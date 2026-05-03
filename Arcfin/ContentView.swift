@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthCore
 
 private enum AppPhase: Equatable {
     case splash, login, main
