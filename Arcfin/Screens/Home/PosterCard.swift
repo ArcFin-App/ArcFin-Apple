@@ -5,6 +5,7 @@ struct PosterCard: View {
     var subtitle: String? = nil
     var accentHue: Color = Color(hex: "1a0d2e")
     var progress: Double? = nil
+    var imageURL: URL? = nil
     var width: CGFloat = DT.Size.posterCard.width
     var height: CGFloat = DT.Size.posterCard.height
 
@@ -12,61 +13,69 @@ struct PosterCard: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Background gradient
-            LinearGradient(
-                colors: [accentHue, DT.Color.backgroundPrimary],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            // Background: poster image or gradient fallback
+            if let url = imageURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: placeholderGradient
+                    }
+                }
+                .clipped()
+            } else {
+                placeholderGradient
+            }
 
             // Scan-line texture
             Canvas { context, size in
                 for y in stride(from: 0, through: size.height, by: 4) {
-                    let line = Path(CGRect(x: 0, y: y, width: size.width, height: 1))
-                    context.fill(line, with: .color(.white.opacity(0.012)))
+                    context.fill(
+                        Path(CGRect(x: 0, y: y, width: size.width, height: 1)),
+                        with: .color(.white.opacity(0.012))
+                    )
                 }
             }
             .allowsHitTesting(false)
 
-            // Glass sheen on top third
+            // Glass sheen — top third
             LinearGradient(
                 colors: [.white.opacity(0.06), .clear],
                 startPoint: .top,
                 endPoint: .init(x: 0.5, y: 0.4)
             )
 
-            // Bottom title overlay
-            VStack(alignment: .leading, spacing: 2) {
-                if let subtitle {
-                    Text(subtitle)
-                        .font(DT.Font.caption2)
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
-                Text(title)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .lineLimit(2)
-                    .shadow(color: .black.opacity(0.8), radius: 2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .background(
-                LinearGradient(
-                    colors: [.black.opacity(0.95), .clear],
-                    startPoint: .bottom,
-                    endPoint: .top
-                )
-            )
+            // Bottom title + progress
+            VStack(spacing: 0) {
+                Spacer()
 
-            // Progress bar
-            if let progress {
-                VStack {
-                    Spacer()
+                VStack(alignment: .leading, spacing: 2) {
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(DT.Font.caption2)
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    Text(title)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .lineLimit(2)
+                        .shadow(color: .black.opacity(0.8), radius: 2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 8)
+                .padding(.top, 12)
+                .padding(.bottom, progress != nil ? 6 : 8)
+                .background(
+                    LinearGradient(
+                        colors: [.black.opacity(0.95), .clear],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+
+                if let progress {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Rectangle()
-                                .fill(.white.opacity(0.1))
+                            Rectangle().fill(.white.opacity(0.1))
                             Rectangle()
                                 .fill(DT.Color.accent)
                                 .frame(width: geo.size.width * progress)
@@ -80,10 +89,7 @@ struct PosterCard: View {
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
         .overlay(
             RoundedRectangle(cornerRadius: DT.Radius.card)
-                .stroke(
-                    hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06),
-                    lineWidth: 1
-                )
+                .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
         )
         .scaleEffect(hovered ? 1.04 : 1)
         .shadow(
@@ -94,9 +100,17 @@ struct PosterCard: View {
         .animation(DT.Animation.fast, value: hovered)
         .onHover { hovered = $0 }
     }
+
+    private var placeholderGradient: some View {
+        LinearGradient(
+            colors: [accentHue, DT.Color.backgroundPrimary],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 }
 
-// MARK: - Request card (landscape variant for Jellyseerr shelf)
+// MARK: - Request card
 
 struct RequestCard: View {
     var title: String
@@ -131,24 +145,20 @@ struct RequestCard: View {
         }
         .frame(width: 140, height: 80)
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-        .overlay(
-            RoundedRectangle(cornerRadius: DT.Radius.card)
-                .stroke(.white.opacity(0.06), lineWidth: 1)
-        )
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
     }
 }
 
-// MARK: - Status models & pill
+// MARK: - Status models
 
 enum RequestStatus: String {
     case approved, pending, downloading, available
 
     var color: Color {
         switch self {
-        case .approved: Color(hex: "10b981")
-        case .pending: Color(hex: "f59e0b")
-        case .downloading: DT.Color.accent
-        case .available: Color(hex: "10b981")
+        case .approved, .available: Color(hex: "10b981")
+        case .pending:              Color(hex: "f59e0b")
+        case .downloading:          DT.Color.accent
         }
     }
 

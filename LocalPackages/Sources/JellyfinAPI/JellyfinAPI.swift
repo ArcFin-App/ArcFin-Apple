@@ -32,6 +32,11 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
     public var backdropImageTags: [String]
     public var primaryImageTag: String?
     public var userData: UserData?
+    public var productionYear: Int?
+    public var communityRating: Double?
+    public var seriesName: String?
+    public var indexNumber: Int?
+    public var parentIndexNumber: Int?
 
     public init(
         id: String,
@@ -40,7 +45,12 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
         type: MediaType,
         backdropImageTags: [String] = [],
         primaryImageTag: String? = nil,
-        userData: UserData? = nil
+        userData: UserData? = nil,
+        productionYear: Int? = nil,
+        communityRating: Double? = nil,
+        seriesName: String? = nil,
+        indexNumber: Int? = nil,
+        parentIndexNumber: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -49,6 +59,11 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
         self.backdropImageTags = backdropImageTags
         self.primaryImageTag = primaryImageTag
         self.userData = userData
+        self.productionYear = productionYear
+        self.communityRating = communityRating
+        self.seriesName = seriesName
+        self.indexNumber = indexNumber
+        self.parentIndexNumber = parentIndexNumber
     }
 }
 

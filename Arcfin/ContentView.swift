@@ -7,6 +7,7 @@ private enum AppPhase: Equatable {
 
 struct ContentView: View {
     @State private var authManager = AuthManager()
+    @State private var mediaRepo = MediaRepository()
     @State private var splashDone = false
 
     private var phase: AppPhase {
@@ -34,6 +35,7 @@ struct ContentView: View {
         .animation(DT.Animation.standard, value: phase)
         .preferredColorScheme(.dark)
         .environment(authManager)
+        .environment(mediaRepo)
         .task { await authManager.checkStoredAuth() }
     }
 }
