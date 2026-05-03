@@ -329,23 +329,24 @@ struct AuthView: View {
     }
 
     private func digitBox(index: Int) -> some View {
-        TextField("", text: $digits[index])
+        let strokeColor: Color = {
+            if digitError { return Color.red.opacity(0.5) }
+            if digits[index].isEmpty { return Color.white.opacity(0.1) }
+            return DT.Color.accent.opacity(0.5)
+        }()
+        let bgColor: Color = digitError ? Color.red.opacity(0.08) : Color.white.opacity(0.06)
+        return TextField("", text: $digits[index])
             .font(.system(size: 20, weight: .heavy, design: .monospaced))
             .foregroundStyle(DT.Color.textPrimary)
             .multilineTextAlignment(.center)
             .keyboardType(.numberPad)
             .focused($focusedDigit, equals: index)
             .frame(width: 38, height: 48)
-            .background(digitError ? Color.red.opacity(0.08) : Color.white.opacity(0.06))
+            .background(bgColor)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(
-                        digitError ? Color.red.opacity(0.5) :
-                            digits[index].isEmpty ? Color.white.opacity(0.1) :
-                            DT.Color.accent.opacity(0.5),
-                        lineWidth: 1.5
-                    )
+                    .stroke(strokeColor, lineWidth: 1.5)
             )
             .onChange(of: digits[index]) { _, newVal in
                 let filtered = String(newVal.filter(\.isNumber).prefix(1))
@@ -417,13 +418,17 @@ struct AuthView: View {
                     .font(DT.Font.caption)
                     .foregroundStyle(DT.Color.textPrimary)
                     .autocorrectionDisabled()
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
+                    #endif
             } else {
                 TextField(placeholder, text: text)
                     .font(DT.Font.caption)
                     .foregroundStyle(DT.Color.textPrimary)
                     .autocorrectionDisabled()
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
+                    #endif
             }
         }
         .padding(.horizontal, 14)

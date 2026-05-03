@@ -172,8 +172,10 @@ struct ServerURLView: View {
                 .font(DT.Font.caption)
                 .foregroundStyle(DT.Color.textPrimary)
                 .autocorrectionDisabled()
+                #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
+                #endif
 
             if trailingCheckmark {
                 Image(systemName: "checkmark.circle.fill")

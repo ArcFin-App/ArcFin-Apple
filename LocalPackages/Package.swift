@@ -5,6 +5,7 @@ let package = Package(
     name: "ArcfinPackages",
     platforms: [
         .iOS(.v26),
+        .macOS(.v15),
     ],
     products: [
         // MARK: Core Services
