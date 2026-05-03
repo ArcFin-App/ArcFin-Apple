@@ -1,26 +1,23 @@
 import SwiftUI
+import AuthCore
 
-enum LoginStep {
+private enum LoginStep {
     case serverURL
-    case auth(serverURL: String)
+    case auth(serverURL: URL, serverName: String)
 }
 
 struct LoginRootView: View {
-    var onAuthenticated: () -> Void
-
+    @Environment(AuthManager.self) private var authManager
     @State private var step: LoginStep = .serverURL
 
     var body: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
-            // Background ambient glow
             VStack {
                 RadialGradient(
                     colors: [DT.Color.accent.opacity(0.07), .clear],
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: 200
+                    center: .center, startRadius: 0, endRadius: 200
                 )
                 .frame(height: 300)
                 .blur(radius: 40)
@@ -30,9 +27,9 @@ struct LoginRootView: View {
 
             switch step {
             case .serverURL:
-                ServerURLView { url in
+                ServerURLView { url, name in
                     withAnimation(DT.Animation.standard) {
-                        step = .auth(serverURL: url)
+                        step = .auth(serverURL: url, serverName: name)
                     }
                 }
                 .transition(.asymmetric(
@@ -40,13 +37,9 @@ struct LoginRootView: View {
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
 
-            case .auth(let url):
-                AuthView(serverURL: url) {
-                    withAnimation(DT.Animation.standard) {
-                        step = .serverURL
-                    }
-                } onAuthenticated: {
-                    onAuthenticated()
+            case .auth(let url, let name):
+                AuthView(serverURL: url, serverName: name) {
+                    withAnimation(DT.Animation.standard) { step = .serverURL }
                 }
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -66,5 +59,6 @@ struct LoginRootView: View {
 }
 
 #Preview {
-    LoginRootView(onAuthenticated: {})
+    LoginRootView()
+        .environment(AuthManager())
 }

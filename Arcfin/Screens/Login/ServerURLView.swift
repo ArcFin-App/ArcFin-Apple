@@ -1,24 +1,24 @@
 import SwiftUI
+import AuthCore
 
 struct ServerURLView: View {
-    var onConnected: (String) -> Void
+    var onConnected: (URL, String) -> Void
+
+    @Environment(AuthManager.self) private var authManager
 
     @State private var serverURL: String = ""
     @State private var connecting: Bool = false
     @State private var connected: Bool = false
     @State private var showError: Bool = false
-
-    private let recentServers = [
-        ("https://media.home.local:8096", "2h ago"),
-        ("https://jellyfin.nas.lan", "Yesterday"),
-    ]
+    @State private var errorMessage: String = ""
+    @State private var discoveredServers: [DiscoveredServer] = []
+    @State private var discovering: Bool = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 stepIndicator
 
-                // Logo
                 ArcfinLogoView(size: 52)
                     .padding(.top, 24)
 
@@ -37,6 +37,7 @@ struct ServerURLView: View {
                 .padding(.top, 20)
                 .padding(.horizontal, DT.Spacing.pagePad)
 
+                // URL field
                 VStack(alignment: .leading, spacing: DT.Spacing.xs) {
                     fieldLabel("Server Address")
 
@@ -50,19 +51,16 @@ struct ServerURLView: View {
                         RoundedRectangle(cornerRadius: DT.Radius.md)
                             .stroke(
                                 showError ? Color.red.opacity(0.5) :
-                                    connected ? DT.Color.accent.opacity(0.4) :
-                                    Color.white.opacity(0.1),
+                                connected ? DT.Color.accent.opacity(0.4) :
+                                Color.white.opacity(0.1),
                                 lineWidth: 1
                             )
                     )
-                    .onChange(of: serverURL) {
-                        showError = false
-                        connected = false
-                    }
-                    .onSubmit { handleConnect() }
+                    .onChange(of: serverURL) { showError = false; connected = false }
+                    .onSubmit { Task { await handleConnect() } }
 
                     if showError {
-                        Text("Please enter a valid server address")
+                        Text(errorMessage)
                             .font(DT.Font.caption2)
                             .foregroundStyle(.red)
                             .padding(.leading, 2)
@@ -71,45 +69,74 @@ struct ServerURLView: View {
                 .padding(.top, DT.Spacing.lg)
                 .padding(.horizontal, DT.Spacing.pagePad)
 
-                // Recent servers
-                VStack(alignment: .leading, spacing: DT.Spacing.xs) {
-                    fieldLabel("Recent Servers")
+                // Local discovery results
+                if discovering || !discoveredServers.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                        HStack {
+                            fieldLabel("Found on network")
+                            Spacer()
+                            if discovering {
+                                ProgressView().scaleEffect(0.7).tint(DT.Color.accent)
+                            }
+                        }
 
-                    ForEach(recentServers, id: \.0) { url, timestamp in
-                        recentServerRow(url: url, timestamp: timestamp)
+                        if discoveredServers.isEmpty {
+                            Text("Searching your local network…")
+                                .font(DT.Font.caption2)
+                                .foregroundStyle(DT.Color.textSecondary)
+                                .padding(.vertical, 4)
+                        } else {
+                            ForEach(discoveredServers) { server in
+                                serverRow(
+                                    icon: "wifi",
+                                    title: server.name,
+                                    subtitle: server.address
+                                ) { serverURL = server.address; showError = false; connected = false }
+                            }
+                        }
                     }
+                    .padding(.top, DT.Spacing.sm)
+                    .padding(.horizontal, DT.Spacing.pagePad)
                 }
-                .padding(.top, DT.Spacing.sm)
-                .padding(.horizontal, DT.Spacing.pagePad)
+
+                // Recent servers from keychain
+                let recent = authManager.storedServers
+                if !recent.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                        fieldLabel("Recent Servers")
+                        ForEach(recent) { cred in
+                            serverRow(
+                                icon: "server.rack",
+                                title: cred.displayName,
+                                subtitle: cred.baseURL.absoluteString
+                            ) { serverURL = cred.baseURL.absoluteString; showError = false; connected = false }
+                        }
+                    }
+                    .padding(.top, DT.Spacing.sm)
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                }
 
                 // Connect button
-                Button(action: handleConnect) {
+                Button { Task { await handleConnect() } } label: {
                     ZStack {
                         if connecting {
                             HStack(spacing: 8) {
-                                ProgressView()
-                                    .tint(.white)
-                                    .scaleEffect(0.85)
-                                Text("Connecting…")
-                                    .font(DT.Font.button)
-                                    .foregroundStyle(.white.opacity(0.8))
+                                ProgressView().tint(.white).scaleEffect(0.85)
+                                Text("Connecting…").font(DT.Font.button).foregroundStyle(.white.opacity(0.8))
                             }
                         } else {
-                            Text("Connect")
-                                .font(DT.Font.button)
-                                .foregroundStyle(.white)
+                            Text("Connect").font(DT.Font.button).foregroundStyle(.white)
                         }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
                         connecting
-                        ? AnyShapeStyle(DT.Color.accent.opacity(0.3))
-                        : AnyShapeStyle(LinearGradient(
-                            colors: [DT.Color.accentDeep, DT.Color.accent],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
+                            ? AnyShapeStyle(DT.Color.accent.opacity(0.3))
+                            : AnyShapeStyle(LinearGradient(
+                                colors: [DT.Color.accentDeep, DT.Color.accent],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            ))
                     )
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                     .shadow(color: connecting ? .clear : DT.Color.accent.opacity(0.35), radius: 16)
@@ -119,33 +146,23 @@ struct ServerURLView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
 
                 HStack(spacing: 4) {
-                    Text("Need help?")
-                        .font(DT.Font.caption)
-                        .foregroundStyle(DT.Color.textSecondary)
-                    Text("Setup guide")
-                        .font(DT.Font.caption)
-                        .foregroundStyle(DT.Color.accent)
-                        .fontWeight(.medium)
+                    Text("Need help?").font(DT.Font.caption).foregroundStyle(DT.Color.textSecondary)
+                    Text("Setup guide").font(DT.Font.caption).foregroundStyle(DT.Color.accent).fontWeight(.medium)
                 }
                 .padding(.top, DT.Spacing.md)
             }
             .padding(.top, 52)
             .padding(.bottom, DT.Spacing.xxxl)
         }
+        .task { await runDiscovery() }
     }
 
     // MARK: - Subviews
 
     private var stepIndicator: some View {
         HStack(spacing: 6) {
-            // Step 1 active
-            Capsule()
-                .fill(DT.Color.accent)
-                .frame(width: 20, height: 6)
-            // Step 2 inactive
-            Capsule()
-                .fill(.white.opacity(0.15))
-                .frame(width: 6, height: 6)
+            Capsule().fill(DT.Color.accent).frame(width: 20, height: 6)
+            Capsule().fill(.white.opacity(0.15)).frame(width: 6, height: 6)
         }
     }
 
@@ -157,17 +174,9 @@ struct ServerURLView: View {
             .foregroundStyle(DT.Color.textSecondary)
     }
 
-    private func glassTextField(
-        text: Binding<String>,
-        placeholder: String,
-        leadingIcon: String,
-        trailingCheckmark: Bool
-    ) -> some View {
+    private func glassTextField(text: Binding<String>, placeholder: String, leadingIcon: String, trailingCheckmark: Bool) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: leadingIcon)
-                .font(.system(size: 13))
-                .foregroundStyle(DT.Color.textSecondary)
-
+            Image(systemName: leadingIcon).font(.system(size: 13)).foregroundStyle(DT.Color.textSecondary)
             TextField(placeholder, text: text)
                 .font(DT.Font.caption)
                 .foregroundStyle(DT.Color.textPrimary)
@@ -176,7 +185,6 @@ struct ServerURLView: View {
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 #endif
-
             if trailingCheckmark {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 14))
@@ -192,50 +200,28 @@ struct ServerURLView: View {
         .animation(DT.Animation.fast, value: trailingCheckmark)
     }
 
-    private func recentServerRow(url: String, timestamp: String) -> some View {
-        Button {
-            serverURL = url
-            showError = false
-        } label: {
+    private func serverRow(icon: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(DT.Color.accent.opacity(0.08))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(DT.Color.accent.opacity(0.15), lineWidth: 1)
-                        )
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(DT.Color.accent.opacity(0.15), lineWidth: 1))
                         .frame(width: 28, height: 28)
-
-                    Image(systemName: "server.rack")
-                        .font(.system(size: 11))
-                        .foregroundStyle(DT.Color.accent)
+                    Image(systemName: icon).font(.system(size: 11)).foregroundStyle(DT.Color.accent)
                 }
-
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(url)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(1)
-                    Text("Last connected \(timestamp)")
-                        .font(DT.Font.caption2)
-                        .foregroundStyle(DT.Color.textSecondary)
+                    Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(DT.Color.textPrimary).lineLimit(1)
+                    Text(subtitle).font(DT.Font.caption2).foregroundStyle(DT.Color.textSecondary).lineLimit(1)
                 }
-
                 Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10))
-                    .foregroundStyle(DT.Color.textSecondary)
+                Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(DT.Color.textSecondary)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
             .background(.white.opacity(0.03))
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(.white.opacity(0.06), lineWidth: 1)
-            )
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.06), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .padding(.bottom, 6)
@@ -243,18 +229,29 @@ struct ServerURLView: View {
 
     // MARK: - Actions
 
-    private func handleConnect() {
-        guard !serverURL.trimmingCharacters(in: .whitespaces).isEmpty else {
-            showError = true
-            return
+    private func runDiscovery() async {
+        discovering = true
+        discoveredServers = await ServerDiscovery.discover(timeout: 3.0)
+        discovering = false
+    }
+
+    private func handleConnect() async {
+        let trimmed = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            showError = true; errorMessage = "Please enter a server address."; return
         }
         connecting = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+        showError = false
+        do {
+            let (url, name) = try await authManager.authClient.validateServer(url: trimmed)
             connected = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                connecting = false
-                onConnected(serverURL)
-            }
+            try? await Task.sleep(for: .milliseconds(600))
+            connecting = false
+            onConnected(url, name)
+        } catch {
+            connecting = false
+            showError = true
+            errorMessage = error.localizedDescription
         }
     }
 }
@@ -262,6 +259,7 @@ struct ServerURLView: View {
 #Preview {
     ZStack {
         DT.Color.backgroundPrimary.ignoresSafeArea()
-        ServerURLView(onConnected: { _ in })
+        ServerURLView(onConnected: { _, _ in })
+            .environment(AuthManager())
     }
 }
