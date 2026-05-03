@@ -245,13 +245,9 @@ struct AuthView: View {
 
                 codeDisplay(quickConnectCode)
 
-                Text("Expires in ")
+                Text("Expires in \(Text("4:58").foregroundStyle(DT.Color.textPrimary))")
                     .font(DT.Font.caption2)
                     .foregroundStyle(DT.Color.textSecondary)
-                +
-                Text("4:58")
-                    .font(DT.Font.caption2)
-                    .foregroundStyle(DT.Color.textPrimary)
             }
             .padding(.top, DT.Spacing.lg)
 
