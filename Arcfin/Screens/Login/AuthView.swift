@@ -339,7 +339,9 @@ struct AuthView: View {
             .font(.system(size: 20, weight: .heavy, design: .monospaced))
             .foregroundStyle(DT.Color.textPrimary)
             .multilineTextAlignment(.center)
+            #if os(iOS)
             .keyboardType(.numberPad)
+            #endif
             .focused($focusedDigit, equals: index)
             .frame(width: 38, height: 48)
             .background(bgColor)
@@ -349,7 +351,7 @@ struct AuthView: View {
                     .stroke(strokeColor, lineWidth: 1.5)
             )
             .onChange(of: digits[index]) { _, newVal in
-                let filtered = String(newVal.filter(\.isNumber).prefix(1))
+                let filtered = String(newVal.filter { $0.isNumber }.prefix(1))
                 if filtered != newVal {
                     digits[index] = filtered
                 }

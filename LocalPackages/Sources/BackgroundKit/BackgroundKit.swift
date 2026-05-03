@@ -19,6 +19,7 @@ public final class BackgroundScheduler: Sendable {
     private init() {}
 
     public func scheduleSettingsSync() {
+        #if !os(macOS)
         let request = BGProcessingTaskRequest(identifier: BackgroundTaskIdentifier.syncSettings)
         request.requiresNetworkConnectivity = true
         request.requiresExternalPower = false
@@ -27,5 +28,6 @@ public final class BackgroundScheduler: Sendable {
         } catch {
             Self.log.error("Failed to schedule settings sync: \(error)")
         }
+        #endif
     }
 }
