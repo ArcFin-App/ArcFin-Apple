@@ -15,6 +15,7 @@ struct ServerURLView: View {
     @State private var discoveredServers: [DiscoveredServer] = []
     @State private var discovering: Bool = false
     @State private var recentServers: [ServerCredential] = []
+    @State private var showSetupGuide: Bool = false
 
     var body: some View {
         ScrollView {
@@ -151,7 +152,10 @@ struct ServerURLView: View {
 
                 HStack(spacing: 4) {
                     Text("Need help?").font(DT.Font.caption).foregroundStyle(DT.Color.textSecondary)
-                    Text("Setup guide").font(DT.Font.caption).foregroundStyle(DT.Color.accent).fontWeight(.medium)
+                    Button { showSetupGuide = true } label: {
+                        Text("Setup guide").font(DT.Font.caption).foregroundStyle(DT.Color.accent).fontWeight(.medium)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, DT.Spacing.md)
             }
@@ -159,6 +163,7 @@ struct ServerURLView: View {
             .padding(.bottom, DT.Spacing.xxxl)
         }
         .task { await runDiscovery() }
+        .sheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
     }
 
     // MARK: - Subviews
