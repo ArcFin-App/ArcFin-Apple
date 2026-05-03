@@ -86,46 +86,56 @@ struct HomeView: View {
     @Environment(MediaRepository.self) private var mediaRepo
 
     @State private var heroIndex: Int = 0
-    private let heroTimer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
+    private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
-    private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(3)) }
+    private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    heroBanner.frame(height: 480)
+        // GeometryReader BEFORE ignoresSafeArea so we capture the real top inset
+        GeometryReader { proxy in
+            let topInset = proxy.safeAreaInsets.top
 
+            ZStack(alignment: .bottom) {
+                // Scrollable content
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        // Continue Watching
-                        if !mediaRepo.continueWatching.isEmpty {
-                            ShelfRow(title: "Continue Watching", onSeeAll: {}) {
-                                ForEach(mediaRepo.continueWatching) { item in
-                                    PosterCard(
-                                        title: itemDisplayTitle(item),
-                                        subtitle: itemDisplaySubtitle(item),
-                                        progress: item.userData?.playedPercentage.map { $0 / 100 },
-                                        imageURL: mediaRepo.imageURL(for: item)
-                                    )
+                        heroBanner(topInset: topInset)
+                            .frame(height: 480 + topInset)
+
+                        VStack(spacing: 0) {
+                            if !mediaRepo.continueWatching.isEmpty {
+                                ShelfRow(title: "Continue Watching", onSeeAll: {}) {
+                                    ForEach(mediaRepo.continueWatching) { item in
+                                        PosterCard(
+                                            title: itemDisplayTitle(item),
+                                            subtitle: itemDisplaySubtitle(item),
+                                            progress: item.userData?.playedPercentage.map { $0 / 100 },
+                                            imageURL: mediaRepo.imageURL(for: item)
+                                        )
+                                    }
                                 }
                             }
-                        }
 
-                        // Recently Added
-                        ShelfRow(title: "Recently Added", badge: "NEW", onSeeAll: {}) {
-                            recentlyAddedContent
+                            ShelfRow(title: "Recently Added", badge: "NEW", onSeeAll: {}) {
+                                recentlyAddedContent
+                            }
                         }
+                        .padding(.top, 12)
+
+                        Spacer().frame(height: DT.Size.tabBarHeight + 24)
                     }
-                    .padding(.top, 8)
-
-                    Spacer().frame(height: DT.Size.tabBarHeight + 16)
                 }
-            }
 
-            ArcfinTabBar(selectedTab: $selectedTab)
+                // Tab bar
+                ArcfinTabBar(selectedTab: $selectedTab)
+            }
+            .background(DT.Color.backgroundPrimary)
+            .ignoresSafeArea()
+            // Nav bar floats above everything, padded into safe area
+            .overlay(alignment: .top) {
+                navBar(topInset: topInset)
+            }
         }
-        .background(DT.Color.backgroundPrimary)
-        .ignoresSafeArea()
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }
             await mediaRepo.load(credential: cred, authClient: authManager.authClient)
@@ -136,51 +146,94 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Hero banner
+    // MARK: - Nav bar overlay
 
-    private var heroBanner: some View {
-        GeometryReader { geo in
-            let topInset = geo.safeAreaInsets.top
-            ZStack(alignment: .bottom) {
-                // Backdrop image — portrait fill
-                heroBackground(topInset: topInset)
-                    .animation(DT.Animation.slow, value: heroIndex)
+    private func navBar(topInset: CGFloat) -> some View {
+        HStack {
+            HStack(spacing: 6) {
+                ArcfinIconView(size: 20)
+                Text("arcfin")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .tracking(-0.5)
+            }
+            Spacer()
+            HStack(spacing: 16) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 17))
+                    .foregroundStyle(.white.opacity(0.85))
 
-                // Multi-stop gradient: transparent top → heavy bottom fade
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .black.opacity(0.15), location: 0.45),
-                        .init(color: .black.opacity(0.6), location: 0.7),
-                        .init(color: DT.Color.backgroundPrimary, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-
-                // Side vignette
-                HStack(spacing: 0) {
-                    LinearGradient(colors: [DT.Color.backgroundPrimary.opacity(0.25), .clear], startPoint: .leading, endPoint: .trailing)
-                        .frame(width: 60)
-                    Spacer()
-                    LinearGradient(colors: [.clear, DT.Color.backgroundPrimary.opacity(0.25)], startPoint: .leading, endPoint: .trailing)
-                        .frame(width: 60)
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            colors: [Color(hex: "1e3a5f"), Color(hex: "0d2040")],
+                            startPoint: .top, endPoint: .bottom
+                        ))
+                        .overlay(Circle().stroke(DT.Color.accent.opacity(0.4), lineWidth: 1.5))
+                        .frame(width: 30, height: 30)
+                    Text(authManager.state.displayInitials)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(DT.Color.accent)
                 }
-
-                // Nav bar — pushed below status bar
-                VStack(spacing: 0) {
-                    navBar(topInset: topInset)
-                    Spacer()
-                }
-
-                // Title / logo + action buttons
-                heroContent
             }
         }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, topInset + 6)
+        .padding(.bottom, 10)
+        .background(
+            LinearGradient(
+                colors: [.black.opacity(0.6), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+
+    // MARK: - Hero banner
+
+    private func heroBanner(topInset: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            // Backdrop image — fills full frame
+            heroBackground
+                .animation(DT.Animation.slow, value: heroIndex)
+
+            // Heavy bottom fade (Netflix-style)
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.1), location: 0.35),
+                    .init(color: .black.opacity(0.55), location: 0.65),
+                    .init(color: DT.Color.backgroundPrimary, location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Side vignette
+            HStack(spacing: 0) {
+                LinearGradient(
+                    colors: [DT.Color.backgroundPrimary.opacity(0.3), .clear],
+                    startPoint: .leading, endPoint: .trailing
+                )
+                .frame(width: 50)
+                Spacer()
+                LinearGradient(
+                    colors: [.clear, DT.Color.backgroundPrimary.opacity(0.3)],
+                    startPoint: .leading, endPoint: .trailing
+                )
+                .frame(width: 50)
+            }
+
+            // Bottom: logo / title + actions + dots
+            heroContent
+                .padding(.bottom, 20)
+        }
+        .frame(maxWidth: .infinity)
+        .clipped()
     }
 
     @ViewBuilder
-    private func heroBackground(topInset: CGFloat) -> some View {
+    private var heroBackground: some View {
         if let item = heroItems[safe: heroIndex],
            let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
             AsyncImage(url: url) { phase in
@@ -208,127 +261,90 @@ struct HomeView: View {
     }
 
     private var heroContent: some View {
-        let item = heroItems[safe: heroIndex]
-        let meta = heroMeta(item)
-        let dotCount = max(heroItems.count, 1)
-
-        return VStack(alignment: .center, spacing: 0) {
-            Spacer()
-
-            // Logo image or title text
-            if let item {
+        VStack(spacing: 0) {
+            // Logo image or title text — centred
+            if let item = heroItems[safe: heroIndex] {
                 AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable()
                             .scaledToFit()
-                            .frame(maxWidth: 220, maxHeight: 72)
-                            .shadow(color: .black.opacity(0.6), radius: 12)
+                            .frame(maxWidth: 240, maxHeight: 80)
+                            .shadow(color: .black.opacity(0.7), radius: 12)
                     } else {
                         Text(item.name)
-                            .font(.system(size: 28, weight: .heavy))
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .tracking(-1)
+                            .font(.system(size: 30, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .tracking(-0.8)
                             .multilineTextAlignment(.center)
-                            .shadow(color: .black.opacity(0.8), radius: 8)
+                            .shadow(color: .black.opacity(0.9), radius: 10)
+                            .padding(.horizontal, DT.Spacing.pagePad)
                     }
                 }
-                .animation(nil, value: heroIndex)
+                .id(heroIndex)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: heroIndex)
+
+                Text(heroMeta(item))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.top, 8)
+                    .animation(nil, value: heroIndex)
             }
 
-            Text(meta)
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.6))
-                .padding(.top, 6)
-                .padding(.bottom, 16)
-                .animation(nil, value: heroIndex)
-
-            HStack(spacing: 10) {
+            // Action buttons
+            HStack(spacing: 12) {
                 Button {} label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "play.fill").font(.system(size: 11))
-                        Text("Play").font(.system(size: 13, weight: .bold))
+                        Image(systemName: "play.fill").font(.system(size: 12))
+                        Text("Play").font(.system(size: 14, weight: .bold))
                     }
                     .foregroundStyle(.black)
-                    .padding(.horizontal, 28).padding(.vertical, 10)
-                    .background(.white).clipShape(Capsule())
+                    .frame(minWidth: 100)
+                    .padding(.vertical, 11)
+                    .background(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
 
                 Button {} label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "info.circle").font(.system(size: 11))
-                        Text("More Info").font(.system(size: 12, weight: .semibold))
+                        Image(systemName: "info.circle").font(.system(size: 12))
+                        Text("More Info").font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundStyle(.white.opacity(0.9))
-                    .padding(.horizontal, 20).padding(.vertical, 10)
-                    .background(.white.opacity(0.12)).background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+                    .frame(minWidth: 100)
+                    .padding(.vertical, 11)
+                    .background(.white.opacity(0.12))
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(.white.opacity(0.2), lineWidth: 1))
                 }
                 .buttonStyle(.plain)
             }
+            .padding(.top, 16)
 
             // Page dots
-            HStack(spacing: 5) {
-                ForEach(0..<dotCount, id: \.self) { i in
-                    Capsule()
-                        .fill(i == heroIndex ? .white : Color.white.opacity(0.3))
-                        .frame(width: i == heroIndex ? 16 : 5, height: 5)
-                        .onTapGesture { withAnimation(DT.Animation.standard) { heroIndex = i } }
-                        .animation(DT.Animation.fast, value: heroIndex)
+            if heroItems.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(0..<heroItems.count, id: \.self) { i in
+                        Capsule()
+                            .fill(i == heroIndex ? .white : Color.white.opacity(0.3))
+                            .frame(width: i == heroIndex ? 18 : 6, height: 5)
+                            .onTapGesture { withAnimation(DT.Animation.standard) { heroIndex = i } }
+                            .animation(DT.Animation.fast, value: heroIndex)
+                    }
                 }
+                .padding(.top, 14)
             }
-            .padding(.top, 14)
-            .padding(.bottom, DT.Spacing.md)
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, DT.Spacing.pagePad)
     }
 
-    private func heroMeta(_ item: MediaItem?) -> String {
-        guard let item else { return "" }
+    private func heroMeta(_ item: MediaItem) -> String {
         var parts: [String] = []
         if let year = item.productionYear { parts.append("\(year)") }
         parts.append(item.type == .series ? "Series" : "Movie")
         return parts.joined(separator: " · ")
-    }
-
-    // MARK: - Nav bar
-
-    private func navBar(topInset: CGFloat) -> some View {
-        HStack {
-            HStack(spacing: 6) {
-                ArcfinIconView(size: 20)
-                Text("arcfin")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .tracking(-0.5)
-            }
-
-            Spacer()
-
-            HStack(spacing: 16) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 17))
-                    .foregroundStyle(.white.opacity(0.8))
-
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [Color(hex: "1e3a5f"), Color(hex: "0d2040")], startPoint: .top, endPoint: .bottom))
-                        .overlay(Circle().stroke(DT.Color.accent.opacity(0.4), lineWidth: 1.5))
-                        .frame(width: 28, height: 28)
-                    Text(authManager.state.displayInitials)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(DT.Color.accent)
-                }
-            }
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, topInset + 8)
-        .frame(height: 48 + topInset)
-        .background(
-            LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
-        )
     }
 
     // MARK: - Recently Added content
@@ -356,18 +372,24 @@ struct HomeView: View {
     // MARK: - Helpers
 
     private func itemDisplayTitle(_ item: MediaItem) -> String {
-        if item.type == .episode, let series = item.seriesName { return series }
-        return item.name
+        switch item.type {
+        case .episode:
+            // Prefer series name; fall back to episode name; then "Unknown"
+            return item.seriesName?.nilIfEmpty ?? item.name.nilIfEmpty ?? "Unknown"
+        default:
+            return item.name.nilIfEmpty ?? "Unknown"
+        }
     }
 
     private func itemDisplaySubtitle(_ item: MediaItem) -> String? {
-        if item.type == .episode {
-            let s = item.parentIndexNumber.map { "S\($0)" } ?? ""
-            let e = item.indexNumber.map { "E\($0)" } ?? ""
-            let se = [s, e].filter { !$0.isEmpty }.joined()
-            return se.isEmpty ? nil : se
+        switch item.type {
+        case .episode:
+            let s = item.parentIndexNumber.map { "S\($0)" }
+            let e = item.indexNumber.map { "E\($0)" }
+            return [s, e].compactMap { $0 }.joined().nilIfEmpty
+        default:
+            return item.productionYear.map { "\($0)" }
         }
-        return item.productionYear.map { "\($0)" }
     }
 }
 
@@ -410,15 +432,20 @@ struct ArcfinTabBar: View {
     }
 }
 
-// MARK: - AuthState + display helpers
+// MARK: - AuthState helpers
 
 private extension AuthState {
     var displayInitials: String {
         guard case .authenticated(let cred) = self else { return "?" }
         let words = cred.displayName.split(separator: " ")
-        let initials = words.prefix(2).compactMap { $0.first }.map { String($0) }.joined()
-        return initials.uppercased().isEmpty ? "?" : initials.uppercased()
+        return words.prefix(2).compactMap { $0.first }.map { String($0).uppercased() }.joined()
     }
+}
+
+// MARK: - String helpers
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
 // MARK: - Safe subscript

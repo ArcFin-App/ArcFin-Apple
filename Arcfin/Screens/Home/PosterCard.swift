@@ -48,14 +48,14 @@ struct PosterCard: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     if let subtitle {
                         Text(subtitle)
-                            .font(DT.Font.caption2)
+                            .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     Text(title)
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.8), radius: 2)
