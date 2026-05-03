@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthCore
+import JellyfinAPI
 
 struct ServerURLView: View {
     var onConnected: (URL, String) -> Void
