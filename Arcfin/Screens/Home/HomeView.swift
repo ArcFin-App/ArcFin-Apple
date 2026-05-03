@@ -94,7 +94,7 @@ struct HomeView: View {
         ZStack(alignment: .bottom) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    heroBanner.frame(height: 260)
+                    heroBanner.frame(height: 480)
 
                     VStack(spacing: 0) {
                         // Continue Watching
@@ -139,51 +139,59 @@ struct HomeView: View {
     // MARK: - Hero banner
 
     private var heroBanner: some View {
-        ZStack(alignment: .bottom) {
-            heroBackground
-                .animation(DT.Animation.slow, value: heroIndex)
+        GeometryReader { geo in
+            let topInset = geo.safeAreaInsets.top
+            ZStack(alignment: .bottom) {
+                // Backdrop image — portrait fill
+                heroBackground(topInset: topInset)
+                    .animation(DT.Animation.slow, value: heroIndex)
 
-            // Cinematic overlay
-            LinearGradient(
-                colors: [.black.opacity(0), .black.opacity(0.3), DT.Color.backgroundPrimary],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                // Multi-stop gradient: transparent top → heavy bottom fade
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black.opacity(0.15), location: 0.45),
+                        .init(color: .black.opacity(0.6), location: 0.7),
+                        .init(color: DT.Color.backgroundPrimary, location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
 
-            // Scan lines
-            Canvas { context, size in
-                for y in stride(from: 0, through: size.height, by: 3) {
-                    context.fill(
-                        Path(CGRect(x: 0, y: y, width: size.width, height: 1)),
-                        with: .color(.black.opacity(0.03))
-                    )
+                // Side vignette
+                HStack(spacing: 0) {
+                    LinearGradient(colors: [DT.Color.backgroundPrimary.opacity(0.25), .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 60)
+                    Spacer()
+                    LinearGradient(colors: [.clear, DT.Color.backgroundPrimary.opacity(0.25)], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 60)
                 }
+
+                // Nav bar — pushed below status bar
+                VStack(spacing: 0) {
+                    navBar(topInset: topInset)
+                    Spacer()
+                }
+
+                // Title / logo + action buttons
+                heroContent
             }
-            .allowsHitTesting(false)
-
-            // Lens flare
-            RadialGradient(colors: [DT.Color.accent.opacity(0.12), .clear], center: .center, startRadius: 0, endRadius: 80)
-                .frame(width: 120, height: 120)
-                .offset(x: 80, y: -80)
-
-            VStack { navBar; Spacer() }
-
-            heroContent
         }
     }
 
     @ViewBuilder
-    private var heroBackground: some View {
+    private func heroBackground(topInset: CGFloat) -> some View {
         if let item = heroItems[safe: heroIndex],
-           let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+           let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let img):
-                    img.resizable().scaledToFill().clipped()
+                    img.resizable().scaledToFill()
                 default:
                     heroGradient(for: heroIndex)
                 }
             }
+            .clipped()
         } else {
             heroGradient(for: heroIndex)
         }
@@ -201,75 +209,80 @@ struct HomeView: View {
 
     private var heroContent: some View {
         let item = heroItems[safe: heroIndex]
-        let title = item?.name ?? "Arcfin"
         let meta = heroMeta(item)
         let dotCount = max(heroItems.count, 1)
 
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .center, spacing: 0) {
             Spacer()
 
-            HStack(spacing: 4) {
-                Circle().fill(DT.Color.accent).frame(width: 5, height: 5).shadow(color: DT.Color.accent, radius: 3)
-                Text("Featured")
-                    .font(.system(size: 9, weight: .bold)).tracking(0.8).textCase(.uppercase)
-                    .foregroundStyle(DT.Color.accent)
-            }
-            .padding(.horizontal, 10).padding(.vertical, 3)
-            .background(DT.Color.accent.opacity(0.12)).background(.ultraThinMaterial)
-            .clipShape(Capsule()).overlay(Capsule().stroke(DT.Color.accent.opacity(0.3), lineWidth: 1))
-            .padding(.bottom, 8)
-
-            Text(title)
-                .font(.system(size: 26, weight: .heavy))
-                .foregroundStyle(DT.Color.textPrimary)
-                .tracking(-1).shadow(color: .black.opacity(0.8), radius: 8)
+            // Logo image or title text
+            if let item {
+                AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                    if case .success(let img) = phase {
+                        img.resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 220, maxHeight: 72)
+                            .shadow(color: .black.opacity(0.6), radius: 12)
+                    } else {
+                        Text(item.name)
+                            .font(.system(size: 28, weight: .heavy))
+                            .foregroundStyle(DT.Color.textPrimary)
+                            .tracking(-1)
+                            .multilineTextAlignment(.center)
+                            .shadow(color: .black.opacity(0.8), radius: 8)
+                    }
+                }
                 .animation(nil, value: heroIndex)
+            }
 
             Text(meta)
-                .font(.system(size: 10)).foregroundStyle(.white.opacity(0.55))
-                .padding(.top, 4).padding(.bottom, 12)
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.6))
+                .padding(.top, 6)
+                .padding(.bottom, 16)
                 .animation(nil, value: heroIndex)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Button {} label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "play.fill").font(.system(size: 10))
-                        Text("Play").font(.system(size: 11, weight: .bold))
+                        Image(systemName: "play.fill").font(.system(size: 11))
+                        Text("Play").font(.system(size: 13, weight: .bold))
                     }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16).padding(.vertical, 7)
-                    .background(DT.Color.accent).clipShape(Capsule())
-                    .shadow(color: DT.Color.accent.opacity(0.4), radius: 10)
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 28).padding(.vertical, 10)
+                    .background(.white).clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
 
                 Button {} label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "info.circle").font(.system(size: 10))
-                        Text("More Info").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "info.circle").font(.system(size: 11))
+                        Text("More Info").font(.system(size: 12, weight: .semibold))
                     }
-                    .foregroundStyle(.white.opacity(0.85))
-                    .padding(.horizontal, 14).padding(.vertical, 7)
-                    .background(.white.opacity(0.1)).background(.ultraThinMaterial)
-                    .clipShape(Capsule()).overlay(Capsule().stroke(.white.opacity(0.15), lineWidth: 1))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 20).padding(.vertical, 10)
+                    .background(.white.opacity(0.12)).background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
                 }
                 .buttonStyle(.plain)
+            }
 
-                Spacer()
-
-                HStack(spacing: 4) {
-                    ForEach(0..<dotCount, id: \.self) { i in
-                        Capsule()
-                            .fill(i == heroIndex ? DT.Color.accent : Color.white.opacity(0.3))
-                            .frame(width: i == heroIndex ? 14 : 4, height: 4)
-                            .onTapGesture { withAnimation(DT.Animation.standard) { heroIndex = i } }
-                            .animation(DT.Animation.fast, value: heroIndex)
-                    }
+            // Page dots
+            HStack(spacing: 5) {
+                ForEach(0..<dotCount, id: \.self) { i in
+                    Capsule()
+                        .fill(i == heroIndex ? .white : Color.white.opacity(0.3))
+                        .frame(width: i == heroIndex ? 16 : 5, height: 5)
+                        .onTapGesture { withAnimation(DT.Animation.standard) { heroIndex = i } }
+                        .animation(DT.Animation.fast, value: heroIndex)
                 }
             }
+            .padding(.top, 14)
+            .padding(.bottom, DT.Spacing.md)
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.md)
     }
 
     private func heroMeta(_ item: MediaItem?) -> String {
@@ -282,7 +295,7 @@ struct HomeView: View {
 
     // MARK: - Nav bar
 
-    private var navBar: some View {
+    private func navBar(topInset: CGFloat) -> some View {
         HStack {
             HStack(spacing: 6) {
                 ArcfinIconView(size: 20)
@@ -311,9 +324,11 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
-        .frame(height: 48)
-        .background(LinearGradient(colors: [.black.opacity(0.7), .clear], startPoint: .top, endPoint: .bottom))
-        .background(.ultraThinMaterial.opacity(0.5))
+        .padding(.top, topInset + 8)
+        .frame(height: 48 + topInset)
+        .background(
+            LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
+        )
     }
 
     // MARK: - Recently Added content

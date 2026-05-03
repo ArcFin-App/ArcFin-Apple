@@ -41,4 +41,15 @@ final class MediaRepository {
         guard let tag, let base = baseURL, let token = accessToken else { return nil }
         return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: type, fillWidth: fillWidth, token: token)
     }
+
+    func logoURL(for item: MediaItem) -> URL? {
+        guard let base = baseURL, let token = accessToken else { return nil }
+        var comps = URLComponents(url: base.appendingPathComponent("Items/\(item.id)/Images/Logo"), resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "fillWidth", value: "300"),
+            .init(name: "quality", value: "90"),
+            .init(name: "api_key", value: token),
+        ]
+        return comps.url
+    }
 }
