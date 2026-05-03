@@ -17,7 +17,9 @@ final class AuthManager {
 
     func checkStoredAuth() async {
         defer { isChecking = false }
-        guard let credential = (try? keychain.allServers())?.first else { return }
+        // SecItemCopyMatching is blocking — run on background thread
+        let servers = await backgroundKeychainRead()
+        guard let credential = servers.first else { return }
         guard await authClient.validateToken(credential: credential) else { return }
         state = .authenticated(credential)
     }
@@ -25,7 +27,8 @@ final class AuthManager {
     // MARK: - Save & activate
 
     func save(_ credential: ServerCredential) {
-        try? keychain.save(credential)
+        let k = keychain
+        Task.detached { try? k.save(credential) }
         state = .authenticated(credential)
     }
 
@@ -33,14 +36,25 @@ final class AuthManager {
 
     func signOut() {
         if case .authenticated(let cred) = state {
-            try? keychain.delete(serverID: cred.id)
+            let k = keychain
+            let id = cred.id
+            Task.detached { try? k.delete(serverID: id) }
         }
         state = .unauthenticated
     }
 
-    // MARK: - Stored servers (for UI)
+    // MARK: - Stored servers (async — always off main thread)
 
-    var storedServers: [ServerCredential] {
-        (try? keychain.allServers()) ?? []
+    func fetchStoredServers() async -> [ServerCredential] {
+        await backgroundKeychainRead()
+    }
+
+    // MARK: - Private
+
+    private func backgroundKeychainRead() async -> [ServerCredential] {
+        let k = keychain
+        return await Task.detached(priority: .userInitiated) {
+            (try? k.allServers()) ?? []
+        }.value
     }
 }

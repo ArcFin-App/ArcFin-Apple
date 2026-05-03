@@ -234,9 +234,12 @@ struct ServerURLView: View {
     // MARK: - Actions
 
     private func runDiscovery() async {
-        recentServers = authManager.storedServers
+        // Load from keychain off main thread, then start UDP discovery in parallel
+        async let stored = authManager.fetchStoredServers()
+        async let found = ServerDiscovery.discover(timeout: 3.0)
         discovering = true
-        discoveredServers = await ServerDiscovery.discover(timeout: 3.0)
+        recentServers = await stored
+        discoveredServers = await found
         discovering = false
     }
 
