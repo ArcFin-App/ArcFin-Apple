@@ -22,7 +22,8 @@ public enum SearchScope: Sendable {
 
 // MARK: - Results
 
-public struct SearchResults: Sendable {
+// CSSearchableItem is not Sendable; isolate Spotlight results behind @unchecked.
+public struct SearchResults: @unchecked Sendable {
     public var serverResults: [ServerSearchResult]
     public var spotlightResults: [CSSearchableItem]
 

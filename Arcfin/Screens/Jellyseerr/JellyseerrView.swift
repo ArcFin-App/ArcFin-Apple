@@ -416,7 +416,7 @@ struct JellyseerrView: View {
                     .padding(.bottom, DT.Spacing.lg)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Request "\(title)"")
+                    Text("Request \"\(title)\"")
                         .font(.system(size: 18, weight: .heavy))
                         .foregroundStyle(DT.Color.textPrimary)
 

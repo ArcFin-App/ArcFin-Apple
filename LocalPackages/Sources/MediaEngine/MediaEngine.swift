@@ -122,7 +122,8 @@ final class PlayerStateBox: @unchecked Sendable {
 public final class MPVPlayer: MediaPlayerProtocol {
 
     private let log = Telemetry.logger(category: "MPVPlayer")
-    public var state: PlayerState = .init()
+    // nonisolated(unsafe) — stub only, replaced by actor-based MPV wrapper when libmpv lands
+    public nonisolated(unsafe) var state: PlayerState = .init()
 
     public init() {}
 
