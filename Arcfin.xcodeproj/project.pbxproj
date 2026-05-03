@@ -6,6 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FAB5D7842FA79F5C002031A9 /* AppState in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7832FA79F5C002031A9 /* AppState */; };
+		FAB5D7862FA79F5C002031A9 /* AuthCore in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7852FA79F5C002031A9 /* AuthCore */; };
+		FAB5D7882FA79F5C002031A9 /* BackgroundKit in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7872FA79F5C002031A9 /* BackgroundKit */; };
+		FAB5D78A2FA79F5C002031A9 /* ImageCache in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7892FA79F5C002031A9 /* ImageCache */; };
+		FAB5D78C2FA79F5C002031A9 /* JellyfinAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78B2FA79F5C002031A9 /* JellyfinAPI */; };
+		FAB5D78E2FA79F5C002031A9 /* JellyseerrAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78D2FA79F5C002031A9 /* JellyseerrAPI */; };
+		FAB5D7902FA79F5C002031A9 /* MediaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78F2FA79F5C002031A9 /* MediaEngine */; };
+		FAB5D7922FA79F5C002031A9 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7912FA79F5C002031A9 /* Persistence */; };
+		FAB5D7942FA79F5C002031A9 /* SearchKit in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7932FA79F5C002031A9 /* SearchKit */; };
+		FAB5D7962FA79F5C002031A9 /* StreamystatsAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */; };
+		FAB5D7982FA79F5C002031A9 /* SyncEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7972FA79F5C002031A9 /* SyncEngine */; };
+		FAB5D79A2FA79F5C002031A9 /* Telemetry in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7992FA79F5C002031A9 /* Telemetry */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		FAB5D7642FA79A9C002031A9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +67,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FAB5D79A2FA79F5C002031A9 /* Telemetry in Frameworks */,
+				FAB5D7922FA79F5C002031A9 /* Persistence in Frameworks */,
+				FAB5D7882FA79F5C002031A9 /* BackgroundKit in Frameworks */,
+				FAB5D78A2FA79F5C002031A9 /* ImageCache in Frameworks */,
+				FAB5D78E2FA79F5C002031A9 /* JellyseerrAPI in Frameworks */,
+				FAB5D7842FA79F5C002031A9 /* AppState in Frameworks */,
+				FAB5D7982FA79F5C002031A9 /* SyncEngine in Frameworks */,
+				FAB5D7862FA79F5C002031A9 /* AuthCore in Frameworks */,
+				FAB5D7902FA79F5C002031A9 /* MediaEngine in Frameworks */,
+				FAB5D7962FA79F5C002031A9 /* StreamystatsAPI in Frameworks */,
+				FAB5D78C2FA79F5C002031A9 /* JellyfinAPI in Frameworks */,
+				FAB5D7942FA79F5C002031A9 /* SearchKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +139,18 @@
 			);
 			name = Arcfin;
 			packageProductDependencies = (
+				FAB5D7832FA79F5C002031A9 /* AppState */,
+				FAB5D7852FA79F5C002031A9 /* AuthCore */,
+				FAB5D7872FA79F5C002031A9 /* BackgroundKit */,
+				FAB5D7892FA79F5C002031A9 /* ImageCache */,
+				FAB5D78B2FA79F5C002031A9 /* JellyfinAPI */,
+				FAB5D78D2FA79F5C002031A9 /* JellyseerrAPI */,
+				FAB5D78F2FA79F5C002031A9 /* MediaEngine */,
+				FAB5D7912FA79F5C002031A9 /* Persistence */,
+				FAB5D7932FA79F5C002031A9 /* SearchKit */,
+				FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */,
+				FAB5D7972FA79F5C002031A9 /* SyncEngine */,
+				FAB5D7992FA79F5C002031A9 /* Telemetry */,
 			);
 			productName = Arcfin;
 			productReference = FAB5D7542FA79A9B002031A9 /* Arcfin.app */;
@@ -195,6 +234,9 @@
 			);
 			mainGroup = FAB5D74B2FA79A9B002031A9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FAB5D7822FA79F5C002031A9 /* XCLocalSwiftPackageReference "LocalPackages" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FAB5D7552FA79A9B002031A9 /* Products */;
 			projectDirPath = "";
@@ -615,6 +657,64 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		FAB5D7822FA79F5C002031A9 /* XCLocalSwiftPackageReference "LocalPackages" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FAB5D7832FA79F5C002031A9 /* AppState */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AppState;
+		};
+		FAB5D7852FA79F5C002031A9 /* AuthCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AuthCore;
+		};
+		FAB5D7872FA79F5C002031A9 /* BackgroundKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BackgroundKit;
+		};
+		FAB5D7892FA79F5C002031A9 /* ImageCache */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ImageCache;
+		};
+		FAB5D78B2FA79F5C002031A9 /* JellyfinAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = JellyfinAPI;
+		};
+		FAB5D78D2FA79F5C002031A9 /* JellyseerrAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = JellyseerrAPI;
+		};
+		FAB5D78F2FA79F5C002031A9 /* MediaEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MediaEngine;
+		};
+		FAB5D7912FA79F5C002031A9 /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		FAB5D7932FA79F5C002031A9 /* SearchKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SearchKit;
+		};
+		FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StreamystatsAPI;
+		};
+		FAB5D7972FA79F5C002031A9 /* SyncEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SyncEngine;
+		};
+		FAB5D7992FA79F5C002031A9 /* Telemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Telemetry;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FAB5D74C2FA79A9B002031A9 /* Project object */;
 }

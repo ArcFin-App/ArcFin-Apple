@@ -1,25 +1,17 @@
-//
-//  ArcfinApp.swift
-//  Arcfin
-//
-//  Created by Puranjay Savar Mattas on 03/05/2026.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct ArcfinApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
+    var sharedModelContainer: ModelContainer = {
+        // Models registered via Persistence package — empty schema until first model added.
+        let schema = Schema([])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            fatalError("ModelContainer init failed: \(error)")
         }
     }()
 
