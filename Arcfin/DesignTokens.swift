@@ -16,6 +16,8 @@ public enum DT {
         public static let backgroundTertiary  = SwiftUI.Color(arcfinHex: "1C1C26")
         /// #06B6D4 — cyan/ice, accent — active states, progress bars, focus rings, CTAs
         public static let accent              = SwiftUI.Color(arcfinHex: "06B6D4")
+        /// #0891b2 — deeper cyan, gradient start for buttons and logo
+        public static let accentDeep          = SwiftUI.Color(arcfinHex: "0891b2")
         /// Accent at reduced opacity for glass tinting
         public static let accentSubtle        = SwiftUI.Color(arcfinHex: "06B6D4").opacity(0.15)
         /// White — primary text

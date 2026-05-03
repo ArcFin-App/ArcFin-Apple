@@ -1,0 +1,278 @@
+import SwiftUI
+
+struct ServerURLView: View {
+    var onConnected: (String) -> Void
+
+    @State private var serverURL: String = ""
+    @State private var connecting: Bool = false
+    @State private var connected: Bool = false
+    @State private var showError: Bool = false
+
+    private let recentServers = [
+        ("https://media.home.local:8096", "2h ago"),
+        ("https://jellyfin.nas.lan", "Yesterday"),
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                stepIndicator
+
+                // Logo
+                ArcfinLogoView(size: 52)
+                    .padding(.top, 24)
+
+                VStack(spacing: 4) {
+                    Text("Connect to Server")
+                        .font(DT.Font.sectionTitle)
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .tracking(-0.6)
+
+                    Text("Enter your Jellyfin server address to get started")
+                        .font(DT.Font.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
+                }
+                .padding(.top, 20)
+                .padding(.horizontal, DT.Spacing.pagePad)
+
+                VStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                    fieldLabel("Server Address")
+
+                    glassTextField(
+                        text: $serverURL,
+                        placeholder: "https://jellyfin.example.com",
+                        leadingIcon: "globe",
+                        trailingCheckmark: connected
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DT.Radius.md)
+                            .stroke(
+                                showError ? Color.red.opacity(0.5) :
+                                    connected ? DT.Color.accent.opacity(0.4) :
+                                    Color.white.opacity(0.1),
+                                lineWidth: 1
+                            )
+                    )
+                    .onChange(of: serverURL) {
+                        showError = false
+                        connected = false
+                    }
+                    .onSubmit { handleConnect() }
+
+                    if showError {
+                        Text("Please enter a valid server address")
+                            .font(DT.Font.caption2)
+                            .foregroundStyle(.red)
+                            .padding(.leading, 2)
+                    }
+                }
+                .padding(.top, DT.Spacing.lg)
+                .padding(.horizontal, DT.Spacing.pagePad)
+
+                // Recent servers
+                VStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                    fieldLabel("Recent Servers")
+
+                    ForEach(recentServers, id: \.0) { url, timestamp in
+                        recentServerRow(url: url, timestamp: timestamp)
+                    }
+                }
+                .padding(.top, DT.Spacing.sm)
+                .padding(.horizontal, DT.Spacing.pagePad)
+
+                // Connect button
+                Button(action: handleConnect) {
+                    ZStack {
+                        if connecting {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(0.85)
+                                Text("Connecting…")
+                                    .font(DT.Font.button)
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
+                        } else {
+                            Text("Connect")
+                                .font(DT.Font.button)
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        connecting
+                        ? AnyShapeStyle(DT.Color.accent.opacity(0.3))
+                        : AnyShapeStyle(LinearGradient(
+                            colors: [DT.Color.accentDeep, DT.Color.accent],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .shadow(color: connecting ? .clear : DT.Color.accent.opacity(0.35), radius: 16)
+                }
+                .disabled(connecting)
+                .padding(.top, DT.Spacing.lg)
+                .padding(.horizontal, DT.Spacing.pagePad)
+
+                HStack(spacing: 4) {
+                    Text("Need help?")
+                        .font(DT.Font.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
+                    Text("Setup guide")
+                        .font(DT.Font.caption)
+                        .foregroundStyle(DT.Color.accent)
+                        .fontWeight(.medium)
+                }
+                .padding(.top, DT.Spacing.md)
+            }
+            .padding(.top, 52)
+            .padding(.bottom, DT.Spacing.xxxl)
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var stepIndicator: some View {
+        HStack(spacing: 6) {
+            // Step 1 active
+            Capsule()
+                .fill(DT.Color.accent)
+                .frame(width: 20, height: 6)
+            // Step 2 inactive
+            Capsule()
+                .fill(.white.opacity(0.15))
+                .frame(width: 6, height: 6)
+        }
+    }
+
+    private func fieldLabel(_ label: String) -> some View {
+        Text(label)
+            .font(.system(size: 10, weight: .bold))
+            .tracking(0.5)
+            .textCase(.uppercase)
+            .foregroundStyle(DT.Color.textSecondary)
+    }
+
+    private func glassTextField(
+        text: Binding<String>,
+        placeholder: String,
+        leadingIcon: String,
+        trailingCheckmark: Bool
+    ) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: leadingIcon)
+                .font(.system(size: 13))
+                .foregroundStyle(DT.Color.textSecondary)
+
+            TextField(placeholder, text: text)
+                .font(DT.Font.caption)
+                .foregroundStyle(DT.Color.textPrimary)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+
+            if trailingCheckmark {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(arcfinHex: "10b981"))
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background(.white.opacity(0.06))
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+        .animation(DT.Animation.fast, value: trailingCheckmark)
+    }
+
+    private func recentServerRow(url: String, timestamp: String) -> some View {
+        Button {
+            serverURL = url
+            showError = false
+        } label: {
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(DT.Color.accent.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(DT.Color.accent.opacity(0.15), lineWidth: 1)
+                        )
+                        .frame(width: 28, height: 28)
+
+                    Image(systemName: "server.rack")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DT.Color.accent)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(url)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .lineLimit(1)
+                    Text("Last connected \(timestamp)")
+                        .font(DT.Font.caption2)
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(.white.opacity(0.03))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(.white.opacity(0.06), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: - Actions
+
+    private func handleConnect() {
+        guard !serverURL.trimmingCharacters(in: .whitespaces).isEmpty else {
+            showError = true
+            return
+        }
+        connecting = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            connected = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                connecting = false
+                onConnected(serverURL)
+            }
+        }
+    }
+}
+
+// Local hex init for non-DT one-offs
+private extension Color {
+    init(arcfinHex hex: String) {
+        var value: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&value)
+        self.init(
+            red: Double((value >> 16) & 0xFF) / 255,
+            green: Double((value >> 8) & 0xFF) / 255,
+            blue: Double(value & 0xFF) / 255
+        )
+    }
+}
+
+#Preview {
+    ZStack {
+        DT.Color.backgroundPrimary.ignoresSafeArea()
+        ServerURLView(onConnected: { _ in })
+    }
+}
