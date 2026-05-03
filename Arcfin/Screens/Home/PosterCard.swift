@@ -172,18 +172,6 @@ struct RequestStatusPill: View {
     }
 }
 
-extension Color {
-    init(arcfinHex hex: String) {
-        var value: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&value)
-        self.init(
-            red: Double((value >> 16) & 0xFF) / 255,
-            green: Double((value >> 8) & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255
-        )
-    }
-}
-
 #Preview {
     HStack(spacing: 12) {
         PosterCard(title: "Dune: Part Two", subtitle: "2024", accentHue: Color(arcfinHex: "1a0a2e"), progress: 0.62)

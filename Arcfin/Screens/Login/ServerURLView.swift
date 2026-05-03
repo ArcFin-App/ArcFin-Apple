@@ -257,19 +257,6 @@ struct ServerURLView: View {
     }
 }
 
-// Local hex init for non-DT one-offs
-private extension Color {
-    init(arcfinHex hex: String) {
-        var value: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&value)
-        self.init(
-            red: Double((value >> 16) & 0xFF) / 255,
-            green: Double((value >> 8) & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255
-        )
-    }
-}
-
 #Preview {
     ZStack {
         DT.Color.backgroundPrimary.ignoresSafeArea()
