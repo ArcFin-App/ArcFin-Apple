@@ -14,6 +14,7 @@ struct ServerURLView: View {
     @State private var errorMessage: String = ""
     @State private var discoveredServers: [DiscoveredServer] = []
     @State private var discovering: Bool = false
+    @State private var recentServers: [ServerCredential] = []
 
     var body: some View {
         ScrollView {
@@ -57,7 +58,10 @@ struct ServerURLView: View {
                                 lineWidth: 1
                             )
                     )
-                    .onChange(of: serverURL) { showError = false; connected = false }
+                    .onChange(of: serverURL) {
+                        showError = false
+                        connected = false
+                    }
                     .onSubmit { Task { await handleConnect() } }
 
                     if showError {
@@ -101,11 +105,10 @@ struct ServerURLView: View {
                 }
 
                 // Recent servers from keychain
-                let recent = authManager.storedServers
-                if !recent.isEmpty {
+                if !recentServers.isEmpty {
                     VStack(alignment: .leading, spacing: DT.Spacing.xs) {
                         fieldLabel("Recent Servers")
-                        ForEach(recent) { cred in
+                        ForEach(recentServers) { cred in
                             serverRow(
                                 icon: "server.rack",
                                 title: cred.displayName,
@@ -231,6 +234,7 @@ struct ServerURLView: View {
     // MARK: - Actions
 
     private func runDiscovery() async {
+        recentServers = authManager.storedServers
         discovering = true
         discoveredServers = await ServerDiscovery.discover(timeout: 3.0)
         discovering = false
