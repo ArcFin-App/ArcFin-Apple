@@ -2,6 +2,9 @@ import SwiftUI
 import Combine
 import JellyfinAPI
 import AuthCore
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - App tab
 
@@ -58,7 +61,9 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             ArcfinTabBar(selectedTab: $selectedTab)
+                .ignoresSafeArea(edges: .bottom)
         }
+        .background(DT.Color.backgroundPrimary.ignoresSafeArea())
         .ignoresSafeArea()
     }
 
@@ -90,17 +95,29 @@ struct HomeView: View {
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
 
+    // UIKit safe area read — reliable even inside ignoresSafeArea parents
+    private var statusBarHeight: CGFloat {
+        #if os(iOS)
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.keyWindow?.safeAreaInsets.top ?? 50
+        #else
+        0
+        #endif
+    }
+
     var body: some View {
-        // GeometryReader BEFORE ignoresSafeArea so we capture the real top inset
         GeometryReader { proxy in
-            let topInset = proxy.safeAreaInsets.top
+            let topInset  = statusBarHeight
+            let screenW   = proxy.size.width
+            let imageH    = screenW * 9 / 16      // natural landscape 16:9
+            let heroH     = topInset + imageH + 220 // status bar + image + title/buttons
 
             ZStack(alignment: .bottom) {
-                // Scrollable content
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        heroBanner(topInset: topInset)
-                            .frame(height: 480 + topInset)
+                        heroBanner(topInset: topInset, imageH: imageH, screenW: screenW)
+                            .frame(height: heroH)
 
                         VStack(spacing: 0) {
                             if !mediaRepo.continueWatching.isEmpty {
@@ -122,16 +139,13 @@ struct HomeView: View {
                         }
                         .padding(.top, 12)
 
-                        Spacer().frame(height: DT.Size.tabBarHeight + 24)
+                        Spacer().frame(height: DT.Size.tabBarHeight + 32)
                     }
                 }
-
-                // Tab bar
-                ArcfinTabBar(selectedTab: $selectedTab)
             }
             .background(DT.Color.backgroundPrimary)
             .ignoresSafeArea()
-            // Nav bar floats above everything, padded into safe area
+            // Nav bar floats on top — padded by UIKit-measured status bar height
             .overlay(alignment: .top) {
                 navBar(topInset: topInset)
             }
@@ -146,7 +160,7 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Nav bar overlay
+    // MARK: - Nav bar
 
     private func navBar(topInset: CGFloat) -> some View {
         HStack {
@@ -162,7 +176,6 @@ struct HomeView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 17))
                     .foregroundStyle(.white.opacity(0.85))
-
                 ZStack {
                     Circle()
                         .fill(LinearGradient(
@@ -178,58 +191,70 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, topInset + 6)
-        .padding(.bottom, 10)
+        // Sit content below status bar; background gradient bleeds up behind it
+        .padding(.top, topInset + 8)
+        .padding(.bottom, 12)
         .background(
             LinearGradient(
-                colors: [.black.opacity(0.6), .clear],
+                colors: [.black.opacity(0.65), .clear],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            // Extend gradient upward into status bar area
+            .ignoresSafeArea(edges: .top)
         )
     }
 
     // MARK: - Hero banner
 
-    private func heroBanner(topInset: CGFloat) -> some View {
+    private func heroBanner(topInset: CGFloat, imageH: CGFloat, screenW: CGFloat) -> some View {
         ZStack(alignment: .bottom) {
-            // Backdrop image — fills full frame
-            heroBackground
-                .animation(DT.Animation.slow, value: heroIndex)
+            // ① Backdrop at top — pinned, 16:9 natural ratio — no cropping
+            VStack(spacing: 0) {
+                // Transparent spacer pushes image below status bar
+                Color.clear.frame(height: topInset)
 
-            // Heavy bottom fade (Netflix-style)
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black.opacity(0.1), location: 0.35),
-                    .init(color: .black.opacity(0.55), location: 0.65),
-                    .init(color: DT.Color.backgroundPrimary, location: 1),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                heroBackground
+                    .frame(width: screenW, height: imageH)
+                    .clipped()
+                    // Fade bottom edge of image into background
+                    .overlay(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.45),
+                                .init(color: DT.Color.backgroundPrimary.opacity(0.6), location: 0.8),
+                                .init(color: DT.Color.backgroundPrimary, location: 1),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .animation(DT.Animation.slow, value: heroIndex)
 
-            // Side vignette
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            // ② Side vignette
             HStack(spacing: 0) {
                 LinearGradient(
-                    colors: [DT.Color.backgroundPrimary.opacity(0.3), .clear],
+                    colors: [DT.Color.backgroundPrimary.opacity(0.35), .clear],
                     startPoint: .leading, endPoint: .trailing
                 )
-                .frame(width: 50)
+                .frame(width: 48)
                 Spacer()
                 LinearGradient(
-                    colors: [.clear, DT.Color.backgroundPrimary.opacity(0.3)],
+                    colors: [.clear, DT.Color.backgroundPrimary.opacity(0.35)],
                     startPoint: .leading, endPoint: .trailing
                 )
-                .frame(width: 50)
+                .frame(width: 48)
             }
 
-            // Bottom: logo / title + actions + dots
+            // ③ Title / logo + buttons + dots
             heroContent
-                .padding(.bottom, 20)
+                .padding(.bottom, 28)
         }
-        .frame(maxWidth: .infinity)
-        .clipped()
+        .background(DT.Color.backgroundPrimary)
     }
 
     @ViewBuilder
@@ -244,40 +269,42 @@ struct HomeView: View {
                     heroGradient(for: heroIndex)
                 }
             }
-            .clipped()
         } else {
             heroGradient(for: heroIndex)
         }
     }
 
     private func heroGradient(for index: Int) -> some View {
-        let gradients: [[Color]] = [
-            [Color(hex: "1a0a2e"), Color(hex: "0a1628"), DT.Color.backgroundPrimary],
-            [Color(hex: "1c0e00"), Color(hex: "0e0a00"), DT.Color.backgroundPrimary],
-            [Color(hex: "0a0a1c"), Color(hex: "060610"), DT.Color.backgroundPrimary],
+        let palettes: [[Color]] = [
+            [Color(hex: "1a0a2e"), Color(hex: "0a1628")],
+            [Color(hex: "1c0e00"), Color(hex: "0e0a00")],
+            [Color(hex: "0a0a1c"), Color(hex: "060610")],
         ]
-        let colors = gradients[index % gradients.count]
-        return LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+        let c = palettes[index % palettes.count]
+        return LinearGradient(colors: c + [DT.Color.backgroundPrimary],
+                              startPoint: .topLeading, endPoint: .bottomTrailing)
     }
+
+    // MARK: - Hero content
 
     private var heroContent: some View {
         VStack(spacing: 0) {
-            // Logo image or title text — centred
             if let item = heroItems[safe: heroIndex] {
+                // Logo or title
                 AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable()
                             .scaledToFit()
-                            .frame(maxWidth: 240, maxHeight: 80)
+                            .frame(maxWidth: 240, maxHeight: 76)
                             .shadow(color: .black.opacity(0.7), radius: 12)
                     } else {
                         Text(item.name)
-                            .font(.system(size: 30, weight: .heavy))
+                            .font(.system(size: 28, weight: .heavy))
                             .foregroundStyle(.white)
                             .tracking(-0.8)
                             .multilineTextAlignment(.center)
                             .shadow(color: .black.opacity(0.9), radius: 10)
-                            .padding(.horizontal, DT.Spacing.pagePad)
+                            .padding(.horizontal, 32)
                     }
                 }
                 .id(heroIndex)
@@ -287,7 +314,7 @@ struct HomeView: View {
                 Text(heroMeta(item))
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.6))
-                    .padding(.top, 8)
+                    .padding(.top, 7)
                     .animation(nil, value: heroIndex)
             }
 
@@ -372,24 +399,19 @@ struct HomeView: View {
     // MARK: - Helpers
 
     private func itemDisplayTitle(_ item: MediaItem) -> String {
-        switch item.type {
-        case .episode:
-            // Prefer series name; fall back to episode name; then "Unknown"
+        if item.type == .episode {
             return item.seriesName?.nilIfEmpty ?? item.name.nilIfEmpty ?? "Unknown"
-        default:
-            return item.name.nilIfEmpty ?? "Unknown"
         }
+        return item.name.nilIfEmpty ?? "Unknown"
     }
 
     private func itemDisplaySubtitle(_ item: MediaItem) -> String? {
-        switch item.type {
-        case .episode:
+        if item.type == .episode {
             let s = item.parentIndexNumber.map { "S\($0)" }
             let e = item.indexNumber.map { "E\($0)" }
             return [s, e].compactMap { $0 }.joined().nilIfEmpty
-        default:
-            return item.productionYear.map { "\($0)" }
         }
+        return item.productionYear.map { "\($0)" }
     }
 }
 
@@ -437,8 +459,8 @@ struct ArcfinTabBar: View {
 private extension AuthState {
     var displayInitials: String {
         guard case .authenticated(let cred) = self else { return "?" }
-        let words = cred.displayName.split(separator: " ")
-        return words.prefix(2).compactMap { $0.first }.map { String($0).uppercased() }.joined()
+        return cred.displayName.split(separator: " ")
+            .prefix(2).compactMap { $0.first }.map { String($0).uppercased() }.joined()
     }
 }
 
