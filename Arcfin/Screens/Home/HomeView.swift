@@ -104,8 +104,8 @@ struct HomeView: View {
                                     PosterCard(
                                         title: itemDisplayTitle(item),
                                         subtitle: itemDisplaySubtitle(item),
-                                        imageURL: mediaRepo.imageURL(for: item),
-                                        progress: item.userData?.playedPercentage.map { $0 / 100 }
+                                        progress: item.userData?.playedPercentage.map { $0 / 100 },
+                                        imageURL: mediaRepo.imageURL(for: item)
                                     )
                                 }
                             }
