@@ -5,6 +5,7 @@ let package = Package(
     name: "ArcfinPackages",
     platforms: [
         .iOS(.v26),
+        .tvOS(.v26),
         .macOS(.v15),
     ],
     products: [
