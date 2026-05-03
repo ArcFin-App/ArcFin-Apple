@@ -30,10 +30,10 @@ private let topShows: [TopShow] = [
 ]
 
 private let topMovies: [TopMovie] = [
-    TopMovie(title: "Dune: Part Two",    hours: 2.8, rating: 9.2, hue: Color(arcfinHex: "1a0a2e")),
-    TopMovie(title: "Oppenheimer",       hours: 3.1, rating: 9.0, hue: Color(arcfinHex: "1c0e00")),
-    TopMovie(title: "Blade Runner 2049", hours: 2.8, rating: 9.5, hue: Color(arcfinHex: "0d0a1a")),
-    TopMovie(title: "The Revenant",      hours: 2.7, rating: 8.8, hue: Color(arcfinHex: "0a0d08")),
+    TopMovie(title: "Dune: Part Two",    hours: 2.8, rating: 9.2, hue: Color(hex: "1a0a2e")),
+    TopMovie(title: "Oppenheimer",       hours: 3.1, rating: 9.0, hue: Color(hex: "1c0e00")),
+    TopMovie(title: "Blade Runner 2049", hours: 2.8, rating: 9.5, hue: Color(hex: "0d0a1a")),
+    TopMovie(title: "The Revenant",      hours: 2.7, rating: 8.8, hue: Color(hex: "0a0d08")),
 ]
 
 // Heatmap — 52 weeks × 7 days, intensity 0-4
@@ -212,7 +212,7 @@ struct StatsView: View {
                                     .foregroundStyle(DT.Color.accent)
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(Color(arcfinHex: "0e121c").opacity(0.95))
+                                    .background(Color(hex: "0e121c").opacity(0.95))
                                     .clipShape(RoundedRectangle(cornerRadius: 6))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 6)
@@ -249,8 +249,8 @@ struct StatsView: View {
     private var statCards: some View {
         HStack(spacing: 8) {
             miniStatCard(label: "Episodes", value: "342", sub: "this year",  accent: DT.Color.accent.opacity(0.08))
-            miniStatCard(label: "Movies",   value: "94",  sub: "watched",    accent: Color(arcfinHex: "8b5cf6").opacity(0.08))
-            miniStatCard(label: "Streak",   value: "12d", sub: "current",    accent: Color(arcfinHex: "10b981").opacity(0.08))
+            miniStatCard(label: "Movies",   value: "94",  sub: "watched",    accent: Color(hex: "8b5cf6").opacity(0.08))
+            miniStatCard(label: "Streak",   value: "12d", sub: "current",    accent: Color(hex: "10b981").opacity(0.08))
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.sm)
@@ -439,7 +439,7 @@ struct StatsView: View {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 6)
                                     .fill(LinearGradient(
-                                        colors: [movie.hue, Color(arcfinHex: "0a0a12")],
+                                        colors: [movie.hue, Color(hex: "0a0a12")],
                                         startPoint: .top,
                                         endPoint: .bottom
                                     ))

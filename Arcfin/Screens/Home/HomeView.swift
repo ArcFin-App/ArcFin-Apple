@@ -33,41 +33,41 @@ private struct JellyseerrItem: Identifiable {
 
 private let heroItems: [HeroItem] = [
     HeroItem(title: "Dune: Part Two", meta: "2024 · Sci-Fi · 2h 46m",
-             gradient: [Color(arcfinHex: "1a0a2e"), Color(arcfinHex: "0a1628"), DT.Color.backgroundPrimary]),
+             gradient: [Color(hex: "1a0a2e"), Color(hex: "0a1628"), DT.Color.backgroundPrimary]),
     HeroItem(title: "Oppenheimer", meta: "2023 · Drama · 3h 1m",
-             gradient: [Color(arcfinHex: "1c0e00"), Color(arcfinHex: "0e0a00"), DT.Color.backgroundPrimary]),
+             gradient: [Color(hex: "1c0e00"), Color(hex: "0e0a00"), DT.Color.backgroundPrimary]),
     HeroItem(title: "The Brutalist", meta: "2024 · Drama · 3h 35m",
-             gradient: [Color(arcfinHex: "0a0a1c"), Color(arcfinHex: "060610"), DT.Color.backgroundPrimary]),
+             gradient: [Color(hex: "0a0a1c"), Color(hex: "060610"), DT.Color.backgroundPrimary]),
 ]
 
 private let continueWatching: [ContinueItem] = [
-    ContinueItem(title: "Severance", episode: "S2 E7", progress: 0.62, hue: Color(arcfinHex: "1a0d2e")),
-    ContinueItem(title: "The Last of Us", episode: "S2 E3", progress: 0.31, hue: Color(arcfinHex: "0d1a0d")),
-    ContinueItem(title: "Shogun", episode: "S1 E9", progress: 0.88, hue: Color(arcfinHex: "1a1000")),
-    ContinueItem(title: "Fallout", episode: "S1 E5", progress: 0.45, hue: Color(arcfinHex: "1a0a00")),
-    ContinueItem(title: "True Detective", episode: "S4 E2", progress: 0.15, hue: Color(arcfinHex: "0a101a")),
+    ContinueItem(title: "Severance", episode: "S2 E7", progress: 0.62, hue: Color(hex: "1a0d2e")),
+    ContinueItem(title: "The Last of Us", episode: "S2 E3", progress: 0.31, hue: Color(hex: "0d1a0d")),
+    ContinueItem(title: "Shogun", episode: "S1 E9", progress: 0.88, hue: Color(hex: "1a1000")),
+    ContinueItem(title: "Fallout", episode: "S1 E5", progress: 0.45, hue: Color(hex: "1a0a00")),
+    ContinueItem(title: "True Detective", episode: "S4 E2", progress: 0.15, hue: Color(hex: "0a101a")),
 ]
 
 private let recentlyAdded: [MediaItem] = [
-    MediaItem(title: "Gladiator II", year: "2024", hue: Color(arcfinHex: "1c1000")),
-    MediaItem(title: "Nosferatu", year: "2024", hue: Color(arcfinHex: "0e0010")),
-    MediaItem(title: "Alien: Romulus", year: "2024", hue: Color(arcfinHex: "00100e")),
-    MediaItem(title: "Conclave", year: "2024", hue: Color(arcfinHex: "0a0a0a")),
-    MediaItem(title: "Heretic", year: "2024", hue: Color(arcfinHex: "100810")),
-    MediaItem(title: "A Complete Unknown", year: "2024", hue: Color(arcfinHex: "080c10")),
+    MediaItem(title: "Gladiator II", year: "2024", hue: Color(hex: "1c1000")),
+    MediaItem(title: "Nosferatu", year: "2024", hue: Color(hex: "0e0010")),
+    MediaItem(title: "Alien: Romulus", year: "2024", hue: Color(hex: "00100e")),
+    MediaItem(title: "Conclave", year: "2024", hue: Color(hex: "0a0a0a")),
+    MediaItem(title: "Heretic", year: "2024", hue: Color(hex: "100810")),
+    MediaItem(title: "A Complete Unknown", year: "2024", hue: Color(hex: "080c10")),
 ]
 
 private let topPicks: [MediaItem] = [
-    MediaItem(title: "Blade Runner 2049", year: "2017", hue: Color(arcfinHex: "0d0a1a")),
-    MediaItem(title: "Arrival", year: "2016", hue: Color(arcfinHex: "080d10")),
-    MediaItem(title: "The Revenant", year: "2015", hue: Color(arcfinHex: "0a0d08")),
-    MediaItem(title: "Interstellar", year: "2014", hue: Color(arcfinHex: "050510")),
+    MediaItem(title: "Blade Runner 2049", year: "2017", hue: Color(hex: "0d0a1a")),
+    MediaItem(title: "Arrival", year: "2016", hue: Color(hex: "080d10")),
+    MediaItem(title: "The Revenant", year: "2015", hue: Color(hex: "0a0d08")),
+    MediaItem(title: "Interstellar", year: "2014", hue: Color(hex: "050510")),
 ]
 
 private let requests: [JellyseerrItem] = [
-    JellyseerrItem(title: "A Real Pain", status: .approved, hue: Color(arcfinHex: "0a1010")),
-    JellyseerrItem(title: "The Substance", status: .pending, hue: Color(arcfinHex: "100808")),
-    JellyseerrItem(title: "I Saw the TV Glow", status: .downloading, hue: Color(arcfinHex: "080a10")),
+    JellyseerrItem(title: "A Real Pain", status: .approved, hue: Color(hex: "0a1010")),
+    JellyseerrItem(title: "The Substance", status: .pending, hue: Color(hex: "100808")),
+    JellyseerrItem(title: "I Saw the TV Glow", status: .downloading, hue: Color(hex: "080a10")),
 ]
 
 // MARK: - App tab
@@ -378,7 +378,7 @@ struct HomeView: View {
                 ZStack {
                     Circle()
                         .fill(LinearGradient(
-                            colors: [Color(arcfinHex: "1e3a5f"), Color(arcfinHex: "0d2040")],
+                            colors: [Color(hex: "1e3a5f"), Color(hex: "0d2040")],
                             startPoint: .top,
                             endPoint: .bottom
                         ))
@@ -419,7 +419,7 @@ struct ArcfinTabBar: View {
         .padding(.bottom, 4)
         .frame(height: DT.Size.tabBarHeight)
         .background(.ultraThinMaterial)
-        .background(Color(arcfinHex: "0a0a14").opacity(0.72))
+        .background(Color(hex: "0a0a14").opacity(0.72))
         .overlay(
             Rectangle()
                 .fill(.white.opacity(0.07))

@@ -3,7 +3,7 @@ import SwiftUI
 struct PosterCard: View {
     var title: String
     var subtitle: String? = nil
-    var accentHue: Color = Color(arcfinHex: "1a0d2e")
+    var accentHue: Color = Color(hex: "1a0d2e")
     var progress: Double? = nil
     var width: CGFloat = DT.Size.posterCard.width
     var height: CGFloat = DT.Size.posterCard.height
@@ -145,10 +145,10 @@ enum RequestStatus: String {
 
     var color: Color {
         switch self {
-        case .approved: Color(arcfinHex: "10b981")
-        case .pending: Color(arcfinHex: "f59e0b")
+        case .approved: Color(hex: "10b981")
+        case .pending: Color(hex: "f59e0b")
         case .downloading: DT.Color.accent
-        case .available: Color(arcfinHex: "10b981")
+        case .available: Color(hex: "10b981")
         }
     }
 
@@ -174,8 +174,8 @@ struct RequestStatusPill: View {
 
 #Preview {
     HStack(spacing: 12) {
-        PosterCard(title: "Dune: Part Two", subtitle: "2024", accentHue: Color(arcfinHex: "1a0a2e"), progress: 0.62)
-        PosterCard(title: "Oppenheimer", subtitle: "S2 E7", accentHue: Color(arcfinHex: "1c0e00"))
+        PosterCard(title: "Dune: Part Two", subtitle: "2024", accentHue: Color(hex: "1a0a2e"), progress: 0.62)
+        PosterCard(title: "Oppenheimer", subtitle: "S2 E7", accentHue: Color(hex: "1c0e00"))
     }
     .padding()
     .background(DT.Color.backgroundPrimary)

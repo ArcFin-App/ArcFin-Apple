@@ -21,12 +21,12 @@ private struct MyRequest: Identifiable {
 }
 
 private let trending: [TrendingItem] = [
-    TrendingItem(title: "Sinners",         year: "2025", type: "Movie",  hue: Color(arcfinHex: "1a0808"), status: nil),
-    TrendingItem(title: "The Pitt",        year: "2025", type: "Series", hue: Color(arcfinHex: "080e1a"), status: nil),
-    TrendingItem(title: "White Lotus S3",  year: "2025", type: "Series", hue: Color(arcfinHex: "0a1208"), status: .available),
-    TrendingItem(title: "Thunderbolts*",   year: "2025", type: "Movie",  hue: Color(arcfinHex: "0a0a1a"), status: .downloading),
-    TrendingItem(title: "Mickey 17",       year: "2025", type: "Movie",  hue: Color(arcfinHex: "120808"), status: nil),
-    TrendingItem(title: "Warfare",         year: "2025", type: "Movie",  hue: Color(arcfinHex: "080a0a"), status: nil),
+    TrendingItem(title: "Sinners",         year: "2025", type: "Movie",  hue: Color(hex: "1a0808"), status: nil),
+    TrendingItem(title: "The Pitt",        year: "2025", type: "Series", hue: Color(hex: "080e1a"), status: nil),
+    TrendingItem(title: "White Lotus S3",  year: "2025", type: "Series", hue: Color(hex: "0a1208"), status: .available),
+    TrendingItem(title: "Thunderbolts*",   year: "2025", type: "Movie",  hue: Color(hex: "0a0a1a"), status: .downloading),
+    TrendingItem(title: "Mickey 17",       year: "2025", type: "Movie",  hue: Color(hex: "120808"), status: nil),
+    TrendingItem(title: "Warfare",         year: "2025", type: "Movie",  hue: Color(hex: "080a0a"), status: nil),
 ]
 
 private let myRequests: [MyRequest] = [
@@ -277,7 +277,7 @@ struct JellyseerrView: View {
                 } else if isRequested {
                     Text("✓ Requested")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Color(arcfinHex: "f59e0b"))
+                        .foregroundStyle(Color(hex: "f59e0b"))
                         .padding(.top, 4)
                 }
             }
@@ -337,7 +337,7 @@ struct JellyseerrView: View {
                 // Mini poster placeholder
                 RoundedRectangle(cornerRadius: 6)
                     .fill(LinearGradient(
-                        colors: [DT.Color.accent.opacity(0.08), Color(arcfinHex: "0a0a14")],
+                        colors: [DT.Color.accent.opacity(0.08), Color(hex: "0a0a14")],
                         startPoint: .top,
                         endPoint: .bottom
                     ))
@@ -482,7 +482,7 @@ struct JellyseerrView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.xl)
             }
-            .background(Color(arcfinHex: "0e121c").opacity(0.95))
+            .background(Color(hex: "0e121c").opacity(0.95))
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sheet, style: .continuous))
             .overlay(

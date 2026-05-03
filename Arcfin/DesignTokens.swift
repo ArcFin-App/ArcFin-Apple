@@ -9,27 +9,27 @@ public enum DT {
 
     public enum Color {
         /// #0A0A0F — deep cinematic black, primary background
-        public static let backgroundPrimary   = SwiftUI.Color(arcfinHex: "0A0A0F")
+        public static let backgroundPrimary   = SwiftUI.Color(hex: "0A0A0F")
         /// #12121A — midnight navy, secondary surface
-        public static let backgroundSecondary = SwiftUI.Color(arcfinHex: "12121A")
+        public static let backgroundSecondary = SwiftUI.Color(hex: "12121A")
         /// #1C1C26 — deep charcoal cool tint, tertiary surface
-        public static let backgroundTertiary  = SwiftUI.Color(arcfinHex: "1C1C26")
+        public static let backgroundTertiary  = SwiftUI.Color(hex: "1C1C26")
         /// #06B6D4 — cyan/ice, accent — active states, progress bars, focus rings, CTAs
-        public static let accent              = SwiftUI.Color(arcfinHex: "06B6D4")
+        public static let accent              = SwiftUI.Color(hex: "06B6D4")
         /// #0891b2 — deeper cyan, gradient start for buttons and logo
-        public static let accentDeep          = SwiftUI.Color(arcfinHex: "0891b2")
+        public static let accentDeep          = SwiftUI.Color(hex: "0891b2")
         /// Accent at reduced opacity for glass tinting
-        public static let accentSubtle        = SwiftUI.Color(arcfinHex: "06B6D4").opacity(0.15)
+        public static let accentSubtle        = SwiftUI.Color(hex: "06B6D4").opacity(0.15)
         /// White — primary text
         public static let textPrimary         = SwiftUI.Color.white
         /// #06B6D4 — active/selected labels
-        public static let textActive          = SwiftUI.Color(arcfinHex: "06B6D4")
+        public static let textActive          = SwiftUI.Color(hex: "06B6D4")
         /// #8E8E93 — secondary metadata (system grey)
-        public static let textSecondary       = SwiftUI.Color(arcfinHex: "8E8E93")
+        public static let textSecondary       = SwiftUI.Color(hex: "8E8E93")
         /// #3A3A4A — separator / divider lines
-        public static let separator           = SwiftUI.Color(arcfinHex: "3A3A4A")
+        public static let separator           = SwiftUI.Color(hex: "3A3A4A")
         /// Progress bar fill
-        public static let progressFill        = SwiftUI.Color(arcfinHex: "06B6D4")
+        public static let progressFill        = SwiftUI.Color(hex: "06B6D4")
         /// Progress bar track
         public static let progressTrack       = SwiftUI.Color.white.opacity(0.15)
     }
@@ -127,7 +127,7 @@ public enum DT {
 // MARK: - Hex colour initialiser
 
 extension SwiftUI.Color {
-    init(arcfinHex hex: String) {
+    init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var value: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&value)

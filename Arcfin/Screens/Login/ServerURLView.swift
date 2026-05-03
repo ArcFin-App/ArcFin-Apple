@@ -178,7 +178,7 @@ struct ServerURLView: View {
             if trailingCheckmark {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 14))
-                    .foregroundStyle(Color(arcfinHex: "10b981"))
+                    .foregroundStyle(Color(hex: "10b981"))
                     .transition(.scale.combined(with: .opacity))
             }
         }
