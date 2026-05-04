@@ -6,6 +6,7 @@ import AuthCore
 public enum JellyfinImageType: String, Sendable {
     case primary = "Primary"
     case backdrop = "Backdrop"
+    case logo = "Logo"
 }
 
 // MARK: - Media client
@@ -71,9 +72,15 @@ public struct JellyfinMediaClient: Sendable {
         fillWidth: Int = 300,
         token: String
     ) -> URL {
-        let path = type == .backdrop
-            ? "Items/\(itemID)/Images/Backdrop/0"
-            : "Items/\(itemID)/Images/Primary"
+        let path: String
+        switch type {
+        case .backdrop:
+            path = "Items/\(itemID)/Images/Backdrop/0"
+        case .logo:
+            path = "Items/\(itemID)/Images/Logo/0"
+        case .primary:
+            path = "Items/\(itemID)/Images/Primary"
+        }
         var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             .init(name: "fillWidth", value: "\(fillWidth)"),
@@ -282,6 +289,26 @@ public struct JellyfinMediaClient: Sendable {
         let (data, _) = try await URLSession.shared.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
         return page.items.map { $0.toMediaItem() }
+    }
+
+    public func getTrailers(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 10
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Trailers"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,PrimaryImageTags,BackdropImageTags,ProductionYear"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 }
 
