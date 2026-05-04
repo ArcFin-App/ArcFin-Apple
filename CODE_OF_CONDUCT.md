@@ -23,7 +23,7 @@ Applies to all project spaces — issues, pull requests, code review comments, a
 
 ## Enforcement
 
-Violations can be reported to the maintainer at stolid-agates7p@icloud.com. All reports will be reviewed and responded to. The maintainer reserves the right to remove, edit, or reject contributions that violate this code of conduct.
+Violations can be reported to the maintainer at support@psmattas.com. All reports will be reviewed and responded to. The maintainer reserves the right to remove, edit, or reject contributions that violate this code of conduct.
 
 ## Attribution
 
