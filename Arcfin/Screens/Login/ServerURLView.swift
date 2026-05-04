@@ -147,7 +147,7 @@ struct ServerURLView: View {
                 HStack(spacing: 4) {
                     Text("Need help?").font(DT.Font.caption).foregroundStyle(DT.Color.textSecondary)
                     Button { showSetupGuide = true } label: {
-                        Text("Setup guide").font(DT.Font.caption).foregroundStyle(DT.Color.accent).fontWeight(.medium)
+                        Text("Setup guide").font(DT.Font.caption).foregroundStyle(.white).fontWeight(.medium)
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .capsule)
                 }
@@ -181,6 +181,7 @@ struct ServerURLView: View {
         HStack(spacing: 8) {
             Image(systemName: leadingIcon).font(.system(size: 13)).foregroundStyle(DT.Color.textSecondary)
             TextField(placeholder, text: text)
+                .textFieldStyle(.plain)
                 .font(DT.Font.caption)
                 .foregroundStyle(DT.Color.textPrimary)
                 .autocorrectionDisabled()
@@ -197,8 +198,7 @@ struct ServerURLView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
-        .background(.white.opacity(0.06))
-        .background(.ultraThinMaterial)
+        .arcfinFieldBackground()
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
         .animation(DT.Animation.fast, value: trailingCheckmark)
     }

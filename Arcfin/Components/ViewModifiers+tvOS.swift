@@ -29,4 +29,16 @@ extension View {
         self.listRowSeparator(.hidden)
 #endif
     }
+
+    // Replaces ultraThinMaterial + white overlay — tvOS material renders light/white
+    @ViewBuilder
+    func arcfinFieldBackground() -> some View {
+#if os(tvOS)
+        self.background(DT.Color.backgroundSecondary)
+#else
+        self
+            .background(.white.opacity(0.06))
+            .background(.ultraThinMaterial)
+#endif
+    }
 }

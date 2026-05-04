@@ -311,6 +311,7 @@ struct AuthView: View {
         }()
         let bgColor: Color = digitError ? Color.red.opacity(0.08) : Color.white.opacity(0.06)
         return TextField("", text: $digits[index])
+            .textFieldStyle(.plain)
             .font(.system(size: 20, weight: .heavy, design: .monospaced))
             .foregroundStyle(DT.Color.textPrimary)
             .multilineTextAlignment(.center)
@@ -375,12 +376,14 @@ struct AuthView: View {
             Image(systemName: icon).font(.system(size: 13)).foregroundStyle(DT.Color.textSecondary)
             if isSecure {
                 SecureField(placeholder, text: text)
+                    .textFieldStyle(.plain)
                     .font(DT.Font.caption).foregroundStyle(DT.Color.textPrimary).autocorrectionDisabled()
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
                     #endif
             } else {
                 TextField(placeholder, text: text)
+                    .textFieldStyle(.plain)
                     .font(DT.Font.caption).foregroundStyle(DT.Color.textPrimary).autocorrectionDisabled()
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
@@ -389,8 +392,7 @@ struct AuthView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
-        .background(.white.opacity(0.06))
-        .background(.ultraThinMaterial)
+        .arcfinFieldBackground()
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
         .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(.white.opacity(0.1), lineWidth: 1))
     }
