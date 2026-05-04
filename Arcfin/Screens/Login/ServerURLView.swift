@@ -227,6 +227,7 @@ struct ServerURLView: View {
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.06), lineWidth: 1))
         }
         .buttonStyle(.plain)
+        .tvFocusRing(cornerRadius: 10)
         .padding(.bottom, 6)
     }
 

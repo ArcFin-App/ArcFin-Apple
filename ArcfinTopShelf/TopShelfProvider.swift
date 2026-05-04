@@ -1,9 +1,8 @@
 import TVServices
 
 // Principal class for the TV Top Shelf Extension.
-// Set NSExtensionPrincipalClass = "$(PRODUCT_MODULE_NAME).TopShelfProvider" in Info.plist.
+// Info.plist: NSExtensionPrincipalClass = "$(PRODUCT_MODULE_NAME).TopShelfProvider"
 
-@objc(TopShelfProvider)
 final class TopShelfProvider: TVTopShelfContentProvider {
 
     override func loadTopShelfContent(completionHandler: @escaping (TVTopShelfContent?) -> Void) {

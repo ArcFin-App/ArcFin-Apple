@@ -2,7 +2,7 @@ import SwiftUI
 import AuthCore
 import JellyfinAPI
 
-private enum AuthMode { case credentials, quickConnect }
+private enum AuthMode { case quickConnect, credentials }
 
 struct AuthView: View {
     let serverURL: URL
@@ -11,7 +11,7 @@ struct AuthView: View {
 
     @Environment(AuthManager.self) private var authManager
 
-    @State private var mode: AuthMode = .credentials
+    @State private var mode: AuthMode = .quickConnect
 
     // Credentials
     @State private var username: String = ""
@@ -27,11 +27,6 @@ struct AuthView: View {
     @State private var qcLoading: Bool = false
     @State private var qcPolling: Bool = false
 
-    // QC manual fallback
-    @State private var digits: [String] = Array(repeating: "", count: 6)
-    @State private var digitError: Bool = false
-    @FocusState private var focusedDigit: Int?
-
     var body: some View {
         if signedIn {
             successView
@@ -45,7 +40,8 @@ struct AuthView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Button(action: onBack) {
                             HStack(spacing: 4) {
-                                Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
                                 Text(serverName).font(DT.Font.caption)
                             }
                             .foregroundStyle(DT.Color.textSecondary)
@@ -58,7 +54,9 @@ struct AuthView: View {
                             .foregroundStyle(DT.Color.textPrimary)
                             .tracking(-0.6)
 
-                        Text("Choose how you'd like to authenticate")
+                        Text(mode == .quickConnect
+                             ? "Approve the code on your Jellyfin server"
+                             : "Enter your Jellyfin credentials")
                             .font(DT.Font.caption)
                             .foregroundStyle(DT.Color.textSecondary)
                             .padding(.top, 4)
@@ -67,14 +65,10 @@ struct AuthView: View {
                     .padding(.top, 20)
                     .padding(.horizontal, DT.Spacing.pagePad)
 
-                    modeToggle
-                        .padding(.top, DT.Spacing.lg)
-                        .padding(.horizontal, DT.Spacing.pagePad)
-
-                    if mode == .credentials {
-                        credentialsForm
+                    if mode == .quickConnect {
+                        quickConnectView
                     } else {
-                        quickConnectForm
+                        credentialsView
                     }
 
                     if let err = authError {
@@ -90,10 +84,10 @@ struct AuthView: View {
                 .padding(.bottom, DT.Spacing.xxxl)
             }
             .animation(DT.Animation.standard, value: mode)
-            .onChange(of: mode) { _, newMode in
+            .task(id: mode) {
                 authError = nil
-                if newMode == .quickConnect {
-                    Task { await initiateQC() }
+                if mode == .quickConnect {
+                    await initiateQC()
                 } else {
                     qcPolling = false
                 }
@@ -114,46 +108,75 @@ struct AuthView: View {
         }
     }
 
-    // MARK: - Mode toggle
+    // MARK: - Quick Connect (default)
 
-    private var modeToggle: some View {
-        ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.white.opacity(0.05))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.08), lineWidth: 1))
-
-            GeometryReader { geo in
-                let halfW = (geo.size.width - 6) / 2
-                RoundedRectangle(cornerRadius: 9)
-                    .fill(DT.Color.accent.opacity(0.15))
-                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(DT.Color.accent.opacity(0.35), lineWidth: 1))
-                    .frame(width: halfW)
-                    .offset(x: mode == .credentials ? 3 : halfW + 3)
-                    .animation(DT.Animation.fast, value: mode)
+    private var quickConnectView: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("How to sign in")
+                    .font(.system(size: 11 * DT.Scale.font, weight: .bold))
+                    .foregroundStyle(DT.Color.accent)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("1. Open Jellyfin on your browser or another device")
+                    Text("2. Go to **Dashboard → Quick Connect**")
+                    Text("3. Enter the code below to approve sign-in")
+                }
+                .font(DT.Font.caption)
+                .foregroundStyle(.white.opacity(0.55))
+                .lineSpacing(4)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(DT.Color.accent.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(DT.Color.accent.opacity(0.15), lineWidth: 1))
+            .padding(.top, DT.Spacing.md)
+            .padding(.horizontal, DT.Spacing.pagePad)
 
-            HStack(spacing: 0) {
-                modeButton("Password", .credentials)
-                modeButton("Quick Connect", .quickConnect)
+            VStack(spacing: 12) {
+                Text("Your Quick Connect Code")
+                    .font(.system(size: 10 * DT.Scale.font, weight: .bold))
+                    .tracking(0.5)
+                    .textCase(.uppercase)
+                    .foregroundStyle(DT.Color.textSecondary)
+
+                if qcLoading {
+                    ProgressView().tint(DT.Color.accent).padding(.vertical, 10)
+                } else if qcCode.isEmpty {
+                    Text("—")
+                        .font(.system(size: 22 * DT.Scale.font, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(DT.Color.textSecondary)
+                } else {
+                    codeDisplay(qcCode)
+                    if qcPolling {
+                        HStack(spacing: 6) {
+                            ProgressView().scaleEffect(0.7).tint(DT.Color.accent)
+                            Text("Waiting for approval…")
+                                .font(DT.Font.caption2)
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                    }
+                }
             }
+            .padding(.top, DT.Spacing.lg)
+            .padding(.bottom, DT.Spacing.lg)
+
+            Button {
+                withAnimation(DT.Animation.fast) { mode = .credentials }
+            } label: {
+                Text("Sign in with username & password")
+                    .font(DT.Font.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .underline()
+            }
+            .buttonStyle(.plain)
+            .tvFocusRing(cornerRadius: DT.Radius.pill)
         }
-        .frame(height: 42)
     }
 
-    private func modeButton(_ label: String, _ target: AuthMode) -> some View {
-        Button { mode = target } label: {
-            Text(label)
-                .font(.system(size: 11 * DT.Scale.font, weight: mode == target ? .bold : .regular))
-                .foregroundStyle(mode == target ? DT.Color.accent : DT.Color.textSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-        }
-        .buttonStyle(.plain)
-    }
+    // MARK: - Credentials
 
-    // MARK: - Credentials form
-
-    private var credentialsForm: some View {
+    private var credentialsView: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 fieldLabel("Username")
@@ -179,101 +202,32 @@ struct AuthView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
 
             signInButton(
-                label: "Sign In", loadingLabel: "Signing in…",
+                label: "Sign In",
+                loadingLabel: "Signing in…",
                 disabled: username.isEmpty || password.isEmpty
             ) { Task { await handleSignIn() } }
             .padding(.top, DT.Spacing.lg)
             .padding(.horizontal, DT.Spacing.pagePad)
 
-            HStack(spacing: 4) {
-                Text("Forgot password?").font(DT.Font.caption).foregroundStyle(DT.Color.textSecondary)
-                Text("Reset via server").font(DT.Font.caption).foregroundStyle(DT.Color.accent).fontWeight(.medium)
-            }
-            .padding(.top, DT.Spacing.md)
-        }
-    }
-
-    // MARK: - Quick Connect form
-
-    private var quickConnectForm: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("How Quick Connect works").font(.system(size: 11 * DT.Scale.font, weight: .bold)).foregroundStyle(DT.Color.accent)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("1. Open Jellyfin on your browser or another device")
-                    Text("2. Go to **Dashboard → Quick Connect**")
-                    Text("3. Enter the 6-digit code shown below")
-                }
-                .font(DT.Font.caption)
-                .foregroundStyle(.white.opacity(0.55))
-                .lineSpacing(4)
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(DT.Color.accent.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
-            .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(DT.Color.accent.opacity(0.15), lineWidth: 1))
-            .padding(.top, DT.Spacing.md)
-            .padding(.horizontal, DT.Spacing.pagePad)
-
-            VStack(spacing: 12) {
-                Text("Your Quick Connect Code")
-                    .font(.system(size: 10 * DT.Scale.font, weight: .bold))
-                    .tracking(0.5)
-                    .textCase(.uppercase)
+            Button {
+                withAnimation(DT.Animation.fast) { mode = .quickConnect }
+            } label: {
+                Text("Use Quick Connect instead")
+                    .font(DT.Font.caption)
                     .foregroundStyle(DT.Color.textSecondary)
-
-                if qcLoading {
-                    ProgressView().tint(DT.Color.accent).padding(.vertical, 10)
-                } else if qcCode.isEmpty {
-                    Text("—").font(.system(size: 22 * DT.Scale.font, weight: .heavy, design: .monospaced)).foregroundStyle(DT.Color.textSecondary)
-                } else {
-                    codeDisplay(qcCode)
-                    if qcPolling {
-                        HStack(spacing: 6) {
-                            ProgressView().scaleEffect(0.7).tint(DT.Color.accent)
-                            Text("Waiting for approval…").font(DT.Font.caption2).foregroundStyle(DT.Color.textSecondary)
-                        }
-                    }
-                }
+                    .underline()
             }
-            .padding(.top, DT.Spacing.lg)
-
-            if !qcCode.isEmpty {
-                Divider()
-                    .background(.white.opacity(0.07))
-                    .padding(.horizontal, DT.Spacing.pagePad)
-                    .padding(.vertical, DT.Spacing.md)
-
-                VStack(spacing: 10) {
-                    Text("Or enter code manually")
-                        .font(.system(size: 10 * DT.Scale.font, weight: .bold))
-                        .tracking(0.5)
-                        .textCase(.uppercase)
-                        .foregroundStyle(DT.Color.textSecondary)
-
-                    digitInputRow
-
-                    if digitError {
-                        Text("Invalid code — please try again")
-                            .font(DT.Font.caption2)
-                            .foregroundStyle(.red)
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-
-                signInButton(
-                    label: "Verify Code", loadingLabel: "Verifying…", disabled: false
-                ) { Task { await handleManualQC() } }
-                .padding(.top, DT.Spacing.md)
-                .padding(.horizontal, DT.Spacing.pagePad)
-            }
+            .buttonStyle(.plain)
+            .tvFocusRing(cornerRadius: DT.Radius.pill)
+            .padding(.top, DT.Spacing.md)
         }
     }
+
+    // MARK: - Code display
 
     private func codeDisplay(_ code: String) -> some View {
         HStack(spacing: 6) {
-            ForEach(Array(code.enumerated()), id: \.offset) { i, ch in
+            ForEach(Array(code.enumerated()), id: \.offset) { _, ch in
                 if ch == " " {
                     Spacer().frame(width: 8)
                 } else {
@@ -281,7 +235,7 @@ struct AuthView: View {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(DT.Color.accent.opacity(0.08))
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.accent.opacity(0.3), lineWidth: 1.5))
-                            .frame(width: 36, height: 46)
+                            .frame(width: 36 * DT.Scale.font, height: 46 * DT.Scale.font)
                             .shadow(color: DT.Color.accent.opacity(0.08), radius: 8)
                         Text(String(ch))
                             .font(.system(size: 22 * DT.Scale.font, weight: .heavy, design: .monospaced))
@@ -290,46 +244,6 @@ struct AuthView: View {
                 }
             }
         }
-    }
-
-    private var digitInputRow: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<6) { i in
-                if i == 3 {
-                    Circle().fill(.white.opacity(0.3)).frame(width: 4, height: 4)
-                }
-                digitBox(index: i)
-            }
-        }
-    }
-
-    private func digitBox(index: Int) -> some View {
-        let strokeColor: Color = {
-            if digitError { return Color.red.opacity(0.5) }
-            if digits[index].isEmpty { return Color.white.opacity(0.1) }
-            return DT.Color.accent.opacity(0.5)
-        }()
-        let bgColor: Color = digitError ? Color.red.opacity(0.08) : Color.white.opacity(0.06)
-        return TextField("", text: $digits[index])
-            .textFieldStyle(.plain)
-            .font(.system(size: 20 * DT.Scale.font, weight: .heavy, design: .monospaced))
-            .foregroundStyle(DT.Color.textPrimary)
-            .multilineTextAlignment(.center)
-            #if os(iOS)
-            .keyboardType(.numberPad)
-            #endif
-            .focused($focusedDigit, equals: index)
-            .frame(width: 38, height: 48)
-            .background(bgColor)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(strokeColor, lineWidth: 1.5))
-            .onChange(of: digits[index]) { _, newVal in
-                let filtered = String(newVal.filter { $0.isNumber }.prefix(1))
-                if filtered != newVal { digits[index] = filtered }
-                digitError = false
-                if !filtered.isEmpty, index < 5 { focusedDigit = index + 1 }
-                if !filtered.isEmpty, index == 5 { Task { await handleManualQC() } }
-            }
     }
 
     // MARK: - Shared sign-in button
@@ -353,14 +267,17 @@ struct AuthView: View {
             .background(
                 disabled
                     ? AnyShapeStyle(DT.Color.accent.opacity(0.2))
-                    : AnyShapeStyle(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent],
-                                                   startPoint: .topLeading, endPoint: .bottomTrailing))
+                    : AnyShapeStyle(LinearGradient(
+                        colors: [DT.Color.accentDeep, DT.Color.accent],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                      ))
             )
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
             .shadow(color: disabled ? .clear : DT.Color.accent.opacity(0.3), radius: 16)
         }
         .buttonStyle(.plain)
         .disabled(signingIn || disabled)
+        .tvFocusRing(cornerRadius: DT.Radius.lg)
     }
 
     private func fieldLabel(_ text: String) -> some View {
@@ -395,6 +312,7 @@ struct AuthView: View {
         .arcfinFieldBackground()
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
         .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(.white.opacity(0.1), lineWidth: 1))
+        .tvFocusRing(cornerRadius: DT.Radius.md)
     }
 
     // MARK: - Success screen
@@ -476,32 +394,6 @@ struct AuthView: View {
         }
         qcPolling = false
         authError = "Quick Connect timed out — please try again."
-    }
-
-    private func handleManualQC() async {
-        let code = digits.joined()
-        guard code.count == 6 else { return }
-        guard let secret = qcSecret else {
-            authError = "No active Quick Connect session."
-            return
-        }
-        signingIn = true
-        authError = nil
-        do {
-            let approved = try await authManager.authClient.pollQuickConnect(baseURL: serverURL, secret: secret)
-            if approved {
-                let credential = try await authManager.authClient.authenticateWithQuickConnect(baseURL: serverURL, secret: secret)
-                authManager.save(credential)
-                withAnimation { signedIn = true }
-            } else {
-                digitError = true
-                digits = Array(repeating: "", count: 6)
-                focusedDigit = 0
-            }
-        } catch {
-            authError = error.localizedDescription
-        }
-        signingIn = false
     }
 
     private func formatCode(_ raw: String) -> String {
