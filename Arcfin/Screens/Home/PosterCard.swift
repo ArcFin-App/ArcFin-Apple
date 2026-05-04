@@ -57,7 +57,8 @@ struct PosterCard: View {
                     Text(title)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(2)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.75)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
