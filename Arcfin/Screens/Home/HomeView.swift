@@ -3,145 +3,40 @@ import Combine
 import JellyfinAPI
 import AuthCore
 
-// MARK: - App tabs
-
-enum AppTab: CaseIterable {
-    case home, library, stats, requests
-
-    var icon: String {
-        switch self {
-        case .home:     "house"
-        case .library:  "square.grid.2x2"
-        case .stats:    "chart.xyaxis.line"
-        case .requests: "clock"
-        }
-    }
-
-    var activeIcon: String {
-        switch self {
-        case .home:     "house.fill"
-        case .library:  "square.grid.2x2.fill"
-        case .stats:    "chart.xyaxis.line"
-        case .requests: "clock.fill"
-        }
-    }
-}
-
-// MARK: - Main container with two-pill tab bar
+// MARK: - Main tab container
 
 struct MainTabView: View {
-    @State private var selectedTab: AppTab = .home
-    @State private var showSearch = false
     @State private var searchQuery = ""
-    @FocusState private var searchFocused: Bool
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Content — each screen adds its own bottom inset via safeAreaInset
-            tabContent
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: showSearch ? 144 : 80)
-                }
-
-            // Floating two-pill bar
-            VStack(spacing: 8) {
-                if showSearch {
-                    searchBar
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-
-                HStack(spacing: 12) {
-                    // Left pill — 4 nav tabs
-                    GlassEffectContainer(spacing: 0) {
-                        HStack(spacing: 0) {
-                            ForEach(AppTab.allCases, id: \.self) { tab in
-                                pillTab(tab)
-                            }
-                        }
-                    }
-
-                    // Right pill — search toggle
-                    Button {
-                        withAnimation(DT.Animation.standard) {
-                            showSearch.toggle()
-                            if showSearch { searchFocused = true } else { searchQuery = "" }
-                        }
-                    } label: {
-                        Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(.white)
-                            .frame(width: 48, height: 44)
-                            .contentTransition(.symbolEffect(.replace))
-                    }
-                    .glassEffect(
-                        showSearch
-                            ? .regular.tint(DT.Color.accent).interactive()
-                            : .regular.interactive(),
-                        in: .capsule
-                    )
-                }
-                .padding(.horizontal, 20)
+        TabView {
+            Tab("Home", systemImage: "house") {
+                HomeView()
             }
-            .padding(.bottom, 12)
-            .animation(DT.Animation.standard, value: showSearch)
+            Tab("Search", systemImage: "magnifyingglass") {
+                NavigationStack {
+                    SearchView(query: $searchQuery)
+                        .searchable(
+                            text: $searchQuery,
+                            placement: .navigationBarDrawer(displayMode: .always),
+                            prompt: "Movies, shows, people…"
+                        )
+                        .navigationTitle("Search")
+                        .navigationBarTitleDisplayMode(.large)
+                        .background(DT.Color.backgroundPrimary)
+                }
+            }
+            Tab("Library", systemImage: "square.grid.2x2") {
+                placeholderScreen("Library", icon: "square.grid.2x2")
+            }
+            Tab("Stats", systemImage: "chart.xyaxis.line") {
+                StatsView()
+            }
+            Tab("Requests", systemImage: "clock") {
+                JellyseerrView()
+            }
         }
         .preferredColorScheme(.dark)
-    }
-
-    @ViewBuilder
-    private var tabContent: some View {
-        switch selectedTab {
-        case .home:     HomeView()
-        case .library:  placeholderScreen("Library", icon: "square.grid.2x2")
-        case .stats:    StatsView()
-        case .requests: JellyseerrView()
-        }
-    }
-
-    @ViewBuilder
-    private func pillTab(_ tab: AppTab) -> some View {
-        let selected = tab == selectedTab
-        Button {
-            withAnimation(DT.Animation.standard) { selectedTab = tab }
-        } label: {
-            Image(systemName: selected ? tab.activeIcon : tab.icon)
-                .font(.system(size: 20, weight: selected ? .semibold : .regular))
-                .foregroundStyle(selected ? DT.Color.accent : .white.opacity(0.55))
-                .frame(width: 58, height: 44)
-                .contentTransition(.symbolEffect(.replace))
-        }
-        .glassEffect(
-            selected
-                ? .regular.tint(DT.Color.accent).interactive()
-                : .regular.interactive(),
-            in: .rect(cornerRadius: 14)
-        )
-    }
-
-    private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 14))
-                .foregroundStyle(DT.Color.textSecondary)
-            TextField("Search movies, shows…", text: $searchQuery)
-                .font(DT.Font.body)
-                .foregroundStyle(DT.Color.textPrimary)
-                .focused($searchFocused)
-                .autocorrectionDisabled()
-                #if os(iOS)
-                .textInputAutocapitalization(.never)
-                #endif
-            if !searchQuery.isEmpty {
-                Button { searchQuery = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .glassEffect(.regular, in: .rect(cornerRadius: DT.Radius.lg))
-        .padding(.horizontal, 20)
     }
 
     @ViewBuilder
@@ -165,26 +60,25 @@ struct MainTabView: View {
 struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var heroIndex: Int = 0
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
 
-    private var usePortraitHero: Bool {
-        #if os(iOS)
-        return UIDevice.current.userInterfaceIdiom == .phone
-        #else
-        return false
-        #endif
-    }
+    // iPhone (compact) → portrait primary image; iPad/Mac/tvOS → 16:9 backdrop
+    private var usePortraitHero: Bool { sizeClass == .compact }
 
     var body: some View {
         GeometryReader { proxy in
+            // proxy.safeAreaInsets.top is the exact status-bar height because
+            // the GeometryReader itself ignores safe area (see modifier below).
             let top     = proxy.safeAreaInsets.top
             let screenW = proxy.size.width
             let imageH  = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
-            let heroH   = usePortraitHero ? top + imageH   : top + imageH + 220
+            // heroH: image fills to screen top, no extra top offset needed
+            let heroH   = usePortraitHero ? imageH : imageH + 220
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -215,6 +109,9 @@ struct HomeView: View {
             .ignoresSafeArea()
             .overlay(alignment: .top) { navBar(top: top) }
         }
+        // ignoresSafeArea on the GR so proxy.safeAreaInsets gives real screen insets,
+        // not zero (which happens when the GR is already clipped to the safe area).
+        .ignoresSafeArea()
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }
             await mediaRepo.load(credential: cred, authClient: authManager.authClient)
@@ -266,17 +163,13 @@ struct HomeView: View {
 
     private func heroBanner(top: CGFloat, imageH: CGFloat, screenW: CGFloat) -> some View {
         ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                Color.clear.frame(height: top)
+            // Image starts at y=0 — behind the status bar — for full-bleed look
+            heroBackground(imageH: imageH, screenW: screenW)
+                .overlay(heroImageFade)
+                .animation(DT.Animation.slow, value: heroIndex)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-                heroBackground(imageH: imageH, screenW: screenW)
-                    .overlay(heroImageFade)
-                    .animation(DT.Animation.slow, value: heroIndex)
-
-                if !usePortraitHero { Spacer(minLength: 0) }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
+            // Side vignette
             HStack(spacing: 0) {
                 LinearGradient(colors: [DT.Color.backgroundPrimary.opacity(0.3), .clear],
                                startPoint: .leading, endPoint: .trailing).frame(width: 48)
