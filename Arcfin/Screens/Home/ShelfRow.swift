@@ -18,7 +18,7 @@ struct ShelfRow<Content: View>: View {
                     Text(badge)
                         .font(.system(size: 9, weight: .bold))
                         .tracking(0.5)
-                        .foregroundStyle(DT.Color.accent)
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 2)
                         .glassEffect(.regular.tint(DT.Color.accent), in: .capsule)
@@ -29,7 +29,7 @@ struct ShelfRow<Content: View>: View {
                 if let onSeeAll {
                     Button("See All", action: onSeeAll)
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(DT.Color.accent)
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .capsule)

@@ -6,28 +6,145 @@ import AuthCore
 import UIKit
 #endif
 
-// MARK: - Main tab container (native Apple TabView — auto Liquid Glass on iOS 26)
+// MARK: - App tabs
+
+enum AppTab: CaseIterable {
+    case home, library, stats, requests
+
+    var icon: String {
+        switch self {
+        case .home:     "house"
+        case .library:  "square.grid.2x2"
+        case .stats:    "chart.xyaxis.line"
+        case .requests: "clock"
+        }
+    }
+
+    var activeIcon: String {
+        switch self {
+        case .home:     "house.fill"
+        case .library:  "square.grid.2x2.fill"
+        case .stats:    "chart.xyaxis.line"
+        case .requests: "clock.fill"
+        }
+    }
+}
+
+// MARK: - Main container with two-pill tab bar
 
 struct MainTabView: View {
+    @State private var selectedTab: AppTab = .home
+    @State private var showSearch = false
+    @State private var searchQuery = ""
+    @FocusState private var searchFocused: Bool
+
     var body: some View {
-        TabView {
-            Tab("Home", systemImage: "house") {
-                HomeView()
+        ZStack(alignment: .bottom) {
+            // Content — each screen adds its own bottom inset via safeAreaInset
+            tabContent
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: showSearch ? 144 : 80)
+                }
+
+            // Floating two-pill bar
+            VStack(spacing: 8) {
+                if showSearch {
+                    searchBar
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                HStack(spacing: 12) {
+                    // Left pill — 4 nav tabs
+                    GlassEffectContainer(spacing: 0) {
+                        HStack(spacing: 0) {
+                            ForEach(AppTab.allCases, id: \.self) { tab in
+                                pillTab(tab)
+                            }
+                        }
+                    }
+
+                    // Right pill — search toggle
+                    Button {
+                        withAnimation(DT.Animation.standard) {
+                            showSearch.toggle()
+                            if showSearch { searchFocused = true } else { searchQuery = "" }
+                        }
+                    } label: {
+                        Image(systemName: showSearch ? "xmark" : "magnifyingglass")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(.white)
+                            .frame(width: 48, height: 44)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .glassEffect(
+                        showSearch
+                            ? .regular.tint(DT.Color.accent).interactive()
+                            : .regular.interactive(),
+                        in: .capsule
+                    )
+                }
+                .padding(.horizontal, 20)
             }
-            Tab("Search", systemImage: "magnifyingglass") {
-                placeholderScreen("Search", icon: "magnifyingglass")
-            }
-            Tab("Library", systemImage: "square.grid.2x2") {
-                placeholderScreen("Library", icon: "square.grid.2x2")
-            }
-            Tab("Stats", systemImage: "chart.xyaxis.line") {
-                StatsView()
-            }
-            Tab("Requests", systemImage: "clock") {
-                JellyseerrView()
-            }
+            .padding(.bottom, 12)
+            .animation(DT.Animation.standard, value: showSearch)
         }
         .preferredColorScheme(.dark)
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch selectedTab {
+        case .home:     HomeView()
+        case .library:  placeholderScreen("Library", icon: "square.grid.2x2")
+        case .stats:    StatsView()
+        case .requests: JellyseerrView()
+        }
+    }
+
+    @ViewBuilder
+    private func pillTab(_ tab: AppTab) -> some View {
+        let selected = tab == selectedTab
+        Button {
+            withAnimation(DT.Animation.standard) { selectedTab = tab }
+        } label: {
+            Image(systemName: selected ? tab.activeIcon : tab.icon)
+                .font(.system(size: 20, weight: selected ? .semibold : .regular))
+                .foregroundStyle(selected ? DT.Color.accent : .white.opacity(0.55))
+                .frame(width: 58, height: 44)
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .glassEffect(
+            selected
+                ? .regular.tint(DT.Color.accent).interactive()
+                : .regular.interactive(),
+            in: .rect(cornerRadius: 14)
+        )
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14))
+                .foregroundStyle(DT.Color.textSecondary)
+            TextField("Search movies, shows…", text: $searchQuery)
+                .font(DT.Font.body)
+                .foregroundStyle(DT.Color.textPrimary)
+                .focused($searchFocused)
+                .autocorrectionDisabled()
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+            if !searchQuery.isEmpty {
+                Button { searchQuery = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .glassEffect(.regular, in: .rect(cornerRadius: DT.Radius.lg))
+        .padding(.horizontal, 20)
     }
 
     @ViewBuilder
@@ -57,7 +174,6 @@ struct HomeView: View {
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
 
-    // iPhone → portrait primary image; iPad/Mac/tvOS → 16:9 backdrop
     private var usePortraitHero: Bool {
         #if os(iOS)
         return UIDevice.current.userInterfaceIdiom == .phone
@@ -136,16 +252,16 @@ struct HomeView: View {
             Spacer()
             HStack(spacing: 12) {
                 Button {} label: {
-                    Image(systemName: "magnifyingglass")
+                    Image(systemName: "bell")
                         .font(.system(size: 16))
                         .foregroundStyle(.white)
                         .frame(width: 34, height: 34)
                 }
-                .glassEffect(in: .circle)
+                .glassEffect(.regular.interactive(), in: .circle)
 
                 Text(authManager.state.displayInitials)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(DT.Color.accent)
+                    .foregroundStyle(.white)
                     .frame(width: 34, height: 34)
                     .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
             }
@@ -174,7 +290,6 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            // Side vignette
             HStack(spacing: 0) {
                 LinearGradient(colors: [DT.Color.backgroundPrimary.opacity(0.3), .clear],
                                startPoint: .leading, endPoint: .trailing).frame(width: 48)
@@ -269,6 +384,7 @@ struct HomeView: View {
                             Image(systemName: "play.fill").font(.system(size: 12))
                             Text("Play").font(.system(size: 14, weight: .bold))
                         }
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 28).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))
@@ -278,6 +394,7 @@ struct HomeView: View {
                             Image(systemName: "info.circle").font(.system(size: 12))
                             Text("More Info").font(.system(size: 13, weight: .semibold))
                         }
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 20).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
