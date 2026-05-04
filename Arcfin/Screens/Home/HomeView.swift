@@ -27,8 +27,7 @@ struct MainTabView: View {
                 NavigationStack {
                     SearchView(query: $searchQuery)
                         .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
-                        .navigationTitle("Search")
-                        .navigationBarTitleDisplayMode(.large)
+                        .arcfinNavTitleLarge("Search")
                         .background(DT.Color.backgroundPrimary)
                         .navigationDestination(for: MediaItem.self) { item in
                             MediaDetailView(item: item)

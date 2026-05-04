@@ -144,12 +144,9 @@ struct SettingsView: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
+        .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
-        .navigationTitle("Settings")
-        .navigationBarTitleDisplayMode(.large)
-        // Hide tab bar on this screen
+        .arcfinNavTitleLarge("Settings")
         .toolbar(.hidden, for: .tabBar)
     }
 
@@ -162,7 +159,7 @@ struct SettingsView: View {
                 profileCard(cred: cred)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                    .listRowSeparator(.hidden)
+                    .arcfinRowSeparatorHidden()
             }
         }
     }
@@ -372,11 +369,9 @@ struct JellyseerrPluginView: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
+        .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
-        .navigationTitle("Jellyseerr")
-        .navigationBarTitleDisplayMode(.large)
+        .arcfinNavTitleLarge("Jellyseerr")
     }
 
     private func testConnection() {
@@ -462,11 +457,9 @@ struct StreamystatsPluginView: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
+        .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
-        .navigationTitle("Streamystats")
-        .navigationBarTitleDisplayMode(.large)
+        .arcfinNavTitleLarge("Streamystats")
     }
 
     private func testConnection() {
@@ -491,3 +484,4 @@ struct StreamystatsPluginView: View {
         }
     }
 }
+
