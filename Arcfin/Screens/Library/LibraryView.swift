@@ -418,33 +418,48 @@ struct LibraryDetailView: View {
     }
 
     private func quickLookPreview(_ item: MediaItem) -> some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600) {
                 AsyncImage(url: url) { ph in
                     if case .success(let img) = ph { img.resizable().scaledToFill() }
                     else { DT.Color.backgroundSecondary }
                 }
             } else { DT.Color.backgroundSecondary }
-            LinearGradient(colors: [.black.opacity(0.9), .clear], startPoint: .bottom, endPoint: .top)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.name)
-                    .font(.system(size: 18, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if let year = item.productionYear {
-                    Text(String(year))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.7))
+            LinearGradient(
+                colors: [.black.opacity(0.65), .black.opacity(0.2)],
+                startPoint: .bottom,
+                endPoint: .top
+            )
+            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 320) {
+                AsyncImage(url: url) { ph in
+                    if case .success(let img) = ph {
+                        img.resizable().scaledToFill()
+                    } else {
+                        quickLookPosterPlaceholder
+                    }
                 }
+                .frame(width: 120, height: 178)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.16), lineWidth: 1))
+                .shadow(color: .black.opacity(0.55), radius: 10, y: 6)
+            } else {
+                quickLookPosterPlaceholder
+                    .frame(width: 120, height: 178)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14)
-            .padding(.bottom, 14)
         }
         .frame(width: 360, height: 230)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var quickLookPosterPlaceholder: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(DT.Color.backgroundSecondary)
+            .overlay(
+                Image(systemName: "film")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.4))
+            )
     }
 
     private func load() async {
