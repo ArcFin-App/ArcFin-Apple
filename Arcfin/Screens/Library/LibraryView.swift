@@ -4,6 +4,7 @@ import JellyfinAPI
 
 #if canImport(UIKit)
 import UIKit
+import AuthCore
 #endif
 
 // MARK: - Library screen
@@ -47,6 +48,9 @@ struct LibraryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
+            .navigationDestination(for: JellyfinLibrary.self) { library in
+                LibraryDetailView(library: library)
+            }
             .onAppear { downloads = listDownloads() }
 #if canImport(UIKit)
             .sheet(isPresented: $showDocPicker) {
@@ -85,7 +89,7 @@ struct LibraryView: View {
 
             LazyVGrid(columns: gridColumns, spacing: 12) {
                 ForEach(mediaRepo.libraries) { library in
-                    NavigationLink(destination: LibraryDetailView(library: library)) {
+                    NavigationLink(value: library) {
                         LibraryCard(library: library)
                     }
                     .buttonStyle(.plain)
@@ -305,26 +309,142 @@ struct LocalPlayerView: View {
     }
 }
 
-// MARK: - Library detail placeholder
+// MARK: - Library detail
 
 struct LibraryDetailView: View {
     let library: JellyfinLibrary
 
+    @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
+
+    @State private var items: [MediaItem] = []
+    @State private var isLoading = true
+
+    private let client = JellyfinMediaClient()
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
     var body: some View {
-        ZStack {
-            DT.Color.backgroundPrimary.ignoresSafeArea()
-            ContentUnavailableView(
-                library.name,
-                systemImage: library.collectionType.systemIcon,
-                description: Text("Library browsing coming soon.")
-            )
+        Group {
+            if isLoading && items.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(DT.Color.backgroundPrimary)
+            } else if items.isEmpty {
+                ContentUnavailableView(library.name,
+                                      systemImage: library.collectionType.systemIcon,
+                                      description: Text("Nothing found in this library."))
+                .background(DT.Color.backgroundPrimary)
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(items) { item in
+                            NavigationLink(value: item) {
+                                libraryItemCard(item)
+                            }
+                            .buttonStyle(.plain)
+                            .contextMenu {
+                                quickLookMenu(item)
+                            } preview: {
+                                quickLookPreview(item)
+                            }
+                        }
+                    }
+                    .padding(DT.Spacing.pagePad)
+                }
+                .background(DT.Color.backgroundPrimary)
+            }
         }
         .navigationTitle(library.name)
+        .navigationDestination(for: MediaItem.self) { item in
+            MediaDetailView(item: item)
+        }
 #if !os(macOS)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
 #endif
+        .task { await load() }
+    }
+
+    private func libraryItemCard(_ item: MediaItem) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            if let url = mediaRepo.imageURL(for: item) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: Color(DT.Color.backgroundSecondary)
+                    }
+                }
+                .clipped()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+            LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .top)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                if let year = item.productionYear {
+                    Text(String(year))
+                        .font(.system(size: 9))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            .padding(8)
+        }
+        .aspectRatio(2/3, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.06), lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private func quickLookMenu(_ item: MediaItem) -> some View {
+        Label(item.name, systemImage: item.type == .series ? "tv" : "film")
+        if let year = item.productionYear {
+            Label(String(year), systemImage: "calendar")
+        }
+        if let rating = item.communityRating {
+            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+        }
+    }
+
+    private func quickLookPreview(_ item: MediaItem) -> some View {
+        ZStack(alignment: .bottom) {
+            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600) {
+                AsyncImage(url: url) { ph in
+                    if case .success(let img) = ph { img.resizable().scaledToFill() }
+                    else { DT.Color.backgroundSecondary }
+                }
+            } else { DT.Color.backgroundSecondary }
+            LinearGradient(colors: [.black.opacity(0.9), .clear], startPoint: .bottom, endPoint: .top)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.system(size: 18, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let year = item.productionYear {
+                    Text(String(year))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+        .frame(width: 300, height: 200)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func load() async {
+        guard let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        isLoading = true
+        items = (try? await client.getLibraryItems(credential: cred, authHeader: header, libraryId: library.id)) ?? []
+        isLoading = false
     }
 }
 

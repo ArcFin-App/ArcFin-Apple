@@ -31,11 +31,14 @@ struct SearchView: View {
                         if !jellyfinResults.isEmpty {
                             ShelfRow(title: "Library", onSeeAll: nil) {
                                 ForEach(jellyfinResults) { item in
-                                    PosterCard(
-                                        title: item.name,
-                                        subtitle: item.productionYear.map { "\($0)" },
-                                        imageURL: mediaRepo.imageURL(for: item)
-                                    )
+                                    NavigationLink(value: item) {
+                                        PosterCard(
+                                            title: item.name,
+                                            subtitle: item.productionYear.map { String($0) },
+                                            imageURL: mediaRepo.imageURL(for: item)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }

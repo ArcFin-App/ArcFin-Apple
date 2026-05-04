@@ -30,6 +30,9 @@ struct MainTabView: View {
                         .navigationTitle("Search")
                         .navigationBarTitleDisplayMode(.large)
                         .background(DT.Color.backgroundPrimary)
+                        .navigationDestination(for: MediaItem.self) { item in
+                            MediaDetailView(item: item)
+                        }
                 }
             }
         }
@@ -50,6 +53,7 @@ struct HomeView: View {
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
+    @State private var heroDetailItem: MediaItem?
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
@@ -71,12 +75,16 @@ struct HomeView: View {
                             if !mediaRepo.continueWatching.isEmpty {
                                 ShelfRow(title: "Continue Watching", onSeeAll: {}) {
                                     ForEach(mediaRepo.continueWatching) { item in
-                                        PosterCard(
-                                            title: itemDisplayTitle(item),
-                                            subtitle: itemDisplaySubtitle(item),
-                                            progress: item.userData?.playedPercentage.map { $0 / 100 },
-                                            imageURL: mediaRepo.imageURL(for: item)
-                                        )
+                                        NavigationLink(value: item) {
+                                            PosterCard(
+                                                title: itemDisplayTitle(item),
+                                                subtitle: itemDisplaySubtitle(item),
+                                                progress: item.userData?.playedPercentage.map { $0 / 100 },
+                                                imageURL: mediaRepo.imageURL(for: item)
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                        .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
                                     }
                                 }
                             }
@@ -103,6 +111,12 @@ struct HomeView: View {
                 .ignoresSafeArea(edges: .top)
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
+                }
+                .navigationDestination(for: MediaItem.self) { item in
+                    MediaDetailView(item: item)
+                }
+                .navigationDestination(item: $heroDetailItem) { item in
+                    MediaDetailView(item: item)
                 }
             }
             .navigationTitle("")
@@ -264,7 +278,9 @@ struct HomeView: View {
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))
 
-                    Button {} label: {
+                    Button {
+                        if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
+                    } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "info.circle").font(.system(size: 12))
                             Text("More Info").font(.system(size: 13, weight: .semibold))
@@ -295,9 +311,58 @@ struct HomeView: View {
 
     private func heroMeta(_ item: MediaItem) -> String {
         var parts: [String] = []
-        if let year = item.productionYear { parts.append("\(year)") }
+        if let year = item.productionYear { parts.append(String(year)) }
         parts.append(item.type == .series ? "Series" : "Movie")
         return parts.joined(separator: " · ")
+    }
+
+    @ViewBuilder
+    func quickLookMenu(_ item: MediaItem) -> some View {
+        Label(item.name, systemImage: item.type == .series ? "tv" : "film")
+        if let year = item.productionYear {
+            Label(String(year), systemImage: "calendar")
+        }
+        if let rating = item.communityRating {
+            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+        }
+        if let overview = item.overview, !overview.isEmpty {
+            Label(String(overview.prefix(60)) + "…", systemImage: "text.alignleft")
+        }
+    }
+
+    func quickLookPreview(_ item: MediaItem) -> some View {
+        ZStack(alignment: .bottom) {
+            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600) {
+                AsyncImage(url: url) { ph in
+                    if case .success(let img) = ph { img.resizable().scaledToFill() }
+                    else { DT.Color.backgroundSecondary }
+                }
+            } else { DT.Color.backgroundSecondary }
+            LinearGradient(colors: [.black.opacity(0.9), .clear], startPoint: .bottom, endPoint: .top)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.system(size: 18, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 8) {
+                    if let year = item.productionYear { Text(String(year)).foregroundStyle(.white.opacity(0.7)) }
+                    if let rating = item.communityRating {
+                        HStack(spacing: 3) {
+                            Image(systemName: "star.fill").font(.system(size: 10)).foregroundStyle(DT.Color.accent)
+                            Text(String(format: "%.1f", rating)).foregroundStyle(DT.Color.accent)
+                        }
+                    }
+                }
+                .font(.system(size: 13))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+        .frame(width: 300, height: 200)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Recently Added
@@ -313,11 +378,15 @@ struct HomeView: View {
             }
         } else {
             ForEach(mediaRepo.recentlyAdded) { item in
-                PosterCard(
-                    title: item.name,
-                    subtitle: item.productionYear.map { "\($0)" },
-                    imageURL: mediaRepo.imageURL(for: item)
-                )
+                NavigationLink(value: item) {
+                    PosterCard(
+                        title: item.name,
+                        subtitle: item.productionYear.map { String($0) },
+                        imageURL: mediaRepo.imageURL(for: item)
+                    )
+                }
+                .buttonStyle(.plain)
+                .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
             }
         }
     }

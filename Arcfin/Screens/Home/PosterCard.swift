@@ -57,8 +57,7 @@ struct PosterCard: View {
                     Text(title)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(2)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -87,6 +86,7 @@ struct PosterCard: View {
             }
         }
         .frame(width: width, height: height)
+        .clipped()
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
         .overlay(
             RoundedRectangle(cornerRadius: DT.Radius.card)
