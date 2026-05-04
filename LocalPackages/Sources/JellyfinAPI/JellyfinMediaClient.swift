@@ -294,16 +294,21 @@ public struct JellyfinMediaClient: Sendable {
     public func getTrailers(
         credential: ServerCredential,
         authHeader: String,
+        itemId: String? = nil,
         limit: Int = 10
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Trailers"),
             resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
+        var queryItems: [URLQueryItem] = [
             .init(name: "UserId", value: credential.userID),
             .init(name: "Limit", value: "\(limit)"),
             .init(name: "Fields", value: "Overview,PrimaryImageTags,BackdropImageTags,ProductionYear"),
         ]
+        if let itemId {
+            queryItems.append(.init(name: "ItemId", value: itemId))
+        }
+        comps.queryItems = queryItems
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15

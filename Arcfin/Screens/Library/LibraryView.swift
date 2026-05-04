@@ -432,7 +432,7 @@ struct LibraryDetailView: View {
             )
             VStack(spacing: 0) {
                 Spacer()
-                if let url = mediaRepo.imageURL(for: item, type: .logo, fillWidth: 280) {
+                if let url = mediaRepo.logoURL(for: item) {
                     AsyncImage(url: url) { ph in
                         if case .success(let img) = ph {
                             img.resizable().scaledToFit()

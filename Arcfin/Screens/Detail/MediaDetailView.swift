@@ -60,7 +60,7 @@ struct MediaDetailView: View {
         guard let cred = credential, let header = authHeader else { return }
 
         async let detailTask = client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
-        async let trailersTask = client.getTrailers(credential: cred, authHeader: header)
+        trailers = []
         
         let fetchedDetail = try? await detailTask
         detail = fetchedDetail
@@ -75,7 +75,17 @@ struct MediaDetailView: View {
             similarItems = []
         }
 
-        trailers = (try? await trailersTask) ?? []
+        Task {
+            let fetchedTrailers = (try? await client.getTrailers(
+                credential: cred,
+                authHeader: header,
+                itemId: item.id,
+                limit: 6
+            )) ?? []
+            await MainActor.run {
+                trailers = fetchedTrailers
+            }
+        }
 
         if let seriesId = seasonSeriesId {
             seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
