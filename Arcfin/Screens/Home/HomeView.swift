@@ -2,9 +2,6 @@ import SwiftUI
 import Combine
 import JellyfinAPI
 import AuthCore
-#if canImport(UIKit)
-import UIKit
-#endif
 
 // MARK: - App tabs
 
@@ -182,19 +179,9 @@ struct HomeView: View {
         #endif
     }
 
-    private var statusBarHeight: CGFloat {
-        #if os(iOS)
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first?.keyWindow?.safeAreaInsets.top ?? 50
-        #else
-        0
-        #endif
-    }
-
     var body: some View {
         GeometryReader { proxy in
-            let top     = statusBarHeight
+            let top     = proxy.safeAreaInsets.top
             let screenW = proxy.size.width
             let imageH  = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
             let heroH   = usePortraitHero ? top + imageH   : top + imageH + 220
