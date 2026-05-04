@@ -114,6 +114,17 @@ public enum DT {
         public static let playerFade = SwiftUI.Animation.easeInOut(duration: 0.25)
     }
 
+    // MARK: - Platform scale
+
+    public enum Scale {
+        /// Multiply hardcoded pt sizes by this for 10-foot TV readability.
+        #if os(tvOS)
+        public static let font: CGFloat = 2.0
+        #else
+        public static let font: CGFloat = 1.0
+        #endif
+    }
+
     // MARK: - Glass
 
     public enum Glass {

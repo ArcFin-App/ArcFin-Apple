@@ -35,7 +35,7 @@ struct SetupGuideSheet: View {
                     // Header
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Jellyfin Setup Guide")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 22 * DT.Scale.font, weight: .bold))
                             .foregroundStyle(DT.Color.textPrimary)
 
                         Text("Get your server running in a few steps")
@@ -53,7 +53,7 @@ struct SetupGuideSheet: View {
                     // Quick tips
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Quick tips")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 11 * DT.Scale.font, weight: .bold))
                             .tracking(0.5)
                             .textCase(.uppercase)
                             .foregroundStyle(DT.Color.textSecondary)
@@ -110,10 +110,10 @@ struct SetupGuideSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Text("\(step.id).")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 12 * DT.Scale.font, weight: .bold))
                         .foregroundStyle(DT.Color.accent)
                     Text(step.title)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 13 * DT.Scale.font, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                 }
                 Text(step.detail)

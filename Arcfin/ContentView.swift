@@ -6,6 +6,11 @@ private enum AppPhase: Equatable {
     case splash, login, main
 }
 
+// Posted by onOpenURL when the Top Shelf launches a play deep link.
+extension Notification.Name {
+    static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
+}
+
 struct ContentView: View {
     @State private var authManager  = AuthManager()
     @State private var mediaRepo    = MediaRepository()
@@ -47,6 +52,18 @@ struct ContentView: View {
         .environment(mediaRepo)
         .environment(seerrRepo)
         .environment(statsRepo)
+        .onOpenURL { url in
+            // arcfin://play/<itemId>  — from Top Shelf or Siri
+            guard url.scheme == "arcfin",
+                  url.host == "play",
+                  let itemID = url.pathComponents.dropFirst().first
+            else { return }
+            NotificationCenter.default.post(
+                name: .arcfinPlayItem,
+                object: nil,
+                userInfo: ["itemID": itemID]
+            )
+        }
         .task { await authManager.checkStoredAuth() }
         .onAppear { configureSeerr() }
         .onChange(of: seerrURL)        { configureSeerr() }

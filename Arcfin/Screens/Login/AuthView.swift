@@ -143,7 +143,7 @@ struct AuthView: View {
     private func modeButton(_ label: String, _ target: AuthMode) -> some View {
         Button { mode = target } label: {
             Text(label)
-                .font(.system(size: 11, weight: mode == target ? .bold : .regular))
+                .font(.system(size: 11 * DT.Scale.font, weight: mode == target ? .bold : .regular))
                 .foregroundStyle(mode == target ? DT.Color.accent : DT.Color.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
@@ -198,7 +198,7 @@ struct AuthView: View {
     private var quickConnectForm: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("How Quick Connect works").font(.system(size: 11, weight: .bold)).foregroundStyle(DT.Color.accent)
+                Text("How Quick Connect works").font(.system(size: 11 * DT.Scale.font, weight: .bold)).foregroundStyle(DT.Color.accent)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("1. Open Jellyfin on your browser or another device")
                     Text("2. Go to **Dashboard → Quick Connect**")
@@ -218,7 +218,7 @@ struct AuthView: View {
 
             VStack(spacing: 12) {
                 Text("Your Quick Connect Code")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 10 * DT.Scale.font, weight: .bold))
                     .tracking(0.5)
                     .textCase(.uppercase)
                     .foregroundStyle(DT.Color.textSecondary)
@@ -226,7 +226,7 @@ struct AuthView: View {
                 if qcLoading {
                     ProgressView().tint(DT.Color.accent).padding(.vertical, 10)
                 } else if qcCode.isEmpty {
-                    Text("—").font(.system(size: 22, weight: .heavy, design: .monospaced)).foregroundStyle(DT.Color.textSecondary)
+                    Text("—").font(.system(size: 22 * DT.Scale.font, weight: .heavy, design: .monospaced)).foregroundStyle(DT.Color.textSecondary)
                 } else {
                     codeDisplay(qcCode)
                     if qcPolling {
@@ -247,7 +247,7 @@ struct AuthView: View {
 
                 VStack(spacing: 10) {
                     Text("Or enter code manually")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 10 * DT.Scale.font, weight: .bold))
                         .tracking(0.5)
                         .textCase(.uppercase)
                         .foregroundStyle(DT.Color.textSecondary)
@@ -284,7 +284,7 @@ struct AuthView: View {
                             .frame(width: 36, height: 46)
                             .shadow(color: DT.Color.accent.opacity(0.08), radius: 8)
                         Text(String(ch))
-                            .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                            .font(.system(size: 22 * DT.Scale.font, weight: .heavy, design: .monospaced))
                             .foregroundStyle(DT.Color.accent)
                     }
                 }
@@ -312,7 +312,7 @@ struct AuthView: View {
         let bgColor: Color = digitError ? Color.red.opacity(0.08) : Color.white.opacity(0.06)
         return TextField("", text: $digits[index])
             .textFieldStyle(.plain)
-            .font(.system(size: 20, weight: .heavy, design: .monospaced))
+            .font(.system(size: 20 * DT.Scale.font, weight: .heavy, design: .monospaced))
             .foregroundStyle(DT.Color.textPrimary)
             .multilineTextAlignment(.center)
             #if os(iOS)
@@ -365,7 +365,7 @@ struct AuthView: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 10, weight: .bold))
+            .font(.system(size: 10 * DT.Scale.font, weight: .bold))
             .tracking(0.5)
             .textCase(.uppercase)
             .foregroundStyle(DT.Color.textSecondary)

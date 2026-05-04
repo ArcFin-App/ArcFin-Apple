@@ -171,7 +171,7 @@ struct ServerURLView: View {
 
     private func fieldLabel(_ label: String) -> some View {
         Text(label)
-            .font(.system(size: 10, weight: .bold))
+            .font(.system(size: 10 * DT.Scale.font, weight: .bold))
             .tracking(0.5)
             .textCase(.uppercase)
             .foregroundStyle(DT.Color.textSecondary)
@@ -214,7 +214,7 @@ struct ServerURLView: View {
                     Image(systemName: icon).font(.system(size: 11)).foregroundStyle(DT.Color.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(DT.Color.textPrimary).lineLimit(1)
+                    Text(title).font(.system(size: 11 * DT.Scale.font, weight: .medium)).foregroundStyle(DT.Color.textPrimary).lineLimit(1)
                     Text(subtitle).font(DT.Font.caption2).foregroundStyle(DT.Color.textSecondary).lineLimit(1)
                 }
                 Spacer()
