@@ -430,22 +430,25 @@ struct LibraryDetailView: View {
                 startPoint: .bottom,
                 endPoint: .top
             )
-            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 320) {
-                AsyncImage(url: url) { ph in
-                    if case .success(let img) = ph {
-                        img.resizable().scaledToFill()
-                    } else {
-                        quickLookPosterPlaceholder
+            VStack(spacing: 0) {
+                Spacer()
+                if let url = mediaRepo.imageURL(for: item, type: .logo, fillWidth: 280) {
+                    AsyncImage(url: url) { ph in
+                        if case .success(let img) = ph {
+                            img.resizable().scaledToFit()
+                        }
                     }
+                    .frame(height: 80)
+                    .padding(.horizontal, 20)
+                } else {
+                    Text(item.name)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 300)
                 }
-                .frame(width: 120, height: 178)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.16), lineWidth: 1))
-                .shadow(color: .black.opacity(0.55), radius: 10, y: 6)
-            } else {
-                quickLookPosterPlaceholder
-                    .frame(width: 120, height: 178)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                Spacer()
             }
         }
         .frame(width: 360, height: 230)
