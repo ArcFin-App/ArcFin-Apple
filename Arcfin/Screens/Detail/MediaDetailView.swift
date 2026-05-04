@@ -18,6 +18,7 @@ struct MediaDetailView: View {
     @State private var seasons: [MediaItem] = []
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
+    @State private var trailers: [MediaItem] = []
     @State private var isLoading = true
 
     private let client = JellyfinMediaClient()
@@ -59,6 +60,8 @@ struct MediaDetailView: View {
         guard let cred = credential, let header = authHeader else { return }
 
         async let detailTask = client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
+        async let trailersTask = client.getTrailers(credential: cred, authHeader: header)
+        
         let fetchedDetail = try? await detailTask
         detail = fetchedDetail
 
@@ -71,6 +74,8 @@ struct MediaDetailView: View {
         } else {
             similarItems = []
         }
+
+        trailers = (try? await trailersTask) ?? []
 
         if let seriesId = seasonSeriesId {
             seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
@@ -296,6 +301,9 @@ struct MediaDetailView: View {
 
         // Series: seasons + episodes
         if !seasons.isEmpty { seriesSection }
+
+        // Trailers
+        if !trailers.isEmpty { trailersSection }
 
         // Similar / recommended
         if !seerrRelatedItems.isEmpty {
@@ -566,6 +574,28 @@ struct MediaDetailView: View {
                             subtitle: sim.year,
                             imageURL: sim.posterURL
                         )
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+            }
+        }
+        .padding(.bottom, DT.Spacing.md)
+    }
+
+    private var trailersSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("Trailers").padding(.horizontal, DT.Spacing.pagePad)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(trailers) { trailer in
+                        NavigationLink(value: trailer) {
+                            PosterCard(
+                                title: trailer.name,
+                                subtitle: nil,
+                                imageURL: mediaRepo.imageURL(for: trailer)
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
