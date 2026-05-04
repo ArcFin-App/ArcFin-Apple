@@ -9,6 +9,8 @@ struct JellyseerrView: View {
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
     @State private var requestingItem: SeerrItem? = nil
+    @State private var hasLoadedInitialData = false
+    @State private var isBootstrapping = false
 
     private let categories = ["All", "Movies", "Series"]
 
@@ -33,8 +35,12 @@ struct JellyseerrView: View {
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
         .task {
+            guard !hasLoadedInitialData else { return }
+            isBootstrapping = true
             await seerrRepo.loadDiscover()
             await seerrRepo.loadRequests()
+            isBootstrapping = false
+            hasLoadedInitialData = true
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)
@@ -75,16 +81,35 @@ struct JellyseerrView: View {
                 if !searchText.isEmpty {
                     searchResultsSection
                 } else {
-                    if seerrRepo.isLoadingDiscover && displayItems.isEmpty {
+                    if isBootstrapping || (seerrRepo.isLoadingDiscover && displayItems.isEmpty) {
                         loadingGrid
+                        requestsLoadingList
                     } else {
                         discoverGrid
+                        requestsList
                     }
-                    requestsList
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
         }
+    }
+
+    private var requestsLoadingList: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("My Requests")
+                    .font(DT.Font.cardTitle)
+                    .foregroundStyle(DT.Color.textPrimary)
+                Spacer()
+            }
+            ForEach(0..<4, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.06))
+                    .frame(height: 66)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+            }
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
     }
 
     // MARK: - Header

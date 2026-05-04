@@ -14,6 +14,7 @@ struct MediaDetailView: View {
     @State private var detail: MediaItemDetail?
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
+    @State private var seriesItem: MediaItem?
     @State private var seasons: [MediaItem] = []
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
@@ -41,9 +42,9 @@ struct MediaDetailView: View {
         .ignoresSafeArea(edges: .top)
         .task { await load() }
         .onChange(of: selectedSeason) { _, season in
-            guard let season, let cred = credential, let header = authHeader else { return }
+            guard let season, let seriesId = seasonSeriesId,
+                  let cred = credential, let header = authHeader else { return }
             Task {
-                let seriesId = item.type == .season ? item.seriesId ?? item.id : item.id
                 episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
                                                           seriesId: seriesId, seasonId: season.id)) ?? []
             }
@@ -71,13 +72,21 @@ struct MediaDetailView: View {
             similarItems = []
         }
 
-        if item.type == .series {
-            seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: item.id)) ?? []
+        if let seriesId = seasonSeriesId {
+            seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
             if let first = seasons.first {
-                selectedSeason = first
+                if let selected = selectedSeasonForCurrentItem(from: seasons) {
+                    selectedSeason = selected
+                } else {
+                    selectedSeason = first
+                }
                 episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
-                                                          seriesId: item.id, seasonId: first.id)) ?? []
+                                                          seriesId: seriesId, seasonId: selectedSeason?.id ?? first.id)) ?? []
             }
+        }
+
+        if item.type == .episode, let seriesId = item.seriesId {
+            seriesItem = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
         }
     }
 
@@ -117,7 +126,7 @@ struct MediaDetailView: View {
     // MARK: - Title block
 
     private var titleBlock: some View {
-        HStack(alignment: .bottom, spacing: 14) {
+        HStack(alignment: .top, spacing: 14) {
             // Portrait poster
             if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 200) {
                 AsyncImage(url: url) { phase in
@@ -281,8 +290,12 @@ struct MediaDetailView: View {
         // Crew
         if let d = detail, (!d.directors.isEmpty || !d.writers.isEmpty) { crewSection(d) }
 
+        if let seriesItem, item.type == .episode {
+            seriesLinkSection(seriesItem)
+        }
+
         // Series: seasons + episodes
-        if item.type == .series && !seasons.isEmpty { seriesSection }
+        if !seasons.isEmpty { seriesSection }
 
         // Similar / recommended
         if !seerrRelatedItems.isEmpty {
@@ -430,6 +443,35 @@ struct MediaDetailView: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
+    private func seriesLinkSection(_ series: MediaItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Series")
+            NavigationLink(value: series) {
+                HStack(spacing: 10) {
+                    Image(systemName: "tv")
+                        .font(.system(size: 14))
+                        .foregroundStyle(DT.Color.accent)
+                    Text(series.name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .lineLimit(1)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(.white.opacity(0.03))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.bottom, DT.Spacing.md)
+    }
+
     private func episodeRow(_ ep: MediaItem) -> some View {
         HStack(spacing: 12) {
             // Episode thumbnail
@@ -540,6 +582,24 @@ struct MediaDetailView: View {
         case .series, .season, .episode: .tv
         default: nil
         }
+    }
+
+    private var seasonSeriesId: String? {
+        switch item.type {
+        case .series: item.id
+        case .season, .episode: item.seriesId
+        default: nil
+        }
+    }
+
+    private func selectedSeasonForCurrentItem(from seasons: [MediaItem]) -> MediaItem? {
+        if item.type == .episode, let seasonNumber = item.parentIndexNumber {
+            return seasons.first(where: { $0.indexNumber == seasonNumber })
+        }
+        if item.type == .season {
+            return seasons.first(where: { $0.id == item.id }) ?? seasons.first
+        }
+        return seasons.first
     }
 
     private func sectionTitle(_ title: String) -> some View {

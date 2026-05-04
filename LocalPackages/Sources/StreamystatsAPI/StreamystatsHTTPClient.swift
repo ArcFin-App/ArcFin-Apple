@@ -62,6 +62,23 @@ public actor StreamystatsHTTPClient {
         return try JSONDecoder().decode([StreamystatsWatchlist].self, from: data)
     }
 
+    public func addToWatchlist(watchlistId: String, jellyfinItemId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/watchlists/\(watchlistId)/items")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("MediaBrowser Token=\"\(jellyfinToken)\"", forHTTPHeaderField: "Authorization")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "jellyfinServerId": jellyfinServerId,
+            "jellyfinId": jellyfinItemId,
+        ])
+        req.timeoutInterval = 15
+        let (_, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw StreamystatsError.requestFailed
+        }
+    }
+
     // MARK: - Search
 
     public func search(query: String, limit: Int = 20) async throws -> [StreamystatsSearchResult] {

@@ -47,6 +47,7 @@ struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(StreamystatsRepository.self) private var statsRepo
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
@@ -163,6 +164,11 @@ struct HomeView: View {
                     subtitle: item.year,
                     imageURL: item.posterURL
                 )
+                .contextMenu {
+                    seerrQuickLookMenu(item)
+                } preview: {
+                    seerrQuickLookPreview(item)
+                }
             }
         }
     }
@@ -318,6 +324,13 @@ struct HomeView: View {
 
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {
+        if statsRepo.isConfigured {
+            Button {
+                Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
+            } label: {
+                Label("Add to Watchlist", systemImage: "bookmark")
+            }
+        }
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear {
             Label(String(year), systemImage: "calendar")
@@ -358,10 +371,56 @@ struct HomeView: View {
                 .font(.system(size: 13))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
         }
-        .frame(width: 300, height: 200)
+        .frame(width: 360, height: 230)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    @ViewBuilder
+    private func seerrQuickLookMenu(_ item: SeerrItem) -> some View {
+        Label(item.title, systemImage: item.mediaType == .tv ? "tv" : "film")
+        if let year = item.year {
+            Label(year, systemImage: "calendar")
+        }
+        if item.availabilityStatus != .available {
+            Button {
+                Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
+            } label: {
+                Label("Request via Jellyseerr", systemImage: "plus.circle")
+            }
+        }
+    }
+
+    private func seerrQuickLookPreview(_ item: SeerrItem) -> some View {
+        ZStack(alignment: .bottom) {
+            if let url = item.backdropURL ?? item.posterURL {
+                AsyncImage(url: url) { ph in
+                    if case .success(let img) = ph { img.resizable().scaledToFill() }
+                    else { DT.Color.backgroundSecondary }
+                }
+            } else { DT.Color.backgroundSecondary }
+            LinearGradient(colors: [.black.opacity(0.9), .clear], startPoint: .bottom, endPoint: .top)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title)
+                    .font(.system(size: 18, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 8) {
+                    if let year = item.year { Text(year).foregroundStyle(.white.opacity(0.7)) }
+                    Text(item.mediaType == .tv ? "Series" : "Movie")
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                .font(.system(size: 13))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
+        }
+        .frame(width: 360, height: 230)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 

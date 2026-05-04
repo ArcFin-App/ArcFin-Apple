@@ -40,4 +40,16 @@ final class StreamystatsRepository {
         promotedWatchlists = (try? await lists) ?? []
         isLoading = false
     }
+
+    func addToWatchlist(itemId: String) async throws {
+        guard let client else { throw StreamystatsError.requestFailed }
+        let watchlistId: String
+        if let first = promotedWatchlists.first?.id {
+            watchlistId = first
+        } else {
+            watchlistId = try await client.getWatchlists().first?.id ?? ""
+        }
+        guard !watchlistId.isEmpty else { throw StreamystatsError.requestFailed }
+        try await client.addToWatchlist(watchlistId: watchlistId, jellyfinItemId: itemId)
+    }
 }

@@ -316,6 +316,7 @@ struct LibraryDetailView: View {
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(AuthManager.self) private var authManager
+    @Environment(StreamystatsRepository.self) private var statsRepo
 
     @State private var items: [MediaItem] = []
     @State private var isLoading = true
@@ -400,6 +401,13 @@ struct LibraryDetailView: View {
 
     @ViewBuilder
     private func quickLookMenu(_ item: MediaItem) -> some View {
+        if statsRepo.isConfigured {
+            Button {
+                Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
+            } label: {
+                Label("Add to Watchlist", systemImage: "bookmark")
+            }
+        }
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear {
             Label(String(year), systemImage: "calendar")
@@ -432,10 +440,10 @@ struct LibraryDetailView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
         }
-        .frame(width: 300, height: 200)
+        .frame(width: 360, height: 230)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
