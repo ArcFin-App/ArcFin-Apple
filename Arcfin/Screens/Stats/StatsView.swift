@@ -1,5 +1,6 @@
 import SwiftUI
 import JellyfinAPI
+import StreamystatsAPI
 
 struct StatsView: View {
     @Environment(MediaRepository.self) private var mediaRepo
