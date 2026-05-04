@@ -32,13 +32,18 @@ struct JellyseerrView: View {
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
-        .animation(DT.Animation.standard, value: requestingItem?.id)
         .task {
             await seerrRepo.loadDiscover()
             await seerrRepo.loadRequests()
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)
+        }
+        .sheet(item: $requestingItem) { item in
+            confirmSheet(item: item)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
         }
     }
 
@@ -64,26 +69,20 @@ struct JellyseerrView: View {
     // MARK: - Main content
 
     private var mainContent: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    header
-                    if !searchText.isEmpty {
-                        searchResultsSection
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                header
+                if !searchText.isEmpty {
+                    searchResultsSection
+                } else {
+                    if seerrRepo.isLoadingDiscover && displayItems.isEmpty {
+                        loadingGrid
                     } else {
-                        if seerrRepo.isLoadingDiscover && displayItems.isEmpty {
-                            loadingGrid
-                        } else {
-                            discoverGrid
-                        }
-                        requestsList
+                        discoverGrid
                     }
-                    Spacer().frame(height: DT.Size.tabBarHeight + 16)
+                    requestsList
                 }
-            }
-
-            if let item = requestingItem {
-                confirmSheet(item: item)
+                Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
         }
     }
@@ -447,72 +446,79 @@ struct JellyseerrView: View {
     // MARK: - Confirm sheet
 
     private func confirmSheet(item: SeerrItem) -> some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(0.7)
-                .background(.ultraThinMaterial.opacity(0.5))
-                .ignoresSafeArea()
-                .onTapGesture { requestingItem = nil }
-
-            VStack(spacing: 0) {
-                Capsule()
-                    .fill(.white.opacity(0.2))
-                    .frame(width: 36, height: 4)
-                    .padding(.top, DT.Spacing.lg)
-                    .padding(.bottom, DT.Spacing.lg)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Request \"\(item.title)\"")
-                        .font(.system(size: 18, weight: .heavy))
-                        .foregroundStyle(DT.Color.textPrimary)
-                    Text("This will send a request to your Jellyseerr server. You'll be notified when it becomes available.")
-                        .font(DT.Font.caption)
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .lineSpacing(4)
+        VStack(spacing: 0) {
+            // Poster + title preview
+            HStack(spacing: 14) {
+                if let url = item.posterURL {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: RoundedRectangle(cornerRadius: 8).fill(DT.Color.backgroundSecondary)
+                        }
+                    }
+                    .frame(width: 56, height: 84)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(item.title)
+                        .font(.system(size: 17, weight: .heavy))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .lineLimit(2)
+                    HStack(spacing: 6) {
+                        Text(item.mediaType == .tv ? "Series" : "Movie")
+                            .font(.system(size: 11))
+                            .foregroundStyle(DT.Color.textSecondary)
+                        if let year = item.year {
+                            Text("· \(year)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, DT.Spacing.lg)
+            .padding(.bottom, DT.Spacing.md)
+
+            Text("Send a request to your Jellyseerr server. You'll be notified when it becomes available.")
+                .font(DT.Font.caption)
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineSpacing(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.lg)
 
-                Button {
-                    let captured = item
-                    requestingItem = nil
-                    Task {
-                        try? await seerrRepo.createRequest(
-                            mediaType: captured.mediaType,
-                            mediaId: captured.id)
-                    }
-                } label: {
-                    Text("Confirm Request")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(LinearGradient(
-                            colors: [DT.Color.accentDeep, DT.Color.accent],
-                            startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                        .shadow(color: DT.Color.accent.opacity(0.35), radius: 16)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, DT.Spacing.pagePad)
-
-                Button { requestingItem = nil } label: {
-                    Text("Cancel")
-                        .font(.system(size: 13))
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.bottom, DT.Spacing.xl)
+            Button {
+                let captured = item
+                requestingItem = nil
+                Task { try? await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id) }
+            } label: {
+                Text("Confirm Request")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(LinearGradient(
+                        colors: [DT.Color.accentDeep, DT.Color.accent],
+                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .shadow(color: DT.Color.accent.opacity(0.35), radius: 16)
             }
-            .background(Color(hex: "0e121c").opacity(0.95))
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sheet, style: .continuous))
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .buttonStyle(.plain)
+            .padding(.horizontal, DT.Spacing.pagePad)
+
+            Button { requestingItem = nil } label: {
+                Text("Cancel")
+                    .font(.system(size: 13))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.lg)
         }
-        .ignoresSafeArea()
     }
 
     // MARK: - Search

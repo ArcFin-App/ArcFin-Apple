@@ -7,15 +7,22 @@ struct StatsView: View {
     @Environment(StreamystatsRepository.self) private var statsRepo
 
     @State private var selectedPeriod: String = "All"
-    @State private var hoveredMonth: Int? = nil
     private let periods = ["7D", "30D", "All"]
+
+    private var totalWatched: Int { mediaRepo.playedMovieCount + mediaRepo.playedEpisodeCount }
+    private var movieFraction: Double {
+        totalWatched > 0 ? Double(mediaRepo.playedMovieCount) / Double(totalWatched) : 0
+    }
+    private var episodeFraction: Double {
+        totalWatched > 0 ? Double(mediaRepo.playedEpisodeCount) / Double(totalWatched) : 0
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 header
-                heroCard
-                statCards
+                heroSection
+                activityRings
                 if !mediaRepo.topShows.isEmpty { showsSection }
                 if !mediaRepo.topMovies.isEmpty { moviesSection }
                 if statsRepo.isConfigured && !statsRepo.recommendations.isEmpty {
@@ -40,7 +47,7 @@ struct StatsView: View {
                     .textCase(.uppercase)
                     .foregroundStyle(DT.Color.accent)
                 Text("Watch History")
-                    .font(.system(size: 24, weight: .heavy))
+                    .font(.system(size: 26, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.8)
             }
@@ -68,232 +75,279 @@ struct StatsView: View {
         .padding(.top, 52)
         .padding(.bottom, DT.Spacing.md)
         .background(LinearGradient(
-            colors: [DT.Color.accent.opacity(0.06), .clear],
+            colors: [DT.Color.accent.opacity(0.07), .clear],
             startPoint: .top, endPoint: .bottom))
     }
 
-    // MARK: - Hero card
+    // MARK: - Hero
 
-    private var heroCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .topTrailing) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Library Stats")
-                        .font(.system(size: 10, weight: .bold))
-                        .tracking(0.8)
-                        .textCase(.uppercase)
+    private var heroSection: some View {
+        ZStack {
+            // Radial glow
+            RadialGradient(
+                colors: [DT.Color.accent.opacity(0.18), .clear],
+                center: .center, startRadius: 0, endRadius: 120)
+            .frame(height: 160)
+
+            VStack(spacing: 4) {
+                Text("TOTAL WATCHED")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1.5)
+                    .foregroundStyle(DT.Color.accent)
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(totalWatched)")
+                        .font(.system(size: 64, weight: .heavy))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .tracking(-3)
+                    Text("items")
+                        .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
-
-                    HStack(alignment: .firstTextBaseline, spacing: 0) {
-                        let totalItems = mediaRepo.playedMovieCount + mediaRepo.playedEpisodeCount
-                        Text("\(totalItems)")
-                            .font(.system(size: 52, weight: .heavy))
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .tracking(-2)
-                        Text(" items")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundStyle(DT.Color.accent)
-                            .tracking(-0.5)
-                    }
-
-                    HStack(spacing: 4) {
-                        Text("\(mediaRepo.playedMovieCount) movies ·")
-                            .foregroundStyle(.white.opacity(0.4))
-                        Text("\(mediaRepo.playedEpisodeCount) episodes")
-                            .foregroundStyle(DT.Color.accent)
-                        Text("watched")
-                            .foregroundStyle(.white.opacity(0.4))
-                    }
-                    .font(.system(size: 12))
+                        .offset(y: -6)
                 }
 
-                RadialGradient(
-                    colors: [DT.Color.accent.opacity(0.12), .clear],
-                    center: .center, startRadius: 0, endRadius: 60)
-                .frame(width: 120, height: 120)
-                .offset(x: 20, y: -20)
-                .allowsHitTesting(false)
+                HStack(spacing: 16) {
+                    statChip("\(mediaRepo.playedMovieCount)", label: "Movies", hex: "8b5cf6")
+                    statChip("\(mediaRepo.playedEpisodeCount)", label: "Episodes", hex: "06b6d4")
+                    statChip("\(mediaRepo.libraries.count)", label: "Libraries", hex: "10b981")
+                }
+                .padding(.top, 4)
             }
-            .padding(20)
-            .background(DT.Color.accent.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(DT.Color.accent.opacity(0.15), lineWidth: 1))
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.sm)
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, DT.Spacing.lg)
     }
 
-    // MARK: - Stat cards
-
-    private var statCards: some View {
-        HStack(spacing: 8) {
-            miniStatCard(
-                label: "Movies",
-                value: "\(mediaRepo.playedMovieCount)",
-                sub: "watched",
-                accent: Color(hex: "8b5cf6").opacity(0.08))
-            miniStatCard(
-                label: "Episodes",
-                value: "\(mediaRepo.playedEpisodeCount)",
-                sub: "watched",
-                accent: DT.Color.accent.opacity(0.08))
-            miniStatCard(
-                label: "Libraries",
-                value: "\(mediaRepo.libraries.count)",
-                sub: "connected",
-                accent: Color(hex: "10b981").opacity(0.08))
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.sm)
-    }
-
-    private func miniStatCard(label: String, value: String, sub: String, accent: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ZStack(alignment: .topTrailing) {
-                Color.clear
-                RadialGradient(colors: [accent, .clear], center: .center, startRadius: 0, endRadius: 30)
-                    .frame(width: 60, height: 60)
-            }
-            Text(label)
-                .font(.system(size: 10, weight: .semibold))
-                .tracking(0.5)
-                .textCase(.uppercase)
-                .foregroundStyle(DT.Color.textSecondary)
+    private func statChip(_ value: String, label: String, hex: String) -> some View {
+        VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 26, weight: .heavy))
-                .foregroundStyle(DT.Color.textPrimary)
-                .tracking(-1)
-            Text(sub)
-                .font(DT.Font.caption2)
+                .font(.system(size: 18, weight: .heavy))
+                .foregroundStyle(Color(hex: hex))
+            Text(label)
+                .font(.system(size: 9, weight: .semibold))
+                .tracking(0.3)
                 .foregroundStyle(DT.Color.textSecondary)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .background(Color(hex: hex).opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: hex).opacity(0.15), lineWidth: 1))
+    }
+
+    // MARK: - Activity rings
+
+    private var activityRings: some View {
+        HStack(spacing: 16) {
+            ringCard(
+                value: mediaRepo.playedMovieCount,
+                label: "Movies",
+                sublabel: "watched",
+                fraction: movieFraction,
+                hex: "8b5cf6"
+            )
+            ringCard(
+                value: mediaRepo.playedEpisodeCount,
+                label: "Episodes",
+                sublabel: "watched",
+                fraction: episodeFraction,
+                hex: "06b6d4"
+            )
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.bottom, DT.Spacing.lg)
+    }
+
+    private func ringCard(value: Int, label: String, sublabel: String, fraction: Double, hex: String) -> some View {
+        let color = Color(hex: hex)
+        return HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .stroke(color.opacity(0.12), lineWidth: 8)
+                Circle()
+                    .trim(from: 0, to: min(fraction, 1))
+                    .stroke(color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeOut(duration: 0.8), value: fraction)
+
+                Text("\(Int(fraction * 100))%")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(color)
+            }
+            .frame(width: 54, height: 54)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("\(value)")
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .tracking(-0.5)
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(color)
+                Text(sublabel)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.07), lineWidth: 1))
+        .padding(16)
+        .background(color.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.12), lineWidth: 1))
     }
 
-    // MARK: - Top shows (real Jellyfin data)
+    // MARK: - Top shows
 
     private var showsSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             HStack {
                 Text("Most Watched Shows")
-                    .font(DT.Font.cardTitle)
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
+                    .tracking(-0.2)
                 Spacer()
             }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, 12)
 
-            ForEach(Array(mediaRepo.topShows.enumerated()), id: \.element.id) { i, show in
-                showRow(rank: i + 1, item: show)
+            VStack(spacing: 8) {
+                ForEach(Array(mediaRepo.topShows.enumerated()), id: \.element.id) { i, show in
+                    showRow(rank: i + 1, item: show)
+                }
             }
+            .padding(.horizontal, DT.Spacing.pagePad)
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.sm)
+        .padding(.bottom, DT.Spacing.lg)
     }
 
     private func showRow(rank: Int, item: MediaItem) -> some View {
-        HStack(spacing: 10) {
-            Text("#\(rank)")
-                .font(.system(size: 11, weight: .heavy))
-                .foregroundStyle(DT.Color.accent)
-                .frame(width: 24)
+        HStack(spacing: 12) {
+            // Rank
+            ZStack {
+                Text("\(rank)")
+                    .font(.system(size: 32, weight: .heavy))
+                    .foregroundStyle(.white.opacity(0.06))
+                Text("\(rank)")
+                    .font(.system(size: 12, weight: .heavy))
+                    .foregroundStyle(rank == 1 ? DT.Color.accent : DT.Color.textSecondary)
+            }
+            .frame(width: 32)
 
             if let url = mediaRepo.imageURL(for: item) {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let img):
-                        img.resizable().scaledToFill()
-                    default:
-                        RoundedRectangle(cornerRadius: 4).fill(DT.Color.backgroundTertiary)
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: RoundedRectangle(cornerRadius: 6).fill(DT.Color.backgroundTertiary)
                     }
                 }
-                .frame(width: 30, height: 42)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .frame(width: 36, height: 50)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 if let plays = item.userData?.playCount, plays > 0 {
                     Text("\(plays) episode\(plays == 1 ? "" : "s") played")
-                        .font(DT.Font.caption2)
+                        .font(.system(size: 11))
                         .foregroundStyle(DT.Color.textSecondary)
                 } else if let year = item.productionYear {
-                    Text("\(year)")
-                        .font(DT.Font.caption2)
+                    Text(String(year))
+                        .font(.system(size: 11))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
             }
 
             Spacer()
+
+            if rank == 1 {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(DT.Color.accent)
+            }
         }
-        .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(.white.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .background(rank == 1 ? DT.Color.accent.opacity(0.06) : .white.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(
+            rank == 1 ? DT.Color.accent.opacity(0.2) : .white.opacity(0.05), lineWidth: 1))
     }
 
-    // MARK: - Top movies (real Jellyfin data)
+    // MARK: - Top movies
 
     private var moviesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Most Watched Movies")
-                .font(DT.Font.cardTitle)
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
+                .tracking(-0.2)
                 .padding(.horizontal, DT.Spacing.pagePad)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(mediaRepo.topMovies) { movie in
-                        VStack(alignment: .leading, spacing: 8) {
-                            if let url = mediaRepo.imageURL(for: movie) {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .success(let img): img.resizable().scaledToFill()
-                                    default: RoundedRectangle(cornerRadius: 6).fill(DT.Color.backgroundTertiary)
-                                    }
-                                }
-                                .frame(width: 40, height: 56)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.06), lineWidth: 1))
-                            }
-                            Text(movie.name)
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(DT.Color.textPrimary)
-                                .lineLimit(2)
-                                .lineSpacing(2)
-                            if let rating = movie.communityRating, rating > 0 {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 9))
-                                        .foregroundStyle(DT.Color.accent)
-                                    Text(rating, format: .number.precision(.fractionLength(1)))
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(DT.Color.accent)
-                                }
-                            }
-                        }
-                        .padding(12)
-                        .frame(width: 130, alignment: .leading)
-                        .background(.white.opacity(0.03))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.07), lineWidth: 1))
+                HStack(spacing: 10) {
+                    ForEach(Array(mediaRepo.topMovies.enumerated()), id: \.element.id) { i, movie in
+                        movieCard(rank: i + 1, movie: movie)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
         }
-        .padding(.bottom, DT.Spacing.md)
+        .padding(.bottom, DT.Spacing.lg)
+    }
+
+    private func movieCard(rank: Int, movie: MediaItem) -> some View {
+        ZStack(alignment: .bottom) {
+            if let url = mediaRepo.imageURL(for: movie) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: DT.Color.backgroundSecondary
+                    }
+                }
+                .clipped()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+
+            LinearGradient(colors: [.black.opacity(0.9), .clear], startPoint: .bottom, endPoint: .top)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text("#\(rank)")
+                        .font(.system(size: 9, weight: .heavy))
+                        .foregroundStyle(DT.Color.accent)
+                    Spacer()
+                    if let rating = movie.communityRating, rating > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "star.fill").font(.system(size: 8))
+                            Text(String(format: "%.1f", rating)).font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundStyle(DT.Color.accent)
+                    }
+                }
+                Text(movie.name)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                if let year = movie.productionYear {
+                    Text(String(year))
+                        .font(.system(size: 9))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            .padding(10)
+        }
+        .frame(width: 120, height: 175)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.07), lineWidth: 1))
+        .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
     }
 
     // MARK: - Streamystats recommendations
 
     private var recommendationsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Streamystats")
@@ -302,7 +356,7 @@ struct StatsView: View {
                         .textCase(.uppercase)
                         .foregroundStyle(DT.Color.accent)
                     Text("Recommended For You")
-                        .font(DT.Font.cardTitle)
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(DT.Color.textPrimary)
                 }
                 Spacer()
@@ -310,7 +364,7 @@ struct StatsView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     ForEach(statsRepo.recommendations) { rec in
                         if let item = rec.item {
                             VStack(alignment: .leading, spacing: 6) {
@@ -331,7 +385,7 @@ struct StatsView: View {
                                     .frame(width: 90, alignment: .leading)
 
                                 if let year = item.productionYear {
-                                    Text("\(year)")
+                                    Text(String(year))
                                         .font(.system(size: 9))
                                         .foregroundStyle(DT.Color.textSecondary)
                                 }
