@@ -326,7 +326,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Cast").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
                     ForEach(d.cast) { person in
                         VStack(spacing: 6) {
                             if let tag = person.primaryImageTag,
@@ -359,7 +359,7 @@ struct MediaDetailView: View {
                                     .lineLimit(1)
                             }
                         }
-                        .frame(width: 70)
+                        .frame(width: 70, alignment: .top)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
