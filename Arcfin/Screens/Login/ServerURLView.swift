@@ -121,7 +121,7 @@ struct ServerURLView: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                 }
 
-                // Connect button
+                // Connect button — Liquid Glass
                 Button { Task { await handleConnect() } } label: {
                     ZStack {
                         if connecting {
@@ -135,17 +135,11 @@ struct ServerURLView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(
-                        connecting
-                            ? AnyShapeStyle(DT.Color.accent.opacity(0.3))
-                            : AnyShapeStyle(LinearGradient(
-                                colors: [DT.Color.accentDeep, DT.Color.accent],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            ))
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                    .shadow(color: connecting ? .clear : DT.Color.accent.opacity(0.35), radius: 16)
                 }
+                .glassEffect(
+                    connecting ? .regular : .regular.tint(DT.Color.accent).interactive(),
+                    in: .rect(cornerRadius: DT.Radius.lg)
+                )
                 .disabled(connecting)
                 .padding(.top, DT.Spacing.lg)
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -155,7 +149,7 @@ struct ServerURLView: View {
                     Button { showSetupGuide = true } label: {
                         Text("Setup guide").font(DT.Font.caption).foregroundStyle(DT.Color.accent).fontWeight(.medium)
                     }
-                    .buttonStyle(.plain)
+                    .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .capsule)
                 }
                 .padding(.top, DT.Spacing.md)
             }

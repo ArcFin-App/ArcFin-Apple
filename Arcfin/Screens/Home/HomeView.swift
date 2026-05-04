@@ -95,7 +95,15 @@ struct HomeView: View {
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
 
-    // UIKit safe area read — reliable even inside ignoresSafeArea parents
+    // iPhone = portrait poster hero; iPad/Mac/tvOS = 16:9 backdrop hero
+    private var usePortraitHero: Bool {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .phone
+        #else
+        return false
+        #endif
+    }
+
     private var statusBarHeight: CGFloat {
         #if os(iOS)
         UIApplication.shared.connectedScenes
@@ -108,15 +116,17 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let topInset  = statusBarHeight
-            let screenW   = proxy.size.width
-            let imageH    = screenW * 9 / 16      // natural landscape 16:9
-            let heroH     = topInset + imageH + 220 // status bar + image + title/buttons
+            let top      = statusBarHeight
+            let screenW  = proxy.size.width
+            // Portrait (iPhone): image ≈ 2:3, content overlaid
+            // Landscape (iPad/Mac/tv): image 16:9 + content below
+            let imageH   = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
+            let heroH    = usePortraitHero ? top + imageH   : top + imageH + 220
 
             ZStack(alignment: .bottom) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        heroBanner(topInset: topInset, imageH: imageH, screenW: screenW)
+                        heroBanner(top: top, imageH: imageH, screenW: screenW)
                             .frame(height: heroH)
 
                         VStack(spacing: 0) {
@@ -132,7 +142,6 @@ struct HomeView: View {
                                     }
                                 }
                             }
-
                             ShelfRow(title: "Recently Added", badge: "NEW", onSeeAll: {}) {
                                 recentlyAddedContent
                             }
@@ -145,10 +154,7 @@ struct HomeView: View {
             }
             .background(DT.Color.backgroundPrimary)
             .ignoresSafeArea()
-            // Nav bar floats on top — padded by UIKit-measured status bar height
-            .overlay(alignment: .top) {
-                navBar(topInset: topInset)
-            }
+            .overlay(alignment: .top) { navBar(top: top) }
         }
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }
@@ -160,9 +166,9 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Nav bar
+    // MARK: - Nav bar (Liquid Glass avatar + search)
 
-    private func navBar(topInset: CGFloat) -> some View {
+    private func navBar(top: CGFloat) -> some View {
         HStack {
             HStack(spacing: 6) {
                 ArcfinIconView(size: 20)
@@ -172,95 +178,97 @@ struct HomeView: View {
                     .tracking(-0.5)
             }
             Spacer()
-            HStack(spacing: 16) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 17))
-                    .foregroundStyle(.white.opacity(0.85))
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(
-                            colors: [Color(hex: "1e3a5f"), Color(hex: "0d2040")],
-                            startPoint: .top, endPoint: .bottom
-                        ))
-                        .overlay(Circle().stroke(DT.Color.accent.opacity(0.4), lineWidth: 1.5))
-                        .frame(width: 30, height: 30)
-                    Text(authManager.state.displayInitials)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(DT.Color.accent)
+            HStack(spacing: 12) {
+                Button {} label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16))
+                        .foregroundStyle(.white)
+                        .frame(width: 34, height: 34)
                 }
+                .glassEffect(in: .circle)
+
+                Text(authManager.state.displayInitials)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(DT.Color.accent)
+                    .frame(width: 34, height: 34)
+                    .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
-        // Sit content below status bar; background gradient bleeds up behind it
-        .padding(.top, topInset + 8)
+        .padding(.top, top + 6)
         .padding(.bottom, 12)
         .background(
             LinearGradient(
-                colors: [.black.opacity(0.65), .clear],
-                startPoint: .top,
-                endPoint: .bottom
+                colors: [.black.opacity(0.6), .clear],
+                startPoint: .top, endPoint: .bottom
             )
-            // Extend gradient upward into status bar area
             .ignoresSafeArea(edges: .top)
         )
     }
 
-    // MARK: - Hero banner
+    // MARK: - Hero banner (adaptive)
 
-    private func heroBanner(topInset: CGFloat, imageH: CGFloat, screenW: CGFloat) -> some View {
+    private func heroBanner(top: CGFloat, imageH: CGFloat, screenW: CGFloat) -> some View {
         ZStack(alignment: .bottom) {
-            // ① Backdrop at top — pinned, 16:9 natural ratio — no cropping
+            // Background image — portrait for iPhone, landscape for others
             VStack(spacing: 0) {
-                // Transparent spacer pushes image below status bar
-                Color.clear.frame(height: topInset)
+                Color.clear.frame(height: top)  // push image below status bar
 
-                heroBackground
-                    .frame(width: screenW, height: imageH)
-                    .clipped()
-                    // Fade bottom edge of image into background
-                    .overlay(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .clear, location: 0.45),
-                                .init(color: DT.Color.backgroundPrimary.opacity(0.6), location: 0.8),
-                                .init(color: DT.Color.backgroundPrimary, location: 1),
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                heroBackground(imageH: imageH, screenW: screenW)
+                    .overlay(heroImageFade)
                     .animation(DT.Animation.slow, value: heroIndex)
 
-                Spacer(minLength: 0)
+                if !usePortraitHero {
+                    Spacer(minLength: 0)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            // ② Side vignette
+            // Side vignette
             HStack(spacing: 0) {
                 LinearGradient(
-                    colors: [DT.Color.backgroundPrimary.opacity(0.35), .clear],
+                    colors: [DT.Color.backgroundPrimary.opacity(0.3), .clear],
                     startPoint: .leading, endPoint: .trailing
-                )
-                .frame(width: 48)
+                ).frame(width: 48)
                 Spacer()
                 LinearGradient(
-                    colors: [.clear, DT.Color.backgroundPrimary.opacity(0.35)],
+                    colors: [.clear, DT.Color.backgroundPrimary.opacity(0.3)],
                     startPoint: .leading, endPoint: .trailing
-                )
-                .frame(width: 48)
+                ).frame(width: 48)
             }
 
-            // ③ Title / logo + buttons + dots
             heroContent
-                .padding(.bottom, 28)
+                .padding(.bottom, usePortraitHero ? 32 : 24)
         }
         .background(DT.Color.backgroundPrimary)
     }
 
+    // Fade gradient applied on top of the image
+    private var heroImageFade: some View {
+        LinearGradient(
+            stops: usePortraitHero
+            ? [
+                .init(color: .clear, location: 0.3),
+                .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.75),
+                .init(color: DT.Color.backgroundPrimary, location: 1),
+            ]
+            : [
+                .init(color: .clear, location: 0.4),
+                .init(color: DT.Color.backgroundPrimary.opacity(0.55), location: 0.78),
+                .init(color: DT.Color.backgroundPrimary, location: 1),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
     @ViewBuilder
-    private var heroBackground: some View {
+    private func heroBackground(imageH: CGFloat, screenW: CGFloat) -> some View {
+        let imageType: JellyfinImageType = usePortraitHero ? .primary : .backdrop
+        let fillW = usePortraitHero ? 600 : 900
+
         if let item = heroItems[safe: heroIndex],
-           let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
+           let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let img):
@@ -269,8 +277,11 @@ struct HomeView: View {
                     heroGradient(for: heroIndex)
                 }
             }
+            .frame(width: screenW, height: imageH)
+            .clipped()
         } else {
             heroGradient(for: heroIndex)
+                .frame(width: screenW, height: imageH)
         }
     }
 
@@ -281,16 +292,18 @@ struct HomeView: View {
             [Color(hex: "0a0a1c"), Color(hex: "060610")],
         ]
         let c = palettes[index % palettes.count]
-        return LinearGradient(colors: c + [DT.Color.backgroundPrimary],
-                              startPoint: .topLeading, endPoint: .bottomTrailing)
+        return LinearGradient(
+            colors: c + [DT.Color.backgroundPrimary],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
     }
 
-    // MARK: - Hero content
+    // MARK: - Hero content (logo / title + buttons + dots)
 
     private var heroContent: some View {
         VStack(spacing: 0) {
             if let item = heroItems[safe: heroIndex] {
-                // Logo or title
+                // Logo image or fallback title text
                 AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable()
@@ -318,35 +331,29 @@ struct HomeView: View {
                     .animation(nil, value: heroIndex)
             }
 
-            // Action buttons
-            HStack(spacing: 12) {
-                Button {} label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "play.fill").font(.system(size: 12))
-                        Text("Play").font(.system(size: 14, weight: .bold))
+            // Action buttons — Liquid Glass
+            GlassEffectContainer(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button {} label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "play.fill").font(.system(size: 12))
+                            Text("Play").font(.system(size: 14, weight: .bold))
+                        }
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 11)
                     }
-                    .foregroundStyle(.black)
-                    .frame(minWidth: 100)
-                    .padding(.vertical, 11)
-                    .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .buttonStyle(.plain)
+                    .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))
 
-                Button {} label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "info.circle").font(.system(size: 12))
-                        Text("More Info").font(.system(size: 13, weight: .semibold))
+                    Button {} label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "info.circle").font(.system(size: 12))
+                            Text("More Info").font(.system(size: 13, weight: .semibold))
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 11)
                     }
-                    .foregroundStyle(.white.opacity(0.9))
-                    .frame(minWidth: 100)
-                    .padding(.vertical, 11)
-                    .background(.white.opacity(0.12))
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(.white.opacity(0.2), lineWidth: 1))
+                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
                 }
-                .buttonStyle(.plain)
             }
             .padding(.top, 16)
 
@@ -374,7 +381,7 @@ struct HomeView: View {
         return parts.joined(separator: " · ")
     }
 
-    // MARK: - Recently Added content
+    // MARK: - Recently Added
 
     @ViewBuilder
     private var recentlyAddedContent: some View {
@@ -415,21 +422,19 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Tab bar
+// MARK: - Tab bar (Liquid Glass)
 
 struct ArcfinTabBar: View {
     @Binding var selectedTab: AppTab
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(AppTab.allCases, id: \.self) { tab in tabItem(tab) }
+            ForEach(AppTab.allCases, id: \.self) { tabItem($0) }
         }
         .padding(.top, 10)
         .padding(.bottom, 4)
         .frame(height: DT.Size.tabBarHeight)
-        .background(.ultraThinMaterial)
-        .background(Color(hex: "0a0a14").opacity(0.72))
-        .overlay(Rectangle().fill(.white.opacity(0.07)).frame(height: 1), alignment: .top)
+        .glassEffect(in: .rect(cornerRadius: 0))
     }
 
     private func tabItem(_ tab: AppTab) -> some View {
@@ -464,13 +469,9 @@ private extension AuthState {
     }
 }
 
-// MARK: - String helpers
-
 private extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }
-
-// MARK: - Safe subscript
 
 private extension Array {
     subscript(safe index: Int) -> Element? {
