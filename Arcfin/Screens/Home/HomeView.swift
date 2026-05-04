@@ -60,10 +60,21 @@ struct HomeView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var heroIndex: Int = 0
+    @State private var showSettings = false
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
     private var usePortraitHero: Bool { sizeClass == .compact }
+
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12:  return "Good morning"
+        case 12..<17: return "Good afternoon"
+        case 17..<22: return "Good evening"
+        default:      return "Good night"
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -100,35 +111,33 @@ struct HomeView: View {
                 .background(DT.Color.backgroundPrimary)
                 // Extend scroll content behind the transparent nav bar
                 .ignoresSafeArea(edges: .top)
+                .navigationDestination(isPresented: $showSettings) {
+                    SettingsView()
+                }
             }
             .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    HStack(spacing: 6) {
-                        ArcfinIconView(size: 20)
-                        Text("arcfin")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .tracking(-0.5)
-                    }
+                    Text(greeting)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {} label: {
                         Image(systemName: "bell")
                             .font(.system(size: 16))
                             .foregroundStyle(.white)
-                            .frame(width: 34, height: 34)
                     }
-                    .glassEffect(.regular.interactive(), in: .circle)
 
-                    Text(authManager.state.displayInitials)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 34, height: 34)
-                        .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
+                    Button { showSettings = true } label: {
+                        Text(authManager.state.displayInitials)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 34, height: 34)
+                            .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
+                    }
                 }
             }
-            // Transparent nav bar — hero image shows through
             .toolbarBackground(.hidden, for: .navigationBar)
         }
         .task {
