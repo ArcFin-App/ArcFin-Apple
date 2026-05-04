@@ -52,7 +52,7 @@ struct LibraryView: View {
                 LibraryDetailView(library: library)
             }
             .onAppear { downloads = listDownloads() }
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(tvOS)
             .sheet(isPresented: $showDocPicker) {
                 DocumentPickerView { url in
                     pickedURL = url
@@ -482,7 +482,7 @@ struct LibraryDetailView: View {
 
 // MARK: - Document picker (UIKit bridge)
 
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(tvOS)
 private struct DocumentPickerView: UIViewControllerRepresentable {
     var onPick: (URL) -> Void
 
