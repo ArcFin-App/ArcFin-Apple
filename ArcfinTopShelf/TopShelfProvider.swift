@@ -12,11 +12,10 @@ final class TopShelfProvider: TVTopShelfContentProvider {
             return
         }
 
-        let shelfItems: [TVTopShelfCarouselItem] = stored.map { item in
-            let si = TVTopShelfCarouselItem(identifier: item.id)
+        let shelfItems: [TVTopShelfSectionedItem] = stored.map { item in
+            let si = TVTopShelfSectionedItem(identifier: item.id)
             si.title = item.title
             si.summary = item.subtitle
-            si.playbackProgress = item.progress
 
             if let imageURL = item.imageURL {
                 si.setImageURL(imageURL, for: .screenScale1x)
