@@ -44,7 +44,7 @@ struct LibraryView: View {
             }
             .background(DT.Color.backgroundPrimary)
             .navigationTitle("Library")
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
@@ -303,7 +303,7 @@ struct LocalPlayerView: View {
             .ignoresSafeArea()
             .background(Color.black)
             .navigationTitle(url.deletingPathExtension().lastPathComponent)
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
     }
@@ -359,7 +359,7 @@ struct LibraryDetailView: View {
         .navigationDestination(for: MediaItem.self) { item in
             MediaDetailView(item: item)
         }
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
