@@ -52,7 +52,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: "Descending"),
             .init(name: "Filters", value: "IsResumable"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,SeriesName"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag"),
             .init(name: "IncludeItemTypes", value: "Movie,Episode"),
         ]
         var req = URLRequest(url: comps.url!)
@@ -98,6 +98,70 @@ public struct JellyfinMediaClient: Sendable {
         }
     }
 
+    /// Fetch the Jellyfin server UUID (needed for Streamystats jellyfinServerId param).
+    public func getServerID(credential: ServerCredential) async throws -> String {
+        let url = credential.baseURL.appendingPathComponent("System/Info/Public")
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 10
+        let (data, _) = try await URLSession.shared.data(for: req)
+        struct Info: Decodable {
+            let id: String
+            enum CodingKeys: String, CodingKey { case id = "Id" }
+        }
+        return try JSONDecoder().decode(Info.self, from: data).id
+    }
+
+    public func getTopPlayed(
+        credential: ServerCredential,
+        authHeader: String,
+        itemType: String,
+        limit: Int = 6
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "SortBy", value: "PlayCount"),
+            .init(name: "SortOrder", value: "Descending"),
+            .init(name: "Filters", value: "IsPlayed"),
+            .init(name: "IncludeItemTypes", value: itemType),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let page = try JSONDecoder().decode(ItemsPage.self, from: data)
+        return page.items.map { $0.toMediaItem() }
+    }
+
+    public func getPlayedCount(
+        credential: ServerCredential,
+        authHeader: String,
+        itemType: String
+    ) async throws -> Int {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Filters", value: "IsPlayed"),
+            .init(name: "IncludeItemTypes", value: itemType),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "1"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        struct CountPage: Decodable {
+            let totalRecordCount: Int
+            enum CodingKeys: String, CodingKey { case totalRecordCount = "TotalRecordCount" }
+        }
+        return (try? JSONDecoder().decode(CountPage.self, from: data).totalRecordCount) ?? 0
+    }
+
     public func search(credential: ServerCredential, authHeader: String, query: String, limit: Int = 20) async throws -> [MediaItem] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
@@ -138,6 +202,8 @@ private struct JellyfinItemResponse: Decodable {
     let seriesName: String?
     let indexNumber: Int?
     let parentIndexNumber: Int?
+    let seriesId: String?
+    let seriesPrimaryImageTag: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -152,6 +218,8 @@ private struct JellyfinItemResponse: Decodable {
         case seriesName = "SeriesName"
         case indexNumber = "IndexNumber"
         case parentIndexNumber = "ParentIndexNumber"
+        case seriesId = "SeriesId"
+        case seriesPrimaryImageTag = "SeriesPrimaryImageTag"
     }
 
     func toMediaItem() -> MediaItem {
@@ -175,7 +243,9 @@ private struct JellyfinItemResponse: Decodable {
             communityRating: communityRating,
             seriesName: seriesName,
             indexNumber: indexNumber,
-            parentIndexNumber: parentIndexNumber
+            parentIndexNumber: parentIndexNumber,
+            seriesId: seriesId,
+            seriesPrimaryImageTag: seriesPrimaryImageTag
         )
     }
 }

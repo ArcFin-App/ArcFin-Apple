@@ -18,9 +18,9 @@ struct SettingsView: View {
     @AppStorage("notifyNewContent")   private var notifyNewContent  = true
     @AppStorage("notifyDownload")     private var notifyDownload    = true
 
-    @AppStorage("seerrDiscoverEnabled")  private var seerrDiscoverEnabled  = true
-    @AppStorage("seerrURL")              private var seerrURL               = ""
-    @AppStorage("streamystatsURL")       private var streamystatsURL        = ""
+    @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
+    @AppStorage("seerrURL")            private var seerrURL             = ""
+    @AppStorage("streamystatsURL")     private var streamystatsURL      = ""
 
     var body: some View {
         List {
@@ -291,8 +291,9 @@ enum VideoQuality: String, CaseIterable, Identifiable {
 // MARK: - Jellyseerr plugin view
 
 struct JellyseerrPluginView: View {
-    @AppStorage("seerrURL")    private var seerrURL    = ""
-    @AppStorage("seerrAPIKey") private var seerrAPIKey = ""
+    @AppStorage("seerrURL")      private var seerrURL      = ""
+    @AppStorage("seerrUsername") private var seerrUsername = ""
+    @AppStorage("seerrPassword") private var seerrPassword = ""
 
     @State private var testResult: String? = nil
     @State private var isTesting = false
@@ -313,16 +314,19 @@ struct JellyseerrPluginView: View {
             }
 
             Section {
-                SecureField("API Key", text: $seerrAPIKey)
+                TextField("Username", text: $seerrUsername)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                SecureField("Password", text: $seerrPassword)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
             } header: {
-                Label("API Key", systemImage: "key.fill")
+                Label("Credentials", systemImage: "person.fill")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Find your API key in Jellyseerr → Settings → General → API Key")
+                Text("Your Jellyseerr local account username and password.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -333,8 +337,7 @@ struct JellyseerrPluginView: View {
                 } label: {
                     HStack {
                         if isTesting {
-                            ProgressView()
-                                .scaleEffect(0.8)
+                            ProgressView().scaleEffect(0.8)
                         } else {
                             Image(systemName: "network")
                         }
@@ -342,7 +345,7 @@ struct JellyseerrPluginView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .disabled(seerrURL.isEmpty || seerrAPIKey.isEmpty || isTesting)
+                .disabled(seerrURL.isEmpty || seerrUsername.isEmpty || seerrPassword.isEmpty || isTesting)
 
                 if let result = testResult {
                     Text(result)
@@ -361,22 +364,22 @@ struct JellyseerrPluginView: View {
 
     private func testConnection() {
         guard let url = URL(string: seerrURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            testResult = "✗ Invalid URL"
-            return
+            testResult = "✗ Invalid URL"; return
         }
-        isTesting = true
-        testResult = nil
-        let apiKey = seerrAPIKey
+        isTesting = true; testResult = nil
+        let (user, pass) = (seerrUsername, seerrPassword)
         Task {
-            var req = URLRequest(url: url.appendingPathComponent("api/v1/settings/public"))
-            req.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+            var req = URLRequest(url: url.appendingPathComponent("api/v1/auth/local"))
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try? JSONSerialization.data(withJSONObject: ["username": user, "password": pass])
             req.timeoutInterval = 10
             do {
                 let (_, resp) = try await URLSession.shared.data(for: req)
                 if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
                     testResult = "✓ Connected successfully"
                 } else {
-                    testResult = "✗ Server returned an error"
+                    testResult = "✗ Invalid credentials or server error"
                 }
             } catch {
                 testResult = "✗ \(error.localizedDescription)"
@@ -389,9 +392,7 @@ struct JellyseerrPluginView: View {
 // MARK: - Streamystats plugin view
 
 struct StreamystatsPluginView: View {
-    @AppStorage("streamystatsURL")    private var streamystatsURL    = ""
-    @AppStorage("streamystatsAPIKey") private var streamystatsAPIKey = ""
-
+    @AppStorage("streamystatsURL") private var streamystatsURL = ""
     @State private var testResult: String? = nil
     @State private var isTesting = false
 
@@ -409,20 +410,9 @@ struct StreamystatsPluginView: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Enter your Streamystats server URL")
+                Text("Streamystats authenticates using your existing Jellyfin session — no separate credentials needed.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            Section {
-                SecureField("API Key", text: $streamystatsAPIKey)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-            } header: {
-                Label("API Key", systemImage: "key.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
             }
 
             Section {
@@ -431,8 +421,7 @@ struct StreamystatsPluginView: View {
                 } label: {
                     HStack {
                         if isTesting {
-                            ProgressView()
-                                .scaleEffect(0.8)
+                            ProgressView().scaleEffect(0.8)
                         } else {
                             Image(systemName: "network")
                         }
@@ -459,20 +448,16 @@ struct StreamystatsPluginView: View {
 
     private func testConnection() {
         guard let url = URL(string: streamystatsURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            testResult = "✗ Invalid URL"
-            return
+            testResult = "✗ Invalid URL"; return
         }
-        isTesting = true
-        testResult = nil
-        let apiKey = streamystatsAPIKey
+        isTesting = true; testResult = nil
         Task {
-            var req = URLRequest(url: url.appendingPathComponent("api/health"))
-            if !apiKey.isEmpty { req.setValue(apiKey, forHTTPHeaderField: "X-Api-Key") }
-            req.timeoutInterval = 10
+            // Public health endpoint — no auth needed
+            let req = URLRequest(url: url.appendingPathComponent("api/health"))
             do {
                 let (_, resp) = try await URLSession.shared.data(for: req)
                 if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                    testResult = "✓ Connected successfully"
+                    testResult = "✓ Server reachable"
                 } else {
                     testResult = "✗ Server returned an error"
                 }

@@ -37,6 +37,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
     public var seriesName: String?
     public var indexNumber: Int?
     public var parentIndexNumber: Int?
+    public var seriesId: String?
+    public var seriesPrimaryImageTag: String?
 
     public init(
         id: String,
@@ -50,7 +52,9 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
         communityRating: Double? = nil,
         seriesName: String? = nil,
         indexNumber: Int? = nil,
-        parentIndexNumber: Int? = nil
+        parentIndexNumber: Int? = nil,
+        seriesId: String? = nil,
+        seriesPrimaryImageTag: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -64,6 +68,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
         self.seriesName = seriesName
         self.indexNumber = indexNumber
         self.parentIndexNumber = parentIndexNumber
+        self.seriesId = seriesId
+        self.seriesPrimaryImageTag = seriesPrimaryImageTag
     }
 }
 

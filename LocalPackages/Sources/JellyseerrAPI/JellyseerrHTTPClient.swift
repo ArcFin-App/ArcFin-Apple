@@ -1,17 +1,48 @@
 import Foundation
 
-// MARK: - Jellyseerr HTTP client (API-key auth)
+// MARK: - Jellyseerr HTTP client (cookie-based local auth)
 
-public struct JellyseerrHTTPClient: Sendable {
+public actor JellyseerrHTTPClient {
     private let baseURL: URL
-    private let apiKey: String
+    private let username: String
+    private let password: String
 
-    public init(baseURL: URL, apiKey: String) {
+    private var isAuthenticated = false
+    private let session: URLSession
+
+    public init(baseURL: URL, username: String, password: String) {
         self.baseURL = baseURL
-        self.apiKey = apiKey
+        self.username = username
+        self.password = password
+        let config = URLSessionConfiguration.default
+        config.httpCookieAcceptPolicy = .always
+        config.httpShouldSetCookies = true
+        self.session = URLSession(configuration: config)
     }
 
-    // MARK: Discover
+    // MARK: - Auth
+
+    public func login() async throws {
+        let url = baseURL.appendingPathComponent("api/v1/auth/local")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body = ["username": username, "password": password]
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        req.timeoutInterval = 15
+        let (_, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw JellyseerrError.authFailed
+        }
+        isAuthenticated = true
+    }
+
+    private func ensureAuthenticated() async throws {
+        guard !isAuthenticated else { return }
+        try await login()
+    }
+
+    // MARK: - Discover
 
     public func trending() async throws -> [SeerrItem] {
         try await fetchPage("api/v1/trending", query: [])
@@ -25,17 +56,18 @@ public struct JellyseerrHTTPClient: Sendable {
         try await fetchPage("api/v1/discover/tv", query: [("page", "\(page)")])
     }
 
-    // MARK: Search
+    // MARK: - Search
 
     public func search(query: String, page: Int = 1) async throws -> [SeerrItem] {
         try await fetchPage("api/v1/search", query: [("query", query), ("page", "\(page)")])
     }
 
-    // MARK: Requests
+    // MARK: - Requests
 
     public func getRequests(filter: String = "all", skip: Int = 0, take: Int = 40) async throws -> [SeerrRequestItem] {
+        try await ensureAuthenticated()
         var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/request"),
-                                   resolvingAgainstBaseURL: false)!
+                                  resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             URLQueryItem(name: "filter", value: filter),
             URLQueryItem(name: "skip", value: "\(skip)"),
@@ -47,26 +79,27 @@ public struct JellyseerrHTTPClient: Sendable {
     }
 
     public func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
+        try await ensureAuthenticated()
         let url = baseURL.appendingPathComponent("api/v1/request")
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
         var body: [String: Any] = ["mediaType": mediaType.rawValue, "mediaId": mediaId]
         if !seasons.isEmpty { body["seasons"] = seasons }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
-        let (_, response) = try await URLSession.shared.data(for: req)
+        let (_, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
     }
 
-    // MARK: Private helpers
+    // MARK: - Private helpers
 
     private func fetchPage(_ path: String, query: [(String, String)]) async throws -> [SeerrItem] {
+        try await ensureAuthenticated()
         var comps = URLComponents(url: baseURL.appendingPathComponent(path),
-                                   resolvingAgainstBaseURL: false)!
+                                  resolvingAgainstBaseURL: false)!
         comps.queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
         let data = try await fetch(comps.url!)
         struct Page: Decodable { let results: [SeerrItemResponse] }
@@ -75,13 +108,35 @@ public struct JellyseerrHTTPClient: Sendable {
 
     private func fetch(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url)
-        req.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
         req.timeoutInterval = 15
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await session.data(for: req)
+        if let http = response as? HTTPURLResponse, http.statusCode == 401 {
+            // Session expired — re-authenticate once then retry
+            isAuthenticated = false
+            try await login()
+            let (retryData, retryResp) = try await session.data(for: req)
+            guard let retryHttp = retryResp as? HTTPURLResponse,
+                  (200...299).contains(retryHttp.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
+            return retryData
+        }
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
         return data
+    }
+}
+
+// MARK: - Errors
+
+public enum JellyseerrError: Error, LocalizedError {
+    case authFailed
+
+    public var errorDescription: String? {
+        switch self {
+        case .authFailed: "Invalid Jellyseerr username or password."
+        }
     }
 }
 

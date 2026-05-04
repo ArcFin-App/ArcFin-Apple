@@ -10,6 +10,11 @@ final class MediaRepository {
     var continueWatching: [MediaItem] = []
     var recentlyAdded: [MediaItem] = []
     var libraries: [JellyfinLibrary] = []
+    var topMovies: [MediaItem] = []
+    var topShows: [MediaItem] = []
+    var playedMovieCount: Int = 0
+    var playedEpisodeCount: Int = 0
+    var serverID: String = ""
     var isLoading: Bool = false
 
     private(set) var baseURL: URL?
@@ -24,12 +29,25 @@ final class MediaRepository {
         accessToken = credential.accessToken
         isLoading = true
         let header = authClient.authHeader(token: credential.accessToken)
-        async let cw   = client.getContinueWatching(credential: credential, authHeader: header)
-        async let la   = client.getLatestMedia(credential: credential, authHeader: header)
-        async let libs = client.getLibraries(credential: credential, authHeader: header)
-        continueWatching = (try? await cw) ?? []
-        recentlyAdded    = (try? await la) ?? []
-        libraries        = (try? await libs) ?? []
+
+        async let cw    = client.getContinueWatching(credential: credential, authHeader: header)
+        async let la    = client.getLatestMedia(credential: credential, authHeader: header)
+        async let libs  = client.getLibraries(credential: credential, authHeader: header)
+        async let tMov  = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Movie")
+        async let tShow = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Series")
+        async let cMov  = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Movie")
+        async let cEp   = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Episode")
+        async let srvID = client.getServerID(credential: credential)
+
+        continueWatching   = (try? await cw)    ?? []
+        recentlyAdded      = (try? await la)    ?? []
+        libraries          = (try? await libs)  ?? []
+        topMovies          = (try? await tMov)  ?? []
+        topShows           = (try? await tShow) ?? []
+        playedMovieCount   = (try? await cMov)  ?? 0
+        playedEpisodeCount = (try? await cEp)   ?? 0
+        serverID           = (try? await srvID) ?? ""
+
         isLoading = false
         loaded = true
     }
@@ -46,13 +64,22 @@ final class MediaRepository {
     }
 
     func imageURL(for item: MediaItem, type: JellyfinImageType = .primary, fillWidth: Int = 300) -> URL? {
+        guard let base = baseURL, let token = accessToken else { return nil }
+        // For episodes, use the parent series poster so the card shows show artwork not a screenshot
+        if item.type == .episode, type == .primary,
+           let seriesId = item.seriesId, let seriesTag = item.seriesPrimaryImageTag {
+            return JellyfinMediaClient.imageURL(
+                baseURL: base, itemID: seriesId, tag: seriesTag,
+                type: .primary, fillWidth: fillWidth, token: token
+            )
+        }
         let tag: String?
         if type == .backdrop {
             tag = item.backdropImageTags.first
         } else {
             tag = item.primaryImageTag
         }
-        guard let tag, let base = baseURL, let token = accessToken else { return nil }
+        guard let tag else { return nil }
         return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: type, fillWidth: fillWidth, token: token)
     }
 

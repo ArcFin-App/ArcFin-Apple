@@ -6,18 +6,21 @@ private enum AppPhase: Equatable {
 }
 
 struct ContentView: View {
-    @State private var authManager = AuthManager()
-    @State private var mediaRepo = MediaRepository()
-    @State private var seerrRepo = JellyseerrRepository()
-    @State private var splashDone = false
+    @State private var authManager  = AuthManager()
+    @State private var mediaRepo    = MediaRepository()
+    @State private var seerrRepo    = JellyseerrRepository()
+    @State private var statsRepo    = StreamystatsRepository()
+    @State private var splashDone   = false
 
-    @AppStorage("seerrURL")    private var seerrURL    = ""
-    @AppStorage("seerrAPIKey") private var seerrAPIKey = ""
+    @AppStorage("seerrURL")          private var seerrURL      = ""
+    @AppStorage("seerrUsername")     private var seerrUsername = ""
+    @AppStorage("seerrPassword")     private var seerrPassword = ""
+    @AppStorage("streamystatsURL")   private var statsURL      = ""
 
     private var phase: AppPhase {
         guard splashDone && !authManager.isChecking else { return .splash }
         switch authManager.state {
-        case .authenticated: return .main
+        case .authenticated:   return .main
         case .unauthenticated: return .login
         }
     }
@@ -41,10 +44,25 @@ struct ContentView: View {
         .environment(authManager)
         .environment(mediaRepo)
         .environment(seerrRepo)
+        .environment(statsRepo)
         .task { await authManager.checkStoredAuth() }
-        .onAppear { seerrRepo.configure(urlString: seerrURL, apiKey: seerrAPIKey) }
-        .onChange(of: seerrURL)    { seerrRepo.configure(urlString: seerrURL, apiKey: seerrAPIKey) }
-        .onChange(of: seerrAPIKey) { seerrRepo.configure(urlString: seerrURL, apiKey: seerrAPIKey) }
+        .onAppear { configureSeerr() }
+        .onChange(of: seerrURL)      { configureSeerr() }
+        .onChange(of: seerrUsername) { configureSeerr() }
+        .onChange(of: seerrPassword) { configureSeerr() }
+        // Streamystats is reconfigured after load() sets serverID + we have the token
+        .onChange(of: mediaRepo.serverID) { configureStats() }
+        .onChange(of: statsURL)           { configureStats() }
+    }
+
+    private func configureSeerr() {
+        seerrRepo.configure(urlString: seerrURL, username: seerrUsername, password: seerrPassword)
+    }
+
+    private func configureStats() {
+        guard case .authenticated(let cred) = authManager.state,
+              !mediaRepo.serverID.isEmpty else { return }
+        statsRepo.configure(urlString: statsURL, credential: cred, serverId: mediaRepo.serverID)
     }
 }
 
