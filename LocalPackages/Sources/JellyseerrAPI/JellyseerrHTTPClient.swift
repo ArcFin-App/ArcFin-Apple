@@ -1,51 +1,67 @@
 import Foundation
 
-// MARK: - Jellyseerr HTTP client (cookie-based auth)
-// Supports both Jellyfin-imported accounts (/api/v1/auth/jellyfin)
-// and local Jellyseerr accounts (/api/v1/auth/local), trying Jellyfin first.
+// MARK: - Auth method
+
+public enum JellyseerrAuthMethod: String, Sendable, CaseIterable {
+    case jellyfin = "jellyfin"   // Jellyfin-imported account — POST /api/v1/auth/jellyfin
+    case local    = "local"      // Local Jellyseerr account  — POST /api/v1/auth/local
+
+    public var label: String {
+        switch self {
+        case .jellyfin: "Jellyfin Account"
+        case .local:    "Local Account"
+        }
+    }
+
+    public var description: String {
+        switch self {
+        case .jellyfin: "Sign in with your Jellyfin username and password."
+        case .local:    "Sign in with a local Jellyseerr account."
+        }
+    }
+
+    public var apiPath: String {
+        "api/v1/auth/\(rawValue)"
+    }
+}
+
+// MARK: - Jellyseerr HTTP client
 
 public actor JellyseerrHTTPClient {
     private let baseURL: URL
     private let username: String
     private let password: String
+    private let authMethod: JellyseerrAuthMethod
 
     private var isAuthenticated = false
     private let session: URLSession
 
-    public init(baseURL: URL, username: String, password: String) {
-        self.baseURL = baseURL
-        self.username = username
-        self.password = password
+    public init(baseURL: URL, username: String, password: String,
+                authMethod: JellyseerrAuthMethod = .jellyfin) {
+        self.baseURL    = baseURL
+        self.username   = username
+        self.password   = password
+        self.authMethod = authMethod
         let config = URLSessionConfiguration.default
         config.httpCookieAcceptPolicy = .always
-        config.httpShouldSetCookies = true
+        config.httpShouldSetCookies   = true
         self.session = URLSession(configuration: config)
     }
 
     // MARK: - Auth
 
-    /// Tries Jellyfin-imported auth first, falls back to local auth.
-    /// Jellyfin-imported accounts use POST /api/v1/auth/jellyfin with
-    /// the same username/password as the Jellyfin server.
     public func login() async throws {
-        if await tryAuth(path: "api/v1/auth/jellyfin") { isAuthenticated = true; return }
-        if await tryAuth(path: "api/v1/auth/local")    { isAuthenticated = true; return }
-        throw JellyseerrError.authFailed
-    }
-
-    private func tryAuth(path: String) async -> Bool {
-        guard let url = URL(string: path, relativeTo: baseURL) else { return false }
+        let url = baseURL.appendingPathComponent(authMethod.apiPath)
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body = ["username": username, "password": password]
-        guard let body = try? JSONSerialization.data(withJSONObject: body) else { return false }
-        req.httpBody = body
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["username": username, "password": password])
         req.timeoutInterval = 15
-        guard let (_, response) = try? await session.data(for: req),
-              let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else { return false }
-        return true
+        let (_, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw JellyseerrError.authFailed
+        }
+        isAuthenticated = true
     }
 
     private func ensureAuthenticated() async throws {

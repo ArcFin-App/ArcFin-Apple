@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthCore
+import JellyseerrAPI
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -291,17 +292,19 @@ enum VideoQuality: String, CaseIterable, Identifiable {
 // MARK: - Jellyseerr plugin view
 
 struct JellyseerrPluginView: View {
-    @AppStorage("seerrURL")      private var seerrURL      = ""
-    @AppStorage("seerrUsername") private var seerrUsername = ""
-    @AppStorage("seerrPassword") private var seerrPassword = ""
+    @AppStorage("seerrURL")         private var seerrURL        = ""
+    @AppStorage("seerrUsername")    private var seerrUsername   = ""
+    @AppStorage("seerrPassword")    private var seerrPassword   = ""
+    @AppStorage("seerrAuthMethod")  private var seerrAuthMethod = JellyseerrAuthMethod.jellyfin
 
     @State private var testResult: String? = nil
     @State private var isTesting = false
 
     var body: some View {
         List {
+            // Server URL
             Section {
-                TextField("https://seerr.example.com", text: $seerrURL)
+                TextField("http://10.0.1.122:5055", text: $seerrURL)
                     .textContentType(.URL)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
@@ -313,6 +316,28 @@ struct JellyseerrPluginView: View {
                     .textCase(nil)
             }
 
+            // Account type picker
+            Section {
+                Picker("Account Type", selection: $seerrAuthMethod) {
+                    ForEach(JellyseerrAuthMethod.allCases, id: \.self) { method in
+                        Text(method.label).tag(method)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+            } header: {
+                Label("Account Type", systemImage: "person.badge.key")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text(seerrAuthMethod.description)
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            // Credentials
             Section {
                 TextField("Username", text: $seerrUsername)
                     .autocorrectionDisabled()
@@ -325,22 +350,14 @@ struct JellyseerrPluginView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Use your Jellyfin username and password — Jellyseerr accepts Jellyfin accounts automatically.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
+            // Test connection
             Section {
-                Button {
-                    testConnection()
-                } label: {
+                Button { testConnection() } label: {
                     HStack {
-                        if isTesting {
-                            ProgressView().scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "network")
-                        }
+                        if isTesting { ProgressView().scaleEffect(0.8) }
+                        else { Image(systemName: "network") }
                         Text(isTesting ? "Testing…" : "Test Connection")
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -367,25 +384,29 @@ struct JellyseerrPluginView: View {
             testResult = "✗ Invalid URL"; return
         }
         isTesting = true; testResult = nil
-        let (user, pass) = (seerrUsername, seerrPassword)
-        let body = try? JSONSerialization.data(withJSONObject: ["username": user, "password": pass])
+        let path = seerrAuthMethod.apiPath
+        let body = try? JSONSerialization.data(withJSONObject: [
+            "username": seerrUsername,
+            "password": seerrPassword,
+        ])
         Task {
-            // Try Jellyfin-imported auth first, then local auth
-            for path in ["api/v1/auth/jellyfin", "api/v1/auth/local"] {
-                var req = URLRequest(url: url.appendingPathComponent(path))
-                req.httpMethod = "POST"
-                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                req.httpBody = body
-                req.timeoutInterval = 10
-                if let (_, resp) = try? await URLSession.shared.data(for: req),
-                   let http = resp as? HTTPURLResponse,
-                   (200...299).contains(http.statusCode) {
-                    testResult = "✓ Connected successfully"
-                    isTesting = false
-                    return
+            var req = URLRequest(url: url.appendingPathComponent(path))
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = body
+            req.timeoutInterval = 10
+            do {
+                let (_, resp) = try await URLSession.shared.data(for: req)
+                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
+                    testResult = "✓ Connected as \(seerrAuthMethod.label)"
+                } else if let http = resp as? HTTPURLResponse, http.statusCode == 403 {
+                    testResult = "✗ Wrong account type — try the other option"
+                } else {
+                    testResult = "✗ Invalid credentials"
                 }
+            } catch {
+                testResult = "✗ \(error.localizedDescription)"
             }
-            testResult = "✗ Invalid credentials or server unreachable"
             isTesting = false
         }
     }

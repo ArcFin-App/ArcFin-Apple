@@ -16,7 +16,8 @@ final class JellyseerrRepository {
 
     var isConfigured: Bool { client != nil }
 
-    func configure(urlString: String, username: String, password: String) {
+    func configure(urlString: String, username: String, password: String,
+                   authMethod: JellyseerrAuthMethod = .jellyfin) {
         let trimURL  = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -24,8 +25,8 @@ final class JellyseerrRepository {
               let url = URL(string: trimURL) else {
             client = nil; return
         }
-        client = JellyseerrHTTPClient(baseURL: url, username: trimUser, password: trimPass)
-        // Reset cached data so stale results don't show if credentials changed
+        client = JellyseerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
+                                      authMethod: authMethod)
         trending = []; popularMovies = []; popularTV = []; requests = []
     }
 

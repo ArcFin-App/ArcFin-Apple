@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthCore
+import JellyseerrAPI
 
 private enum AppPhase: Equatable {
     case splash, login, main
@@ -12,10 +13,11 @@ struct ContentView: View {
     @State private var statsRepo    = StreamystatsRepository()
     @State private var splashDone   = false
 
-    @AppStorage("seerrURL")          private var seerrURL      = ""
-    @AppStorage("seerrUsername")     private var seerrUsername = ""
-    @AppStorage("seerrPassword")     private var seerrPassword = ""
-    @AppStorage("streamystatsURL")   private var statsURL      = ""
+    @AppStorage("seerrURL")          private var seerrURL         = ""
+    @AppStorage("seerrUsername")     private var seerrUsername    = ""
+    @AppStorage("seerrPassword")     private var seerrPassword    = ""
+    @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = JellyseerrAuthMethod.jellyfin
+    @AppStorage("streamystatsURL")   private var statsURL         = ""
 
     private var phase: AppPhase {
         guard splashDone && !authManager.isChecking else { return .splash }
@@ -47,16 +49,18 @@ struct ContentView: View {
         .environment(statsRepo)
         .task { await authManager.checkStoredAuth() }
         .onAppear { configureSeerr() }
-        .onChange(of: seerrURL)      { configureSeerr() }
-        .onChange(of: seerrUsername) { configureSeerr() }
-        .onChange(of: seerrPassword) { configureSeerr() }
+        .onChange(of: seerrURL)        { configureSeerr() }
+        .onChange(of: seerrUsername)   { configureSeerr() }
+        .onChange(of: seerrPassword)   { configureSeerr() }
+        .onChange(of: seerrAuthMethod) { configureSeerr() }
         // Streamystats is reconfigured after load() sets serverID + we have the token
         .onChange(of: mediaRepo.serverID) { configureStats() }
         .onChange(of: statsURL)           { configureStats() }
     }
 
     private func configureSeerr() {
-        seerrRepo.configure(urlString: seerrURL, username: seerrUsername, password: seerrPassword)
+        seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
+                            password: seerrPassword, authMethod: seerrAuthMethod)
     }
 
     private func configureStats() {
