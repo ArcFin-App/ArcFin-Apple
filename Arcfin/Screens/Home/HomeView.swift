@@ -13,19 +13,6 @@ struct MainTabView: View {
             Tab("Home", systemImage: "house") {
                 HomeView()
             }
-            Tab("Search", systemImage: "magnifyingglass") {
-                NavigationStack {
-                    SearchView(query: $searchQuery)
-                        .searchable(
-                            text: $searchQuery,
-                            placement: .navigationBarDrawer(displayMode: .always),
-                            prompt: "Movies, shows, people…"
-                        )
-                        .navigationTitle("Search")
-                        .navigationBarTitleDisplayMode(.large)
-                        .background(DT.Color.backgroundPrimary)
-                }
-            }
             Tab("Library", systemImage: "square.grid.2x2") {
                 placeholderScreen("Library", icon: "square.grid.2x2")
             }
@@ -35,7 +22,23 @@ struct MainTabView: View {
             Tab("Requests", systemImage: "clock") {
                 JellyseerrView()
             }
+            // role: .search pins this tab to the trailing end of the tab bar,
+            // separate from the main group — matching Apple's iOS 26 design.
+            Tab("Search", systemImage: "magnifyingglass", role: .search) {
+                NavigationStack {
+                    SearchView(query: $searchQuery)
+                        .searchable(
+                            text: $searchQuery,
+                            prompt: "Movies, shows, people…"
+                        )
+                        .navigationTitle("Search")
+                        .navigationBarTitleDisplayMode(.large)
+                        .background(DT.Color.backgroundPrimary)
+                }
+            }
         }
+        // Adapts tab bar → sidebar automatically on iPad / Mac
+        .tabViewStyle(.sidebarAdaptable)
         .preferredColorScheme(.dark)
     }
 
