@@ -143,8 +143,13 @@ struct HomeView: View {
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }
             await mediaRepo.load(credential: cred, authClient: authManager.authClient)
+            mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
             if seerrRepo.isConfigured && seerrDiscoverEnabled {
                 await seerrRepo.loadDiscover()
+                let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV).flatMap { item in
+                    [item.backdropURL, item.posterURL].compactMap { $0 }
+                }
+                mediaRepo.prefetch(urls: seerrQuickLookURLs)
             }
         }
         .onReceive(heroTimer) { _ in
@@ -220,7 +225,11 @@ struct HomeView: View {
            let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
             AsyncImage(url: url) { phase in
                 switch phase {
-                case .success(let img): img.resizable().scaledToFill()
+                case .success(let img):
+                    img
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 default: heroGradient(for: heroIndex)
                 }
             }
@@ -347,7 +356,12 @@ struct HomeView: View {
         ZStack {
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600) {
                 AsyncImage(url: url) { ph in
-                    if case .success(let img) = ph { img.resizable().scaledToFill() }
+                    if case .success(let img) = ph {
+                        img
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    }
                     else { DT.Color.backgroundSecondary }
                 }
             } else { DT.Color.backgroundSecondary }
@@ -400,7 +414,12 @@ struct HomeView: View {
         ZStack {
             if let url = item.backdropURL ?? item.posterURL {
                 AsyncImage(url: url) { ph in
-                    if case .success(let img) = ph { img.resizable().scaledToFill() }
+                    if case .success(let img) = ph {
+                        img
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    }
                     else { DT.Color.backgroundSecondary }
                 }
             } else { DT.Color.backgroundSecondary }

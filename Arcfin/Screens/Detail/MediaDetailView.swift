@@ -112,7 +112,11 @@ struct MediaDetailView: View {
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
+                    case .success(let img):
+                        img
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     default: fallbackHero
                     }
                 }

@@ -421,7 +421,12 @@ struct LibraryDetailView: View {
         ZStack {
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600) {
                 AsyncImage(url: url) { ph in
-                    if case .success(let img) = ph { img.resizable().scaledToFill() }
+                    if case .success(let img) = ph {
+                        img
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    }
                     else { DT.Color.backgroundSecondary }
                 }
             } else { DT.Color.backgroundSecondary }
@@ -470,6 +475,7 @@ struct LibraryDetailView: View {
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
         items = (try? await client.getLibraryItems(credential: cred, authHeader: header, libraryId: library.id)) ?? []
+        mediaRepo.prefetchQuickLookAssets(for: items)
         isLoading = false
     }
 }

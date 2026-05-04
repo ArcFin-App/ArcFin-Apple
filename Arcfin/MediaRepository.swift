@@ -99,4 +99,30 @@ final class MediaRepository {
         ]
         return comps.url
     }
+
+    func prefetchQuickLookAssets(for items: [MediaItem], limit: Int = 24) {
+        let urls = Array(items.prefix(limit)).flatMap { item -> [URL] in
+            var itemURLs: [URL] = []
+            if let backdropURL = imageURL(for: item, type: .backdrop, fillWidth: 600) {
+                itemURLs.append(backdropURL)
+            }
+            if let logoURL = logoURL(for: item) {
+                itemURLs.append(logoURL)
+            }
+            return itemURLs
+        }
+        prefetch(urls: urls)
+    }
+
+    func prefetch(urls: [URL]) {
+        let uniqueURLs = Array(Set(urls))
+        guard !uniqueURLs.isEmpty else { return }
+
+        Task.detached(priority: .utility) {
+            for url in uniqueURLs {
+                let req = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 12)
+                _ = try? await URLSession.shared.data(for: req)
+            }
+        }
+    }
 }
