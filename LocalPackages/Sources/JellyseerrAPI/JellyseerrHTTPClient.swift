@@ -89,6 +89,20 @@ public actor JellyseerrHTTPClient {
         try await fetchPage("api/v1/search", query: [("query", query), ("page", "\(page)")])
     }
 
+    public func recommendations(mediaType: RequestMediaType, mediaId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        let path = mediaType == .tv
+            ? "api/v1/tv/\(mediaId)/recommendations"
+            : "api/v1/movie/\(mediaId)/recommendations"
+        return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
+    }
+
+    public func similar(mediaType: RequestMediaType, mediaId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        let path = mediaType == .tv
+            ? "api/v1/tv/\(mediaId)/similar"
+            : "api/v1/movie/\(mediaId)/similar"
+        return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
+    }
+
     // MARK: - Requests
 
     public func getRequests(filter: String = "all", skip: Int = 0, take: Int = 40) async throws -> [SeerrRequestItem] {
@@ -123,14 +137,20 @@ public actor JellyseerrHTTPClient {
 
     // MARK: - Private helpers
 
-    private func fetchPage(_ path: String, query: [(String, String)]) async throws -> [SeerrItem] {
+    private func fetchPage(
+        _ path: String,
+        query: [(String, String)],
+        defaultMediaType: RequestMediaType? = nil
+    ) async throws -> [SeerrItem] {
         try await ensureAuthenticated()
         var comps = URLComponents(url: baseURL.appendingPathComponent(path),
                                   resolvingAgainstBaseURL: false)!
         comps.queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
         let data = try await fetch(comps.url!)
         struct Page: Decodable { let results: [SeerrItemResponse] }
-        return try JSONDecoder().decode(Page.self, from: data).results.compactMap { $0.toItem() }
+        return try JSONDecoder().decode(Page.self, from: data).results.compactMap {
+            $0.toItem(defaultMediaType: defaultMediaType)
+        }
     }
 
     private func fetch(_ url: URL) async throws -> Data {
@@ -181,9 +201,16 @@ private struct SeerrItemResponse: Decodable {
     let overview: String?
     let mediaInfo: SeerrMediaInfoResponse?
 
-    func toItem() -> SeerrItem? {
+    func toItem(defaultMediaType: RequestMediaType? = nil) -> SeerrItem? {
         guard let displayTitle = title ?? name else { return nil }
-        let type: RequestMediaType = mediaType == "tv" ? .tv : .movie
+        let type: RequestMediaType
+        if let mediaType {
+            type = mediaType == "tv" ? .tv : .movie
+        } else if let defaultMediaType {
+            type = defaultMediaType
+        } else {
+            type = .movie
+        }
         let year = (releaseDate ?? firstAirDate).flatMap { $0.count >= 4 ? String($0.prefix(4)) : nil }
         let status = mediaInfo.flatMap { SeerrAvailabilityStatus(rawValue: $0.status) }
         return SeerrItem(id: id, title: displayTitle, mediaType: type,

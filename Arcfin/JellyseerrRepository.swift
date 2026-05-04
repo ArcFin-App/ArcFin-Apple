@@ -13,6 +13,8 @@ final class JellyseerrRepository {
     var isLoadingRequests = false
 
     @ObservationIgnored private var client: JellyseerrHTTPClient?
+    @ObservationIgnored private var isFetchingDiscover = false
+    @ObservationIgnored private var isFetchingRequests = false
 
     var isConfigured: Bool { client != nil }
 
@@ -31,22 +33,30 @@ final class JellyseerrRepository {
     }
 
     func loadDiscover() async {
-        guard let client, !isLoadingDiscover else { return }
-        isLoadingDiscover = true
+        guard let client, !isFetchingDiscover else { return }
+        isFetchingDiscover = true
+        let firstLoad = trending.isEmpty
+        if firstLoad { isLoadingDiscover = true }
         async let t  = (try? await client.trending())       ?? []
         async let m  = (try? await client.discoverMovies()) ?? []
         async let tv = (try? await client.discoverTV())     ?? []
-        trending      = await t
-        popularMovies = await m
-        popularTV     = await tv
-        isLoadingDiscover = false
+        let (newT, newM, newTV) = await (t, m, tv)
+        if !newT.isEmpty  || firstLoad { trending = newT }
+        if !newM.isEmpty  || firstLoad { popularMovies = newM }
+        if !newTV.isEmpty || firstLoad { popularTV = newTV }
+        if firstLoad { isLoadingDiscover = false }
+        isFetchingDiscover = false
     }
 
     func loadRequests() async {
-        guard let client, !isLoadingRequests else { return }
-        isLoadingRequests = true
-        requests = (try? await client.getRequests()) ?? []
-        isLoadingRequests = false
+        guard let client, !isFetchingRequests else { return }
+        isFetchingRequests = true
+        let firstLoad = requests.isEmpty
+        if firstLoad { isLoadingRequests = true }
+        let fetched = (try? await client.getRequests()) ?? []
+        requests = fetched
+        if firstLoad { isLoadingRequests = false }
+        isFetchingRequests = false
     }
 
     func search(query: String) async -> [SeerrItem] {
@@ -58,5 +68,16 @@ final class JellyseerrRepository {
         guard let client else { throw URLError(.badURL) }
         try await client.createRequest(mediaType: mediaType, mediaId: mediaId)
         await loadRequests()
+    }
+
+    func relatedMedia(mediaType: RequestMediaType, mediaId: Int) async -> [SeerrItem] {
+        guard let client else { return [] }
+        async let recommendations = (try? await client.recommendations(mediaType: mediaType, mediaId: mediaId)) ?? []
+        async let similar = (try? await client.similar(mediaType: mediaType, mediaId: mediaId)) ?? []
+        let merged = await recommendations + similar
+        var seen = Set<Int>()
+        return merged.filter { item in
+            seen.insert(item.id).inserted
+        }
     }
 }
