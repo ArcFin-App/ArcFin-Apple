@@ -33,6 +33,11 @@ public protocol KeychainClientProtocol: Sendable {
 public enum AuthState: Sendable, Equatable {
     case unauthenticated
     case authenticated(ServerCredential)
+
+    public var credential: ServerCredential? {
+        if case .authenticated(let cred) = self { return cred }
+        return nil
+    }
 }
 
 // MARK: - Token refresh

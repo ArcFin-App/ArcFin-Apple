@@ -24,7 +24,7 @@ public protocol JellyfinAPIClientProtocol: Sendable {
 
 // MARK: - Stub models (replace with OpenAPI-generated when specs land)
 
-public struct MediaItem: Sendable, Identifiable, Equatable {
+public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public let id: String
     public var name: String
     public var overview: String?
@@ -39,6 +39,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
     public var parentIndexNumber: Int?
     public var seriesId: String?
     public var seriesPrimaryImageTag: String?
+    public var tmdbId: Int?
 
     public init(
         id: String,
@@ -54,7 +55,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
         indexNumber: Int? = nil,
         parentIndexNumber: Int? = nil,
         seriesId: String? = nil,
-        seriesPrimaryImageTag: String? = nil
+        seriesPrimaryImageTag: String? = nil,
+        tmdbId: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -70,6 +72,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable {
         self.parentIndexNumber = parentIndexNumber
         self.seriesId = seriesId
         self.seriesPrimaryImageTag = seriesPrimaryImageTag
+        self.tmdbId = tmdbId
     }
 }
 
@@ -83,7 +86,7 @@ public enum MediaType: String, Sendable, Equatable {
     case unknown
 }
 
-public struct UserData: Sendable, Equatable {
+public struct UserData: Sendable, Equatable, Hashable {
     public var playbackPositionTicks: Int64
     public var playCount: Int
     public var isFavorite: Bool
@@ -105,9 +108,81 @@ public struct UserData: Sendable, Equatable {
     }
 }
 
+// MARK: - Person
+
+public struct MediaPerson: Sendable, Identifiable, Equatable, Hashable {
+    public let id: String
+    public var name: String
+    public var role: String?
+    public var primaryImageTag: String?
+    public var type: String
+
+    public init(id: String, name: String, role: String? = nil, primaryImageTag: String? = nil, type: String = "Actor") {
+        self.id = id; self.name = name; self.role = role
+        self.primaryImageTag = primaryImageTag; self.type = type
+    }
+}
+
+// MARK: - Media stream
+
+public struct MediaStream: Sendable, Equatable, Hashable {
+    public var type: String
+    public var codec: String?
+    public var displayTitle: String?
+    public var width: Int?
+    public var height: Int?
+    public var bitRate: Int?
+    public var isDefault: Bool
+
+    public init(type: String, codec: String? = nil, displayTitle: String? = nil,
+                width: Int? = nil, height: Int? = nil, bitRate: Int? = nil, isDefault: Bool = false) {
+        self.type = type; self.codec = codec; self.displayTitle = displayTitle
+        self.width = width; self.height = height; self.bitRate = bitRate; self.isDefault = isDefault
+    }
+}
+
+// MARK: - Item detail
+
+public struct MediaItemDetail: Sendable, Identifiable {
+    public var id: String { item.id }
+    public var item: MediaItem
+    public var people: [MediaPerson]
+    public var mediaStreams: [MediaStream]
+    public var genres: [String]
+    public var studios: [String]
+    public var officialRating: String?
+    public var runTimeTicks: Int64?
+    public var taglines: [String]
+
+    public var runtimeMinutes: Int? {
+        guard let ticks = runTimeTicks, ticks > 0 else { return nil }
+        return Int(ticks / 10_000_000 / 60)
+    }
+
+    public var videoStream: MediaStream? { mediaStreams.first { $0.type == "Video" } }
+    public var audioStreams: [MediaStream] { mediaStreams.filter { $0.type == "Audio" } }
+    public var directors: [MediaPerson] { people.filter { $0.type == "Director" } }
+    public var writers: [MediaPerson] { people.filter { $0.type == "Writer" } }
+    public var cast: [MediaPerson] { Array(people.filter { $0.type == "Actor" }.prefix(20)) }
+
+    public var is4K: Bool { (videoStream?.height ?? 0) >= 2160 }
+    public var isHDR: Bool {
+        let t = (videoStream?.displayTitle ?? "").lowercased()
+        return t.contains("hdr") || t.contains("dolby vision") || t.contains(" dv")
+    }
+
+    public init(item: MediaItem, people: [MediaPerson] = [], mediaStreams: [MediaStream] = [],
+                genres: [String] = [], studios: [String] = [], officialRating: String? = nil,
+                runTimeTicks: Int64? = nil, taglines: [String] = []) {
+        self.item = item; self.people = people; self.mediaStreams = mediaStreams
+        self.genres = genres; self.studios = studios; self.officialRating = officialRating
+        self.runTimeTicks = runTimeTicks; self.taglines = taglines
+    }
+}
+
 // MARK: - Library
 
-public struct JellyfinLibrary: Sendable, Identifiable, Equatable {
+public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
     public let id: String
     public var name: String
     public var collectionType: LibraryType
@@ -117,7 +192,7 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable {
         self.id = id; self.name = name; self.collectionType = collectionType; self.primaryImageTag = primaryImageTag
     }
 
-    public enum LibraryType: Sendable, Equatable {
+    public enum LibraryType: Sendable, Equatable, Hashable {
         case movies, tvshows, music, homevideos, photos, books, livetv, playlists, unknown
 
         public init(apiValue: String) {

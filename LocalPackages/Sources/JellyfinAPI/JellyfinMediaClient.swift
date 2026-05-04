@@ -162,6 +162,109 @@ public struct JellyfinMediaClient: Sendable {
         return (try? JSONDecoder().decode(CountPage.self, from: data).totalRecordCount) ?? 0
     }
 
+    public func getItemDetail(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String
+    ) async throws -> MediaItemDetail {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemDetailResponse.self, from: data).toDetail()
+    }
+
+    public func getSimilarItems(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String,
+        limit: Int = 10
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Items/\(itemId)/Similar"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    public func getSeasons(
+        credential: ServerCredential,
+        authHeader: String,
+        seriesId: String
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Seasons"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "Fields", value: "UserData,PrimaryImageTags,ProductionYear"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    public func getEpisodes(
+        credential: ServerCredential,
+        authHeader: String,
+        seriesId: String,
+        seasonId: String
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Episodes"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "SeasonId", value: seasonId),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,SeriesId,SeriesPrimaryImageTag"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    public func getLibraryItems(
+        credential: ServerCredential,
+        authHeader: String,
+        libraryId: String,
+        limit: Int = 100
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "ParentId", value: libraryId),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "SortBy", value: "SortName"),
+            .init(name: "SortOrder", value: "Ascending"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
     public func search(credential: ServerCredential, authHeader: String, query: String, limit: Int = 20) async throws -> [MediaItem] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
@@ -264,6 +367,115 @@ private struct UserDataResponse: Decodable {
         case played = "Played"
         case playedPercentage = "PlayedPercentage"
     }
+}
+
+private struct ItemDetailResponse: Decodable {
+    let id: String
+    let name: String
+    let type: String
+    let overview: String?
+    let imageTags: [String: String]?
+    let backdropImageTags: [String]?
+    let userData: UserDataResponse?
+    let productionYear: Int?
+    let communityRating: Double?
+    let seriesName: String?
+    let indexNumber: Int?
+    let parentIndexNumber: Int?
+    let seriesId: String?
+    let seriesPrimaryImageTag: String?
+    let people: [PersonResponse]?
+    let mediaStreams: [MediaStreamResponse]?
+    let genres: [String]?
+    let studios: [StudioResponse]?
+    let officialRating: String?
+    let runTimeTicks: Int64?
+    let taglines: [String]?
+    let providerIds: [String: String]?
+
+    enum CodingKeys: String, CodingKey {
+        case id = "Id", name = "Name", type = "Type", overview = "Overview"
+        case imageTags = "ImageTags", backdropImageTags = "BackdropImageTags"
+        case userData = "UserData", productionYear = "ProductionYear"
+        case communityRating = "CommunityRating", seriesName = "SeriesName"
+        case indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber"
+        case seriesId = "SeriesId", seriesPrimaryImageTag = "SeriesPrimaryImageTag"
+        case people = "People", mediaStreams = "MediaStreams"
+        case genres = "Genres", studios = "Studios"
+        case officialRating = "OfficialRating", runTimeTicks = "RunTimeTicks"
+        case taglines = "Taglines", providerIds = "ProviderIds"
+    }
+
+    func toDetail() -> MediaItemDetail {
+        let mediaItem = MediaItem(
+            id: id, name: name, overview: overview,
+            type: MediaType(rawValue: type) ?? .unknown,
+            backdropImageTags: backdropImageTags ?? [],
+            primaryImageTag: imageTags?["Primary"],
+            userData: userData.map { ud in
+                UserData(playbackPositionTicks: ud.playbackPositionTicks ?? 0,
+                         playCount: ud.playCount ?? 0,
+                         isFavorite: ud.isFavorite ?? false,
+                         played: ud.played ?? false,
+                         playedPercentage: ud.playedPercentage)
+            },
+            productionYear: productionYear,
+            communityRating: communityRating,
+            seriesName: seriesName,
+            indexNumber: indexNumber,
+            parentIndexNumber: parentIndexNumber,
+            seriesId: seriesId,
+            seriesPrimaryImageTag: seriesPrimaryImageTag,
+            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
+        )
+        return MediaItemDetail(
+            item: mediaItem,
+            people: people?.compactMap { p in
+                MediaPerson(id: p.id, name: p.name, role: p.role,
+                            primaryImageTag: p.primaryImageTag, type: p.type ?? "Actor")
+            } ?? [],
+            mediaStreams: mediaStreams?.compactMap { s in
+                MediaStream(type: s.type ?? "Video", codec: s.codec, displayTitle: s.displayTitle,
+                            width: s.width, height: s.height, bitRate: s.bitRate, isDefault: s.isDefault ?? false)
+            } ?? [],
+            genres: genres ?? [],
+            studios: studios?.map { $0.name } ?? [],
+            officialRating: officialRating,
+            runTimeTicks: runTimeTicks,
+            taglines: taglines ?? []
+        )
+    }
+}
+
+private struct PersonResponse: Decodable {
+    let id: String
+    let name: String
+    let role: String?
+    let primaryImageTag: String?
+    let type: String?
+    enum CodingKeys: String, CodingKey {
+        case id = "Id", name = "Name", role = "Role"
+        case primaryImageTag = "PrimaryImageTag", type = "Type"
+    }
+}
+
+private struct MediaStreamResponse: Decodable {
+    let type: String?
+    let codec: String?
+    let displayTitle: String?
+    let width: Int?
+    let height: Int?
+    let bitRate: Int?
+    let isDefault: Bool?
+    enum CodingKeys: String, CodingKey {
+        case type = "Type", codec = "Codec", displayTitle = "DisplayTitle"
+        case width = "Width", height = "Height", bitRate = "BitRate", isDefault = "IsDefault"
+    }
+}
+
+private struct StudioResponse: Decodable {
+    let name: String
+    enum CodingKeys: String, CodingKey { case name = "Name" }
 }
 
 private struct LibraryViewsResponse: Decodable {
