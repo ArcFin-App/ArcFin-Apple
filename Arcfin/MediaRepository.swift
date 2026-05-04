@@ -40,6 +40,11 @@ final class MediaRepository {
         return (try? await client.search(credential: credential, authHeader: header, query: query)) ?? []
     }
 
+    func searchIfAuthenticated(query: String, authState: AuthState, authClient: JellyfinAuthClient) async -> [MediaItem] {
+        guard case .authenticated(let cred) = authState else { return [] }
+        return await search(query: query, credential: cred, authClient: authClient)
+    }
+
     func imageURL(for item: MediaItem, type: JellyfinImageType = .primary, fillWidth: Int = 300) -> URL? {
         let tag: String?
         if type == .backdrop {

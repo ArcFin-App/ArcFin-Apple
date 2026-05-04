@@ -71,12 +71,11 @@ struct SearchView: View {
         }
         isSearching = true
         Task {
-            async let jellyTask: [MediaItem] = {
-                if case .authenticated(let cred) = authManager.state {
-                    return await mediaRepo.search(query: query, credential: cred, authClient: authManager.authClient)
-                }
-                return []
-            }()
+            async let jellyTask: [MediaItem] = mediaRepo.searchIfAuthenticated(
+                query: query,
+                authState: authManager.state,
+                authClient: authManager.authClient
+            )
             async let seerrTask = seerrRepo.search(query: query)
 
             jellyfinResults = await jellyTask

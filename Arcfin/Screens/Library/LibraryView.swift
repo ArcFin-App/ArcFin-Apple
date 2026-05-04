@@ -43,8 +43,10 @@ struct LibraryView: View {
             }
             .background(DT.Color.backgroundPrimary)
             .navigationTitle("Library")
+#if !os(macOS)
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+#endif
             .onAppear { downloads = listDownloads() }
 #if canImport(UIKit)
             .sheet(isPresented: $showDocPicker) {
@@ -56,13 +58,21 @@ struct LibraryView: View {
 #endif
             .navigationDestination(isPresented: $navigateToLocalPlayer) {
                 if let url = pickedURL {
+#if !os(macOS)
                     LocalPlayerView(url: url)
                         .toolbar(.hidden, for: .tabBar)
+#else
+                    LocalPlayerView(url: url)
+#endif
                 }
             }
             .navigationDestination(item: $playerItem) { file in
+#if !os(macOS)
                 LocalPlayerView(url: file.url)
                     .toolbar(.hidden, for: .tabBar)
+#else
+                LocalPlayerView(url: file.url)
+#endif
             }
         }
     }
@@ -271,7 +281,7 @@ private struct DownloadRow: View {
 
 // MARK: - Downloaded file model
 
-struct DownloadedFile: Identifiable {
+struct DownloadedFile: Identifiable, Hashable {
     var id: URL { url }
     let url: URL
     let name: String
@@ -289,7 +299,9 @@ struct LocalPlayerView: View {
             .ignoresSafeArea()
             .background(Color.black)
             .navigationTitle(url.deletingPathExtension().lastPathComponent)
+#if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
+#endif
     }
 }
 
@@ -308,9 +320,11 @@ struct LibraryDetailView: View {
             )
         }
         .navigationTitle(library.name)
+#if !os(macOS)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
+#endif
     }
 }
 

@@ -1,5 +1,7 @@
 import Foundation
+#if !os(tvOS)
 import CoreSpotlight
+#endif
 import Telemetry
 
 // MARK: - Search client protocol
@@ -22,16 +24,28 @@ public enum SearchScope: Sendable {
 
 // MARK: - Results
 
-// CSSearchableItem is not Sendable; isolate Spotlight results behind @unchecked.
-public struct SearchResults: @unchecked Sendable {
+public struct SearchResults: Sendable {
     public var serverResults: [ServerSearchResult]
-    public var spotlightResults: [CSSearchableItem]
-
-    public init(serverResults: [ServerSearchResult] = [], spotlightResults: [CSSearchableItem] = []) {
+#if !os(tvOS)
+    // CSSearchableItem is not Sendable; isolate Spotlight results behind @unchecked Sendable wrapper.
+    public var spotlightResults: [SpotlightResultWrapper]
+    public init(serverResults: [ServerSearchResult] = [], spotlightResults: [SpotlightResultWrapper] = []) {
         self.serverResults = serverResults
         self.spotlightResults = spotlightResults
     }
+#else
+    public init(serverResults: [ServerSearchResult] = []) {
+        self.serverResults = serverResults
+    }
+#endif
 }
+
+#if !os(tvOS)
+public final class SpotlightResultWrapper: @unchecked Sendable {
+    public let item: CSSearchableItem
+    public init(_ item: CSSearchableItem) { self.item = item }
+}
+#endif
 
 public struct ServerSearchResult: Sendable, Identifiable, Equatable {
     public let id: String
