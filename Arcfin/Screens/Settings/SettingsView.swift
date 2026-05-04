@@ -18,6 +18,10 @@ struct SettingsView: View {
     @AppStorage("notifyNewContent")   private var notifyNewContent  = true
     @AppStorage("notifyDownload")     private var notifyDownload    = true
 
+    @AppStorage("seerrDiscoverEnabled")  private var seerrDiscoverEnabled  = true
+    @AppStorage("seerrURL")              private var seerrURL               = ""
+    @AppStorage("streamystatsURL")       private var streamystatsURL        = ""
+
     var body: some View {
         List {
             profileSection
@@ -72,6 +76,41 @@ struct SettingsView: View {
                 }
             } header: {
                 sectionHeader("Account & Server", icon: "person.badge.key")
+            }
+
+            // ── Plugins ──────────────────────────────────────────────────
+            Section {
+                Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
+                NavigationLink {
+                    JellyseerrPluginView()
+                        .toolbar(.hidden, for: .tabBar)
+                } label: {
+                    HStack {
+                        Label("Jellyseerr", systemImage: "clock.fill")
+                        Spacer()
+                        if !seerrURL.isEmpty {
+                            Text("Connected")
+                                .font(.caption2)
+                                .foregroundStyle(Color(hex: "10b981"))
+                        }
+                    }
+                }
+                NavigationLink {
+                    StreamystatsPluginView()
+                        .toolbar(.hidden, for: .tabBar)
+                } label: {
+                    HStack {
+                        Label("Streamystats", systemImage: "chart.xyaxis.line")
+                        Spacer()
+                        if !streamystatsURL.isEmpty {
+                            Text("Connected")
+                                .font(.caption2)
+                                .foregroundStyle(Color(hex: "10b981"))
+                        }
+                    }
+                }
+            } header: {
+                sectionHeader("Plugins", icon: "puzzlepiece.extension")
             }
 
             // ── About ────────────────────────────────────────────────────
@@ -245,6 +284,202 @@ enum VideoQuality: String, CaseIterable, Identifiable {
         case .p1080: "1080p HD"
         case .p720:  "720p"
         case .p480:  "480p"
+        }
+    }
+}
+
+// MARK: - Jellyseerr plugin view
+
+struct JellyseerrPluginView: View {
+    @AppStorage("seerrURL")    private var seerrURL    = ""
+    @AppStorage("seerrAPIKey") private var seerrAPIKey = ""
+
+    @State private var testResult: String? = nil
+    @State private var isTesting = false
+
+    var body: some View {
+        List {
+            Section {
+                TextField("https://seerr.example.com", text: $seerrURL)
+                    .textContentType(.URL)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+            } header: {
+                Label("Server URL", systemImage: "server.rack")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            }
+
+            Section {
+                SecureField("API Key", text: $seerrAPIKey)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+            } header: {
+                Label("API Key", systemImage: "key.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Find your API key in Jellyseerr → Settings → General → API Key")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Button {
+                    testConnection()
+                } label: {
+                    HStack {
+                        if isTesting {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "network")
+                        }
+                        Text(isTesting ? "Testing…" : "Test Connection")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .disabled(seerrURL.isEmpty || seerrAPIKey.isEmpty || isTesting)
+
+                if let result = testResult {
+                    Text(result)
+                        .font(.caption)
+                        .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(DT.Color.backgroundPrimary)
+        .navigationTitle("Jellyseerr")
+        .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func testConnection() {
+        guard let url = URL(string: seerrURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            testResult = "✗ Invalid URL"
+            return
+        }
+        isTesting = true
+        testResult = nil
+        let apiKey = seerrAPIKey
+        Task {
+            var req = URLRequest(url: url.appendingPathComponent("api/v1/settings/public"))
+            req.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+            req.timeoutInterval = 10
+            do {
+                let (_, resp) = try await URLSession.shared.data(for: req)
+                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
+                    testResult = "✓ Connected successfully"
+                } else {
+                    testResult = "✗ Server returned an error"
+                }
+            } catch {
+                testResult = "✗ \(error.localizedDescription)"
+            }
+            isTesting = false
+        }
+    }
+}
+
+// MARK: - Streamystats plugin view
+
+struct StreamystatsPluginView: View {
+    @AppStorage("streamystatsURL")    private var streamystatsURL    = ""
+    @AppStorage("streamystatsAPIKey") private var streamystatsAPIKey = ""
+
+    @State private var testResult: String? = nil
+    @State private var isTesting = false
+
+    var body: some View {
+        List {
+            Section {
+                TextField("https://stats.example.com", text: $streamystatsURL)
+                    .textContentType(.URL)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+            } header: {
+                Label("Server URL", systemImage: "server.rack")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Enter your Streamystats server URL")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                SecureField("API Key", text: $streamystatsAPIKey)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+            } header: {
+                Label("API Key", systemImage: "key.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            }
+
+            Section {
+                Button {
+                    testConnection()
+                } label: {
+                    HStack {
+                        if isTesting {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "network")
+                        }
+                        Text(isTesting ? "Testing…" : "Test Connection")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .disabled(streamystatsURL.isEmpty || isTesting)
+
+                if let result = testResult {
+                    Text(result)
+                        .font(.caption)
+                        .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(DT.Color.backgroundPrimary)
+        .navigationTitle("Streamystats")
+        .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func testConnection() {
+        guard let url = URL(string: streamystatsURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            testResult = "✗ Invalid URL"
+            return
+        }
+        isTesting = true
+        testResult = nil
+        let apiKey = streamystatsAPIKey
+        Task {
+            var req = URLRequest(url: url.appendingPathComponent("api/health"))
+            if !apiKey.isEmpty { req.setValue(apiKey, forHTTPHeaderField: "X-Api-Key") }
+            req.timeoutInterval = 10
+            do {
+                let (_, resp) = try await URLSession.shared.data(for: req)
+                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
+                    testResult = "✓ Connected successfully"
+                } else {
+                    testResult = "✗ Server returned an error"
+                }
+            } catch {
+                testResult = "✗ \(error.localizedDescription)"
+            }
+            isTesting = false
         }
     }
 }

@@ -8,7 +8,11 @@ private enum AppPhase: Equatable {
 struct ContentView: View {
     @State private var authManager = AuthManager()
     @State private var mediaRepo = MediaRepository()
+    @State private var seerrRepo = JellyseerrRepository()
     @State private var splashDone = false
+
+    @AppStorage("seerrURL")    private var seerrURL    = ""
+    @AppStorage("seerrAPIKey") private var seerrAPIKey = ""
 
     private var phase: AppPhase {
         guard splashDone && !authManager.isChecking else { return .splash }
@@ -36,7 +40,11 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .environment(authManager)
         .environment(mediaRepo)
+        .environment(seerrRepo)
         .task { await authManager.checkStoredAuth() }
+        .onAppear { seerrRepo.configure(urlString: seerrURL, apiKey: seerrAPIKey) }
+        .onChange(of: seerrURL)    { seerrRepo.configure(urlString: seerrURL, apiKey: seerrAPIKey) }
+        .onChange(of: seerrAPIKey) { seerrRepo.configure(urlString: seerrURL, apiKey: seerrAPIKey) }
     }
 }
 

@@ -98,3 +98,62 @@ public struct UserData: Sendable, Equatable {
         self.playedPercentage = playedPercentage
     }
 }
+
+// MARK: - Library
+
+public struct JellyfinLibrary: Sendable, Identifiable, Equatable {
+    public let id: String
+    public var name: String
+    public var collectionType: LibraryType
+    public var primaryImageTag: String?
+
+    public init(id: String, name: String, collectionType: LibraryType, primaryImageTag: String? = nil) {
+        self.id = id; self.name = name; self.collectionType = collectionType; self.primaryImageTag = primaryImageTag
+    }
+
+    public enum LibraryType: Sendable, Equatable {
+        case movies, tvshows, music, homevideos, photos, books, livetv, playlists, unknown
+
+        public init(apiValue: String) {
+            switch apiValue.lowercased() {
+            case "movies":     self = .movies
+            case "tvshows":    self = .tvshows
+            case "music":      self = .music
+            case "homevideos": self = .homevideos
+            case "photos":     self = .photos
+            case "books":      self = .books
+            case "livetv":     self = .livetv
+            case "playlists":  self = .playlists
+            default:           self = .unknown
+            }
+        }
+
+        public var systemIcon: String {
+            switch self {
+            case .movies:     "film"
+            case .tvshows:    "tv"
+            case .music:      "music.note"
+            case .homevideos: "video.fill"
+            case .photos:     "photo"
+            case .books:      "books.vertical"
+            case .livetv:     "antenna.radiowaves.left.and.right"
+            case .playlists:  "music.note.list"
+            case .unknown:    "folder"
+            }
+        }
+
+        public var accentHex: String {
+            switch self {
+            case .movies:     "06B6D4"
+            case .tvshows:    "8B5CF6"
+            case .music:      "EC4899"
+            case .homevideos: "F59E0B"
+            case .photos:     "10B981"
+            case .books:      "F97316"
+            case .livetv:     "EF4444"
+            case .playlists:  "06B6D4"
+            case .unknown:    "6B7280"
+            }
+        }
+    }
+}

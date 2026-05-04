@@ -1,58 +1,87 @@
 import SwiftUI
 import JellyfinAPI
+import JellyseerrAPI
+import AuthCore
 
 struct SearchView: View {
     @Binding var query: String
+
+    @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(JellyseerrRepository.self) private var seerrRepo
 
-    private var results: [MediaItem] {
-        guard !query.isEmpty else { return [] }
-        let q = query.lowercased()
-        let pool = (mediaRepo.recentlyAdded + mediaRepo.continueWatching)
-        // deduplicate by id
-        var seen = Set<String>()
-        return pool.filter {
-            guard seen.insert($0.id).inserted else { return false }
-            return $0.name.lowercased().contains(q)
-                || ($0.seriesName?.lowercased().contains(q) ?? false)
-        }
-    }
-
-    private let columns = [GridItem(.adaptive(minimum: 100), spacing: DT.Spacing.shelfGap)]
+    @State private var jellyfinResults: [MediaItem] = []
+    @State private var seerrResults: [SeerrItem] = []
+    @State private var isSearching = false
 
     var body: some View {
         Group {
             if query.isEmpty {
-                emptyState
-            } else if results.isEmpty {
-                noResults
+                ContentUnavailableView(
+                    "Search",
+                    systemImage: "magnifyingglass",
+                    description: Text("Find movies, shows, and more.")
+                )
+            } else if !isSearching && jellyfinResults.isEmpty && seerrResults.isEmpty {
+                ContentUnavailableView.search(text: query)
             } else {
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
-                        ForEach(results) { item in
-                            PosterCard(
-                                title: item.name,
-                                subtitle: item.productionYear.map { "\($0)" },
-                                imageURL: mediaRepo.imageURL(for: item)
-                            )
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
+                        // ── Library section ──────────────────────────────────
+                        if !jellyfinResults.isEmpty {
+                            ShelfRow(title: "Library", onSeeAll: nil) {
+                                ForEach(jellyfinResults) { item in
+                                    PosterCard(
+                                        title: item.name,
+                                        subtitle: item.productionYear.map { "\($0)" },
+                                        imageURL: mediaRepo.imageURL(for: item)
+                                    )
+                                }
+                            }
+                        }
+
+                        // ── Discover via Jellyseerr ──────────────────────────
+                        if seerrRepo.isConfigured && !seerrResults.isEmpty {
+                            ShelfRow(title: "Discover via Jellyseerr", onSeeAll: nil) {
+                                ForEach(seerrResults) { item in
+                                    PosterCard(
+                                        title: item.title,
+                                        subtitle: item.year,
+                                        imageURL: item.posterURL
+                                    )
+                                }
+                            }
                         }
                     }
-                    .padding(DT.Spacing.pagePad)
+                    .padding(.top, 8)
                 }
             }
         }
         .background(DT.Color.backgroundPrimary)
+        .onChange(of: query) { _, newValue in
+            performSearch(query: newValue)
+        }
     }
 
-    private var emptyState: some View {
-        ContentUnavailableView(
-            "Search Arcfin",
-            systemImage: "magnifyingglass",
-            description: Text("Find movies, shows, and more from your Jellyfin library.")
-        )
-    }
+    private func performSearch(query: String) {
+        guard !query.isEmpty else {
+            jellyfinResults = []
+            seerrResults = []
+            return
+        }
+        isSearching = true
+        Task {
+            async let jellyTask: [MediaItem] = {
+                if case .authenticated(let cred) = authManager.state {
+                    return await mediaRepo.search(query: query, credential: cred, authClient: authManager.authClient)
+                }
+                return []
+            }()
+            async let seerrTask = seerrRepo.search(query: query)
 
-    private var noResults: some View {
-        ContentUnavailableView.search(text: query)
+            jellyfinResults = await jellyTask
+            seerrResults    = await seerrTask
+            isSearching = false
+        }
     }
 }

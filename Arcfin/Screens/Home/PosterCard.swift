@@ -115,7 +115,7 @@ struct PosterCard: View {
 
 struct RequestCard: View {
     var title: String
-    var status: RequestStatus
+    var status: CardRequestStatus
     var accentHue: Color = DT.Color.backgroundSecondary
 
     var body: some View {
@@ -152,7 +152,7 @@ struct RequestCard: View {
 
 // MARK: - Status models
 
-enum RequestStatus: String {
+enum CardRequestStatus: String {
     case approved, pending, downloading, available
 
     var color: Color {
@@ -167,7 +167,7 @@ enum RequestStatus: String {
 }
 
 struct RequestStatusPill: View {
-    let status: RequestStatus
+    let status: CardRequestStatus
 
     var body: some View {
         Text(status.label)

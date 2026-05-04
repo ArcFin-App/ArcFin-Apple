@@ -9,6 +9,7 @@ final class MediaRepository {
 
     var continueWatching: [MediaItem] = []
     var recentlyAdded: [MediaItem] = []
+    var libraries: [JellyfinLibrary] = []
     var isLoading: Bool = false
 
     private(set) var baseURL: URL?
@@ -23,12 +24,20 @@ final class MediaRepository {
         accessToken = credential.accessToken
         isLoading = true
         let header = authClient.authHeader(token: credential.accessToken)
-        async let cw = client.getContinueWatching(credential: credential, authHeader: header)
-        async let la = client.getLatestMedia(credential: credential, authHeader: header)
+        async let cw   = client.getContinueWatching(credential: credential, authHeader: header)
+        async let la   = client.getLatestMedia(credential: credential, authHeader: header)
+        async let libs = client.getLibraries(credential: credential, authHeader: header)
         continueWatching = (try? await cw) ?? []
-        recentlyAdded = (try? await la) ?? []
+        recentlyAdded    = (try? await la) ?? []
+        libraries        = (try? await libs) ?? []
         isLoading = false
         loaded = true
+    }
+
+    func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {
+        guard !query.isEmpty else { return [] }
+        let header = authClient.authHeader(token: credential.accessToken)
+        return (try? await client.search(credential: credential, authHeader: header, query: query)) ?? []
     }
 
     func imageURL(for item: MediaItem, type: JellyfinImageType = .primary, fillWidth: Int = 300) -> URL? {

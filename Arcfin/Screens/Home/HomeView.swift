@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import JellyfinAPI
+import JellyseerrAPI
 import AuthCore
 
 // MARK: - Main tab container
@@ -14,7 +15,7 @@ struct MainTabView: View {
                 HomeView()
             }
             Tab("Library", systemImage: "square.grid.2x2") {
-                placeholderScreen("Library", icon: "square.grid.2x2")
+                LibraryView()
             }
             Tab("Stats", systemImage: "chart.xyaxis.line") {
                 StatsView()
@@ -35,21 +36,6 @@ struct MainTabView: View {
         .tabViewStyle(.sidebarAdaptable)
         .preferredColorScheme(.dark)
     }
-
-    @ViewBuilder
-    private func placeholderScreen(_ title: String, icon: String) -> some View {
-        ZStack {
-            DT.Color.backgroundPrimary.ignoresSafeArea()
-            VStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 40, weight: .thin))
-                    .foregroundStyle(DT.Color.textSecondary)
-                Text(title)
-                    .font(DT.Font.cardTitle)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-        }
-    }
 }
 
 // MARK: - Home screen
@@ -57,7 +43,10 @@ struct MainTabView: View {
 struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(JellyseerrRepository.self) private var seerrRepo
     @Environment(\.horizontalSizeClass) private var sizeClass
+
+    @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
@@ -65,16 +54,6 @@ struct HomeView: View {
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
     private var usePortraitHero: Bool { sizeClass == .compact }
-
-    private var greeting: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case 5..<12:  return "Good morning"
-        case 12..<17: return "Good afternoon"
-        case 17..<22: return "Good evening"
-        default:      return "Good night"
-        }
-    }
 
     var body: some View {
         NavigationStack {
@@ -104,12 +83,23 @@ struct HomeView: View {
                             ShelfRow(title: "Recently Added", badge: "NEW", onSeeAll: {}) {
                                 recentlyAddedContent
                             }
+
+                            if seerrRepo.isConfigured && seerrDiscoverEnabled {
+                                if !seerrRepo.trending.isEmpty {
+                                    seerrShelf(title: "Trending", items: seerrRepo.trending)
+                                }
+                                if !seerrRepo.popularMovies.isEmpty {
+                                    seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
+                                }
+                                if !seerrRepo.popularTV.isEmpty {
+                                    seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
+                                }
+                            }
                         }
                         .padding(.top, 12)
                     }
                 }
                 .background(DT.Color.backgroundPrimary)
-                // Extend scroll content behind the transparent nav bar
                 .ignoresSafeArea(edges: .top)
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
@@ -117,11 +107,6 @@ struct HomeView: View {
             }
             .navigationTitle("")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text(greeting)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {} label: {
                         Image(systemName: "bell")
@@ -143,10 +128,28 @@ struct HomeView: View {
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }
             await mediaRepo.load(credential: cred, authClient: authManager.authClient)
+            if seerrRepo.isConfigured && seerrDiscoverEnabled {
+                await seerrRepo.loadDiscover()
+            }
         }
         .onReceive(heroTimer) { _ in
             guard heroItems.count > 1 else { return }
             withAnimation(DT.Animation.slow) { heroIndex = (heroIndex + 1) % heroItems.count }
+        }
+    }
+
+    // MARK: - Seerr shelf
+
+    @ViewBuilder
+    private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
+        ShelfRow(title: title, onSeeAll: nil) {
+            ForEach(items) { item in
+                PosterCard(
+                    title: item.title,
+                    subtitle: item.year,
+                    imageURL: item.posterURL
+                )
+            }
         }
     }
 
@@ -162,7 +165,6 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            // Side vignette
             HStack(spacing: 0) {
                 LinearGradient(colors: [DT.Color.backgroundPrimary.opacity(0.3), .clear],
                                startPoint: .leading, endPoint: .trailing).frame(width: 48)
@@ -363,4 +365,5 @@ private extension Array {
     MainTabView()
         .environment(AuthManager())
         .environment(MediaRepository())
+        .environment(JellyseerrRepository())
 }

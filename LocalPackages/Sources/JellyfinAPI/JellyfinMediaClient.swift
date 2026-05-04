@@ -83,6 +83,39 @@ public struct JellyfinMediaClient: Sendable {
         ]
         return comps.url!
     }
+
+    public func getLibraries(credential: ServerCredential, authHeader: String) async throws -> [JellyfinLibrary] {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Views")
+        var req = URLRequest(url: url)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let page = try JSONDecoder().decode(LibraryViewsResponse.self, from: data)
+        return page.items.map {
+            JellyfinLibrary(id: $0.id, name: $0.name,
+                           collectionType: JellyfinLibrary.LibraryType(apiValue: $0.collectionType ?? ""),
+                           primaryImageTag: $0.imageTags?["Primary"])
+        }
+    }
+
+    public func search(credential: ServerCredential, authHeader: String, query: String, limit: Int = 20) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "SearchTerm", value: query),
+            .init(name: "IncludeItemTypes", value: "Movie,Series,Episode"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,SeriesName"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let page = try JSONDecoder().decode(ItemsPage.self, from: data)
+        return page.items.map { $0.toMediaItem() }
+    }
 }
 
 // MARK: - Private response types
@@ -160,5 +193,21 @@ private struct UserDataResponse: Decodable {
         case isFavorite = "IsFavorite"
         case played = "Played"
         case playedPercentage = "PlayedPercentage"
+    }
+}
+
+private struct LibraryViewsResponse: Decodable {
+    let items: [LibraryViewItem]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+private struct LibraryViewItem: Decodable {
+    let id: String
+    let name: String
+    let collectionType: String?
+    let imageTags: [String: String]?
+    enum CodingKeys: String, CodingKey {
+        case id = "Id"; case name = "Name"
+        case collectionType = "CollectionType"; case imageTags = "ImageTags"
     }
 }

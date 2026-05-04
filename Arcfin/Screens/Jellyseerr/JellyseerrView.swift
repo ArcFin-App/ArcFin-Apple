@@ -8,14 +8,14 @@ private struct TrendingItem: Identifiable {
     var year: String
     var type: String
     var hue: Color
-    var status: RequestStatus?
+    var status: CardRequestStatus?
 }
 
 private struct MyRequest: Identifiable {
     let id = UUID()
     var title: String
     var type: String
-    var status: RequestStatus
+    var status: CardRequestStatus
     var date: String
     var progress: Double?
 }
@@ -196,7 +196,7 @@ struct JellyseerrView: View {
 
     private func trendingCard(_ item: TrendingItem) -> some View {
         let isRequested = requestedTitles.contains(item.title)
-        let effectiveStatus = isRequested ? RequestStatus.pending : item.status
+        let effectiveStatus = isRequested ? CardRequestStatus.pending : item.status
 
         return ZStack(alignment: .bottomLeading) {
             // Background

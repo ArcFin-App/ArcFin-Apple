@@ -82,3 +82,73 @@ public struct SearchResult: Sendable, Identifiable, Equatable {
         self.overview = overview
     }
 }
+
+// MARK: - Discover models
+
+public struct SeerrItem: Sendable, Identifiable, Equatable {
+    public let id: Int
+    public var title: String
+    public var mediaType: RequestMediaType
+    public var posterPath: String?
+    public var backdropPath: String?
+    public var year: String?
+    public var overview: String?
+    public var availabilityStatus: SeerrAvailabilityStatus?
+
+    public init(id: Int, title: String, mediaType: RequestMediaType, posterPath: String? = nil,
+                backdropPath: String? = nil, year: String? = nil, overview: String? = nil,
+                availabilityStatus: SeerrAvailabilityStatus? = nil) {
+        self.id = id; self.title = title; self.mediaType = mediaType
+        self.posterPath = posterPath; self.backdropPath = backdropPath
+        self.year = year; self.overview = overview; self.availabilityStatus = availabilityStatus
+    }
+
+    public var posterURL: URL? {
+        posterPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w500\($0)") }
+    }
+    public var backdropURL: URL? {
+        backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w1280\($0)") }
+    }
+}
+
+public enum SeerrAvailabilityStatus: Int, Sendable, Equatable {
+    case unknown = 1, pending, processing, partiallyAvailable, available
+
+    public var label: String {
+        switch self {
+        case .unknown:           "Unknown"
+        case .pending:           "Pending"
+        case .processing:        "Processing"
+        case .partiallyAvailable:"Partial"
+        case .available:         "Available"
+        }
+    }
+
+    public var colorHex: String {
+        switch self {
+        case .available:         "10b981"
+        case .pending:           "f59e0b"
+        case .processing:        "06B6D4"
+        default:                 "6B7280"
+        }
+    }
+}
+
+public struct SeerrRequestItem: Sendable, Identifiable, Equatable {
+    public let id: Int
+    public var mediaTitle: String
+    public var mediaType: RequestMediaType
+    public var status: RequestStatus
+    public var requestedAt: Date
+    public var posterPath: String?
+
+    public init(id: Int, mediaTitle: String, mediaType: RequestMediaType, status: RequestStatus,
+                requestedAt: Date, posterPath: String? = nil) {
+        self.id = id; self.mediaTitle = mediaTitle; self.mediaType = mediaType
+        self.status = status; self.requestedAt = requestedAt; self.posterPath = posterPath
+    }
+
+    public var posterURL: URL? {
+        posterPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w500\($0)") }
+    }
+}
