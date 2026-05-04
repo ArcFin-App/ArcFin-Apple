@@ -1,6 +1,8 @@
 import Foundation
 
-// MARK: - Jellyseerr HTTP client (cookie-based local auth)
+// MARK: - Jellyseerr HTTP client (cookie-based auth)
+// Supports both Jellyfin-imported accounts (/api/v1/auth/jellyfin)
+// and local Jellyseerr accounts (/api/v1/auth/local), trying Jellyfin first.
 
 public actor JellyseerrHTTPClient {
     private let baseURL: URL
@@ -22,19 +24,28 @@ public actor JellyseerrHTTPClient {
 
     // MARK: - Auth
 
+    /// Tries Jellyfin-imported auth first, falls back to local auth.
+    /// Jellyfin-imported accounts use POST /api/v1/auth/jellyfin with
+    /// the same username/password as the Jellyfin server.
     public func login() async throws {
-        let url = baseURL.appendingPathComponent("api/v1/auth/local")
+        if await tryAuth(path: "api/v1/auth/jellyfin") { isAuthenticated = true; return }
+        if await tryAuth(path: "api/v1/auth/local")    { isAuthenticated = true; return }
+        throw JellyseerrError.authFailed
+    }
+
+    private func tryAuth(path: String) async -> Bool {
+        guard let url = URL(string: path, relativeTo: baseURL) else { return false }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let body = ["username": username, "password": password]
-        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        guard let body = try? JSONSerialization.data(withJSONObject: body) else { return false }
+        req.httpBody = body
         req.timeoutInterval = 15
-        let (_, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw JellyseerrError.authFailed
-        }
-        isAuthenticated = true
+        guard let (_, response) = try? await session.data(for: req),
+              let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else { return false }
+        return true
     }
 
     private func ensureAuthenticated() async throws {

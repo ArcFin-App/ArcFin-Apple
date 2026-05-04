@@ -326,7 +326,7 @@ struct JellyseerrPluginView: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Your Jellyseerr local account username and password.")
+                Text("Use your Jellyfin username and password — Jellyseerr accepts Jellyfin accounts automatically.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -368,22 +368,24 @@ struct JellyseerrPluginView: View {
         }
         isTesting = true; testResult = nil
         let (user, pass) = (seerrUsername, seerrPassword)
+        let body = try? JSONSerialization.data(withJSONObject: ["username": user, "password": pass])
         Task {
-            var req = URLRequest(url: url.appendingPathComponent("api/v1/auth/local"))
-            req.httpMethod = "POST"
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = try? JSONSerialization.data(withJSONObject: ["username": user, "password": pass])
-            req.timeoutInterval = 10
-            do {
-                let (_, resp) = try await URLSession.shared.data(for: req)
-                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
+            // Try Jellyfin-imported auth first, then local auth
+            for path in ["api/v1/auth/jellyfin", "api/v1/auth/local"] {
+                var req = URLRequest(url: url.appendingPathComponent(path))
+                req.httpMethod = "POST"
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.httpBody = body
+                req.timeoutInterval = 10
+                if let (_, resp) = try? await URLSession.shared.data(for: req),
+                   let http = resp as? HTTPURLResponse,
+                   (200...299).contains(http.statusCode) {
                     testResult = "✓ Connected successfully"
-                } else {
-                    testResult = "✗ Invalid credentials or server error"
+                    isTesting = false
+                    return
                 }
-            } catch {
-                testResult = "✗ \(error.localizedDescription)"
             }
+            testResult = "✗ Invalid credentials or server unreachable"
             isTesting = false
         }
     }
