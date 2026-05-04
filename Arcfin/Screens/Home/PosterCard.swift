@@ -58,12 +58,12 @@ struct PosterCard: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(3)
-                        .minimumScaleFactor(0.75)
+                        .fixedSize(horizontal: false, vertical: true)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 8)
-                .padding(.top, 12)
+                .padding(.top, 24)
                 .padding(.bottom, progress != nil ? 6 : 8)
                 .background(
                     LinearGradient(

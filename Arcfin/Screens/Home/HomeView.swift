@@ -22,22 +22,16 @@ struct MainTabView: View {
             Tab("Requests", systemImage: "clock") {
                 JellyseerrView()
             }
-            // role: .search pins this tab to the trailing end of the tab bar,
-            // separate from the main group — matching Apple's iOS 26 design.
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 NavigationStack {
                     SearchView(query: $searchQuery)
-                        .searchable(
-                            text: $searchQuery,
-                            prompt: "Movies, shows, people…"
-                        )
+                        .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
                         .navigationTitle("Search")
                         .navigationBarTitleDisplayMode(.large)
                         .background(DT.Color.backgroundPrimary)
                 }
             }
         }
-        // Adapts tab bar → sidebar automatically on iPad / Mac
         .tabViewStyle(.sidebarAdaptable)
         .preferredColorScheme(.dark)
     }
@@ -69,52 +63,74 @@ struct HomeView: View {
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
-
-    // iPhone (compact) → portrait primary image; iPad/Mac/tvOS → 16:9 backdrop
     private var usePortraitHero: Bool { sizeClass == .compact }
 
     var body: some View {
-        GeometryReader { proxy in
-            // proxy.safeAreaInsets.top is the exact status-bar height because
-            // the GeometryReader itself ignores safe area (see modifier below).
-            let top     = proxy.safeAreaInsets.top
-            let screenW = proxy.size.width
-            let imageH  = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
-            // heroH: image fills to screen top, no extra top offset needed
-            let heroH   = usePortraitHero ? imageH : imageH + 220
+        NavigationStack {
+            GeometryReader { proxy in
+                let screenW = proxy.size.width
+                let imageH  = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
+                let heroH   = usePortraitHero ? imageH : imageH + 220
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    heroBanner(top: top, imageH: imageH, screenW: screenW)
-                        .frame(height: heroH)
-
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        if !mediaRepo.continueWatching.isEmpty {
-                            ShelfRow(title: "Continue Watching", onSeeAll: {}) {
-                                ForEach(mediaRepo.continueWatching) { item in
-                                    PosterCard(
-                                        title: itemDisplayTitle(item),
-                                        subtitle: itemDisplaySubtitle(item),
-                                        progress: item.userData?.playedPercentage.map { $0 / 100 },
-                                        imageURL: mediaRepo.imageURL(for: item)
-                                    )
+                        heroBanner(imageH: imageH, screenW: screenW)
+                            .frame(height: heroH)
+
+                        VStack(spacing: 0) {
+                            if !mediaRepo.continueWatching.isEmpty {
+                                ShelfRow(title: "Continue Watching", onSeeAll: {}) {
+                                    ForEach(mediaRepo.continueWatching) { item in
+                                        PosterCard(
+                                            title: itemDisplayTitle(item),
+                                            subtitle: itemDisplaySubtitle(item),
+                                            progress: item.userData?.playedPercentage.map { $0 / 100 },
+                                            imageURL: mediaRepo.imageURL(for: item)
+                                        )
+                                    }
                                 }
                             }
+                            ShelfRow(title: "Recently Added", badge: "NEW", onSeeAll: {}) {
+                                recentlyAddedContent
+                            }
                         }
-                        ShelfRow(title: "Recently Added", badge: "NEW", onSeeAll: {}) {
-                            recentlyAddedContent
-                        }
+                        .padding(.top, 12)
                     }
-                    .padding(.top, 12)
+                }
+                .background(DT.Color.backgroundPrimary)
+                // Extend scroll content behind the transparent nav bar
+                .ignoresSafeArea(edges: .top)
+            }
+            .navigationTitle("")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    HStack(spacing: 6) {
+                        ArcfinIconView(size: 20)
+                        Text("arcfin")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(DT.Color.textPrimary)
+                            .tracking(-0.5)
+                    }
+                }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {} label: {
+                        Image(systemName: "bell")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.white)
+                            .frame(width: 34, height: 34)
+                    }
+                    .glassEffect(.regular.interactive(), in: .circle)
+
+                    Text(authManager.state.displayInitials)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 34, height: 34)
+                        .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
                 }
             }
-            .background(DT.Color.backgroundPrimary)
-            .ignoresSafeArea()
-            .overlay(alignment: .top) { navBar(top: top) }
+            // Transparent nav bar — hero image shows through
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
-        // ignoresSafeArea on the GR so proxy.safeAreaInsets gives real screen insets,
-        // not zero (which happens when the GR is already clipped to the safe area).
-        .ignoresSafeArea()
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }
             await mediaRepo.load(credential: cred, authClient: authManager.authClient)
@@ -125,52 +141,17 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Nav bar
-
-    private func navBar(top: CGFloat) -> some View {
-        HStack {
-            HStack(spacing: 6) {
-                ArcfinIconView(size: 20)
-                Text("arcfin")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .tracking(-0.5)
-            }
-            Spacer()
-            HStack(spacing: 12) {
-                Button {} label: {
-                    Image(systemName: "bell")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.white)
-                        .frame(width: 34, height: 34)
-                }
-                .glassEffect(.regular.interactive(), in: .circle)
-
-                Text(authManager.state.displayInitials)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 34, height: 34)
-                    .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
-            }
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, top + 6)
-        .padding(.bottom, 12)
-        .background(
-            LinearGradient(colors: [.black.opacity(0.6), .clear], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea(edges: .top)
-        )
-    }
-
     // MARK: - Hero banner
 
-    private func heroBanner(top: CGFloat, imageH: CGFloat, screenW: CGFloat) -> some View {
+    private func heroBanner(imageH: CGFloat, screenW: CGFloat) -> some View {
         ZStack(alignment: .bottom) {
-            // Image starts at y=0 — behind the status bar — for full-bleed look
-            heroBackground(imageH: imageH, screenW: screenW)
-                .overlay(heroImageFade)
-                .animation(DT.Animation.slow, value: heroIndex)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            VStack(spacing: 0) {
+                heroBackground(imageH: imageH, screenW: screenW)
+                    .overlay(heroImageFade)
+                    .animation(DT.Animation.slow, value: heroIndex)
+                if !usePortraitHero { Spacer(minLength: 0) }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
             // Side vignette
             HStack(spacing: 0) {
