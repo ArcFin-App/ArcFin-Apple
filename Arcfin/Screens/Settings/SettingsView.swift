@@ -68,13 +68,21 @@ struct SettingsView: View {
                 NavigationLink {
                     placeholderDetail("Switch Server")
                 } label: {
+#if os(tvOS)
+                    TVFocusRowLabel { Label("Switch Server", systemImage: "server.rack") }
+#else
                     Label("Switch Server", systemImage: "server.rack")
+#endif
                 }
                 .tvListRow()
                 NavigationLink {
                     placeholderDetail("Add Server")
                 } label: {
+#if os(tvOS)
+                    TVFocusRowLabel { Label("Add Server", systemImage: "plus.circle") }
+#else
                     Label("Add Server", systemImage: "plus.circle")
+#endif
                 }
                 .tvListRow()
             } header: {
@@ -88,30 +96,50 @@ struct SettingsView: View {
                     JellyseerrPluginView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
+#if os(tvOS)
+                    TVFocusRowLabel {
+                        HStack {
+                            Label("Jellyseerr", systemImage: "clock.fill")
+                            Spacer()
+                            if !seerrURL.isEmpty {
+                                Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                            }
+                        }
+                    }
+#else
                     HStack {
                         Label("Jellyseerr", systemImage: "clock.fill")
                         Spacer()
                         if !seerrURL.isEmpty {
-                            Text("Connected")
-                                .font(.caption2)
-                                .foregroundStyle(Color(hex: "10b981"))
+                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
                         }
                     }
+#endif
                 }
                 .tvListRow()
                 NavigationLink {
                     StreamystatsPluginView()
                         .toolbar(.hidden, for: .tabBar)
                 } label: {
+#if os(tvOS)
+                    TVFocusRowLabel {
+                        HStack {
+                            Label("Streamystats", systemImage: "chart.xyaxis.line")
+                            Spacer()
+                            if !streamystatsURL.isEmpty {
+                                Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                            }
+                        }
+                    }
+#else
                     HStack {
                         Label("Streamystats", systemImage: "chart.xyaxis.line")
                         Spacer()
                         if !streamystatsURL.isEmpty {
-                            Text("Connected")
-                                .font(.caption2)
-                                .foregroundStyle(Color(hex: "10b981"))
+                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
                         }
                     }
+#endif
                 }
                 .tvListRow()
             } header: {
@@ -127,13 +155,21 @@ struct SettingsView: View {
                     Text(buildNumber).foregroundStyle(.secondary)
                 }
                 Link(destination: URL(string: "https://jellyfin.org")!) {
+#if os(tvOS)
+                    TVFocusRowLabel { Label("Jellyfin Website", systemImage: "safari") }
+#else
                     Label("Jellyfin Website", systemImage: "safari")
+#endif
                 }
                 .tvListRow()
                 NavigationLink {
                     placeholderDetail("Open Source Licenses")
                 } label: {
+#if os(tvOS)
+                    TVFocusRowLabel { Label("Open Source Licenses", systemImage: "doc.text") }
+#else
                     Label("Open Source Licenses", systemImage: "doc.text")
+#endif
                 }
                 .tvListRow()
             } header: {
@@ -145,8 +181,16 @@ struct SettingsView: View {
                 Button(role: .destructive) {
                     authManager.signOut()
                 } label: {
+#if os(tvOS)
+                    TVFocusRowLabel {
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .foregroundStyle(.red)
+                    }
+#else
                     Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                         .frame(maxWidth: .infinity, alignment: .center)
+#endif
                 }
                 .tvListRow()
             }

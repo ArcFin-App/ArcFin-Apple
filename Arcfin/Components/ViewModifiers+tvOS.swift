@@ -53,11 +53,11 @@ extension View {
     }
 
     // Use on List rows (NavigationLink, Button, Link).
-    // Disables the system white pill and substitutes an accent-tinted background.
+    // Clears system white pill — wrap label content in TVFocusRowLabel for accent highlight.
     func tvListRow() -> some View {
 #if os(tvOS)
         self
-            .listRowBackground(TVFocusBackground())
+            .listRowBackground(Color.clear)
             .focusEffectDisabled()
 #else
         self
@@ -83,16 +83,24 @@ private struct TVFocusRingModifier: ViewModifier {
     }
 }
 
-// Background view used by tvListRow() — reads focus state from the list row context.
-struct TVFocusBackground: View {
+// Place INSIDE a NavigationLink/Button label — inherits focus from the row correctly.
+struct TVFocusRowLabel<Content: View>: View {
+    var cornerRadius: CGFloat = DT.Radius.md
+    @ViewBuilder let content: () -> Content
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
-        RoundedRectangle(cornerRadius: DT.Radius.md)
-            .fill(isFocused ? DT.Color.accent.opacity(0.15) : Color.clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: DT.Radius.md)
-                    .stroke(isFocused ? DT.Color.accent.opacity(0.35) : Color.clear, lineWidth: 1)
+        content()
+            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(isFocused ? DT.Color.accent.opacity(0.18) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(isFocused ? DT.Color.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                    )
             )
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
