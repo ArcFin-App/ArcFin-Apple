@@ -43,9 +43,15 @@ struct ShelfRow<Content: View>: View {
                     content()
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
+#if os(tvOS)
+                .focusSection()
+#endif
             }
         }
         .padding(.bottom, DT.Spacing.lg)
+#if os(tvOS)
+        .focusSection()
+#endif
     }
 }
 

@@ -117,6 +117,9 @@ struct HomeView: View {
                             }
                         }
                         .padding(.top, 12)
+#if os(tvOS)
+                        .focusSection()
+#endif
                     }
                 }
                 .background(DT.Color.backgroundPrimary)
@@ -132,6 +135,7 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("")
+#if !os(tvOS)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {} label: {
@@ -150,6 +154,7 @@ struct HomeView: View {
                 }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
+#endif
         }
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }

@@ -31,13 +31,9 @@ struct PosterCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
                 .overlay(
                     RoundedRectangle(cornerRadius: DT.Radius.card)
-                        .stroke(isFocused ? DT.Color.accent : Color.white.opacity(0.06), lineWidth: isFocused ? 2 : 1)
+                        .stroke(isFocused ? DT.Color.accent : Color.white.opacity(0.06), lineWidth: isFocused ? 3 : 1)
                 )
-                .scaleEffect(isFocused ? 1.04 : 1)
-                .shadow(
-                    color: isFocused ? DT.Color.accent.opacity(0.4) : .black.opacity(0.5),
-                    radius: isFocused ? 18 : 4, y: isFocused ? 8 : 2
-                )
+                .shadow(color: .black.opacity(0.5), radius: 4, y: 2)
                 .animation(DT.Animation.fast, value: isFocused)
 
             VStack(alignment: .leading, spacing: 3) {
