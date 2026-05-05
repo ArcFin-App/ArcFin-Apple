@@ -31,9 +31,11 @@ struct PosterCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
                 .overlay(
                     RoundedRectangle(cornerRadius: DT.Radius.card)
-                        .stroke(isFocused ? DT.Color.accent : Color.white.opacity(0.08), lineWidth: isFocused ? 3 : 1)
+                        .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: 3)
                 )
-                .animation(DT.Animation.fast, value: isFocused)
+                .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
+                .scaleEffect(isFocused ? 1.05 : 1.0)
+                .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
 
             VStack(alignment: .leading, spacing: 2) {
                 if let subtitle {
