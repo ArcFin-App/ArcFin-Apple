@@ -35,7 +35,9 @@ struct MainTabView: View {
                 }
             }
         }
+#if !os(tvOS)
         .tabViewStyle(.sidebarAdaptable)
+#endif
         .preferredColorScheme(.dark)
     }
 }
@@ -63,8 +65,14 @@ struct HomeView: View {
         NavigationStack {
             GeometryReader { proxy in
                 let screenW = proxy.size.width
-                let imageH  = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
-                let heroH   = usePortraitHero ? imageH : imageH + 220
+                let screenH = proxy.size.height
+#if os(tvOS)
+                let imageH: CGFloat = screenH * 0.48
+                let heroH:  CGFloat = imageH + 180
+#else
+                let imageH = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
+                let heroH  = usePortraitHero ? imageH : imageH + 220
+#endif
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -257,11 +265,11 @@ struct HomeView: View {
                 AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFit()
-                            .frame(maxWidth: 240, maxHeight: 76)
+                            .frame(maxWidth: 240 * DT.Scale.font, maxHeight: 76 * DT.Scale.font)
                             .shadow(color: .black.opacity(0.7), radius: 12)
                     } else {
                         Text(item.name)
-                            .font(.system(size: 28, weight: .heavy))
+                            .font(.system(size: 28 * DT.Scale.font, weight: .heavy))
                             .foregroundStyle(.white)
                             .tracking(-0.8)
                             .multilineTextAlignment(.center)
@@ -274,7 +282,7 @@ struct HomeView: View {
                 .animation(.easeInOut(duration: 0.3), value: heroIndex)
 
                 Text(heroMeta(item))
-                    .font(.system(size: 12))
+                    .font(.system(size: 12 * DT.Scale.font))
                     .foregroundStyle(.white.opacity(0.6))
                     .padding(.top, 7)
                     .animation(nil, value: heroIndex)
@@ -284,25 +292,27 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     Button {} label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "play.fill").font(.system(size: 12))
-                            Text("Play").font(.system(size: 14, weight: .bold))
+                            Image(systemName: "play.fill").font(.system(size: 12 * DT.Scale.font))
+                            Text("Play").font(.system(size: 14 * DT.Scale.font, weight: .bold))
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 28).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))
+                    .tvFocusRing(cornerRadius: 10)
 
                     Button {
                         if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "info.circle").font(.system(size: 12))
-                            Text("More Info").font(.system(size: 13, weight: .semibold))
+                            Image(systemName: "info.circle").font(.system(size: 12 * DT.Scale.font))
+                            Text("More Info").font(.system(size: 13 * DT.Scale.font, weight: .semibold))
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 20).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
+                    .tvFocusRing(cornerRadius: 10)
                 }
             }
             .padding(.top, 16)
