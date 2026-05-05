@@ -1,8 +1,6 @@
 import Foundation
 
-// Copy of the bridge for the ArcfinTopShelf extension target.
-// The main app target has its own copy at Arcfin/TopShelf/TopShelfBridge.swift.
-// Keep both in sync.
+// Extension-target copy — keep in sync with Arcfin/TopShelf/TopShelfBridge.swift
 
 struct TopShelfMediaItem: Codable {
     let id: String
@@ -13,19 +11,16 @@ struct TopShelfMediaItem: Codable {
 }
 
 enum TopShelfBridge {
-    private static let suiteName = "group.com.psmattas.arcfin"
-    private static let continueWatchingKey = "topShelf.continueWatching"
+    private static let suiteName            = "group.com.psmattas.arcfin"
+    private static let continueWatchingKey  = "topShelf.continueWatching"
+    private static let recentlyAddedKey     = "topShelf.recentlyAdded"
 
-    static func save(continueWatching items: [TopShelfMediaItem]) {
-        guard let defaults = UserDefaults(suiteName: suiteName),
-              let data = try? JSONEncoder().encode(Array(items.prefix(10))) else { return }
-        defaults.set(data, forKey: continueWatchingKey)
-        defaults.synchronize()
-    }
+    static func loadContinueWatching() -> [TopShelfMediaItem] { load(key: continueWatchingKey) }
+    static func loadRecentlyAdded()    -> [TopShelfMediaItem] { load(key: recentlyAddedKey) }
 
-    static func loadContinueWatching() -> [TopShelfMediaItem] {
+    private static func load(key: String) -> [TopShelfMediaItem] {
         guard let defaults = UserDefaults(suiteName: suiteName),
-              let data = defaults.data(forKey: continueWatchingKey),
+              let data = defaults.data(forKey: key),
               let items = try? JSONDecoder().decode([TopShelfMediaItem].self, from: data)
         else { return [] }
         return items

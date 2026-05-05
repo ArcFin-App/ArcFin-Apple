@@ -22,25 +22,38 @@ public struct TopShelfMediaItem: Codable {
 public enum TopShelfBridge {
     private static let suiteName = "group.com.psmattas.arcfin"
     private static let continueWatchingKey = "topShelf.continueWatching"
+    private static let recentlyAddedKey    = "topShelf.recentlyAdded"
 
-    /// Called from the main app whenever Continue Watching changes.
-    public static func save(continueWatching items: [TopShelfMediaItem]) {
-        guard let defaults = UserDefaults(suiteName: suiteName),
-              let data = try? JSONEncoder().encode(Array(items.prefix(10))) else { return }
-        defaults.set(data, forKey: continueWatchingKey)
+    public static func save(
+        continueWatching: some Collection<TopShelfMediaItem>,
+        recentlyAdded: some Collection<TopShelfMediaItem>
+    ) {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return }
+        if let data = try? JSONEncoder().encode(Array(continueWatching.prefix(5))) {
+            defaults.set(data, forKey: continueWatchingKey)
+        }
+        if let data = try? JSONEncoder().encode(Array(recentlyAdded.prefix(3))) {
+            defaults.set(data, forKey: recentlyAddedKey)
+        }
         defaults.synchronize()
     }
 
-    /// Called from the Top Shelf extension.
     public static func loadContinueWatching() -> [TopShelfMediaItem] {
+        load(key: continueWatchingKey)
+    }
+
+    public static func loadRecentlyAdded() -> [TopShelfMediaItem] {
+        load(key: recentlyAddedKey)
+    }
+
+    private static func load(key: String) -> [TopShelfMediaItem] {
         guard let defaults = UserDefaults(suiteName: suiteName),
-              let data = defaults.data(forKey: continueWatchingKey),
+              let data = defaults.data(forKey: key),
               let items = try? JSONDecoder().decode([TopShelfMediaItem].self, from: data)
         else { return [] }
         return items
     }
 
-    /// Deep link URL the extension hands to tvOS for a given item.
     public static func playURL(for itemID: String) -> URL {
         URL(string: "arcfin://play/\(itemID)")!
     }

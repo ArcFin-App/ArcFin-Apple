@@ -37,6 +37,11 @@ struct MainTabView: View {
         }
 #if !os(tvOS)
         .tabViewStyle(.sidebarAdaptable)
+#else
+        // Suppress the system white focus halo across all screens.
+        // The focus ENGINE still works (remote nav, isFocused env); only
+        // the system visual highlight is replaced by per-element custom styling.
+        .focusEffectDisabled()
 #endif
         .preferredColorScheme(.dark)
     }
@@ -56,6 +61,9 @@ struct HomeView: View {
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
+    @State private var seerrRequestItem: SeerrItem? = nil
+    @State private var seerrRequestPending = false
+    @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
     private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
@@ -94,6 +102,7 @@ struct HomeView: View {
 #if os(tvOS)
                                         .buttonStyle(TVCardButtonStyle())
                                         .focusEffectDisabled()
+                                        .contextMenu { quickLookMenu(item) }
 #else
                                         .buttonStyle(.plain)
                                         .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
@@ -189,6 +198,27 @@ struct HomeView: View {
             guard case .authenticated(let cred) = authManager.state else { return }
             await mediaRepo.load(credential: cred, authClient: authManager.authClient)
             mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
+            TopShelfBridge.save(
+                continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
+                    TopShelfMediaItem(
+                        id: item.id, title: item.name,
+                        subtitle: itemDisplaySubtitle(item),
+                        imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
+                        progress: item.userData?.playedPercentage.map { $0 / 100 } ?? 0
+                    )
+                },
+                recentlyAdded: mediaRepo.recentlyAdded.prefix(3).map { item in
+                    TopShelfMediaItem(
+                        id: item.id, title: item.name, subtitle: nil,
+                        imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
+                        progress: 0
+                    )
+                }
+            )
+            if let id = deepLinkItemID {
+                heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
+                    ?? mediaRepo.recentlyAdded.first { $0.id == id }
+            }
             if seerrRepo.isConfigured && seerrDiscoverEnabled {
                 await seerrRepo.loadDiscover()
                 let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV).flatMap { item in
@@ -201,6 +231,25 @@ struct HomeView: View {
             guard heroItems.count > 1 else { return }
             withAnimation(DT.Animation.slow) { heroIndex = (heroIndex + 1) % heroItems.count }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
+            if let id = note.userInfo?["itemID"] as? String {
+                deepLinkItemID = id
+                heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
+                    ?? mediaRepo.recentlyAdded.first { $0.id == id }
+            }
+        }
+        .alert(
+            seerrRequestItem.map { "Request \($0.title)" } ?? "Request",
+            isPresented: $seerrRequestPending,
+            presenting: seerrRequestItem
+        ) { item in
+            Button("Request via Jellyseerr") {
+                Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { item in
+            Text(item.year.map { "(\($0))" } ?? "")
+        }
     }
 
     // MARK: - Seerr shelf
@@ -209,15 +258,21 @@ struct HomeView: View {
     private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
         ShelfRow(title: title, onSeeAll: nil) {
             ForEach(items) { item in
-                PosterCard(
-                    title: item.title,
-                    subtitle: item.year,
-                    imageURL: seerrShelfImageURL(for: item)
-                )
+                Button {
+                    seerrRequestItem = item
+                    seerrRequestPending = true
+                } label: {
+                    PosterCard(
+                        title: item.title,
+                        subtitle: item.year,
+                        imageURL: seerrShelfImageURL(for: item)
+                    )
+                }
 #if os(tvOS)
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
 #else
+                .buttonStyle(.plain)
                 .contextMenu { seerrQuickLookMenu(item) } preview: { seerrQuickLookPreview(item) }
 #endif
             }
@@ -531,6 +586,7 @@ struct HomeView: View {
 #if os(tvOS)
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
+                .contextMenu { quickLookMenu(item) }
 #else
                 .buttonStyle(.plain)
                 .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
