@@ -33,6 +33,9 @@ struct ShelfRow<Content: View>: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .capsule)
+#if os(tvOS)
+                        .focusEffectDisabled()
+#endif
                 }
             }
             .padding(.horizontal, DT.Spacing.pagePad)

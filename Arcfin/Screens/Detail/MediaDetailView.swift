@@ -38,6 +38,9 @@ struct MediaDetailView: View {
                 else { detailContent }
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
+#if os(tvOS)
+            .focusSection()
+#endif
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
@@ -257,6 +260,10 @@ struct MediaDetailView: View {
         .buttonStyle(.plain)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
+#if os(tvOS)
+        .focusEffectDisabled()
+        .tvFocusRing(cornerRadius: DT.Radius.lg)
+#endif
     }
 
     // MARK: - Loading skeleton
@@ -296,6 +303,9 @@ struct MediaDetailView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
             .padding(.bottom, DT.Spacing.md)
+#if os(tvOS)
+            .focusSection()
+#endif
         }
 
         // Overview
@@ -388,6 +398,9 @@ struct MediaDetailView: View {
             }
         }
         .padding(.bottom, DT.Spacing.md)
+#if os(tvOS)
+        .focusSection()
+#endif
     }
 
     private var personPlaceholder: some View {
@@ -451,7 +464,13 @@ struct MediaDetailView: View {
                     .background(DT.Color.accent.opacity(0.1))
                     .clipShape(Capsule())
                 }
+#if os(tvOS)
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .tvFocusRing(cornerRadius: DT.Radius.pill)
+#else
                 .buttonStyle(.plain)
+#endif
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 
@@ -463,6 +482,9 @@ struct MediaDetailView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
         }
         .padding(.bottom, DT.Spacing.md)
+#if os(tvOS)
+        .focusSection()
+#endif
     }
 
     private func seriesLinkSection(_ series: MediaItem) -> some View {
@@ -488,7 +510,13 @@ struct MediaDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
             }
+#if os(tvOS)
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: 10)
+#else
             .buttonStyle(.plain)
+#endif
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
@@ -568,10 +596,18 @@ struct MediaDetailView: View {
                                 imageURL: mediaRepo.imageURL(for: sim)
                             )
                         }
+#if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+#else
                         .buttonStyle(.plain)
+#endif
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
+#if os(tvOS)
+                .focusSection()
+#endif
             }
         }
         .padding(.bottom, DT.Spacing.md)
@@ -609,10 +645,18 @@ struct MediaDetailView: View {
                                 imageURL: mediaRepo.imageURL(for: trailer)
                             )
                         }
+#if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+#else
                         .buttonStyle(.plain)
+#endif
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
+#if os(tvOS)
+                .focusSection()
+#endif
             }
         }
         .padding(.bottom, DT.Spacing.md)
