@@ -48,6 +48,9 @@ struct ContentView: View {
         }
         .animation(DT.Animation.standard, value: phase)
         .preferredColorScheme(.dark)
+#if os(tvOS)
+        .focusEffectDisabled()
+#endif
         .environment(authManager)
         .environment(mediaRepo)
         .environment(seerrRepo)

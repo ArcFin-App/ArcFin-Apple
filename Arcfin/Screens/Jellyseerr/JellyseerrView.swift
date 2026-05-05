@@ -213,12 +213,32 @@ struct JellyseerrView: View {
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 
+#if os(tvOS)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: DT.Spacing.shelfGap) {
+                    ForEach(displayItems) { item in
+                        Button { requestingItem = item } label: {
+                            PosterCard(
+                                title: item.title,
+                                subtitle: item.year,
+                                imageURL: item.backdropURL ?? item.posterURL
+                            )
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .focusSection()
+            }
+#else
             LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
                 ForEach(displayItems) { item in
                     discoverCard(item)
                 }
             }
             .padding(.horizontal, DT.Spacing.pagePad)
+#endif
         }
         .padding(.bottom, DT.Spacing.md)
     }
@@ -353,12 +373,32 @@ struct JellyseerrView: View {
                 ContentUnavailableView.search(text: searchText)
                     .frame(height: 200)
             } else {
+#if os(tvOS)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: DT.Spacing.shelfGap) {
+                        ForEach(searchResults) { item in
+                            Button { requestingItem = item } label: {
+                                PosterCard(
+                                    title: item.title,
+                                    subtitle: item.year,
+                                    imageURL: item.backdropURL ?? item.posterURL
+                                )
+                            }
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                        }
+                    }
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .focusSection()
+                }
+#else
                 LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
                     ForEach(searchResults) { item in
                         discoverCard(item)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
+#endif
             }
         }
         .padding(.bottom, DT.Spacing.md)
@@ -399,21 +439,32 @@ struct JellyseerrView: View {
     }
 
     private func requestRow(_ req: SeerrRequestItem) -> some View {
-        HStack(spacing: 10) {
-            // Mini poster
-            if let url = req.posterURL {
+#if os(tvOS)
+        let thumbW: CGFloat = 96
+        let thumbH: CGFloat = 54
+        let thumbRadius: CGFloat = 6
+        let thumbURL: URL? = req.backdropURL ?? req.posterURL
+#else
+        let thumbW: CGFloat = 32
+        let thumbH: CGFloat = 44
+        let thumbRadius: CGFloat = 6
+        let thumbURL: URL? = req.posterURL
+#endif
+        return HStack(spacing: 10) {
+            // Thumbnail
+            if let url = thumbURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: posterMiniFallback
                     }
                 }
-                .frame(width: 32, height: 44)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .frame(width: thumbW, height: thumbH)
+                .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
             } else {
                 posterMiniFallback
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .frame(width: 32, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
+                    .frame(width: thumbW, height: thumbH)
             }
 
             VStack(alignment: .leading, spacing: 3) {

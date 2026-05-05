@@ -232,6 +232,7 @@ private struct SeerrRequestResponse: Decodable {
     struct SeerrRequestMedia: Decodable {
         let mediaType: String?
         let posterPath: String?
+        let backdropPath: String?
         let title: String?
         let name: String?
         let originalTitle: String?
@@ -243,6 +244,7 @@ private struct SeerrRequestResponse: Decodable {
         let title = media.originalTitle ?? media.title ?? media.name ?? "Unknown"
         let date = createdAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         return SeerrRequestItem(id: id, mediaTitle: title, mediaType: mType,
-                                status: reqStatus, requestedAt: date, posterPath: media.posterPath)
+                                status: reqStatus, requestedAt: date,
+                                posterPath: media.posterPath, backdropPath: media.backdropPath)
     }
 }

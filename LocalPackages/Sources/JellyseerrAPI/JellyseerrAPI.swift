@@ -141,14 +141,20 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable {
     public var status: RequestStatus
     public var requestedAt: Date
     public var posterPath: String?
+    public var backdropPath: String?
 
     public init(id: Int, mediaTitle: String, mediaType: RequestMediaType, status: RequestStatus,
-                requestedAt: Date, posterPath: String? = nil) {
+                requestedAt: Date, posterPath: String? = nil, backdropPath: String? = nil) {
         self.id = id; self.mediaTitle = mediaTitle; self.mediaType = mediaType
-        self.status = status; self.requestedAt = requestedAt; self.posterPath = posterPath
+        self.status = status; self.requestedAt = requestedAt
+        self.posterPath = posterPath; self.backdropPath = backdropPath
     }
 
     public var posterURL: URL? {
         posterPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w500\($0)") }
+    }
+
+    public var backdropURL: URL? {
+        backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w1280\($0)") }
     }
 }

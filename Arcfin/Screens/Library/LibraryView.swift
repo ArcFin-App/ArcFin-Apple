@@ -86,7 +86,22 @@ struct LibraryView: View {
     private var librariesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader("Your Libraries")
-
+#if os(tvOS)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: DT.Spacing.shelfGap) {
+                    ForEach(mediaRepo.libraries) { library in
+                        NavigationLink(value: library) {
+                            TVLibraryCard(library: library)
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .focusSection()
+            }
+            .padding(.horizontal, -DT.Spacing.pagePad)
+#else
             LazyVGrid(columns: gridColumns, spacing: 12) {
                 ForEach(mediaRepo.libraries) { library in
                     NavigationLink(value: library) {
@@ -95,6 +110,7 @@ struct LibraryView: View {
                     .buttonStyle(.plain)
                 }
             }
+#endif
         }
     }
 
@@ -197,6 +213,51 @@ struct LibraryView: View {
         }.sorted { $0.modifiedDate > $1.modifiedDate }
     }
 }
+
+// MARK: - tvOS landscape library card
+
+#if os(tvOS)
+private struct TVLibraryCard: View {
+    let library: JellyfinLibrary
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: DT.Radius.card)
+                .fill(LinearGradient(
+                    colors: [
+                        Color(hex: library.collectionType.accentHex).opacity(0.3),
+                        DT.Color.backgroundSecondary,
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DT.Radius.card)
+                        .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: 3)
+                )
+
+            HStack(spacing: 20) {
+                Image(systemName: library.collectionType.systemIcon)
+                    .font(.system(size: 40 * DT.Scale.font, weight: .light))
+                    .foregroundStyle(Color(hex: library.collectionType.accentHex))
+
+                Text(library.name)
+                    .font(.system(size: 14 * DT.Scale.font, weight: .semibold))
+                    .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
+                    .lineLimit(2)
+                    .animation(DT.Animation.fast, value: isFocused)
+            }
+            .padding(24)
+        }
+        .frame(width: DT.Size.posterCard.width, height: DT.Size.posterCard.height)
+        .scaleEffect(isFocused ? 1.05 : 1.0)
+        .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
+        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .contentShape(Rectangle())
+    }
+}
+#endif
 
 // MARK: - Library card
 
@@ -322,7 +383,11 @@ struct LibraryDetailView: View {
     @State private var isLoading = true
 
     private let client = JellyfinMediaClient()
+#if os(tvOS)
+    private let columns = [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: DT.Spacing.shelfGap)]
+#else
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+#endif
 
     var body: some View {
         Group {
@@ -337,20 +402,33 @@ struct LibraryDetailView: View {
                 .background(DT.Color.backgroundPrimary)
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVGrid(columns: columns, spacing: 12) {
+                    LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                         ForEach(items) { item in
                             NavigationLink(value: item) {
+#if os(tvOS)
+                                PosterCard(
+                                    title: item.name,
+                                    subtitle: item.productionYear.map { String($0) },
+                                    imageURL: mediaRepo.tvImageURL(for: item)
+                                )
+#else
                                 libraryItemCard(item)
+#endif
                             }
+#if os(tvOS)
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                            .contextMenu { quickLookMenu(item) }
+#else
                             .buttonStyle(.plain)
-                            .contextMenu {
-                                quickLookMenu(item)
-                            } preview: {
-                                quickLookPreview(item)
-                            }
+                            .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
+#endif
                         }
                     }
                     .padding(DT.Spacing.pagePad)
+#if os(tvOS)
+                    .focusSection()
+#endif
                 }
                 .background(DT.Color.backgroundPrimary)
             }
