@@ -70,11 +70,13 @@ struct SettingsView: View {
                 } label: {
                     Label("Switch Server", systemImage: "server.rack")
                 }
+                .tvListRow()
                 NavigationLink {
                     placeholderDetail("Add Server")
                 } label: {
                     Label("Add Server", systemImage: "plus.circle")
                 }
+                .tvListRow()
             } header: {
                 sectionHeader("Account & Server", icon: "person.badge.key")
             }
@@ -96,6 +98,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+                .tvListRow()
                 NavigationLink {
                     StreamystatsPluginView()
                         .toolbar(.hidden, for: .tabBar)
@@ -110,6 +113,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+                .tvListRow()
             } header: {
                 sectionHeader("Plugins", icon: "puzzlepiece.extension")
             }
@@ -125,11 +129,13 @@ struct SettingsView: View {
                 Link(destination: URL(string: "https://jellyfin.org")!) {
                     Label("Jellyfin Website", systemImage: "safari")
                 }
+                .tvListRow()
                 NavigationLink {
                     placeholderDetail("Open Source Licenses")
                 } label: {
                     Label("Open Source Licenses", systemImage: "doc.text")
                 }
+                .tvListRow()
             } header: {
                 sectionHeader("About", icon: "info.circle")
             }
@@ -142,6 +148,7 @@ struct SettingsView: View {
                     Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
+                .tvListRow()
             }
         }
         .arcfinListStyle()

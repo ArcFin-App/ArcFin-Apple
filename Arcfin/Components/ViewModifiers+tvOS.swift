@@ -43,10 +43,22 @@ extension View {
     }
 
     // Replaces the tvOS default white focus highlight with an accent ring.
-    // Apply to any tappable row or card that currently shows a white overlay on focus.
+    // Use on standalone buttons/cards outside of a List.
     func tvFocusRing(cornerRadius: CGFloat = DT.Radius.md) -> some View {
 #if os(tvOS)
         self.modifier(TVFocusRingModifier(cornerRadius: cornerRadius))
+#else
+        self
+#endif
+    }
+
+    // Use on List rows (NavigationLink, Button, Link).
+    // Disables the system white pill and substitutes an accent-tinted background.
+    func tvListRow() -> some View {
+#if os(tvOS)
+        self
+            .listRowBackground(TVFocusBackground())
+            .focusEffectDisabled()
 #else
         self
 #endif
@@ -67,6 +79,21 @@ private struct TVFocusRingModifier: ViewModifier {
             )
             .shadow(color: isFocused ? DT.Color.accent.opacity(0.35) : .clear, radius: 8)
             .scaleEffect(isFocused ? 1.02 : 1.0)
+            .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+    }
+}
+
+// Background view used by tvListRow() — reads focus state from the list row context.
+struct TVFocusBackground: View {
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: DT.Radius.md)
+            .fill(isFocused ? DT.Color.accent.opacity(0.15) : Color.clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: DT.Radius.md)
+                    .stroke(isFocused ? DT.Color.accent.opacity(0.35) : Color.clear, lineWidth: 1)
+            )
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
 }

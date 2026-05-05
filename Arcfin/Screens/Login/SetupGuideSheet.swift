@@ -29,64 +29,88 @@ struct SetupGuideSheet: View {
     ]
 
     var body: some View {
+#if os(tvOS)
+        tvOSBody
+#else
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Header
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Jellyfin Setup Guide")
-                            .font(.system(size: 22 * DT.Scale.font, weight: .bold))
-                            .foregroundStyle(DT.Color.textPrimary)
-
-                        Text("Get your server running in a few steps")
-                            .font(DT.Font.caption)
-                            .foregroundStyle(DT.Color.textSecondary)
+            scrollContent
+                .background(DT.Color.backgroundPrimary.ignoresSafeArea())
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                            .foregroundStyle(DT.Color.accent)
+                            .fontWeight(.semibold)
                     }
-                    .padding(.horizontal, DT.Spacing.pagePad)
-                    .padding(.top, DT.Spacing.lg)
-                    .padding(.bottom, DT.Spacing.md)
-
-                    ForEach(steps) { step in
-                        stepRow(step)
-                    }
-
-                    // Quick tips
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Quick tips")
-                            .font(.system(size: 11 * DT.Scale.font, weight: .bold))
-                            .tracking(0.5)
-                            .textCase(.uppercase)
-                            .foregroundStyle(DT.Color.textSecondary)
-
-                        tipRow(icon: "exclamationmark.triangle", text: "Include the port number — e.g. http://192.168.1.10:8096")
-                        tipRow(icon: "exclamationmark.triangle", text: "No trailing slash — http://server.local not http://server.local/")
-                        tipRow(icon: "checkmark.circle", text: "Arcfin auto-discovers servers on your local Wi-Fi network")
-                        tipRow(icon: "checkmark.circle", text: "Quick Connect lets you sign in without typing a password on this device")
-                    }
-                    .padding(16)
-                    .background(DT.Color.accent.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
-                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(DT.Color.accent.opacity(0.12), lineWidth: 1))
-                    .padding(.horizontal, DT.Spacing.pagePad)
-                    .padding(.top, DT.Spacing.md)
-                    .padding(.bottom, DT.Spacing.xxxl)
                 }
-            }
-            .background(DT.Color.backgroundPrimary.ignoresSafeArea())
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .foregroundStyle(DT.Color.accent)
-                        .fontWeight(.semibold)
-                }
-            }
         }
         .preferredColorScheme(.dark)
+#endif
+    }
+
+#if os(tvOS)
+    private var tvOSBody: some View {
+        ZStack(alignment: .topTrailing) {
+            scrollContent
+
+            Button { dismiss() } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .padding(DT.Spacing.lg)
+            }
+            .buttonStyle(.plain)
+            .tvFocusRing(cornerRadius: DT.Radius.pill)
+        }
+        .background(DT.Color.backgroundPrimary.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+    }
+#endif
+
+    private var scrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Jellyfin Setup Guide")
+                        .font(.system(size: 22 * DT.Scale.font, weight: .bold))
+                        .foregroundStyle(DT.Color.textPrimary)
+
+                    Text("Get your server running in a few steps")
+                        .font(DT.Font.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.top, DT.Spacing.lg)
+                .padding(.bottom, DT.Spacing.md)
+
+                ForEach(steps) { step in
+                    stepRow(step)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Quick tips")
+                        .font(.system(size: 11 * DT.Scale.font, weight: .bold))
+                        .tracking(0.5)
+                        .textCase(.uppercase)
+                        .foregroundStyle(DT.Color.textSecondary)
+
+                    tipRow(icon: "exclamationmark.triangle", text: "Include the port number — e.g. http://192.168.1.10:8096")
+                    tipRow(icon: "exclamationmark.triangle", text: "No trailing slash — http://server.local not http://server.local/")
+                    tipRow(icon: "checkmark.circle", text: "Arcfin auto-discovers servers on your local Wi-Fi network")
+                    tipRow(icon: "checkmark.circle", text: "Quick Connect lets you sign in without typing a password on this device")
+                }
+                .padding(16)
+                .background(DT.Color.accent.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(DT.Color.accent.opacity(0.12), lineWidth: 1))
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.top, DT.Spacing.md)
+                .padding(.bottom, DT.Spacing.xxxl)
+            }
+        }
     }
 
     private func stepRow(_ step: Step) -> some View {
         HStack(alignment: .top, spacing: 14) {
-            // Number + connector line
             VStack(spacing: 0) {
                 ZStack {
                     Circle()
