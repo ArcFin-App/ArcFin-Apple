@@ -10,7 +10,6 @@ class ContentProvider: TVTopShelfContentProvider {
         let shelfItems: [TVTopShelfSectionedItem] = items.map { item in
             let si = TVTopShelfSectionedItem(identifier: item.id)
             si.title = item.title
-            si.summary = item.subtitle
             if let url = item.imageURL {
                 si.setImageURL(url, for: .screenScale1x)
             }
