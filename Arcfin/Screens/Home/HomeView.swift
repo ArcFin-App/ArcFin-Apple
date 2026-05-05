@@ -184,7 +184,6 @@ struct HomeView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
-#endif
         }
         .task {
             guard case .authenticated(let cred) = authManager.state else { return }
