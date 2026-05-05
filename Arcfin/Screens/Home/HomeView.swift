@@ -12,7 +12,11 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             Tab("Home", systemImage: "house") {
+#if os(tvOS)
+                TVHomeView()
+#else
                 HomeView()
+#endif
             }
             Tab("Library", systemImage: "square.grid.2x2") {
                 LibraryView()
@@ -30,7 +34,11 @@ struct MainTabView: View {
                         .arcfinNavTitleLarge("Search")
                         .background(DT.Color.backgroundPrimary)
                         .navigationDestination(for: MediaItem.self) { item in
+#if os(tvOS)
+                            TVMediaDetailView(item: item)
+#else
                             MediaDetailView(item: item)
+#endif
                         }
                 }
             }

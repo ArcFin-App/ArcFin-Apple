@@ -435,7 +435,11 @@ struct LibraryDetailView: View {
         }
         .navigationTitle(library.name)
         .navigationDestination(for: MediaItem.self) { item in
+#if os(tvOS)
+            TVMediaDetailView(item: item)
+#else
             MediaDetailView(item: item)
+#endif
         }
 #if !os(macOS) && !os(tvOS)
         .navigationBarTitleDisplayMode(.large)

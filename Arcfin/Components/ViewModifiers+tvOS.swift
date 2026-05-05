@@ -149,4 +149,80 @@ struct TVFocusRowLabel<Content: View>: View {
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
 }
+
+// Full-width action button for the TVMediaDetailView action column.
+// Has a visible rest state (dimmed) and brightens/scales on focus.
+struct TVDetailButtonLabel: View {
+    let icon: String
+    let text: String
+    var isPrimary: Bool = false
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 15 * DT.Scale.font))
+            Text(text)
+                .font(.system(size: 15 * DT.Scale.font, weight: isPrimary ? .bold : .medium))
+        }
+        .foregroundStyle(
+            isFocused
+                ? (isPrimary ? DT.Color.backgroundPrimary : .white)
+                : .white.opacity(0.9)
+        )
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 13 * DT.Scale.font)
+        .background(
+            RoundedRectangle(cornerRadius: DT.Radius.md)
+                .fill(isFocused
+                    ? (isPrimary ? AnyShapeStyle(DT.Color.accent) : AnyShapeStyle(Color.white.opacity(0.3)))
+                    : AnyShapeStyle(Color.white.opacity(isPrimary ? 0.15 : 0.08)))
+        )
+        .scaleEffect(isFocused ? 1.02 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+    }
+}
+
+// Tappable description block. Shows truncated text at rest, highlights on focus,
+// adds "Read more" hint when focused so the user knows it's interactive.
+struct TVDescriptionLabel: View {
+    let text: String
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(text)
+                .font(.system(size: 11 * DT.Scale.font))
+                .foregroundStyle(isFocused ? .white : DT.Color.textSecondary)
+                .lineLimit(4)
+                .lineSpacing(5)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("Read more")
+                .font(.system(size: 10 * DT.Scale.font, weight: .semibold))
+                .foregroundStyle(DT.Color.accent)
+                .opacity(isFocused ? 1 : 0)
+        }
+        .padding(14 * DT.Scale.font)
+        .background(
+            RoundedRectangle(cornerRadius: DT.Radius.md)
+                .fill(isFocused ? Color.white.opacity(0.08) : Color.clear)
+        )
+        .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+    }
+}
+
+// Scroll-target behavior that snaps to either the top (hero) or the showcase
+// boundary (below-fold shelves). Pass the screen height as showcaseHeight.
+struct TVFoldSnappingBehavior: ScrollTargetBehavior {
+    let showcaseHeight: CGFloat
+
+    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+        if target.rect.minY < showcaseHeight * 0.5 {
+            target.rect.origin.y = 0
+        } else {
+            target.rect.origin.y = showcaseHeight
+        }
+    }
+}
 #endif
