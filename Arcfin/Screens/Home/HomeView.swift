@@ -91,10 +91,11 @@ struct HomeView: View {
                                                 imageURL: shelfImageURL(for: item)
                                             )
                                         }
-                                        .buttonStyle(.plain)
 #if os(tvOS)
+                                        .buttonStyle(TVCardButtonStyle())
                                         .focusEffectDisabled()
 #else
+                                        .buttonStyle(.plain)
                                         .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
 #endif
                                     }
@@ -135,7 +136,35 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("")
-#if !os(tvOS)
+#if os(tvOS)
+            .overlay(alignment: .topTrailing) {
+                HStack(spacing: 24) {
+                    Button {} label: {
+                        Image(systemName: "bell")
+                            .font(.system(size: 22))
+                            .foregroundStyle(.white)
+                            .frame(width: 54, height: 54)
+                            .background(Circle().fill(Color.white.opacity(0.12)))
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.pill)
+
+                    Button { showSettings = true } label: {
+                        Text(authManager.state.displayInitials)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 54, height: 54)
+                            .background(Circle().fill(DT.Color.accent))
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.pill)
+                }
+                .padding(.trailing, 60)
+                .padding(.top, 20)
+            }
+#else
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {} label: {
@@ -154,6 +183,7 @@ struct HomeView: View {
                 }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
+#endif
 #endif
         }
         .task {
@@ -186,6 +216,7 @@ struct HomeView: View {
                     imageURL: seerrShelfImageURL(for: item)
                 )
 #if os(tvOS)
+                .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
 #else
                 .contextMenu { seerrQuickLookMenu(item) } preview: { seerrQuickLookPreview(item) }
@@ -498,10 +529,11 @@ struct HomeView: View {
                         imageURL: shelfImageURL(for: item)
                     )
                 }
-                .buttonStyle(.plain)
 #if os(tvOS)
+                .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
 #else
+                .buttonStyle(.plain)
                 .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
 #endif
             }

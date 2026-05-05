@@ -24,19 +24,18 @@ struct PosterCard: View {
 
 #if os(tvOS)
     private var tvBody: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             imageLayer
                 .frame(width: width, height: height)
                 .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
                 .overlay(
                     RoundedRectangle(cornerRadius: DT.Radius.card)
-                        .stroke(isFocused ? DT.Color.accent : Color.white.opacity(0.06), lineWidth: isFocused ? 3 : 1)
+                        .stroke(isFocused ? DT.Color.accent : Color.white.opacity(0.08), lineWidth: isFocused ? 3 : 1)
                 )
-                .shadow(color: .black.opacity(0.5), radius: 4, y: 2)
                 .animation(DT.Animation.fast, value: isFocused)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 if let subtitle {
                     Text(subtitle)
                         .font(.system(size: 10 * DT.Scale.font, weight: .medium))
@@ -51,6 +50,8 @@ struct PosterCard: View {
             }
             .frame(width: width, alignment: .leading)
         }
+        // Clip the whole card+text column so no system focus transform bleeds outside
+        .contentShape(Rectangle())
     }
 #endif
 

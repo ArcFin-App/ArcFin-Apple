@@ -83,6 +83,14 @@ private struct TVFocusRingModifier: ViewModifier {
     }
 }
 
+// ButtonStyle for shelf NavigationLinks — passes label through with no system transforms.
+// Prevents tvOS from applying its implicit focus zoom/scale to the wrapped view.
+struct TVCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}
+
 // Place INSIDE a NavigationLink/Button label — inherits focus from the row correctly.
 // Zero extra padding by default — the List row provides its own insets.
 struct TVFocusRowLabel<Content: View>: View {
@@ -96,11 +104,10 @@ struct TVFocusRowLabel<Content: View>: View {
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(isFocused ? DT.Color.accent.opacity(0.18) : Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(isFocused ? DT.Color.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
-                    )
-                    .padding(-6)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(isFocused ? DT.Color.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
             )
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
