@@ -133,6 +133,7 @@ struct TVHeroButtonLabel: View {
 }
 
 // Place INSIDE a NavigationLink/Button label in a List row.
+// Uses neutral white fill — matches tvOS system convention, avoids accent-colored rings on rows.
 struct TVFocusRowLabel<Content: View>: View {
     var cornerRadius: CGFloat = DT.Radius.md
     @ViewBuilder let content: () -> Content
@@ -143,11 +144,7 @@ struct TVFocusRowLabel<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(isFocused ? DT.Color.accent.opacity(0.18) : Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isFocused ? DT.Color.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                    .fill(isFocused ? Color.white.opacity(0.15) : Color.clear)
             )
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }

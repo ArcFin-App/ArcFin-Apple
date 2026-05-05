@@ -243,6 +243,13 @@ struct MediaDetailView: View {
     // MARK: - Play button
 
     private var playButton: some View {
+#if os(tvOS)
+        Button {} label: { TVPlayButtonLabel() }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
+#else
         Button {} label: {
             HStack(spacing: 8) {
                 Image(systemName: "play.fill").font(.system(size: 14))
@@ -260,9 +267,6 @@ struct MediaDetailView: View {
         .buttonStyle(.plain)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
-#if os(tvOS)
-        .focusEffectDisabled()
-        .tvFocusRing(cornerRadius: DT.Radius.lg)
 #endif
     }
 
@@ -697,6 +701,43 @@ struct MediaDetailView: View {
             .tracking(-0.3)
     }
 }
+
+// MARK: - tvOS play button label
+// Separate struct so @Environment(\.isFocused) reads the button's focus state,
+// not the outer container. Ring/glow are drawn inside the button bounds only —
+// no bleed into the surrounding layout padding.
+
+#if os(tvOS)
+private struct TVPlayButtonLabel: View {
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 14 * DT.Scale.font))
+            Text("Play")
+                .font(.system(size: 16 * DT.Scale.font, weight: .bold))
+        }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14 * DT.Scale.font)
+        .background(LinearGradient(
+            colors: [DT.Color.accentDeep, DT.Color.accent],
+            startPoint: .topLeading, endPoint: .bottomTrailing))
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: DT.Radius.lg)
+                .stroke(isFocused ? Color.white.opacity(0.6) : Color.clear, lineWidth: 3)
+        )
+        .shadow(
+            color: isFocused ? DT.Color.accent.opacity(0.55) : DT.Color.accent.opacity(0.15),
+            radius: isFocused ? 18 : 6
+        )
+        .scaleEffect(isFocused ? 1.02 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+    }
+}
+#endif
 
 #Preview {
     NavigationStack {
