@@ -58,6 +58,7 @@ struct PosterCard: View {
     }
 #endif
 
+    #if !os(tvOS)
     private var iOSBody: some View {
         ZStack(alignment: .bottom) {
             imageLayer
@@ -133,6 +134,7 @@ struct PosterCard: View {
         .animation(DT.Animation.fast, value: hovered)
         .onHover { hovered = $0 }
     }
+    #endif
 
     private var imageLayer: some View {
         Group {
