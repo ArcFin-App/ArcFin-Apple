@@ -10,23 +10,58 @@ struct PosterCard: View {
     var height: CGFloat = DT.Size.posterCard.height
 
     @State private var hovered = false
+#if os(tvOS)
+    @Environment(\.isFocused) private var isFocused
+#endif
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Background: poster image or gradient fallback
-            if let url = imageURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: placeholderGradient
-                    }
-                }
-                .clipped()
-            } else {
-                placeholderGradient
-            }
+#if os(tvOS)
+        tvBody
+#else
+        iOSBody
+#endif
+    }
 
-            // Scan-line texture
+#if os(tvOS)
+    private var tvBody: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            imageLayer
+                .frame(width: width, height: height)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DT.Radius.card)
+                        .stroke(isFocused ? DT.Color.accent : Color.white.opacity(0.06), lineWidth: isFocused ? 2 : 1)
+                )
+                .scaleEffect(isFocused ? 1.04 : 1)
+                .shadow(
+                    color: isFocused ? DT.Color.accent.opacity(0.4) : .black.opacity(0.5),
+                    radius: isFocused ? 18 : 4, y: isFocused ? 8 : 2
+                )
+                .animation(DT.Animation.fast, value: isFocused)
+
+            VStack(alignment: .leading, spacing: 3) {
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 10 * DT.Scale.font, weight: .medium))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(1)
+                }
+                Text(title)
+                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                    .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
+                    .lineLimit(2)
+                    .animation(DT.Animation.fast, value: isFocused)
+            }
+            .frame(width: width, alignment: .leading)
+        }
+    }
+#endif
+
+    private var iOSBody: some View {
+        ZStack(alignment: .bottom) {
+            imageLayer
+
             Canvas { context, size in
                 for y in stride(from: 0, through: size.height, by: 4) {
                     context.fill(
@@ -37,17 +72,14 @@ struct PosterCard: View {
             }
             .allowsHitTesting(false)
 
-            // Glass sheen — top third
             LinearGradient(
                 colors: [.white.opacity(0.06), .clear],
                 startPoint: .top,
                 endPoint: .init(x: 0.5, y: 0.4)
             )
 
-            // Bottom title + progress
             VStack(spacing: 0) {
                 Spacer()
-
                 VStack(alignment: .leading, spacing: 3) {
                     if let subtitle {
                         Text(subtitle)
@@ -99,9 +131,23 @@ struct PosterCard: View {
             y: hovered ? 8 : 2
         )
         .animation(DT.Animation.fast, value: hovered)
-        #if !os(tvOS)
         .onHover { hovered = $0 }
-        #endif
+    }
+
+    private var imageLayer: some View {
+        Group {
+            if let url = imageURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: placeholderGradient
+                    }
+                }
+                .clipped()
+            } else {
+                placeholderGradient
+            }
+        }
     }
 
     private var placeholderGradient: some View {

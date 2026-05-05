@@ -65,7 +65,7 @@ final class MediaRepository {
 
     func imageURL(for item: MediaItem, type: JellyfinImageType = .primary, fillWidth: Int = 300) -> URL? {
         guard let base = baseURL, let token = accessToken else { return nil }
-        // For episodes, use the parent series poster so the card shows show artwork not a screenshot
+        // For episodes requesting primary on iOS, use the series poster instead of a screenshot
         if item.type == .episode, type == .primary,
            let seriesId = item.seriesId, let seriesTag = item.seriesPrimaryImageTag {
             return JellyfinMediaClient.imageURL(
@@ -74,13 +74,23 @@ final class MediaRepository {
             )
         }
         let tag: String?
-        if type == .backdrop {
-            tag = item.backdropImageTags.first
-        } else {
-            tag = item.primaryImageTag
+        switch type {
+        case .backdrop: tag = item.backdropImageTags.first
+        case .thumb:    tag = item.thumbImageTag ?? item.backdropImageTags.first
+        default:        tag = item.primaryImageTag
         }
         guard let tag else { return nil }
-        return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: type, fillWidth: fillWidth, token: token)
+        return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: type == .thumb && item.thumbImageTag == nil ? .backdrop : type, fillWidth: fillWidth, token: token)
+    }
+
+    // On tvOS: landscape thumb for movies/shows, episode primary for episodes (landscape screenshot).
+    func tvImageURL(for item: MediaItem, fillWidth: Int = 500) -> URL? {
+        guard let base = baseURL, let token = accessToken else { return nil }
+        if item.type == .episode {
+            guard let tag = item.primaryImageTag else { return nil }
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: .primary, fillWidth: fillWidth, token: token)
+        }
+        return imageURL(for: item, type: .thumb, fillWidth: fillWidth)
     }
 
     func personImageURL(personId: String, tag: String, fillWidth: Int = 120) -> URL? {

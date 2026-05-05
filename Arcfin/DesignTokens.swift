@@ -93,8 +93,12 @@ public enum DT {
     // MARK: - Sizing
 
     public enum Size {
-        /// Poster card: portrait 2:3
+        /// Poster card — portrait 2:3 on iOS, landscape 16:9 thumb on tvOS
+#if os(tvOS)
+        public static let posterCard        = CGSize(width: 320, height: 180)
+#else
         public static let posterCard        = CGSize(width: 110, height: 165)
+#endif
         /// Backdrop card: landscape 16:9
         public static let backdropCard      = CGSize(width: 240, height: 135)
         /// Hero banner height

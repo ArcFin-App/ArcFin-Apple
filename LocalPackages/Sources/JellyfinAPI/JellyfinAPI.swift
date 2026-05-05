@@ -31,6 +31,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public var type: MediaType
     public var backdropImageTags: [String]
     public var primaryImageTag: String?
+    public var thumbImageTag: String?
     public var userData: UserData?
     public var productionYear: Int?
     public var communityRating: Double?
@@ -48,6 +49,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         type: MediaType,
         backdropImageTags: [String] = [],
         primaryImageTag: String? = nil,
+        thumbImageTag: String? = nil,
         userData: UserData? = nil,
         productionYear: Int? = nil,
         communityRating: Double? = nil,
@@ -64,6 +66,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         self.type = type
         self.backdropImageTags = backdropImageTags
         self.primaryImageTag = primaryImageTag
+        self.thumbImageTag = thumbImageTag
         self.userData = userData
         self.productionYear = productionYear
         self.communityRating = communityRating

@@ -7,6 +7,7 @@ public enum JellyfinImageType: String, Sendable {
     case primary = "Primary"
     case backdrop = "Backdrop"
     case logo = "Logo"
+    case thumb = "Thumb"
 }
 
 // MARK: - Media client
@@ -80,6 +81,8 @@ public struct JellyfinMediaClient: Sendable {
             path = "Items/\(itemID)/Images/Logo/0"
         case .primary:
             path = "Items/\(itemID)/Images/Primary"
+        case .thumb:
+            path = "Items/\(itemID)/Images/Thumb"
         }
         var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         comps.queryItems = [
@@ -365,6 +368,7 @@ private struct JellyfinItemResponse: Decodable {
             type: MediaType(rawValue: type) ?? .unknown,
             backdropImageTags: backdropImageTags ?? [],
             primaryImageTag: imageTags?["Primary"],
+            thumbImageTag: imageTags?["Thumb"],
             userData: userData.map {
                 UserData(
                     playbackPositionTicks: $0.playbackPositionTicks ?? 0,
@@ -444,6 +448,7 @@ private struct ItemDetailResponse: Decodable {
             type: MediaType(rawValue: type) ?? .unknown,
             backdropImageTags: backdropImageTags ?? [],
             primaryImageTag: imageTags?["Primary"],
+            thumbImageTag: imageTags?["Thumb"],
             userData: userData.map { ud in
                 UserData(playbackPositionTicks: ud.playbackPositionTicks ?? 0,
                          playCount: ud.playCount ?? 0,

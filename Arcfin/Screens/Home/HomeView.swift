@@ -88,11 +88,15 @@ struct HomeView: View {
                                                 title: itemDisplayTitle(item),
                                                 subtitle: itemDisplaySubtitle(item),
                                                 progress: item.userData?.playedPercentage.map { $0 / 100 },
-                                                imageURL: mediaRepo.imageURL(for: item)
+                                                imageURL: shelfImageURL(for: item)
                                             )
                                         }
                                         .buttonStyle(.plain)
+#if os(tvOS)
+                                        .focusEffectDisabled()
+#else
                                         .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
+#endif
                                     }
                                 }
                             }
@@ -174,15 +178,23 @@ struct HomeView: View {
                 PosterCard(
                     title: item.title,
                     subtitle: item.year,
-                    imageURL: item.posterURL
+                    imageURL: seerrShelfImageURL(for: item)
                 )
-                .contextMenu {
-                    seerrQuickLookMenu(item)
-                } preview: {
-                    seerrQuickLookPreview(item)
-                }
+#if os(tvOS)
+                .focusEffectDisabled()
+#else
+                .contextMenu { seerrQuickLookMenu(item) } preview: { seerrQuickLookPreview(item) }
+#endif
             }
         }
+    }
+
+    private func seerrShelfImageURL(for item: SeerrItem) -> URL? {
+#if os(tvOS)
+        item.backdropURL ?? item.posterURL
+#else
+        item.posterURL
+#endif
     }
 
     // MARK: - Hero banner
@@ -478,13 +490,25 @@ struct HomeView: View {
                     PosterCard(
                         title: item.name,
                         subtitle: item.productionYear.map { String($0) },
-                        imageURL: mediaRepo.imageURL(for: item)
+                        imageURL: shelfImageURL(for: item)
                     )
                 }
                 .buttonStyle(.plain)
+#if os(tvOS)
+                .focusEffectDisabled()
+#else
                 .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
+#endif
             }
         }
+    }
+
+    private func shelfImageURL(for item: MediaItem) -> URL? {
+#if os(tvOS)
+        mediaRepo.tvImageURL(for: item, fillWidth: 640)
+#else
+        mediaRepo.imageURL(for: item)
+#endif
     }
 
     // MARK: - Helpers

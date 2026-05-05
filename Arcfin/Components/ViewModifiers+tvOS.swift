@@ -84,6 +84,7 @@ private struct TVFocusRingModifier: ViewModifier {
 }
 
 // Place INSIDE a NavigationLink/Button label — inherits focus from the row correctly.
+// Zero extra padding by default — the List row provides its own insets.
 struct TVFocusRowLabel<Content: View>: View {
     var cornerRadius: CGFloat = DT.Radius.md
     @ViewBuilder let content: () -> Content
@@ -91,8 +92,6 @@ struct TVFocusRowLabel<Content: View>: View {
 
     var body: some View {
         content()
-            .padding(.vertical, 8)
-            .padding(.horizontal, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
@@ -101,6 +100,7 @@ struct TVFocusRowLabel<Content: View>: View {
                         RoundedRectangle(cornerRadius: cornerRadius)
                             .stroke(isFocused ? DT.Color.accent.opacity(0.5) : Color.clear, lineWidth: 1.5)
                     )
+                    .padding(-6)
             )
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
