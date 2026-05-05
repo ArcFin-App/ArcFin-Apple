@@ -192,7 +192,13 @@ struct HomeView: View {
                     )
                 }
             )
-            if let id = deepLinkItemID {
+            // Resolve deep link — prefer in-memory ID (warm launch), fall back to
+            // UserDefaults buffer written by onOpenURL before this view appeared (cold launch).
+            let pendingID = deepLinkItemID
+                ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
+            if let id = pendingID {
+                UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+                deepLinkItemID = nil
                 heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
                     ?? mediaRepo.recentlyAdded.first { $0.id == id }
             }
@@ -210,6 +216,7 @@ struct HomeView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
+                UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
                 deepLinkItemID = id
                 heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
                     ?? mediaRepo.recentlyAdded.first { $0.id == id }

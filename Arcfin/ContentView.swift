@@ -61,6 +61,9 @@ struct ContentView: View {
                   url.host == "play",
                   let itemID = url.pathComponents.dropFirst().first
             else { return }
+            // Buffer for cold-launch: HomeView .task reads this after mediaRepo.load()
+            UserDefaults.standard.set(itemID, forKey: "arcfin.pendingPlayID")
+            // Also post for warm/already-running case
             NotificationCenter.default.post(
                 name: .arcfinPlayItem,
                 object: nil,

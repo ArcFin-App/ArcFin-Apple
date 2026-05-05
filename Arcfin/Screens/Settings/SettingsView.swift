@@ -94,7 +94,9 @@ struct SettingsView: View {
                 Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
                 NavigationLink {
                     JellyseerrPluginView()
+#if !os(tvOS)
                         .toolbar(.hidden, for: .tabBar)
+#endif
                 } label: {
 #if os(tvOS)
                     TVFocusRowLabel {
@@ -119,7 +121,9 @@ struct SettingsView: View {
                 .tvListRow()
                 NavigationLink {
                     StreamystatsPluginView()
+#if !os(tvOS)
                         .toolbar(.hidden, for: .tabBar)
+#endif
                 } label: {
 #if os(tvOS)
                     TVFocusRowLabel {
@@ -198,7 +202,9 @@ struct SettingsView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .arcfinNavTitleLarge("Settings")
+#if !os(tvOS)
         .toolbar(.hidden, for: .tabBar)
+#endif
     }
 
     // MARK: - Profile section
@@ -308,7 +314,9 @@ struct SettingsView: View {
             )
         }
         .navigationTitle(title)
+#if !os(tvOS)
         .toolbar(.hidden, for: .tabBar)
+#endif
     }
 
     // MARK: - Helpers

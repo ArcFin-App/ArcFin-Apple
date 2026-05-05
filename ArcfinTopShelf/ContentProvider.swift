@@ -28,8 +28,10 @@ class ContentProvider: TVTopShelfContentProvider {
     private func makeItem(_ item: TopShelfMediaItem) -> TVTopShelfSectionedItem {
         let si = TVTopShelfSectionedItem(identifier: item.id)
         si.title = item.title
+        si.imageShape = .hdtv
         if let url = item.imageURL {
             si.setImageURL(url, for: .screenScale1x)
+            si.setImageURL(url, for: .screenScale2x)
         }
         let deepLink = TopShelfBridge.playURL(for: item.id)
         si.playAction    = TVTopShelfAction(url: deepLink)
