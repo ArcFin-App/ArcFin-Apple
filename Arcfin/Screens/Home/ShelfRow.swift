@@ -21,20 +21,30 @@ struct ShelfRow<Content: View>: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 2)
+#if os(tvOS)
+                        .background(Capsule().fill(DT.Color.accent.opacity(0.3)))
+                        .overlay(Capsule().stroke(DT.Color.accent.opacity(0.5), lineWidth: 1))
+#else
                         .glassEffect(.regular.tint(DT.Color.accent), in: .capsule)
+#endif
                 }
 
                 Spacer()
 
                 if let onSeeAll {
+#if os(tvOS)
+                    Button(action: onSeeAll) {
+                        TVFocusButtonLabel(title: "See All")
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+#else
                     Button("See All", action: onSeeAll)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .capsule)
-#if os(tvOS)
-                        .focusEffectDisabled()
 #endif
                 }
             }

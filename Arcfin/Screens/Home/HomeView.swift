@@ -34,6 +34,11 @@ struct MainTabView: View {
                         }
                 }
             }
+#if os(tvOS)
+            Tab("Profile", systemImage: "person.circle") {
+                NavigationStack { SettingsView() }
+            }
+#endif
         }
 #if !os(tvOS)
         .tabViewStyle(.sidebarAdaptable)
@@ -145,35 +150,7 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("")
-#if os(tvOS)
-            .overlay(alignment: .topTrailing) {
-                HStack(spacing: 24) {
-                    Button {} label: {
-                        Image(systemName: "bell")
-                            .font(.system(size: 22))
-                            .foregroundStyle(.white)
-                            .frame(width: 54, height: 54)
-                            .background(Circle().fill(Color.white.opacity(0.12)))
-                    }
-                    .buttonStyle(TVCardButtonStyle())
-                    .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: DT.Radius.pill)
-
-                    Button { showSettings = true } label: {
-                        Text(authManager.state.displayInitials)
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 54, height: 54)
-                            .background(Circle().fill(DT.Color.accent))
-                    }
-                    .buttonStyle(TVCardButtonStyle())
-                    .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: DT.Radius.pill)
-                }
-                .padding(.trailing, 60)
-                .padding(.top, 20)
-            }
-#else
+#if !os(tvOS)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {} label: {
@@ -390,6 +367,24 @@ struct HomeView: View {
                     .animation(nil, value: heroIndex)
             }
 
+#if os(tvOS)
+            HStack(spacing: 12 * DT.Scale.font) {
+                Button {} label: {
+                    TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+
+                Button {
+                    if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
+                } label: {
+                    TVHeroButtonLabel(icon: "info.circle", text: "More Info")
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+            }
+            .padding(.top, 16)
+#else
             GlassEffectContainer(spacing: 12) {
                 HStack(spacing: 12) {
                     Button {} label: {
@@ -401,7 +396,6 @@ struct HomeView: View {
                         .padding(.horizontal, 28).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))
-                    .tvFocusRing(cornerRadius: 10)
 
                     Button {
                         if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
@@ -414,10 +408,10 @@ struct HomeView: View {
                         .padding(.horizontal, 20).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
-                    .tvFocusRing(cornerRadius: 10)
                 }
             }
             .padding(.top, 16)
+#endif
 
             if heroItems.count > 1 {
                 HStack(spacing: 6) {
