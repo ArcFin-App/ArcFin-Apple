@@ -19,6 +19,8 @@
 		FAB5D7962FA79F5C002031A9 /* StreamystatsAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */; };
 		FAB5D7982FA79F5C002031A9 /* SyncEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7972FA79F5C002031A9 /* SyncEngine */; };
 		FAB5D79A2FA79F5C002031A9 /* Telemetry in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7992FA79F5C002031A9 /* Telemetry */; };
+		FAB5D86E2FA9621A002031A9 /* TVServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAB5D86D2FA9621A002031A9 /* TVServices.framework */; };
+		FAB5D8752FA9621A002031A9 /* ArcfinTopShelf.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,13 +38,46 @@
 			remoteGlobalIDString = FAB5D7532FA79A9B002031A9;
 			remoteInfo = Arcfin;
 		};
+		FAB5D8732FA9621A002031A9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FAB5D74C2FA79A9B002031A9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FAB5D86A2FA9621A002031A9;
+			remoteInfo = ArcfinTopShelf;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FAB5D87A2FA9621A002031A9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FAB5D8752FA9621A002031A9 /* ArcfinTopShelf.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		FAB5D7542FA79A9B002031A9 /* Arcfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Arcfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAB5D7632FA79A9C002031A9 /* ArcfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAB5D76D2FA79A9C002031A9 /* ArcfinUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcfinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ArcfinTopShelf.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAB5D86D2FA9621A002031A9 /* TVServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = TVServices.framework; path = Library/Frameworks/TVServices.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FAB5D8762FA9621A002031A9 /* Exceptions for "ArcfinTopShelf" folder in "ArcfinTopShelf" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FAB5D86A2FA9621A002031A9 /* ArcfinTopShelf */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FAB5D7562FA79A9B002031A9 /* Arcfin */ = {
@@ -58,6 +93,14 @@
 		FAB5D7702FA79A9C002031A9 /* ArcfinUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ArcfinUITests;
+			sourceTree = "<group>";
+		};
+		FAB5D86F2FA9621A002031A9 /* ArcfinTopShelf */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FAB5D8762FA9621A002031A9 /* Exceptions for "ArcfinTopShelf" folder in "ArcfinTopShelf" target */,
+			);
+			path = ArcfinTopShelf;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -96,6 +139,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FAB5D8682FA9621A002031A9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAB5D86E2FA9621A002031A9 /* TVServices.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -105,6 +156,8 @@
 				FAB5D7562FA79A9B002031A9 /* Arcfin */,
 				FAB5D7662FA79A9C002031A9 /* ArcfinTests */,
 				FAB5D7702FA79A9C002031A9 /* ArcfinUITests */,
+				FAB5D86F2FA9621A002031A9 /* ArcfinTopShelf */,
+				FAB5D86C2FA9621A002031A9 /* Frameworks */,
 				FAB5D7552FA79A9B002031A9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,8 +168,17 @@
 				FAB5D7542FA79A9B002031A9 /* Arcfin.app */,
 				FAB5D7632FA79A9C002031A9 /* ArcfinTests.xctest */,
 				FAB5D76D2FA79A9C002031A9 /* ArcfinUITests.xctest */,
+				FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		FAB5D86C2FA9621A002031A9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FAB5D86D2FA9621A002031A9 /* TVServices.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -129,10 +191,12 @@
 				FAB5D7502FA79A9B002031A9 /* Sources */,
 				FAB5D7512FA79A9B002031A9 /* Frameworks */,
 				FAB5D7522FA79A9B002031A9 /* Resources */,
+				FAB5D87A2FA9621A002031A9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				FAB5D8742FA9621A002031A9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FAB5D7562FA79A9B002031A9 /* Arcfin */,
@@ -202,6 +266,28 @@
 			productReference = FAB5D76D2FA79A9C002031A9 /* ArcfinUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		FAB5D86A2FA9621A002031A9 /* ArcfinTopShelf */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FAB5D8772FA9621A002031A9 /* Build configuration list for PBXNativeTarget "ArcfinTopShelf" */;
+			buildPhases = (
+				FAB5D8672FA9621A002031A9 /* Sources */,
+				FAB5D8682FA9621A002031A9 /* Frameworks */,
+				FAB5D8692FA9621A002031A9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FAB5D86F2FA9621A002031A9 /* ArcfinTopShelf */,
+			);
+			name = ArcfinTopShelf;
+			packageProductDependencies = (
+			);
+			productName = ArcfinTopShelf;
+			productReference = FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -222,6 +308,9 @@
 					FAB5D76C2FA79A9C002031A9 = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = FAB5D7532FA79A9B002031A9;
+					};
+					FAB5D86A2FA9621A002031A9 = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -245,6 +334,7 @@
 				FAB5D7532FA79A9B002031A9 /* Arcfin */,
 				FAB5D7622FA79A9C002031A9 /* ArcfinTests */,
 				FAB5D76C2FA79A9C002031A9 /* ArcfinUITests */,
+				FAB5D86A2FA9621A002031A9 /* ArcfinTopShelf */,
 			);
 		};
 /* End PBXProject section */
@@ -265,6 +355,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FAB5D76B2FA79A9C002031A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FAB5D8692FA9621A002031A9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -295,6 +392,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FAB5D8672FA9621A002031A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -307,6 +411,11 @@
 			isa = PBXTargetDependency;
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 			targetProxy = FAB5D76E2FA79A9C002031A9 /* PBXContainerItemProxy */;
+		};
+		FAB5D8742FA9621A002031A9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FAB5D86A2FA9621A002031A9 /* ArcfinTopShelf */;
+			targetProxy = FAB5D8732FA9621A002031A9 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -432,6 +541,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = B95H74ZDY6;
@@ -457,10 +568,10 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -475,6 +586,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TVOS_DEPLOYMENT_TARGET = 26.0;
 				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Debug;
@@ -484,6 +596,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = B95H74ZDY6;
@@ -509,10 +623,10 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -527,6 +641,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3";
+				TVOS_DEPLOYMENT_TARGET = 26.0;
 				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Release;
@@ -633,6 +748,67 @@
 			};
 			name = Release;
 		};
+		FAB5D8782FA9621A002031A9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B95H74ZDY6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ArcfinTopShelf;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinTopShelf;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		FAB5D8792FA9621A002031A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B95H74ZDY6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ArcfinTopShelf;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinTopShelf;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 26.2;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -668,6 +844,15 @@
 			buildConfigurations = (
 				FAB5D77E2FA79A9C002031A9 /* Debug */,
 				FAB5D77F2FA79A9C002031A9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FAB5D8772FA9621A002031A9 /* Build configuration list for PBXNativeTarget "ArcfinTopShelf" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAB5D8782FA9621A002031A9 /* Debug */,
+				FAB5D8792FA9621A002031A9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -99,7 +99,9 @@ struct PosterCard: View {
             y: hovered ? 8 : 2
         )
         .animation(DT.Animation.fast, value: hovered)
+        #if !os(tvOS)
         .onHover { hovered = $0 }
+        #endif
     }
 
     private var placeholderGradient: some View {
