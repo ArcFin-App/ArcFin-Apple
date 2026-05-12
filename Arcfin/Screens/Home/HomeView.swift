@@ -19,13 +19,23 @@ struct MainTabView: View {
 #endif
             }
             Tab("Library", systemImage: "square.grid.2x2") {
+#if os(tvOS)
+                TVLibraryView()
+#else
                 LibraryView()
+#endif
             }
+#if !os(tvOS)
             Tab("Stats", systemImage: "chart.xyaxis.line") {
                 StatsView()
             }
+#endif
             Tab("Requests", systemImage: "clock") {
+#if os(tvOS)
+                TVJellyseerrView()
+#else
                 JellyseerrView()
+#endif
             }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 NavigationStack {
