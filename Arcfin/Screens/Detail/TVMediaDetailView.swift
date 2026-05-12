@@ -346,15 +346,20 @@ struct TVMediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(seerrRelatedItems) { sim in
-                        PosterCard(
-                            title: sim.title,
-                            subtitle: sim.year,
-                            imageURL: sim.backdropURL ?? sim.posterURL
-                        )
+                        Button {} label: {
+                            PosterCard(
+                                title: sim.title,
+                                subtitle: sim.year,
+                                imageURL: sim.backdropURL ?? sim.posterURL
+                            )
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
                     }
                 }
                 .padding(.horizontal, 80)
                 .padding(.top, 20)
+                .focusSection()
             }
             .scrollClipDisabled()
         }
