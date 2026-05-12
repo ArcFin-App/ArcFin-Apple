@@ -168,14 +168,14 @@ struct TVHomeView: View {
                     heroFallbackGradient
                 }
             }
-            .frame(width: screenW, height: screenH)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
             .id(heroDisplayItem?.id ?? "")
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.4), value: focusedItemID)
         } else {
             heroFallbackGradient
-                .frame(width: screenW, height: screenH)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

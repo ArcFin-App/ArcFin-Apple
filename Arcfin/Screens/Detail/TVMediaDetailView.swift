@@ -78,10 +78,10 @@ struct TVMediaDetailView: View {
                         fallbackGradient
                     }
                 }
-                .frame(width: screenW, height: screenH)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
             } else {
-                fallbackGradient.frame(width: screenW, height: screenH)
+                fallbackGradient.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
             LinearGradient(
