@@ -342,6 +342,8 @@ private struct JellyfinItemResponse: Decodable {
     let parentIndexNumber: Int?
     let seriesId: String?
     let seriesPrimaryImageTag: String?
+    let parentBackdropItemId: String?
+    let parentBackdropImageTags: [String]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -358,6 +360,8 @@ private struct JellyfinItemResponse: Decodable {
         case parentIndexNumber = "ParentIndexNumber"
         case seriesId = "SeriesId"
         case seriesPrimaryImageTag = "SeriesPrimaryImageTag"
+        case parentBackdropItemId = "ParentBackdropItemId"
+        case parentBackdropImageTags = "ParentBackdropImageTags"
     }
 
     func toMediaItem() -> MediaItem {
@@ -384,7 +388,9 @@ private struct JellyfinItemResponse: Decodable {
             indexNumber: indexNumber,
             parentIndexNumber: parentIndexNumber,
             seriesId: seriesId,
-            seriesPrimaryImageTag: seriesPrimaryImageTag
+            seriesPrimaryImageTag: seriesPrimaryImageTag,
+            parentBackdropItemId: parentBackdropItemId,
+            parentBackdropImageTags: parentBackdropImageTags ?? []
         )
     }
 }

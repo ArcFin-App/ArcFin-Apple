@@ -122,6 +122,7 @@ struct TVHomeView: View {
 
     private func heroSection(screenW: CGFloat, screenH: CGFloat) -> some View {
         ZStack(alignment: .bottomLeading) {
+            Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
             backdropLayer(screenW: screenW, screenH: screenH)
 
             LinearGradient(
@@ -161,15 +162,13 @@ struct TVHomeView: View {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let img):
-                    img.resizable()
-                        .scaledToFill()
-                        .frame(width: screenW, height: screenH)
-                        .clipped()
+                    img.resizable().scaledToFill()
                 default:
                     heroFallbackGradient
-                        .frame(width: screenW, height: screenH)
                 }
             }
+            .frame(width: screenW, height: screenH)
+            .clipped()
             .id(heroDisplayItem?.id ?? "")
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.4), value: focusedItemID)

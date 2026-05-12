@@ -79,6 +79,13 @@ final class MediaRepository {
         case .thumb:    tag = item.thumbImageTag ?? item.backdropImageTags.first
         default:        tag = item.primaryImageTag
         }
+        // Episodes rarely have their own backdrop; fall back to the series backdrop.
+        if tag == nil, type == .backdrop,
+           let parentId = item.parentBackdropItemId ?? item.seriesId,
+           let parentTag = item.parentBackdropImageTags.first {
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: parentId, tag: parentTag,
+                                                type: .backdrop, fillWidth: fillWidth, token: token)
+        }
         guard let tag else { return nil }
         return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: type == .thumb && item.thumbImageTag == nil ? .backdrop : type, fillWidth: fillWidth, token: token)
     }

@@ -40,6 +40,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public var parentIndexNumber: Int?
     public var seriesId: String?
     public var seriesPrimaryImageTag: String?
+    public var parentBackdropItemId: String?
+    public var parentBackdropImageTags: [String]
     public var tmdbId: Int?
 
     public init(
@@ -58,6 +60,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         parentIndexNumber: Int? = nil,
         seriesId: String? = nil,
         seriesPrimaryImageTag: String? = nil,
+        parentBackdropItemId: String? = nil,
+        parentBackdropImageTags: [String] = [],
         tmdbId: Int? = nil
     ) {
         self.id = id
@@ -75,6 +79,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         self.parentIndexNumber = parentIndexNumber
         self.seriesId = seriesId
         self.seriesPrimaryImageTag = seriesPrimaryImageTag
+        self.parentBackdropItemId = parentBackdropItemId
+        self.parentBackdropImageTags = parentBackdropImageTags
         self.tmdbId = tmdbId
     }
 }

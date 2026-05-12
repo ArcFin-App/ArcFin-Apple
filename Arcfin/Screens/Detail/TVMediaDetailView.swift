@@ -68,17 +68,18 @@ struct TVMediaDetailView: View {
 
     private func showcaseSection(screenW: CGFloat, screenH: CGFloat) -> some View {
         ZStack(alignment: .bottomLeading) {
+            Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img):
                         img.resizable().scaledToFill()
-                            .frame(width: screenW, height: screenH)
-                            .clipped()
                     default:
-                        fallbackGradient.frame(width: screenW, height: screenH)
+                        fallbackGradient
                     }
                 }
+                .frame(width: screenW, height: screenH)
+                .clipped()
             } else {
                 fallbackGradient.frame(width: screenW, height: screenH)
             }
