@@ -390,6 +390,8 @@ struct LibraryDetailView: View {
     @State private var isLoading = true
     @State private var isLoadingMore = false
     @State private var totalItems = 0
+    @State private var hasLoaded = false
+    @State private var scrolledItemID: MediaItem.ID? = nil
     private let pageSize = 100
 
     private var hasMore: Bool { items.count < totalItems }
@@ -455,6 +457,7 @@ struct LibraryDetailView: View {
                     .scrollClipDisabled()
 #endif
                 }
+                .scrollPosition(id: $scrolledItemID)
                 .background(DT.Color.backgroundPrimary)
             }
         }
@@ -593,6 +596,8 @@ struct LibraryDetailView: View {
     }
 
     private func load() async {
+        guard !hasLoaded else { return }
+        hasLoaded = true
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
