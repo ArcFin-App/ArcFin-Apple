@@ -41,7 +41,7 @@ final class JellyseerrRepository {
             return
         }
         // Clear any persisted auth-failure cooldown when credentials change.
-        client?.clearAuthFailure()
+        if let old = client { Task { await old.clearAuthFailure() } }
         configuredURL = trimURL; configuredUsername = trimUser
         configuredPassword = trimPass; configuredMethod = authMethod
         client = JellyseerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
