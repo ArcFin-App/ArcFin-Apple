@@ -42,7 +42,6 @@ struct TVMediaDetailView: View {
                 }
                 .focusSection()
             }
-            .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
             .ignoresSafeArea()
         }
         .background(DT.Color.backgroundPrimary)

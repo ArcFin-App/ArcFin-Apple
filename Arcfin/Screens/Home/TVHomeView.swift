@@ -307,8 +307,10 @@ struct TVHomeView: View {
                         }
                     }
                     .padding(.horizontal, 80)
+                    .padding(.top, 20)
                     .focusSection()
                 }
+                .scrollClipDisabled()
             }
         }
     }
