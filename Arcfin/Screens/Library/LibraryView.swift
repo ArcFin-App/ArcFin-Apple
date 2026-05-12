@@ -372,6 +372,13 @@ struct LocalPlayerView: View {
 
 // MARK: - Library detail
 
+// Navigation target used in LibraryDetailView to route BoxSet vs Media items
+// without registering duplicate navigationDestination(for: MediaItem.self).
+enum LibraryNavTarget: Hashable {
+    case media(MediaItem)
+    case collection(JellyfinLibrary)
+}
+
 struct LibraryDetailView: View {
     let library: JellyfinLibrary
 
@@ -386,6 +393,7 @@ struct LibraryDetailView: View {
     private let pageSize = 100
 
     private var hasMore: Bool { items.count < totalItems }
+    private var isCollections: Bool { library.collectionType == .boxsets }
 
     private let client = JellyfinMediaClient()
 #if os(tvOS)
@@ -409,7 +417,7 @@ struct LibraryDetailView: View {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                         ForEach(items) { item in
-                            NavigationLink(value: item) {
+                            NavigationLink(value: navTarget(for: item)) {
 #if os(tvOS)
                                 PosterCard(
                                     title: item.name,
@@ -444,25 +452,41 @@ struct LibraryDetailView: View {
                     .padding(DT.Spacing.pagePad)
 #if os(tvOS)
                     .focusSection()
+                    .scrollClipDisabled()
 #endif
                 }
                 .background(DT.Color.backgroundPrimary)
             }
         }
         .navigationTitle(library.name)
-        .navigationDestination(for: MediaItem.self) { item in
+        .navigationDestination(for: LibraryNavTarget.self) { target in
+            switch target {
+            case .media(let item):
 #if os(tvOS)
-            TVMediaDetailView(item: item)
+                TVMediaDetailView(item: item)
 #else
-            MediaDetailView(item: item)
+                MediaDetailView(item: item)
 #endif
+            case .collection(let lib):
+                LibraryDetailView(library: lib)
+            }
         }
 #if !os(macOS) && !os(tvOS)
-        .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
 #endif
         .task { await load() }
+    }
+
+    private func navTarget(for item: MediaItem) -> LibraryNavTarget {
+        if item.type == .boxSet {
+            let lib = JellyfinLibrary(id: item.id, name: item.name,
+                                      collectionType: .boxsets,
+                                      primaryImageTag: item.primaryImageTag)
+            return .collection(lib)
+        }
+        return .media(item)
     }
 
     private func libraryItemCard(_ item: MediaItem) -> some View {
@@ -572,12 +596,14 @@ struct LibraryDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
-        let result = (try? await client.getLibraryItems(
+        let fetched = try? await client.getLibraryItems(
             credential: cred, authHeader: header,
-            libraryId: library.id, startIndex: 0, limit: pageSize
-        )) ?? ([], 0)
-        items = result.items
-        totalItems = result.total
+            libraryId: library.id, startIndex: 0, limit: pageSize,
+            recursive: !isCollections,
+            includeItemTypes: isCollections ? "BoxSet" : nil
+        )
+        items = fetched?.items ?? []
+        totalItems = fetched?.total ?? 0
         mediaRepo.prefetchQuickLookAssets(for: items)
         isLoading = false
     }
@@ -587,12 +613,14 @@ struct LibraryDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoadingMore = true
-        let result = (try? await client.getLibraryItems(
+        let fetched = try? await client.getLibraryItems(
             credential: cred, authHeader: header,
-            libraryId: library.id, startIndex: items.count, limit: pageSize
-        )) ?? ([], totalItems)
-        items.append(contentsOf: result.items)
-        totalItems = result.total
+            libraryId: library.id, startIndex: items.count, limit: pageSize,
+            recursive: !isCollections,
+            includeItemTypes: isCollections ? "BoxSet" : nil
+        )
+        items.append(contentsOf: fetched?.items ?? [])
+        if let total = fetched?.total { totalItems = total }
         isLoadingMore = false
     }
 }

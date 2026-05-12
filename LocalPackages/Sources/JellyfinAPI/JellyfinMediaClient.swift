@@ -256,26 +256,32 @@ public struct JellyfinMediaClient: Sendable {
         authHeader: String,
         libraryId: String,
         startIndex: Int = 0,
-        limit: Int = 100
+        limit: Int = 100,
+        recursive: Bool = true,
+        includeItemTypes: String? = nil
     ) async throws -> (items: [MediaItem], total: Int) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
             resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
+        var queryItems: [URLQueryItem] = [
             .init(name: "ParentId", value: libraryId),
-            .init(name: "Recursive", value: "true"),
+            .init(name: "Recursive", value: recursive ? "true" : "false"),
             .init(name: "SortBy", value: "SortName"),
             .init(name: "SortOrder", value: "Ascending"),
             .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
             .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
         ]
+        if let types = includeItemTypes {
+            queryItems.append(.init(name: "IncludeItemTypes", value: types))
+        }
+        comps.queryItems = queryItems
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
-        return (page.items.map { $0.toMediaItem() }, page.totalRecordCount ?? 0)
+        return (items: page.items.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0)
     }
 
     public func search(credential: ServerCredential, authHeader: String, query: String, limit: Int = 20) async throws -> [MediaItem] {

@@ -92,6 +92,7 @@ public enum MediaType: String, Sendable, Equatable {
     case season = "Season"
     case audio = "Audio"
     case musicAlbum = "MusicAlbum"
+    case boxSet = "BoxSet"
     case unknown
 }
 
@@ -202,7 +203,7 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
     }
 
     public enum LibraryType: Sendable, Equatable, Hashable {
-        case movies, tvshows, music, homevideos, photos, books, livetv, playlists, unknown
+        case movies, tvshows, music, homevideos, photos, books, livetv, playlists, boxsets, unknown
 
         public init(apiValue: String) {
             switch apiValue.lowercased() {
@@ -214,6 +215,7 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
             case "books":      self = .books
             case "livetv":     self = .livetv
             case "playlists":  self = .playlists
+            case "boxsets":    self = .boxsets
             default:           self = .unknown
             }
         }
@@ -228,6 +230,7 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
             case .books:      "books.vertical"
             case .livetv:     "antenna.radiowaves.left.and.right"
             case .playlists:  "music.note.list"
+            case .boxsets:    "rectangle.stack"
             case .unknown:    "folder"
             }
         }
@@ -242,6 +245,7 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
             case .books:      "F97316"
             case .livetv:     "EF4444"
             case .playlists:  "06B6D4"
+            case .boxsets:    "F59E0B"
             case .unknown:    "6B7280"
             }
         }
