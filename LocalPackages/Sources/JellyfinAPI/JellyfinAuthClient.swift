@@ -124,6 +124,7 @@ public struct JellyfinAuthClient: Sendable {
 
     public func initiateQuickConnect(baseURL: URL) async throws -> (code: String, secret: String) {
         var req = URLRequest(url: baseURL.appendingPathComponent("QuickConnect/Initiate"))
+        req.httpMethod = "POST"
         req.setValue(authHeader(), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
         let (data, resp) = try await URLSession.shared.data(for: req)

@@ -26,8 +26,9 @@ public struct JellyfinMediaClient: Sendable {
             resolvingAgainstBaseURL: false
         )!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
             .init(name: "ImageTypeLimit", value: "1"),
+            .init(name: "EnableUserData", value: "true"),
             .init(name: "Recursive", value: "true"),
             .init(name: "IncludeItemTypes", value: "Movie,Series"),
             .init(name: "Limit", value: "\(limit)"),
@@ -54,7 +55,8 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: "Descending"),
             .init(name: "Filters", value: "IsResumable"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "EnableUserData", value: "true"),
             .init(name: "IncludeItemTypes", value: "Movie,Episode"),
         ]
         var req = URLRequest(url: comps.url!)
@@ -221,7 +223,8 @@ public struct JellyfinMediaClient: Sendable {
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
-            .init(name: "Fields", value: "UserData,PrimaryImageTags,ProductionYear"),
+            .init(name: "Fields", value: "UserData,PrimaryImageTags,ProductionYear,IndexNumber"),
+            .init(name: "EnableUserData", value: "true"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -242,7 +245,8 @@ public struct JellyfinMediaClient: Sendable {
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
             .init(name: "SeasonId", value: seasonId),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,SeriesId,SeriesPrimaryImageTag"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "EnableUserData", value: "true"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -270,7 +274,9 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: "Ascending"),
             .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "EnableUserData", value: "true"),
+            .init(name: "EnableTotalRecordCount", value: "true"),
         ]
         if let types = includeItemTypes {
             queryItems.append(.init(name: "IncludeItemTypes", value: types))
@@ -303,29 +309,27 @@ public struct JellyfinMediaClient: Sendable {
         return page.items.map { $0.toMediaItem() }
     }
 
+    /// Local trailers attached to a specific item.
+    /// Uses /Items/{itemId}/LocalTrailers which returns a bare array (not wrapped in Items).
     public func getTrailers(
         credential: ServerCredential,
         authHeader: String,
-        itemId: String? = nil,
-        limit: Int = 10
+        itemId: String,
+        limit: Int = 6
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Trailers"),
+            url: credential.baseURL.appendingPathComponent("Items/\(itemId)/LocalTrailers"),
             resolvingAgainstBaseURL: false)!
-        var queryItems: [URLQueryItem] = [
+        comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
-            .init(name: "Limit", value: "\(limit)"),
             .init(name: "Fields", value: "Overview,PrimaryImageTags,BackdropImageTags,ProductionYear"),
         ]
-        if let itemId {
-            queryItems.append(.init(name: "ItemId", value: itemId))
-        }
-        comps.queryItems = queryItems
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: req)
-        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        let items = (try? JSONDecoder().decode([JellyfinItemResponse].self, from: data)) ?? []
+        return Array(items.prefix(limit).map { $0.toMediaItem() })
     }
 }
 
