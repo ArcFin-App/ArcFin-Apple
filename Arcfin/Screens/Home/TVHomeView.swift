@@ -39,6 +39,7 @@ struct TVHomeView: View {
                         belowFoldSection
                             .padding(.vertical, 72)
                     }
+                    .focusSection()
                 }
                 .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
                 .ignoresSafeArea()

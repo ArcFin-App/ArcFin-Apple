@@ -218,7 +218,7 @@ struct TVFoldSnappingBehavior: ScrollTargetBehavior {
     let showcaseHeight: CGFloat
 
     func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
-        if target.rect.minY < showcaseHeight * 0.5 {
+        if target.rect.minY < showcaseHeight * 0.22 {
             target.rect.origin.y = 0
         } else {
             target.rect.origin.y = showcaseHeight

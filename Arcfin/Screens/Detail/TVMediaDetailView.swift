@@ -39,8 +39,8 @@ struct TVMediaDetailView: View {
                         .frame(height: sh)
                     belowFoldSection
                         .padding(.vertical, 72)
-                        .focusSection()
                 }
+                .focusSection()
             }
             .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
             .ignoresSafeArea()
