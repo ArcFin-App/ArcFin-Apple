@@ -3,6 +3,7 @@ import SwiftUI
 import JellyfinAPI
 import JellyseerrAPI
 import AuthCore
+import ImageCache
 
 struct TVHomeView: View {
     @Environment(AuthManager.self) private var authManager
@@ -85,6 +86,13 @@ struct TVHomeView: View {
         guard case .authenticated(let cred) = authManager.state else { return }
         await mediaRepo.load(credential: cred, authClient: authManager.authClient)
         mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
+        // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
+        // backdrop transitions are instant with no load jump.
+        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in
+            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
+             mediaRepo.logoURL(for: item)].compactMap { $0 }
+        }
+        ImageCache.preheat(urls: heroURLs)
         TopShelfBridge.save(
             continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
                 TopShelfMediaItem(
@@ -124,7 +132,7 @@ struct TVHomeView: View {
     private func heroSection(screenW: CGFloat, screenH: CGFloat) -> some View {
         ZStack(alignment: .bottomLeading) {
             Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
-            backdropLayer(screenW: screenW, screenH: screenH)
+            backdropLayer()
 
             LinearGradient(
                 stops: [
@@ -157,26 +165,12 @@ struct TVHomeView: View {
     }
 
     @ViewBuilder
-    private func backdropLayer(screenW: CGFloat, screenH: CGFloat) -> some View {
-        if let item = heroDisplayItem,
-           let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let img):
-                    img.resizable().scaledToFill()
-                default:
-                    heroFallbackGradient
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-            .id(heroDisplayItem?.id ?? "")
-            .transition(.opacity)
-            .animation(.easeInOut(duration: 0.4), value: focusedItemID)
-        } else {
-            heroFallbackGradient
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+    private func backdropLayer() -> some View {
+        let url = heroDisplayItem.flatMap {
+            mediaRepo.imageURL(for: $0, type: .backdrop, fillWidth: 1920)
         }
+        LazyHeroImage(url: url) { heroFallbackGradient }
+            .clipped()
     }
 
     private var heroFallbackGradient: some View {
