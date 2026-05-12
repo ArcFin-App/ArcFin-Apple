@@ -34,6 +34,7 @@ public actor JellyseerrHTTPClient {
     private let authMethod: JellyseerrAuthMethod
 
     private var isAuthenticated = false
+    private var authPermanentlyFailed = false
     private let session: URLSession
 
     public init(baseURL: URL, username: String, password: String,
@@ -59,12 +60,17 @@ public actor JellyseerrHTTPClient {
         req.timeoutInterval = 15
         let (_, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            // Mark permanently failed so we don't hammer Jellyfin with repeated bad-credential
+            // attempts — each failure counts toward Jellyfin's brute-force lockout threshold.
+            authPermanentlyFailed = true
             throw JellyseerrError.authFailed
         }
+        authPermanentlyFailed = false
         isAuthenticated = true
     }
 
     private func ensureAuthenticated() async throws {
+        guard !authPermanentlyFailed else { throw JellyseerrError.authFailed }
         guard !isAuthenticated else { return }
         try await login()
     }

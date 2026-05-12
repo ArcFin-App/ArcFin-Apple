@@ -15,6 +15,10 @@ final class JellyseerrRepository {
     @ObservationIgnored private var client: JellyseerrHTTPClient?
     @ObservationIgnored private var isFetchingDiscover = false
     @ObservationIgnored private var isFetchingRequests = false
+    @ObservationIgnored private var configuredURL: String = ""
+    @ObservationIgnored private var configuredUsername: String = ""
+    @ObservationIgnored private var configuredPassword: String = ""
+    @ObservationIgnored private var configuredMethod: JellyseerrAuthMethod = .jellyfin
 
     var isConfigured: Bool { client != nil }
 
@@ -25,8 +29,19 @@ final class JellyseerrRepository {
         let trimPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimURL.isEmpty, !trimUser.isEmpty, !trimPass.isEmpty,
               let url = URL(string: trimURL) else {
-            client = nil; return
+            client = nil
+            configuredURL = ""; configuredUsername = ""; configuredPassword = ""
+            return
         }
+        // Skip recreation when nothing changed — preserves isAuthenticated state
+        // and prevents a fresh login() attempt (which hits Jellyfin) on every app launch.
+        if client != nil,
+           trimURL == configuredURL, trimUser == configuredUsername,
+           trimPass == configuredPassword, authMethod == configuredMethod {
+            return
+        }
+        configuredURL = trimURL; configuredUsername = trimUser
+        configuredPassword = trimPass; configuredMethod = authMethod
         client = JellyseerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
                                       authMethod: authMethod)
         trending = []; popularMovies = []; popularTV = []; requests = []

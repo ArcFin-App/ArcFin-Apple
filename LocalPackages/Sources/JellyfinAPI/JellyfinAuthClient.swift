@@ -165,7 +165,8 @@ public struct JellyfinAuthClient: Sendable {
     // MARK: - Token validation
 
     public func validateToken(credential: ServerCredential) async -> Bool {
-        var req = URLRequest(url: credential.baseURL.appendingPathComponent("System/Info/Public"))
+        // Use an authenticated endpoint so an expired/revoked token returns 401, not 200.
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
         req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
         guard let (_, resp) = try? await URLSession.shared.data(for: req) else { return false }
