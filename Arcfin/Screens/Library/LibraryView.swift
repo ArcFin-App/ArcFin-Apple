@@ -397,6 +397,19 @@ struct LibraryDetailView: View {
     private var hasMore: Bool { items.count < totalItems }
     private var isCollections: Bool { library.collectionType == .boxsets }
 
+    // Maps the library type to the items it should show.
+    // .unknown = BoxSet contents (Movie+Series from within a collection).
+    private var includeTypes: String? {
+        switch library.collectionType {
+        case .movies:  return "Movie"
+        case .tvshows: return "Series"
+        case .boxsets: return "BoxSet"
+        case .music:   return "MusicAlbum"
+        case .unknown: return "Movie,Series"   // inside a BoxSet
+        default:       return nil
+        }
+    }
+
     private let client = JellyfinMediaClient()
 #if os(tvOS)
     private let columns = [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: DT.Spacing.shelfGap)]
@@ -484,8 +497,10 @@ struct LibraryDetailView: View {
 
     private func navTarget(for item: MediaItem) -> LibraryNavTarget {
         if item.type == .boxSet {
+            // .unknown → includeTypes returns "Movie,Series" so the inner view
+            // fetches the collection contents, not more BoxSet tiles.
             let lib = JellyfinLibrary(id: item.id, name: item.name,
-                                      collectionType: .boxsets,
+                                      collectionType: .unknown,
                                       primaryImageTag: item.primaryImageTag)
             return .collection(lib)
         }
@@ -605,7 +620,7 @@ struct LibraryDetailView: View {
             credential: cred, authHeader: header,
             libraryId: library.id, startIndex: 0, limit: pageSize,
             recursive: !isCollections,
-            includeItemTypes: isCollections ? "BoxSet" : nil
+            includeItemTypes: includeTypes
         )
         items = fetched?.items ?? []
         totalItems = fetched?.total ?? 0
@@ -622,7 +637,7 @@ struct LibraryDetailView: View {
             credential: cred, authHeader: header,
             libraryId: library.id, startIndex: items.count, limit: pageSize,
             recursive: !isCollections,
-            includeItemTypes: isCollections ? "BoxSet" : nil
+            includeItemTypes: includeTypes
         )
         items.append(contentsOf: fetched?.items ?? [])
         if let total = fetched?.total { totalItems = total }
