@@ -50,7 +50,7 @@ struct PosterCard: View {
                     .lineLimit(2)
                     .animation(DT.Animation.fast, value: isFocused)
             }
-            .frame(width: width, alignment: .leading)
+            .frame(width: width, height: 84, alignment: .topLeading)
         }
         // Clip the whole card+text column so no system focus transform bleeds outside
         .contentShape(Rectangle())

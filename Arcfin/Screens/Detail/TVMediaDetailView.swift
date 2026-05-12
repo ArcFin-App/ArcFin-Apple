@@ -281,8 +281,10 @@ struct TVMediaDetailView: View {
                     }
                 }
                 .padding(.horizontal, 80)
+                .padding(.top, 20)
                 .focusSection()
             }
+            .scrollClipDisabled()
         }
         .padding(.bottom, 56)
     }
@@ -304,8 +306,10 @@ struct TVMediaDetailView: View {
                     }
                 }
                 .padding(.horizontal, 80)
+                .padding(.top, 20)
                 .focusSection()
             }
+            .scrollClipDisabled()
         }
         .padding(.bottom, 56)
     }
@@ -328,8 +332,10 @@ struct TVMediaDetailView: View {
                     }
                 }
                 .padding(.horizontal, 80)
+                .padding(.top, 20)
                 .focusSection()
             }
+            .scrollClipDisabled()
         }
         .padding(.bottom, 56)
     }
@@ -348,7 +354,9 @@ struct TVMediaDetailView: View {
                     }
                 }
                 .padding(.horizontal, 80)
+                .padding(.top, 20)
             }
+            .scrollClipDisabled()
         }
         .padding(.bottom, 56)
     }
