@@ -363,8 +363,10 @@ struct TVHomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) { content() }
                     .padding(.horizontal, 80)
+                    .padding(.top, 20)
                     .focusSection()
             }
+            .scrollClipDisabled()
         }
         .padding(.bottom, 40)
         .focusSection()
