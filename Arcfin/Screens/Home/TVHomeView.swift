@@ -402,18 +402,18 @@ struct TVHomeView: View {
 
     // MARK: - Helpers
 
+    // "S1 · E4 · Episode Name" for episodes, show title for movies/series
     private func itemTitle(_ item: MediaItem) -> String {
-        item.type == .episode ? (item.seriesName ?? item.name) : item.name
+        guard item.type == .episode else { return item.name }
+        let s = item.parentIndexNumber.map { "S\($0)" }
+        let e = item.indexNumber.map { "E\($0)" }
+        let badge = [s, e].compactMap { $0 }.joined(separator: " · ")
+        return badge.isEmpty ? item.name : "\(badge) · \(item.name)"
     }
 
-    // "S1 · E4" for episodes, year for everything else
+    // Show name as subtitle for episodes, year for everything else
     private func itemSubtitle(_ item: MediaItem) -> String? {
-        if item.type == .episode {
-            let s = item.parentIndexNumber.map { "S\($0)" }
-            let e = item.indexNumber.map { "E\($0)" }
-            let parts = [s, e].compactMap { $0 }
-            return parts.isEmpty ? nil : parts.joined(separator: " · ")
-        }
+        if item.type == .episode { return item.seriesName }
         return item.productionYear.map { String($0) }
     }
 
