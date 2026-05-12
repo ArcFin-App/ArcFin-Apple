@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 import Nuke
-import NukeUI
 import Telemetry
 
 // MARK: - Pipeline
@@ -16,36 +15,60 @@ public enum ImageCache: Sendable {
         return ImagePipeline(configuration: config)
     }()
 
-    /// Warms the Nuke cache for a batch of URLs so they render without a loading delay.
+    /// Loads all URLs into the Nuke decoded cache concurrently so images render
+    /// without a network round-trip or decode stall.
     public static func preheat(urls: [URL]) {
-        let requests = urls.map { ImageRequest(url: $0) }
-        ImagePreheater(pipeline: shared).startPreheating(with: requests)
+        let captured = urls
+        Task.detached(priority: .utility) {
+            await withTaskGroup(of: Void.self) { group in
+                for url in captured {
+                    group.addTask { _ = try? await ImageCache.shared.image(for: url) }
+                }
+            }
+        }
     }
 }
 
 // MARK: - LazyHeroImage
 
-/// Full-bleed hero backdrop using Nuke's decoded image cache with a smooth crossfade.
-/// Avoids the layout-recalculation jump that AsyncImage produces when images swap.
-public struct LazyHeroImage<Placeholder: View>: View {
-    let url: URL?
-    @ViewBuilder let placeholder: () -> Placeholder
+/// Full-bleed hero backdrop backed by Nuke's decoded image cache.
+/// Crossfades between images using SwiftUI animation — no layout jump.
+public struct LazyHeroImage: View {
+    public let url: URL?
+    private let placeholder: AnyView
 
-    public init(url: URL?, @ViewBuilder placeholder: () -> Placeholder) {
+    @State private var displayed: Image?
+    @State private var version: Int = 0
+
+    public init<P: View>(url: URL?, @ViewBuilder placeholder: () -> P) {
         self.url = url
-        self.placeholder = placeholder
+        self.placeholder = AnyView(placeholder())
     }
 
     public var body: some View {
-        LazyImage(url: url) { state in
-            if let image = state.image {
-                image.resizable().scaledToFill()
-            } else {
-                placeholder()
+        ZStack {
+            placeholder
+            if let displayed {
+                displayed
+                    .resizable()
+                    .scaledToFill()
+                    .id(version)
+                    .transition(.opacity)
             }
         }
-        .pipeline(ImageCache.shared)
-        .transition(.fade(duration: 0.35))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: url) {
+            guard let url else { return }
+            guard let response = try? await ImageCache.shared.image(for: url) else { return }
+            #if canImport(UIKit)
+            let loaded = Image(uiImage: response.image)
+            #else
+            let loaded = Image(nsImage: response.image)
+            #endif
+            withAnimation(.easeInOut(duration: 0.35)) {
+                displayed = loaded
+                version &+= 1
+            }
+        }
     }
 }

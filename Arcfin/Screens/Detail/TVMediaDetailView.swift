@@ -36,18 +36,16 @@ struct TVMediaDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     showcaseSection(screenW: sw, screenH: sh)
-                        .frame(height: sh)
+                        .frame(height: sh * 0.88)
                     belowFoldSection
                         .padding(.vertical, 72)
+                        .focusSection()
                 }
                 .focusSection()
             }
             .ignoresSafeArea()
         }
         .background(DT.Color.backgroundPrimary)
-        .navigationDestination(for: MediaItem.self) { i in
-            TVMediaDetailView(item: i)
-        }
         .task { await load() }
         .onChange(of: selectedSeason) { _, season in
             guard let season, let seriesId = seasonSeriesId,
@@ -239,12 +237,12 @@ struct TVMediaDetailView: View {
 
     @ViewBuilder
     private var belowFoldSection: some View {
-        if !seasons.isEmpty { seriesSection }
-        if !trailers.isEmpty { trailersSection }
+        if !seasons.isEmpty { seriesSection.focusSection() }
+        if !trailers.isEmpty { trailersSection.focusSection() }
         if !seerrRelatedItems.isEmpty {
-            seerrRelatedSection
+            seerrRelatedSection.focusSection()
         } else if !similarItems.isEmpty {
-            similarSection
+            similarSection.focusSection()
         }
     }
 

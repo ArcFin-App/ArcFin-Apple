@@ -88,15 +88,15 @@ struct TVHomeView: View {
         mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
         // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
         // backdrop transitions are instant with no load jump.
-        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in
-            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
+        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
              mediaRepo.logoURL(for: item)].compactMap { $0 }
         }
         ImageCache.preheat(urls: heroURLs)
         TopShelfBridge.save(
             continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
                 TopShelfMediaItem(
-                    id: item.id, title: item.name,
+                    id: item.id,
+                    title: topShelfTitle(item),
                     subtitle: itemSubtitle(item),
                     imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
                     progress: item.userData?.playedPercentage.map { $0 / 100 } ?? 0
@@ -406,13 +406,23 @@ struct TVHomeView: View {
         item.type == .episode ? (item.seriesName ?? item.name) : item.name
     }
 
+    // "S1 · E4" for episodes, year for everything else
     private func itemSubtitle(_ item: MediaItem) -> String? {
         if item.type == .episode {
-            let parts = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }]
-                .compactMap { $0 }
-            return parts.isEmpty ? nil : parts.joined()
+            let s = item.parentIndexNumber.map { "S\($0)" }
+            let e = item.indexNumber.map { "E\($0)" }
+            let parts = [s, e].compactMap { $0 }
+            return parts.isEmpty ? nil : parts.joined(separator: " · ")
         }
         return item.productionYear.map { String($0) }
+    }
+
+    // Top Shelf title includes S/E so users see context without needing a subtitle row
+    private func topShelfTitle(_ item: MediaItem) -> String {
+        guard item.type == .episode else { return item.name }
+        let show = item.seriesName ?? item.name
+        guard let sub = itemSubtitle(item) else { return show }
+        return "\(show) – \(sub)"
     }
 }
 
