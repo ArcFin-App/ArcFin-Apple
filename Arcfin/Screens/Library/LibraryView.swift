@@ -381,6 +381,11 @@ struct LibraryDetailView: View {
 
     @State private var items: [MediaItem] = []
     @State private var isLoading = true
+    @State private var isLoadingMore = false
+    @State private var totalItems = 0
+    private let pageSize = 100
+
+    private var hasMore: Bool { items.count < totalItems }
 
     private let client = JellyfinMediaClient()
 #if os(tvOS)
@@ -423,6 +428,17 @@ struct LibraryDetailView: View {
                             .buttonStyle(.plain)
                             .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
 #endif
+                            .onAppear {
+                                if item.id == items.last?.id && hasMore && !isLoadingMore {
+                                    Task { await loadMore() }
+                                }
+                            }
+                        }
+
+                        if isLoadingMore {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding()
                         }
                     }
                     .padding(DT.Spacing.pagePad)
@@ -556,9 +572,28 @@ struct LibraryDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
-        items = (try? await client.getLibraryItems(credential: cred, authHeader: header, libraryId: library.id)) ?? []
+        let result = (try? await client.getLibraryItems(
+            credential: cred, authHeader: header,
+            libraryId: library.id, startIndex: 0, limit: pageSize
+        )) ?? ([], 0)
+        items = result.items
+        totalItems = result.total
         mediaRepo.prefetchQuickLookAssets(for: items)
         isLoading = false
+    }
+
+    private func loadMore() async {
+        guard hasMore, !isLoadingMore else { return }
+        guard let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        isLoadingMore = true
+        let result = (try? await client.getLibraryItems(
+            credential: cred, authHeader: header,
+            libraryId: library.id, startIndex: items.count, limit: pageSize
+        )) ?? ([], totalItems)
+        items.append(contentsOf: result.items)
+        totalItems = result.total
+        isLoadingMore = false
     }
 }
 

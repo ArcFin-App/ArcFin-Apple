@@ -255,8 +255,9 @@ public struct JellyfinMediaClient: Sendable {
         credential: ServerCredential,
         authHeader: String,
         libraryId: String,
+        startIndex: Int = 0,
         limit: Int = 100
-    ) async throws -> [MediaItem] {
+    ) async throws -> (items: [MediaItem], total: Int) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
             resolvingAgainstBaseURL: false)!
@@ -265,14 +266,16 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "Recursive", value: "true"),
             .init(name: "SortBy", value: "SortName"),
             .init(name: "SortOrder", value: "Ascending"),
+            .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: req)
-        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        let page = try JSONDecoder().decode(ItemsPage.self, from: data)
+        return (page.items.map { $0.toMediaItem() }, page.totalRecordCount ?? 0)
     }
 
     public func search(credential: ServerCredential, authHeader: String, query: String, limit: Int = 20) async throws -> [MediaItem] {
@@ -324,7 +327,11 @@ public struct JellyfinMediaClient: Sendable {
 
 private struct ItemsPage: Decodable {
     let items: [JellyfinItemResponse]
-    enum CodingKeys: String, CodingKey { case items = "Items" }
+    let totalRecordCount: Int?
+    enum CodingKeys: String, CodingKey {
+        case items = "Items"
+        case totalRecordCount = "TotalRecordCount"
+    }
 }
 
 private struct JellyfinItemResponse: Decodable {
