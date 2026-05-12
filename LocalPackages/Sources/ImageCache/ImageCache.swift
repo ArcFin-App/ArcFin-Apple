@@ -61,9 +61,9 @@ public struct LazyHeroImage: View {
             guard let url else { return }
             guard let response = try? await ImageCache.shared.image(for: url) else { return }
             #if canImport(UIKit)
-            let loaded = Image(uiImage: response.image)
+            let loaded = Image(uiImage: response)
             #else
-            let loaded = Image(nsImage: response.image)
+            let loaded = Image(nsImage: response)
             #endif
             withAnimation(.easeInOut(duration: 0.35)) {
                 displayed = loaded
