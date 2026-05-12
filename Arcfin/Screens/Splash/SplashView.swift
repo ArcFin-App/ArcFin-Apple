@@ -66,10 +66,10 @@ struct SplashView: View {
                 Spacer()
             }
 
-            // "For Jellyfin" wordmark
+            // "By PSMattas" wordmark
             VStack {
                 Spacer()
-                Text("For Jellyfin")
+                Text("By PSMattas")
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1.5)
                     .textCase(.uppercase)
