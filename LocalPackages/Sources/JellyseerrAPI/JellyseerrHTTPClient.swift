@@ -36,6 +36,8 @@ public actor JellyseerrHTTPClient {
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
     private let session: URLSession
+    // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
+    private let authFailedKey: String
 
     public init(baseURL: URL, username: String, password: String,
                 authMethod: JellyseerrAuthMethod = .jellyfin) {
@@ -47,6 +49,13 @@ public actor JellyseerrHTTPClient {
         config.httpCookieAcceptPolicy = .always
         config.httpShouldSetCookies   = true
         self.session = URLSession(configuration: config)
+        self.authFailedKey = "arcfin.seerr.authFailedUntil.\(baseURL.host ?? "unknown")"
+    }
+
+    /// Clears any persisted auth-failure cooldown. Call this when the user updates credentials.
+    public func clearAuthFailure() {
+        UserDefaults.standard.removeObject(forKey: authFailedKey)
+        authPermanentlyFailed = false
     }
 
     // MARK: - Auth
@@ -60,17 +69,27 @@ public actor JellyseerrHTTPClient {
         req.timeoutInterval = 15
         let (_, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            // Mark permanently failed so we don't hammer Jellyfin with repeated bad-credential
-            // attempts — each failure counts toward Jellyfin's brute-force lockout threshold.
             authPermanentlyFailed = true
+            // Persist a 1-hour cooldown so cold relaunches don't retry with bad credentials,
+            // each retry counts toward Jellyfin's brute-force lockout threshold.
+            let cooldownUntil = Date().addingTimeInterval(3600)
+            UserDefaults.standard.set(cooldownUntil, forKey: authFailedKey)
             throw JellyseerrError.authFailed
         }
         authPermanentlyFailed = false
+        UserDefaults.standard.removeObject(forKey: authFailedKey)
         isAuthenticated = true
     }
 
     private func ensureAuthenticated() async throws {
+        // Check in-memory flag first (fast path within a session).
         guard !authPermanentlyFailed else { throw JellyseerrError.authFailed }
+        // Check persisted cooldown so cold relaunches also respect previous failures.
+        if let until = UserDefaults.standard.object(forKey: authFailedKey) as? Date,
+           until > Date() {
+            authPermanentlyFailed = true
+            throw JellyseerrError.authFailed
+        }
         guard !isAuthenticated else { return }
         try await login()
     }
@@ -164,9 +183,8 @@ public actor JellyseerrHTTPClient {
         req.timeoutInterval = 15
         let (data, response) = try await session.data(for: req)
         if let http = response as? HTTPURLResponse, http.statusCode == 401 {
-            // Session expired — re-authenticate once then retry
             isAuthenticated = false
-            try await login()
+            try await ensureAuthenticated()
             let (retryData, retryResp) = try await session.data(for: req)
             guard let retryHttp = retryResp as? HTTPURLResponse,
                   (200...299).contains(retryHttp.statusCode) else {

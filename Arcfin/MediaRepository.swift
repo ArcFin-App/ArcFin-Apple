@@ -22,8 +22,12 @@ final class MediaRepository {
 
     private let client = JellyfinMediaClient()
     private var loaded = false
+    private var lastLoadedAt: Date?
 
     func load(credential: ServerCredential, authClient: JellyfinAuthClient) async {
+        // Skip if already loaded within the last 60 s — prevents repeated API bursts
+        // when the view re-appears (tab switch, background/foreground, etc.).
+        if loaded, let t = lastLoadedAt, Date().timeIntervalSince(t) < 60 { return }
         guard !isLoading else { return }
         baseURL = credential.baseURL
         accessToken = credential.accessToken
@@ -50,6 +54,7 @@ final class MediaRepository {
 
         isLoading = false
         loaded = true
+        lastLoadedAt = Date()
     }
 
     func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {

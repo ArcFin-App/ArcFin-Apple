@@ -40,6 +40,8 @@ final class JellyseerrRepository {
            trimPass == configuredPassword, authMethod == configuredMethod {
             return
         }
+        // Clear any persisted auth-failure cooldown when credentials change.
+        client?.clearAuthFailure()
         configuredURL = trimURL; configuredUsername = trimUser
         configuredPassword = trimPass; configuredMethod = authMethod
         client = JellyseerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
