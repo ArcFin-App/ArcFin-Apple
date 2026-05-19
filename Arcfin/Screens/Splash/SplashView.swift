@@ -3,30 +3,47 @@ import SwiftUI
 struct SplashView: View {
     var onComplete: () -> Void
 
-    @State private var shimmerPhase: CGFloat = -1
-    @State private var opacity: Double = 0
-    @State private var logoScale: CGFloat = 0.85
+    // Box
+    @State private var boxOpacity: Double = 0
+    @State private var boxScale: CGFloat = 0.55
+    // Stroke draw
+    @State private var finTrim: CGFloat = 0
+    @State private var crossbarTrim: CGFloat = 0
+    // Text
+    @State private var wordmarkOpacity: Double = 0
+    @State private var wordmarkOffset: CGFloat = 14
+    // Ambient glow
+    @State private var glowOpacity: Double = 0
+    @State private var glowPulse: CGFloat = 1.0
+    // Credit
+    @State private var creditOpacity: Double = 0
+    // Exit
+    @State private var sceneOpacity: Double = 1
+    @State private var sceneScale: CGFloat = 1
+
+    private let iconSize: CGFloat = 124
 
     var body: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
-            // Ambient radial glow
+            // Ambient radial glow — pulses during hold
             RadialGradient(
-                colors: [DT.Color.accent.opacity(0.12), .clear],
-                center: .center,
-                startRadius: 0,
-                endRadius: 200
+                colors: [DT.Color.accent.opacity(0.22), DT.Color.accentDeep.opacity(0.10), .clear],
+                center: .center, startRadius: 0, endRadius: 300
             )
-            .frame(width: 260, height: 260)
-            .blur(radius: 40)
-            .offset(y: -80)
+            .frame(width: 600, height: 600)
+            .scaleEffect(glowPulse)
+            .opacity(glowOpacity)
+            .blur(radius: 24)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
 
-            // Subtle scan lines
-            Canvas { context, size in
+            // Subtle scan-line texture
+            Canvas { ctx, size in
                 for y in stride(from: 0, through: size.height, by: 4) {
-                    let line = Path(CGRect(x: 0, y: y, width: size.width, height: 1))
-                    context.fill(line, with: .color(.white.opacity(0.012)))
+                    ctx.fill(Path(CGRect(x: 0, y: y, width: size.width, height: 1)),
+                             with: .color(.white.opacity(0.012)))
                 }
             }
             .ignoresSafeArea()
@@ -35,64 +52,120 @@ struct SplashView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                ArcfinLogoView(size: 72)
-                    .scaleEffect(logoScale)
+                // Icon box + strokes
+                ZStack {
+                    RoundedRectangle(cornerRadius: iconSize * 0.25)
+                        .fill(LinearGradient(
+                            colors: [DT.Color.accentDeep, DT.Color.accent.opacity(0.9)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ))
+                        .frame(width: iconSize, height: iconSize)
+                        .shadow(color: DT.Color.accent.opacity(0.55), radius: 48)
+                        .shadow(color: .black.opacity(0.65), radius: 24, y: 12)
 
-                // Shimmer loading bar
-                GeometryReader { geo in
-                    let barWidth: CGFloat = 120
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(.white.opacity(0.08))
-                            .frame(width: barWidth, height: 2)
+                    let is2 = iconSize * 0.60
+                    FinIconShape()
+                        .trim(from: 0, to: finTrim)
+                        .stroke(.white, style: StrokeStyle(
+                            lineWidth: 3.2 * (is2 / 28), lineCap: .round, lineJoin: .round))
+                        .frame(width: is2, height: is2)
 
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.clear, DT.Color.accent, .clear],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: barWidth * 0.4, height: 2)
-                            .offset(x: shimmerPhase * barWidth * 1.5)
-                    }
-                    .frame(width: barWidth)
-                    .frame(maxWidth: .infinity)
+                    FinCrossbarShape()
+                        .trim(from: 0, to: crossbarTrim)
+                        .stroke(.white.opacity(0.92), style: StrokeStyle(
+                            lineWidth: 2.8 * (is2 / 28), lineCap: .round))
+                        .frame(width: is2, height: is2)
                 }
-                .frame(height: 2)
-                .padding(.top, 52)
+                .scaleEffect(boxScale)
+                .opacity(boxOpacity)
+
+                // "arcfin" wordmark
+                Text("arcfin")
+                    .font(.system(size: iconSize * 0.40, weight: .heavy, design: .default))
+                    .foregroundStyle(.white)
+                    .tracking(-1)
+                    .opacity(wordmarkOpacity)
+                    .offset(y: wordmarkOffset)
+                    .padding(.top, 22)
 
                 Spacer()
             }
 
-            // "By PSMattas" wordmark
+            // Credit
             VStack {
                 Spacer()
-                Text("By PSMattas")
+                Text("by PSMattas")
                     .font(.system(size: 10, weight: .medium))
-                    .tracking(1.5)
+                    .tracking(2.5)
                     .textCase(.uppercase)
-                    .foregroundStyle(.white.opacity(0.2))
-                    .padding(.bottom, 36)
+                    .foregroundStyle(.white.opacity(0.18))
+                    .padding(.bottom, 40)
+                    .opacity(creditOpacity)
             }
         }
-        .opacity(opacity)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.4)) {
-                opacity = 1
-                logoScale = 1
+        .scaleEffect(sceneScale)
+        .opacity(sceneOpacity)
+        .onAppear { runSequence() }
+    }
+
+    private func runSequence() {
+        // 1. Glow fades in
+        withAnimation(.easeOut(duration: 0.5)) {
+            glowOpacity = 1
+        }
+
+        // 2. Icon box springs in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.spring(response: 0.52, dampingFraction: 0.68)) {
+                boxOpacity = 1
+                boxScale   = 1
             }
-            withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
-                shimmerPhase = 1.4
+        }
+
+        // 3. Fin stroke draws
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
+            withAnimation(.easeInOut(duration: 0.62)) {
+                finTrim = 1
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
-                withAnimation(.easeInOut(duration: 0.4)) {
-                    opacity = 0
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    onComplete()
-                }
+        }
+
+        // 4. Crossbar draws
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.76) {
+            withAnimation(.easeInOut(duration: 0.38)) {
+                crossbarTrim = 1
+            }
+        }
+
+        // 5. "arcfin" rises in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.88) {
+            withAnimation(.easeOut(duration: 0.45)) {
+                wordmarkOpacity = 1
+                wordmarkOffset  = 0
+            }
+        }
+
+        // 6. Credit line
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+            withAnimation(.easeIn(duration: 0.4)) {
+                creditOpacity = 1
+            }
+        }
+
+        // 7. Glow pulse loop (starts while holding)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
+                glowPulse = 1.18
+            }
+        }
+
+        // 8. Exit — gentle zoom-out + fade
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
+            withAnimation(.easeInOut(duration: 0.48)) {
+                sceneOpacity = 0
+                sceneScale   = 0.94
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
+                onComplete()
             }
         }
     }

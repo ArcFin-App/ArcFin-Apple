@@ -79,13 +79,11 @@ struct TVCollectionDetailView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    heroSection(screenW: sw, screenH: sh)
-                        .frame(height: sh * 0.72)
-                    if !items.isEmpty {
-                        itemsSection
-                            .padding(.vertical, 56)
-                            .focusSection()
-                    }
+                    showcaseSection(screenW: sw, screenH: sh)
+                        .frame(height: sh * 0.88)
+                    belowFoldSection
+                        .padding(.vertical, 72)
+                        .focusSection()
                 }
                 .focusSection()
             }
@@ -98,9 +96,9 @@ struct TVCollectionDetailView: View {
         .task { await load() }
     }
 
-    // MARK: - Hero
+    // MARK: - Showcase
 
-    private func heroSection(screenW: CGFloat, screenH: CGFloat) -> some View {
+    private func showcaseSection(screenW: CGFloat, screenH: CGFloat) -> some View {
         ZStack(alignment: .bottomLeading) {
             Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -120,7 +118,7 @@ struct TVCollectionDetailView: View {
 
             LinearGradient(stops: [
                 .init(color: .clear, location: 0.0),
-                .init(color: DT.Color.backgroundPrimary.opacity(0.55), location: 0.55),
+                .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.5),
                 .init(color: DT.Color.backgroundPrimary, location: 1.0)
             ], startPoint: .top, endPoint: .bottom)
 
@@ -133,27 +131,34 @@ struct TVCollectionDetailView: View {
                 Spacer()
             }
 
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 28) {
                 Text(item.name)
                     .font(.system(size: 44, weight: .heavy))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.9), radius: 12)
 
                 if !items.isEmpty {
-                    Text("\(items.count) \(items.count == 1 ? "Item" : "Items")")
+                    Text("\(items.count) \(items.count == 1 ? "item" : "items")")
                         .font(.system(size: 22))
                         .foregroundStyle(.white.opacity(0.65))
                 }
 
-                Button {} label: {
-                    TVDetailButtonLabel(icon: "play.fill", text: "Play All", isPrimary: true)
+                HStack(spacing: 20) {
+                    Button {} label: {
+                        TVDetailButtonLabel(icon: "play.fill", text: "Play All", isPrimary: true)
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+
+                    Button {} label: {
+                        TVDetailButtonLabel(icon: "bookmark", text: "Watchlist")
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
                 }
-                .buttonStyle(TVCardButtonStyle())
-                .focusEffectDisabled()
-                .frame(width: 260)
             }
             .padding(.horizontal, 80)
-            .padding(.bottom, 72)
+            .padding(.bottom, 80)
         }
         .focusSection()
     }
@@ -165,7 +170,14 @@ struct TVCollectionDetailView: View {
         )
     }
 
-    // MARK: - Items shelf
+    // MARK: - Below fold
+
+    @ViewBuilder
+    private var belowFoldSection: some View {
+        if !items.isEmpty {
+            itemsSection.focusSection()
+        }
+    }
 
     private var itemsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -175,16 +187,10 @@ struct TVCollectionDetailView: View {
                 .padding(.horizontal, 80)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 24) {
                     ForEach(items) { ci in
                         Button { selectedItem = ci } label: {
-                            PosterCard(
-                                title: ci.name,
-                                subtitle: ci.productionYear.map { String($0) },
-                                imageURL: mediaRepo.imageURL(for: ci, type: .primary, fillWidth: 400),
-                                width: 200,
-                                height: 356
-                            )
+                            TVCollectionItemCard(item: ci, imageURL: mediaRepo.imageURL(for: ci, type: .primary, fillWidth: 400))
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
@@ -196,6 +202,7 @@ struct TVCollectionDetailView: View {
             }
             .scrollClipDisabled()
         }
+        .padding(.bottom, 40)
     }
 
     // MARK: - Load
@@ -207,10 +214,55 @@ struct TVCollectionDetailView: View {
             libraryId: item.id, startIndex: 0, limit: 500,
             recursive: true, includeItemTypes: "Movie,Series"
         )
-        // Sort by release year so the collection is in chronological order.
         items = (fetched?.items ?? []).sorted {
             ($0.productionYear ?? 0) < ($1.productionYear ?? 0)
         }
+    }
+}
+
+// MARK: - Collection item card
+
+private struct TVCollectionItemCard: View {
+    let item: MediaItem
+    let imageURL: URL?
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AsyncImage(url: imageURL) { phase in
+                switch phase {
+                case .success(let img): img.resizable().scaledToFill()
+                default:
+                    RoundedRectangle(cornerRadius: DT.Radius.card)
+                        .fill(DT.Color.backgroundSecondary)
+                }
+            }
+            .frame(width: 200, height: 300)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card)
+                .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: 3))
+            .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 12)
+            .compositingGroup()
+            .scaleEffect(isFocused ? 1.05 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+
+            VStack(alignment: .leading, spacing: 2) {
+                if let year = item.productionYear {
+                    Text(String(year))
+                        .font(.system(size: 10 * DT.Scale.font, weight: .medium))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(1)
+                }
+                Text(item.name)
+                    .font(.system(size: 13 * DT.Scale.font, weight: .semibold))
+                    .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
+                    .lineLimit(2)
+                    .animation(DT.Animation.fast, value: isFocused)
+            }
+            .frame(width: 200, height: 56, alignment: .topLeading)
+        }
+        .contentShape(Rectangle())
     }
 }
 

@@ -40,7 +40,7 @@ struct ArcfinLogoView: View {
 
 // MARK: - Icon paths (viewBox 0 0 28 28)
 
-private struct FinIconShape: Shape {
+struct FinIconShape: Shape {
     func path(in rect: CGRect) -> Path {
         let sx = rect.width / 28
         let sy = rect.height / 28
@@ -52,7 +52,7 @@ private struct FinIconShape: Shape {
     }
 }
 
-private struct FinCrossbarShape: Shape {
+struct FinCrossbarShape: Shape {
     func path(in rect: CGRect) -> Path {
         let sx = rect.width / 28
         let sy = rect.height / 28
