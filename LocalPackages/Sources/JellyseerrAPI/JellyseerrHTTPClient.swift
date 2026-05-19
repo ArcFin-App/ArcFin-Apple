@@ -68,13 +68,16 @@ public actor JellyseerrHTTPClient {
         req.httpBody = try JSONSerialization.data(withJSONObject: ["username": username, "password": password])
         req.timeoutInterval = 15
         let (_, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        if http.statusCode == 401 || http.statusCode == 403 {
+            // Real credential rejection — back off to protect against Jellyfin brute-force lockout.
             authPermanentlyFailed = true
-            // Persist a 1-hour cooldown so cold relaunches don't retry with bad credentials,
-            // each retry counts toward Jellyfin's brute-force lockout threshold.
-            let cooldownUntil = Date().addingTimeInterval(3600)
-            UserDefaults.standard.set(cooldownUntil, forKey: authFailedKey)
+            UserDefaults.standard.set(Date().addingTimeInterval(3600), forKey: authFailedKey)
             throw JellyseerrError.authFailed
+        }
+        guard (200...299).contains(http.statusCode) else {
+            // Transient server error (5xx, 503 during startup, etc.) — do not lock out.
+            throw URLError(.badServerResponse)
         }
         authPermanentlyFailed = false
         UserDefaults.standard.removeObject(forKey: authFailedKey)
