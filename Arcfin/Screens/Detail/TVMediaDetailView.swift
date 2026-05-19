@@ -22,6 +22,7 @@ struct TVMediaDetailView: View {
     @State private var showFullDescription = false
     @State private var selectedEpisode: MediaItem?
     @State private var initialEpisodeID: String?
+    @State private var nextEpisode: MediaItem?
 
     private let client = JellyfinMediaClient()
 
@@ -169,10 +170,18 @@ struct TVMediaDetailView: View {
         }
     }
 
+    private var playLabel: String {
+        if let ep = nextEpisode ?? (item.type == .episode ? item : nil),
+           let num = ep.indexNumber {
+            return "Play E\(num)"
+        }
+        return "Play"
+    }
+
     private var actionColumn: some View {
         VStack(spacing: 14) {
             Button {} label: {
-                TVDetailButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
+                TVDetailButtonLabel(icon: "play.fill", text: playLabel, isPrimary: true)
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
@@ -268,8 +277,8 @@ struct TVMediaDetailView: View {
             }
             .padding(.horizontal, 80)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                ScrollViewReader { proxy in
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(episodes) { ep in
                             Button { selectedEpisode = ep } label: {
@@ -283,15 +292,15 @@ struct TVMediaDetailView: View {
                     .padding(.horizontal, 80)
                     .padding(.top, 20)
                     .focusSection()
-                    .onChange(of: episodes) { _, newEps in
-                        guard let target = initialEpisodeID,
-                              newEps.contains(where: { $0.id == target }) else { return }
-                        proxy.scrollTo(target, anchor: .leading)
-                        initialEpisodeID = nil
-                    }
+                }
+                .scrollClipDisabled()
+                .onChange(of: episodes) { _, newEps in
+                    guard let target = initialEpisodeID,
+                          newEps.contains(where: { $0.id == target }) else { return }
+                    proxy.scrollTo(target, anchor: .leading)
+                    initialEpisodeID = nil
                 }
             }
-            .scrollClipDisabled()
         }
         .padding(.bottom, 56)
     }
@@ -432,11 +441,13 @@ struct TVMediaDetailView: View {
             switch item.type {
             case .series:
                 // Ask the server which episode is next — use its season and scroll to it.
-                if let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId),
-                   let seasonNum = nextEp.parentIndexNumber,
-                   let matched = seasons.first(where: { $0.indexNumber == seasonNum }) {
-                    target = matched
+                if let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
+                    if let seasonNum = nextEp.parentIndexNumber,
+                       let matched = seasons.first(where: { $0.indexNumber == seasonNum }) {
+                        target = matched
+                    }
                     initialEpisodeID = nextEp.id
+                    nextEpisode = nextEp
                 }
             case .episode:
                 target = selectedSeasonForCurrentItem(from: seasons) ?? first
