@@ -619,7 +619,7 @@ struct LibraryDetailView: View {
         let fetched = try? await client.getLibraryItems(
             credential: cred, authHeader: header,
             libraryId: library.id, startIndex: 0, limit: pageSize,
-            recursive: !isCollections,
+            recursive: true,
             includeItemTypes: includeTypes
         )
         items = fetched?.items ?? []
@@ -636,7 +636,7 @@ struct LibraryDetailView: View {
         let fetched = try? await client.getLibraryItems(
             credential: cred, authHeader: header,
             libraryId: library.id, startIndex: items.count, limit: pageSize,
-            recursive: !isCollections,
+            recursive: true,
             includeItemTypes: includeTypes
         )
         items.append(contentsOf: fetched?.items ?? [])

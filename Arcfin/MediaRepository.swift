@@ -91,18 +91,42 @@ final class MediaRepository {
             return JellyfinMediaClient.imageURL(baseURL: base, itemID: parentId, tag: parentTag,
                                                 type: .backdrop, fillWidth: fillWidth, token: token)
         }
+        // BoxSets only have Primary; fall back to it when thumb/backdrop are absent.
+        if tag == nil, item.type == .boxSet, let primary = item.primaryImageTag {
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: primary,
+                                                type: .primary, fillWidth: fillWidth, token: token)
+        }
         guard let tag else { return nil }
         return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: type == .thumb && item.thumbImageTag == nil ? .backdrop : type, fillWidth: fillWidth, token: token)
     }
 
     // On tvOS: landscape thumb for movies/shows, episode primary for episodes (landscape screenshot).
+    // BoxSets only carry a Primary poster — skip the thumb/backdrop path entirely.
     func tvImageURL(for item: MediaItem, fillWidth: Int = 500) -> URL? {
         guard let base = baseURL, let token = accessToken else { return nil }
         if item.type == .episode {
             guard let tag = item.primaryImageTag else { return nil }
             return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: .primary, fillWidth: fillWidth, token: token)
         }
+        if item.type == .boxSet, let tag = item.primaryImageTag {
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: .primary, fillWidth: fillWidth, token: token)
+        }
         return imageURL(for: item, type: .thumb, fillWidth: fillWidth)
+    }
+
+    // Episode screenshot — uses the episode's own Primary (screenshot) or Thumb image,
+    // bypassing the episode→series poster redirect in imageURL(for:type:).
+    func episodeThumbnailURL(for item: MediaItem, fillWidth: Int = 240) -> URL? {
+        guard let base = baseURL, let token = accessToken else { return nil }
+        if let tag = item.thumbImageTag {
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag,
+                                                type: .thumb, fillWidth: fillWidth, token: token)
+        }
+        if let tag = item.primaryImageTag {
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag,
+                                                type: .primary, fillWidth: fillWidth, token: token)
+        }
+        return nil
     }
 
     func personImageURL(personId: String, tag: String, fillWidth: Int = 120) -> URL? {
