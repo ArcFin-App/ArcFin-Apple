@@ -158,6 +158,7 @@ public actor JellyseerrHTTPClient {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        applyXSRF(to: &req)
         var body: [String: Any] = ["mediaType": mediaType.rawValue, "mediaId": mediaId]
         if !seasons.isEmpty { body["seasons"] = seasons }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -169,6 +170,17 @@ public actor JellyseerrHTTPClient {
     }
 
     // MARK: - Private helpers
+
+    /// Reads the XSRF-TOKEN cookie from the session's cookie jar and injects it
+    /// as the XSRF-TOKEN header. Jellyseerr uses the double-submit cookie pattern —
+    /// the cookie alone is not enough; the value must also appear as a header.
+    private func applyXSRF(to request: inout URLRequest) {
+        guard let token = session.configuration.httpCookieStorage?
+            .cookies(for: baseURL)?
+            .first(where: { $0.name == "XSRF-TOKEN" })?
+            .value else { return }
+        request.setValue(token, forHTTPHeaderField: "XSRF-TOKEN")
+    }
 
     private func fetchPage(
         _ path: String,
@@ -189,11 +201,16 @@ public actor JellyseerrHTTPClient {
     private func fetch(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url)
         req.timeoutInterval = 15
+        applyXSRF(to: &req)
         let (data, response) = try await session.data(for: req)
         if let http = response as? HTTPURLResponse, http.statusCode == 401 {
             isAuthenticated = false
             try await ensureAuthenticated()
-            let (retryData, retryResp) = try await session.data(for: req)
+            // Rebuild so the fresh XSRF-TOKEN from the new login is included.
+            var retryReq = URLRequest(url: url)
+            retryReq.timeoutInterval = 15
+            applyXSRF(to: &retryReq)
+            let (retryData, retryResp) = try await session.data(for: retryReq)
             guard let retryHttp = retryResp as? HTTPURLResponse,
                   (200...299).contains(retryHttp.statusCode) else {
                 throw URLError(.badServerResponse)
