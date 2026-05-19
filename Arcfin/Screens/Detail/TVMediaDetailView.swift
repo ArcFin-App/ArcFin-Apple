@@ -20,6 +20,7 @@ struct TVMediaDetailView: View {
     @State private var seerrRelatedItems: [SeerrItem] = []
     @State private var isLoading = true
     @State private var showFullDescription = false
+    @State private var selectedEpisode: MediaItem?
 
     private let client = JellyfinMediaClient()
 
@@ -55,6 +56,9 @@ struct TVMediaDetailView: View {
                     credential: cred, authHeader: header,
                     seriesId: seriesId, seasonId: season.id)) ?? []
             }
+        }
+        .navigationDestination(item: $selectedEpisode) { ep in
+            TVMediaDetailView(item: ep)
         }
         .fullScreenCover(isPresented: $showFullDescription) {
             fullDescriptionCover
@@ -277,7 +281,11 @@ struct TVMediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(episodes) { ep in
-                        TVEpisodeCard(ep: ep)
+                        Button { selectedEpisode = ep } label: {
+                            TVEpisodeCard(ep: ep)
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
                     }
                 }
                 .padding(.horizontal, 80)
@@ -488,7 +496,7 @@ private struct TVEpisodeCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: mediaRepo.imageURL(for: ep, type: .primary, fillWidth: 400)) { phase in
+            AsyncImage(url: mediaRepo.episodeThumbnailURL(for: ep, fillWidth: 400)) { phase in
                 switch phase {
                 case .success(let img):
                     img.resizable().scaledToFill()
