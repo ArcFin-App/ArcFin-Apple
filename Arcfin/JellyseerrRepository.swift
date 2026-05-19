@@ -11,6 +11,7 @@ final class JellyseerrRepository {
     var requests: [SeerrRequestItem] = []
     var isLoadingDiscover = false
     var isLoadingRequests = false
+    var authFailed = false
 
     @ObservationIgnored private var client: JellyseerrHTTPClient?
     @ObservationIgnored private var isFetchingDiscover = false
@@ -46,6 +47,7 @@ final class JellyseerrRepository {
         configuredPassword = trimPass; configuredMethod = authMethod
         client = JellyseerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
                                       authMethod: authMethod)
+        authFailed = false
         trending = []; popularMovies = []; popularTV = []; requests = []
     }
 
@@ -54,13 +56,18 @@ final class JellyseerrRepository {
         isFetchingDiscover = true
         let firstLoad = trending.isEmpty
         if firstLoad { isLoadingDiscover = true }
-        async let t  = (try? await client.trending())       ?? []
-        async let m  = (try? await client.discoverMovies()) ?? []
-        async let tv = (try? await client.discoverTV())     ?? []
-        let (newT, newM, newTV) = await (t, m, tv)
-        if !newT.isEmpty  || firstLoad { trending = newT }
-        if !newM.isEmpty  || firstLoad { popularMovies = newM }
-        if !newTV.isEmpty || firstLoad { popularTV = newTV }
+        do {
+            async let t  = client.trending()
+            async let m  = client.discoverMovies()
+            async let tv = client.discoverTV()
+            let (newT, newM, newTV) = try await (t, m, tv)
+            if !newT.isEmpty  || firstLoad { trending = newT }
+            if !newM.isEmpty  || firstLoad { popularMovies = newM }
+            if !newTV.isEmpty || firstLoad { popularTV = newTV }
+            authFailed = false
+        } catch JellyseerrError.authFailed {
+            authFailed = true
+        } catch {}
         if firstLoad { isLoadingDiscover = false }
         isFetchingDiscover = false
     }
@@ -70,8 +77,13 @@ final class JellyseerrRepository {
         isFetchingRequests = true
         let firstLoad = requests.isEmpty
         if firstLoad { isLoadingRequests = true }
-        let fetched = (try? await client.getRequests()) ?? []
-        requests = fetched
+        do {
+            let fetched = try await client.getRequests()
+            requests = fetched
+            authFailed = false
+        } catch JellyseerrError.authFailed {
+            authFailed = true
+        } catch {}
         if firstLoad { isLoadingRequests = false }
         isFetchingRequests = false
     }

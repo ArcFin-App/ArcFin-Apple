@@ -4,6 +4,7 @@ import JellyseerrAPI
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(JellyseerrRepository.self) private var seerrRepo
 
     // MARK: - Persisted preferences
 
@@ -103,18 +104,14 @@ struct SettingsView: View {
                         HStack {
                             Label("Jellyseerr", systemImage: "clock.fill")
                             Spacer()
-                            if !seerrURL.isEmpty {
-                                Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
-                            }
+                            seerrStatusPill
                         }
                     }
 #else
                     HStack {
                         Label("Jellyseerr", systemImage: "clock.fill")
                         Spacer()
-                        if !seerrURL.isEmpty {
-                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
-                        }
+                        seerrStatusPill
                     }
 #endif
                 }
@@ -293,6 +290,15 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var seerrStatusPill: some View {
+        if seerrRepo.authFailed {
+            Text("Auth Failed").font(.caption2).foregroundStyle(Color(hex: "EF4444"))
+        } else if !seerrURL.isEmpty {
+            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
         }
     }
 

@@ -14,6 +14,8 @@ struct TVJellyseerrView: View {
             Group {
                 if !seerrRepo.isConfigured {
                     notConfiguredView
+                } else if seerrRepo.authFailed {
+                    authFailedView
                 } else {
                     mainContent
                 }
@@ -41,6 +43,25 @@ struct TVJellyseerrView: View {
             let type = item.mediaType == .tv ? "Series" : "Movie"
             return Text("\(type)\(year)")
         }
+    }
+
+    // MARK: - Auth failed
+
+    private var authFailedView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "lock.slash.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(Color(hex: "EF4444"))
+            Text("Authentication Failed")
+                .font(.system(size: 32, weight: .bold))
+                .foregroundStyle(DT.Color.textPrimary)
+            Text("Check your Jellyseerr credentials in Profile → Plugins → Jellyseerr.")
+                .font(.system(size: 22))
+                .foregroundStyle(DT.Color.textSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 600)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Not configured

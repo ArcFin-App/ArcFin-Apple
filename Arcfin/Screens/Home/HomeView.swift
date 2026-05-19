@@ -7,6 +7,7 @@ import AuthCore
 // MARK: - Main tab container
 
 struct MainTabView: View {
+    @Environment(JellyseerrRepository.self) private var seerrRepo
     @State private var searchQuery = ""
 
     var body: some View {
@@ -53,7 +54,7 @@ struct MainTabView: View {
                 }
             }
 #if os(tvOS)
-            Tab("Profile", systemImage: "person.circle") {
+            Tab("Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                 NavigationStack { SettingsView() }
             }
 #endif
