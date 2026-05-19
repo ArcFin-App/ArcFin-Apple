@@ -405,7 +405,6 @@ struct TVMediaDetailView: View {
     private func load() async {
         isLoading = true
         defer { isLoading = false }
-        if item.type == .episode { initialEpisodeID = item.id }
         guard let cred = credential, let header = authHeader else { return }
 
         let fetchedDetail = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
@@ -427,12 +426,31 @@ struct TVMediaDetailView: View {
 
         if let seriesId = seasonSeriesId {
             seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
-            if let first = seasons.first {
-                selectedSeason = selectedSeasonForCurrentItem(from: seasons) ?? first
-                episodes = (try? await client.getEpisodes(
-                    credential: cred, authHeader: header,
-                    seriesId: seriesId, seasonId: selectedSeason?.id ?? first.id)) ?? []
+            guard let first = seasons.first else { return }
+
+            var target = first
+            switch item.type {
+            case .series:
+                // Ask the server which episode is next — use its season and scroll to it.
+                if let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId),
+                   let seasonNum = nextEp.parentIndexNumber,
+                   let matched = seasons.first(where: { $0.indexNumber == seasonNum }) {
+                    target = matched
+                    initialEpisodeID = nextEp.id
+                }
+            case .episode:
+                target = selectedSeasonForCurrentItem(from: seasons) ?? first
+                initialEpisodeID = item.id
+            case .season:
+                target = selectedSeasonForCurrentItem(from: seasons) ?? first
+            default:
+                break
             }
+
+            selectedSeason = target
+            episodes = (try? await client.getEpisodes(
+                credential: cred, authHeader: header,
+                seriesId: seriesId, seasonId: target.id)) ?? []
         }
     }
 
