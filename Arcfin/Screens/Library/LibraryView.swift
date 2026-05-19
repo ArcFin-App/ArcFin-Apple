@@ -51,6 +51,16 @@ struct LibraryView: View {
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 LibraryDetailView(library: library)
             }
+            .navigationDestination(for: LibraryNavTarget.self) { target in
+                switch target {
+                case .media(let item):   MediaDetailView(item: item)
+                case .collection(let item):
+                    LibraryDetailView(library: JellyfinLibrary(
+                        id: item.id, name: item.name,
+                        collectionType: .unknown,
+                        primaryImageTag: item.primaryImageTag))
+                }
+            }
             .onAppear { downloads = listDownloads() }
 #if canImport(UIKit) && !os(tvOS)
             .sheet(isPresented: $showDocPicker) {
@@ -372,11 +382,9 @@ struct LocalPlayerView: View {
 
 // MARK: - Library detail
 
-// Navigation target used in LibraryDetailView to route BoxSet vs Media items
-// without registering duplicate navigationDestination(for: MediaItem.self).
 enum LibraryNavTarget: Hashable {
     case media(MediaItem)
-    case collection(JellyfinLibrary)
+    case collection(MediaItem)   // BoxSet item — routed to collection detail
 }
 
 struct LibraryDetailView: View {
@@ -477,18 +485,6 @@ struct LibraryDetailView: View {
             }
         }
         .navigationTitle(library.name)
-        .navigationDestination(for: LibraryNavTarget.self) { target in
-            switch target {
-            case .media(let item):
-#if os(tvOS)
-                TVMediaDetailView(item: item)
-#else
-                MediaDetailView(item: item)
-#endif
-            case .collection(let lib):
-                LibraryDetailView(library: lib)
-            }
-        }
 #if !os(macOS) && !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -498,15 +494,7 @@ struct LibraryDetailView: View {
     }
 
     private func navTarget(for item: MediaItem) -> LibraryNavTarget {
-        if item.type == .boxSet {
-            // .unknown → includeTypes returns "Movie,Series" so the inner view
-            // fetches the collection contents, not more BoxSet tiles.
-            let lib = JellyfinLibrary(id: item.id, name: item.name,
-                                      collectionType: .unknown,
-                                      primaryImageTag: item.primaryImageTag)
-            return .collection(lib)
-        }
-        return .media(item)
+        item.type == .boxSet ? .collection(item) : .media(item)
     }
 
     private func libraryItemCard(_ item: MediaItem) -> some View {
