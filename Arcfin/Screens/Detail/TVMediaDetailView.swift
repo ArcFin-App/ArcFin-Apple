@@ -21,6 +21,7 @@ struct TVMediaDetailView: View {
     @State private var isLoading = true
     @State private var showFullDescription = false
     @State private var selectedEpisode: MediaItem?
+    @State private var initialEpisodeID: String?
 
     private let client = JellyfinMediaClient()
 
@@ -260,37 +261,35 @@ struct TVMediaDetailView: View {
                         Button(season.name) { selectedSeason = season }
                     }
                 } label: {
-                    HStack(spacing: 6) {
-                        Text(selectedSeason?.name ?? "Season")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(DT.Color.accent)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 18))
-                            .foregroundStyle(DT.Color.accent)
-                    }
-                    .padding(.horizontal, 16).padding(.vertical, 8)
-                    .background(DT.Color.accent.opacity(0.1))
-                    .clipShape(Capsule())
+                    TVSeasonPickerLabel(name: selectedSeason?.name ?? "Season")
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
-                .tvFocusRing(cornerRadius: DT.Radius.pill)
             }
             .padding(.horizontal, 80)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(episodes) { ep in
-                        Button { selectedEpisode = ep } label: {
-                            TVEpisodeCard(ep: ep)
+                ScrollViewReader { proxy in
+                    HStack(spacing: 16) {
+                        ForEach(episodes) { ep in
+                            Button { selectedEpisode = ep } label: {
+                                TVEpisodeCard(ep: ep)
+                            }
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                            .id(ep.id)
                         }
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
+                    }
+                    .padding(.horizontal, 80)
+                    .padding(.top, 20)
+                    .focusSection()
+                    .onChange(of: episodes) { _, newEps in
+                        guard let target = initialEpisodeID,
+                              newEps.contains(where: { $0.id == target }) else { return }
+                        proxy.scrollTo(target, anchor: .leading)
+                        initialEpisodeID = nil
                     }
                 }
-                .padding(.horizontal, 80)
-                .padding(.top, 20)
-                .focusSection()
             }
             .scrollClipDisabled()
         }
@@ -406,6 +405,7 @@ struct TVMediaDetailView: View {
     private func load() async {
         isLoading = true
         defer { isLoading = false }
+        if item.type == .episode { initialEpisodeID = item.id }
         guard let cred = credential, let header = authHeader else { return }
 
         let fetchedDetail = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
@@ -484,6 +484,28 @@ struct TVMediaDetailView: View {
             return seasons.first { $0.id == item.id } ?? seasons.first
         }
         return seasons.first
+    }
+}
+
+// MARK: - Season picker label
+
+private struct TVSeasonPickerLabel: View {
+    let name: String
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(name)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(isFocused ? .white : DT.Color.accent)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 18))
+                .foregroundStyle(isFocused ? .white : DT.Color.accent)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .background(Capsule().fill(isFocused ? DT.Color.accent : DT.Color.accent.opacity(0.1)))
+        .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 10)
+        .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
 }
 
