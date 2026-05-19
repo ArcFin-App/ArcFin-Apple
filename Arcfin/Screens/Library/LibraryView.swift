@@ -412,7 +412,7 @@ struct LibraryDetailView: View {
 
     private let client = JellyfinMediaClient()
 #if os(tvOS)
-    private let columns = [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: DT.Spacing.shelfGap)]
+    private let columns = [GridItem(.adaptive(minimum: 200), spacing: DT.Spacing.shelfGap)]
 #else
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 #endif
@@ -437,7 +437,9 @@ struct LibraryDetailView: View {
                                 PosterCard(
                                     title: item.name,
                                     subtitle: item.productionYear.map { String($0) },
-                                    imageURL: mediaRepo.tvImageURL(for: item)
+                                    imageURL: mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400),
+                                    width: 200,
+                                    height: 356
                                 )
 #else
                                 libraryItemCard(item)
