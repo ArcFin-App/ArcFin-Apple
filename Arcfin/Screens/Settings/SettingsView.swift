@@ -354,6 +354,8 @@ enum VideoQuality: String, CaseIterable, Identifiable {
 // MARK: - Jellyseerr plugin view
 
 struct JellyseerrPluginView: View {
+    @Environment(JellyseerrRepository.self) private var seerrRepo
+
     @AppStorage("seerrURL")         private var seerrURL        = ""
     @AppStorage("seerrUsername")    private var seerrUsername   = ""
     @AppStorage("seerrPassword")    private var seerrPassword   = ""
@@ -459,6 +461,7 @@ struct JellyseerrPluginView: View {
                 let (_, resp) = try await URLSession.shared.data(for: req)
                 if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
                     testResult = "✓ Connected as \(seerrAuthMethod.label)"
+                    seerrRepo.clearAuthFailure()
                 } else if let http = resp as? HTTPURLResponse, http.statusCode == 403 {
                     testResult = "✗ Wrong account type — try the other option"
                 } else {

@@ -35,6 +35,7 @@ public actor JellyseerrHTTPClient {
 
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
+    private var loginInFlight = false
     private let session: URLSession
     // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
     private let authFailedKey: String
@@ -45,7 +46,7 @@ public actor JellyseerrHTTPClient {
         self.username   = username
         self.password   = password
         self.authMethod = authMethod
-        let config = URLSessionConfiguration.default
+        let config = URLSessionConfiguration.ephemeral
         config.httpCookieAcceptPolicy = .always
         config.httpShouldSetCookies   = true
         self.session = URLSession(configuration: config)
@@ -85,15 +86,19 @@ public actor JellyseerrHTTPClient {
     }
 
     private func ensureAuthenticated() async throws {
-        // Check in-memory flag first (fast path within a session).
         guard !authPermanentlyFailed else { throw JellyseerrError.authFailed }
-        // Check persisted cooldown so cold relaunches also respect previous failures.
         if let until = UserDefaults.standard.object(forKey: authFailedKey) as? Date,
            until > Date() {
             authPermanentlyFailed = true
             throw JellyseerrError.authFailed
         }
         guard !isAuthenticated else { return }
+        // Actor suspends during network I/O, so concurrent callers can reach here while
+        // a login is already in flight. Skip rather than fan out — the first caller's
+        // login will set isAuthenticated = true before the retry.
+        guard !loginInFlight else { return }
+        loginInFlight = true
+        defer { loginInFlight = false }
         try await login()
     }
 
