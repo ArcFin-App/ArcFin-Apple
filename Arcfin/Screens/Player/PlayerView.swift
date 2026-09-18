@@ -33,6 +33,10 @@ struct PlayerView: View {
     @State var creditsStart: Double?
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
+    @State var stallObserver: NSObjectProtocol?
+    @State var autoDowngradeTier = 0
+    @State var lastStallHandledAt: Date?
+    @State var networkToast: String?
 
     #if !os(tvOS)
     @StateObject var pip = PiPCoordinator()
@@ -93,6 +97,10 @@ struct PlayerView: View {
 
             if let errorMessage {
                 errorView(errorMessage)
+            }
+
+            if let networkToast {
+                networkToastView(networkToast)
             }
 
             if let currentSubtitleText {
@@ -174,6 +182,13 @@ struct PlayerView: View {
     private func setup() async {
         #if !os(tvOS)
         volumeController = SystemVolumeController()
+        // Playback stalling (buffer underrun) is the standard signal for "network can't
+        // keep up" — auto-step quality down when the user hasn't manually picked one.
+        stallObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemPlaybackStalled, object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in handlePlaybackStall() }
+        }
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
             // The async activate() API needs iOS 27 — this project's min target is 26, so
@@ -237,6 +252,7 @@ struct PlayerView: View {
         volumeController?.teardown()
         volumeObservation?.invalidate()
         #endif
+        if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
                                                itemId: item.id, mediaSourceId: info.mediaSourceId,
@@ -272,12 +288,16 @@ struct PlayerView: View {
     // MARK: - Quality
 
     private func qualityCap(for quality: VideoQuality) -> StreamQualityCap {
+        // No forceTranscode — a picked quality is a cap, not a demand to re-encode.
+        // If the source already qualifies for direct play under that cap, it should stay
+        // direct play (forcing a transcode there was wasteful and confusing: Jellyfin's own
+        // dashboard correctly said Direct Play while this app's badge said Transcoding).
         switch quality {
         case .max, .auto: .auto
-        case .p4k:   StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840, forceTranscode: true)
-        case .p1080: StreamQualityCap(maxBitrate: 20_000_000, maxWidth: 1920, forceTranscode: true)
-        case .p720:  StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1280, forceTranscode: true)
-        case .p480:  StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 854, forceTranscode: true)
+        case .p4k:   StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840)
+        case .p1080: StreamQualityCap(maxBitrate: 20_000_000, maxWidth: 1920)
+        case .p720:  StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1280)
+        case .p480:  StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 854)
         }
     }
 
@@ -285,6 +305,25 @@ struct PlayerView: View {
         guard newQuality != quality else { return }
         quality = newQuality
         reload(errorContext: "switch quality")
+    }
+
+    /// Only acts when the user hasn't manually picked a quality — a deliberate pick is
+    /// never silently overridden by this.
+    func handlePlaybackStall() {
+        guard quality == .auto || quality == .max else { return }
+        if let last = lastStallHandledAt, Date().timeIntervalSince(last) < 20 { return }
+        let tiers: [VideoQuality] = [.p1080, .p720, .p480]
+        guard autoDowngradeTier < tiers.count else { return }
+        lastStallHandledAt = Date()
+        let next = tiers[autoDowngradeTier]
+        autoDowngradeTier += 1
+        quality = next
+        reload(errorContext: "adjust quality")
+        networkToast = "Lowered to \(next.label) — your connection can't keep up"
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            networkToast = nil
+        }
     }
 
     // MARK: - Audio/subtitle tracks
@@ -312,7 +351,10 @@ struct PlayerView: View {
     }
 
     func updateSubtitleText(forTicks ticks: Int64) {
-        guard !subtitleCues.isEmpty else { return }
+        guard !subtitleCues.isEmpty else {
+            currentSubtitleText = nil
+            return
+        }
         currentSubtitleText = SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
     }
 

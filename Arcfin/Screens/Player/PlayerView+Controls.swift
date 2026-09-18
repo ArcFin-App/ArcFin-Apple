@@ -304,6 +304,24 @@ extension PlayerView {
 
     // MARK: - Error / feedback views
 
+    func networkToastView(_ text: String) -> some View {
+        VStack {
+            HStack(spacing: 8) {
+                Image(systemName: "wifi.exclamationmark")
+                    .font(.system(size: 13, weight: .semibold))
+                Text(text)
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .background(.black.opacity(0.7), in: Capsule())
+            .padding(.top, 60)
+            Spacer()
+        }
+        .transition(.opacity)
+        .allowsHitTesting(false)
+    }
+
     func subtitleOverlay(_ text: String) -> some View {
         VStack {
             Spacer()

@@ -57,7 +57,12 @@ struct PlayerLayerRepresentable: UIViewRepresentable {
         view.playerLayer.player = player
         view.playerLayer.videoGravity = .resizeAspect
         view.backgroundColor = .black
-        pip.attach(to: view.playerLayer)
+        // Deferred: attach() mutates @Published isSupported, and doing that synchronously
+        // during makeUIView (itself part of a SwiftUI view update) is undefined behavior
+        // per SwiftUI's own diagnostic — this was also implicated in video not rendering.
+        DispatchQueue.main.async {
+            pip.attach(to: view.playerLayer)
+        }
         return view
     }
 

@@ -6,6 +6,11 @@ import UIKit
 #if !os(tvOS)
 extension PlayerView {
 
+    var activeWindowScene: UIWindowScene? {
+        UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+    }
+
     func tapGesture(width: CGFloat) -> some Gesture {
         SpatialTapGesture(count: 2)
             .onEnded { value in handleDoubleTap(at: value.location, width: width) }
@@ -23,7 +28,7 @@ extension PlayerView {
                     let axis: DragAxis = value.startLocation.x < width / 2 ? .brightness : .volume
                     dragAxis = axis
                     dragBaseline = axis == .brightness
-                        ? UIScreen.main.brightness
+                        ? (activeWindowScene?.screen.brightness ?? UIScreen.main.brightness)
                         : CGFloat(volumeController?.currentVolume ?? 0.5)
                     lastHapticStep = nil
                     HapticManager.impact(.light)
@@ -33,7 +38,7 @@ extension PlayerView {
                 let newValue = min(max(dragBaseline + delta, 0), 1)
                 dragValue = newValue
                 switch dragAxis {
-                case .brightness: UIScreen.main.brightness = newValue
+                case .brightness: activeWindowScene?.screen.brightness = newValue
                 case .volume: volumeController?.setVolume(Float(newValue))
                 }
                 // Light tick every 10% crossed, not every pixel of drag.
@@ -50,10 +55,8 @@ extension PlayerView {
     }
 
     func toggleOrientation() {
-        guard let scene = UIApplication.shared.connectedScenes
-            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
-        else { return }
-        let isLandscape = scene.interfaceOrientation.isLandscape
+        guard let scene = activeWindowScene else { return }
+        let isLandscape = scene.effectiveGeometry.interfaceOrientation.isLandscape
         let targetMask: UIInterfaceOrientationMask = isLandscape ? .portrait : .landscapeRight
         scene.requestGeometryUpdate(.iOS(interfaceOrientations: targetMask)) { _ in }
     }
