@@ -70,6 +70,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FA70FDB4305CEA9F00C55247 /* Exceptions for "Arcfin" folder in "Arcfin" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
+		};
 		FAB5D8762FA9621A002031A9 /* Exceptions for "ArcfinTopShelf" folder in "ArcfinTopShelf" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -82,6 +89,9 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FAB5D7562FA79A9B002031A9 /* Arcfin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FA70FDB4305CEA9F00C55247 /* Exceptions for "Arcfin" folder in "Arcfin" target */,
+			);
 			path = Arcfin;
 			sourceTree = "<group>";
 		};
@@ -559,6 +569,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Arcfin/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcFin;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
@@ -616,6 +627,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Arcfin/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ArcFin;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;

@@ -232,6 +232,9 @@ struct PlayerView: View {
             lastLoadStartedAt = Date()
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             await player.play()
+            #if !os(tvOS)
+            pip.activateIfNeeded()
+            #endif
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
                                              positionTicks: startPositionTicks)

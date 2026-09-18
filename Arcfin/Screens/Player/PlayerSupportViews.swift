@@ -22,9 +22,22 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
     // button could never actually appear even on devices that support it.
     @Published var isSupported = false
     private var controller: AVPictureInPictureController?
+    private var pendingLayer: AVPlayerLayer?
 
-    func attach(to layer: AVPlayerLayer) {
-        guard AVPictureInPictureController.isPictureInPictureSupported(), controller == nil else { return }
+    /// Just remembers the layer — doesn't create the controller yet. Creating an
+    /// AVPictureInPictureController switches the layer into a "video receiver" rendering
+    /// mode internally; doing that before the layer has any content set up (i.e. right when
+    /// the view appears, before the stream has loaded) is the likely cause of some HLS
+    /// streams never actually rendering video afterward.
+    func captureLayer(_ layer: AVPlayerLayer) {
+        pendingLayer = layer
+    }
+
+    /// Call once playback has actually started — see captureLayer's note on why this isn't
+    /// done any earlier.
+    func activateIfNeeded() {
+        guard controller == nil, let layer = pendingLayer,
+              AVPictureInPictureController.isPictureInPictureSupported() else { return }
         let controller = AVPictureInPictureController(playerLayer: layer)
         controller?.delegate = self
         self.controller = controller
@@ -57,12 +70,7 @@ struct PlayerLayerRepresentable: UIViewRepresentable {
         view.playerLayer.player = player
         view.playerLayer.videoGravity = .resizeAspect
         view.backgroundColor = .black
-        // Deferred: attach() mutates @Published isSupported, and doing that synchronously
-        // during makeUIView (itself part of a SwiftUI view update) is undefined behavior
-        // per SwiftUI's own diagnostic — this was also implicated in video not rendering.
-        DispatchQueue.main.async {
-            pip.attach(to: view.playerLayer)
-        }
+        pip.captureLayer(view.playerLayer)
         return view
     }
 
