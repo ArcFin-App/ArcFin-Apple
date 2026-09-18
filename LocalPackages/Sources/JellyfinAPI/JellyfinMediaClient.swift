@@ -206,6 +206,31 @@ public struct JellyfinMediaClient: Sendable {
         return comps.url!
     }
 
+    /// Containers AVFoundation can actually open locally — notably not Matroska. This is an
+    /// iOS platform limitation (AVFoundation only supports the QuickTime/MP4 family), not
+    /// something fixable client-side short of a full third-party demuxer.
+    public static let avFoundationCompatibleContainers: Set<String> = ["mp4", "m4v", "mov"]
+
+    /// A single progressively-downloadable file, remuxed (or transcoded, if the source codec
+    /// itself needs it) into MP4 — used for downloads when the source container is
+    /// something AVFoundation can't open (e.g. mkv), where originalFileDownloadURL's
+    /// output would silently fail to play. Static=false with an .mp4 extension makes
+    /// Jellyfin return a normal progressive stream, not HLS segments, so it downloads the
+    /// same way as a plain file.
+    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, token: String) -> URL {
+        var comps = URLComponents(
+            url: baseURL.appendingPathComponent("Videos/\(itemID)/stream.mp4"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Static", value: "false"),
+            .init(name: "mediaSourceId", value: mediaSourceId),
+            .init(name: "VideoCodec", value: "h264"),
+            .init(name: "AudioCodec", value: "aac"),
+            .init(name: "api_key", value: token),
+        ]
+        return comps.url!
+    }
+
     public static func userImageURL(baseURL: URL, userID: String, tag: String, fillWidth: Int = 100, token: String) -> URL {
         var comps = URLComponents(
             url: baseURL.appendingPathComponent("Users/\(userID)/Images/Primary"),

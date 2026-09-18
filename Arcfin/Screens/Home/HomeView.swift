@@ -743,7 +743,11 @@ struct HomeView: View {
     private func heroMeta(_ item: MediaItem) -> String {
         var parts: [String] = []
         if let year = item.productionYear { parts.append(String(year)) }
-        parts.append(item.type == .series ? "Series" : "Movie")
+        switch item.type {
+        case .series:  parts.append("Series")
+        case .episode: parts.append(itemDisplaySubtitle(item) ?? "Episode")
+        default:       parts.append("Movie")
+        }
         return parts.joined(separator: " · ")
     }
 

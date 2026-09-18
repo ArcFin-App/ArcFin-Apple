@@ -9,6 +9,9 @@ struct MediaDetailView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
+    #if os(iOS)
+    @Environment(DownloadManager.self) private var downloadManager
+    #endif
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: MediaItemDetail?
@@ -27,6 +30,9 @@ struct MediaDetailView: View {
     @State private var isLoading = true
     @State private var requestingSeerrItem: SeerrItem?
     @State private var playbackRequest: PlaybackRequest?
+    #if os(iOS)
+    @State private var showSeasonDownloadConfirm = false
+    #endif
 
     struct PlaybackRequest: Identifiable {
         let id = UUID()
@@ -57,6 +63,17 @@ struct MediaDetailView: View {
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
+        .navigationTitle("")
+        #if os(iOS)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            if item.type == .movie || item.type == .episode {
+                ToolbarItem(placement: .topBarTrailing) {
+                    DownloadButton(item: item)
+                }
+            }
+        }
+        #endif
         .navigationDestination(item: $selectedEpisode) { ep in
             MediaDetailView(item: ep)
         }
@@ -66,6 +83,15 @@ struct MediaDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
+        #if os(iOS)
+        .confirmationDialog(
+            "Download all \(episodes.count) episodes of \(selectedSeason?.name ?? "this season")?",
+            isPresented: $showSeasonDownloadConfirm, titleVisibility: .visible
+        ) {
+            Button("Download Season") { downloadSeason() }
+            Button("Cancel", role: .cancel) {}
+        }
+        #endif
 #if os(iOS)
         .fullScreenCover(item: $playbackRequest) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
@@ -87,6 +113,16 @@ struct MediaDetailView: View {
     }
 
     // MARK: - Load
+
+    #if os(iOS)
+    private func downloadSeason() {
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        for episode in episodes where !downloadManager.isDownloaded(episode.id) {
+            Task { await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader) }
+        }
+    }
+    #endif
 
     private func load() async {
         isLoading = true
@@ -399,17 +435,6 @@ struct MediaDetailView: View {
     private var detailContent: some View {
         playButton
 
-        #if os(iOS)
-        if item.type == .movie {
-            HStack {
-                Spacer()
-                DownloadButton(item: item)
-            }
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.bottom, DT.Spacing.sm)
-        }
-        #endif
-
         // Genres
         if let d = detail, !d.genres.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -593,9 +618,22 @@ struct MediaDetailView: View {
 
                 Spacer()
 
+                #if os(iOS)
+                Button { showSeasonDownloadConfirm = true } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.down.circle")
+                        Text("Download Season")
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                }
+                .buttonStyle(.plain)
+                .disabled(episodes.isEmpty)
+                #else
                 Text("Episodes")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(DT.Color.textSecondary)
+                #endif
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 

@@ -11,7 +11,7 @@ struct DownloadsView: View {
     @Environment(DownloadManager.self) private var downloadManager
     @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var items: [DownloadedItem]
 
-    @State private var playingItem: DownloadedItem?
+    @State private var selectedItem: DownloadedItem?
     @State private var pendingDelete: DownloadedItem?
 
     private var movies: [DownloadedItem] { items.filter { $0.seriesId == nil }.sorted { $0.name < $1.name } }
@@ -28,7 +28,7 @@ struct DownloadsView: View {
 
     var body: some View {
         Group {
-            if items.isEmpty {
+            if items.isEmpty && downloadManager.activeItemTitles.isEmpty {
                 ContentUnavailableView(
                     "No Downloads",
                     systemImage: "arrow.down.circle",
@@ -37,10 +37,16 @@ struct DownloadsView: View {
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                        Text("\(items.count) downloaded — \(ByteCountFormatter.string(fromByteCount: totalSizeBytes, countStyle: .file)) used")
-                            .font(.system(size: 12))
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .padding(.horizontal, DT.Spacing.pagePad)
+                        if !items.isEmpty {
+                            Text("\(items.count) downloaded — \(ByteCountFormatter.string(fromByteCount: totalSizeBytes, countStyle: .file)) used")
+                                .font(.system(size: 12))
+                                .foregroundStyle(DT.Color.textSecondary)
+                                .padding(.horizontal, DT.Spacing.pagePad)
+                        }
+
+                        if !downloadManager.activeItemTitles.isEmpty {
+                            inProgressSection
+                        }
 
                         ForEach(seriesGroups, id: \.seriesId) { group in
                             seriesSection(group)
@@ -75,11 +81,9 @@ struct DownloadsView: View {
                 }
             }
         }
-        #if os(iOS)
-        .fullScreenCover(item: $playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
+        .navigationDestination(item: $selectedItem) { item in
+            DownloadedItemDetailView(item: item)
         }
-        #endif
         .confirmationDialog("Delete this download?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
         ), titleVisibility: .visible) {
@@ -89,6 +93,60 @@ struct DownloadsView: View {
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         }
+    }
+
+    // MARK: - In progress
+
+    private var inProgressSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Downloading")
+                .font(DT.Font.cardTitle)
+                .foregroundStyle(DT.Color.textPrimary)
+                .padding(.horizontal, DT.Spacing.pagePad)
+            ForEach(Array(downloadManager.activeItemTitles.keys).sorted(), id: \.self) { itemId in
+                inProgressRow(itemId)
+            }
+        }
+    }
+
+    private func inProgressRow(_ itemId: String) -> some View {
+        let stats = downloadManager.stats[itemId]
+        let fraction = downloadManager.progress[itemId] ?? 0
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(downloadManager.activeItemTitles[itemId] ?? "Downloading…")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                Spacer()
+                Button { downloadManager.cancelDownload(itemId: itemId) } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+            ProgressView(value: fraction)
+                .tint(DT.Color.accent)
+            HStack {
+                if let stats, stats.totalBytes > 0 {
+                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: stats.totalBytes, countStyle: .file))")
+                } else {
+                    Text("Preparing…")
+                }
+                Spacer()
+                if let stats, stats.bytesPerSecond > 0 {
+                    Text("\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s")
+                }
+            }
+            .font(.system(size: 10))
+            .foregroundStyle(DT.Color.textSecondary)
+        }
+        .padding(12)
+        .background(.white.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+        .padding(.horizontal, DT.Spacing.pagePad)
     }
 
     private func seriesSection(_ group: (seriesId: String, seriesName: String, episodes: [DownloadedItem])) -> some View {
@@ -104,7 +162,7 @@ struct DownloadsView: View {
     }
 
     private func downloadRow(_ item: DownloadedItem) -> some View {
-        Button { playingItem = item } label: {
+        Button { selectedItem = item } label: {
             HStack(spacing: 12) {
                 posterThumbnail(item)
                 VStack(alignment: .leading, spacing: 3) {
@@ -123,9 +181,9 @@ struct DownloadsView: View {
                         .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
                 }
                 Spacer()
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 26))
-                    .foregroundStyle(DT.Color.accent)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
             }
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.vertical, 8)

@@ -4,6 +4,9 @@ import SwiftData
 import AuthCore
 import JellyfinAPI
 import Persistence
+#if canImport(UIKit) && !os(tvOS)
+import UIKit
+#endif
 
 enum DownloadError: LocalizedError {
     case permissionDenied
@@ -19,12 +22,20 @@ enum DownloadError: LocalizedError {
     }
 }
 
+struct DownloadStats: Sendable {
+    var bytesWritten: Int64
+    var totalBytes: Int64
+    var bytesPerSecond: Double
+}
+
 @MainActor
 @Observable
 final class DownloadManager: NSObject {
 
     private(set) var progress: [String: Double] = [:]
+    private(set) var stats: [String: DownloadStats] = [:]
     private(set) var activeItemIds: Set<String> = []
+    private(set) var activeItemTitles: [String: String] = [:]
     /// Keyed by itemId — a shared single error string would show the wrong download's
     /// failure on an unrelated DownloadButton if more than one item is downloading at once.
     var errors: [String: String] = [:]
@@ -33,6 +44,10 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private let client = JellyfinMediaClient()
     @ObservationIgnored private var downloadTasks: [String: URLSessionDownloadTask] = [:]
     @ObservationIgnored private var taskItemIds: [Int: String] = [:]
+    @ObservationIgnored private var speedSamples: [String: (time: Date, bytes: Int64)] = [:]
+    #if canImport(UIKit) && !os(tvOS)
+    @ObservationIgnored private var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
+    #endif
     @ObservationIgnored private lazy var session: URLSession = {
         URLSession(configuration: .default, delegate: self, delegateQueue: nil)
     }()
@@ -47,12 +62,75 @@ final class DownloadManager: NSObject {
         return (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
     }
 
+    // MARK: - Preview (shown before the user confirms a download)
+
+    struct DownloadPreview: Identifiable {
+        let id = UUID()
+        var subtitleLanguages: [String]
+        var estimatedSizeBytes: Int64?
+        var willRemux: Bool
+    }
+
+    /// What the confirmation sheet shows before actually starting — same PlaybackInfo call
+    /// the real download makes, plus a HEAD request against the resolved video URL for its
+    /// size (Content-Length), without downloading anything yet.
+    func preview(for item: MediaItem, credential: ServerCredential, authHeader: String) async -> DownloadPreview? {
+        guard let info = try? await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id) else {
+            return nil
+        }
+        let sourceContainer = (info.container ?? "").lowercased()
+        let needsRemux = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(sourceContainer)
+        let videoURL = needsRemux
+            ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, token: credential.accessToken)
+            : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
+
+        var headReq = URLRequest(url: videoURL)
+        headReq.httpMethod = "HEAD"
+        headReq.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        headReq.timeoutInterval = 10
+        var estimatedSize: Int64?
+        if let (_, response) = try? await URLSession.shared.data(for: headReq),
+           let http = response as? HTTPURLResponse, http.expectedContentLength > 0 {
+            estimatedSize = http.expectedContentLength
+        }
+
+        let languages = info.subtitleStreams.compactMap { $0.deliveryUrl != nil ? ($0.language ?? $0.displayTitle ?? "Unknown") : nil }
+        return DownloadPreview(subtitleLanguages: languages, estimatedSizeBytes: estimatedSize, willRemux: needsRemux)
+    }
+
     // MARK: - Start download
 
+    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String)] = []
+    @ObservationIgnored private var isProcessingQueue = false
+
+    /// Queues the download — a season's worth of episodes all calling this at once
+    /// shouldn't fire a dozen simultaneous video downloads, so only one actually runs at a
+    /// time; the rest wait their turn here.
     func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String) async {
-        guard let modelContext, !isDownloaded(item.id), !activeItemIds.contains(item.id) else { return }
+        guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
+              !pendingQueue.contains(where: { $0.item.id == item.id })
+        else { return }
+        activeItemTitles[item.id] = item.name
+        pendingQueue.append((item, credential, authHeader))
+        await processQueue()
+    }
+
+    private func processQueue() async {
+        guard !isProcessingQueue else { return }
+        isProcessingQueue = true
+        while !pendingQueue.isEmpty {
+            let next = pendingQueue.removeFirst()
+            guard !isDownloaded(next.item.id) else { continue }
+            await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader)
+        }
+        isProcessingQueue = false
+    }
+
+    private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String) async {
+        guard let modelContext else { return }
         activeItemIds.insert(item.id)
         progress[item.id] = 0
+        beginBackgroundTaskIfNeeded()
 
         do {
             async let detailTask = client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
@@ -62,16 +140,17 @@ final class DownloadManager: NSObject {
 
             let dir = try DownloadStore.ensureDirectory(for: item.id)
 
-            // Video — the original file, not a transcode. Progress-tracked via the
-            // delegate below since this is the one file large enough to matter.
-            // info.container reflects the source's real container regardless of play
-            // method — info.playURL's extension would be wrong for a transcode-eligible
-            // item (e.g. ".../master.m3u8"), which doesn't describe the original file
-            // this endpoint actually returns.
-            let ext = info.container?.nilIfEmpty ?? "mp4"
-            let videoFileName = "video.\(ext)"
-            let videoURL = JellyfinMediaClient.originalFileDownloadURL(
-                baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
+            // Video — the original file when its container is one AVFoundation can actually
+            // open; otherwise (Matroska being the common case) a remux download instead,
+            // since the original file would download fine but silently fail to play. This
+            // is an iOS platform limitation — AVFoundation only reads the MP4/QuickTime
+            // family, not Matroska, regardless of the codecs inside.
+            let sourceContainer = (info.container ?? "").lowercased()
+            let needsRemux = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(sourceContainer)
+            let videoFileName = needsRemux ? "video.mp4" : "video.\(sourceContainer.nilIfEmpty ?? "mp4")"
+            let videoURL = needsRemux
+                ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, token: credential.accessToken)
+                : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
             try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
 
             // Subtitles — external tracks only (embedded ones travel with the video file itself).
@@ -164,15 +243,47 @@ final class DownloadManager: NSObject {
         }
 
         activeItemIds.remove(item.id)
+        activeItemTitles[item.id] = nil
         progress[item.id] = nil
+        stats[item.id] = nil
+        speedSamples[item.id] = nil
+        endBackgroundTaskIfIdle()
     }
 
     func cancelDownload(itemId: String) {
+        pendingQueue.removeAll { $0.item.id == itemId }
         downloadTasks[itemId]?.cancel()
         downloadTasks[itemId] = nil
         activeItemIds.remove(itemId)
+        activeItemTitles[itemId] = nil
         progress[itemId] = nil
+        stats[itemId] = nil
+        speedSamples[itemId] = nil
         DownloadStore.deleteDirectory(for: itemId)
+        endBackgroundTaskIfIdle()
+    }
+
+    // MARK: - Background continuation
+
+    /// Not a true background URLSession (that needs app-delegate wiring to reconnect a
+    /// completion handler after relaunch) — this just asks iOS for extra runtime so a
+    /// download in flight has a real chance to finish if the user backgrounds the app
+    /// mid-download, rather than being killed within seconds.
+    private func beginBackgroundTaskIfNeeded() {
+        #if canImport(UIKit) && !os(tvOS)
+        guard backgroundTaskId == .invalid else { return }
+        backgroundTaskId = UIApplication.shared.beginBackgroundTask(withName: "ArcfinDownload") { [weak self] in
+            Task { @MainActor in self?.endBackgroundTaskIfIdle(force: true) }
+        }
+        #endif
+    }
+
+    private func endBackgroundTaskIfIdle(force: Bool = false) {
+        #if canImport(UIKit) && !os(tvOS)
+        guard force || activeItemIds.isEmpty, backgroundTaskId != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTaskId)
+        backgroundTaskId = .invalid
+        #endif
     }
 
     func deleteDownload(_ item: DownloadedItem) {
@@ -216,12 +327,27 @@ final class DownloadManager: NSObject {
 
 extension DownloadManager: URLSessionDownloadDelegate {
     nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard totalBytesExpectedToWrite > 0 else { return }
-        let fraction = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
         let taskId = downloadTask.taskIdentifier
+        let now = Date()
         Task { @MainActor in
             guard let itemId = self.taskItemIds[taskId] else { return }
-            self.progress[itemId] = fraction
+            if totalBytesExpectedToWrite > 0 {
+                self.progress[itemId] = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+            }
+            // Sampled rather than computed from this single delta — didWriteData can fire
+            // many times a second, which would make the displayed speed jump around.
+            let bytesPerSecond: Double
+            if let last = self.speedSamples[itemId], now.timeIntervalSince(last.time) >= 0.5 {
+                let elapsed = now.timeIntervalSince(last.time)
+                bytesPerSecond = elapsed > 0 ? Double(totalBytesWritten - last.bytes) / elapsed : 0
+                self.speedSamples[itemId] = (now, totalBytesWritten)
+            } else if self.speedSamples[itemId] == nil {
+                self.speedSamples[itemId] = (now, totalBytesWritten)
+                bytesPerSecond = self.stats[itemId]?.bytesPerSecond ?? 0
+            } else {
+                bytesPerSecond = self.stats[itemId]?.bytesPerSecond ?? 0
+            }
+            self.stats[itemId] = DownloadStats(bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite, bytesPerSecond: bytesPerSecond)
         }
     }
 
