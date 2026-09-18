@@ -2,6 +2,9 @@ import SwiftUI
 import AVKit
 import JellyfinAPI
 import AuthCore
+import MediaEngine
+import Persistence
+import SwiftVLC
 
 #if canImport(UIKit)
 import UIKit
@@ -12,8 +15,6 @@ import UIKit
 struct LibraryView: View {
     @Environment(MediaRepository.self) private var mediaRepo
 
-    @State private var downloads: [DownloadedFile] = []
-    @State private var playerItem: DownloadedFile?
     @State private var showDocPicker = false
     @State private var pickedURL: URL?
     @State private var navigateToLocalPlayer = false
@@ -56,7 +57,6 @@ struct LibraryView: View {
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
             }
-            .onAppear { downloads = listDownloads() }
 #if canImport(UIKit) && !os(tvOS)
             .sheet(isPresented: $showDocPicker) {
                 DocumentPickerView { url in
@@ -75,14 +75,16 @@ struct LibraryView: View {
 #endif
                 }
             }
-            .navigationDestination(item: $playerItem) { file in
-#if !os(macOS)
-                LocalPlayerView(url: file.url)
-                    .toolbar(.hidden, for: .tabBar)
-#else
-                LocalPlayerView(url: file.url)
-#endif
+            #if os(iOS)
+            // DownloadsView is pushed non-root here (see its own comment on why it no
+            // longer declares these itself) — kept as close to this stack's root as possible.
+            .navigationDestination(for: DownloadedItem.self) { item in
+                DownloadedItemDetailView(item: item)
             }
+            .navigationDestination(for: DownloadedSeriesRef.self) { ref in
+                DownloadedSeriesDetailView(seriesId: ref.seriesId)
+            }
+            #endif
         }
     }
 
@@ -98,9 +100,6 @@ struct LibraryView: View {
                 #if os(iOS)
                 jellyfinDownloadsSection
                 #endif
-
-                // ── Local Files ───────────────────────────────────────────
-                downloadsSection
 
                 // ── On This Device ──────────────────────────────────────
                 onDeviceSection
@@ -188,34 +187,6 @@ struct LibraryView: View {
     }
     #endif
 
-    // MARK: - Local files section
-
-    private var downloadsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Local Files")
-
-            if downloads.isEmpty {
-                ContentUnavailableView(
-                    "No Downloads",
-                    systemImage: "arrow.down.circle",
-                    description: Text("Downloaded content will appear here.")
-                )
-                .frame(height: 160)
-            } else {
-                VStack(spacing: 8) {
-                    ForEach(downloads) { file in
-                        Button {
-                            playerItem = file
-                        } label: {
-                            DownloadRow(file: file)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-    }
-
     // MARK: - On this device section
 
     private var onDeviceSection: some View {
@@ -268,24 +239,6 @@ struct LibraryView: View {
             .tracking(-0.2)
     }
 
-    private func listDownloads() -> [DownloadedFile] {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let dir = docs.appendingPathComponent("ArcfinDownloads", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let urls = (try? FileManager.default.contentsOfDirectory(
-            at: dir,
-            includingPropertiesForKeys: [.fileSizeKey, .contentModificationDateKey]
-        )) ?? []
-        return urls.map { url in
-            let attrs = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
-            return DownloadedFile(
-                url: url,
-                name: url.deletingPathExtension().lastPathComponent,
-                size: ByteCountFormatter.string(fromByteCount: Int64(attrs?.fileSize ?? 0), countStyle: .file),
-                modifiedDate: attrs?.contentModificationDate ?? Date()
-            )
-        }.sorted { $0.modifiedDate > $1.modifiedDate }
-    }
 }
 
 // MARK: - tvOS landscape library card
@@ -398,74 +351,300 @@ private struct LibraryCard: View {
     }
 }
 
-// MARK: - Download row
-
-private struct DownloadRow: View {
-    let file: DownloadedFile
-
-    var body: some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(DT.Color.backgroundTertiary)
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Image(systemName: "film.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(DT.Color.accent)
-                )
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(file.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .lineLimit(1)
-                Text(file.size)
-                    .font(.system(size: 12))
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            Spacer()
-
-            Image(systemName: "play.circle.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(DT.Color.accent)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: DT.Radius.card)
-                .fill(DT.Color.backgroundSecondary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DT.Radius.card)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                )
-        )
-    }
-}
-
-// MARK: - Downloaded file model
-
-struct DownloadedFile: Identifiable, Hashable {
-    var id: URL { url }
-    let url: URL
-    let name: String
-    let size: String
-    let modifiedDate: Date
-}
-
 // MARK: - Local player
 
+/// Plays any file the user picks via Files (the "On This Device" section) — always VLC,
+/// same reasoning as OfflinePlayerView: an arbitrary local file can be any container/codec,
+/// and VLC opens it natively without AVFoundation's mkv/HEVC-tag limitations. Simpler than
+/// OfflinePlayerView by design: no Jellyfin metadata exists for a raw picked file, so no
+/// trickplay/skip-intro/resume-position — just playback, subtitle tracks VLC finds in the
+/// file itself, and the same fill-screen/rotate/PiP affordances the other players have.
 struct LocalPlayerView: View {
     let url: URL
 
+    @Environment(\.dismiss) private var dismiss
+    @State private var player = VLCEnginePlayer()
+    @State private var isControlsVisible = true
+    @State private var hideControlsTask: Task<Void, Never>?
+    @State private var isScrubbing = false
+    @State private var scrubTicks: Double = 0
+    @State private var showTrackMenu = false
+    #if canImport(UIKit) && !os(tvOS)
+    @State private var vlcPipController: SwiftVLC.PiPController?
+    @State private var isFillScreen = false
+    #endif
+
     var body: some View {
-        VideoPlayer(player: AVPlayer(url: url))
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            #if canImport(UIKit) && !os(tvOS)
+            GeometryReader { proxy in
+                // See PlayerView/OfflinePlayerView's own comment on why hit-testing is
+                // disabled here — PiPVideoView's native drawable is itself interactive and
+                // would otherwise swallow the tap before the toggleControls gesture sees it.
+                ZStack {
+                    PiPVideoView(player.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+                        .allowsHitTesting(false)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { toggleControls() }
+            }
             .ignoresSafeArea()
-            .background(Color.black)
-            .navigationTitle(url.deletingPathExtension().lastPathComponent)
+            #endif
+
+            if player.status == .idle || player.status == .loading || player.isBuffering {
+                ProgressView().tint(.white).scaleEffect(1.4)
+            }
+
+            if isControlsVisible {
+                controlsOverlay.transition(.opacity)
+            }
+        }
+        #if canImport(UIKit) && !os(tvOS)
+        .statusBarHidden()
+        .persistentSystemOverlays(.hidden)
+        #endif
+        .task {
+            _ = url.startAccessingSecurityScopedResource()
+            try? await player.load(url: url, startPositionTicks: 0)
+            await player.play()
+        }
+        .onDisappear {
+            Task { await player.stop() }
+            url.stopAccessingSecurityScopedResource()
+        }
+        .onChange(of: player.status) { _, status in
+            if status == .playing { scheduleAutoHide() }
+            if status == .ended { dismiss() }
+        }
+        #if canImport(UIKit) && !os(tvOS)
+        .onChange(of: isFillScreen) { _, newValue in
+            player.vlcPlayer.aspectRatio = newValue ? .fill : .default
+        }
+        #endif
+        .sheet(isPresented: $showTrackMenu) {
+            trackSheet
+        }
 #if !os(macOS) && !os(tvOS)
-            .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
 #endif
+    }
+
+    private var controlsOverlay: some View {
+        VStack(spacing: 0) {
+            topBar
+            Spacer()
+            bottomBar
+        }
+        .background(
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.55), location: 0),
+                    .init(color: .clear, location: 0.22),
+                    .init(color: .clear, location: 0.7),
+                    .init(color: .black.opacity(0.65), location: 1),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        )
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 16) {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+            }
+            Text(url.deletingPathExtension().lastPathComponent)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            Spacer()
+            #if canImport(UIKit) && !os(tvOS)
+            AirPlayButton().frame(width: 30, height: 30)
+            if AVPictureInPictureController.isPictureInPictureSupported() {
+                Button { vlcPipController?.toggle() } label: {
+                    Image(systemName: "pip.enter")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                }
+            }
+            Button { togglePlayerOrientation() } label: {
+                Image(systemName: "rotate.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+            }
+            Button { isFillScreen.toggle() } label: {
+                Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isFillScreen ? DT.Color.accent : .white)
+                    .frame(width: 32, height: 32)
+            }
+            #endif
+            if !player.availableSubtitleTracks.isEmpty {
+                Button { showTrackMenu = true } label: {
+                    Image(systemName: "captions.bubble")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                }
+            }
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, 8)
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 10) {
+            scrubber
+            HStack {
+                Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks))
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.8))
+                Spacer()
+                HStack(spacing: 28) {
+                    Button { seek(by: -10) } label: {
+                        Image(systemName: "gobackward.10").font(.system(size: 20)).foregroundStyle(.white)
+                    }
+                    Button { togglePlayPause() } label: {
+                        Image(systemName: player.status == .playing ? "pause.fill" : "play.fill")
+                            .font(.system(size: 30))
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                    }
+                    Button { seek(by: 10) } label: {
+                        Image(systemName: "goforward.10").font(.system(size: 20)).foregroundStyle(.white)
+                    }
+                }
+                Spacer()
+                Text(remainingLabel)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.bottom, 24)
+    }
+
+    private var scrubber: some View {
+        GeometryReader { proxy in
+            let duration = max(player.durationTicks, 1)
+            let fraction = Double(isScrubbing ? Int64(scrubTicks) : player.positionTicks) / Double(duration)
+            let thumbX = proxy.size.width * min(max(fraction, 0), 1)
+
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.25)).frame(height: 4)
+                Capsule().fill(DT.Color.accent).frame(width: thumbX, height: 4)
+                Circle().fill(.white)
+                    .frame(width: isScrubbing ? 16 : 10, height: isScrubbing ? 16 : 10)
+                    .offset(x: thumbX - (isScrubbing ? 8 : 5))
+            }
+            .frame(maxHeight: .infinity, alignment: .center)
+            .contentShape(Rectangle())
+            #if canImport(UIKit) && !os(tvOS)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        isScrubbing = true
+                        hideControlsTask?.cancel()
+                        let fraction = min(max(value.location.x / proxy.size.width, 0), 1)
+                        scrubTicks = Double(player.durationTicks) * fraction
+                    }
+                    .onEnded { _ in
+                        Task {
+                            await player.seek(to: Int64(scrubTicks))
+                            isScrubbing = false
+                            scheduleAutoHide()
+                        }
+                    }
+            )
+            #endif
+        }
+        .frame(height: 20)
+    }
+
+    private var trackSheet: some View {
+        NavigationStack {
+            List {
+                Button {
+                    Task { await player.setSubtitleTrack(index: nil) }
+                    showTrackMenu = false
+                } label: {
+                    HStack {
+                        Text("Off")
+                        Spacer()
+                        if player.selectedSubtitleTrackIndex == nil { Image(systemName: "checkmark") }
+                    }
+                }
+                ForEach(player.availableSubtitleTracks) { track in
+                    Button {
+                        Task { await player.setSubtitleTrack(index: track.id) }
+                        showTrackMenu = false
+                    } label: {
+                        HStack {
+                            Text(track.displayName)
+                            Spacer()
+                            if player.selectedSubtitleTrackIndex == track.id { Image(systemName: "checkmark") }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Subtitles")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func togglePlayPause() {
+        Task { if player.status == .playing { await player.pause() } else { await player.play() } }
+        toggleControlsVisibilityOnAction()
+    }
+
+    private func seek(by seconds: Int) {
+        let newTicks = max(0, player.positionTicks + Int64(seconds) * 10_000_000)
+        Task { await player.seek(to: min(newTicks, player.durationTicks)) }
+        toggleControlsVisibilityOnAction()
+    }
+
+    private func toggleControls() {
+        withAnimation(DT.Animation.fast) { isControlsVisible.toggle() }
+        if isControlsVisible { scheduleAutoHide() }
+    }
+
+    private func toggleControlsVisibilityOnAction() {
+        if !isControlsVisible { withAnimation(DT.Animation.fast) { isControlsVisible = true } }
+        scheduleAutoHide()
+    }
+
+    private func scheduleAutoHide() {
+        hideControlsTask?.cancel()
+        hideControlsTask = Task {
+            try? await Task.sleep(for: .seconds(3.5))
+            guard !Task.isCancelled, player.status == .playing else { return }
+            withAnimation(DT.Animation.fast) { isControlsVisible = false }
+        }
+    }
+
+    private var remainingLabel: String {
+        let remaining = max(player.durationTicks - player.positionTicks, 0)
+        return "-" + timeLabel(ticks: remaining)
+    }
+
+    private func timeLabel(ticks: Int64) -> String {
+        let totalSeconds = Int(Double(ticks) / 10_000_000)
+        let h = totalSeconds / 3600
+        let m = (totalSeconds % 3600) / 60
+        let s = totalSeconds % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
     }
 }
 
@@ -691,7 +870,9 @@ private struct DocumentPickerView: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let types: [UTType] = [.movie, .video, .mpeg4Movie, .quickTimeMovie, .avi]
+        // VLC opens containers AVFoundation never could — broadened past the old
+        // AVFoundation-only list (.movie/.video/.mpeg4Movie/.quickTimeMovie) to include mkv.
+        let types: [UTType] = [.movie, .video, .mpeg4Movie, .quickTimeMovie, .avi, .matroska]
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: types)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
@@ -705,8 +886,10 @@ private struct DocumentPickerView: UIViewControllerRepresentable {
         init(onPick: @escaping (URL) -> Void) { self.onPick = onPick }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            // Access is started/stopped as a matched pair inside LocalPlayerView itself
+            // (task/onDisappear), not here — starting it in both places would leave one
+            // extra unmatched start once LocalPlayerView's single stop call runs.
             guard let url = urls.first else { return }
-            _ = url.startAccessingSecurityScopedResource()
             onPick(url)
         }
     }
@@ -716,5 +899,6 @@ import UniformTypeIdentifiers
 
 private extension UTType {
     static let avi = UTType(filenameExtension: "avi") ?? .movie
+    static let matroska = UTType(filenameExtension: "mkv") ?? .movie
 }
 #endif

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import AuthCore
 import JellyfinAPI
+import Persistence
 import SeerrAPI
 
 private enum AppPhase: Equatable {
@@ -56,6 +57,12 @@ struct ContentView: View {
             case .offline:
                 NavigationStack {
                     DownloadsView(goBackOnline: { offlineModeEnabled = false })
+                        .navigationDestination(for: DownloadedItem.self) { item in
+                            DownloadedItemDetailView(item: item)
+                        }
+                        .navigationDestination(for: DownloadedSeriesRef.self) { ref in
+                            DownloadedSeriesDetailView(seriesId: ref.seriesId)
+                        }
                 }
                 .transition(.opacity)
             }

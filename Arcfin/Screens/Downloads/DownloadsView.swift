@@ -144,12 +144,13 @@ struct DownloadsView: View {
             }
             #endif
         }
-        .navigationDestination(for: DownloadedItem.self) { item in
-            DownloadedItemDetailView(item: item)
-        }
-        .navigationDestination(for: DownloadedSeriesRef.self) { ref in
-            DownloadedSeriesDetailView(seriesId: ref.seriesId)
-        }
+        // Deliberately NOT declared here — DownloadsView is pushed as a non-root child in
+        // LibraryView/SettingsView's stacks (only root in ContentView's offline stack), and
+        // Apple's own guidance is that navigationDestination modifiers belong as close to a
+        // stack's root as possible; attached to a frequently re-rendering pushed view (this
+        // one re-renders on every @Query/download-progress change) it produced "declared
+        // earlier on the stack" warnings and dead NavigationLinks. See each host's own
+        // navigationDestination(for: DownloadedItem.self)/(for: DownloadedSeriesRef.self).
         .confirmationDialog("Delete this download?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
         ), titleVisibility: .visible) {

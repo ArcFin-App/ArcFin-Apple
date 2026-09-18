@@ -2,6 +2,7 @@ import SwiftUI
 import AuthCore
 import JellyfinAPI
 import MediaEngine
+import Persistence
 import SeerrAPI
 
 struct SettingsView: View {
@@ -284,6 +285,14 @@ struct SettingsView: View {
                 .presentationDetents([.medium, .large], selection: $usersDetent)
                 .presentationDragIndicator(.visible)
                 .preferredColorScheme(.dark)
+        }
+        // DownloadsView is pushed non-root here (see its own comment on why it no longer
+        // declares these itself) — kept as close to this stack's root as possible.
+        .navigationDestination(for: DownloadedItem.self) { item in
+            DownloadedItemDetailView(item: item)
+        }
+        .navigationDestination(for: DownloadedSeriesRef.self) { ref in
+            DownloadedSeriesDetailView(seriesId: ref.seriesId)
         }
 #endif
     }
