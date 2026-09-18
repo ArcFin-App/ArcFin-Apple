@@ -13,6 +13,7 @@ struct SearchView: View {
     @State private var jellyfinResults: [MediaItem] = []
     @State private var seerrResults: [SeerrItem] = []
     @State private var isSearching = false
+    @State private var requestingSeerrItem: SeerrItem?
 
     var body: some View {
         Group {
@@ -43,15 +44,18 @@ struct SearchView: View {
                             }
                         }
 
-                        // ── Discover via Seerr ──────────────────────────
+                        // ── Discover ──────────────────────────────────────────
                         if seerrRepo.isConfigured && !seerrResults.isEmpty {
-                            ShelfRow(title: "Discover via Seerr", onSeeAll: nil) {
+                            ShelfRow(title: "Discover", onSeeAll: nil) {
                                 ForEach(seerrResults) { item in
-                                    PosterCard(
-                                        title: item.title,
-                                        subtitle: item.year,
-                                        imageURL: item.posterURL
-                                    )
+                                    Button { requestingSeerrItem = item } label: {
+                                        PosterCard(
+                                            title: item.title,
+                                            subtitle: item.year,
+                                            imageURL: item.posterURL
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }
@@ -63,6 +67,12 @@ struct SearchView: View {
         .background(DT.Color.backgroundPrimary)
         .onChange(of: query) { _, newValue in
             performSearch(query: newValue)
+        }
+        .sheet(item: $requestingSeerrItem) { item in
+            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
         }
     }
 

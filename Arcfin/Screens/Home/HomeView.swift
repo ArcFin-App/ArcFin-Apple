@@ -90,7 +90,6 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
     @State private var seerrRequestItem: SeerrItem? = nil
-    @State private var seerrRequestPending = false
     @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
@@ -276,17 +275,11 @@ struct HomeView: View {
                     ?? mediaRepo.recentlyAdded.first { $0.id == id }
             }
         }
-        .alert(
-            seerrRequestItem.map { "Request \($0.title)" } ?? "Request",
-            isPresented: $seerrRequestPending,
-            presenting: seerrRequestItem
-        ) { item in
-            Button("Request via Seerr") {
-                Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: { item in
-            Text(item.year.map { "(\($0))" } ?? "")
+        .sheet(item: $seerrRequestItem) { item in
+            SeerrRequestConfirmSheet(item: item, requestingItem: $seerrRequestItem)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
         }
     }
 
@@ -298,7 +291,6 @@ struct HomeView: View {
             ForEach(items) { item in
                 Button {
                     seerrRequestItem = item
-                    seerrRequestPending = true
                 } label: {
                     PosterCard(
                         title: item.title,
