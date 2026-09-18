@@ -18,6 +18,7 @@ struct LibraryView: View {
     @State private var showDocPicker = false
     @State private var pickedURL: URL?
     @State private var navigateToLocalPlayer = false
+    @State private var navigateToDownloadsDeepLink = false
     @State private var searchQuery = ""
 
     private let gridColumns = [
@@ -83,6 +84,14 @@ struct LibraryView: View {
             }
             .navigationDestination(for: DownloadedSeriesRef.self) { ref in
                 DownloadedSeriesDetailView(seriesId: ref.seriesId)
+            }
+            .navigationDestination(isPresented: $navigateToDownloadsDeepLink) {
+                DownloadsView()
+            }
+            // arcfin://downloads — tapping the download Live Activity.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
+                searchQuery = ""
+                navigateToDownloadsDeepLink = true
             }
             #endif
         }

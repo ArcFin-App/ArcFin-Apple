@@ -20,10 +20,17 @@ public struct DownloadActivityAttributes: ActivityAttributes {
         public var completedCount: Int
         public var totalCount: Int
         public var isFinished: Bool
+        /// Small (≈120px) JPEG thumbnail — no App Group is set up to share a file path with
+        /// the widget extension, so this rides along in the content state itself instead.
+        /// Kept intentionally tiny to stay well clear of ActivityKit's payload limits.
+        public var posterImageData: Data?
+        public var seasonNumber: Int?
+        public var episodeNumber: Int?
 
         public init(
             currentItemTitle: String, bytesWritten: Int64, totalBytes: Int64, bytesPerSecond: Double,
-            completedCount: Int, totalCount: Int, isFinished: Bool = false
+            completedCount: Int, totalCount: Int, isFinished: Bool = false,
+            posterImageData: Data? = nil, seasonNumber: Int? = nil, episodeNumber: Int? = nil
         ) {
             self.currentItemTitle = currentItemTitle
             self.bytesWritten = bytesWritten
@@ -32,11 +39,21 @@ public struct DownloadActivityAttributes: ActivityAttributes {
             self.completedCount = completedCount
             self.totalCount = totalCount
             self.isFinished = isFinished
+            self.posterImageData = posterImageData
+            self.seasonNumber = seasonNumber
+            self.episodeNumber = episodeNumber
         }
 
         public var fractionComplete: Double {
             guard totalBytes > 0 else { return 0 }
             return min(max(Double(bytesWritten) / Double(totalBytes), 0), 1)
+        }
+
+        public var episodeLabel: String? {
+            guard let seasonNumber else { return nil }
+            let s = "S\(seasonNumber)"
+            let e = episodeNumber.map { "E\($0)" } ?? ""
+            return s + e
         }
     }
 

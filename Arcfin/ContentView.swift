@@ -12,6 +12,8 @@ private enum AppPhase: Equatable {
 // Posted by onOpenURL when the Top Shelf launches a play deep link.
 extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
+    /// Posted by onOpenURL for arcfin://downloads — tapping the download Live Activity.
+    static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
 }
 
 struct ContentView: View {
@@ -46,7 +48,7 @@ struct ContentView: View {
         ZStack {
             switch phase {
             case .splash:
-                SplashView { splashDone = true }
+                SplashView(isLoading: authManager.isChecking) { splashDone = true }
                     .transition(.opacity)
             case .login:
                 LoginRootView()
@@ -78,19 +80,25 @@ struct ContentView: View {
         .environment(statsRepo)
         .environment(downloadManager)
         .onOpenURL { url in
-            // arcfin://play/<itemId>  — from Top Shelf or Siri
-            guard url.scheme == "arcfin",
-                  url.host == "play",
-                  let itemID = url.pathComponents.dropFirst().first
-            else { return }
-            // Buffer for cold-launch: HomeView .task reads this after mediaRepo.load()
-            UserDefaults.standard.set(itemID, forKey: "arcfin.pendingPlayID")
-            // Also post for warm/already-running case
-            NotificationCenter.default.post(
-                name: .arcfinPlayItem,
-                object: nil,
-                userInfo: ["itemID": itemID]
-            )
+            guard url.scheme == "arcfin" else { return }
+            switch url.host {
+            case "play":
+                // arcfin://play/<itemId> — from Top Shelf or Siri
+                guard let itemID = url.pathComponents.dropFirst().first else { return }
+                // Buffer for cold-launch: HomeView .task reads this after mediaRepo.load()
+                UserDefaults.standard.set(itemID, forKey: "arcfin.pendingPlayID")
+                // Also post for warm/already-running case
+                NotificationCenter.default.post(
+                    name: .arcfinPlayItem,
+                    object: nil,
+                    userInfo: ["itemID": itemID]
+                )
+            case "downloads":
+                // arcfin://downloads — tapping the download Live Activity.
+                NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
+            default:
+                break
+            }
         }
         .task { await authManager.checkStoredAuth() }
         .task { authManager.startNetworkMonitoring() }

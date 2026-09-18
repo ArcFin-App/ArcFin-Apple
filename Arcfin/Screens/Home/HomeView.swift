@@ -16,6 +16,7 @@ struct MainTabView: View {
     #else
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
+    @State private var selectedTab: BottomNavItem = .home
     #endif
 
     #if !os(tvOS)
@@ -42,8 +43,8 @@ struct MainTabView: View {
     #endif
 
     var body: some View {
-        TabView {
 #if os(tvOS)
+        TabView {
             Tab("Home", systemImage: "house") {
                 TVHomeView()
             }
@@ -67,23 +68,27 @@ struct MainTabView: View {
             Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                 NavigationStack { SettingsView() }
             }
-#else
-            ForEach(visibleTabs) { tab in
-                Tab(tab.title, systemImage: tab.icon) {
-                    tabDestination(tab)
-                }
-            }
-#endif
         }
-#if !os(tvOS)
-        .tabViewStyle(.sidebarAdaptable)
-#else
         // Suppress the system white focus halo across all screens.
         // The focus ENGINE still works (remote nav, isFocused env); only
         // the system visual highlight is replaced by per-element custom styling.
         .focusEffectDisabled()
-#endif
         .preferredColorScheme(.dark)
+#else
+        TabView(selection: $selectedTab) {
+            ForEach(visibleTabs) { tab in
+                Tab(tab.title, systemImage: tab.icon, value: tab) {
+                    tabDestination(tab)
+                }
+            }
+        }
+        .tabViewStyle(.sidebarAdaptable)
+        .preferredColorScheme(.dark)
+        // arcfin://downloads — from the download Live Activity's tap target.
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
+            selectedTab = .browse
+        }
+#endif
     }
 }
 

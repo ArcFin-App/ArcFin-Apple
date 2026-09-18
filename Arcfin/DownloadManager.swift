@@ -54,6 +54,10 @@ final class DownloadManager: NSObject {
     #endif
     #if canImport(ActivityKit) && os(iOS)
     @ObservationIgnored private var liveActivity: Activity<DownloadActivityAttributes>?
+    /// Poster thumbnail + season/episode per active item, fetched once per item start
+    /// (network call, so filled in asynchronously — the activity starts without it and
+    /// picks it up on the next refresh once the fetch completes).
+    @ObservationIgnored private var liveActivityItemMeta: [String: (posterData: Data?, season: Int?, episode: Int?)] = [:]
     #endif
     /// Counts across the whole current queue run (reset when a fresh run starts after the
     /// previous one fully drained) — drives the Live Activity's "N of M" display.
@@ -100,13 +104,27 @@ final class DownloadManager: NSObject {
         guard let liveActivity else { return }
         let itemId = activeItemIds.first
         let stat = itemId.flatMap { stats[$0] }
+        let meta = itemId.flatMap { liveActivityItemMeta[$0] }
         let state = DownloadActivityAttributes.ContentState(
             currentItemTitle: itemId.flatMap { activeItemTitles[$0] } ?? "",
             bytesWritten: stat?.bytesWritten ?? 0, totalBytes: stat?.totalBytes ?? 0,
             bytesPerSecond: stat?.bytesPerSecond ?? 0,
-            completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished
+            completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished,
+            posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode
         )
         Task { await liveActivity.update(ActivityContent(state: state, staleDate: nil)) }
+    }
+
+    /// Small thumbnail for the Live Activity — no App Group exists to share a file path with
+    /// the widget extension, so a downsized JPEG rides along in the content state itself.
+    private func fetchLiveActivityPoster(item: MediaItem, credential: ServerCredential) async {
+        guard let tag = item.primaryImageTag else { return }
+        let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .primary, fillWidth: 120, token: credential.accessToken)
+        guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
+        guard var existing = liveActivityItemMeta[item.id] else { return }
+        existing.posterData = data
+        liveActivityItemMeta[item.id] = existing
+        refreshLiveActivity()
     }
 
     /// Shows a brief "Download Complete" state before dismissing — matching every other
@@ -241,7 +259,9 @@ final class DownloadManager: NSObject {
         progress[item.id] = 0
         beginBackgroundTaskIfNeeded()
         #if canImport(ActivityKit) && os(iOS)
+        liveActivityItemMeta[item.id] = (nil, item.parentIndexNumber, item.indexNumber)
         refreshLiveActivity()
+        Task { await fetchLiveActivityPoster(item: item, credential: credential) }
         #endif
 
         do {
@@ -364,6 +384,7 @@ final class DownloadManager: NSObject {
         speedSamples[item.id] = nil
         endBackgroundTaskIfIdle()
         #if canImport(ActivityKit) && os(iOS)
+        liveActivityItemMeta[item.id] = nil
         queueCompletedCount += 1
         if pendingQueue.isEmpty {
             endLiveActivity()
