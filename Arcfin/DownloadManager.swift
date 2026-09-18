@@ -346,13 +346,45 @@ final class DownloadManager: NSObject {
 
     // MARK: - Video download with progress
 
+    /// Retries a genuinely interrupted transfer (dropped connection, network switch, server
+    /// hiccup) using the resume data URLSession hands back on failure, instead of wiping all
+    /// progress and restarting from zero. Caps at 3 attempts with a short backoff — a failure
+    /// that comes back with no resume data (permission error, 404, etc.) isn't resumable and
+    /// is rethrown immediately rather than retried.
     private func downloadFile(from url: URL, authHeader: String, to destination: URL, itemId: String) async throws {
-        var req = URLRequest(url: url)
-        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 60 * 60
+        var resumeData: Data?
+        var lastError: Error?
+        for attempt in 0..<3 {
+            do {
+                try await attemptDownload(url: url, authHeader: authHeader, destination: destination, itemId: itemId, resumeData: resumeData)
+                return
+            } catch {
+                lastError = error
+                guard let data = (error as NSError).userInfo[NSURLSessionDownloadTaskResumeData] as? Data else {
+                    throw error
+                }
+                resumeData = data
+                if attempt < 2 {
+                    try? await Task.sleep(for: .seconds(Double(attempt + 1) * 2))
+                }
+            }
+        }
+        throw lastError ?? URLError(.unknown)
+    }
 
+    private func attemptDownload(url: URL, authHeader: String, destination: URL, itemId: String, resumeData: Data?) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let task = session.downloadTask(with: req)
+            let task: URLSessionDownloadTask
+            if let resumeData {
+                // The original request (including the Authorization header) is already
+                // encoded in resumeData — nothing to re-attach here.
+                task = session.downloadTask(withResumeData: resumeData)
+            } else {
+                var req = URLRequest(url: url)
+                req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+                req.timeoutInterval = 60 * 60
+                task = session.downloadTask(with: req)
+            }
             // Read synchronously (no actor hop) from the delegate callback, which must move
             // the temp file before returning — the OS deletes it right after, so this can't
             // wait on a MainActor round-trip first.

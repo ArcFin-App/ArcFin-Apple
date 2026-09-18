@@ -57,7 +57,9 @@ struct OfflinePlayerView: View {
             .ignoresSafeArea()
             #endif
 
-            if player.status == .loading || player.isBuffering {
+            // .idle covers the gap between the screen appearing and setup() actually calling
+            // player.load() — without it the screen was just black with no spinner there.
+            if player.status == .idle || player.status == .loading || player.isBuffering {
                 ProgressView().tint(.white).scaleEffect(1.4)
             }
 

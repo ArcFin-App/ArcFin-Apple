@@ -112,7 +112,10 @@ struct PlayerView: View {
             dragAxisIndicator
             #endif
 
-            if player.status == .loading || player.isBuffering {
+            // .idle covers the gap between the screen appearing and setup() actually calling
+            // player.load() (fetching PlaybackInfo/item detail first) — without it the screen
+            // was just black with no spinner for that whole prefetch window.
+            if errorMessage == nil, player.status == .idle || player.status == .loading || player.isBuffering {
                 ProgressView()
                     .tint(.white)
                     .scaleEffect(1.4)
