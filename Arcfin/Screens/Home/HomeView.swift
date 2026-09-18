@@ -213,7 +213,7 @@ struct HomeView: View {
                 .animation(DT.Animation.fast, value: mediaRepo.isLoading)
             }
             .navigationTitle("")
-#if !os(tvOS)
+#if os(iOS)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {} label: {

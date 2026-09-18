@@ -54,8 +54,10 @@ struct ServerSettingsView: View {
                 TextField("https://your-server.example.com", text: $remoteURL)
                     .textContentType(.URL)
                     .autocorrectionDisabled()
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
+                    #endif
             } header: {
                 Label("Remote URL", systemImage: "globe")
                     .font(.system(size: 12, weight: .semibold))
@@ -71,8 +73,10 @@ struct ServerSettingsView: View {
                 TextField("http://10.0.1.50:8096", text: $localURL)
                     .textContentType(.URL)
                     .autocorrectionDisabled()
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
+                    #endif
 
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {

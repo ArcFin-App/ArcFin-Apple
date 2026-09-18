@@ -86,7 +86,9 @@ struct UsersView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .navigationTitle("Profiles")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task { await loadPINStates() }
         .onChange(of: authManager.profiles) { _, _ in Task { await loadPINStates() } }
         // PIN entry sheet for switching to a protected profile
@@ -274,8 +276,10 @@ struct ProfileDetailView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .navigationTitle(profile.displayName)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+        #endif
         .task { hasPIN = await authManager.pin(for: profile.id) != nil }
         .sheet(item: $pinFlow) { flow in
             PINFlowSheet(profile: profile, flow: flow) {

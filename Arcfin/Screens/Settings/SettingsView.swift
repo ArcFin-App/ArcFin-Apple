@@ -46,8 +46,10 @@ struct SettingsView: View {
             Section {
                 HStack(spacing: 10) {
                     TextField("Code", text: $quickConnectCode)
+                        #if os(iOS)
                         .keyboardType(.numberPad)
                         .textInputAutocapitalization(.characters)
+                        #endif
                         .autocorrectionDisabled()
                     Button {
                         authorizeQuickConnect()
@@ -154,7 +156,7 @@ struct SettingsView: View {
                 Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
                 NavigationLink {
                     SeerrPluginView()
-#if !os(tvOS)
+#if os(iOS)
                         .toolbar(.hidden, for: .tabBar)
 #endif
                 } label: {
@@ -169,7 +171,7 @@ struct SettingsView: View {
 #endif
                 NavigationLink {
                     StreamystatsPluginView()
-#if !os(tvOS)
+#if os(iOS)
                         .toolbar(.hidden, for: .tabBar)
 #endif
                 } label: {
@@ -242,8 +244,10 @@ struct SettingsView: View {
         }
 #else
         .navigationTitle(authManager.state.credential?.displayName ?? "Settings")
+#if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.visible, for: .navigationBar)
+#endif
         .sheet(isPresented: $showUsersSheet, onDismiss: { usersDetent = .medium }) {
             NavigationStack { UsersView(onExpand: { usersDetent = .large }) }
                 .presentationDetents([.medium, .large], selection: $usersDetent)
@@ -377,7 +381,7 @@ struct SettingsView: View {
             )
         }
         .navigationTitle(title)
-#if !os(tvOS)
+#if os(iOS)
         .toolbar(.hidden, for: .tabBar)
 #endif
     }
@@ -527,8 +531,10 @@ struct SeerrPluginView: View {
             TextField("http://10.0.1.122:5055", text: $draftURL)
                 .textContentType(.URL)
                 .autocorrectionDisabled()
+                #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
+                #endif
         } header: {
             Label("Server URL", systemImage: "server.rack")
                 .font(.system(size: 12, weight: .semibold))
@@ -561,10 +567,14 @@ struct SeerrPluginView: View {
         Section {
             TextField("Username", text: $draftUsername)
                 .autocorrectionDisabled()
+                #if os(iOS)
                 .textInputAutocapitalization(.never)
+                #endif
             SecureField("Password", text: $draftPassword)
                 .autocorrectionDisabled()
+                #if os(iOS)
                 .textInputAutocapitalization(.never)
+                #endif
         } header: {
             Label("Credentials", systemImage: "person.fill")
                 .font(.system(size: 12, weight: .semibold))
@@ -666,8 +676,10 @@ struct StreamystatsPluginView: View {
                 TextField("https://stats.example.com", text: $streamystatsURL)
                     .textContentType(.URL)
                     .autocorrectionDisabled()
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
+                    #endif
             } header: {
                 Label("Server URL", systemImage: "server.rack")
                     .font(.system(size: 12, weight: .semibold))

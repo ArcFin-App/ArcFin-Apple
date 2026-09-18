@@ -5,19 +5,21 @@ extension View {
     func arcfinListStyle() -> some View {
 #if os(tvOS)
         self.listStyle(.plain)
-#else
+#elseif os(iOS)
         self.listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+#else
+        self.scrollContentBackground(.hidden)
 #endif
     }
 
     @ViewBuilder
     func arcfinNavTitleLarge(_ title: String) -> some View {
-#if os(tvOS)
-        self.navigationTitle(title)
-#else
+#if os(iOS)
         self.navigationTitle(title)
             .navigationBarTitleDisplayMode(.large)
+#else
+        self.navigationTitle(title)
 #endif
     }
 

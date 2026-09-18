@@ -1,10 +1,10 @@
 import SwiftUI
 import AVKit
 import JellyfinAPI
+import AuthCore
 
 #if canImport(UIKit)
 import UIKit
-import AuthCore
 #endif
 
 // MARK: - Library screen

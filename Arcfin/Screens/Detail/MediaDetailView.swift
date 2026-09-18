@@ -63,7 +63,7 @@ struct MediaDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
-#if !os(tvOS)
+#if os(iOS)
         .fullScreenCover(item: $playbackRequest) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks)
         }
