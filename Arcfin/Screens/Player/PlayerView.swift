@@ -25,6 +25,7 @@ struct PlayerView: View {
     @State var scrubTicks: Double = 0
     @State var showTrackMenu = false
     @State var showQualityMenu = false
+    @State var showRateMenu = false
     @State var quality: VideoQuality
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
@@ -150,11 +151,15 @@ struct PlayerView: View {
         // sheet/dialog was presented from it was tearing the presentation down too.
         .onChange(of: showTrackMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .onChange(of: showQualityMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
+        .onChange(of: showRateMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .sheet(isPresented: $showTrackMenu) {
             trackSelectionSheet
         }
         .confirmationDialog("Quality", isPresented: $showQualityMenu, titleVisibility: .visible) {
             qualityMenuButtons
+        }
+        .confirmationDialog("Playback Speed", isPresented: $showRateMenu, titleVisibility: .visible) {
+            rateMenuButtons
         }
     }
 
@@ -204,6 +209,24 @@ struct PlayerView: View {
             Button(q.label + (q == quality ? " ✓" : "")) { changeQuality(to: q) }
         }
         Button("Cancel", role: .cancel) {}
+    }
+
+    // MARK: - Playback speed
+
+    static let rateOptions: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+
+    @ViewBuilder
+    private var rateMenuButtons: some View {
+        ForEach(Self.rateOptions, id: \.self) { rate in
+            Button(rateLabel(rate) + (rate == player.playbackRate ? " ✓" : "")) {
+                Task { await player.setRate(rate) }
+            }
+        }
+        Button("Cancel", role: .cancel) {}
+    }
+
+    private func rateLabel(_ rate: Float) -> String {
+        rate == 1.0 ? "Normal" : "\(rate.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", rate) : String(format: "%.2f", rate))×"
     }
 
     // MARK: - Setup / teardown

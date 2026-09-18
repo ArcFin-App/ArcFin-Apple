@@ -113,6 +113,7 @@ struct HomeView: View {
         let id = UUID()
         let title: String
         let items: [MediaItem]
+        var isLandscape: Bool = false
     }
     @State private var seerrRequestItem: SeerrItem? = nil
     @State private var deepLinkItemID: String? = nil
@@ -152,12 +153,22 @@ struct HomeView: View {
     @ViewBuilder
     private func continueWatchingCard(_ item: MediaItem) -> some View {
         NavigationLink(value: item) {
+#if os(tvOS)
             PosterCard(
                 title: itemDisplayTitle(item),
                 subtitle: itemDisplaySubtitle(item),
                 progress: item.userData?.playedPercentage.map { $0 / 100 },
                 imageURL: shelfImageURL(for: item)
             )
+#else
+            PosterCard(
+                title: itemDisplayTitle(item),
+                subtitle: itemDisplaySubtitle(item),
+                progress: item.userData?.playedPercentage.map { $0 / 100 },
+                imageURL: landscapeShelfImageURL(for: item),
+                width: 200, height: 113
+            )
+#endif
         }
 #if os(tvOS)
         .buttonStyle(TVCardButtonStyle())
@@ -165,7 +176,11 @@ struct HomeView: View {
         .contextMenu { quickLookMenu(item) }
 #else
         .buttonStyle(.plain)
-        .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
+        // No custom preview: — a preview whose size doesn't match the tiny source card
+        // confuses UIKit's context-menu interaction proxy about which cell was actually
+        // touched in a tightly-packed horizontal shelf, causing taps to land on the
+        // neighboring card instead of the one under your finger.
+        .contextMenu { quickLookMenu(item) }
 #endif
     }
 
@@ -222,7 +237,7 @@ struct HomeView: View {
                             if mergeContinueWatchingAndUpNext {
                                 if !mergedContinueAndNextItems.isEmpty {
                                     ShelfRow(title: "Continue Watching", onSeeAll: {
-                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mergedContinueAndNextItems)
+                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mergedContinueAndNextItems, isLandscape: true)
                                     }) {
                                         ForEach(mergedContinueAndNextItems) { item in
                                             continueWatchingCard(item)
@@ -232,7 +247,7 @@ struct HomeView: View {
                             } else {
                                 if !mediaRepo.continueWatching.isEmpty {
                                     ShelfRow(title: "Continue Watching", onSeeAll: {
-                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mediaRepo.continueWatching)
+                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mediaRepo.continueWatching, isLandscape: true)
                                     }) {
                                         ForEach(mediaRepo.continueWatching) { item in
                                             continueWatchingCard(item)
@@ -241,9 +256,11 @@ struct HomeView: View {
                                 }
                                 if !mediaRepo.nextUp.isEmpty {
                                     ShelfRow(title: "Next Up", onSeeAll: {
-                                        seeAllShelf = SeeAllShelf(title: "Next Up", items: mediaRepo.nextUp)
+                                        seeAllShelf = SeeAllShelf(title: "Next Up", items: mediaRepo.nextUp, isLandscape: true)
                                     }) {
-                                        mediaShelfContent(mediaRepo.nextUp)
+                                        ForEach(mediaRepo.nextUp) { item in
+                                            continueWatchingCard(item)
+                                        }
                                     }
                                 }
                             }
@@ -313,7 +330,7 @@ struct HomeView: View {
                     MediaDetailView(item: item)
                 }
                 .navigationDestination(item: $seeAllShelf) { shelf in
-                    ShelfSeeAllView(title: shelf.title, items: shelf.items)
+                    ShelfSeeAllView(title: shelf.title, items: shelf.items, isLandscape: shelf.isLandscape)
                 }
 #if os(iOS)
                 .fullScreenCover(item: $heroPlaybackRequest) { request in
@@ -463,7 +480,7 @@ struct HomeView: View {
                 .focusEffectDisabled()
 #else
                 .buttonStyle(.plain)
-                .contextMenu { seerrQuickLookMenu(item) } preview: { seerrQuickLookPreview(item) }
+                .contextMenu { seerrQuickLookMenu(item) }
 #endif
             }
         }
@@ -729,49 +746,6 @@ struct HomeView: View {
         }
     }
 
-    func quickLookPreview(_ item: MediaItem) -> some View {
-        ZStack {
-            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600) {
-                AsyncImage(url: url) { ph in
-                    if case .success(let img) = ph {
-                        img
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    }
-                    else { DT.Color.backgroundSecondary }
-                }
-            } else { DT.Color.backgroundSecondary }
-            LinearGradient(
-                colors: [.black.opacity(0.65), .black.opacity(0.2)],
-                startPoint: .bottom,
-                endPoint: .top
-            )
-            VStack(spacing: 0) {
-                Spacer()
-                if let url = mediaRepo.logoURL(for: item) {
-                    AsyncImage(url: url) { ph in
-                        if case .success(let img) = ph {
-                            img.resizable().scaledToFit()
-                        }
-                    }
-                    .frame(height: 80)
-                    .padding(.horizontal, 20)
-                } else {
-                    Text(item.name)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 300)
-                }
-                Spacer()
-            }
-        }
-        .frame(width: 360, height: 230)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
     @ViewBuilder
     private func seerrQuickLookMenu(_ item: SeerrItem) -> some View {
         Label(item.title, systemImage: item.mediaType == .tv ? "tv" : "film")
@@ -785,49 +759,6 @@ struct HomeView: View {
                 Label("Request via Seerr", systemImage: "plus.circle")
             }
         }
-    }
-
-    private func seerrQuickLookPreview(_ item: SeerrItem) -> some View {
-        ZStack {
-            if let url = item.backdropURL ?? item.posterURL {
-                AsyncImage(url: url) { ph in
-                    if case .success(let img) = ph {
-                        img
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    }
-                    else { DT.Color.backgroundSecondary }
-                }
-            } else { DT.Color.backgroundSecondary }
-            LinearGradient(
-                colors: [.black.opacity(0.65), .black.opacity(0.2)],
-                startPoint: .bottom,
-                endPoint: .top
-            )
-            VStack(spacing: 0) {
-                Spacer()
-                Text(item.title)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 300)
-                Spacer()
-            }
-        }
-        .frame(width: 360, height: 230)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var quickLookPosterPlaceholder: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(DT.Color.backgroundSecondary)
-            .overlay(
-                Image(systemName: "film")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.4))
-            )
     }
 
 
@@ -855,7 +786,7 @@ struct HomeView: View {
                 .contextMenu { quickLookMenu(item) }
 #else
                 .buttonStyle(.plain)
-                .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
+                .contextMenu { quickLookMenu(item) }
 #endif
             }
         }
@@ -867,6 +798,17 @@ struct HomeView: View {
 #else
         mediaRepo.imageURL(for: item)
 #endif
+    }
+
+    /// Continue Watching / Up Next use landscape cards for everything (movies included),
+    /// matching the convention most streaming apps use for "resume this" rows — a movie's
+    /// thumb/backdrop, or an episode's own screenshot.
+    private func landscapeShelfImageURL(for item: MediaItem) -> URL? {
+        if item.type == .episode {
+            return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
+        }
+        return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 400)
+            ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 400)
     }
 
     // MARK: - Helpers

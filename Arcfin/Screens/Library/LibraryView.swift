@@ -518,7 +518,7 @@ struct LibraryDetailView: View {
                             .contextMenu { quickLookMenu(item) }
 #else
                             .buttonStyle(.plain)
-                            .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
+                            .contextMenu { quickLookMenu(item) }
 #endif
                             .onAppear {
                                 if item.id == items.last?.id && hasMore && !isLoadingMore {
@@ -603,59 +603,6 @@ struct LibraryDetailView: View {
         if let rating = item.communityRating {
             Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
         }
-    }
-
-    private func quickLookPreview(_ item: MediaItem) -> some View {
-        ZStack {
-            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600) {
-                AsyncImage(url: url) { ph in
-                    if case .success(let img) = ph {
-                        img
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    }
-                    else { DT.Color.backgroundSecondary }
-                }
-            } else { DT.Color.backgroundSecondary }
-            LinearGradient(
-                colors: [.black.opacity(0.65), .black.opacity(0.2)],
-                startPoint: .bottom,
-                endPoint: .top
-            )
-            VStack(spacing: 0) {
-                Spacer()
-                if let url = mediaRepo.logoURL(for: item) {
-                    AsyncImage(url: url) { ph in
-                        if case .success(let img) = ph {
-                            img.resizable().scaledToFit()
-                        }
-                    }
-                    .frame(height: 80)
-                    .padding(.horizontal, 20)
-                } else {
-                    Text(item.name)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 300)
-                }
-                Spacer()
-            }
-        }
-        .frame(width: 360, height: 230)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var quickLookPosterPlaceholder: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(DT.Color.backgroundSecondary)
-            .overlay(
-                Image(systemName: "film")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.4))
-            )
     }
 
     private func load() async {

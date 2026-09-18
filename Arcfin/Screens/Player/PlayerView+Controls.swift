@@ -104,6 +104,13 @@ extension PlayerView {
                     .frame(width: 32, height: 32)
             }
 
+            Button { showRateMenu = true } label: {
+                Image(systemName: "gauge.with.dots.needle.67percent")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+            }
+
             Button { showQualityMenu = true } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 16, weight: .semibold))

@@ -15,6 +15,7 @@ public protocol MediaPlayerProtocol: AnyObject, Sendable {
     func seek(to positionTicks: Int64) async
     func setAudioTrack(index: Int) async
     func setSubtitleTrack(index: Int?) async
+    func setRate(_ rate: Float) async
     func stop() async
 }
 
@@ -89,6 +90,7 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     public private(set) var availableSubtitleTracks: [SubtitleTrack] = []
     public private(set) var selectedAudioTrackIndex: Int = 0
     public private(set) var selectedSubtitleTrackIndex: Int? = nil
+    public private(set) var playbackRate: Float = 1.0
 
     public var state: PlayerState {
         PlayerState(status: status, positionTicks: positionTicks, durationTicks: durationTicks,
@@ -161,8 +163,15 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     }
 
     public func play() async {
-        player.play()
+        // player.play() always resets rate to 1.0 — setting .rate directly is what actually
+        // starts playback at a non-default speed.
+        player.rate = playbackRate
         status = .playing
+    }
+
+    public func setRate(_ rate: Float) async {
+        playbackRate = rate
+        if status == .playing { player.rate = rate }
     }
 
     public func pause() async {
@@ -286,5 +295,6 @@ public final class MPVPlayer: MediaPlayerProtocol {
     public func seek(to positionTicks: Int64) async {}
     public func setAudioTrack(index: Int) async {}
     public func setSubtitleTrack(index: Int?) async {}
+    public func setRate(_ rate: Float) async {}
     public func stop() async {}
 }

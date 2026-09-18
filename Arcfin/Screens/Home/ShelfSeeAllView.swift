@@ -4,15 +4,15 @@ import JellyfinAPI
 struct ShelfSeeAllView: View {
     let title: String
     let items: [MediaItem]
+    var isLandscape: Bool = false
 
     @Environment(MediaRepository.self) private var mediaRepo
     @State private var selectedItem: MediaItem?
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
+    private var columns: [GridItem] {
+        let count = isLandscape ? 2 : 3
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -39,10 +39,19 @@ struct ShelfSeeAllView: View {
         }
     }
 
+    private func imageURL(for item: MediaItem) -> URL? {
+        guard isLandscape else { return mediaRepo.imageURL(for: item) }
+        if item.type == .episode {
+            return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 500)
+        }
+        return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 500)
+            ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 500)
+    }
+
     private func gridCard(_ item: MediaItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             ZStack {
-                if let url = mediaRepo.imageURL(for: item) {
+                if let url = imageURL(for: item) {
                     AsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
@@ -54,7 +63,7 @@ struct ShelfSeeAllView: View {
                     DT.Color.backgroundSecondary
                 }
             }
-            .aspectRatio(2 / 3, contentMode: .fit)
+            .aspectRatio(isLandscape ? 16 / 9 : 2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
 
