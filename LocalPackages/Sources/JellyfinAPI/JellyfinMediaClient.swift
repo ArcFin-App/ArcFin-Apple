@@ -234,14 +234,13 @@ public struct JellyfinMediaClient: Sendable {
     ///
     /// VideoBitRate must be passed explicitly — without it Jellyfin's transcoder falls back
     /// to a low default bitrate regardless of source quality, which is what actually made
-    /// remuxed downloads look bad, not the codec change itself. `sourceBitrate` should come
-    /// from PlaybackInfo's MediaSource.Bitrate; a generous fallback covers sources that
-    /// don't report one so a remux still isn't downgraded below what most sources need.
-    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, sourceBitrate: Int?, token: String) -> URL {
+    /// remuxed downloads look bad, not the codec change itself. Callers decide the value:
+    /// source bitrate (with a generous fallback) for an unrequested remux, or the user's
+    /// own picked cap when they deliberately asked for a smaller download.
+    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, videoBitRate: Int, token: String) -> URL {
         var comps = URLComponents(
             url: baseURL.appendingPathComponent("Videos/\(itemID)/stream.mp4"),
             resolvingAgainstBaseURL: false)!
-        let videoBitRate = max(sourceBitrate ?? 20_000_000, 4_000_000)
         comps.queryItems = [
             .init(name: "Static", value: "false"),
             .init(name: "mediaSourceId", value: mediaSourceId),

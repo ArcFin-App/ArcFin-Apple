@@ -72,8 +72,8 @@ struct DownloadButton: View {
             downloadManager.errors[item.id] = nil
         }
         .sheet(item: $previewSheet) { preview in
-            DownloadConfirmSheet(item: item, preview: preview) {
-                startDownload()
+            DownloadConfirmSheet(item: item, preview: preview) { bitrateCap in
+                startDownload(bitrateCap: bitrateCap)
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
@@ -91,9 +91,9 @@ struct DownloadButton: View {
         }
     }
 
-    private func startDownload() {
+    private func startDownload(bitrateCap: Int? = nil) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        Task { await downloadManager.startDownload(item: item, credential: credential, authHeader: authHeader) }
+        Task { await downloadManager.startDownload(item: item, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap) }
     }
 }

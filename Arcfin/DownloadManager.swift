@@ -83,6 +83,10 @@ final class DownloadManager: NSObject {
         var subtitleLanguages: [String]
         var estimatedSizeBytes: Int64?
         var willRemux: Bool
+        /// Source's own bitrate (bits/sec), when the server reports it — the ceiling for
+        /// any bitrate the confirm sheet lets the user pick (no point offering to "upscale").
+        var sourceBitrate: Int?
+        var runtimeTicks: Int64?
     }
 
     /// What the confirmation sheet shows before actually starting — same PlaybackInfo call
@@ -94,7 +98,7 @@ final class DownloadManager: NSObject {
         }
         let needsRemux = JellyfinMediaClient.downloadNeedsRemux(container: info.container, videoCodec: info.videoStream?.codec)
         let videoURL = needsRemux
-            ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, sourceBitrate: info.bitrate, token: credential.accessToken)
+            ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, videoBitRate: max(info.bitrate ?? 20_000_000, 4_000_000), token: credential.accessToken)
             : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
 
         var headReq = URLRequest(url: videoURL)
@@ -108,23 +112,26 @@ final class DownloadManager: NSObject {
         }
 
         let languages = info.subtitleStreams.compactMap { $0.deliveryUrl != nil ? ($0.language ?? $0.displayTitle ?? "Unknown") : nil }
-        return DownloadPreview(subtitleLanguages: languages, estimatedSizeBytes: estimatedSize, willRemux: needsRemux)
+        return DownloadPreview(subtitleLanguages: languages, estimatedSizeBytes: estimatedSize, willRemux: needsRemux,
+                                sourceBitrate: info.bitrate, runtimeTicks: info.runTimeTicks)
     }
 
     // MARK: - Start download
 
-    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String)] = []
+    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?)] = []
     @ObservationIgnored private var isProcessingQueue = false
 
     /// Queues the download — a season's worth of episodes all calling this at once
     /// shouldn't fire a dozen simultaneous video downloads, so only one actually runs at a
-    /// time; the rest wait their turn here.
-    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String) async {
+    /// time; the rest wait their turn here. `bitrateCap` (bits/sec), when set, forces a
+    /// remux even for an otherwise direct-downloadable source — that's the only way to
+    /// actually reduce a download's bitrate below the source's own.
+    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil) async {
         guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
               !pendingQueue.contains(where: { $0.item.id == item.id })
         else { return }
         activeItemTitles[item.id] = item.name
-        pendingQueue.append((item, credential, authHeader))
+        pendingQueue.append((item, credential, authHeader, bitrateCap))
         await processQueue()
     }
 
@@ -134,12 +141,12 @@ final class DownloadManager: NSObject {
         while !pendingQueue.isEmpty {
             let next = pendingQueue.removeFirst()
             guard !isDownloaded(next.item.id) else { continue }
-            await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader)
+            await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
         }
         isProcessingQueue = false
     }
 
-    private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String) async {
+    private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?) async {
         guard let modelContext else { return }
         activeItemIds.insert(item.id)
         progress[item.id] = 0
@@ -154,15 +161,21 @@ final class DownloadManager: NSObject {
             let dir = try DownloadStore.ensureDirectory(for: item.id)
 
             // Video — the original file when its container is one AVFoundation can actually
-            // open and its video codec isn't HEVC; otherwise a remux download instead. HEVC
-            // sources are routinely tagged hev1 rather than the hvc1 tag AVFoundation
-            // requires (plays audio with a black screen), and a raw file download has no
-            // way to fix that server-side tag — only forcing h264 output sidesteps it.
+            // open, its video codec isn't HEVC, and the user didn't ask for a lower bitrate;
+            // otherwise a remux download instead. HEVC sources are routinely tagged hev1
+            // rather than the hvc1 tag AVFoundation requires (plays audio with a black
+            // screen), and a raw file download has no way to fix that server-side tag —
+            // only forcing h264 output sidesteps it. A bitrateCap forces the same remux
+            // path since that's the only way to actually shrink a download below source.
             let sourceContainer = (info.container ?? "").lowercased()
-            let needsRemux = JellyfinMediaClient.downloadNeedsRemux(container: info.container, videoCodec: info.videoStream?.codec)
+            let needsRemux = JellyfinMediaClient.downloadNeedsRemux(container: info.container, videoCodec: info.videoStream?.codec) || bitrateCap != nil
             let videoFileName = needsRemux ? "video.mp4" : "video.\(sourceContainer.nilIfEmpty ?? "mp4")"
+            // A user-picked cap is respected as-is (that's the point of picking "Low"); an
+            // unrequested remux (bad container/HEVC tag) instead floors at 4 Mbps so a
+            // missing/garbage source bitrate doesn't silently tank quality nobody asked to reduce.
+            let remuxBitrate = bitrateCap.map { cap in info.bitrate.map { min(cap, $0) } ?? cap } ?? max(info.bitrate ?? 20_000_000, 4_000_000)
             let videoURL = needsRemux
-                ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, sourceBitrate: info.bitrate, token: credential.accessToken)
+                ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, videoBitRate: remuxBitrate, token: credential.accessToken)
                 : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
             try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
 
