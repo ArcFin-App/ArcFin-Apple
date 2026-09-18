@@ -107,7 +107,12 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     @ObservationIgnored private var audioGroup: AVMediaSelectionGroup?
     @ObservationIgnored private var subtitleGroup: AVMediaSelectionGroup?
 
-    public init() {}
+    public init() {
+        // Without this, AVKit can silently re-pick an audio/subtitle track on its own
+        // (e.g. after a variant change) based on system language/accessibility criteria,
+        // overriding an explicit setAudioTrack/setSubtitleTrack call the user just made.
+        player.appliesMediaSelectionCriteriaAutomatically = false
+    }
 
     public func load(url: URL, startPositionTicks: Int64) async throws {
         teardownObservers()
