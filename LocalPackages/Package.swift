@@ -11,6 +11,9 @@ let package = Package(
     products: [
         // MARK: Core Services
         .library(name: "Telemetry",       targets: ["Telemetry"]),
+        // Shared ActivityAttributes for the download Live Activity — deliberately tiny
+        // (Foundation + ActivityKit only) since it's linked into the widget extension too.
+        .library(name: "LiveActivityKit", targets: ["LiveActivityKit"]),
         .library(name: "AuthCore",        targets: ["AuthCore"]),
         .library(name: "Persistence",     targets: ["Persistence"]),
         .library(name: "ImageCache",      targets: ["ImageCache"]),
@@ -69,6 +72,11 @@ let package = Package(
         .target(
             name: "AuthCore",
             dependencies: ["Telemetry"]
+        ),
+
+        .target(
+            name: "LiveActivityKit",
+            dependencies: []
         ),
 
         .target(
