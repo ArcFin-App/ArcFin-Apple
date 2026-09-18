@@ -253,11 +253,12 @@ extension JellyfinMediaClient {
             ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac,flac"],
             ["Container": "mov", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac"],
         ],
-        // h264-only for the transcode OUTPUT — HEVC decode/render through a raw AVPlayerLayer
-        // (not AVPlayerViewController, needed for full custom-control ownership) is a known
-        // trouble spot on some iOS versions, and every HLS "no video" case so far has
-        // requested hevc as an option. DirectPlayProfiles above still allow hevc for
-        // sources that qualify for passthrough — this only affects re-encoded output.
+        // h264-only for the transcode OUTPUT. The real cause of the "audio plays, video is
+        // black" bug turned out to be AVFoundation's documented requirement that HEVC be
+        // FourCC-tagged hvc1, not hev1 — not HEVC decode itself being broken. The CodecProfile
+        // below asks Jellyfin to tag transcoded HEVC correctly, but since that couldn't be
+        // verified against a live server, h264 stays as the confirmed-working transcode
+        // target for now; hevc output can be re-enabled once the tag fix is confirmed too.
         "TranscodingProfiles": [
             [
                 "Container": "ts", "Type": "Video", "AudioCodec": "aac",
@@ -268,6 +269,13 @@ extension JellyfinMediaClient {
         "CodecProfiles": [
             ["Type": "Video", "Codec": "h264",
              "Conditions": [["Condition": "LessThanEqual", "Property": "VideoBitDepth", "Value": "8"]]],
+            // AVFoundation requires the HEVC FourCC tag to be hvc1, not hev1 (Apple's own
+            // documented requirement) — a source tagged hev1 plays audio with a black video
+            // screen, which is exactly the failure mode chased through most of this session.
+            // IsRequired: false so a correctly-tagged hevc source isn't forced through an
+            // unnecessary transcode; it still guides the tag Jellyfin writes when transcoding.
+            ["Type": "Video", "Codec": "hevc",
+             "Conditions": [["Condition": "EqualsAny", "Property": "VideoCodecTag", "Value": "hvc1", "IsRequired": false]]],
         ],
         // vtt only — the client parses/renders subtitles itself (see SubtitleLoader), so a
         // single consistent, easily-parsed format is preferable to juggling srt/ass too.
