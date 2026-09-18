@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthCore
+import JellyfinAPI
 import SeerrAPI
 
 private enum AppPhase: Equatable {
@@ -12,11 +13,14 @@ extension Notification.Name {
 }
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var authManager  = AuthManager()
     @State private var mediaRepo    = MediaRepository()
     @State private var seerrRepo    = SeerrRepository()
     @State private var statsRepo    = StreamystatsRepository()
     @State private var splashDone   = false
+    @State private var heartbeatTask: Task<Void, Never>?
 
     @AppStorage("seerrURL")          private var seerrURL         = ""
     @AppStorage("seerrUsername")     private var seerrUsername    = ""
@@ -71,6 +75,9 @@ struct ContentView: View {
             )
         }
         .task { await authManager.checkStoredAuth() }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active { startHeartbeat() } else { heartbeatTask?.cancel() }
+        }
         .onAppear { configureSeerr() }
         .onChange(of: seerrURL)        { configureSeerr() }
         .onChange(of: seerrUsername)   { configureSeerr() }
@@ -82,6 +89,22 @@ struct ContentView: View {
         // A profile switch keeps the same serverID when staying on one server, so
         // Streamystats needs its own trigger to pick up the new credential's token.
         .onChange(of: authManager.state)  { configureStats() }
+    }
+
+    /// Jellyfin marks a session "active" from any authenticated request — the app's own
+    /// normal API traffic keeps that fresh while actively browsing, but a lightweight
+    /// periodic ping covers idle stretches (paused on a detail screen, backgrounded briefly)
+    /// so the server's Active Devices view doesn't show a stale/offline session.
+    private func startHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = Task {
+            while !Task.isCancelled {
+                if case .authenticated(let cred) = authManager.state {
+                    _ = await authManager.authClient.validateToken(credential: cred)
+                }
+                try? await Task.sleep(for: .seconds(60))
+            }
+        }
     }
 
     private func configureSeerr() {

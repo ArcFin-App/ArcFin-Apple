@@ -164,6 +164,12 @@ final class MediaRepository {
         return nil
     }
 
+    func libraryBackdropURL(for library: JellyfinLibrary, fillWidth: Int = 700) -> URL? {
+        guard let base = baseURL, let token = accessToken, let tag = library.backdropImageTag else { return nil }
+        return JellyfinMediaClient.imageURL(baseURL: base, itemID: library.id, tag: tag,
+                                            type: .backdrop, fillWidth: fillWidth, token: token)
+    }
+
     func personImageURL(personId: String, tag: String, fillWidth: Int = 120) -> URL? {
         guard let base = baseURL, let token = accessToken else { return nil }
         return JellyfinMediaClient.imageURL(baseURL: base, itemID: personId, tag: tag,

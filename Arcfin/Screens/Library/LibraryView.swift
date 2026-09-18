@@ -28,7 +28,7 @@ struct LibraryView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
                     // ── Your Libraries ──────────────────────────────────────
-                    if !mediaRepo.libraries.isEmpty {
+                    if !supportedLibraries.isEmpty {
                         librariesSection
                     }
 
@@ -93,13 +93,20 @@ struct LibraryView: View {
 
     // MARK: - Libraries section
 
+    /// Live TV and Music aren't playable yet (no live-TV tuner support, no music player
+    /// UI) — hide them from the library list rather than showing a section that just
+    /// leads to a dead end.
+    private var supportedLibraries: [JellyfinLibrary] {
+        mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
+    }
+
     private var librariesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader("Your Libraries")
 #if os(tvOS)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DT.Spacing.shelfGap) {
-                    ForEach(mediaRepo.libraries) { library in
+                    ForEach(supportedLibraries) { library in
                         NavigationLink(value: library) {
                             TVLibraryCard(library: library)
                         }
@@ -113,9 +120,9 @@ struct LibraryView: View {
             .padding(.horizontal, -DT.Spacing.pagePad)
 #else
             LazyVGrid(columns: gridColumns, spacing: 12) {
-                ForEach(mediaRepo.libraries) { library in
+                ForEach(supportedLibraries) { library in
                     NavigationLink(value: library) {
-                        LibraryCard(library: library)
+                        LibraryCard(library: library, imageURL: mediaRepo.libraryBackdropURL(for: library))
                     }
                     .buttonStyle(.plain)
                 }
@@ -273,39 +280,64 @@ private struct TVLibraryCard: View {
 
 private struct LibraryCard: View {
     let library: JellyfinLibrary
+    let imageURL: URL?
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: DT.Radius.card)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: library.collectionType.accentHex).opacity(0.25),
-                            DT.Color.backgroundSecondary,
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DT.Radius.card)
-                        .stroke(Color(hex: library.collectionType.accentHex).opacity(0.18), lineWidth: 1)
-                )
+            background
+
+            Rectangle()
+                .fill(.black.opacity(0.35))
 
             VStack(spacing: 10) {
                 Image(systemName: library.collectionType.systemIcon)
-                    .font(.system(size: 32, weight: .light))
-                    .foregroundStyle(Color(hex: library.collectionType.accentHex))
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.6), radius: 6)
 
                 Text(library.name)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
+                    .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
+                    .shadow(color: .black.opacity(0.6), radius: 6)
             }
             .padding(16)
         }
         .frame(height: 110)
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: DT.Radius.card)
+                .stroke(Color(hex: library.collectionType.accentHex).opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+    }
+
+    @ViewBuilder
+    private var background: some View {
+        if let imageURL {
+            AsyncImage(url: imageURL) { phase in
+                switch phase {
+                case .success(let img):
+                    img.resizable().scaledToFill().blur(radius: 3)
+                default: gradientFallback
+                }
+            }
+            .clipped()
+        } else {
+            gradientFallback
+        }
+    }
+
+    private var gradientFallback: some View {
+        LinearGradient(
+            colors: [
+                Color(hex: library.collectionType.accentHex).opacity(0.25),
+                DT.Color.backgroundSecondary,
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }
 

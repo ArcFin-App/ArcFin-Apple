@@ -134,7 +134,7 @@ public enum SeerrAvailabilityStatus: Int, Sendable, Equatable {
     }
 }
 
-public struct SeerrRequestItem: Sendable, Identifiable, Equatable {
+public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
     public let id: Int
     public var mediaTitle: String
     public var mediaType: RequestMediaType

@@ -196,6 +196,19 @@ public struct JellyfinMediaClient: Sendable {
         return comps.url!
     }
 
+    public static func userImageURL(baseURL: URL, userID: String, tag: String, fillWidth: Int = 100, token: String) -> URL {
+        var comps = URLComponents(
+            url: baseURL.appendingPathComponent("Users/\(userID)/Images/Primary"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "fillWidth", value: "\(fillWidth)"),
+            .init(name: "quality", value: "90"),
+            .init(name: "tag", value: tag),
+            .init(name: "api_key", value: token),
+        ]
+        return comps.url!
+    }
+
     public func getLibraries(credential: ServerCredential, authHeader: String) async throws -> [JellyfinLibrary] {
         let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Views")
         var req = URLRequest(url: url)
@@ -206,7 +219,8 @@ public struct JellyfinMediaClient: Sendable {
         return page.items.map {
             JellyfinLibrary(id: $0.id, name: $0.name,
                            collectionType: JellyfinLibrary.LibraryType(apiValue: $0.collectionType ?? ""),
-                           primaryImageTag: $0.imageTags?["Primary"])
+                           primaryImageTag: $0.imageTags?["Primary"],
+                           backdropImageTag: $0.backdropImageTags?.first)
         }
     }
 
@@ -699,8 +713,10 @@ private struct LibraryViewItem: Decodable {
     let name: String
     let collectionType: String?
     let imageTags: [String: String]?
+    let backdropImageTags: [String]?
     enum CodingKeys: String, CodingKey {
         case id = "Id"; case name = "Name"
         case collectionType = "CollectionType"; case imageTags = "ImageTags"
+        case backdropImageTags = "BackdropImageTags"
     }
 }

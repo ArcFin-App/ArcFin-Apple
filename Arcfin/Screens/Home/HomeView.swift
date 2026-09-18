@@ -85,6 +85,7 @@ struct HomeView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
+    @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
@@ -93,8 +94,65 @@ struct HomeView: View {
     @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
-    private var heroItems: [MediaItem] { Array(mediaRepo.recentlyAdded.prefix(4)) }
+    /// 2 Continue Watching + 2 Up Next + 6 Recently Added — deduped in case the same item
+    /// shows up in more than one list. TabView's page style only instantiates the current
+    /// page plus its immediate neighbors, so this doesn't mean 10 images loading at once —
+    /// each poster/backdrop loads lazily as the user actually swipes to it.
+    private var heroItems: [MediaItem] {
+        var items: [MediaItem] = []
+        items.append(contentsOf: mediaRepo.continueWatching.prefix(2))
+        items.append(contentsOf: mediaRepo.nextUp.prefix(2))
+        items.append(contentsOf: mediaRepo.recentlyAdded.prefix(6))
+        var seen = Set<String>()
+        return items.filter { seen.insert($0.id).inserted }
+    }
     private var usePortraitHero: Bool { sizeClass == .compact }
+
+    private var mergedContinueAndNextItems: [MediaItem] {
+        var seen = Set<String>()
+        return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
+    }
+
+    @ViewBuilder
+    private func continueWatchingCard(_ item: MediaItem) -> some View {
+        NavigationLink(value: item) {
+            PosterCard(
+                title: itemDisplayTitle(item),
+                subtitle: itemDisplaySubtitle(item),
+                progress: item.userData?.playedPercentage.map { $0 / 100 },
+                imageURL: shelfImageURL(for: item)
+            )
+        }
+#if os(tvOS)
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .contextMenu { quickLookMenu(item) }
+#else
+        .buttonStyle(.plain)
+        .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
+#endif
+    }
+
+    @ViewBuilder
+    private var avatarView: some View {
+        if let cred = authManager.state.credential, let tag = cred.userImageTag {
+            AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, token: cred.accessToken)) { phase in
+                switch phase {
+                case .success(let img): img.resizable().scaledToFill()
+                default: initialsView
+                }
+            }
+            .clipShape(Circle())
+        } else {
+            initialsView
+        }
+    }
+
+    private var initialsView: some View {
+        Text(authManager.state.displayInitials)
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(.white)
+    }
 
     var body: some View {
         NavigationStack {
@@ -119,31 +177,26 @@ struct HomeView: View {
                             if mediaRepo.connectionFailed && !mediaRepo.isLoading {
                                 connectionFailedBanner
                             }
-                            if !mediaRepo.continueWatching.isEmpty {
-                                ShelfRow(title: "Continue Watching", onSeeAll: {}) {
-                                    ForEach(mediaRepo.continueWatching) { item in
-                                        NavigationLink(value: item) {
-                                            PosterCard(
-                                                title: itemDisplayTitle(item),
-                                                subtitle: itemDisplaySubtitle(item),
-                                                progress: item.userData?.playedPercentage.map { $0 / 100 },
-                                                imageURL: shelfImageURL(for: item)
-                                            )
+                            if mergeContinueWatchingAndUpNext {
+                                if !mergedContinueAndNextItems.isEmpty {
+                                    ShelfRow(title: "Continue Watching", onSeeAll: {}) {
+                                        ForEach(mergedContinueAndNextItems) { item in
+                                            continueWatchingCard(item)
                                         }
-#if os(tvOS)
-                                        .buttonStyle(TVCardButtonStyle())
-                                        .focusEffectDisabled()
-                                        .contextMenu { quickLookMenu(item) }
-#else
-                                        .buttonStyle(.plain)
-                                        .contextMenu { quickLookMenu(item) } preview: { quickLookPreview(item) }
-#endif
                                     }
                                 }
-                            }
-                            if !mediaRepo.nextUp.isEmpty {
-                                ShelfRow(title: "Next Up", onSeeAll: {}) {
-                                    mediaShelfContent(mediaRepo.nextUp)
+                            } else {
+                                if !mediaRepo.continueWatching.isEmpty {
+                                    ShelfRow(title: "Continue Watching", onSeeAll: {}) {
+                                        ForEach(mediaRepo.continueWatching) { item in
+                                            continueWatchingCard(item)
+                                        }
+                                    }
+                                }
+                                if !mediaRepo.nextUp.isEmpty {
+                                    ShelfRow(title: "Next Up", onSeeAll: {}) {
+                                        mediaShelfContent(mediaRepo.nextUp)
+                                    }
                                 }
                             }
                             ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {}) {
@@ -223,9 +276,7 @@ struct HomeView: View {
                     }
 
                     Button { showSettings = true } label: {
-                        Text(authManager.state.displayInitials)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
+                        avatarView
                             .frame(width: 34, height: 34)
                             .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
                     }
@@ -412,9 +463,9 @@ struct HomeView: View {
 
     @ViewBuilder
     private func heroBackground(imageH: CGFloat, screenW: CGFloat) -> some View {
+#if !os(iOS)
         let imageType: JellyfinImageType = usePortraitHero ? .primary : .backdrop
         let fillW = usePortraitHero ? 600 : 900
-
         if let item = heroItems[safe: heroIndex],
            let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
             AsyncImage(url: url) { phase in
@@ -432,7 +483,44 @@ struct HomeView: View {
         } else {
             heroGradient(for: heroIndex).frame(width: screenW, height: imageH)
         }
+#else
+        // Page-style TabView, not a single crossfading image — lets the user swipe
+        // between hero items, and only ever instantiates the current page plus its
+        // immediate neighbors (SwiftUI's own page-style lazy-loading), so this never
+        // fires off requests for all heroItems' images at once.
+        TabView(selection: $heroIndex) {
+            ForEach(Array(heroItems.enumerated()), id: \.offset) { index, item in
+                heroImage(item: item, index: index, imageH: imageH, screenW: screenW)
+                    .tag(index)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .frame(width: screenW, height: imageH)
+#endif
     }
+
+#if os(iOS)
+    private func heroImage(item: MediaItem, index: Int, imageH: CGFloat, screenW: CGFloat) -> some View {
+        let imageType: JellyfinImageType = usePortraitHero ? .primary : .backdrop
+        let fillW = usePortraitHero ? 600 : 900
+        return Group {
+            if let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img.resizable().scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    default: heroGradient(for: index)
+                    }
+                }
+            } else {
+                heroGradient(for: index)
+            }
+        }
+        .frame(width: screenW, height: imageH)
+        .clipped()
+    }
+#endif
 
     private func heroGradient(for index: Int) -> some View {
         let p: [[Color]] = [

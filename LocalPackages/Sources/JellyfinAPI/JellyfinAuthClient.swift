@@ -42,7 +42,10 @@ private struct AuthResponse: Decodable {
     struct UserInfo: Decodable {
         let id: String
         let name: String
-        enum CodingKeys: String, CodingKey { case id = "Id"; case name = "Name" }
+        let primaryImageTag: String?
+        enum CodingKeys: String, CodingKey {
+            case id = "Id"; case name = "Name"; case primaryImageTag = "PrimaryImageTag"
+        }
     }
     enum CodingKeys: String, CodingKey {
         case accessToken = "AccessToken"; case serverId = "ServerId"; case user = "User"
@@ -125,7 +128,8 @@ public struct JellyfinAuthClient: Sendable {
         }
         let result = try JSONDecoder().decode(AuthResponse.self, from: data)
         return ServerCredential(baseURL: baseURL, userID: result.user.id,
-                                accessToken: result.accessToken, displayName: result.user.name)
+                                accessToken: result.accessToken, displayName: result.user.name,
+                                userImageTag: result.user.primaryImageTag)
     }
 
     // MARK: - Quick Connect
@@ -168,7 +172,8 @@ public struct JellyfinAuthClient: Sendable {
         guard http.statusCode == 200 else { throw JellyfinAuthError.authFailed("Quick Connect auth failed.") }
         let result = try JSONDecoder().decode(AuthResponse.self, from: data)
         return ServerCredential(baseURL: baseURL, userID: result.user.id,
-                                accessToken: result.accessToken, displayName: result.user.name)
+                                accessToken: result.accessToken, displayName: result.user.name,
+                                userImageTag: result.user.primaryImageTag)
     }
 
     /// Authorizes a Quick Connect code shown on another, currently-signing-in device,

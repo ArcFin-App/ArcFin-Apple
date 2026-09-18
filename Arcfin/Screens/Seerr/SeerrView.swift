@@ -9,6 +9,7 @@ struct SeerrView: View {
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
     @State private var requestingItem: SeerrItem? = nil
+    @State private var selectedRequest: SeerrRequestItem? = nil
     @State private var isBootstrapping = false
 
     private let categories = ["All", "Movies", "Series"]
@@ -24,15 +25,21 @@ struct SeerrView: View {
     }
 
     var body: some View {
-        Group {
-            if !seerrRepo.isConfigured {
-                notConfiguredView
-            } else {
-                mainContent
+        NavigationStack {
+            Group {
+                if !seerrRepo.isConfigured {
+                    notConfiguredView
+                } else {
+                    mainContent
+                }
+            }
+            .background(DT.Color.backgroundPrimary)
+            .navigationTitle("Requests")
+            .arcfinNavTitleLarge("Requests")
+            .navigationDestination(item: $selectedRequest) { req in
+                SeerrRequestDetailView(request: req)
             }
         }
-        .background(DT.Color.backgroundPrimary)
-        .ignoresSafeArea(edges: .top)
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
             isBootstrapping = true
@@ -114,31 +121,6 @@ struct SeerrView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 7)
-                        .fill(LinearGradient(
-                            colors: [DT.Color.accentDeep, DT.Color.accent],
-                            startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 22, height: 22)
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white)
-                }
-                Text("Seerr")
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(0.8)
-                    .textCase(.uppercase)
-                    .foregroundStyle(DT.Color.accent)
-            }
-
-            Text("Discover & Request")
-                .font(.system(size: 24, weight: .heavy))
-                .foregroundStyle(DT.Color.textPrimary)
-                .tracking(-0.8)
-                .padding(.top, 4)
-                .padding(.bottom, DT.Spacing.sm)
-
             // Search bar
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
@@ -190,7 +172,7 @@ struct SeerrView: View {
             .padding(.bottom, DT.Spacing.md)
         }
         .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, 52)
+        .padding(.top, 12)
         .background(LinearGradient(
             colors: [DT.Color.accent.opacity(0.05), .clear],
             startPoint: .top, endPoint: .bottom))
@@ -429,7 +411,10 @@ struct SeerrView: View {
                 .frame(height: 160)
             } else {
                 ForEach(seerrRepo.requests) { req in
-                    requestRow(req)
+                    Button { selectedRequest = req } label: {
+                        requestRow(req)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

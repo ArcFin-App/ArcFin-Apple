@@ -210,9 +210,11 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
     public var name: String
     public var collectionType: LibraryType
     public var primaryImageTag: String?
+    public var backdropImageTag: String?
 
-    public init(id: String, name: String, collectionType: LibraryType, primaryImageTag: String? = nil) {
-        self.id = id; self.name = name; self.collectionType = collectionType; self.primaryImageTag = primaryImageTag
+    public init(id: String, name: String, collectionType: LibraryType, primaryImageTag: String? = nil, backdropImageTag: String? = nil) {
+        self.id = id; self.name = name; self.collectionType = collectionType
+        self.primaryImageTag = primaryImageTag; self.backdropImageTag = backdropImageTag
     }
 
     public enum LibraryType: Sendable, Equatable, Hashable {

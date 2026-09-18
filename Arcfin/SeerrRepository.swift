@@ -105,6 +105,12 @@ final class SeerrRepository {
         await loadRequests()
     }
 
+    func cancelRequest(id: Int) async throws {
+        guard let client else { throw URLError(.badURL) }
+        try await client.cancelRequest(requestID: id)
+        requests.removeAll { $0.id == id }
+    }
+
     func clearAuthFailure() {
         authFailed = false
         if let c = client { Task { await c.clearAuthFailure() } }

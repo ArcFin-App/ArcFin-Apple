@@ -9,13 +9,17 @@ public struct ServerCredential: Codable, Sendable, Identifiable, Equatable {
     public var userID: String
     public var accessToken: String
     public var displayName: String
+    /// Jellyfin's PrimaryImageTag for this user, if they've set an avatar server-side —
+    /// nil falls back to initials.
+    public var userImageTag: String?
 
-    public init(id: UUID = .init(), baseURL: URL, userID: String, accessToken: String, displayName: String) {
+    public init(id: UUID = .init(), baseURL: URL, userID: String, accessToken: String, displayName: String, userImageTag: String? = nil) {
         self.id = id
         self.baseURL = baseURL
         self.userID = userID
         self.accessToken = accessToken
         self.displayName = displayName
+        self.userImageTag = userImageTag
     }
 }
 

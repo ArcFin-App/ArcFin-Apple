@@ -227,6 +227,21 @@ public actor SeerrHTTPClient {
         }
     }
 
+    /// Cancels a pending request, or removes a declined/available one from the list —
+    /// Seerr uses the same DELETE for both.
+    public func cancelRequest(requestID: Int) async throws {
+        try await ensureAuthenticated()
+        let url = baseURL.appendingPathComponent("api/v1/request/\(requestID)")
+        var req = URLRequest(url: url)
+        req.httpMethod = "DELETE"
+        applyXSRF(to: &req)
+        req.timeoutInterval = 15
+        let (_, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     // MARK: - Private helpers
 
     /// Reads the XSRF-TOKEN cookie from the session's cookie jar and injects it
