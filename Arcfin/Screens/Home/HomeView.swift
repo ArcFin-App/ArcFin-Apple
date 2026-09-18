@@ -109,6 +109,7 @@ struct HomeView: View {
                 let heroH  = usePortraitHero ? imageH : imageH + 220
 #endif
 
+                ZStack(alignment: .top) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         heroBanner(imageH: imageH, screenW: screenW)
@@ -199,6 +200,17 @@ struct HomeView: View {
                 .navigationDestination(item: $heroDetailItem) { item in
                     MediaDetailView(item: item)
                 }
+
+                if mediaRepo.isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .padding(10)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .padding(.top, 8)
+                        .transition(.opacity)
+                }
+                }
+                .animation(DT.Animation.fast, value: mediaRepo.isLoading)
             }
             .navigationTitle("")
 #if !os(tvOS)
