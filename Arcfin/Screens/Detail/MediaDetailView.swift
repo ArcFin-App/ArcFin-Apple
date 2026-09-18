@@ -22,6 +22,7 @@ struct MediaDetailView: View {
     @State private var loadedSeasonId: String?
     @State private var trailers: [MediaItem] = []
     @State private var isLoading = true
+    @State private var requestingSeerrItem: SeerrItem?
 
     private let client = JellyfinMediaClient()
 
@@ -48,6 +49,12 @@ struct MediaDetailView: View {
         .ignoresSafeArea(edges: .top)
         .navigationDestination(item: $selectedEpisode) { ep in
             MediaDetailView(item: ep)
+        }
+        .sheet(item: $requestingSeerrItem) { item in
+            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
         }
         .task { await load() }
         .onChange(of: selectedSeason) { _, season in
@@ -684,11 +691,14 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(seerrRelatedItems) { sim in
-                        PosterCard(
-                            title: sim.title,
-                            subtitle: sim.year,
-                            imageURL: sim.posterURL
-                        )
+                        Button { requestingSeerrItem = sim } label: {
+                            PosterCard(
+                                title: sim.title,
+                                subtitle: sim.year,
+                                imageURL: sim.posterURL
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)

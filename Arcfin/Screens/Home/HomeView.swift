@@ -306,6 +306,10 @@ struct HomeView: View {
                 heroBackground(imageH: imageH, screenW: screenW)
                     .overlay(heroImageFade)
                     .animation(DT.Animation.slow, value: heroIndex)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
+                    }
                 if !usePortraitHero { Spacer(minLength: 0) }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
