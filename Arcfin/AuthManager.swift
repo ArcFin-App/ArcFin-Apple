@@ -38,6 +38,12 @@ final class AuthManager {
         }
 
         guard await authClient.validateToken(credential: cred) else { return }
+        // Backfills the avatar tag for credentials saved before it existed, and picks up
+        // any server-side avatar change — cheap, and only happens once per cold launch.
+        if let tag = await authClient.fetchUserImageTag(credential: cred), tag != cred.userImageTag {
+            cred.userImageTag = tag
+            upsert(cred)
+        }
         state = .authenticated(cred)
         persist(active: cred)
     }

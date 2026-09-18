@@ -10,6 +10,8 @@ struct SeerrRequestDetailView: View {
     @State private var isCancelling = false
     @State private var errorMessage: String?
     @State private var showCancelConfirm = false
+    @State private var detail: SeerrMediaDetail?
+    @State private var isLoadingDetail = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -26,9 +28,58 @@ struct SeerrRequestDetailView: View {
                         Text(request.requestedAt, style: .date)
                             .font(.system(size: 11))
                             .foregroundStyle(DT.Color.textSecondary)
+                        if let runtime = detail?.runtimeMinutes {
+                            Text("·")
+                                .foregroundStyle(.white.opacity(0.2))
+                            Text("\(runtime) min")
+                                .font(.system(size: 11))
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                        if let rating = detail?.voteAverage, rating > 0 {
+                            Text("·")
+                                .foregroundStyle(.white.opacity(0.2))
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill").font(.system(size: 9))
+                                Text(String(format: "%.1f", rating))
+                            }
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color(hex: "f59e0b"))
+                        }
+                    }
+
+                    if let genres = detail?.genres, !genres.isEmpty {
+                        Text(genres.joined(separator: " · "))
+                            .font(.system(size: 12))
+                            .foregroundStyle(DT.Color.textSecondary)
                     }
 
                     statusRow
+
+                    if isLoadingDetail {
+                        ProgressView().frame(maxWidth: .infinity, alignment: .center)
+                    }
+
+                    if let tagline = detail?.tagline, !tagline.isEmpty {
+                        Text(tagline)
+                            .font(.system(size: 12, weight: .medium))
+                            .italic()
+                            .foregroundStyle(DT.Color.accent)
+                    }
+
+                    if let overview = detail?.overview, !overview.isEmpty {
+                        Text(overview)
+                            .font(.system(size: 13))
+                            .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
+                            .lineSpacing(3)
+                    }
+
+                    if let seasons = detail?.seasons, !seasons.isEmpty {
+                        seasonsRow(seasons)
+                    }
+
+                    if let cast = detail?.cast, !cast.isEmpty {
+                        castRow(cast)
+                    }
 
                     if let error = errorMessage {
                         Text(error)
@@ -62,9 +113,10 @@ struct SeerrRequestDetailView: View {
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
-        .navigationTitle(request.mediaTitle)
+        .navigationTitle("")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         #endif
         .confirmationDialog(
             "Remove this request?",
@@ -73,6 +125,75 @@ struct SeerrRequestDetailView: View {
         ) {
             Button("Remove Request", role: .destructive) { cancel() }
             Button("Cancel", role: .cancel) {}
+        }
+        .task {
+            guard let tmdbId = request.tmdbId else { return }
+            isLoadingDetail = true
+            detail = await seerrRepo.mediaDetail(mediaType: request.mediaType, tmdbId: tmdbId)
+            isLoadingDetail = false
+        }
+    }
+
+    private func seasonsRow(_ seasons: [SeerrSeasonInfo]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Seasons")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(seasons) { season in
+                        VStack(spacing: 2) {
+                            Text(season.label)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(DT.Color.textPrimary)
+                            if let count = season.episodeCount {
+                                Text("\(count) episodes")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(DT.Color.textSecondary)
+                            }
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+                    }
+                }
+            }
+        }
+    }
+
+    private func castRow(_ cast: [SeerrCastMember]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Cast")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(cast.prefix(12)) { member in
+                        VStack(spacing: 4) {
+                            AsyncImage(url: member.profileURL) { phase in
+                                switch phase {
+                                case .success(let img): img.resizable().scaledToFill()
+                                default: DT.Color.backgroundSecondary
+                                }
+                            }
+                            .frame(width: 56, height: 56)
+                            .clipShape(Circle())
+
+                            Text(member.name)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(DT.Color.textPrimary)
+                                .lineLimit(1)
+                            if let character = member.character {
+                                Text(character)
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(DT.Color.textSecondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .frame(width: 64)
+                    }
+                }
+            }
         }
     }
 

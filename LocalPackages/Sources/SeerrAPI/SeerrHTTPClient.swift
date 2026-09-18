@@ -221,9 +221,11 @@ public actor SeerrHTTPClient {
         if mediaType == .tv { body["seasons"] = seasons }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
-        let (_, response) = try await session.data(for: req)
+        let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let bodyText = String(data: data, encoding: .utf8) ?? ""
+            throw SeerrError.requestFailed(status: status, body: bodyText)
         }
     }
 
@@ -301,10 +303,15 @@ public actor SeerrHTTPClient {
 
 public enum SeerrError: Error, LocalizedError {
     case authFailed
+    case requestFailed(status: Int, body: String)
 
     public var errorDescription: String? {
         switch self {
-        case .authFailed: "Invalid Seerr username or password."
+        case .authFailed:
+            return "Invalid Seerr username or password."
+        case .requestFailed(let status, let body):
+            let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "Server returned HTTP \(status)." : "HTTP \(status): \(trimmed.prefix(200))"
         }
     }
 }
@@ -370,7 +377,8 @@ private struct SeerrRequestResponse: Decodable {
         let date = createdAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         return SeerrRequestItem(id: id, mediaTitle: title, mediaType: mType,
                                 status: reqStatus, requestedAt: date,
-                                posterPath: detail?.posterPath, backdropPath: detail?.backdropPath)
+                                posterPath: detail?.posterPath, backdropPath: detail?.backdropPath,
+                                tmdbId: media.tmdbId)
     }
 }
 

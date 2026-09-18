@@ -210,6 +210,23 @@ public struct JellyfinAuthClient: Sendable {
         return http.statusCode != 401 && http.statusCode != 403
     }
 
+    /// Refreshes just the avatar tag for an already-authenticated credential — used to pick
+    /// up a server-side avatar change (or backfill it for a credential saved before this
+    /// field existed) without forcing a fresh sign-in.
+    public func fetchUserImageTag(credential: ServerCredential) async -> String? {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
+        req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 8
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200
+        else { return nil }
+        struct UserResp: Decodable {
+            let primaryImageTag: String?
+            enum CodingKeys: String, CodingKey { case primaryImageTag = "PrimaryImageTag" }
+        }
+        return (try? JSONDecoder().decode(UserResp.self, from: data))?.primaryImageTag
+    }
+
     // MARK: - Helpers
 
     public func authHeader(token: String? = nil) -> String {

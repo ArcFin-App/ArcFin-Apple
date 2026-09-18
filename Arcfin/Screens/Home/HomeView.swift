@@ -11,6 +11,7 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @State private var searchQuery = ""
     @AppStorage("showStatsTab") private var showStatsTab = true
+    @AppStorage("showWatchlistTab") private var showWatchlistTab = true
 
     var body: some View {
         TabView {
@@ -35,12 +36,19 @@ struct MainTabView: View {
                 }
             }
 #endif
-            Tab("Requests", systemImage: "clock") {
+            if seerrRepo.isConfigured {
+                Tab("Requests", systemImage: "clock") {
 #if os(tvOS)
-                TVSeerrView()
+                    TVSeerrView()
 #else
-                SeerrView()
+                    SeerrView()
 #endif
+                }
+                if showWatchlistTab {
+                    Tab("Watchlist", systemImage: "bookmark") {
+                        NavigationStack { WatchlistView() }
+                    }
+                }
             }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 NavigationStack {
@@ -163,15 +171,22 @@ struct HomeView: View {
                 let imageH: CGFloat = screenH * 0.48
                 let heroH:  CGFloat = imageH + 180
 #else
-                let imageH = usePortraitHero ? screenW * 1.45 : screenW * 9 / 16
+                let imageH = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.75
                 let heroH  = usePortraitHero ? imageH : imageH + 220
 #endif
 
                 ZStack(alignment: .top) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        heroBanner(imageH: imageH, screenW: screenW)
-                            .frame(height: heroH)
+                        // Stretchy header — on pull-to-refresh overscroll, grows the hero
+                        // image upward into the revealed space instead of showing a plain
+                        // black bar above it.
+                        GeometryReader { heroGeo in
+                            let stretch = max(0, heroGeo.frame(in: .named("homeScroll")).minY)
+                            heroBanner(imageH: imageH + stretch, screenW: screenW)
+                                .offset(y: -stretch)
+                        }
+                        .frame(height: heroH)
 
                         VStack(spacing: 0) {
                             if mediaRepo.connectionFailed && !mediaRepo.isLoading {
@@ -242,6 +257,7 @@ struct HomeView: View {
 #endif
                     }
                 }
+                .coordinateSpace(name: "homeScroll")
                 .background(DT.Color.backgroundPrimary)
                 .ignoresSafeArea(edges: .top)
                 .navigationDestination(isPresented: $showSettings) {
@@ -428,9 +444,14 @@ struct HomeView: View {
                     .overlay(heroImageFade)
                     .animation(DT.Animation.slow, value: heroIndex)
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
-                    }
+                    // simultaneousGesture, not .onTapGesture directly — a plain tap gesture
+                    // stacked on top of the page-style TabView below was winning gesture
+                    // priority and blocking swipe-to-change-page entirely.
+                    .simultaneousGesture(
+                        TapGesture().onEnded {
+                            if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
+                        }
+                    )
                 if !usePortraitHero { Spacer(minLength: 0) }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

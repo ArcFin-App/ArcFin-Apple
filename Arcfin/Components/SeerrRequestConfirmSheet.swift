@@ -10,6 +10,8 @@ struct SeerrRequestConfirmSheet: View {
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = true
     @State private var selectedSeasons: Set<Int> = []
+    @State private var isSubmitting = false
+    @State private var submitError: String?
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -187,15 +189,37 @@ struct SeerrRequestConfirmSheet: View {
                 // from — if the detail fetch failed, don't strand the button disabled
                 // with no picker visible to explain why.
                 let hasSeasonList = !(detail?.seasons.isEmpty ?? true)
-                let requestDisabled = item.mediaType == .tv && hasSeasonList && selectedSeasons.isEmpty
+                let requestDisabled = (item.mediaType == .tv && hasSeasonList && selectedSeasons.isEmpty) || isSubmitting
+
+                if let submitError {
+                    Text(submitError)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: "EF4444"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                        .padding(.bottom, DT.Spacing.sm)
+                }
+
                 Button {
                     HapticManager.impact(.medium)
+                    submitError = nil
+                    isSubmitting = true
                     let captured = item
                     let seasons = captured.mediaType == .tv ? Array(selectedSeasons) : []
-                    requestingItem = nil
-                    Task { try? await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id, seasons: seasons) }
+                    Task {
+                        do {
+                            try await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id, seasons: seasons)
+                            requestingItem = nil
+                        } catch {
+                            isSubmitting = false
+                            submitError = "Couldn't send request: \(error.localizedDescription)"
+                        }
+                    }
                 } label: {
-                    Text("Confirm Request")
+                    HStack(spacing: 8) {
+                        if isSubmitting { ProgressView().tint(.white) }
+                        Text(isSubmitting ? "Sending…" : "Confirm Request")
+                    }
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)

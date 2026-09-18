@@ -6,6 +6,7 @@ struct AppearanceView: View {
     @AppStorage("compactLibraryGrid") private var compactLibraryGrid = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
+    @AppStorage("showWatchlistTab") private var showWatchlistTab = true
 
     var body: some View {
         List {
@@ -24,13 +25,14 @@ struct AppearanceView: View {
 
             Section {
                 Toggle("Show Stats Tab", isOn: $showStatsTab)
+                Toggle("Show Watchlist Tab", isOn: $showWatchlistTab)
             } header: {
                 Label("Bottom Navigation", systemImage: "rectangle.bottomthird.inset.filled")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Hide the Stats tab from the bottom navigation bar.")
+                Text("Hide tabs you don't use from the bottom navigation bar. Watchlist only shows when Seerr is connected.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
