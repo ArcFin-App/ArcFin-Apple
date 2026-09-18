@@ -11,50 +11,46 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     #if os(tvOS)
     @State private var searchQuery = ""
+    #else
+    @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
+    @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     #endif
-    @AppStorage("showStatsTab") private var showStatsTab = true
-    @AppStorage("showWatchlistTab") private var showWatchlistTab = true
+
+    #if !os(tvOS)
+    private var visibleTabs: [BottomNavItem] {
+        let order = BottomNavPrefs.order(from: orderString)
+        let active = BottomNavPrefs.active(from: activeString)
+        return order.filter { tab in
+            guard active.contains(tab) else { return false }
+            if tab == .requests || tab == .watchlist { return seerrRepo.isConfigured }
+            return true
+        }
+    }
+
+    @ViewBuilder
+    private func tabDestination(_ tab: BottomNavItem) -> some View {
+        switch tab {
+        case .home:      HomeView()
+        case .browse:    LibraryView()
+        case .stats:     StatsView()
+        case .requests:  SeerrView()
+        case .watchlist: NavigationStack { WatchlistView() }
+        }
+    }
+    #endif
 
     var body: some View {
         TabView {
+#if os(tvOS)
             Tab("Home", systemImage: "house") {
-#if os(tvOS)
                 TVHomeView()
-#else
-                HomeView()
-#endif
             }
-#if os(tvOS)
             Tab("Library", systemImage: "square.grid.2x2") {
                 TVLibraryView()
             }
-#else
-            Tab("Browse", systemImage: "square.grid.2x2") {
-                LibraryView()
+            Tab("Requests", systemImage: "clock") {
+                TVSeerrView()
             }
-#endif
-#if !os(tvOS)
-            if showStatsTab {
-                Tab("Stats", systemImage: "chart.xyaxis.line") {
-                    StatsView()
-                }
-            }
-#endif
-            if seerrRepo.isConfigured {
-                Tab("Requests", systemImage: "clock") {
-#if os(tvOS)
-                    TVSeerrView()
-#else
-                    SeerrView()
-#endif
-                }
-                if showWatchlistTab {
-                    Tab("Watchlist", systemImage: "bookmark") {
-                        NavigationStack { WatchlistView() }
-                    }
-                }
-            }
-#if os(tvOS)
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 NavigationStack {
                     SearchView(query: $searchQuery)
@@ -68,6 +64,12 @@ struct MainTabView: View {
             }
             Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                 NavigationStack { SettingsView() }
+            }
+#else
+            ForEach(visibleTabs) { tab in
+                Tab(tab.title, systemImage: tab.icon) {
+                    tabDestination(tab)
+                }
             }
 #endif
         }
@@ -133,6 +135,13 @@ struct HomeView: View {
     private var heroIsResumable: Bool {
         guard let ud = heroItems[safe: heroIndex]?.userData else { return false }
         return ud.playbackPositionTicks > 0 && !ud.played
+    }
+
+    private var heroEpisodeLabel: String? {
+        guard let item = heroItems[safe: heroIndex], item.type == .episode else { return nil }
+        let s = item.parentIndexNumber.map { "S\($0)" }
+        let e = item.indexNumber.map { "E\($0)" }
+        return [s, e].compactMap { $0 }.joined().nilIfEmpty
     }
 
     private var mergedContinueAndNextItems: [MediaItem] {
@@ -661,6 +670,11 @@ struct HomeView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "play.fill").font(.system(size: 12 * DT.Scale.font))
                             Text(heroIsResumable ? "Resume" : "Play").font(.system(size: 14 * DT.Scale.font, weight: .bold))
+                            if let episodeLabel = heroEpisodeLabel {
+                                Text(episodeLabel)
+                                    .font(.system(size: 11 * DT.Scale.font, weight: .semibold))
+                                    .opacity(0.85)
+                            }
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 28).padding(.vertical, 11)
@@ -880,7 +894,9 @@ struct HomeView: View {
         if item.type == .episode {
             let s = item.parentIndexNumber.map { "S\($0)" }
             let e = item.indexNumber.map { "E\($0)" }
-            return [s, e].compactMap { $0 }.joined().nilIfEmpty
+            let code = [s, e].compactMap { $0 }.joined()
+            let episodeName = item.name.nilIfEmpty
+            return [code.nilIfEmpty, episodeName].compactMap { $0 }.joined(separator: " · ").nilIfEmpty
         }
         return item.productionYear.map { "\($0)" }
     }
@@ -896,7 +912,7 @@ private extension AuthState {
     }
 }
 
-private extension String {
+extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 

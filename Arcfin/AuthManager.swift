@@ -5,6 +5,7 @@ import JellyfinAPI
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
+import Network
 #endif
 
 @Observable
@@ -30,7 +31,6 @@ final class AuthManager {
         let candidate = all.first { $0.id == storedID } ?? all.first
         guard var cred = candidate else { return }
 
-        // Local/Remote URL switching only takes effect on a fresh launch — resolve once here.
         let resolvedURL = await Self.resolveBaseURL(for: cred.baseURL)
         if resolvedURL != cred.baseURL {
             cred.baseURL = resolvedURL
@@ -47,6 +47,53 @@ final class AuthManager {
         state = .authenticated(cred)
         persist(active: cred)
     }
+
+    // MARK: - Live Wi-Fi switching
+
+    #if os(iOS)
+    private var pathMonitor: NWPathMonitor?
+    private let pathMonitorQueue = DispatchQueue(label: "arcfin.pathMonitor")
+    private var reresolveTask: Task<Void, Never>?
+    #endif
+
+    /// Watches for network changes (leaving/joining the home Wi-Fi, Wi-Fi↔cellular) and
+    /// re-resolves Local vs Remote server URL live — previously this only happened once at
+    /// launch, so switching networks mid-session required force-quitting the app.
+    func startNetworkMonitoring() {
+        #if os(iOS)
+        guard pathMonitor == nil else { return }
+        let monitor = NWPathMonitor()
+        pathMonitor = monitor
+        monitor.pathUpdateHandler = { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in self.scheduleReresolve() }
+        }
+        monitor.start(queue: pathMonitorQueue)
+        #endif
+    }
+
+    #if os(iOS)
+    private func scheduleReresolve() {
+        // NWPathMonitor can fire several updates in quick succession during a network
+        // transition — debounce so we don't hammer the SSID lookup and server for each one.
+        reresolveTask?.cancel()
+        reresolveTask = Task {
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            await reresolveBaseURLIfNeeded()
+        }
+    }
+
+    private func reresolveBaseURLIfNeeded() async {
+        guard case .authenticated(var cred) = state else { return }
+        let resolved = await Self.resolveBaseURL(for: cred.baseURL)
+        guard resolved != cred.baseURL else { return }
+        cred.baseURL = resolved
+        upsert(cred)
+        state = .authenticated(cred)
+        persist(active: cred)
+    }
+    #endif
 
     // MARK: - Local/Remote server URL resolution
 

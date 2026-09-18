@@ -1,12 +1,10 @@
 import SwiftUI
 
 struct AppearanceView: View {
-    @AppStorage("showStatsTab") private var showStatsTab = true
     @AppStorage("reduceMotion") private var reduceMotion = false
     @AppStorage("compactLibraryGrid") private var compactLibraryGrid = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
-    @AppStorage("showWatchlistTab") private var showWatchlistTab = true
 
     var body: some View {
         List {
@@ -24,15 +22,18 @@ struct AppearanceView: View {
             }
 
             Section {
-                Toggle("Show Stats Tab", isOn: $showStatsTab)
-                Toggle("Show Watchlist Tab", isOn: $showWatchlistTab)
+                NavigationLink {
+                    BottomNavSettingsView()
+                } label: {
+                    Text("Bottom Navigation")
+                }
             } header: {
                 Label("Bottom Navigation", systemImage: "rectangle.bottomthird.inset.filled")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Hide tabs you don't use from the bottom navigation bar. Watchlist only shows when Seerr is connected.")
+                Text("Choose which tabs show and in what order. Requests and Watchlist only appear when Seerr is connected, even if active here.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

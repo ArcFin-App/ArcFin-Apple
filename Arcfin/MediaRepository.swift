@@ -105,21 +105,21 @@ final class MediaRepository {
 
     func imageURL(for item: MediaItem, type: JellyfinImageType = .primary, fillWidth: Int = 300) -> URL? {
         guard let base = baseURL, let token = accessToken else { return nil }
-        // For episodes requesting primary on iOS, use the series poster instead of a screenshot
-        if item.type == .episode, type == .primary,
-           let seriesId = item.seriesId, let seriesTag = item.seriesPrimaryImageTag {
-            return JellyfinMediaClient.imageURL(
-                baseURL: base, itemID: seriesId, tag: seriesTag,
-                type: .primary, fillWidth: fillWidth, token: token
-            )
-        }
         let tag: String?
         switch type {
         case .backdrop: tag = item.backdropImageTags.first
         case .thumb:    tag = item.thumbImageTag ?? item.backdropImageTags.first
         default:        tag = item.primaryImageTag
         }
-        // Episodes rarely have their own backdrop; fall back to the series backdrop.
+        // An episode's own Primary image IS its screenshot — a much better backdrop
+        // substitute than falling straight to the series' generic backdrop, since it's
+        // specific to the episode actually being shown.
+        if tag == nil, type == .backdrop, item.type == .episode, let episodeTag = item.primaryImageTag {
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: episodeTag,
+                                                type: .primary, fillWidth: fillWidth, token: token)
+        }
+        // Otherwise, only truly parentless episodes (no own image at all) fall back to
+        // the series/season backdrop.
         if tag == nil, type == .backdrop,
            let parentId = item.parentBackdropItemId ?? item.seriesId,
            let parentTag = item.parentBackdropImageTags.first {

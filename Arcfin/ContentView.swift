@@ -75,6 +75,7 @@ struct ContentView: View {
             )
         }
         .task { await authManager.checkStoredAuth() }
+        .task { authManager.startNetworkMonitoring() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { startHeartbeat() } else { heartbeatTask?.cancel() }
         }

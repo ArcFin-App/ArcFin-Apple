@@ -444,23 +444,25 @@ public struct JellyfinMediaClient: Sendable {
         return (items: page.items.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0)
     }
 
+    /// Uses /Search/Hints rather than a plain /Items SearchTerm filter — Hints also
+    /// matches on cast/crew names (searching an actor surfaces their filmography), which
+    /// the plain Items text search only does against title/overview, not people metadata.
     public func search(credential: ServerCredential, authHeader: String, query: String, limit: Int = 20) async throws -> [MediaItem] {
         var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            url: credential.baseURL.appendingPathComponent("Search/Hints"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
-            .init(name: "SearchTerm", value: query),
-            .init(name: "IncludeItemTypes", value: "Movie,Series,Episode"),
-            .init(name: "Recursive", value: "true"),
-            .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,SeriesName"),
+            .init(name: "searchTerm", value: query),
+            .init(name: "includeItemTypes", value: "Movie,Series,Episode,BoxSet"),
+            .init(name: "limit", value: "\(limit)"),
+            .init(name: "includePeople", value: "true"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: req)
-        let page = try JSONDecoder().decode(ItemsPage.self, from: data)
-        return page.items.map { $0.toMediaItem() }
+        let page = try JSONDecoder().decode(SearchHintsResponse.self, from: data)
+        return page.searchHints.compactMap { $0.toMediaItem() }
     }
 
     /// Local trailers attached to a specific item.
@@ -695,6 +697,54 @@ private struct MediaStreamResponse: Decodable {
     enum CodingKeys: String, CodingKey {
         case type = "Type", codec = "Codec", displayTitle = "DisplayTitle"
         case width = "Width", height = "Height", bitRate = "BitRate", isDefault = "IsDefault"
+    }
+}
+
+private struct SearchHintsResponse: Decodable {
+    let searchHints: [SearchHintResponse]
+    enum CodingKeys: String, CodingKey { case searchHints = "SearchHints" }
+}
+
+private struct SearchHintResponse: Decodable {
+    let itemId: String
+    let name: String
+    let type: String
+    let primaryImageTag: String?
+    let thumbImageTag: String?
+    let backdropImageTag: String?
+    let productionYear: Int?
+    let series: String?
+    let indexNumber: Int?
+    let parentIndexNumber: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case itemId = "ItemId", name = "Name", type = "Type"
+        case primaryImageTag = "PrimaryImageTag", thumbImageTag = "ThumbImageTag"
+        case backdropImageTag = "BackdropImageTag", productionYear = "ProductionYear"
+        case series = "Series", indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber"
+    }
+
+    /// Person hints (an actor/director entry itself, not a title) have no playable
+    /// destination in this app yet — filtered out rather than shown as a dead tap target.
+    func toMediaItem() -> MediaItem? {
+        let mappedType: MediaType
+        switch type {
+        case "Movie":   mappedType = .movie
+        case "Series":  mappedType = .series
+        case "Episode": mappedType = .episode
+        case "BoxSet":  mappedType = .boxSet
+        default:        return nil
+        }
+        return MediaItem(
+            id: itemId, name: name, type: mappedType,
+            backdropImageTags: backdropImageTag.map { [$0] } ?? [],
+            primaryImageTag: primaryImageTag,
+            thumbImageTag: thumbImageTag,
+            productionYear: productionYear,
+            seriesName: series,
+            indexNumber: indexNumber,
+            parentIndexNumber: parentIndexNumber
+        )
     }
 }
 

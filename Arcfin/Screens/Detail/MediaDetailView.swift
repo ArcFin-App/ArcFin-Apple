@@ -15,6 +15,9 @@ struct MediaDetailView: View {
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
     @State private var seriesItem: MediaItem?
+    /// The episode a series-level Play/Resume button actually starts — a series itself
+    /// isn't playable, so this is what getNextEpisode() resolves to.
+    @State private var nextEpisode: MediaItem?
     @State private var seasons: [MediaItem] = []
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
@@ -124,10 +127,12 @@ struct MediaDetailView: View {
                 var target = selectedSeasonForCurrentItem(from: seasons) ?? first
                 // For a series entry point, ask the server which episode is next
                 if item.type == .series,
-                   let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId),
-                   let seasonNum = nextEp.parentIndexNumber,
-                   let matched = seasons.first(where: { $0.indexNumber == seasonNum }) {
-                    target = matched
+                   let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
+                    nextEpisode = nextEp
+                    if let seasonNum = nextEp.parentIndexNumber,
+                       let matched = seasons.first(where: { $0.indexNumber == seasonNum }) {
+                        target = matched
+                    }
                 }
                 selectedSeason = target
                 loadedSeasonId = target.id
@@ -275,13 +280,28 @@ struct MediaDetailView: View {
 
     // MARK: - Play button
 
+    /// A series itself isn't playable — Play/Resume on a series page actually starts
+    /// whichever episode getNextEpisode() resolved to.
+    private var playTargetItem: MediaItem {
+        item.type == .series ? (nextEpisode ?? item) : (detail?.item ?? item)
+    }
+
     private var resumeUserData: UserData? {
-        detail?.item.userData ?? item.userData
+        playTargetItem.userData
     }
 
     private var isResumable: Bool {
         guard let ud = resumeUserData else { return false }
         return ud.playbackPositionTicks > 0 && !ud.played
+    }
+
+    /// "S2E5" for whichever episode Play/Resume is about to start — nil for a movie.
+    private var playEpisodeLabel: String? {
+        let target = playTargetItem
+        guard target.type == .episode else { return nil }
+        let s = target.parentIndexNumber.map { "S\($0)" }
+        let e = target.indexNumber.map { "E\($0)" }
+        return [s, e].compactMap { $0 }.joined().nilIfEmpty
     }
 
     private var resumeTimeLabel: String? {
@@ -304,15 +324,22 @@ struct MediaDetailView: View {
         HStack(spacing: 10) {
             Button {
                 playbackRequest = PlaybackRequest(
-                    item: detail?.item ?? item,
+                    item: playTargetItem,
                     startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
                 )
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill").font(.system(size: 14))
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(isResumable ? "Resume" : "Play")
-                            .font(.system(size: 16, weight: .bold))
+                        HStack(spacing: 5) {
+                            Text(isResumable ? "Resume" : "Play")
+                                .font(.system(size: 16, weight: .bold))
+                            if let playEpisodeLabel {
+                                Text(playEpisodeLabel)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .opacity(0.85)
+                            }
+                        }
                         if let resumeTimeLabel {
                             Text(resumeTimeLabel)
                                 .font(.system(size: 10, weight: .medium))
@@ -333,7 +360,7 @@ struct MediaDetailView: View {
 
             if isResumable {
                 Button {
-                    playbackRequest = PlaybackRequest(item: detail?.item ?? item, startTicks: 0)
+                    playbackRequest = PlaybackRequest(item: playTargetItem, startTicks: 0)
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 16, weight: .semibold))
