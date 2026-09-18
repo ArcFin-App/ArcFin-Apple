@@ -47,7 +47,13 @@ struct DownloadsView: View {
                     description: Text("Download movies and episodes to watch them without a connection.")
                 )
             } else {
-                List(selection: $selection) {
+                // Deliberately NOT List(selection:) — combining native List selection with
+                // NavigationLink(value:) rows produced exactly the "tap does nothing, back
+                // reveals it actually pushed" bug: the first tap in a fresh List seems to
+                // get absorbed by the selection machinery instead of the navigation link,
+                // even with editMode inactive. Selection is fully manual instead (a checkmark
+                // row replacing the NavigationLink while editing), which has no such ambiguity.
+                List {
                     if !items.isEmpty {
                         Section {
                             Text("\(items.count) downloaded — \(ByteCountFormatter.string(fromByteCount: totalSizeBytes, countStyle: .file)) used")
@@ -69,23 +75,12 @@ struct DownloadsView: View {
                                     #endif
                             }
                         }
-                        .selectionDisabled()
                     }
 
                     if !seriesGroups.isEmpty {
                         Section("Shows") {
                             ForEach(seriesGroups, id: \.seriesId) { group in
-                                NavigationLink(value: DownloadedSeriesRef(seriesId: group.seriesId)) {
-                                    seriesRowContent(group)
-                                }
-                                .tag("series:\(group.seriesId)")
-                                #if os(iOS)
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                                #endif
+                                seriesRow(group)
                             }
                         }
                     }
@@ -93,17 +88,7 @@ struct DownloadsView: View {
                     if !movies.isEmpty {
                         Section("Movies") {
                             ForEach(movies) { item in
-                                NavigationLink(value: item) {
-                                    downloadRowContent(item)
-                                }
-                                .tag("movie:\(item.itemId)")
-                                #if os(iOS)
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) { pendingDelete = item } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                                #endif
+                                movieRow(item)
                             }
                         }
                     }
@@ -111,7 +96,6 @@ struct DownloadsView: View {
                 #if os(iOS)
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .environment(\.editMode, $editMode)
                 #endif
             }
         }
@@ -194,6 +178,76 @@ struct DownloadsView: View {
         selection.removeAll()
         #if os(iOS)
         editMode = .inactive
+        #endif
+    }
+
+    #if os(iOS)
+    private func toggleSelection(_ id: String) {
+        if selection.contains(id) { selection.remove(id) } else { selection.insert(id) }
+    }
+
+    private func selectionIndicator(_ id: String) -> some View {
+        Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 20))
+            .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
+    }
+    #endif
+
+    @ViewBuilder
+    private func seriesRow(_ group: (seriesId: String, seriesName: String, episodes: [DownloadedItem])) -> some View {
+        #if os(iOS)
+        if editMode.isEditing {
+            let id = "series:\(group.seriesId)"
+            Button { toggleSelection(id) } label: {
+                HStack(spacing: 12) {
+                    selectionIndicator(id)
+                    seriesRowContent(group)
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            NavigationLink(value: DownloadedSeriesRef(seriesId: group.seriesId)) {
+                seriesRowContent(group)
+            }
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        #else
+        NavigationLink(value: DownloadedSeriesRef(seriesId: group.seriesId)) {
+            seriesRowContent(group)
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private func movieRow(_ item: DownloadedItem) -> some View {
+        #if os(iOS)
+        if editMode.isEditing {
+            let id = "movie:\(item.itemId)"
+            Button { toggleSelection(id) } label: {
+                HStack(spacing: 12) {
+                    selectionIndicator(id)
+                    downloadRowContent(item)
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            NavigationLink(value: item) {
+                downloadRowContent(item)
+            }
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) { pendingDelete = item } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        #else
+        NavigationLink(value: item) {
+            downloadRowContent(item)
+        }
         #endif
     }
 
