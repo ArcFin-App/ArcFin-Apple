@@ -34,11 +34,12 @@ final class MediaRepository {
     private var lastLoadedAt: Date?
     private var lastLoadedUserID: String?
 
-    func load(credential: ServerCredential, authClient: JellyfinAuthClient) async {
+    func load(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool = false) async {
         // Skip if already loaded within the last 60 s for the SAME profile — prevents
         // repeated API bursts when the view re-appears (tab switch, background/foreground).
-        // A profile switch always reloads regardless of the cooldown.
-        if loaded, credential.userID == lastLoadedUserID,
+        // A profile switch always reloads regardless of the cooldown. An explicit
+        // user-initiated refresh (force: true) always bypasses it too.
+        if !force, loaded, credential.userID == lastLoadedUserID,
            let t = lastLoadedAt, Date().timeIntervalSince(t) < 60 { return }
         guard !isLoading else { return }
         baseURL = credential.baseURL

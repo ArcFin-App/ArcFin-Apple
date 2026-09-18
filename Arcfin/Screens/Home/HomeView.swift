@@ -222,46 +222,8 @@ struct HomeView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
         }
-        .task {
-            guard case .authenticated(let cred) = authManager.state else { return }
-            await mediaRepo.load(credential: cred, authClient: authManager.authClient)
-            mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
-            TopShelfBridge.save(
-                continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
-                    TopShelfMediaItem(
-                        id: item.id, title: item.name,
-                        subtitle: itemDisplaySubtitle(item),
-                        imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
-                        progress: item.userData?.playedPercentage.map { $0 / 100 } ?? 0
-                    )
-                },
-                recentlyAdded: mediaRepo.recentlyAdded.prefix(3).map { item in
-                    TopShelfMediaItem(
-                        id: item.id, title: item.name, subtitle: nil,
-                        imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
-                        progress: 0
-                    )
-                }
-            )
-            // Resolve deep link — prefer in-memory ID (warm launch), fall back to
-            // UserDefaults buffer written by onOpenURL before this view appeared (cold launch).
-            let pendingID = deepLinkItemID
-                ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
-            if let id = pendingID {
-                UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-                deepLinkItemID = nil
-                heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
-                    ?? mediaRepo.recentlyAdded.first { $0.id == id }
-            }
-            if seerrRepo.isConfigured && seerrDiscoverEnabled {
-                await seerrRepo.loadDiscover()
-                await seerrRepo.loadWatchlist()
-                let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
-                    [item.backdropURL, item.posterURL].compactMap { $0 }
-                }
-                mediaRepo.prefetch(urls: seerrQuickLookURLs)
-            }
-        }
+        .task { await loadHome() }
+        .refreshable { await loadHome(force: true) }
         .onChange(of: authManager.state) { old, new in
             guard let cred = new.credential, old.credential?.id != cred.id else { return }
             Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
@@ -283,6 +245,49 @@ struct HomeView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
+        }
+    }
+
+    // MARK: - Home data load
+
+    private func loadHome(force: Bool = false) async {
+        guard case .authenticated(let cred) = authManager.state else { return }
+        await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: force)
+        mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
+        TopShelfBridge.save(
+            continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
+                TopShelfMediaItem(
+                    id: item.id, title: item.name,
+                    subtitle: itemDisplaySubtitle(item),
+                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
+                    progress: item.userData?.playedPercentage.map { $0 / 100 } ?? 0
+                )
+            },
+            recentlyAdded: mediaRepo.recentlyAdded.prefix(3).map { item in
+                TopShelfMediaItem(
+                    id: item.id, title: item.name, subtitle: nil,
+                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
+                    progress: 0
+                )
+            }
+        )
+        // Resolve deep link — prefer in-memory ID (warm launch), fall back to
+        // UserDefaults buffer written by onOpenURL before this view appeared (cold launch).
+        let pendingID = deepLinkItemID
+            ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
+        if let id = pendingID {
+            UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+            deepLinkItemID = nil
+            heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
+                ?? mediaRepo.recentlyAdded.first { $0.id == id }
+        }
+        if seerrRepo.isConfigured && seerrDiscoverEnabled {
+            await seerrRepo.loadDiscover()
+            await seerrRepo.loadWatchlist()
+            let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
+                [item.backdropURL, item.posterURL].compactMap { $0 }
+            }
+            mediaRepo.prefetch(urls: seerrQuickLookURLs)
         }
     }
 
