@@ -36,6 +36,7 @@ struct PlayerView: View {
     @State var stallObserver: NSObjectProtocol?
     @State var autoDowngradeTier = 0
     @State var lastStallHandledAt: Date?
+    @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
     @State var networkToast: String?
 
@@ -314,17 +315,26 @@ struct PlayerView: View {
 
     /// Only acts when the user hasn't manually picked a quality — a deliberate pick is
     /// never silently overridden by this.
+    ///
+    /// AVPlayerItemPlaybackStalled fires for plenty of non-network reasons too (seeking,
+    /// a reload's own startup buffering, backgrounding) — a single stall is not a reliable
+    /// "network can't keep up" signal on its own, and reacting to one caused a reload loop
+    /// twice (each reload's startup buffering looked like another stall). Now requires
+    /// several stalls clustered in a short window, which normal one-off blips don't produce.
     func handlePlaybackStall() {
         guard quality == .auto || quality == .max else { return }
-        // Every load/reload causes its own brief startup buffering, which fires this same
-        // notification — without a grace period, that looks like "network can't keep up"
-        // and triggers another reload, whose own startup buffering triggers another one,
-        // and so on. Only treat a stall as real once things have had time to settle.
-        if let lastLoad = lastLoadStartedAt, Date().timeIntervalSince(lastLoad) < 8 { return }
-        if let last = lastStallHandledAt, Date().timeIntervalSince(last) < 20 { return }
+        if let lastLoad = lastLoadStartedAt, Date().timeIntervalSince(lastLoad) < 12 { return }
+
+        let now = Date()
+        recentStallTimestamps.append(now)
+        recentStallTimestamps.removeAll { now.timeIntervalSince($0) > 15 }
+        guard recentStallTimestamps.count >= 3 else { return }
+        recentStallTimestamps.removeAll()
+
+        if let last = lastStallHandledAt, now.timeIntervalSince(last) < 30 { return }
         let tiers: [VideoQuality] = [.p1080, .p720, .p480]
         guard autoDowngradeTier < tiers.count else { return }
-        lastStallHandledAt = Date()
+        lastStallHandledAt = now
         let next = tiers[autoDowngradeTier]
         autoDowngradeTier += 1
         quality = next
