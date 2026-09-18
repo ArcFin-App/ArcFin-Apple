@@ -4,6 +4,9 @@ import Persistence
 
 @main
 struct ArcfinApp: App {
+    #if canImport(UIKit) && !os(tvOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    #endif
 
     var sharedModelContainer: ModelContainer = {
         do {

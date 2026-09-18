@@ -240,7 +240,11 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
             }
         }
 
-        bufferObservation = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+        // .initial matters here, not just .new — a local file's isPlaybackLikelyToKeepUp is
+        // often already true the instant this observer is registered (no network latency to
+        // wait out), so a change-only observer would never fire and isBuffering (set true at
+        // the top of load()) would stay stuck forever, leaving the spinner on indefinitely.
+        bufferObservation = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new, .initial]) { [weak self] item, _ in
             MainActor.assumeIsolated {
                 self?.isBuffering = !item.isPlaybackLikelyToKeepUp
             }

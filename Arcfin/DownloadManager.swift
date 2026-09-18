@@ -48,8 +48,22 @@ final class DownloadManager: NSObject {
     #if canImport(UIKit) && !os(tvOS)
     @ObservationIgnored private var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
     #endif
+    /// True background session on iOS — transfer keeps going, managed by nsurlsessiond,
+    /// even if the app is suspended or killed; iOS relaunches the app to redeliver the
+    /// delegate callback via AppDelegate's handleEventsForBackgroundURLSession. tvOS/macOS
+    /// don't get the same relaunch guarantee (no AppDelegate wired for it here), so they
+    /// stay on a plain session — .default is fine since those aren't killed as aggressively.
+    static let backgroundSessionIdentifier = "com.psmattas.arcfin.downloads"
+    nonisolated(unsafe) static var pendingBackgroundCompletionHandler: (() -> Void)?
     @ObservationIgnored private lazy var session: URLSession = {
-        URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+        #if canImport(UIKit) && !os(tvOS)
+        let config = URLSessionConfiguration.background(withIdentifier: Self.backgroundSessionIdentifier)
+        config.sessionSendsLaunchEvents = true
+        config.isDiscretionary = false
+        #else
+        let config = URLSessionConfiguration.default
+        #endif
+        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
 
     func configure(modelContext: ModelContext) {
@@ -381,6 +395,18 @@ extension DownloadManager: URLSessionDownloadDelegate {
             guard let continuation = self.continuations[taskId] else { return }
             self.continuations[taskId] = nil
             continuation.resume(throwing: error)
+        }
+    }
+
+    /// iOS calls this once all queued delegate callbacks for the background session have
+    /// been replayed after a relaunch — the completion handler AppDelegate stashed must be
+    /// called here, or iOS won't snapshot the app / give background time again.
+    nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        Task { @MainActor in
+            #if canImport(UIKit) && !os(tvOS)
+            Self.pendingBackgroundCompletionHandler?()
+            Self.pendingBackgroundCompletionHandler = nil
+            #endif
         }
     }
 }
