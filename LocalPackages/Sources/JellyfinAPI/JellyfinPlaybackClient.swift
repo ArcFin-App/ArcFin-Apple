@@ -21,6 +21,10 @@ public struct JellyfinMediaStream: Sendable, Equatable {
     public let height: Int?
     /// Video-only — "SDR" | "HDR10" | "HDR10+" | "DolbyVision" | "HLG", nil if unknown.
     public let videoRange: String?
+    /// Video-only, bits/sec — fallback for JellyfinPlaybackInfo.bitrate, since Jellyfin
+    /// often leaves the MediaSource-level aggregate Bitrate null while still reporting
+    /// this per-stream one.
+    public let bitRate: Int?
 }
 
 /// Trickplay scrub-thumbnail sprite sheet info (Jellyfin 10.9+ "Trickplay" plugin/core
@@ -190,7 +194,7 @@ extension JellyfinMediaClient {
             defaultSubtitleStreamIndex: subtitleStreams.first(where: \.isDefault)?.index,
             trickplay: source.trickplayInfo?.preferred(),
             videoStream: videoStream,
-            bitrate: source.bitrate
+            bitrate: source.bitrate ?? videoStream?.bitRate
         )
     }
 
@@ -401,6 +405,7 @@ private struct MediaStreamStreamResponse: Decodable {
     let width: Int?
     let height: Int?
     let videoRange: String?
+    let bitRate: Int?
 
     enum CodingKeys: String, CodingKey {
         case index = "Index", type = "Type", codec = "Codec", language = "Language"
@@ -408,6 +413,7 @@ private struct MediaStreamStreamResponse: Decodable {
         case isForced = "IsForced", isExternal = "IsExternal"
         case deliveryUrl = "DeliveryUrl"
         case width = "Width", height = "Height", videoRange = "VideoRange"
+        case bitRate = "BitRate"
     }
 
     func toStream() -> JellyfinMediaStream {
@@ -415,7 +421,8 @@ private struct MediaStreamStreamResponse: Decodable {
             index: index, type: type, codec: codec, language: language,
             displayTitle: displayTitle, isDefault: isDefault ?? false,
             isForced: isForced ?? false, isExternal: isExternal ?? false,
-            deliveryUrl: deliveryUrl, width: width, height: height, videoRange: videoRange
+            deliveryUrl: deliveryUrl, width: width, height: height, videoRange: videoRange,
+            bitRate: bitRate
         )
     }
 }
