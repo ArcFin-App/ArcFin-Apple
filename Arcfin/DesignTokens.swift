@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 // MARK: - Design token system for Arcfin
 // Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass.
@@ -112,10 +113,25 @@ public enum DT {
     // MARK: - Animation
 
     public enum Animation {
-        public static let standard = SwiftUI.Animation.spring(response: 0.35, dampingFraction: 0.80)
-        public static let fast     = SwiftUI.Animation.spring(response: 0.20, dampingFraction: 0.90)
-        public static let slow     = SwiftUI.Animation.spring(response: 0.50, dampingFraction: 0.75)
-        public static let playerFade = SwiftUI.Animation.easeInOut(duration: 0.25)
+        /// When the Appearance → Reduce Motion setting is on, every DT.Animation
+        /// collapses to a near-instant linear fade instead of its spring/duration.
+        private static var reduceMotion: Bool {
+            UserDefaults.standard.bool(forKey: "reduceMotion")
+        }
+        private static let reducedFallback = SwiftUI.Animation.linear(duration: 0.01)
+
+        public static var standard: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .spring(response: 0.35, dampingFraction: 0.80)
+        }
+        public static var fast: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .spring(response: 0.20, dampingFraction: 0.90)
+        }
+        public static var slow: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .spring(response: 0.50, dampingFraction: 0.75)
+        }
+        public static var playerFade: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .easeInOut(duration: 0.25)
+        }
     }
 
     // MARK: - Platform scale

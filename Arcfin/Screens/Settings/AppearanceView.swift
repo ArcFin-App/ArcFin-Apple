@@ -2,6 +2,9 @@ import SwiftUI
 
 struct AppearanceView: View {
     @AppStorage("showStatsTab") private var showStatsTab = true
+    @AppStorage("reduceMotion") private var reduceMotion = false
+    @AppStorage("compactLibraryGrid") private var compactLibraryGrid = false
+    @AppStorage("hapticsEnabled") private var hapticsEnabled = true
 
     var body: some View {
         List {
@@ -14,6 +17,45 @@ struct AppearanceView: View {
                     .textCase(nil)
             } footer: {
                 Text("Hide the Stats tab from the bottom navigation bar.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle("Reduce Motion", isOn: $reduceMotion)
+            } header: {
+                Label("Motion", systemImage: "sparkles")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Minimizes animations and transitions throughout the app.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle("Compact Grid", isOn: $compactLibraryGrid)
+            } header: {
+                Label("Library", systemImage: "square.grid.3x3")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Shows more, smaller posters per row in Library grids.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle("Haptic Feedback", isOn: $hapticsEnabled)
+            } header: {
+                Label("Feedback", systemImage: "iphone.radiowaves.left.and.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Taps a light vibration on key interactions like requesting a title.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

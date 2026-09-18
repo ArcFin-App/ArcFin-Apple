@@ -422,7 +422,11 @@ struct LibraryDetailView: View {
 #if os(tvOS)
     private let columns = [GridItem(.adaptive(minimum: 200), spacing: DT.Spacing.shelfGap)]
 #else
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    @AppStorage("compactLibraryGrid") private var compactGrid = false
+    private var columns: [GridItem] {
+        let count = compactGrid ? 4 : 3
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
+    }
 #endif
 
     var body: some View {

@@ -617,7 +617,10 @@ struct MediaDetailView: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button { markEpisodeWatched(ep, watched: !isWatched) } label: {
+            Button {
+                HapticManager.impact(.light)
+                markEpisodeWatched(ep, watched: !isWatched)
+            } label: {
                 Label(isWatched ? "Mark as Unwatched" : "Mark as Watched",
                       systemImage: isWatched ? "eye.slash" : "checkmark")
             }

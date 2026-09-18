@@ -143,6 +143,7 @@ struct SeerrRequestConfirmSheet: View {
                     .padding(.bottom, DT.Spacing.lg)
 
                 Button {
+                    HapticManager.impact(.medium)
                     let captured = item
                     requestingItem = nil
                     Task { try? await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id) }
