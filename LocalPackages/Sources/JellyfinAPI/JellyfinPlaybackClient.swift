@@ -68,6 +68,10 @@ extension JellyfinMediaClient {
             "DeviceProfile": Self.deviceProfile,
         ]
         if let maxBitrate = quality.maxBitrate { body["MaxStreamingBitrate"] = maxBitrate }
+        // MaxWidth forces a resolution-based transcode even when the source's bitrate
+        // metadata is missing or under the cap — MaxStreamingBitrate alone only forces a
+        // transcode when the server actually has bitrate metadata to compare against.
+        if let maxWidth = quality.maxWidth { body["MaxWidth"] = maxWidth }
         if let audioStreamIndex { body["AudioStreamIndex"] = audioStreamIndex }
         if let subtitleStreamIndex { body["SubtitleStreamIndex"] = subtitleStreamIndex }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)

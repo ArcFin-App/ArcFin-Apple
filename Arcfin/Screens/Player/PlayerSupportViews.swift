@@ -17,6 +17,10 @@ final class PlayerSurfaceView: UIView {
 
 final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, ObservableObject {
     @Published var isActive = false
+    // Was previously a computed property derived from `controller`, which isn't @Published —
+    // SwiftUI never observed it flipping true after the async attach() call, so the PiP
+    // button could never actually appear even on devices that support it.
+    @Published var isSupported = false
     private var controller: AVPictureInPictureController?
 
     func attach(to layer: AVPlayerLayer) {
@@ -24,6 +28,7 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
         let controller = AVPictureInPictureController(playerLayer: layer)
         controller?.delegate = self
         self.controller = controller
+        isSupported = controller != nil
     }
 
     func toggle() {
@@ -34,8 +39,6 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
             controller.startPictureInPicture()
         }
     }
-
-    var isSupported: Bool { controller != nil }
 
     func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         isActive = true

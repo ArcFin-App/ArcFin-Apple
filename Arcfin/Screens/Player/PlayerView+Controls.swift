@@ -80,15 +80,24 @@ extension PlayerView {
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 8)
-        .confirmationDialog("Audio & Subtitles", isPresented: $showTrackMenu, titleVisibility: .visible) {
-            ForEach(player.availableAudioTracks) { track in
-                Button(track.displayName) { Task { await player.setAudioTrack(index: track.id) } }
-            }
-            Button("Subtitles Off") { Task { await player.setSubtitleTrack(index: nil) } }
-            ForEach(player.availableSubtitleTracks) { track in
-                Button(track.displayName) { Task { await player.setSubtitleTrack(index: track.id) } }
-            }
-            Button("Cancel", role: .cancel) {}
+        .sheet(isPresented: $showTrackMenu) {
+            TrackSelectionSheet(
+                audioStreams: playbackInfo?.audioStreams ?? [],
+                subtitleStreams: playbackInfo?.subtitleStreams ?? [],
+                selectedAudioIndex: selectedAudioIndex,
+                selectedSubtitleIndex: selectedSubtitleIndex,
+                onSelectAudio: { index in
+                    showTrackMenu = false
+                    changeTrack(audioIndex: index)
+                },
+                onSelectSubtitle: { index in
+                    showTrackMenu = false
+                    changeTrack(subtitleIndex: .some(index))
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(.ultraThinMaterial)
         }
         .confirmationDialog("Quality", isPresented: $showQualityMenu, titleVisibility: .visible) {
             ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
@@ -329,5 +338,62 @@ extension PlayerView {
         .padding(.horizontal, 40)
         .transition(.opacity)
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Audio & subtitle track selection
+
+private struct TrackSelectionSheet: View {
+    let audioStreams: [JellyfinMediaStream]
+    let subtitleStreams: [JellyfinMediaStream]
+    let selectedAudioIndex: Int?
+    let selectedSubtitleIndex: Int?
+    let onSelectAudio: (Int) -> Void
+    let onSelectSubtitle: (Int?) -> Void
+
+    var body: some View {
+        List {
+            if !audioStreams.isEmpty {
+                Section("Audio") {
+                    ForEach(audioStreams, id: \.index) { stream in
+                        trackRow(label(for: stream), isSelected: stream.index == selectedAudioIndex) {
+                            onSelectAudio(stream.index)
+                        }
+                    }
+                }
+            }
+            Section("Subtitles") {
+                trackRow("Off", isSelected: selectedSubtitleIndex == nil) {
+                    onSelectSubtitle(nil)
+                }
+                ForEach(subtitleStreams, id: \.index) { stream in
+                    trackRow(label(for: stream), isSelected: stream.index == selectedSubtitleIndex) {
+                        onSelectSubtitle(stream.index)
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(DT.Color.backgroundPrimary)
+    }
+
+    private func trackRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(label).foregroundStyle(DT.Color.textPrimary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
+                }
+            }
+        }
+        .listRowBackground(DT.Color.backgroundSecondary)
+    }
+
+    private func label(for stream: JellyfinMediaStream) -> String {
+        if let title = stream.displayTitle, !title.isEmpty { return title }
+        let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
+        return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
     }
 }
