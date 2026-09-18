@@ -36,6 +36,7 @@ struct PlayerView: View {
     @State var stallObserver: NSObjectProtocol?
     @State var autoDowngradeTier = 0
     @State var lastStallHandledAt: Date?
+    @State var lastLoadStartedAt: Date?
     @State var networkToast: String?
 
     #if !os(tvOS)
@@ -228,6 +229,7 @@ struct PlayerView: View {
                 trickplayLoader = TrickplayLoader(credential: credential, client: client, itemId: item.id, info: trickplay)
             }
             await loadSubtitleCues(from: info, credential: credential)
+            lastLoadStartedAt = Date()
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             await player.play()
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
@@ -311,6 +313,11 @@ struct PlayerView: View {
     /// never silently overridden by this.
     func handlePlaybackStall() {
         guard quality == .auto || quality == .max else { return }
+        // Every load/reload causes its own brief startup buffering, which fires this same
+        // notification — without a grace period, that looks like "network can't keep up"
+        // and triggers another reload, whose own startup buffering triggers another one,
+        // and so on. Only treat a stall as real once things have had time to settle.
+        if let lastLoad = lastLoadStartedAt, Date().timeIntervalSince(lastLoad) < 8 { return }
         if let last = lastStallHandledAt, Date().timeIntervalSince(last) < 20 { return }
         let tiers: [VideoQuality] = [.p1080, .p720, .p480]
         guard autoDowngradeTier < tiers.count else { return }
@@ -370,6 +377,7 @@ struct PlayerView: View {
                 )
                 playbackInfo = info
                 await loadSubtitleCues(from: info, credential: credential)
+                lastLoadStartedAt = Date()
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
