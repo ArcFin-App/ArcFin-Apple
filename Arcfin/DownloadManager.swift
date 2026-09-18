@@ -348,6 +348,10 @@ final class DownloadManager: NSObject {
             )
             modelContext.insert(downloaded)
             try? modelContext.save()
+
+            if let seriesId = detail.item.seriesId {
+                await ensureSeriesMetadata(seriesId: seriesId, credential: credential, authHeader: authHeader)
+            }
         } catch {
             errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
             DownloadStore.deleteDirectory(for: item.id)
@@ -367,6 +371,45 @@ final class DownloadManager: NSObject {
             refreshLiveActivity()
         }
         #endif
+    }
+
+    /// Fetches and saves series-level metadata (poster, backdrop, overview) the first time
+    /// any of a series' episodes is downloaded — skipped on every later episode of the same
+    /// series since the row already exists. Best-effort: a failure here doesn't fail the
+    /// episode download itself, it just leaves the series container without a poster/overview
+    /// until a later episode download succeeds in fetching it.
+    private func ensureSeriesMetadata(seriesId: String, credential: ServerCredential, authHeader: String) async {
+        guard let modelContext else { return }
+        let descriptor = FetchDescriptor<DownloadedSeries>(predicate: #Predicate { $0.seriesId == seriesId })
+        guard ((try? modelContext.fetchCount(descriptor)) ?? 0) == 0 else { return }
+        guard let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: seriesId),
+              let dir = try? DownloadStore.ensureDirectory(for: seriesId)
+        else { return }
+
+        var posterFileName: String?
+        if let tag = detail.item.primaryImageTag {
+            let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
+            if let (data, _) = try? await URLSession.shared.data(from: url) {
+                posterFileName = "poster.jpg"
+                try? data.write(to: dir.appendingPathComponent("poster.jpg"))
+            }
+        }
+        var backdropFileName: String?
+        if let tag = detail.item.backdropImageTags.first {
+            let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
+            if let (data, _) = try? await URLSession.shared.data(from: url) {
+                backdropFileName = "backdrop.jpg"
+                try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
+            }
+        }
+
+        let series = DownloadedSeries(
+            seriesId: seriesId, name: detail.item.name, overview: detail.item.overview, genres: detail.genres,
+            communityRating: detail.item.communityRating, officialRating: detail.officialRating,
+            productionYear: detail.item.productionYear, posterFileName: posterFileName, backdropFileName: backdropFileName
+        )
+        modelContext.insert(series)
+        try? modelContext.save()
     }
 
     func cancelDownload(itemId: String) {
@@ -418,9 +461,13 @@ final class DownloadManager: NSObject {
 
     func deleteDownload(_ item: DownloadedItem) {
         guard let modelContext else { return }
+        let seriesId = item.seriesId
         DownloadStore.deleteDirectory(for: item.itemId)
         modelContext.delete(item)
         try? modelContext.save()
+        if let seriesId {
+            deleteSeriesMetadataIfNoEpisodesRemain(seriesId: seriesId)
+        }
     }
 
     func deleteDownload(itemId: String) {
@@ -428,6 +475,25 @@ final class DownloadManager: NSObject {
         let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
         guard let item = try? modelContext.fetch(descriptor).first else { return }
         deleteDownload(item)
+    }
+
+    /// Deletes many at once — used by the downloads screen's multi-select. Runs each through
+    /// the same path as a single delete (series cleanup included) rather than batching the
+    /// SwiftData writes, since this isn't a hot path and correctness (no orphaned series rows
+    /// or files) matters more than a handful of extra save() calls.
+    func deleteDownloads(_ items: [DownloadedItem]) {
+        for item in items { deleteDownload(item) }
+    }
+
+    private func deleteSeriesMetadataIfNoEpisodesRemain(seriesId: String) {
+        guard let modelContext else { return }
+        let episodeDescriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.seriesId == seriesId })
+        guard ((try? modelContext.fetchCount(episodeDescriptor)) ?? 0) == 0 else { return }
+        let seriesDescriptor = FetchDescriptor<DownloadedSeries>(predicate: #Predicate { $0.seriesId == seriesId })
+        guard let series = try? modelContext.fetch(seriesDescriptor).first else { return }
+        DownloadStore.deleteDirectory(for: seriesId)
+        modelContext.delete(series)
+        try? modelContext.save()
     }
 
     // MARK: - Video download with progress

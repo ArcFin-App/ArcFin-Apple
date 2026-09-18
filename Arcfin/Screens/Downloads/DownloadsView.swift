@@ -2,6 +2,13 @@ import SwiftUI
 import SwiftData
 import Persistence
 
+/// Navigation payload for a series container row — a thin wrapper instead of a bare String
+/// so `.navigationDestination(for:)` can dispatch to the series detail view specifically,
+/// without colliding with any other String-based destination elsewhere in the app.
+struct DownloadedSeriesRef: Hashable {
+    let seriesId: String
+}
+
 struct DownloadsView: View {
     /// Non-nil only when this is standing in for the whole app (offline mode) — shows a
     /// "Go Back Online" affordance and skips the normal nav chrome.
@@ -11,8 +18,13 @@ struct DownloadsView: View {
     @Environment(DownloadManager.self) private var downloadManager
     @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var items: [DownloadedItem]
 
-    @State private var selectedItem: DownloadedItem?
     @State private var pendingDelete: DownloadedItem?
+    @State private var pendingDeleteSeriesId: String?
+    #if os(iOS)
+    @State private var editMode: EditMode = .inactive
+    #endif
+    @State private var selection = Set<String>()
+    @State private var showBulkDeleteConfirm = false
 
     private var movies: [DownloadedItem] { items.filter { $0.seriesId == nil }.sorted { $0.name < $1.name } }
 
@@ -35,38 +47,72 @@ struct DownloadsView: View {
                     description: Text("Download movies and episodes to watch them without a connection.")
                 )
             } else {
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                        if !items.isEmpty {
+                List(selection: $selection) {
+                    if !items.isEmpty {
+                        Section {
                             Text("\(items.count) downloaded — \(ByteCountFormatter.string(fromByteCount: totalSizeBytes, countStyle: .file)) used")
                                 .font(.system(size: 12))
                                 .foregroundStyle(DT.Color.textSecondary)
-                                .padding(.horizontal, DT.Spacing.pagePad)
                         }
+                        #if os(iOS)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        #endif
+                    }
 
-                        if !downloadManager.activeItemTitles.isEmpty {
-                            inProgressSection
+                    if !downloadManager.activeItemTitles.isEmpty {
+                        Section("Downloading") {
+                            ForEach(Array(downloadManager.activeItemTitles.keys).sorted(), id: \.self) { itemId in
+                                inProgressRow(itemId)
+                                    #if os(iOS)
+                                    .listRowSeparator(.hidden)
+                                    #endif
+                            }
                         }
+                        .selectionDisabled()
+                    }
 
-                        ForEach(seriesGroups, id: \.seriesId) { group in
-                            seriesSection(group)
-                        }
-
-                        if !movies.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Movies")
-                                    .font(DT.Font.cardTitle)
-                                    .foregroundStyle(DT.Color.textPrimary)
-                                    .padding(.horizontal, DT.Spacing.pagePad)
-                                ForEach(movies) { item in
-                                    downloadRow(item)
+                    if !seriesGroups.isEmpty {
+                        Section("Shows") {
+                            ForEach(seriesGroups, id: \.seriesId) { group in
+                                NavigationLink(value: DownloadedSeriesRef(seriesId: group.seriesId)) {
+                                    seriesRowContent(group)
                                 }
+                                .tag("series:\(group.seriesId)")
+                                #if os(iOS)
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                                #endif
                             }
                         }
                     }
-                    .padding(.vertical, DT.Spacing.md)
-                    .padding(.bottom, 32)
+
+                    if !movies.isEmpty {
+                        Section("Movies") {
+                            ForEach(movies) { item in
+                                NavigationLink(value: item) {
+                                    downloadRowContent(item)
+                                }
+                                .tag("movie:\(item.itemId)")
+                                #if os(iOS)
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) { pendingDelete = item } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                                #endif
+                            }
+                        }
+                    }
                 }
+                #if os(iOS)
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .environment(\.editMode, $editMode)
+                #endif
             }
         }
         .background(DT.Color.backgroundPrimary)
@@ -80,9 +126,29 @@ struct DownloadsView: View {
                     Button("Go Back Online", action: goBackOnline)
                 }
             }
+            #if os(iOS)
+            if goBackOnline == nil, !items.isEmpty {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(editMode.isEditing ? "Done" : "Select") {
+                        editMode = editMode.isEditing ? .inactive : .active
+                        selection.removeAll()
+                    }
+                }
+            }
+            if editMode.isEditing && !selection.isEmpty {
+                ToolbarItem(placement: .bottomBar) {
+                    Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
+                        Text("Delete \(selection.count) Selected")
+                    }
+                }
+            }
+            #endif
         }
-        .navigationDestination(item: $selectedItem) { item in
+        .navigationDestination(for: DownloadedItem.self) { item in
             DownloadedItemDetailView(item: item)
+        }
+        .navigationDestination(for: DownloadedSeriesRef.self) { ref in
+            DownloadedSeriesDetailView(seriesId: ref.seriesId)
         }
         .confirmationDialog("Delete this download?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
@@ -93,21 +159,44 @@ struct DownloadsView: View {
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         }
+        .confirmationDialog("Delete this show's downloads?", isPresented: Binding(
+            get: { pendingDeleteSeriesId != nil }, set: { if !$0 { pendingDeleteSeriesId = nil } }
+        ), titleVisibility: .visible) {
+            Button("Delete All Episodes", role: .destructive) {
+                if let seriesId = pendingDeleteSeriesId {
+                    downloadManager.deleteDownloads(items.filter { $0.seriesId == seriesId })
+                }
+                pendingDeleteSeriesId = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeleteSeriesId = nil }
+        }
+        .confirmationDialog("Delete \(selection.count) selected download\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                deleteSelection()
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func deleteSelection() {
+        var toDelete: [DownloadedItem] = []
+        for id in selection {
+            if id.hasPrefix("series:") {
+                let seriesId = String(id.dropFirst("series:".count))
+                toDelete.append(contentsOf: items.filter { $0.seriesId == seriesId })
+            } else if id.hasPrefix("movie:") {
+                let itemId = String(id.dropFirst("movie:".count))
+                if let item = items.first(where: { $0.itemId == itemId }) { toDelete.append(item) }
+            }
+        }
+        downloadManager.deleteDownloads(toDelete)
+        selection.removeAll()
+        #if os(iOS)
+        editMode = .inactive
+        #endif
     }
 
     // MARK: - In progress
-
-    private var inProgressSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Downloading")
-                .font(DT.Font.cardTitle)
-                .foregroundStyle(DT.Color.textPrimary)
-                .padding(.horizontal, DT.Spacing.pagePad)
-            ForEach(Array(downloadManager.activeItemTitles.keys).sorted(), id: \.self) { itemId in
-                inProgressRow(itemId)
-            }
-        }
-    }
 
     private func inProgressRow(_ itemId: String) -> some View {
         let stats = downloadManager.stats[itemId]
@@ -151,58 +240,74 @@ struct DownloadsView: View {
             .font(.system(size: 10))
             .foregroundStyle(DT.Color.textSecondary)
         }
-        .padding(12)
-        .background(.white.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
-        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.vertical, 4)
     }
 
-    private func seriesSection(_ group: (seriesId: String, seriesName: String, episodes: [DownloadedItem])) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(group.seriesName)
-                .font(DT.Font.cardTitle)
-                .foregroundStyle(DT.Color.textPrimary)
-                .padding(.horizontal, DT.Spacing.pagePad)
-            ForEach(group.episodes) { item in
-                downloadRow(item)
-            }
-        }
-    }
+    // MARK: - Series container row
 
-    private func downloadRow(_ item: DownloadedItem) -> some View {
-        Button { selectedItem = item } label: {
-            HStack(spacing: 12) {
-                posterThumbnail(item)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(rowTitle(item))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(1)
-                    if let subtitle = rowSubtitle(item) {
-                        Text(subtitle)
-                            .font(.system(size: 11))
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .lineLimit(1)
-                    }
-                    Text(ByteCountFormatter.string(fromByteCount: item.fileSizeBytes, countStyle: .file))
-                        .font(.system(size: 10))
-                        .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+    private func seriesRowContent(_ group: (seriesId: String, seriesName: String, episodes: [DownloadedItem])) -> some View {
+        let totalSize = group.episodes.reduce(0) { $0 + $1.fileSizeBytes }
+        return HStack(spacing: 12) {
+            seriesPosterThumbnail(group.seriesId, fallbackItem: group.episodes.first)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(group.seriesName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                Text("\(group.episodes.count) episode\(group.episodes.count == 1 ? "" : "s") downloaded")
+                    .font(.system(size: 11))
                     .foregroundStyle(DT.Color.textSecondary)
+                Text(ByteCountFormatter.string(fromByteCount: totalSize, countStyle: .file))
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
             }
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.vertical, 8)
+            Spacer()
         }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button(role: .destructive) { pendingDelete = item } label: {
-                Label("Delete Download", systemImage: "trash")
+        .padding(.vertical, 4)
+    }
+
+    private func seriesPosterThumbnail(_ seriesId: String, fallbackItem: DownloadedItem?) -> some View {
+        Group {
+            #if canImport(UIKit)
+            if let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: seriesId).appendingPathComponent("poster.jpg").path) {
+                Image(uiImage: uiImage).resizable().scaledToFill()
+            } else if let fallbackItem, let fileName = fallbackItem.posterFileName,
+                      let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: fallbackItem.itemId).appendingPathComponent(fileName).path) {
+                Image(uiImage: uiImage).resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
             }
+            #else
+            DT.Color.backgroundSecondary
+            #endif
         }
+        .frame(width: 46, height: 69)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.06), lineWidth: 1))
+    }
+
+    // MARK: - Movie row
+
+    private func downloadRowContent(_ item: DownloadedItem) -> some View {
+        HStack(spacing: 12) {
+            posterThumbnail(item)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                if let year = item.productionYear {
+                    Text(String(year))
+                        .font(.system(size: 11))
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+                Text(ByteCountFormatter.string(fromByteCount: item.fileSizeBytes, countStyle: .file))
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 
     private func posterThumbnail(_ item: DownloadedItem) -> some View {
@@ -221,17 +326,5 @@ struct DownloadsView: View {
         .frame(width: 46, height: 69)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.06), lineWidth: 1))
-    }
-
-    private func rowTitle(_ item: DownloadedItem) -> String {
-        item.seriesId != nil ? (item.seriesName ?? item.name) : item.name
-    }
-
-    private func rowSubtitle(_ item: DownloadedItem) -> String? {
-        guard item.seriesId != nil else { return item.productionYear.map { String($0) } }
-        let s = item.seasonNumber.map { "S\($0)" }
-        let e = item.episodeNumber.map { "E\($0)" }
-        let code = [s, e].compactMap { $0 }.joined()
-        return [code.isEmpty ? nil : code, item.name].compactMap { $0 }.joined(separator: " · ")
     }
 }
