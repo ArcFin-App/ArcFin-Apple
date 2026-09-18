@@ -8,14 +8,16 @@ import AuthCore
 @MainActor
 final class TrickplayLoader {
     private let credential: ServerCredential
+    private let authHeader: String
     private let client: JellyfinMediaClient
     private let itemId: String
     private let info: JellyfinTrickplayInfo
     private var tileCache: [Int: UIImage] = [:]
     private var inFlight: [Int: Task<UIImage?, Never>] = [:]
 
-    init(credential: ServerCredential, client: JellyfinMediaClient, itemId: String, info: JellyfinTrickplayInfo) {
+    init(credential: ServerCredential, authHeader: String, client: JellyfinMediaClient, itemId: String, info: JellyfinTrickplayInfo) {
         self.credential = credential
+        self.authHeader = authHeader
         self.client = client
         self.itemId = itemId
         self.info = info
@@ -41,9 +43,14 @@ final class TrickplayLoader {
         if let cached = tileCache[tileIndex] { return cached }
         if let existing = inFlight[tileIndex] { return await existing.value }
         let url = client.trickplayTileURL(credential: credential, itemId: itemId, width: info.width, tileIndex: tileIndex)
+        let authHeader = authHeader
         let task = Task<UIImage?, Never> {
             do {
-                let (data, response) = try await URLSession.shared.data(from: url)
+                var req = URLRequest(url: url)
+                // The api_key query param alone 401s on this endpoint — unlike Items/Images,
+                // Videos/.../Trickplay actually checks the Authorization header.
+                req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+                let (data, response) = try await URLSession.shared.data(for: req)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? -1
                 guard status == 200, let image = UIImage(data: data) else {
                     print("[Trickplay] tile \(tileIndex) fetch failed — status \(status), bytes \(data.count), url \(url)")

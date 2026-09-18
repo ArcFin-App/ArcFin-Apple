@@ -294,7 +294,7 @@ struct PlayerView: View {
             let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
             #if canImport(UIKit)
             if let trickplay = detail?.trickplay[info.mediaSourceId] ?? info.trickplay {
-                trickplayLoader = TrickplayLoader(credential: credential, client: client, itemId: item.id, info: trickplay)
+                trickplayLoader = TrickplayLoader(credential: credential, authHeader: authHeader, client: client, itemId: item.id, info: trickplay)
             }
             #endif
             chapters = detail?.chapters ?? []
