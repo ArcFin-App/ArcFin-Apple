@@ -166,6 +166,7 @@ extension PlayerView {
             }
             .frame(maxHeight: .infinity, alignment: .center)
             .contentShape(Rectangle())
+            #if !os(tvOS)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -185,6 +186,7 @@ extension PlayerView {
                         }
                     }
             )
+            #endif
         }
         .frame(height: 20)
     }
@@ -439,8 +441,10 @@ struct TrackSelectionSheet: View {
                 }
             }
         }
+        #if !os(tvOS)
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        #endif
         .background(DT.Color.backgroundPrimary)
     }
 

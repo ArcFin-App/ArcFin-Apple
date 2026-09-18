@@ -116,8 +116,10 @@ struct PlayerView: View {
 
             skipButton
         }
+        #if !os(tvOS)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        #endif
         .task { await setup() }
         .onDisappear { Task { await teardown() } }
         .onChange(of: player.positionTicks) { _, newValue in
