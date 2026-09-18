@@ -1,9 +1,9 @@
 import SwiftUI
-#if !os(tvOS)
+#if canImport(UIKit) && !os(tvOS)
 import UIKit
 #endif
 
-#if !os(tvOS)
+#if canImport(UIKit) && !os(tvOS)
 extension PlayerView {
 
     var activeWindowScene: UIWindowScene? {

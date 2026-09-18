@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import UIKit
 import JellyfinAPI
 import AuthCore
@@ -51,3 +52,4 @@ final class TrickplayLoader {
         return image
     }
 }
+#endif

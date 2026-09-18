@@ -60,7 +60,7 @@ extension PlayerView {
 
             Spacer()
 
-            #if !os(tvOS)
+            #if canImport(UIKit) && !os(tvOS)
             AirPlayButton()
                 .frame(width: 30, height: 30)
 
@@ -74,7 +74,7 @@ extension PlayerView {
             }
             #endif
 
-            #if !os(tvOS)
+            #if canImport(UIKit) && !os(tvOS)
             Button { toggleOrientation() } label: {
                 Image(systemName: "rotate.right")
                     .font(.system(size: 16, weight: .semibold))
@@ -159,14 +159,16 @@ extension PlayerView {
                     .frame(width: isScrubbing ? 16 : 10, height: isScrubbing ? 16 : 10)
                     .offset(x: thumbX - (isScrubbing ? 8 : 5))
 
+                #if canImport(UIKit)
                 if isScrubbing, trickplayLoader != nil {
                     trickplayPreview
                         .offset(x: min(max(thumbX - 70, 0), proxy.size.width - 140), y: -100)
                 }
+                #endif
             }
             .frame(maxHeight: .infinity, alignment: .center)
             .contentShape(Rectangle())
-            #if !os(tvOS)
+            #if canImport(UIKit) && !os(tvOS)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -175,13 +177,17 @@ extension PlayerView {
                         hideControlsTask?.cancel()
                         let fraction = min(max(value.location.x / proxy.size.width, 0), 1)
                         scrubTicks = Double(player.durationTicks) * fraction
+                        #if canImport(UIKit)
                         updateScrubThumbnail()
+                        #endif
                     }
                     .onEnded { _ in
                         Task {
                             await player.seek(to: Int64(scrubTicks))
                             isScrubbing = false
+                            #if canImport(UIKit)
                             scrubThumbnail = nil
+                            #endif
                             scheduleAutoHide()
                         }
                     }
@@ -191,6 +197,7 @@ extension PlayerView {
         .frame(height: 20)
     }
 
+    #if canImport(UIKit)
     private var trickplayPreview: some View {
         Group {
             if let scrubThumbnail {
@@ -220,6 +227,7 @@ extension PlayerView {
             scrubThumbnail = image
         }
     }
+    #endif
 
     private var remainingLabel: String {
         let remaining = max(player.durationTicks - player.positionTicks, 0)
@@ -357,7 +365,7 @@ extension PlayerView {
         .frame(maxWidth: 320)
     }
 
-    #if !os(tvOS)
+    #if canImport(UIKit) && !os(tvOS)
     @ViewBuilder
     var dragAxisIndicator: some View {
         if let dragAxis {
@@ -441,7 +449,7 @@ struct TrackSelectionSheet: View {
                 }
             }
         }
-        #if !os(tvOS)
+        #if canImport(UIKit) && !os(tvOS)
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         #endif

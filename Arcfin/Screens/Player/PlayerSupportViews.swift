@@ -9,7 +9,7 @@ import MediaPlayer
 
 // MARK: - Video surface (AVPlayerLayer) + Picture in Picture
 
-#if !os(tvOS)
+#if canImport(UIKit) && !os(tvOS)
 final class PlayerSurfaceView: UIView {
     override class var layerClass: AnyClass { AVPlayerLayer.self }
     var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }

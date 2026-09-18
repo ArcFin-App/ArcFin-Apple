@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 import AVFoundation
 import AuthCore
 import JellyfinAPI
@@ -26,8 +28,10 @@ struct PlayerView: View {
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
     @State var currentSubtitleText: String?
+    #if canImport(UIKit)
     @State var trickplayLoader: TrickplayLoader?
     @State var scrubThumbnail: UIImage?
+    #endif
     @State var lastThumbnailBucket: Int?
     @State var introEnd: Double?
     @State var creditsStart: Double?
@@ -40,7 +44,7 @@ struct PlayerView: View {
     @State var lastLoadStartedAt: Date?
     @State var networkToast: String?
 
-    #if !os(tvOS)
+    #if canImport(UIKit) && !os(tvOS)
     @StateObject var pip = PiPCoordinator()
     @State var volumeController: SystemVolumeController?
     @State var dragAxis: DragAxis?
@@ -73,7 +77,7 @@ struct PlayerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            #if !os(tvOS)
+            #if canImport(UIKit) && !os(tvOS)
             GeometryReader { proxy in
                 PlayerLayerRepresentable(player: player.player, pip: pip)
                     .contentShape(Rectangle())
@@ -87,7 +91,7 @@ struct PlayerView: View {
                 seekFeedbackView(seekFeedback)
             }
 
-            #if !os(tvOS)
+            #if canImport(UIKit) && !os(tvOS)
             dragAxisIndicator
             #endif
 
@@ -116,7 +120,7 @@ struct PlayerView: View {
 
             skipButton
         }
-        #if !os(tvOS)
+        #if canImport(UIKit) && !os(tvOS)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         #endif
@@ -184,7 +188,7 @@ struct PlayerView: View {
     // MARK: - Setup / teardown
 
     private func setup() async {
-        #if !os(tvOS)
+        #if canImport(UIKit) && !os(tvOS)
         volumeController = SystemVolumeController()
         // Playback stalling (buffer underrun) is the standard signal for "network can't
         // keep up" — auto-step quality down when the user hasn't manually picked one.
@@ -228,14 +232,16 @@ struct PlayerView: View {
             playbackInfo = info
             selectedAudioIndex = info.defaultAudioStreamIndex
             selectedSubtitleIndex = info.defaultSubtitleStreamIndex
+            #if canImport(UIKit)
             if let trickplay = info.trickplay {
                 trickplayLoader = TrickplayLoader(credential: credential, client: client, itemId: item.id, info: trickplay)
             }
+            #endif
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             await player.play()
-            #if !os(tvOS)
+            #if canImport(UIKit) && !os(tvOS)
             pip.activateIfNeeded()
             #endif
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
@@ -256,7 +262,7 @@ struct PlayerView: View {
     private func teardown() async {
         progressReportTask?.cancel()
         hideControlsTask?.cancel()
-        #if !os(tvOS)
+        #if canImport(UIKit) && !os(tvOS)
         volumeController?.teardown()
         volumeObservation?.invalidate()
         #endif
@@ -267,7 +273,7 @@ struct PlayerView: View {
                                                positionTicks: player.positionTicks)
         }
         await player.stop()
-        #if !os(tvOS)
+        #if canImport(UIKit) && !os(tvOS)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         #endif
     }
