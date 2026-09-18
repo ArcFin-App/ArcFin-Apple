@@ -112,14 +112,18 @@ extension JellyfinMediaClient {
             playURL = url
             isTranscoding = true
         } else {
+            // The extension must be in the path, not just a query param — AVFoundation
+            // demuxes a static stream by sniffing the URL's file extension, and without
+            // one it falls back to the server's Content-Type, which is unreliable for
+            // correctly picking up every track (this is what produced video-with-no-audio).
+            let container = source.container ?? "mp4"
             var directComps = URLComponents(
-                url: credential.baseURL.appendingPathComponent("Videos/\(itemId)/stream"),
+                url: credential.baseURL.appendingPathComponent("Videos/\(itemId)/stream.\(container)"),
                 resolvingAgainstBaseURL: false)!
             directComps.queryItems = [
                 .init(name: "static", value: "true"),
                 .init(name: "mediaSourceId", value: source.id),
                 .init(name: "api_key", value: credential.accessToken),
-                .init(name: "Container", value: source.container ?? "mp4"),
             ]
             playURL = directComps.url!
             isTranscoding = false
@@ -214,9 +218,11 @@ extension JellyfinMediaClient {
         // a compatible receiver, which isn't guaranteed) — claiming them as direct-play
         // compatible produced video with silent audio. Anything else gets remuxed with
         // audio transcoded to AAC while video stays copied, via the profiles below.
+        // mkv is deliberately absent — AVFoundation's native Matroska support is
+        // unreliable even for codec-compatible files (routinely "Cannot Open" on
+        // real-world encodes), so mkv sources always remux into HLS below instead.
         "DirectPlayProfiles": [
             ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac,flac"],
-            ["Container": "mkv", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac,flac"],
             ["Container": "mov", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac"],
         ],
         "TranscodingProfiles": [
