@@ -8,17 +8,11 @@ struct ShelfSeeAllView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @State private var selectedItem: MediaItem?
 
-    /// Episodes only have a landscape screenshot — a uniform portrait grid crops most of
-    /// it away. A shelf's items are practically always all-episode or all-not, so this
-    /// decides per screen rather than trying to mix aspect ratios in one grid.
-    private var isLandscapeShelf: Bool {
-        items.first?.type == .episode
-    }
-
-    private var columns: [GridItem] {
-        let count = isLandscapeShelf ? 2 : 3
-        return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
-    }
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+    ]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -60,7 +54,7 @@ struct ShelfSeeAllView: View {
                     DT.Color.backgroundSecondary
                 }
             }
-            .aspectRatio(isLandscapeShelf ? 16 / 9 : 2 / 3, contentMode: .fit)
+            .aspectRatio(2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
 

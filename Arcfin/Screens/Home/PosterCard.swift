@@ -39,17 +39,17 @@ struct PosterCard: View {
                 .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
 
             VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                    .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
+                    .lineLimit(2)
+                    .animation(DT.Animation.fast, value: isFocused)
                 if let subtitle {
                     Text(subtitle)
                         .font(.system(size: 10 * DT.Scale.font, weight: .medium))
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
-                Text(title)
-                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
-                    .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
-                    .lineLimit(2)
-                    .animation(DT.Animation.fast, value: isFocused)
             }
             .frame(width: width, height: 84, alignment: .topLeading)
         }
@@ -82,6 +82,11 @@ struct PosterCard: View {
             VStack(spacing: 0) {
                 Spacer()
                 VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .lineLimit(2)
+                        .shadow(color: .black.opacity(0.8), radius: 2)
                     if let subtitle {
                         Text(subtitle)
                             .font(.system(size: 10, weight: .medium))
@@ -89,11 +94,6 @@ struct PosterCard: View {
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }
-                    Text(title)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(2)
-                        .shadow(color: .black.opacity(0.8), radius: 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 8)
