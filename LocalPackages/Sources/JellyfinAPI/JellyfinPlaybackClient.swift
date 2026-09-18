@@ -28,10 +28,19 @@ public struct JellyfinTrickplayInfo: Sendable {
     public let intervalMs: Int
 }
 
+/// Mirrors Jellyfin's own three PlayMethod states — the server's dashboard distinguishes
+/// these, so a client badge collapsing DirectStream and Transcode into one "Transcoding"
+/// bucket disagrees with what the dashboard shows for the same session.
+public enum JellyfinPlayMethod: String, Sendable {
+    case directPlay = "Direct Play"
+    case directStream = "Direct Stream"
+    case transcode = "Transcoding"
+}
+
 public struct JellyfinPlaybackInfo: Sendable {
     public let mediaSourceId: String
     public let playURL: URL
-    public let isTranscoding: Bool
+    public let playMethod: JellyfinPlayMethod
     public let container: String?
     public let runTimeTicks: Int64?
     public let audioStreams: [JellyfinMediaStream]
@@ -39,6 +48,8 @@ public struct JellyfinPlaybackInfo: Sendable {
     public let defaultAudioStreamIndex: Int?
     public let defaultSubtitleStreamIndex: Int?
     public let trickplay: JellyfinTrickplayInfo?
+
+    public var isTranscoding: Bool { playMethod == .transcode }
 }
 
 /// Caps applied when the user overrides automatic quality — nil means uncapped/Auto.
@@ -108,7 +119,7 @@ extension JellyfinMediaClient {
         guard let source = decoded.mediaSources.first else { throw URLError(.cannotParseResponse) }
 
         let playURL: URL
-        let isTranscoding: Bool
+        let playMethod: JellyfinPlayMethod
         if let transcodingUrl = source.transcodingUrl {
             // TranscodingUrl is a relative path+query (e.g. "/videos/x/master.m3u8?...") —
             // appendingPathComponent would percent-encode the "?" into the path itself and
@@ -122,7 +133,12 @@ extension JellyfinMediaClient {
             combined.query = relative.query
             guard let url = combined.url else { throw URLError(.badURL) }
             playURL = url
-            isTranscoding = true
+            // "ContainerNotSupported" alone means every stream is already compatible and
+            // only the container is being repackaged (a cheap remux, codecs untouched) —
+            // that's Jellyfin's "Direct Stream", genuinely distinct from a real re-encode,
+            // and its own dashboard doesn't label it "Transcoding" either.
+            let reasons = Set(source.transcodeReasons ?? [])
+            playMethod = (reasons.isEmpty || reasons == ["ContainerNotSupported"]) ? .directStream : .transcode
         } else {
             // The extension must be in the path, not just a query param — AVFoundation
             // demuxes a static stream by sniffing the URL's file extension, and without
@@ -138,7 +154,7 @@ extension JellyfinMediaClient {
                 .init(name: "api_key", value: credential.accessToken),
             ]
             playURL = directComps.url!
-            isTranscoding = false
+            playMethod = .directPlay
         }
 
         let streams = source.mediaStreams ?? []
@@ -148,7 +164,7 @@ extension JellyfinMediaClient {
         return JellyfinPlaybackInfo(
             mediaSourceId: source.id,
             playURL: playURL,
-            isTranscoding: isTranscoding,
+            playMethod: playMethod,
             container: source.container,
             runTimeTicks: source.runTimeTicks,
             audioStreams: audioStreams,
@@ -274,12 +290,14 @@ private struct MediaSourceResponse: Decodable {
     let container: String?
     let runTimeTicks: Int64?
     let transcodingUrl: String?
+    let transcodeReasons: [String]?
     let mediaStreams: [MediaStreamStreamResponse]?
     let trickplayInfo: [String: TrickplayResponse]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", container = "Container", runTimeTicks = "RunTimeTicks"
-        case transcodingUrl = "TranscodingUrl", mediaStreams = "MediaStreams"
+        case transcodingUrl = "TranscodingUrl", transcodeReasons = "TranscodeReasons"
+        case mediaStreams = "MediaStreams"
         case trickplayInfo = "TrickplayInfo"
     }
 }

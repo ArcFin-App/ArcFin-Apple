@@ -41,13 +41,13 @@ extension PlayerView {
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                    if playbackInfo?.isTranscoding == true {
-                        Text("TRANSCODING")
+                    if let method = playbackInfo?.playMethod, method != .directPlay {
+                        Text(method.rawValue.uppercased())
                             .font(.system(size: 9, weight: .bold))
                             .tracking(0.5)
                             .foregroundStyle(.black)
                             .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(DT.Color.accent, in: Capsule())
+                            .background(method == .transcode ? DT.Color.accent : Color.white.opacity(0.6), in: Capsule())
                     }
                 }
                 if let subtitle = episodeSubtitle {
