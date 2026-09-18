@@ -19,6 +19,7 @@ public struct JellyfinMediaClient: Sendable {
     public func getLatestMedia(
         credential: ServerCredential,
         authHeader: String,
+        itemTypes: String = "Movie,Series",
         limit: Int = 16
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
@@ -30,7 +31,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "ImageTypeLimit", value: "1"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "Recursive", value: "true"),
-            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "IncludeItemTypes", value: itemTypes),
             .init(name: "Limit", value: "\(limit)"),
         ]
         var req = URLRequest(url: comps.url!)
@@ -38,6 +39,81 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: req)
         return try JSONDecoder().decode([JellyfinItemResponse].self, from: data).map { $0.toMediaItem() }
+    }
+
+    /// "Up next" across all shows the user is watching, not scoped to one series.
+    public func getNextUp(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 12
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Shows/NextUp"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "EnableUserData", value: "true"),
+            .init(name: "EnableImages", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    /// Library items sorted by premiere/air date — "Recently Released Movies" / "Recently Aired Episodes".
+    public func getRecentlyPremiered(
+        credential: ServerCredential,
+        authHeader: String,
+        itemType: String,
+        limit: Int = 16
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "SortBy", value: "PremiereDate"),
+            .init(name: "SortOrder", value: "Descending"),
+            .init(name: "IncludeItemTypes", value: itemType),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    /// Already-watched items sorted by most recently played — "Watch Again".
+    public func getWatchAgain(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 16
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "SortBy", value: "DatePlayed"),
+            .init(name: "SortOrder", value: "Descending"),
+            .init(name: "Filters", value: "IsPlayed"),
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
     public func getContinueWatching(

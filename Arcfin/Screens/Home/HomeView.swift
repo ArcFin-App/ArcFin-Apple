@@ -138,11 +138,37 @@ struct HomeView: View {
                                     }
                                 }
                             }
-                            ShelfRow(title: "Recently Added", badge: "NEW", onSeeAll: {}) {
-                                recentlyAddedContent
+                            if !mediaRepo.nextUp.isEmpty {
+                                ShelfRow(title: "Next Up", onSeeAll: {}) {
+                                    mediaShelfContent(mediaRepo.nextUp)
+                                }
+                            }
+                            ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {}) {
+                                mediaShelfContent(mediaRepo.recentlyAddedMovies)
+                            }
+                            ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {}) {
+                                mediaShelfContent(mediaRepo.recentlyAddedShows)
+                            }
+                            if !mediaRepo.recentlyReleasedMovies.isEmpty {
+                                ShelfRow(title: "Recently Released Movies", onSeeAll: {}) {
+                                    mediaShelfContent(mediaRepo.recentlyReleasedMovies)
+                                }
+                            }
+                            if !mediaRepo.recentlyAiredEpisodes.isEmpty {
+                                ShelfRow(title: "Recently Aired Episodes", onSeeAll: {}) {
+                                    mediaShelfContent(mediaRepo.recentlyAiredEpisodes)
+                                }
+                            }
+                            if !mediaRepo.watchAgain.isEmpty {
+                                ShelfRow(title: "Watch Again", onSeeAll: {}) {
+                                    mediaShelfContent(mediaRepo.watchAgain)
+                                }
                             }
 
                             if seerrRepo.isConfigured && seerrDiscoverEnabled {
+                                if !seerrRepo.watchlist.isEmpty {
+                                    seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
+                                }
                                 if !seerrRepo.trending.isEmpty {
                                     seerrShelf(title: "Trending", items: seerrRepo.trending)
                                 }
@@ -227,7 +253,8 @@ struct HomeView: View {
             }
             if seerrRepo.isConfigured && seerrDiscoverEnabled {
                 await seerrRepo.loadDiscover()
-                let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV).flatMap { item in
+                await seerrRepo.loadWatchlist()
+                let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
                     [item.backdropURL, item.posterURL].compactMap { $0 }
                 }
                 mediaRepo.prefetch(urls: seerrQuickLookURLs)
@@ -598,20 +625,20 @@ struct HomeView: View {
 
 
     @ViewBuilder
-    private var recentlyAddedContent: some View {
-        if mediaRepo.recentlyAdded.isEmpty {
-            ForEach(0..<6, id: \.self) { _ in
+    private func mediaShelfContent(_ items: [MediaItem], placeholderCount: Int = 6) -> some View {
+        if items.isEmpty {
+            ForEach(0..<placeholderCount, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: DT.Radius.card)
                     .fill(Color.white.opacity(0.05))
                     .frame(width: DT.Size.posterCard.width, height: DT.Size.posterCard.height)
                     .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.04), lineWidth: 1))
             }
         } else {
-            ForEach(mediaRepo.recentlyAdded) { item in
+            ForEach(items) { item in
                 NavigationLink(value: item) {
                     PosterCard(
-                        title: item.name,
-                        subtitle: item.productionYear.map { String($0) },
+                        title: itemDisplayTitle(item),
+                        subtitle: itemDisplaySubtitle(item),
                         imageURL: shelfImageURL(for: item)
                     )
                 }

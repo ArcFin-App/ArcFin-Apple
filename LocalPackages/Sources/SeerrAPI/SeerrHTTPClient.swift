@@ -136,6 +136,32 @@ public actor SeerrHTTPClient {
         return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
     }
 
+    // MARK: - Watchlist
+
+    /// The user's Seerr watchlist. Only carries tmdbId/mediaType, so each entry is
+    /// enriched with title/poster via the same detail lookup used for requests.
+    public func watchlist(limit: Int = 20) async throws -> [SeerrItem] {
+        try await ensureAuthenticated()
+        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/discover/watchlist"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [URLQueryItem(name: "take", value: "\(limit)")]
+        let data = try await fetch(comps.url!)
+        struct Page: Decodable { let results: [SeerrWatchlistItemResponse] }
+        let raw = try JSONDecoder().decode(Page.self, from: data).results
+
+        var items = [SeerrItem?](repeating: nil, count: raw.count)
+        await withTaskGroup(of: (Int, SeerrItem?).self) { group in
+            for (index, r) in raw.enumerated() {
+                group.addTask {
+                    let detail = try? await self.mediaDetail(tmdbId: r.tmdbId, mediaType: r.mediaType)
+                    return (index, detail)
+                }
+            }
+            for await (index, item) in group { items[index] = item }
+        }
+        return items.compactMap { $0 }
+    }
+
     // MARK: - Requests
 
     public func getRequests(filter: String = "all", skip: Int = 0, take: Int = 40) async throws -> [SeerrRequestItem] {
@@ -300,6 +326,11 @@ private struct SeerrItemResponse: Decodable {
 
 private struct SeerrMediaInfoResponse: Decodable {
     let status: Int
+}
+
+private struct SeerrWatchlistItemResponse: Decodable {
+    let tmdbId: Int?
+    let mediaType: String?
 }
 
 private struct SeerrRequestResponse: Decodable {

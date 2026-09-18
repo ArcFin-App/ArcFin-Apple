@@ -9,6 +9,7 @@ final class SeerrRepository {
     var popularMovies: [SeerrItem] = []
     var popularTV: [SeerrItem] = []
     var requests: [SeerrRequestItem] = []
+    var watchlist: [SeerrItem] = []
     var isLoadingDiscover = false
     var isLoadingRequests = false
     var authFailed = false
@@ -70,6 +71,11 @@ final class SeerrRepository {
         } catch {}
         if firstLoad { isLoadingDiscover = false }
         isFetchingDiscover = false
+    }
+
+    func loadWatchlist() async {
+        guard let client else { return }
+        watchlist = (try? await client.watchlist()) ?? []
     }
 
     func loadRequests() async {

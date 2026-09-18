@@ -9,6 +9,12 @@ final class MediaRepository {
 
     var continueWatching: [MediaItem] = []
     var recentlyAdded: [MediaItem] = []
+    var nextUp: [MediaItem] = []
+    var recentlyAddedMovies: [MediaItem] = []
+    var recentlyAddedShows: [MediaItem] = []
+    var recentlyReleasedMovies: [MediaItem] = []
+    var recentlyAiredEpisodes: [MediaItem] = []
+    var watchAgain: [MediaItem] = []
     var libraries: [JellyfinLibrary] = []
     var topMovies: [MediaItem] = []
     var topShows: [MediaItem] = []
@@ -37,23 +43,35 @@ final class MediaRepository {
         isLoading = true
         let header = authClient.authHeader(token: credential.accessToken)
 
-        async let cw    = client.getContinueWatching(credential: credential, authHeader: header)
-        async let la    = client.getLatestMedia(credential: credential, authHeader: header)
-        async let libs  = client.getLibraries(credential: credential, authHeader: header)
-        async let tMov  = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Movie")
-        async let tShow = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Series")
-        async let cMov  = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Movie")
-        async let cEp   = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Episode")
-        async let srvID = client.getServerID(credential: credential)
+        async let cw      = client.getContinueWatching(credential: credential, authHeader: header)
+        async let la      = client.getLatestMedia(credential: credential, authHeader: header)
+        async let libs    = client.getLibraries(credential: credential, authHeader: header)
+        async let tMov    = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Movie")
+        async let tShow   = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Series")
+        async let cMov    = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Movie")
+        async let cEp     = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Episode")
+        async let srvID   = client.getServerID(credential: credential)
+        async let nUp     = client.getNextUp(credential: credential, authHeader: header)
+        async let raMov   = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")
+        async let raShow  = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Series")
+        async let rrMov   = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Movie")
+        async let raEp    = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Episode")
+        async let wAgain  = client.getWatchAgain(credential: credential, authHeader: header)
 
-        continueWatching   = (try? await cw)    ?? []
-        recentlyAdded      = (try? await la)    ?? []
-        libraries          = (try? await libs)  ?? []
-        topMovies          = (try? await tMov)  ?? []
-        topShows           = (try? await tShow) ?? []
-        playedMovieCount   = (try? await cMov)  ?? 0
-        playedEpisodeCount = (try? await cEp)   ?? 0
-        serverID           = (try? await srvID) ?? ""
+        continueWatching       = (try? await cw)     ?? []
+        recentlyAdded          = (try? await la)     ?? []
+        libraries               = (try? await libs)  ?? []
+        topMovies               = (try? await tMov)  ?? []
+        topShows                = (try? await tShow) ?? []
+        playedMovieCount        = (try? await cMov)  ?? 0
+        playedEpisodeCount      = (try? await cEp)   ?? 0
+        serverID                = (try? await srvID) ?? ""
+        nextUp                  = (try? await nUp)    ?? []
+        recentlyAddedMovies     = (try? await raMov)  ?? []
+        recentlyAddedShows      = (try? await raShow) ?? []
+        recentlyReleasedMovies  = (try? await rrMov)  ?? []
+        recentlyAiredEpisodes   = (try? await raEp)   ?? []
+        watchAgain              = (try? await wAgain) ?? []
 
         isLoading = false
         loaded = true
