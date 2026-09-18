@@ -1,9 +1,12 @@
 import Foundation
 import AVFoundation
+import AVKit
+import Observation
 import Telemetry
 
 // MARK: - Player protocol
 
+@MainActor
 public protocol MediaPlayerProtocol: AnyObject, Sendable {
     var state: PlayerState { get }
     func load(url: URL, startPositionTicks: Int64) async throws
@@ -21,12 +24,22 @@ public struct PlayerState: Sendable, Equatable {
     public var status: PlaybackStatus = .idle
     public var positionTicks: Int64 = 0
     public var durationTicks: Int64 = 0
+    public var isBuffering: Bool = false
     public var availableAudioTracks: [AudioTrack] = []
     public var availableSubtitleTracks: [SubtitleTrack] = []
     public var selectedAudioTrackIndex: Int = 0
     public var selectedSubtitleTrackIndex: Int? = nil
 
-    public init() {}
+    public init(status: PlaybackStatus = .idle, positionTicks: Int64 = 0, durationTicks: Int64 = 0,
+                isBuffering: Bool = false, availableAudioTracks: [AudioTrack] = [],
+                availableSubtitleTracks: [SubtitleTrack] = [], selectedAudioTrackIndex: Int = 0,
+                selectedSubtitleTrackIndex: Int? = nil) {
+        self.status = status; self.positionTicks = positionTicks; self.durationTicks = durationTicks
+        self.isBuffering = isBuffering; self.availableAudioTracks = availableAudioTracks
+        self.availableSubtitleTracks = availableSubtitleTracks
+        self.selectedAudioTrackIndex = selectedAudioTrackIndex
+        self.selectedSubtitleTrackIndex = selectedSubtitleTrackIndex
+    }
 }
 
 public enum PlaybackStatus: Sendable, Equatable {
@@ -61,60 +74,174 @@ public struct SubtitleTrack: Sendable, Equatable, Identifiable {
 
 // MARK: - AVFoundation adapter (primary until MPV wrapper lands)
 
-public final class AVFoundationPlayer: MediaPlayerProtocol {
+@MainActor
+@Observable
+public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable {
 
     private let log = Telemetry.logger(category: "AVFoundationPlayer")
-    private let _player = AVPlayer()
-    private let _state = PlayerStateBox()
+    public let player = AVPlayer()
 
-    public var state: PlayerState { _state.value }
+    public private(set) var status: PlaybackStatus = .idle
+    public private(set) var positionTicks: Int64 = 0
+    public private(set) var durationTicks: Int64 = 0
+    public private(set) var isBuffering: Bool = false
+    public private(set) var availableAudioTracks: [AudioTrack] = []
+    public private(set) var availableSubtitleTracks: [SubtitleTrack] = []
+    public private(set) var selectedAudioTrackIndex: Int = 0
+    public private(set) var selectedSubtitleTrackIndex: Int? = nil
+
+    public var state: PlayerState {
+        PlayerState(status: status, positionTicks: positionTicks, durationTicks: durationTicks,
+                    isBuffering: isBuffering, availableAudioTracks: availableAudioTracks,
+                    availableSubtitleTracks: availableSubtitleTracks,
+                    selectedAudioTrackIndex: selectedAudioTrackIndex,
+                    selectedSubtitleTrackIndex: selectedSubtitleTrackIndex)
+    }
+
+    @ObservationIgnored private var timeObserverToken: Any?
+    @ObservationIgnored private var itemStatusObservation: NSKeyValueObservation?
+    @ObservationIgnored private var bufferObservation: NSKeyValueObservation?
+    @ObservationIgnored private var endObserver: NSObjectProtocol?
+    @ObservationIgnored private var audioGroup: AVMediaSelectionGroup?
+    @ObservationIgnored private var subtitleGroup: AVMediaSelectionGroup?
 
     public init() {}
 
     public func load(url: URL, startPositionTicks: Int64) async throws {
+        teardownObservers()
+        status = .loading
+        isBuffering = true
+        positionTicks = 0
+        durationTicks = 0
+
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
-        await MainActor.run { _player.replaceCurrentItem(with: item) }
-        _state.value.status = .loading
-        log.info("Loading \(url.lastPathComponent)")
+        player.replaceCurrentItem(with: item)
+        log.info("Loading \(url.absoluteString)")
+
+        do {
+            let duration = try await asset.load(.duration)
+            if duration.isNumeric {
+                durationTicks = Int64(CMTimeGetSeconds(duration) * 10_000_000)
+            }
+        } catch {
+            log.warning("Duration load failed: \(error.localizedDescription)")
+        }
+
+        await loadTracks(asset: asset)
+        observe(item: item)
+
+        if startPositionTicks > 0 {
+            await seek(to: startPositionTicks)
+        }
+        status = .paused
     }
 
     public func play() async {
-        await MainActor.run { _player.play() }
-        _state.value.status = .playing
+        player.play()
+        status = .playing
     }
 
     public func pause() async {
-        await MainActor.run { _player.pause() }
-        _state.value.status = .paused
+        player.pause()
+        status = .paused
     }
 
     public func seek(to positionTicks: Int64) async {
         let seconds = Double(positionTicks) / 10_000_000
-        let time = CMTime(seconds: seconds, preferredTimescale: 1000)
-        await _player.seek(to: time)
+        let time = CMTime(seconds: seconds, preferredTimescale: 600)
+        await player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+        self.positionTicks = positionTicks
     }
 
     public func setAudioTrack(index: Int) async {
-        _state.value.selectedAudioTrackIndex = index
+        guard let group = audioGroup,
+              let option = group.options.first(where: { $0.hash == index }) else { return }
+        player.currentItem?.select(option, in: group)
+        selectedAudioTrackIndex = index
     }
 
     public func setSubtitleTrack(index: Int?) async {
-        _state.value.selectedSubtitleTrackIndex = index
+        guard let group = subtitleGroup else { return }
+        guard let index, let option = group.options.first(where: { $0.hash == index }) else {
+            player.currentItem?.select(nil, in: group)
+            selectedSubtitleTrackIndex = nil
+            return
+        }
+        player.currentItem?.select(option, in: group)
+        selectedSubtitleTrackIndex = index
     }
 
     public func stop() async {
-        await MainActor.run {
-            _player.pause()
-            _player.replaceCurrentItem(with: nil)
-        }
-        _state.value.status = .idle
+        teardownObservers()
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+        status = .idle
     }
-}
 
-// Thread-safe box for PlayerState mutations outside of actors
-final class PlayerStateBox: @unchecked Sendable {
-    var value = PlayerState()
+    // MARK: - Track discovery
+
+    private func loadTracks(asset: AVURLAsset) async {
+        audioGroup = try? await asset.loadMediaSelectionGroup(for: .audible)
+        subtitleGroup = try? await asset.loadMediaSelectionGroup(for: .legible)
+
+        availableAudioTracks = (audioGroup?.options ?? []).map { option in
+            AudioTrack(id: option.hash, displayName: option.displayName, language: option.locale?.identifier)
+        }
+        availableSubtitleTracks = (subtitleGroup?.options ?? []).map { option in
+            SubtitleTrack(id: option.hash, displayName: option.displayName, language: option.locale?.identifier, isExternal: false)
+        }
+        if let selected = audioGroup.flatMap({ player.currentItem?.currentMediaSelection.selectedMediaOption(in: $0) }) {
+            selectedAudioTrackIndex = selected.hash
+        }
+    }
+
+    // MARK: - Observation
+
+    private func observe(item: AVPlayerItem) {
+        timeObserverToken = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main
+        ) { [weak self] time in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.positionTicks = Int64(CMTimeGetSeconds(time) * 10_000_000)
+            }
+        }
+
+        bufferObservation = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+            MainActor.assumeIsolated {
+                self?.isBuffering = !item.isPlaybackLikelyToKeepUp
+            }
+        }
+
+        itemStatusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if item.status == .failed {
+                    let message = item.error?.localizedDescription ?? "Playback failed."
+                    self.status = .failed(message)
+                    self.log.error("AVPlayerItem failed: \(message)")
+                }
+            }
+        }
+
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.status = .ended
+            }
+        }
+    }
+
+    private func teardownObservers() {
+        if let token = timeObserverToken { player.removeTimeObserver(token) }
+        timeObserverToken = nil
+        bufferObservation?.invalidate(); bufferObservation = nil
+        itemStatusObservation?.invalidate(); itemStatusObservation = nil
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = nil
+    }
 }
 
 // MARK: - MPV adapter (stub — link libmpv when wrapper is available)
