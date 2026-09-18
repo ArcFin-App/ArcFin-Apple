@@ -21,14 +21,14 @@ struct SettingsView: View {
 
     // MARK: - Persisted preferences
 
-    @AppStorage("videoQuality")       private var videoQuality    = VideoQuality.p4k
+    @AppStorage("videoQuality")       private var videoQuality    = VideoQuality.max
     @AppStorage("autoPlayNext")       private var autoPlayNext    = true
     @AppStorage("skipIntro")          private var skipIntro       = false
     @AppStorage("skipCredits")        private var skipCredits     = false
     @AppStorage("subtitleDefault")    private var subtitleDefault = false
 
     @AppStorage("wifiOnly")           private var wifiOnly          = true
-    @AppStorage("downloadQuality")    private var downloadQuality   = VideoQuality.p4k
+    @AppStorage("downloadQuality")    private var downloadQuality   = VideoQuality.max
 
     @AppStorage("notifyNewContent")   private var notifyNewContent  = true
     @AppStorage("notifyDownload")     private var notifyDownload    = true
@@ -417,10 +417,11 @@ struct SettingsView: View {
 // MARK: - Settings models
 
 enum VideoQuality: String, CaseIterable, Identifiable {
-    case auto, p4k = "4K", p1080 = "1080p", p720 = "720p", p480 = "480p"
+    case max = "Max", auto, p4k = "4K", p1080 = "1080p", p720 = "720p", p480 = "480p"
     var id: String { rawValue }
     var label: String {
         switch self {
+        case .max:   "Max Quality"
         case .auto:  "Auto (Recommended)"
         case .p4k:   "4K Ultra HD"
         case .p1080: "1080p HD"
