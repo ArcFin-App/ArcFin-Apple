@@ -92,8 +92,7 @@ final class DownloadManager: NSObject {
         guard let info = try? await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id) else {
             return nil
         }
-        let sourceContainer = (info.container ?? "").lowercased()
-        let needsRemux = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(sourceContainer)
+        let needsRemux = JellyfinMediaClient.downloadNeedsRemux(container: info.container, videoCodec: info.videoStream?.codec)
         let videoURL = needsRemux
             ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, token: credential.accessToken)
             : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
@@ -155,12 +154,12 @@ final class DownloadManager: NSObject {
             let dir = try DownloadStore.ensureDirectory(for: item.id)
 
             // Video — the original file when its container is one AVFoundation can actually
-            // open; otherwise (Matroska being the common case) a remux download instead,
-            // since the original file would download fine but silently fail to play. This
-            // is an iOS platform limitation — AVFoundation only reads the MP4/QuickTime
-            // family, not Matroska, regardless of the codecs inside.
+            // open and its video codec isn't HEVC; otherwise a remux download instead. HEVC
+            // sources are routinely tagged hev1 rather than the hvc1 tag AVFoundation
+            // requires (plays audio with a black screen), and a raw file download has no
+            // way to fix that server-side tag — only forcing h264 output sidesteps it.
             let sourceContainer = (info.container ?? "").lowercased()
-            let needsRemux = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(sourceContainer)
+            let needsRemux = JellyfinMediaClient.downloadNeedsRemux(container: info.container, videoCodec: info.videoStream?.codec)
             let videoFileName = needsRemux ? "video.mp4" : "video.\(sourceContainer.nilIfEmpty ?? "mp4")"
             let videoURL = needsRemux
                 ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, token: credential.accessToken)
