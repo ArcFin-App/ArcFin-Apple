@@ -174,7 +174,13 @@ struct PlayerView: View {
         if let avPlayer = player as? AVFoundationPlayer {
             PlayerLayerRepresentable(player: avPlayer.player, pip: pip)
         } else if let vlcEngine = player as? VLCEnginePlayer {
+            // Unlike AVFoundation's inert PlayerSurfaceView, PiPVideoView's native drawable
+            // is itself interactive and was swallowing taps before our own tapGesture saw
+            // them (single tap was toggling play/pause instead of the controls overlay).
+            // PiP is driven entirely through our own button, not by touching the video, so
+            // hit-testing on the surface itself is safe to turn off.
             PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+                .allowsHitTesting(false)
         }
     }
 

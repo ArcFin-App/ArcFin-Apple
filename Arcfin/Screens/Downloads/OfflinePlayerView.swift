@@ -42,9 +42,16 @@ struct OfflinePlayerView: View {
 
             #if canImport(UIKit) && !os(tvOS)
             GeometryReader { proxy in
-                PiPVideoView(player.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
-                    .contentShape(Rectangle())
-                    .onTapGesture { toggleControls() }
+                // PiPVideoView's native drawable is itself interactive (unlike AVFoundation's
+                // inert surface) and was swallowing the tap before onTapGesture below saw it.
+                // The gesture lives on this separate wrapping ZStack, not on PiPVideoView
+                // itself, so disabling hit-testing on the surface can't also disable it.
+                ZStack {
+                    PiPVideoView(player.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+                        .allowsHitTesting(false)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { toggleControls() }
             }
             .ignoresSafeArea()
             #endif
