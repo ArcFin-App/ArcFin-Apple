@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct SplashView: View {
+    /// Reflects real work still happening (e.g. auth check) — not just a fixed timer. The
+    /// exit animation waits for this to go false in addition to the minimum presentation time.
+    var isLoading: Bool
     var onComplete: () -> Void
 
     @State private var logoScale: CGFloat = 0.55
@@ -8,12 +11,11 @@ struct SplashView: View {
     @State private var logoBlur: CGFloat = 14
     @State private var glowOpacity: Double = 0
     @State private var glowPulse: CGFloat = 1.0
-    @State private var ringTrim: CGFloat = 0
-    @State private var ringOpacity: Double = 0
-    @State private var ringRotation: Angle = .degrees(-90)
+    @State private var spinnerOpacity: Double = 0
     @State private var creditOpacity: Double = 0
     @State private var sceneOpacity: Double = 1
     @State private var sceneScale: CGFloat = 1
+    @State private var minimumTimeElapsed = false
 
     private let logoSize: CGFloat = 140
 
@@ -46,33 +48,21 @@ struct SplashView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                ZStack {
-                    // A single accent arc draws in around the logo — a quiet "the app is
-                    // alive" cue that doesn't need a wordmark to feel intentional.
-                    Circle()
-                        .trim(from: 0, to: ringTrim)
-                        .stroke(
-                            AngularGradient(
-                                colors: [DT.Color.accent, DT.Color.accentDeep, DT.Color.accent.opacity(0)],
-                                center: .center
-                            ),
-                            style: StrokeStyle(lineWidth: 2, lineCap: .round)
-                        )
-                        .frame(width: logoSize + 34, height: logoSize + 34)
-                        .rotationEffect(ringRotation)
-                        .opacity(ringOpacity)
+                Image("ArcfinLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: logoSize, height: logoSize)
+                    .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25))
+                    .shadow(color: DT.Color.accent.opacity(0.55), radius: 48)
+                    .shadow(color: .black.opacity(0.65), radius: 24, y: 12)
+                    .blur(radius: logoBlur)
+                    .scaleEffect(logoScale)
+                    .opacity(logoOpacity)
 
-                    Image("ArcfinLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: logoSize, height: logoSize)
-                        .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25))
-                        .shadow(color: DT.Color.accent.opacity(0.55), radius: 48)
-                        .shadow(color: .black.opacity(0.65), radius: 24, y: 12)
-                        .blur(radius: logoBlur)
-                        .scaleEffect(logoScale)
-                        .opacity(logoOpacity)
-                }
+                ProgressView()
+                    .tint(.white)
+                    .opacity(spinnerOpacity)
+                    .padding(.top, 28)
 
                 Spacer()
             }
@@ -92,6 +82,7 @@ struct SplashView: View {
         .scaleEffect(sceneScale)
         .opacity(sceneOpacity)
         .onAppear { runSequence() }
+        .onChange(of: isLoading) { _, _ in attemptFinish() }
     }
 
     private func runSequence() {
@@ -111,44 +102,48 @@ struct SplashView: View {
             }
         }
 
-        // 3. Accent ring draws in around the logo
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            ringOpacity = 1
-            withAnimation(.easeInOut(duration: 0.9)) {
-                ringTrim = 1
-            }
-            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
-                ringRotation = .degrees(270)
-            }
-        }
-
-        // 4. Credit line
+        // 3. Credit line
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
             withAnimation(.easeIn(duration: 0.4)) {
                 creditOpacity = 1
             }
         }
 
-        // 5. Glow pulse loop
+        // 4. Glow pulse loop
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
                 glowPulse = 1.18
             }
         }
 
-        // 6. Exit
+        // 5. If still loading once the entrance settles, fade in a plain spinner below the
+        // logo instead of silently sitting there with no indication anything is happening.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            if isLoading {
+                withAnimation(.easeIn(duration: 0.3)) { spinnerOpacity = 1 }
+            }
+        }
+
+        // 6. Exit — minimum presentation time, but won't actually leave until loading is
+        // also done (see attemptFinish/onChange(of: isLoading)).
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
-            withAnimation(.easeInOut(duration: 0.48)) {
-                sceneOpacity = 0
-                sceneScale = 0.94
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
-                onComplete()
-            }
+            minimumTimeElapsed = true
+            attemptFinish()
+        }
+    }
+
+    private func attemptFinish() {
+        guard minimumTimeElapsed, !isLoading else { return }
+        withAnimation(.easeInOut(duration: 0.48)) {
+            sceneOpacity = 0
+            sceneScale = 0.94
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
+            onComplete()
         }
     }
 }
 
 #Preview {
-    SplashView(onComplete: {})
+    SplashView(isLoading: false, onComplete: {})
 }
