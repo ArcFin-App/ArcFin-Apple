@@ -72,6 +72,19 @@ struct SettingsView: View {
                 sectionHeader("Notifications", icon: "bell")
             }
 
+            // ── Appearance ───────────────────────────────────────────────
+#if !os(tvOS)
+            Section {
+                NavigationLink {
+                    AppearanceView()
+                } label: {
+                    Text("Appearance")
+                }
+            } header: {
+                sectionHeader("Appearance", icon: "paintbrush")
+            }
+#endif
+
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow

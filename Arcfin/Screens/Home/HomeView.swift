@@ -10,6 +10,7 @@ struct MainTabView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(JellyseerrRepository.self) private var seerrRepo
     @State private var searchQuery = ""
+    @AppStorage("showStatsTab") private var showStatsTab = true
 
     var body: some View {
         TabView {
@@ -28,8 +29,10 @@ struct MainTabView: View {
 #endif
             }
 #if !os(tvOS)
-            Tab("Stats", systemImage: "chart.xyaxis.line") {
-                StatsView()
+            if showStatsTab {
+                Tab("Stats", systemImage: "chart.xyaxis.line") {
+                    StatsView()
+                }
             }
 #endif
             Tab("Requests", systemImage: "clock") {
