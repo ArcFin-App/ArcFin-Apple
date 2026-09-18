@@ -21,19 +21,21 @@ struct DownloadConfirmSheet: View {
         self.item = item
         self.preview = preview
         self.onConfirm = onConfirm
-        self._selectedOption = State(initialValue: Self.options(for: preview).first!)
+        self._selectedOption = State(initialValue: Self.options.first!)
     }
 
-    /// Fixed quality tiers. When the server reports a source bitrate, tiers at or above it
-    /// are dropped (no point offering to "upscale"); plenty of libraries never get a deep
-    /// metadata scan and report no bitrate at all, in which case all tiers are offered
-    /// rather than silently hiding the picker.
-    private static func options(for preview: DownloadManager.DownloadPreview) -> [DownloadBitrateOption] {
-        let original = DownloadBitrateOption(label: "Original (Best Quality)", bitrate: nil)
-        let tiers: [(String, Int)] = [("High", 10_000_000), ("Medium", 5_000_000), ("Low", 2_500_000)]
-        let usable = tiers.filter { tier in preview.sourceBitrate.map { tier.1 < $0 } ?? true }
-        return [original] + usable.map { DownloadBitrateOption(label: $0.0, bitrate: $0.1) }
-    }
+    /// Fixed quality tiers — always the same list regardless of what the server reports for
+    /// this source (matching streamyfin's BitrateSelector), since gating this on server-
+    /// reported bitrate metadata is unreliable: plenty of libraries never get a deep
+    /// metadata scan and report no bitrate on either the source or its streams at all.
+    private static let options: [DownloadBitrateOption] = [
+        DownloadBitrateOption(label: "Max", bitrate: nil),
+        DownloadBitrateOption(label: "8 Mb/s", bitrate: 8_000_000),
+        DownloadBitrateOption(label: "4 Mb/s", bitrate: 4_000_000),
+        DownloadBitrateOption(label: "2 Mb/s", bitrate: 2_000_000),
+        DownloadBitrateOption(label: "1 Mb/s", bitrate: 1_000_000),
+        DownloadBitrateOption(label: "500 Kb/s", bitrate: 500_000),
+    ]
 
     private func estimatedSize(for option: DownloadBitrateOption) -> String {
         guard let bitrate = option.bitrate else {
@@ -52,19 +54,17 @@ struct DownloadConfirmSheet: View {
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
 
-                let options = Self.options(for: preview)
-                if options.count > 1 {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Quality")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(DT.Color.textSecondary)
-                        Picker("Quality", selection: $selectedOption) {
-                            ForEach(options) { option in
-                                Text(option.label).tag(option)
-                            }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Quality")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(DT.Color.textSecondary)
+                    Picker("Quality", selection: $selectedOption) {
+                        ForEach(Self.options) { option in
+                            Text(option.label).tag(option)
                         }
-                        .pickerStyle(.segmented)
                     }
+                    .pickerStyle(.menu)
+                    .tint(DT.Color.textPrimary)
                 }
 
                 VStack(spacing: 0) {
