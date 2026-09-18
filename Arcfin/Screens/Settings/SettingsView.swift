@@ -364,95 +364,193 @@ struct JellyseerrPluginView: View {
     @AppStorage("seerrPassword")    private var seerrPassword   = ""
     @AppStorage("seerrAuthMethod")  private var seerrAuthMethod = JellyseerrAuthMethod.jellyfin
 
+    // Draft copies — edits only commit to AppStorage (and re-trigger the live
+    // connection) on Save, so browsing the form can't accidentally reconfigure it.
+    @State private var isEditing = false
+    @State private var draftURL = ""
+    @State private var draftUsername = ""
+    @State private var draftPassword = ""
+    @State private var draftAuthMethod = JellyseerrAuthMethod.jellyfin
+    @State private var showRemoveConfirm = false
+
     @State private var testResult: String? = nil
     @State private var isTesting = false
 
+    private var isConfigured: Bool { !seerrURL.isEmpty }
+
     var body: some View {
         List {
-            // Server URL
-            Section {
-                TextField("http://10.0.1.122:5055", text: $seerrURL)
-                    .textContentType(.URL)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-            } header: {
-                Label("Server URL", systemImage: "server.rack")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            }
-
-            // Account type picker
-            Section {
-                Picker("Account Type", selection: $seerrAuthMethod) {
-                    ForEach(JellyseerrAuthMethod.allCases, id: \.self) { method in
-                        Text(method.label).tag(method)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-            } header: {
-                Label("Account Type", systemImage: "person.badge.key")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            } footer: {
-                Text(seerrAuthMethod.description)
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            // Credentials
-            Section {
-                TextField("Username", text: $seerrUsername)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                SecureField("Password", text: $seerrPassword)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-            } header: {
-                Label("Credentials", systemImage: "person.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            }
-
-            // Test connection
-            Section {
-                Button { testConnection() } label: {
-                    HStack {
-                        if isTesting { ProgressView().scaleEffect(0.8) }
-                        else { Image(systemName: "network") }
-                        Text(isTesting ? "Testing…" : "Test Connection")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                }
-                .disabled(seerrURL.isEmpty || seerrUsername.isEmpty || seerrPassword.isEmpty || isTesting)
-
-                if let result = testResult {
-                    Text(result)
-                        .font(.caption)
-                        .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
+            if isEditing {
+                editingForm
+            } else {
+                connectedSummary
             }
         }
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .arcfinNavTitleLarge("Jellyseerr")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if isEditing {
+                    Button("Save") { save() }
+                        .disabled(draftURL.isEmpty || draftUsername.isEmpty || draftPassword.isEmpty)
+                } else {
+                    Button("Edit") { beginEditing() }
+                }
+            }
+            if isEditing {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { isEditing = false; testResult = nil }
+                }
+            }
+        }
+        .onAppear { if !isConfigured { beginEditing() } }
+        .confirmationDialog(
+            "Remove Jellyseerr connection?",
+            isPresented: $showRemoveConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) { remove() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This clears the saved server URL and credentials. You can reconnect any time.")
+        }
+    }
+
+    // MARK: - Read-only summary
+
+    @ViewBuilder
+    private var connectedSummary: some View {
+        Section {
+            LabeledContent("Server URL", value: seerrURL)
+                .lineLimit(1)
+            LabeledContent("Account Type", value: seerrAuthMethod.label)
+            LabeledContent("Username", value: seerrUsername)
+        } header: {
+            Label("Connection", systemImage: "server.rack")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .textCase(nil)
+        }
+
+        Section {
+            Button(role: .destructive) { showRemoveConfirm = true } label: {
+                Text("Remove Connection")
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+    }
+
+    // MARK: - Editing form
+
+    @ViewBuilder
+    private var editingForm: some View {
+        // Server URL
+        Section {
+            TextField("http://10.0.1.122:5055", text: $draftURL)
+                .textContentType(.URL)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+        } header: {
+            Label("Server URL", systemImage: "server.rack")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .textCase(nil)
+        }
+
+        // Account type picker
+        Section {
+            Picker("Account Type", selection: $draftAuthMethod) {
+                ForEach(JellyseerrAuthMethod.allCases, id: \.self) { method in
+                    Text(method.label).tag(method)
+                }
+            }
+            .pickerStyle(.segmented)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        } header: {
+            Label("Account Type", systemImage: "person.badge.key")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .textCase(nil)
+        } footer: {
+            Text(draftAuthMethod.description)
+                .font(.caption)
+                .foregroundStyle(DT.Color.textSecondary)
+        }
+
+        // Credentials
+        Section {
+            TextField("Username", text: $draftUsername)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+            SecureField("Password", text: $draftPassword)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+        } header: {
+            Label("Credentials", systemImage: "person.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .textCase(nil)
+        }
+
+        // Test connection
+        Section {
+            Button { testConnection() } label: {
+                HStack {
+                    if isTesting { ProgressView().scaleEffect(0.8) }
+                    else { Image(systemName: "network") }
+                    Text(isTesting ? "Testing…" : "Test Connection")
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .disabled(draftURL.isEmpty || draftUsername.isEmpty || draftPassword.isEmpty || isTesting)
+
+            if let result = testResult {
+                Text(result)
+                    .font(.caption)
+                    .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+    }
+
+    // MARK: - Actions
+
+    private func beginEditing() {
+        draftURL = seerrURL
+        draftUsername = seerrUsername
+        draftPassword = seerrPassword
+        draftAuthMethod = seerrAuthMethod
+        testResult = nil
+        isEditing = true
+    }
+
+    private func save() {
+        seerrURL = draftURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        seerrUsername = draftUsername
+        seerrPassword = draftPassword
+        seerrAuthMethod = draftAuthMethod
+        isEditing = false
+    }
+
+    private func remove() {
+        seerrURL = ""; seerrUsername = ""; seerrPassword = ""
+        seerrAuthMethod = .jellyfin
+        seerrRepo.clearAuthFailure()
+        beginEditing()
     }
 
     private func testConnection() {
-        guard let url = URL(string: seerrURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+        guard let url = URL(string: draftURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
             testResult = "✗ Invalid URL"; return
         }
         isTesting = true; testResult = nil
-        let path = seerrAuthMethod.apiPath
+        let path = draftAuthMethod.apiPath
         let body = try? JSONSerialization.data(withJSONObject: [
-            "username": seerrUsername,
-            "password": seerrPassword,
+            "username": draftUsername,
+            "password": draftPassword,
         ])
         Task {
             var req = URLRequest(url: url.appendingPathComponent(path))
@@ -463,7 +561,7 @@ struct JellyseerrPluginView: View {
             do {
                 let (_, resp) = try await URLSession.shared.data(for: req)
                 if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                    testResult = "✓ Connected as \(seerrAuthMethod.label)"
+                    testResult = "✓ Connected as \(draftAuthMethod.label)"
                     seerrRepo.clearAuthFailure()
                 } else if let http = resp as? HTTPURLResponse, http.statusCode == 403 {
                     testResult = "✗ Wrong account type — try the other option"

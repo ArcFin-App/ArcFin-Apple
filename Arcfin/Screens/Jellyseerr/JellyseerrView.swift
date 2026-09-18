@@ -9,7 +9,6 @@ struct JellyseerrView: View {
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
     @State private var requestingItem: SeerrItem? = nil
-    @State private var hasLoadedInitialData = false
     @State private var isBootstrapping = false
 
     private let categories = ["All", "Movies", "Series"]
@@ -34,13 +33,12 @@ struct JellyseerrView: View {
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
-        .task {
-            guard !hasLoadedInitialData else { return }
+        .task(id: seerrRepo.isConfigured) {
+            guard seerrRepo.isConfigured else { return }
             isBootstrapping = true
             await seerrRepo.loadDiscover()
             await seerrRepo.loadRequests()
             isBootstrapping = false
-            hasLoadedInitialData = true
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)

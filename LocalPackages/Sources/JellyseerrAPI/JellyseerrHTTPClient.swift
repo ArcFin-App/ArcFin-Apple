@@ -149,7 +149,29 @@ public actor JellyseerrHTTPClient {
         ]
         let data = try await fetch(comps.url!)
         struct Page: Decodable { let results: [SeerrRequestResponse] }
-        return try JSONDecoder().decode(Page.self, from: data).results.map { $0.toItem() }
+        let raw = try JSONDecoder().decode(Page.self, from: data).results
+
+        // The request list only carries tmdbId/mediaType — title and artwork
+        // live on TMDB, so fetch each item's detail to fill them in.
+        var items = [SeerrRequestItem?](repeating: nil, count: raw.count)
+        await withTaskGroup(of: (Int, SeerrRequestItem).self) { group in
+            for (index, r) in raw.enumerated() {
+                group.addTask {
+                    let detail = try? await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
+                    return (index, r.toItem(detail: detail))
+                }
+            }
+            for await (index, item) in group { items[index] = item }
+        }
+        return items.compactMap { $0 }
+    }
+
+    private func mediaDetail(tmdbId: Int?, mediaType: String?) async throws -> SeerrItem? {
+        guard let tmdbId else { return nil }
+        let defaultType: RequestMediaType = mediaType == "tv" ? .tv : .movie
+        let path = defaultType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        return try JSONDecoder().decode(SeerrItemResponse.self, from: data).toItem(defaultMediaType: defaultType)
     }
 
     public func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
@@ -278,22 +300,20 @@ private struct SeerrRequestResponse: Decodable {
     let createdAt: String?
     let media: SeerrRequestMedia
 
+    // Jellyseerr's request media entity only stores identifiers/status —
+    // title, name, posterPath, backdropPath live on TMDB and are fetched separately.
     struct SeerrRequestMedia: Decodable {
+        let tmdbId: Int?
         let mediaType: String?
-        let posterPath: String?
-        let backdropPath: String?
-        let title: String?
-        let name: String?
-        let originalTitle: String?
     }
 
-    func toItem() -> SeerrRequestItem {
+    func toItem(detail: SeerrItem?) -> SeerrRequestItem {
         let reqStatus = RequestStatus(rawValue: status) ?? .pending
         let mType: RequestMediaType = media.mediaType == "tv" ? .tv : .movie
-        let title = media.originalTitle ?? media.title ?? media.name ?? "Unknown"
+        let title = detail?.title ?? "Unknown"
         let date = createdAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         return SeerrRequestItem(id: id, mediaTitle: title, mediaType: mType,
                                 status: reqStatus, requestedAt: date,
-                                posterPath: media.posterPath, backdropPath: media.backdropPath)
+                                posterPath: detail?.posterPath, backdropPath: detail?.backdropPath)
     }
 }

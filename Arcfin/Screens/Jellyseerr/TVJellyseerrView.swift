@@ -7,7 +7,6 @@ struct TVJellyseerrView: View {
 
     @State private var requestingItem: SeerrItem? = nil
     @State private var showRequestAlert = false
-    @State private var hasLoaded = false
 
     var body: some View {
         NavigationStack {
@@ -23,11 +22,10 @@ struct TVJellyseerrView: View {
             .background(DT.Color.backgroundPrimary)
             .navigationTitle("Requests")
         }
-        .task {
-            guard !hasLoaded else { return }
+        .task(id: seerrRepo.isConfigured) {
+            guard seerrRepo.isConfigured else { return }
             await seerrRepo.loadDiscover()
             await seerrRepo.loadRequests()
-            hasLoaded = true
         }
         .alert(
             requestingItem.map { "Request \($0.title)" } ?? "Request",
