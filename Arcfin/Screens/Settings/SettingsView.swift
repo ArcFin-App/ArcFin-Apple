@@ -1,6 +1,7 @@
 import SwiftUI
 import AuthCore
 import JellyfinAPI
+import MediaEngine
 import SeerrAPI
 
 struct SettingsView: View {
@@ -22,6 +23,7 @@ struct SettingsView: View {
     // MARK: - Persisted preferences
 
     @AppStorage("videoQuality")       private var videoQuality    = VideoQuality.max
+    @AppStorage("playbackEngine")     private var playbackEngine  = PlaybackEngineKind.auto
     @AppStorage("autoPlayNext")       private var autoPlayNext    = true
     @AppStorage("skipIntro")          private var skipIntro       = false
     @AppStorage("skipCredits")        private var skipCredits     = false
@@ -81,12 +83,21 @@ struct SettingsView: View {
                         Text(q.label).tag(q)
                     }
                 }
+                Picker("Playback Engine", selection: $playbackEngine) {
+                    ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
+                        Text(engine.rawValue).tag(engine)
+                    }
+                }
                 Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
                 Toggle("Skip Credits Automatically", isOn: $skipCredits)
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
             } header: {
                 sectionHeader("Playback", icon: "play.circle")
+            } footer: {
+                Text("Auto picks AVFoundation or VLC per item based on its container and codec. AVFoundation uses less battery; VLC plays a wider range of files (including Matroska/mkv and mistagged HEVC) that AVFoundation can't open.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             // ── Downloads ────────────────────────────────────────────────
@@ -225,7 +236,7 @@ struct SettingsView: View {
                 }
 #endif
                 NavigationLink {
-                    placeholderDetail("Open Source Licenses")
+                    OpenSourceLicensesView()
                 } label: {
                     Text("Open Source Licenses")
                 }

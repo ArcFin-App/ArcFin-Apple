@@ -3,9 +3,11 @@ import SwiftUI
 import UIKit
 #endif
 import AVFoundation
+import AVKit
 import AuthCore
 import JellyfinAPI
 import MediaEngine
+import SwiftVLC
 
 struct PlayerView: View {
     let item: MediaItem
@@ -16,7 +18,8 @@ struct PlayerView: View {
     @Environment(MediaRepository.self) var mediaRepo
     @Environment(\.dismiss) var dismiss
 
-    @State var player = AVFoundationPlayer()
+    @State var player: any MediaPlayerProtocol = AVFoundationPlayer()
+    @AppStorage("playbackEngine") var playbackEnginePreference = PlaybackEngineKind.auto
     @State var playbackInfo: JellyfinPlaybackInfo?
     @State var errorMessage: String?
     @State var isControlsVisible = true
@@ -56,6 +59,8 @@ struct PlayerView: View {
 
     #if canImport(UIKit) && !os(tvOS)
     @StateObject var pip = PiPCoordinator()
+    @State var vlcPipController: SwiftVLC.PiPController?
+    @State var isPiPSupported = AVPictureInPictureController.isPictureInPictureSupported()
     @State var volumeController: SystemVolumeController?
     @State var dragAxis: DragAxis?
     @State var dragBaseline: CGFloat = 0
@@ -90,7 +95,7 @@ struct PlayerView: View {
 
             #if canImport(UIKit) && !os(tvOS)
             GeometryReader { proxy in
-                PlayerLayerRepresentable(player: player.player, pip: pip)
+                videoSurface
                     .contentShape(Rectangle())
                     .gesture(tapGesture(width: proxy.size.width))
                     .simultaneousGesture(dragGesture(width: proxy.size.width))
@@ -162,6 +167,25 @@ struct PlayerView: View {
             rateMenuButtons
         }
     }
+
+    #if canImport(UIKit) && !os(tvOS)
+    @ViewBuilder
+    var videoSurface: some View {
+        if let avPlayer = player as? AVFoundationPlayer {
+            PlayerLayerRepresentable(player: avPlayer.player, pip: pip)
+        } else if let vlcEngine = player as? VLCEnginePlayer {
+            PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+        }
+    }
+
+    func togglePiP() {
+        if player is VLCEnginePlayer {
+            vlcPipController?.toggle()
+        } else {
+            pip.toggle()
+        }
+    }
+    #endif
 
     private func handleStatusChange(_ newStatus: PlaybackStatus) {
         if newStatus == .playing { scheduleAutoHide() }
@@ -277,6 +301,15 @@ struct PlayerView: View {
                 quality: qualityCap(for: quality)
             )
             playbackInfo = info
+            // .choose always resolves Auto down to a concrete engine — only two outcomes here.
+            let engine = PlaybackEngineSelector.choose(
+                preference: playbackEnginePreference, container: info.container, videoCodec: info.videoStream?.codec
+            )
+            if engine == .vlc, !(player is VLCEnginePlayer) {
+                player = VLCEnginePlayer()
+            } else if engine == .avFoundation, !(player is AVFoundationPlayer) {
+                player = AVFoundationPlayer()
+            }
             selectedAudioIndex = info.defaultAudioStreamIndex
             // The server only marks a subtitle default when one's flagged default/forced
             // there — most libraries don't have that set, so "Show Subtitles by Default"
@@ -303,7 +336,11 @@ struct PlayerView: View {
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             await player.play()
             #if canImport(UIKit) && !os(tvOS)
-            pip.activateIfNeeded()
+            // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's
+            // custom PiPCoordinator needs this explicit activation step.
+            if player is AVFoundationPlayer {
+                pip.activateIfNeeded()
+            }
             #endif
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,

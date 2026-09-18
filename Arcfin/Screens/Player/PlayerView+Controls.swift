@@ -78,8 +78,8 @@ extension PlayerView {
             AirPlayButton()
                 .frame(width: 30, height: 30)
 
-            if pip.isSupported {
-                Button { pip.toggle() } label: {
+            if isPiPSupported {
+                Button { togglePiP() } label: {
                     Image(systemName: "pip.enter")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)

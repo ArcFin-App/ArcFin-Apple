@@ -1,8 +1,10 @@
 import SwiftUI
 import SwiftData
 import AVFoundation
+import AVKit
 import MediaEngine
 import Persistence
+import SwiftVLC
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -16,7 +18,9 @@ struct OfflinePlayerView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @State private var player = AVFoundationPlayer()
+    // Always VLC, not AVFoundation — a downloaded file's container/codec can be anything the
+    // server has, and VLC plays that natively without AVFoundation's mkv/HEVC-tag limitations.
+    @State private var player = VLCEnginePlayer()
     @State private var isControlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
     @State private var isScrubbing = false
@@ -27,7 +31,7 @@ struct OfflinePlayerView: View {
     @State private var showTrackMenu = false
     @State private var progressSaveTask: Task<Void, Never>?
     #if canImport(UIKit) && !os(tvOS)
-    @StateObject private var pip = PiPCoordinator()
+    @State private var vlcPipController: SwiftVLC.PiPController?
     #endif
 
     private var dir: URL { DownloadStore.directory(for: downloadedItem.itemId) }
@@ -38,7 +42,7 @@ struct OfflinePlayerView: View {
 
             #if canImport(UIKit) && !os(tvOS)
             GeometryReader { proxy in
-                PlayerLayerRepresentable(player: player.player, pip: pip)
+                PiPVideoView(player.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
                     .contentShape(Rectangle())
                     .onTapGesture { toggleControls() }
             }
@@ -97,9 +101,6 @@ struct OfflinePlayerView: View {
         do {
             try await player.load(url: videoURL, startPositionTicks: downloadedItem.playbackPositionTicks)
             await player.play()
-            #if canImport(UIKit) && !os(tvOS)
-            pip.activateIfNeeded()
-            #endif
         } catch {
             // Nothing more to fall back to offline — surfaced via the stalled/failed state
             // the controls overlay already reflects through player.status.
@@ -188,8 +189,8 @@ struct OfflinePlayerView: View {
             Spacer()
             #if canImport(UIKit) && !os(tvOS)
             AirPlayButton().frame(width: 30, height: 30)
-            if pip.isSupported {
-                Button { pip.toggle() } label: {
+            if AVPictureInPictureController.isPictureInPictureSupported() {
+                Button { vlcPipController?.toggle() } label: {
                     Image(systemName: "pip.enter")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)

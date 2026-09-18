@@ -49,6 +49,13 @@ let package = Package(
             url: "https://github.com/apple/swift-openapi-generator",
             from: "1.3.0"
         ),
+        // Secondary player engine — libVLC (LGPLv2.1) via a Swift 6/@Observable wrapper.
+        // AVFoundation stays primary/default; VLC exists for containers/codecs AVFoundation
+        // can't open (mkv, mistagged HEVC, etc.) and is selectable in Settings.
+        .package(
+            url: "https://github.com/harflabs/SwiftVLC.git",
+            from: "1.0.0"
+        ),
     ],
     targets: [
 
@@ -140,6 +147,7 @@ let package = Package(
                 "AppState",
                 "JellyfinAPI",
                 "Telemetry",
+                .product(name: "SwiftVLC", package: "SwiftVLC"),
             ]
         ),
 

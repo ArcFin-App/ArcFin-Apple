@@ -6,9 +6,22 @@ import Telemetry
 
 // MARK: - Player protocol
 
+/// Individual properties are required (not just the aggregate `state`) so a view can bind
+/// to `player.status`/`player.positionTicks`/etc. directly through an `any MediaPlayerProtocol`
+/// existential and still get correct SwiftUI/Observation tracking — matches how
+/// `AVFoundationPlayer` already exposed these before a second engine existed.
 @MainActor
 public protocol MediaPlayerProtocol: AnyObject, Sendable {
     var state: PlayerState { get }
+    var status: PlaybackStatus { get }
+    var positionTicks: Int64 { get }
+    var durationTicks: Int64 { get }
+    var isBuffering: Bool { get }
+    var availableAudioTracks: [AudioTrack] { get }
+    var availableSubtitleTracks: [SubtitleTrack] { get }
+    var selectedAudioTrackIndex: Int { get }
+    var selectedSubtitleTrackIndex: Int? { get }
+    var playbackRate: Float { get }
     func load(url: URL, startPositionTicks: Int64) async throws
     func play() async
     func pause() async
@@ -283,27 +296,4 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
     }
-}
-
-// MARK: - MPV adapter (stub — link libmpv when wrapper is available)
-
-public final class MPVPlayer: MediaPlayerProtocol {
-
-    private let log = Telemetry.logger(category: "MPVPlayer")
-    // nonisolated(unsafe) — stub only, replaced by actor-based MPV wrapper when libmpv lands
-    public nonisolated(unsafe) var state: PlayerState = .init()
-
-    public init() {}
-
-    public func load(url: URL, startPositionTicks: Int64) async throws {
-        log.warning("MPVPlayer stub — not yet linked to libmpv")
-    }
-
-    public func play() async {}
-    public func pause() async {}
-    public func seek(to positionTicks: Int64) async {}
-    public func setAudioTrack(index: Int) async {}
-    public func setSubtitleTrack(index: Int?) async {}
-    public func setRate(_ rate: Float) async {}
-    public func stop() async {}
 }
