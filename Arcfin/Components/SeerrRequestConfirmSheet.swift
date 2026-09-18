@@ -183,7 +183,11 @@ struct SeerrRequestConfirmSheet: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.lg)
 
-                let requestDisabled = item.mediaType == .tv && selectedSeasons.isEmpty
+                // Only block on empty seasons when we actually have a season list to pick
+                // from — if the detail fetch failed, don't strand the button disabled
+                // with no picker visible to explain why.
+                let hasSeasonList = !(detail?.seasons.isEmpty ?? true)
+                let requestDisabled = item.mediaType == .tv && hasSeasonList && selectedSeasons.isEmpty
                 Button {
                     HapticManager.impact(.medium)
                     let captured = item
