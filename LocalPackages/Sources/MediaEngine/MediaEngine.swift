@@ -131,10 +131,33 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         await loadTracks(asset: asset)
         observe(item: item)
 
+        // Without this, a broken URL (bad transcode path, unreachable server, unsupported
+        // codec) would report success here — the item only surfaces .failed asynchronously
+        // via KVO afterward — so load() would return, play()/reportPlaybackStart would fire,
+        // and nothing would visibly happen while the server still thought playback started.
+        try await waitUntilReady(item: item)
+
         if startPositionTicks > 0 {
             await seek(to: startPositionTicks)
         }
         status = .paused
+    }
+
+    private func waitUntilReady(item: AVPlayerItem) async throws {
+        if item.status == .readyToPlay { return }
+        if item.status == .failed { throw item.error ?? URLError(.cannotLoadFromNetwork) }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            nonisolated(unsafe) var observation: NSKeyValueObservation?
+            observation = item.observe(\.status, options: [.new]) { item, _ in
+                guard item.status != .unknown else { return }
+                observation?.invalidate()
+                if item.status == .failed {
+                    continuation.resume(throwing: item.error ?? URLError(.cannotLoadFromNetwork))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
     }
 
     public func play() async {

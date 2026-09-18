@@ -82,7 +82,18 @@ extension JellyfinMediaClient {
         let playURL: URL
         let isTranscoding: Bool
         if let transcodingUrl = source.transcodingUrl {
-            playURL = credential.baseURL.appendingPathComponent(String(transcodingUrl.dropFirst(transcodingUrl.hasPrefix("/") ? 1 : 0)))
+            // TranscodingUrl is a relative path+query (e.g. "/videos/x/master.m3u8?...") —
+            // appendingPathComponent would percent-encode the "?" into the path itself and
+            // silently break the URL, so parse and recombine with the base host instead.
+            guard let relative = URLComponents(string: transcodingUrl),
+                  var combined = URLComponents(url: credential.baseURL, resolvingAgainstBaseURL: false)
+            else { throw URLError(.badURL) }
+            let basePath = combined.path.hasSuffix("/") ? String(combined.path.dropLast()) : combined.path
+            let relativePath = relative.path.hasPrefix("/") ? relative.path : "/" + relative.path
+            combined.path = basePath + relativePath
+            combined.query = relative.query
+            guard let url = combined.url else { throw URLError(.badURL) }
+            playURL = url
             isTranscoding = true
         } else {
             var directComps = URLComponents(
@@ -171,14 +182,19 @@ extension JellyfinMediaClient {
 
     private static var deviceProfile: [String: Any] { [
         "MaxStreamingBitrate": 120_000_000,
+        // AudioCodec lists are deliberately narrow: AVFoundation can't reliably decode
+        // ac3/eac3/dts to the built-in speaker/headphones on-device (only passthrough to
+        // a compatible receiver, which isn't guaranteed) — claiming them as direct-play
+        // compatible produced video with silent audio. Anything else gets remuxed with
+        // audio transcoded to AAC while video stays copied, via the profiles below.
         "DirectPlayProfiles": [
-            ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,ac3,eac3,flac,alac"],
-            ["Container": "mkv", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,ac3,eac3,flac,dts"],
-            ["Container": "mov", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,ac3,eac3"],
+            ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac,flac"],
+            ["Container": "mkv", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac,flac"],
+            ["Container": "mov", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac"],
         ],
         "TranscodingProfiles": [
             [
-                "Container": "ts", "Type": "Video", "AudioCodec": "aac,ac3",
+                "Container": "ts", "Type": "Video", "AudioCodec": "aac",
                 "VideoCodec": "h264,hevc", "Context": "Streaming", "Protocol": "hls",
                 "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
             ],
