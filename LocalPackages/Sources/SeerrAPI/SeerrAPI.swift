@@ -158,3 +158,37 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable {
         backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w1280\($0)") }
     }
 }
+
+// MARK: - Full media detail (for the request confirmation sheet)
+
+public struct SeerrCastMember: Sendable, Identifiable, Equatable {
+    public let id: Int
+    public let name: String
+    public let character: String?
+    public let profilePath: String?
+
+    public init(id: Int, name: String, character: String?, profilePath: String?) {
+        self.id = id; self.name = name; self.character = character; self.profilePath = profilePath
+    }
+
+    public var profileURL: URL? {
+        profilePath.flatMap { URL(string: "https://image.tmdb.org/t/p/w185\($0)") }
+    }
+}
+
+public struct SeerrMediaDetail: Sendable, Equatable {
+    public let tagline: String?
+    public let overview: String?
+    public let genres: [String]
+    public let runtimeMinutes: Int?
+    public let voteAverage: Double?
+    public let status: String?
+    public let cast: [SeerrCastMember]
+
+    public init(tagline: String?, overview: String?, genres: [String], runtimeMinutes: Int?,
+                voteAverage: Double?, status: String?, cast: [SeerrCastMember]) {
+        self.tagline = tagline; self.overview = overview; self.genres = genres
+        self.runtimeMinutes = runtimeMinutes; self.voteAverage = voteAverage
+        self.status = status; self.cast = cast
+    }
+}

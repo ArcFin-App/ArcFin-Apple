@@ -79,6 +79,9 @@ struct ContentView: View {
         // Streamystats is reconfigured after load() sets serverID + we have the token
         .onChange(of: mediaRepo.serverID) { configureStats() }
         .onChange(of: statsURL)           { configureStats() }
+        // A profile switch keeps the same serverID when staying on one server, so
+        // Streamystats needs its own trigger to pick up the new credential's token.
+        .onChange(of: authManager.state)  { configureStats() }
     }
 
     private func configureSeerr() {

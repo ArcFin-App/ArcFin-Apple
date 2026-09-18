@@ -23,11 +23,14 @@ final class MediaRepository {
     private let client = JellyfinMediaClient()
     private var loaded = false
     private var lastLoadedAt: Date?
+    private var lastLoadedUserID: String?
 
     func load(credential: ServerCredential, authClient: JellyfinAuthClient) async {
-        // Skip if already loaded within the last 60 s — prevents repeated API bursts
-        // when the view re-appears (tab switch, background/foreground, etc.).
-        if loaded, let t = lastLoadedAt, Date().timeIntervalSince(t) < 60 { return }
+        // Skip if already loaded within the last 60 s for the SAME profile — prevents
+        // repeated API bursts when the view re-appears (tab switch, background/foreground).
+        // A profile switch always reloads regardless of the cooldown.
+        if loaded, credential.userID == lastLoadedUserID,
+           let t = lastLoadedAt, Date().timeIntervalSince(t) < 60 { return }
         guard !isLoading else { return }
         baseURL = credential.baseURL
         accessToken = credential.accessToken
@@ -55,6 +58,7 @@ final class MediaRepository {
         isLoading = false
         loaded = true
         lastLoadedAt = Date()
+        lastLoadedUserID = credential.userID
     }
 
     func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {
