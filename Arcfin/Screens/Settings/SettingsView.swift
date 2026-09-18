@@ -5,6 +5,15 @@ import JellyseerrAPI
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(\.openURL) private var openURL
+
+    @State private var showUsersSheet = false
+    #if !os(tvOS)
+    @State private var usersDetent: PresentationDetent = .medium
+    #endif
+    #if os(tvOS)
+    @State private var listID = UUID()
+    #endif
 
     // MARK: - Persisted preferences
 
@@ -69,23 +78,19 @@ struct SettingsView: View {
                 NavigationLink {
                     placeholderDetail("Switch Server")
                 } label: {
-#if os(tvOS)
-                    TVFocusRowLabel { Label("Switch Server", systemImage: "server.rack") }
-#else
-                    Label("Switch Server", systemImage: "server.rack")
-#endif
+                    Text("Switch Server")
                 }
-                .tvListRow()
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
                 NavigationLink {
                     placeholderDetail("Add Server")
                 } label: {
-#if os(tvOS)
-                    TVFocusRowLabel { Label("Add Server", systemImage: "plus.circle") }
-#else
-                    Label("Add Server", systemImage: "plus.circle")
-#endif
+                    Text("Add Server")
                 }
-                .tvListRow()
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
             } header: {
                 sectionHeader("Account & Server", icon: "person.badge.key")
             }
@@ -99,50 +104,32 @@ struct SettingsView: View {
                         .toolbar(.hidden, for: .tabBar)
 #endif
                 } label: {
-#if os(tvOS)
-                    TVFocusRowLabel {
-                        HStack {
-                            Label("Jellyseerr", systemImage: "clock.fill")
-                            Spacer()
-                            seerrStatusPill
-                        }
-                    }
-#else
                     HStack {
-                        Label("Jellyseerr", systemImage: "clock.fill")
+                        Text("Jellyseerr")
                         Spacer()
                         seerrStatusPill
                     }
-#endif
                 }
-                .tvListRow()
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
                 NavigationLink {
                     StreamystatsPluginView()
 #if !os(tvOS)
                         .toolbar(.hidden, for: .tabBar)
 #endif
                 } label: {
-#if os(tvOS)
-                    TVFocusRowLabel {
-                        HStack {
-                            Label("Streamystats", systemImage: "chart.xyaxis.line")
-                            Spacer()
-                            if !streamystatsURL.isEmpty {
-                                Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
-                            }
-                        }
-                    }
-#else
                     HStack {
-                        Label("Streamystats", systemImage: "chart.xyaxis.line")
+                        Text("Streamystats")
                         Spacer()
                         if !streamystatsURL.isEmpty {
                             Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
                         }
                     }
-#endif
                 }
-                .tvListRow()
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
             } header: {
                 sectionHeader("Plugins", icon: "puzzlepiece.extension")
             }
@@ -155,24 +142,21 @@ struct SettingsView: View {
                 LabeledContent("Build") {
                     Text(buildNumber).foregroundStyle(.secondary)
                 }
-                Link(destination: URL(string: "https://jellyfin.org")!) {
-#if os(tvOS)
-                    TVFocusRowLabel { Label("Jellyfin Website", systemImage: "safari") }
-#else
-                    Label("Jellyfin Website", systemImage: "safari")
-#endif
+#if !os(tvOS)
+                Button {
+                    openURL(URL(string: "https://jellyfin.org")!)
+                } label: {
+                    Text("Jellyfin Website")
                 }
-                .tvListRow()
+#endif
                 NavigationLink {
                     placeholderDetail("Open Source Licenses")
                 } label: {
-#if os(tvOS)
-                    TVFocusRowLabel { Label("Open Source Licenses", systemImage: "doc.text") }
-#else
-                    Label("Open Source Licenses", systemImage: "doc.text")
-#endif
+                    Text("Open Source Licenses")
                 }
-                .tvListRow()
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
             } header: {
                 sectionHeader("About", icon: "info.circle")
             }
@@ -182,25 +166,36 @@ struct SettingsView: View {
                 Button(role: .destructive) {
                     authManager.signOut()
                 } label: {
-#if os(tvOS)
-                    TVFocusRowLabel {
-                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .foregroundStyle(.red)
-                    }
-#else
-                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    Text("Sign Out")
+                        .foregroundStyle(.red)
                         .frame(maxWidth: .infinity, alignment: .center)
-#endif
                 }
-                .tvListRow()
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
             }
         }
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
-        .arcfinNavTitleLarge("Settings")
-#if !os(tvOS)
-        .toolbar(.hidden, for: .tabBar)
+#if os(tvOS)
+        .navigationTitle(authManager.state.credential?.displayName ?? "Profile")
+        .id(listID)
+        .onAppear { listID = UUID() }
+        .sheet(isPresented: $showUsersSheet) {
+            NavigationStack { TVUsersView() }
+                .frame(minWidth: 900)
+                .preferredColorScheme(.dark)
+        }
+#else
+        .navigationTitle(authManager.state.credential?.displayName ?? "Settings")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .sheet(isPresented: $showUsersSheet, onDismiss: { usersDetent = .medium }) {
+            NavigationStack { UsersView(onExpand: { usersDetent = .large }) }
+                .presentationDetents([.medium, .large], selection: $usersDetent)
+                .presentationDragIndicator(.visible)
+                .preferredColorScheme(.dark)
+        }
 #endif
     }
 
@@ -210,10 +205,20 @@ struct SettingsView: View {
     private var profileSection: some View {
         if case .authenticated(let cred) = authManager.state {
             Section {
-                profileCard(cred: cred)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                    .arcfinRowSeparatorHidden()
+#if os(tvOS)
+                Button { showUsersSheet = true } label: {
+                    TVFocusRowLabel { Text(cred.displayName) }
+                }
+                .tvListRow()
+#else
+                Button { showUsersSheet = true } label: {
+                    profileCard(cred: cred)
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                .arcfinRowSeparatorHidden()
+#endif
             }
         }
     }
@@ -228,23 +233,21 @@ struct SettingsView: View {
         return HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [DT.Color.accent, DT.Color.accentDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 72, height: 72)
+                    .fill(LinearGradient(
+                        colors: [DT.Color.accent, DT.Color.accentDeep],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 64, height: 64)
                     .shadow(color: DT.Color.accent.opacity(0.4), radius: 12, y: 4)
                 Text(initials)
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(cred.displayName)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 HStack(spacing: 4) {
                     Image(systemName: "server.rack")
@@ -268,7 +271,7 @@ struct SettingsView: View {
             Spacer()
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: DT.Radius.lg)
                 .fill(DT.Color.backgroundSecondary)
@@ -304,7 +307,7 @@ struct SettingsView: View {
 
     private func sectionHeader(_ title: String, icon: String) -> some View {
         Label(title, systemImage: icon)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
     }
@@ -552,4 +555,142 @@ struct StreamystatsPluginView: View {
         }
     }
 }
+
+// MARK: - tvOS users sheet
+
+#if os(tvOS)
+struct TVUsersView: View {
+    @Environment(AuthManager.self) private var authManager
+    @Environment(\.dismiss) private var dismiss
+
+    private var activeID: UUID? { authManager.state.credential?.id }
+
+    private var otherProfiles: [ServerCredential] {
+        authManager.profiles.filter { $0.id != activeID }
+    }
+
+    var body: some View {
+        List {
+            if let active = authManager.state.credential {
+                Section {
+                    tvProfileRow(active, isActive: true)
+                        .listRowBackground(Color.clear)
+                        .focusEffectDisabled()
+                } header: { sectionLabel("Current Profile") }
+            }
+
+            if !otherProfiles.isEmpty {
+                Section {
+                    ForEach(otherProfiles) { profile in
+                        Button {
+                            authManager.switchTo(profile)
+                            dismiss()
+                        } label: {
+                            tvProfileRow(profile, isActive: false)
+                        }
+                        .listRowBackground(Color.clear)
+                    }
+                } header: { sectionLabel("Switch To") }
+            }
+
+            Section {
+                NavigationLink {
+                    TVAddProfileFlowView(onProfileAdded: { dismiss() })
+                } label: {
+                    Text("Add Profile")
+                        .foregroundStyle(DT.Color.accent)
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: 48, bottom: 8, trailing: 48))
+            }
+
+            Section {
+                Button(role: .destructive) {
+                    authManager.signOut()
+                    dismiss()
+                } label: {
+                    Text("Sign Out")
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .listRowBackground(Color.clear)
+            }
+        }
+        .listStyle(.plain)
+        .background(DT.Color.backgroundPrimary)
+        .navigationTitle("Profiles")
+    }
+
+    private func tvProfileRow(_ cred: ServerCredential, isActive: Bool) -> some View {
+        let initials = cred.displayName
+            .split(separator: " ").prefix(2)
+            .compactMap { $0.first.map { String($0).uppercased() } }
+            .joined()
+
+        return HStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [DT.Color.accent, DT.Color.accentDeep],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 52 * DT.Scale.font, height: 52 * DT.Scale.font)
+                    .shadow(color: isActive ? DT.Color.accent.opacity(0.4) : .clear, radius: 8)
+                Text(initials)
+                    .font(.system(size: 18 * DT.Scale.font, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(cred.displayName)
+                    .font(.system(size: 18 * DT.Scale.font, weight: .semibold))
+                Text(cred.baseURL.host ?? cred.baseURL.absoluteString)
+                    .font(.system(size: 14 * DT.Scale.font))
+                    .opacity(0.6)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if isActive {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 26 * DT.Scale.font))
+                    .foregroundStyle(DT.Color.accent)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(DT.Color.textSecondary)
+            .textCase(nil)
+    }
+}
+
+// MARK: - tvOS add-profile flow (pushed within TVUsersView's NavigationStack)
+
+private struct TVAddProfileFlowView: View {
+    var onProfileAdded: () -> Void
+
+    @Environment(AuthManager.self) private var authManager
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        if let cred = authManager.state.credential {
+            AuthView(
+                serverURL: cred.baseURL,
+                serverName: cred.baseURL.host ?? cred.baseURL.absoluteString,
+                onBack: { dismiss() },
+                onAuthenticated: { credential in
+                    authManager.addProfile(credential)
+                    onProfileAdded()
+                }
+            )
+            .navigationTitle("Add Profile")
+        }
+    }
+}
+#endif
 

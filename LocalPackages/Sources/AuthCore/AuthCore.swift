@@ -26,6 +26,9 @@ public protocol KeychainClientProtocol: Sendable {
     func load(serverID: UUID) throws -> ServerCredential?
     func delete(serverID: UUID) throws
     func allServers() throws -> [ServerCredential]
+    func savePin(_ pin: String, for credentialID: UUID) throws
+    func loadPin(for credentialID: UUID) throws -> String?
+    func deletePin(for credentialID: UUID) throws
 }
 
 // MARK: - Auth state

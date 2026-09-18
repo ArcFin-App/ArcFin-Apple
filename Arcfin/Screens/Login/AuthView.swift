@@ -8,6 +8,7 @@ struct AuthView: View {
     let serverURL: URL
     let serverName: String
     var onBack: () -> Void
+    var onAuthenticated: ((ServerCredential) -> Void)? = nil
 
     @Environment(AuthManager.self) private var authManager
 
@@ -352,8 +353,12 @@ struct AuthView: View {
             let credential = try await authManager.authClient.authenticate(
                 baseURL: serverURL, username: username, password: password
             )
-            authManager.save(credential)
-            withAnimation { signedIn = true }
+            if let onAuthenticated {
+                onAuthenticated(credential)
+            } else {
+                authManager.save(credential)
+                withAnimation { signedIn = true }
+            }
         } catch {
             authError = error.localizedDescription
         }
@@ -385,8 +390,12 @@ struct AuthView: View {
             guard approved else { continue }
             do {
                 let credential = try await authManager.authClient.authenticateWithQuickConnect(baseURL: serverURL, secret: secret)
-                authManager.save(credential)
-                withAnimation { signedIn = true }
+                if let onAuthenticated {
+                    onAuthenticated(credential)
+                } else {
+                    authManager.save(credential)
+                    withAnimation { signedIn = true }
+                }
             } catch {
                 authError = error.localizedDescription
             }

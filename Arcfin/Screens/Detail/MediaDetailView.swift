@@ -18,6 +18,8 @@ struct MediaDetailView: View {
     @State private var seasons: [MediaItem] = []
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
+    @State private var selectedEpisode: MediaItem?
+    @State private var loadedSeasonId: String?
     @State private var trailers: [MediaItem] = []
     @State private var isLoading = true
 
@@ -44,11 +46,16 @@ struct MediaDetailView: View {
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
+        .navigationDestination(item: $selectedEpisode) { ep in
+            MediaDetailView(item: ep)
+        }
         .task { await load() }
         .onChange(of: selectedSeason) { _, season in
-            guard let season, let seriesId = seasonSeriesId,
+            guard let season, season.id != loadedSeasonId,
+                  let seriesId = seasonSeriesId,
                   let cred = credential, let header = authHeader else { return }
             Task {
+                loadedSeasonId = season.id
                 episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
                                                           seriesId: seriesId, seasonId: season.id)) ?? []
             }
@@ -93,13 +100,18 @@ struct MediaDetailView: View {
         if let seriesId = seasonSeriesId {
             seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
             if let first = seasons.first {
-                if let selected = selectedSeasonForCurrentItem(from: seasons) {
-                    selectedSeason = selected
-                } else {
-                    selectedSeason = first
+                var target = selectedSeasonForCurrentItem(from: seasons) ?? first
+                // For a series entry point, ask the server which episode is next
+                if item.type == .series,
+                   let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId),
+                   let seasonNum = nextEp.parentIndexNumber,
+                   let matched = seasons.first(where: { $0.indexNumber == seasonNum }) {
+                    target = matched
                 }
+                selectedSeason = target
+                loadedSeasonId = target.id
                 episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
-                                                          seriesId: seriesId, seasonId: selectedSeason?.id ?? first.id)) ?? []
+                                                          seriesId: seriesId, seasonId: target.id)) ?? []
             }
         }
 
@@ -447,26 +459,20 @@ struct MediaDetailView: View {
 
     private var seriesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                sectionTitle("Episodes")
-                Spacer()
-                // Season picker
+            HStack(alignment: .firstTextBaseline) {
                 Menu {
                     ForEach(seasons) { season in
                         Button(season.name) { selectedSeason = season }
                     }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 5) {
                         Text(selectedSeason?.name ?? "Season")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(DT.Color.accent)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(DT.Color.textPrimary)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 10))
-                            .foregroundStyle(DT.Color.accent)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(DT.Color.textSecondary)
                     }
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(DT.Color.accent.opacity(0.1))
-                    .clipShape(Capsule())
                 }
 #if os(tvOS)
                 .buttonStyle(TVCardButtonStyle())
@@ -474,7 +480,14 @@ struct MediaDetailView: View {
                 .tvFocusRing(cornerRadius: DT.Radius.pill)
 #else
                 .buttonStyle(.plain)
+                .fixedSize()
 #endif
+
+                Spacer()
+
+                Text("Episodes")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(DT.Color.textSecondary)
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 
@@ -527,62 +540,110 @@ struct MediaDetailView: View {
     }
 
     private func episodeRow(_ ep: MediaItem) -> some View {
-        HStack(spacing: 12) {
-            // Episode thumbnail
-            if let url = mediaRepo.imageURL(for: ep, type: .primary, fillWidth: 200) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: RoundedRectangle(cornerRadius: 6).fill(DT.Color.backgroundSecondary)
-                    }
-                }
-                .frame(width: 80, height: 45)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            } else {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(DT.Color.backgroundSecondary)
-                    .frame(width: 80, height: 45)
-            }
+        let isWatched = ep.userData?.played == true
+        let pct = ep.userData?.playedPercentage ?? 0
 
-            VStack(alignment: .leading, spacing: 3) {
-                if let epNum = ep.indexNumber {
-                    Text("Episode \(epNum)")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(DT.Color.accent)
+        return Button { selectedEpisode = ep } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        if let url = mediaRepo.episodeThumbnailURL(for: ep) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let img): img.resizable().scaledToFill()
+                                default: episodeThumbPlaceholder
+                                }
+                            }
+                        } else {
+                            episodeThumbPlaceholder
+                        }
+
+                        if isWatched {
+                            Color.black.opacity(0.45)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(Color(hex: "10b981"))
+                        } else if pct > 0 {
+                            VStack(spacing: 0) {
+                                Spacer()
+                                GeometryReader { geo in
+                                    ZStack(alignment: .leading) {
+                                        Rectangle().fill(.white.opacity(0.25)).frame(height: 3)
+                                        Rectangle()
+                                            .fill(DT.Color.accent)
+                                            .frame(width: geo.size.width * CGFloat(min(pct / 100.0, 1.0)), height: 3)
+                                    }
+                                }
+                                .frame(height: 3)
+                            }
+                        }
+                    }
+                    .frame(width: 120, height: 68)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let epNum = ep.indexNumber {
+                            Text("E\(epNum)")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(DT.Color.accent)
+                        }
+                        Text(ep.name)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(DT.Color.textPrimary)
+                            .lineLimit(2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Text(ep.name)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .lineLimit(1)
-                if let overview = ep.overview {
+
+                if let overview = ep.overview, !overview.isEmpty {
                     Text(overview)
                         .font(.system(size: 11))
                         .foregroundStyle(DT.Color.textSecondary)
-                        .lineLimit(2)
+                        .lineLimit(3)
+                        .padding(.top, 8)
                 }
             }
-
-            Spacer()
-
-            if let progress = ep.userData?.playedPercentage, progress > 0 {
-                ZStack {
-                    Circle().stroke(.white.opacity(0.1), lineWidth: 2)
-                    Circle()
-                        .trim(from: 0, to: min(progress / 100, 1))
-                        .stroke(DT.Color.accent, lineWidth: 2)
-                        .rotationEffect(.degrees(-90))
-                }
-                .frame(width: 18, height: 18)
-            } else if ep.userData?.played == true {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color(hex: "10b981"))
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(.white.opacity(0.03))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button { markEpisodeWatched(ep, watched: !isWatched) } label: {
+                Label(isWatched ? "Mark as Unwatched" : "Mark as Watched",
+                      systemImage: isWatched ? "eye.slash" : "checkmark")
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(.white.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
+    }
+
+    private var episodeThumbPlaceholder: some View {
+        Rectangle()
+            .fill(DT.Color.backgroundSecondary)
+            .overlay(
+                Image(systemName: "play.rectangle")
+                    .font(.system(size: 20))
+                    .foregroundStyle(DT.Color.textSecondary.opacity(0.3))
+            )
+    }
+
+    private func markEpisodeWatched(_ ep: MediaItem, watched: Bool) {
+        guard let cred = credential, let header = authHeader else { return }
+        Task {
+            try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
+            if let idx = episodes.firstIndex(where: { $0.id == ep.id }) {
+                var updated = episodes[idx]
+                let old = updated.userData ?? UserData()
+                updated.userData = UserData(
+                    playbackPositionTicks: watched ? 0 : old.playbackPositionTicks,
+                    playCount: watched ? old.playCount + 1 : max(0, old.playCount - 1),
+                    isFavorite: old.isFavorite,
+                    played: watched,
+                    playedPercentage: watched ? nil : old.playedPercentage
+                )
+                episodes[idx] = updated
+            }
+        }
     }
 
     // MARK: - Similar items
@@ -690,6 +751,16 @@ struct MediaDetailView: View {
         }
         if item.type == .season {
             return seasons.first(where: { $0.id == item.id }) ?? seasons.first
+        }
+        // .series: in-progress season first, then next after last fully-watched, then first
+        if let inProgress = seasons.first(where: {
+            ($0.userData?.playedPercentage ?? 0) > 0 && $0.userData?.played != true
+        }) {
+            return inProgress
+        }
+        if let lastPlayedIdx = seasons.lastIndex(where: { $0.userData?.played == true }),
+           lastPlayedIdx + 1 < seasons.count {
+            return seasons[lastPlayedIdx + 1]
         }
         return seasons.first
     }

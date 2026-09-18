@@ -438,6 +438,14 @@ struct LibraryDetailView: View {
                 .background(DT.Color.backgroundPrimary)
             } else {
                 ScrollView(showsIndicators: false) {
+#if !os(macOS) && !os(tvOS)
+                    Text(library.name)
+                        .font(.largeTitle.bold())
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                        .padding(.top, DT.Spacing.pagePad)
+#endif
                     LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                         ForEach(items) { item in
                             NavigationLink(value: navTarget(for: item)) {
@@ -484,10 +492,9 @@ struct LibraryDetailView: View {
                 .background(DT.Color.backgroundPrimary)
             }
         }
-        .navigationTitle(library.name)
+        .navigationTitle("")
 #if !os(macOS) && !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
 #endif
         .task { await load() }

@@ -68,6 +68,7 @@ public struct JellyfinAuthClient: Sendable {
     private static let log = Telemetry.logger(category: "JellyfinAuth")
 
     private let deviceId: String
+    private let deviceName: String
 
     public init() {
         let key = "arcfin.deviceId"
@@ -78,6 +79,13 @@ public struct JellyfinAuthClient: Sendable {
             UserDefaults.standard.set(id, forKey: key)
             deviceId = id
         }
+        #if os(iOS) || os(tvOS)
+        deviceName = MainActor.assumeIsolated { UIDevice.current.name }
+        #elseif os(macOS)
+        deviceName = Host.current().localizedName ?? "Mac"
+        #else
+        deviceName = "Arcfin"
+        #endif
     }
 
     // MARK: - Server validation
@@ -179,22 +187,12 @@ public struct JellyfinAuthClient: Sendable {
     public func authHeader(token: String? = nil) -> String {
         var parts = [
             "Client=\"Arcfin\"",
-            "Device=\"\(currentDeviceName)\"",
+            "Device=\"\(deviceName)\"",
             "DeviceId=\"\(deviceId)\"",
             "Version=\"\(Self.appVersion)\"",
         ]
         if let t = token { parts.append("Token=\"\(t)\"") }
         return "MediaBrowser " + parts.joined(separator: ", ")
-    }
-
-    private var currentDeviceName: String {
-        #if os(iOS) || os(tvOS)
-        return UIDevice.current.name
-        #elseif os(macOS)
-        return Host.current().localizedName ?? "Mac"
-        #else
-        return "Arcfin"
-        #endif
     }
 
     private func normalise(_ raw: String) -> URL? {

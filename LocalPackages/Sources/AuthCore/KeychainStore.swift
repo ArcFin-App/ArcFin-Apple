@@ -8,7 +8,8 @@ public enum KeychainError: Error, Sendable {
 
 public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
 
-    private let service = "com.psmattas.arcfin"
+    private let service    = "com.psmattas.arcfin"
+    private let pinService = "com.psmattas.arcfin.pin"
 
     public init() {}
 
@@ -73,5 +74,53 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             throw KeychainError.unexpectedStatus(status)
         }
         return items.compactMap { try? JSONDecoder().decode(ServerCredential.self, from: $0) }
+    }
+
+    // MARK: - PIN storage (separate service, device-only accessibility)
+
+    public func savePin(_ pin: String, for credentialID: UUID) throws {
+        guard let data = pin.data(using: .utf8) else { return }
+        let query: [CFString: Any] = [
+            kSecClass:           kSecClassGenericPassword,
+            kSecAttrService:     pinService,
+            kSecAttrAccount:     credentialID.uuidString,
+            kSecAttrAccessible:  kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        ]
+        var status = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
+        if status == errSecItemNotFound {
+            var item = query
+            item[kSecValueData] = data
+            status = SecItemAdd(item as CFDictionary, nil)
+        }
+        guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
+    }
+
+    public func loadPin(for credentialID: UUID) throws -> String? {
+        let query: [CFString: Any] = [
+            kSecClass:        kSecClassGenericPassword,
+            kSecAttrService:  pinService,
+            kSecAttrAccount:  credentialID.uuidString,
+            kSecReturnData:   true,
+            kSecMatchLimit:   kSecMatchLimitOne,
+        ]
+        var ref: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &ref)
+        if status == errSecItemNotFound { return nil }
+        guard status == errSecSuccess, let data = ref as? Data else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    public func deletePin(for credentialID: UUID) throws {
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: pinService,
+            kSecAttrAccount: credentialID.uuidString,
+        ]
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.unexpectedStatus(status)
+        }
     }
 }

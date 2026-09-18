@@ -247,12 +247,50 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SeasonId", value: seasonId),
             .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
             .init(name: "EnableUserData", value: "true"),
+            .init(name: "EnableImages", value: "true"),
+            .init(name: "ImageTypeLimit", value: "1"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    public func getNextEpisode(
+        credential: ServerCredential,
+        authHeader: String,
+        seriesId: String
+    ) async throws -> MediaItem? {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Shows/NextUp"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "SeriesId", value: seriesId),
+            .init(name: "Limit", value: "1"),
+            .init(name: "Fields", value: "UserData,Overview"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.first?.toMediaItem()
+    }
+
+    public func markWatched(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String,
+        watched: Bool
+    ) async throws {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/PlayedItems/\(itemId)")
+        var req = URLRequest(url: url)
+        req.httpMethod = watched ? "POST" : "DELETE"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        _ = try await URLSession.shared.data(for: req)
     }
 
     public func getLibraryItems(

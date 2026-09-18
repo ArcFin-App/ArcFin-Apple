@@ -7,6 +7,7 @@ import AuthCore
 // MARK: - Main tab container
 
 struct MainTabView: View {
+    @Environment(AuthManager.self) private var authManager
     @Environment(JellyseerrRepository.self) private var seerrRepo
     @State private var searchQuery = ""
 
@@ -54,7 +55,7 @@ struct MainTabView: View {
                 }
             }
 #if os(tvOS)
-            Tab("Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
+            Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                 NavigationStack { SettingsView() }
             }
 #endif
@@ -228,6 +229,10 @@ struct HomeView: View {
                 }
                 mediaRepo.prefetch(urls: seerrQuickLookURLs)
             }
+        }
+        .onChange(of: authManager.state) { old, new in
+            guard let cred = new.credential, old.credential?.id != cred.id else { return }
+            Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
         }
         .onReceive(heroTimer) { _ in
             guard heroItems.count > 1 else { return }

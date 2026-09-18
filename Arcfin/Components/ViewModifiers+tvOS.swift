@@ -141,10 +141,11 @@ struct TVFocusRowLabel<Content: View>: View {
 
     var body: some View {
         content()
+            .foregroundStyle(isFocused ? Color.black : Color.primary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(isFocused ? Color.white.opacity(0.15) : Color.clear)
+                    .fill(isFocused ? Color.white.opacity(0.92) : Color.clear)
             )
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
