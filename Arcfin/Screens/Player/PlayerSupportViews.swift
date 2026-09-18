@@ -73,11 +73,12 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
 struct PlayerLayerRepresentable: UIViewRepresentable {
     let player: AVPlayer
     let pip: PiPCoordinator
+    var isFillScreen: Bool = false
 
     func makeUIView(context: Context) -> PlayerSurfaceView {
         let view = PlayerSurfaceView()
         view.playerLayer.player = player
-        view.playerLayer.videoGravity = .resizeAspect
+        view.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
         view.backgroundColor = .black
         pip.captureLayer(view.playerLayer)
         return view
@@ -87,7 +88,21 @@ struct PlayerLayerRepresentable: UIViewRepresentable {
         if uiView.playerLayer.player !== player {
             uiView.playerLayer.player = player
         }
+        uiView.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
     }
+}
+
+// MARK: - Rotate button (shared by online + offline players)
+
+/// Flips between portrait and forced landscape — iPad/iPhone with multiple orientations
+/// enabled don't always rotate on their own for a video sheet, so this is a manual override.
+func togglePlayerOrientation() {
+    guard let scene = UIApplication.shared.connectedScenes
+        .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+    else { return }
+    let isLandscape = scene.effectiveGeometry.interfaceOrientation.isLandscape
+    let targetMask: UIInterfaceOrientationMask = isLandscape ? .portrait : .landscapeRight
+    scene.requestGeometryUpdate(.iOS(interfaceOrientations: targetMask)) { _ in }
 }
 
 // MARK: - AirPlay route picker

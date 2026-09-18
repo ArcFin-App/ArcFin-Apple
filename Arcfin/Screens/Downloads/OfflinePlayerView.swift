@@ -32,6 +32,7 @@ struct OfflinePlayerView: View {
     @State private var progressSaveTask: Task<Void, Never>?
     #if canImport(UIKit) && !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?
+    @State private var isFillScreen = false
     #endif
 
     private var dir: URL { DownloadStore.directory(for: downloadedItem.itemId) }
@@ -92,6 +93,11 @@ struct OfflinePlayerView: View {
             if status == .playing { scheduleAutoHide() }
             if status == .ended { savePosition(final: true); dismiss() }
         }
+        #if canImport(UIKit) && !os(tvOS)
+        .onChange(of: isFillScreen) { _, newValue in
+            player.vlcPlayer.aspectRatio = newValue ? .fill : .default
+        }
+        #endif
         .sheet(isPresented: $showTrackMenu) {
             subtitleSheet
         }
@@ -203,6 +209,18 @@ struct OfflinePlayerView: View {
                         .foregroundStyle(.white)
                         .frame(width: 32, height: 32)
                 }
+            }
+            Button { togglePlayerOrientation() } label: {
+                Image(systemName: "rotate.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+            }
+            Button { isFillScreen.toggle() } label: {
+                Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isFillScreen ? DT.Color.accent : .white)
+                    .frame(width: 32, height: 32)
             }
             #endif
             if !downloadedItem.subtitleFileNames.isEmpty {

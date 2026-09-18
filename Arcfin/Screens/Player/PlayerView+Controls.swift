@@ -41,14 +41,6 @@ extension PlayerView {
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                    if let method = playbackInfo?.playMethod, method != .directPlay {
-                        Text(method.rawValue.uppercased())
-                            .font(.system(size: 9, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundStyle(.black)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(method == .transcode ? DT.Color.accent : Color.white.opacity(0.6), in: Capsule())
-                    }
                     if let hdrLabel {
                         Text(hdrLabel)
                             .font(.system(size: 9, weight: .bold))
@@ -93,6 +85,13 @@ extension PlayerView {
                 Image(systemName: "rotate.right")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+            }
+
+            Button { isFillScreen.toggle() } label: {
+                Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isFillScreen ? DT.Color.accent : .white)
                     .frame(width: 32, height: 32)
             }
             #endif

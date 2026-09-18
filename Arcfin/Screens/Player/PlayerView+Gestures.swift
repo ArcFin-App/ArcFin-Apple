@@ -55,10 +55,7 @@ extension PlayerView {
     }
 
     func toggleOrientation() {
-        guard let scene = activeWindowScene else { return }
-        let isLandscape = scene.effectiveGeometry.interfaceOrientation.isLandscape
-        let targetMask: UIInterfaceOrientationMask = isLandscape ? .portrait : .landscapeRight
-        scene.requestGeometryUpdate(.iOS(interfaceOrientations: targetMask)) { _ in }
+        togglePlayerOrientation()
     }
 
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {

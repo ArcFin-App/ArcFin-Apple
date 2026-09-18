@@ -61,6 +61,7 @@ struct PlayerView: View {
     @StateObject var pip = PiPCoordinator()
     @State var vlcPipController: SwiftVLC.PiPController?
     @State var isPiPSupported = AVPictureInPictureController.isPictureInPictureSupported()
+    @State var isFillScreen = false
     @State var volumeController: SystemVolumeController?
     @State var dragAxis: DragAxis?
     @State var dragBaseline: CGFloat = 0
@@ -151,6 +152,9 @@ struct PlayerView: View {
             checkUpNextThreshold(positionTicks: newValue)
         }
         .onChange(of: player.status) { _, newStatus in handleStatusChange(newStatus) }
+        #if canImport(UIKit) && !os(tvOS)
+        .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
+        #endif
         // These must live on a view that's always mounted, not inside the conditionally
         // -shown controlsOverlay — auto-hide removing that view from the tree while a
         // sheet/dialog was presented from it was tearing the presentation down too.
@@ -172,7 +176,7 @@ struct PlayerView: View {
     @ViewBuilder
     var videoSurface: some View {
         if let avPlayer = player as? AVFoundationPlayer {
-            PlayerLayerRepresentable(player: avPlayer.player, pip: pip)
+            PlayerLayerRepresentable(player: avPlayer.player, pip: pip, isFillScreen: isFillScreen)
         } else if let vlcEngine = player as? VLCEnginePlayer {
             // Unlike AVFoundation's inert PlayerSurfaceView, PiPVideoView's native drawable
             // is itself interactive and was swallowing taps before our own tapGesture saw
@@ -182,6 +186,14 @@ struct PlayerView: View {
             PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
                 .allowsHitTesting(false)
         }
+    }
+
+    func applyFillScreen() {
+        if let vlcEngine = player as? VLCEnginePlayer {
+            vlcEngine.vlcPlayer.aspectRatio = isFillScreen ? .fill : .default
+        }
+        // AVFoundation's videoGravity is driven declaratively via videoSurface's
+        // isFillScreen param above — no imperative call needed for that branch.
     }
 
     func togglePiP() {
