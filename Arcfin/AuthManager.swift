@@ -125,15 +125,41 @@ final class AuthManager {
         // Undocumented but widely-reported: NEHotspotNetwork.fetchCurrent silently
         // fails ("invalid result code 1") without Location authorization too, despite
         // Apple's docs saying the Access Wi-Fi Information capability alone suffices.
-        await LocationAuthWaiter().wait()
-        return await withCheckedContinuation { continuation in
-            NEHotspotNetwork.fetchCurrent { network in
-                continuation.resume(returning: network?.ssid)
+        //
+        // Both awaits below only resolve via a callback the system controls (the user
+        // answering the location permission prompt; NEHotspotNetwork's own completion) —
+        // neither is guaranteed to fire in a bounded time (a prompt that fails to present,
+        // or is dismissed without a decision some other way, leaves the continuation
+        // dangling forever). This whole call sits directly in checkStoredAuth()'s path,
+        // which the splash screen blocks on — an unbounded hang here was a silent "stuck
+        // at splash" bug. Both now race against a timeout instead.
+        await withTimeout(seconds: 3, fallback: ()) { await LocationAuthWaiter().wait() }
+        return await withTimeout(seconds: 3, fallback: nil) {
+            await withCheckedContinuation { continuation in
+                NEHotspotNetwork.fetchCurrent { network in
+                    continuation.resume(returning: network?.ssid)
+                }
             }
         }
         #else
         nil
         #endif
+    }
+
+    /// Races `operation` against a timeout, returning `fallback` if the timeout wins. Used
+    /// for the two system callbacks above that have no guaranteed completion time of their
+    /// own — without this, a callback that never fires hangs checkStoredAuth() forever.
+    private static func withTimeout<T: Sendable>(seconds: Double, fallback: T, operation: @escaping @Sendable () async -> T) async -> T {
+        await withTaskGroup(of: T.self) { group in
+            group.addTask { await operation() }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(seconds))
+                return fallback
+            }
+            let result = await group.next()!
+            group.cancelAll()
+            return result
+        }
     }
 
     // MARK: - Save & activate (initial sign-in)
