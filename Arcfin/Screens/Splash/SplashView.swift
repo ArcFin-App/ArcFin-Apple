@@ -55,8 +55,8 @@ struct SplashView: View {
                     .scaleEffect(logoScale)
                     .opacity(logoOpacity)
 
-                // "arcfin" wordmark
-                Text("arcfin")
+                // "Arcfin" wordmark
+                Text("Arcfin")
                     .font(.system(size: logoSize * 0.40, weight: .heavy))
                     .foregroundStyle(.white)
                     .tracking(-1)
