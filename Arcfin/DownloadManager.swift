@@ -94,7 +94,7 @@ final class DownloadManager: NSObject {
         }
         let needsRemux = JellyfinMediaClient.downloadNeedsRemux(container: info.container, videoCodec: info.videoStream?.codec)
         let videoURL = needsRemux
-            ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, token: credential.accessToken)
+            ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, sourceBitrate: info.bitrate, token: credential.accessToken)
             : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
 
         var headReq = URLRequest(url: videoURL)
@@ -162,7 +162,7 @@ final class DownloadManager: NSObject {
             let needsRemux = JellyfinMediaClient.downloadNeedsRemux(container: info.container, videoCodec: info.videoStream?.codec)
             let videoFileName = needsRemux ? "video.mp4" : "video.\(sourceContainer.nilIfEmpty ?? "mp4")"
             let videoURL = needsRemux
-                ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, token: credential.accessToken)
+                ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, sourceBitrate: info.bitrate, token: credential.accessToken)
                 : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
             try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
 

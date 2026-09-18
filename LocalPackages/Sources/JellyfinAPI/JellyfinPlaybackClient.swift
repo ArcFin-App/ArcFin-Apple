@@ -55,6 +55,10 @@ public struct JellyfinPlaybackInfo: Sendable {
     public let defaultSubtitleStreamIndex: Int?
     public let trickplay: JellyfinTrickplayInfo?
     public let videoStream: JellyfinMediaStream?
+    /// Source's total bitrate (bits/sec), when the server reports it — used to keep a
+    /// forced remux download close to source quality instead of Jellyfin's low default
+    /// transcode bitrate when none is specified.
+    public let bitrate: Int?
 
     public var isTranscoding: Bool { playMethod == .transcode }
     public var isDolbyVision: Bool { (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby") }
@@ -185,7 +189,8 @@ extension JellyfinMediaClient {
             defaultAudioStreamIndex: audioStreams.first(where: \.isDefault)?.index ?? audioStreams.first?.index,
             defaultSubtitleStreamIndex: subtitleStreams.first(where: \.isDefault)?.index,
             trickplay: source.trickplayInfo?.preferred(),
-            videoStream: videoStream
+            videoStream: videoStream,
+            bitrate: source.bitrate
         )
     }
 
@@ -344,12 +349,14 @@ private struct MediaSourceResponse: Decodable {
     let transcodeReasons: [String]?
     let mediaStreams: [MediaStreamStreamResponse]?
     let trickplayInfo: [String: TrickplayResponse]?
+    let bitrate: Int?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", container = "Container", runTimeTicks = "RunTimeTicks"
         case transcodingUrl = "TranscodingUrl", transcodeReasons = "TranscodeReasons"
         case mediaStreams = "MediaStreams"
         case trickplayInfo = "TrickplayInfo"
+        case bitrate = "Bitrate"
     }
 }
 

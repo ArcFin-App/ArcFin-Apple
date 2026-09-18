@@ -231,15 +231,24 @@ public struct JellyfinMediaClient: Sendable {
     /// output would silently fail to play. Static=false with an .mp4 extension makes
     /// Jellyfin return a normal progressive stream, not HLS segments, so it downloads the
     /// same way as a plain file.
-    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, token: String) -> URL {
+    ///
+    /// VideoBitRate must be passed explicitly — without it Jellyfin's transcoder falls back
+    /// to a low default bitrate regardless of source quality, which is what actually made
+    /// remuxed downloads look bad, not the codec change itself. `sourceBitrate` should come
+    /// from PlaybackInfo's MediaSource.Bitrate; a generous fallback covers sources that
+    /// don't report one so a remux still isn't downgraded below what most sources need.
+    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, sourceBitrate: Int?, token: String) -> URL {
         var comps = URLComponents(
             url: baseURL.appendingPathComponent("Videos/\(itemID)/stream.mp4"),
             resolvingAgainstBaseURL: false)!
+        let videoBitRate = max(sourceBitrate ?? 20_000_000, 4_000_000)
         comps.queryItems = [
             .init(name: "Static", value: "false"),
             .init(name: "mediaSourceId", value: mediaSourceId),
             .init(name: "VideoCodec", value: "h264"),
             .init(name: "AudioCodec", value: "aac"),
+            .init(name: "VideoBitRate", value: "\(videoBitRate)"),
+            .init(name: "AudioBitRate", value: "320000"),
             .init(name: "api_key", value: token),
         ]
         return comps.url!
