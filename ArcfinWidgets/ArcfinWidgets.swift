@@ -1,86 +1,106 @@
-//
-//  ArcfinWidgets.swift
-//  ArcfinWidgets
-//
-//  Created by Puranjay Savar Mattas on 18/09/26.
-//
-
 import WidgetKit
 import SwiftUI
+import LiveActivityKit
+import ActivityKit
 
-struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
-    }
-
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
-        completion(entry)
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
-            entries.append(entry)
-        }
-
-        let timeline = Timeline(entries: entries, policy: .atEnd)
-        completion(timeline)
-    }
-
-//    func relevances() async -> WidgetRelevances<Void> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
+private enum WidgetDT {
+    static let accent = Color(red: 0x06 / 255, green: 0xB6 / 255, blue: 0xD4 / 255)
+    static let textSecondary = Color(white: 1, opacity: 0.6)
 }
 
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let emoji: String
+private func formattedBytes(_ bytes: Int64) -> String {
+    ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
 }
 
-struct ArcfinWidgetsEntryView : View {
-    var entry: Provider.Entry
-
-    var body: some View {
-        VStack {
-            HStack {
-                Text("Time:")
-                Text(entry.date, style: .time)
-            }
-
-            Text("Emoji:")
-            Text(entry.emoji)
-        }
-    }
+private func formattedSpeed(_ bytesPerSecond: Double) -> String {
+    guard bytesPerSecond > 0 else { return "" }
+    return ByteCountFormatter.string(fromByteCount: Int64(bytesPerSecond), countStyle: .file) + "/s"
 }
 
-struct ArcfinWidgets: Widget {
-    let kind: String = "ArcfinWidgets"
-
+struct DownloadLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if #available(macOS 14.0, iOS 17.0, *) {
-                ArcfinWidgetsEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
-            } else {
-                ArcfinWidgetsEntryView(entry: entry)
-                    .padding()
-                    .background()
+        ActivityConfiguration(for: DownloadActivityAttributes.self) { context in
+            lockScreenView(context.state)
+                .activityBackgroundTint(Color(red: 0x0A / 255, green: 0x0A / 255, blue: 0x0F / 255))
+                .activitySystemActionForegroundColor(.white)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .foregroundStyle(WidgetDT.accent)
+                        .font(.system(size: 22))
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    Text("\(context.state.completedCount + 1)/\(context.state.totalCount)")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    Text(context.state.currentItemTitle)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ProgressView(value: context.state.fractionComplete)
+                            .tint(WidgetDT.accent)
+                        HStack {
+                            Text(formattedBytes(context.state.bytesWritten) + " of " + formattedBytes(context.state.totalBytes))
+                            Spacer()
+                            Text(formattedSpeed(context.state.bytesPerSecond))
+                        }
+                        .font(.system(size: 11))
+                        .foregroundStyle(WidgetDT.textSecondary)
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: "arrow.down.circle.fill")
+                    .foregroundStyle(WidgetDT.accent)
+            } compactTrailing: {
+                Text("\(Int(context.state.fractionComplete * 100))%")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+            } minimal: {
+                Image(systemName: "arrow.down.circle.fill")
+                    .foregroundStyle(WidgetDT.accent)
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
     }
-}
 
-#Preview(as: .systemSmall) {
-    ArcfinWidgets()
-} timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
+    @ViewBuilder
+    private func lockScreenView(_ state: DownloadActivityAttributes.ContentState) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: state.isFinished ? "checkmark.circle.fill" : "arrow.down.circle.fill")
+                    .foregroundStyle(WidgetDT.accent)
+                    .font(.system(size: 18))
+                Text(state.isFinished ? "Download Complete" : "Downloading")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("\(min(state.completedCount + (state.isFinished ? 0 : 1), state.totalCount))/\(state.totalCount)")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(WidgetDT.textSecondary)
+            }
+
+            Text(state.currentItemTitle)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+
+            if !state.isFinished {
+                ProgressView(value: state.fractionComplete)
+                    .tint(WidgetDT.accent)
+                HStack {
+                    Text(formattedBytes(state.bytesWritten) + " of " + formattedBytes(state.totalBytes))
+                    Spacer()
+                    Text(formattedSpeed(state.bytesPerSecond))
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(WidgetDT.textSecondary)
+            }
+        }
+        .padding(14)
+    }
 }

@@ -3,9 +3,13 @@ import Observation
 import SwiftData
 import AuthCore
 import JellyfinAPI
+import LiveActivityKit
 import Persistence
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
+#endif
+#if canImport(ActivityKit) && os(iOS)
+import ActivityKit
 #endif
 
 enum DownloadError: LocalizedError {
@@ -48,6 +52,13 @@ final class DownloadManager: NSObject {
     #if canImport(UIKit) && !os(tvOS)
     @ObservationIgnored private var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
     #endif
+    #if canImport(ActivityKit) && os(iOS)
+    @ObservationIgnored private var liveActivity: Activity<DownloadActivityAttributes>?
+    #endif
+    /// Counts across the whole current queue run (reset when a fresh run starts after the
+    /// previous one fully drained) — drives the Live Activity's "N of M" display.
+    @ObservationIgnored private var queueCompletedCount = 0
+    @ObservationIgnored private var queueTotalCount = 0
     /// True background session on iOS — transfer keeps going, managed by nsurlsessiond,
     /// even if the app is suspended or killed; iOS relaunches the app to redeliver the
     /// delegate callback via AppDelegate's handleEventsForBackgroundURLSession. tvOS/macOS
@@ -69,6 +80,48 @@ final class DownloadManager: NSObject {
     func configure(modelContext: ModelContext) {
         self.modelContext = modelContext
     }
+
+    // MARK: - Live Activity
+
+    #if canImport(ActivityKit) && os(iOS)
+    private func beginLiveActivity(currentItemTitle: String) {
+        guard liveActivity == nil, ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let state = DownloadActivityAttributes.ContentState(
+            currentItemTitle: currentItemTitle, bytesWritten: 0, totalBytes: 0, bytesPerSecond: 0,
+            completedCount: 0, totalCount: queueTotalCount
+        )
+        liveActivity = try? Activity.request(
+            attributes: DownloadActivityAttributes(),
+            content: ActivityContent(state: state, staleDate: nil)
+        )
+    }
+
+    private func refreshLiveActivity(isFinished: Bool = false) {
+        guard let liveActivity else { return }
+        let itemId = activeItemIds.first
+        let stat = itemId.flatMap { stats[$0] }
+        let state = DownloadActivityAttributes.ContentState(
+            currentItemTitle: itemId.flatMap { activeItemTitles[$0] } ?? "",
+            bytesWritten: stat?.bytesWritten ?? 0, totalBytes: stat?.totalBytes ?? 0,
+            bytesPerSecond: stat?.bytesPerSecond ?? 0,
+            completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished
+        )
+        Task { await liveActivity.update(ActivityContent(state: state, staleDate: nil)) }
+    }
+
+    /// Shows a brief "Download Complete" state before dismissing — matching every other
+    /// list's stats/progress reset at this same point, so there's nothing stale left over
+    /// for the next queue run to accidentally inherit.
+    private func endLiveActivity() {
+        guard let liveActivity else { return }
+        refreshLiveActivity(isFinished: true)
+        self.liveActivity = nil
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            await liveActivity.end(nil, dismissalPolicy: .after(.now + 60 * 20))
+        }
+    }
+    #endif
 
     func isDownloaded(_ itemId: String) -> Bool {
         guard let modelContext else { return false }
@@ -155,8 +208,19 @@ final class DownloadManager: NSObject {
         guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
               !pendingQueue.contains(where: { $0.item.id == item.id })
         else { return }
+        let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
         pendingQueue.append((item, credential, authHeader, bitrateCap))
+        #if canImport(ActivityKit) && os(iOS)
+        if isFreshQueue {
+            queueCompletedCount = 0
+            queueTotalCount = 1
+            beginLiveActivity(currentItemTitle: item.name)
+        } else {
+            queueTotalCount += 1
+            refreshLiveActivity()
+        }
+        #endif
         await processQueue()
     }
 
@@ -176,6 +240,9 @@ final class DownloadManager: NSObject {
         activeItemIds.insert(item.id)
         progress[item.id] = 0
         beginBackgroundTaskIfNeeded()
+        #if canImport(ActivityKit) && os(iOS)
+        refreshLiveActivity()
+        #endif
 
         do {
             async let detailTask = client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
@@ -292,9 +359,18 @@ final class DownloadManager: NSObject {
         stats[item.id] = nil
         speedSamples[item.id] = nil
         endBackgroundTaskIfIdle()
+        #if canImport(ActivityKit) && os(iOS)
+        queueCompletedCount += 1
+        if pendingQueue.isEmpty {
+            endLiveActivity()
+        } else {
+            refreshLiveActivity()
+        }
+        #endif
     }
 
     func cancelDownload(itemId: String) {
+        let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
         downloadTasks[itemId]?.cancel()
         downloadTasks[itemId] = nil
@@ -305,6 +381,16 @@ final class DownloadManager: NSObject {
         speedSamples[itemId] = nil
         DownloadStore.deleteDirectory(for: itemId)
         endBackgroundTaskIfIdle()
+        #if canImport(ActivityKit) && os(iOS)
+        if wasQueued {
+            queueTotalCount = max(queueTotalCount - 1, queueCompletedCount)
+            if pendingQueue.isEmpty && activeItemIds.isEmpty {
+                endLiveActivity()
+            } else {
+                refreshLiveActivity()
+            }
+        }
+        #endif
     }
 
     // MARK: - Background continuation
@@ -413,17 +499,28 @@ extension DownloadManager: URLSessionDownloadDelegate {
             // Sampled rather than computed from this single delta — didWriteData can fire
             // many times a second, which would make the displayed speed jump around.
             let bytesPerSecond: Double
+            var tookNewSample = false
             if let last = self.speedSamples[itemId], now.timeIntervalSince(last.time) >= 0.5 {
                 let elapsed = now.timeIntervalSince(last.time)
                 bytesPerSecond = elapsed > 0 ? Double(totalBytesWritten - last.bytes) / elapsed : 0
                 self.speedSamples[itemId] = (now, totalBytesWritten)
+                tookNewSample = true
             } else if self.speedSamples[itemId] == nil {
                 self.speedSamples[itemId] = (now, totalBytesWritten)
                 bytesPerSecond = self.stats[itemId]?.bytesPerSecond ?? 0
+                tookNewSample = true
             } else {
                 bytesPerSecond = self.stats[itemId]?.bytesPerSecond ?? 0
             }
             self.stats[itemId] = DownloadStats(bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite, bytesPerSecond: bytesPerSecond)
+            #if canImport(ActivityKit) && os(iOS)
+            // Throttled to the same ~0.5s cadence as the speed sample above — updating on
+            // every didWriteData tick would hammer ActivityKit with far more writes than a
+            // glanceable progress bar needs.
+            if tookNewSample {
+                self.refreshLiveActivity()
+            }
+            #endif
         }
     }
 

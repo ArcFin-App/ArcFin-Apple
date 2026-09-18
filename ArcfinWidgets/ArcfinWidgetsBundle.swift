@@ -11,6 +11,6 @@ import SwiftUI
 @main
 struct ArcfinWidgetsBundle: WidgetBundle {
     var body: some Widget {
-        ArcfinWidgets()
+        DownloadLiveActivity()
     }
 }
