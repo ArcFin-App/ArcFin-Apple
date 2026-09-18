@@ -83,10 +83,15 @@ struct SettingsView: View {
                         Text(q.label).tag(q)
                     }
                 }
-                Picker("Playback Engine", selection: $playbackEngine) {
-                    ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
-                        Text(engine.rawValue).tag(engine)
+                VStack(alignment: .leading, spacing: 4) {
+                    Picker("Playback Engine", selection: $playbackEngine) {
+                        ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
+                            Text(engine.rawValue).tag(engine)
+                        }
                     }
+                    Text("Auto is recommended. If a video won't play, switch to VLC — then back to Auto once it's fixed.")
+                        .font(.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
                 }
                 Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
@@ -94,10 +99,6 @@ struct SettingsView: View {
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
             } header: {
                 sectionHeader("Playback", icon: "play.circle")
-            } footer: {
-                Text("Auto picks AVFoundation or VLC per item based on its container and codec. AVFoundation uses less battery; VLC plays a wider range of files (including Matroska/mkv and mistagged HEVC) that AVFoundation can't open.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             // ── Downloads ────────────────────────────────────────────────
