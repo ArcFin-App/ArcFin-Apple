@@ -24,14 +24,15 @@ struct DownloadConfirmSheet: View {
         self._selectedOption = State(initialValue: Self.options(for: preview).first!)
     }
 
-    /// Fixed quality tiers, filtered to those actually below the source's own bitrate —
-    /// no point offering to "upscale" a download past what the source already is.
+    /// Fixed quality tiers. When the server reports a source bitrate, tiers at or above it
+    /// are dropped (no point offering to "upscale"); plenty of libraries never get a deep
+    /// metadata scan and report no bitrate at all, in which case all tiers are offered
+    /// rather than silently hiding the picker.
     private static func options(for preview: DownloadManager.DownloadPreview) -> [DownloadBitrateOption] {
         let original = DownloadBitrateOption(label: "Original (Best Quality)", bitrate: nil)
-        guard let sourceBitrate = preview.sourceBitrate else { return [original] }
         let tiers: [(String, Int)] = [("High", 10_000_000), ("Medium", 5_000_000), ("Low", 2_500_000)]
-        let lower = tiers.filter { $0.1 < sourceBitrate }.map { DownloadBitrateOption(label: $0.0, bitrate: $0.1) }
-        return [original] + lower
+        let usable = tiers.filter { tier in preview.sourceBitrate.map { tier.1 < $0 } ?? true }
+        return [original] + usable.map { DownloadBitrateOption(label: $0.0, bitrate: $0.1) }
     }
 
     private func estimatedSize(for option: DownloadBitrateOption) -> String {
