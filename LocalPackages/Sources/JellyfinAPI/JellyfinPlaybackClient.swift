@@ -237,10 +237,15 @@ extension JellyfinMediaClient {
             ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac,flac"],
             ["Container": "mov", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac"],
         ],
+        // h264-only for the transcode OUTPUT — HEVC decode/render through a raw AVPlayerLayer
+        // (not AVPlayerViewController, needed for full custom-control ownership) is a known
+        // trouble spot on some iOS versions, and every HLS "no video" case so far has
+        // requested hevc as an option. DirectPlayProfiles above still allow hevc for
+        // sources that qualify for passthrough — this only affects re-encoded output.
         "TranscodingProfiles": [
             [
                 "Container": "ts", "Type": "Video", "AudioCodec": "aac",
-                "VideoCodec": "h264,hevc", "Context": "Streaming", "Protocol": "hls",
+                "VideoCodec": "h264", "Context": "Streaming", "Protocol": "hls",
                 "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
             ],
         ],
