@@ -75,7 +75,7 @@ struct DownloadButton: View {
             DownloadConfirmSheet(item: item, preview: preview) { bitrateCap in
                 startDownload(bitrateCap: bitrateCap)
             }
-            .presentationDetents([.medium])
+            .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
     }
@@ -87,7 +87,10 @@ struct DownloadButton: View {
         Task {
             let preview = await downloadManager.preview(for: item, credential: credential, authHeader: authHeader)
             isLoadingPreview = false
-            previewSheet = preview ?? DownloadManager.DownloadPreview(subtitleLanguages: [], estimatedSizeBytes: nil, willRemux: false)
+            previewSheet = preview ?? DownloadManager.DownloadPreview(
+                subtitleLanguages: [], audioLanguages: [], estimatedSizeBytes: nil,
+                estimatedSizeIsApproximate: false, willRemux: false
+            )
         }
     }
 

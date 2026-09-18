@@ -39,7 +39,9 @@ struct DownloadConfirmSheet: View {
 
     private func estimatedSize(for option: DownloadBitrateOption) -> String {
         guard let bitrate = option.bitrate else {
-            return preview.estimatedSizeBytes.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "Unknown"
+            guard let bytes = preview.estimatedSizeBytes else { return "Unknown" }
+            let prefix = preview.estimatedSizeIsApproximate ? "~" : ""
+            return prefix + ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         }
         guard let ticks = preview.runtimeTicks, ticks > 0 else { return "Estimated" }
         let seconds = Double(ticks) / 10_000_000
@@ -47,45 +49,93 @@ struct DownloadConfirmSheet: View {
         return "~" + ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
+    private var resolutionLabel: String? {
+        guard let width = preview.videoWidth, let height = preview.videoHeight else { return nil }
+        switch height {
+        case 2000...: return "4K (\(width)×\(height))"
+        case 1000..<2000: return "1080p (\(width)×\(height))"
+        case 700..<1000: return "720p (\(width)×\(height))"
+        default: return "\(width)×\(height)"
+        }
+    }
+
+    private var isHDR: Bool {
+        (preview.videoRange ?? "").localizedCaseInsensitiveContains("hdr")
+            || (preview.videoRange ?? "").localizedCaseInsensitiveContains("dolby")
+    }
+
+    private var runtimeLabel: String? {
+        guard let ticks = preview.runtimeTicks, ticks > 0 else { return nil }
+        let totalMinutes = Int(Double(ticks) / 10_000_000 / 60)
+        let h = totalMinutes / 60
+        let m = totalMinutes % 60
+        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+    }
+
+    private var divider: some View {
+        Divider().overlay(.white.opacity(0.06))
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: DT.Spacing.md) {
-                Text(item.name)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(DT.Color.textPrimary)
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: DT.Spacing.md) {
+                        Text(item.name)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(DT.Color.textPrimary)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Quality")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(DT.Color.textSecondary)
-                    Picker("Quality", selection: $selectedOption) {
-                        ForEach(Self.options) { option in
-                            Text(option.label).tag(option)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Quality")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(DT.Color.textSecondary)
+                            Picker("Quality", selection: $selectedOption) {
+                                ForEach(Self.options) { option in
+                                    Text(option.label).tag(option)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .tint(DT.Color.textPrimary)
+                        }
+
+                        VStack(spacing: 0) {
+                            row(label: "Size", value: estimatedSize(for: selectedOption))
+                            if let runtimeLabel {
+                                divider
+                                row(label: "Runtime", value: runtimeLabel)
+                            }
+                            if let resolutionLabel {
+                                divider
+                                row(label: "Resolution", value: resolutionLabel + (isHDR ? " · HDR" : ""))
+                            }
+                            if let videoCodec = preview.videoCodec {
+                                divider
+                                row(label: "Video", value: videoCodec.uppercased())
+                            }
+                            divider
+                            row(label: "Audio", value: preview.audioLanguages.isEmpty ? "Unknown" : preview.audioLanguages.joined(separator: ", "))
+                            divider
+                            row(label: "Subtitles", value: preview.subtitleLanguages.isEmpty ? "None" : preview.subtitleLanguages.joined(separator: ", "))
+                            if let container = preview.container {
+                                divider
+                                row(label: "Format", value: container.uppercased())
+                            }
+                            if preview.willRemux || selectedOption.bitrate != nil {
+                                divider
+                                row(label: "Converted", value: "Yes — offline quality change")
+                            }
+                        }
+                        .background(.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+
+                        if preview.willRemux || selectedOption.bitrate != nil {
+                            Text("This download will be converted on your server before downloading — this may take longer than the file size alone suggests.")
+                                .font(.system(size: 12))
+                                .foregroundStyle(DT.Color.textSecondary)
                         }
                     }
-                    .pickerStyle(.menu)
-                    .tint(DT.Color.textPrimary)
+                    .padding(DT.Spacing.pagePad)
                 }
-
-                VStack(spacing: 0) {
-                    row(label: "Size", value: estimatedSize(for: selectedOption))
-                    Divider().overlay(.white.opacity(0.06))
-                    row(label: "Subtitles", value: preview.subtitleLanguages.isEmpty ? "None" : preview.subtitleLanguages.joined(separator: ", "))
-                    if preview.willRemux || selectedOption.bitrate != nil {
-                        Divider().overlay(.white.opacity(0.06))
-                        row(label: "Format", value: "Converted for offline playback")
-                    }
-                }
-                .background(.white.opacity(0.04))
-                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
-
-                if preview.willRemux || selectedOption.bitrate != nil {
-                    Text("This download will be converted on your server before downloading — this may take longer than the file size alone suggests.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
-
-                Spacer()
 
                 Button {
                     onConfirm(selectedOption.bitrate)
@@ -100,8 +150,9 @@ struct DownloadConfirmSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 }
                 .buttonStyle(.plain)
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.pagePad)
             }
-            .padding(DT.Spacing.pagePad)
             .background(DT.Color.backgroundPrimary)
             .navigationTitle("Download")
             #if os(iOS)

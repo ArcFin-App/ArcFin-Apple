@@ -211,20 +211,6 @@ public struct JellyfinMediaClient: Sendable {
     /// something fixable client-side short of a full third-party demuxer.
     public static let avFoundationCompatibleContainers: Set<String> = ["mp4", "m4v", "mov"]
 
-    /// Whether a download needs the server-side remux (forced to h264 output) rather than
-    /// the original file verbatim. Container incompatibility is the obvious case; HEVC is
-    /// the other one — sources are routinely tagged hev1 instead of the hvc1 AVFoundation
-    /// requires, which plays audio with a black video screen, and originalFileDownloadURL
-    /// serves the file byte-for-byte with whatever tag it already has. The online player
-    /// sidesteps this for direct play by asking the server not to advertise mistagged hevc
-    /// (see JellyfinPlaybackClient's DeviceProfile), but a download has no such negotiation —
-    /// forcing the same h264 remux is the only way to guarantee it plays.
-    public static func downloadNeedsRemux(container: String?, videoCodec: String?) -> Bool {
-        let container = (container ?? "").lowercased()
-        let videoCodec = (videoCodec ?? "").lowercased()
-        return !avFoundationCompatibleContainers.contains(container) || videoCodec == "hevc"
-    }
-
     /// A single progressively-downloadable file, remuxed (or transcoded, if the source codec
     /// itself needs it) into MP4 — used for downloads when the source container is
     /// something AVFoundation can't open (e.g. mkv), where originalFileDownloadURL's

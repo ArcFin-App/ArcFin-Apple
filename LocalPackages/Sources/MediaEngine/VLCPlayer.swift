@@ -1,4 +1,5 @@
 import Foundation
+import JellyfinAPI
 import Observation
 import SwiftVLC
 import Telemetry
@@ -130,11 +131,10 @@ public enum PlaybackEngineKind: String, CaseIterable, Sendable {
 }
 
 public enum PlaybackEngineSelector {
-    /// Same signal `JellyfinMediaClient.downloadNeedsRemux` uses for downloads — a container
-    /// AVFoundation can't open, or HEVC (routinely mistagged hev1 vs the hvc1 AVFoundation
-    /// requires) — picks VLC instead of AVFoundation for Auto. AVFoundation stays preferred
-    /// otherwise: less battery, native PiP/AirPlay/Now-Playing/HDR tone-mapping, and it's the
-    /// better fit for HLS transcode output too.
+    /// A container AVFoundation can't open, or HEVC (routinely mistagged hev1 vs the hvc1
+    /// AVFoundation requires) — picks VLC instead of AVFoundation for Auto. AVFoundation
+    /// stays preferred otherwise: less battery, native PiP/AirPlay/Now-Playing/HDR
+    /// tone-mapping, and it's the better fit for HLS transcode output too.
     public static func choose(preference: PlaybackEngineKind, container: String?, videoCodec: String?) -> PlaybackEngineKind {
         switch preference {
         case .avFoundation, .vlc:
@@ -142,8 +142,7 @@ public enum PlaybackEngineSelector {
         case .auto:
             let container = (container ?? "").lowercased()
             let videoCodec = (videoCodec ?? "").lowercased()
-            let avFoundationCompatible: Set<String> = ["mp4", "m4v", "mov"]
-            let needsVLC = !avFoundationCompatible.contains(container) || videoCodec == "hevc"
+            let needsVLC = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(container) || videoCodec == "hevc"
             return needsVLC ? .vlc : .avFoundation
         }
     }
