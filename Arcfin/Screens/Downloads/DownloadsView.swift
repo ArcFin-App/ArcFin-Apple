@@ -126,11 +126,20 @@ struct DownloadsView: View {
                 }
                 .buttonStyle(.plain)
             }
-            ProgressView(value: fraction)
-                .tint(DT.Color.accent)
+            if let stats, stats.totalBytes > 0 {
+                ProgressView(value: fraction).tint(DT.Color.accent)
+            } else if stats != nil {
+                // Total size isn't knowable ahead of time for a server-side remux/transcode
+                // download — still show that data IS flowing, not a static empty bar.
+                ProgressView().tint(DT.Color.accent)
+            } else {
+                ProgressView(value: 0).tint(DT.Color.accent)
+            }
             HStack {
-                if let stats, stats.totalBytes > 0 {
+                if let stats, stats.bytesWritten > 0, stats.totalBytes > 0 {
                     Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: stats.totalBytes, countStyle: .file))")
+                } else if let stats, stats.bytesWritten > 0 {
+                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) downloaded")
                 } else {
                     Text("Preparing…")
                 }

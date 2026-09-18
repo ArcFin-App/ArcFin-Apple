@@ -108,6 +108,7 @@ struct HomeView: View {
     @State private var heroDetailItem: MediaItem?
     @State private var heroPlaybackRequest: HeroPlaybackRequest?
     @State private var seeAllShelf: SeeAllShelf?
+    @State private var showOfflinePrompt = false
 
     struct HeroPlaybackRequest: Identifiable {
         let id = UUID()
@@ -270,15 +271,19 @@ struct HomeView: View {
                                     }
                                 }
                             }
-                            ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
-                                seeAllShelf = SeeAllShelf(title: "Recently Added Movies", items: mediaRepo.recentlyAddedMovies)
-                            }) {
-                                mediaShelfContent(mediaRepo.recentlyAddedMovies)
+                            if !mediaRepo.recentlyAddedMovies.isEmpty || !mediaRepo.connectionFailed {
+                                ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
+                                    seeAllShelf = SeeAllShelf(title: "Recently Added Movies", items: mediaRepo.recentlyAddedMovies)
+                                }) {
+                                    mediaShelfContent(mediaRepo.recentlyAddedMovies)
+                                }
                             }
-                            ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
-                                seeAllShelf = SeeAllShelf(title: "Recently Added Shows", items: mediaRepo.recentlyAddedShows)
-                            }) {
-                                mediaShelfContent(mediaRepo.recentlyAddedShows)
+                            if !mediaRepo.recentlyAddedShows.isEmpty || !mediaRepo.connectionFailed {
+                                ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
+                                    seeAllShelf = SeeAllShelf(title: "Recently Added Shows", items: mediaRepo.recentlyAddedShows)
+                                }) {
+                                    mediaShelfContent(mediaRepo.recentlyAddedShows)
+                                }
                             }
                             if !mediaRepo.recentlyReleasedMovies.isEmpty {
                                 ShelfRow(title: "Recently Released Movies", onSeeAll: {
@@ -289,9 +294,11 @@ struct HomeView: View {
                             }
                             if !mediaRepo.recentlyAiredEpisodes.isEmpty {
                                 ShelfRow(title: "Recently Aired Episodes", onSeeAll: {
-                                    seeAllShelf = SeeAllShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
+                                    seeAllShelf = SeeAllShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes, isLandscape: true)
                                 }) {
-                                    mediaShelfContent(mediaRepo.recentlyAiredEpisodes)
+                                    ForEach(mediaRepo.recentlyAiredEpisodes) { item in
+                                        continueWatchingCard(item)
+                                    }
                                 }
                             }
                             if !mediaRepo.watchAgain.isEmpty {
@@ -368,6 +375,25 @@ struct HomeView: View {
         }
         .task { await loadHome() }
         .refreshable { await loadHome(force: true) }
+        #if os(iOS)
+        .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
+            if isFailed && !wasFailed { showOfflinePrompt = true }
+        }
+        .confirmationDialog(
+            "Can't reach your server", isPresented: $showOfflinePrompt, titleVisibility: .visible
+        ) {
+            Button("Retry") {
+                guard case .authenticated(let cred) = authManager.state else { return }
+                Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
+            }
+            if !downloadedItems.isEmpty {
+                Button("Watch Downloads Instead") { offlineModeEnabled = true }
+            }
+            Button("Dismiss", role: .cancel) {}
+        } message: {
+            Text("Check your connection or Server Settings, then retry.")
+        }
+        #endif
         .onChange(of: authManager.state) { old, new in
             guard let cred = new.credential, old.credential?.id != cred.id else { return }
             Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
