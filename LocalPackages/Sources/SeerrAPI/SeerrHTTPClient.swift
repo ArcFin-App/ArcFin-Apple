@@ -174,6 +174,14 @@ public actor SeerrHTTPClient {
         return try JSONDecoder().decode(SeerrItemResponse.self, from: data).toItem(defaultMediaType: defaultType)
     }
 
+    /// Full movie/tv detail (genres, runtime, rating, cast) for the request confirmation sheet.
+    public func fullDetail(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrMediaDetail {
+        try await ensureAuthenticated()
+        let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        return try JSONDecoder().decode(SeerrDetailResponse.self, from: data).toDetail()
+    }
+
     public func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
         try await ensureAuthenticated()
         let url = baseURL.appendingPathComponent("api/v1/request")
@@ -315,5 +323,40 @@ private struct SeerrRequestResponse: Decodable {
         return SeerrRequestItem(id: id, mediaTitle: title, mediaType: mType,
                                 status: reqStatus, requestedAt: date,
                                 posterPath: detail?.posterPath, backdropPath: detail?.backdropPath)
+    }
+}
+
+private struct SeerrDetailResponse: Decodable {
+    let tagline: String?
+    let overview: String?
+    let genres: [SeerrGenre]?
+    let runtime: Int?               // movie
+    let episodeRunTime: [Int]?      // tv
+    let voteAverage: Double?
+    let status: String?
+    let credits: SeerrCredits?
+
+    struct SeerrGenre: Decodable { let name: String }
+    struct SeerrCredits: Decodable { let cast: [SeerrCast]? }
+    struct SeerrCast: Decodable {
+        let id: Int
+        let name: String
+        let character: String?
+        let profilePath: String?
+    }
+
+    func toDetail() -> SeerrMediaDetail {
+        let cast = (credits?.cast ?? []).prefix(10).map {
+            SeerrCastMember(id: $0.id, name: $0.name, character: $0.character, profilePath: $0.profilePath)
+        }
+        return SeerrMediaDetail(
+            tagline: (tagline?.isEmpty ?? true) ? nil : tagline,
+            overview: overview,
+            genres: (genres ?? []).map(\.name),
+            runtimeMinutes: runtime ?? episodeRunTime?.first,
+            voteAverage: voteAverage,
+            status: status,
+            cast: Array(cast)
+        )
     }
 }

@@ -45,7 +45,7 @@ struct SeerrView: View {
         }
         .sheet(item: $requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }

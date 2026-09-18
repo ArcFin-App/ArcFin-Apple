@@ -104,6 +104,11 @@ final class SeerrRepository {
         if let c = client { Task { await c.clearAuthFailure() } }
     }
 
+    func mediaDetail(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrMediaDetail? {
+        guard let client else { return nil }
+        return try? await client.fullDetail(mediaType: mediaType, tmdbId: tmdbId)
+    }
+
     func relatedMedia(mediaType: RequestMediaType, mediaId: Int) async -> [SeerrItem] {
         guard let client else { return [] }
         async let recommendations = (try? await client.recommendations(mediaType: mediaType, mediaId: mediaId)) ?? []
