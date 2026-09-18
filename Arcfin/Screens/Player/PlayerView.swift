@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import AVFoundation
 import AuthCore
 import JellyfinAPI
@@ -23,6 +24,9 @@ struct PlayerView: View {
     @State var quality: VideoQuality
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
+    @State var trickplayLoader: TrickplayLoader?
+    @State var scrubThumbnail: UIImage?
+    @State var lastThumbnailBucket: Int?
     @State var introEnd: Double?
     @State var creditsStart: Double?
     @State var progressReportTask: Task<Void, Never>?
@@ -130,6 +134,9 @@ struct PlayerView: View {
             playbackInfo = info
             selectedAudioIndex = info.defaultAudioStreamIndex
             selectedSubtitleIndex = info.defaultSubtitleStreamIndex
+            if let trickplay = info.trickplay {
+                trickplayLoader = TrickplayLoader(credential: credential, client: client, itemId: item.id, info: trickplay)
+            }
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             await player.play()
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,

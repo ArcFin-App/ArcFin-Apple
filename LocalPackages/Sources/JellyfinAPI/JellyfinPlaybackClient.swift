@@ -14,6 +14,17 @@ public struct JellyfinMediaStream: Sendable, Equatable {
     public let isExternal: Bool
 }
 
+/// Trickplay scrub-thumbnail sprite sheet info (Jellyfin 10.9+ "Trickplay" plugin/core
+/// feature — absent entirely if the server hasn't generated it for this item).
+public struct JellyfinTrickplayInfo: Sendable {
+    public let width: Int
+    public let height: Int
+    public let tileWidth: Int
+    public let tileHeight: Int
+    public let thumbnailCount: Int
+    public let intervalMs: Int
+}
+
 public struct JellyfinPlaybackInfo: Sendable {
     public let mediaSourceId: String
     public let playURL: URL
@@ -24,6 +35,7 @@ public struct JellyfinPlaybackInfo: Sendable {
     public let subtitleStreams: [JellyfinMediaStream]
     public let defaultAudioStreamIndex: Int?
     public let defaultSubtitleStreamIndex: Int?
+    public let trickplay: JellyfinTrickplayInfo?
 }
 
 /// Caps applied when the user overrides automatic quality — nil means uncapped/Auto.
@@ -126,8 +138,19 @@ extension JellyfinMediaClient {
             audioStreams: audioStreams,
             subtitleStreams: subtitleStreams,
             defaultAudioStreamIndex: audioStreams.first(where: \.isDefault)?.index ?? audioStreams.first?.index,
-            defaultSubtitleStreamIndex: subtitleStreams.first(where: \.isDefault)?.index
+            defaultSubtitleStreamIndex: subtitleStreams.first(where: \.isDefault)?.index,
+            trickplay: source.trickplayInfo?.preferred()
         )
+    }
+
+    /// The tile-sheet URL for one trickplay tile — cache these client-side, each holds
+    /// tileWidth × tileHeight individual thumbnail frames.
+    public func trickplayTileURL(credential: ServerCredential, itemId: String, width: Int, tileIndex: Int) -> URL {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Videos/\(itemId)/Trickplay/\(width)/\(tileIndex).jpg"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [.init(name: "api_key", value: credential.accessToken)]
+        return comps.url!
     }
 
     // MARK: - Playback progress reporting
@@ -229,10 +252,40 @@ private struct MediaSourceResponse: Decodable {
     let runTimeTicks: Int64?
     let transcodingUrl: String?
     let mediaStreams: [MediaStreamStreamResponse]?
+    let trickplayInfo: [String: TrickplayResponse]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", container = "Container", runTimeTicks = "RunTimeTicks"
         case transcodingUrl = "TranscodingUrl", mediaStreams = "MediaStreams"
+        case trickplayInfo = "TrickplayInfo"
+    }
+}
+
+private struct TrickplayResponse: Decodable {
+    let width: Int
+    let height: Int
+    let tileWidth: Int
+    let tileHeight: Int
+    let thumbnailCount: Int
+    let interval: Int
+
+    enum CodingKeys: String, CodingKey {
+        case width = "Width", height = "Height"
+        case tileWidth = "TileWidth", tileHeight = "TileHeight"
+        case thumbnailCount = "ThumbnailCount", interval = "Interval"
+    }
+}
+
+private extension [String: TrickplayResponse] {
+    /// Smallest available resolution — a fast-loading, small scrub-preview image is
+    /// preferable here since it's only ever shown at thumbnail size.
+    func preferred() -> JellyfinTrickplayInfo? {
+        guard let smallest = values.min(by: { $0.width < $1.width }) else { return nil }
+        return JellyfinTrickplayInfo(
+            width: smallest.width, height: smallest.height,
+            tileWidth: smallest.tileWidth, tileHeight: smallest.tileHeight,
+            thumbnailCount: smallest.thumbnailCount, intervalMs: smallest.interval
+        )
     }
 }
 

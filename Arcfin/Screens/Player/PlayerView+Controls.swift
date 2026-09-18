@@ -155,14 +155,20 @@ extension PlayerView {
         GeometryReader { proxy in
             let duration = max(player.durationTicks, 1)
             let fraction = Double(isScrubbing ? Int64(scrubTicks) : player.positionTicks) / Double(duration)
+            let thumbX = proxy.size.width * min(max(fraction, 0), 1)
 
             ZStack(alignment: .leading) {
                 Capsule().fill(.white.opacity(0.25)).frame(height: 4)
                 Capsule().fill(DT.Color.accent)
-                    .frame(width: proxy.size.width * min(max(fraction, 0), 1), height: 4)
+                    .frame(width: thumbX, height: 4)
                 Circle().fill(.white)
                     .frame(width: isScrubbing ? 16 : 10, height: isScrubbing ? 16 : 10)
-                    .offset(x: proxy.size.width * min(max(fraction, 0), 1) - (isScrubbing ? 8 : 5))
+                    .offset(x: thumbX - (isScrubbing ? 8 : 5))
+
+                if isScrubbing, trickplayLoader != nil {
+                    trickplayPreview
+                        .offset(x: min(max(thumbX - 70, 0), proxy.size.width - 140), y: -100)
+                }
             }
             .frame(maxHeight: .infinity, alignment: .center)
             .contentShape(Rectangle())
@@ -174,17 +180,49 @@ extension PlayerView {
                         hideControlsTask?.cancel()
                         let fraction = min(max(value.location.x / proxy.size.width, 0), 1)
                         scrubTicks = Double(player.durationTicks) * fraction
+                        updateScrubThumbnail()
                     }
                     .onEnded { _ in
                         Task {
                             await player.seek(to: Int64(scrubTicks))
                             isScrubbing = false
+                            scrubThumbnail = nil
                             scheduleAutoHide()
                         }
                     }
             )
         }
         .frame(height: 20)
+    }
+
+    private var trickplayPreview: some View {
+        Group {
+            if let scrubThumbnail {
+                Image(uiImage: scrubThumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                Color.black
+            }
+        }
+        .frame(width: 140, height: 79)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.white.opacity(0.3), lineWidth: 1))
+        .shadow(radius: 8)
+        .allowsHitTesting(false)
+    }
+
+    private func updateScrubThumbnail() {
+        // 2s buckets — fetching a fresh crop on every pixel of drag would hammer the loader.
+        let bucket = Int(scrubTicks / (2 * 10_000_000))
+        guard bucket != lastThumbnailBucket, let loader = trickplayLoader else { return }
+        lastThumbnailBucket = bucket
+        let ticks = Int64(scrubTicks)
+        Task {
+            let image = await loader.thumbnail(forPositionTicks: ticks)
+            guard isScrubbing else { return }
+            scrubThumbnail = image
+        }
     }
 
     private var remainingLabel: String {
