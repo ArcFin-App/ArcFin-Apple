@@ -23,6 +23,13 @@ struct MediaDetailView: View {
     @State private var trailers: [MediaItem] = []
     @State private var isLoading = true
     @State private var requestingSeerrItem: SeerrItem?
+    @State private var playbackRequest: PlaybackRequest?
+
+    struct PlaybackRequest: Identifiable {
+        let id = UUID()
+        let item: MediaItem
+        let startTicks: Int64
+    }
 
     private let client = JellyfinMediaClient()
 
@@ -56,6 +63,11 @@ struct MediaDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
+#if !os(tvOS)
+        .fullScreenCover(item: $playbackRequest) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks)
+        }
+#endif
         .task { await load() }
         .onChange(of: selectedSeason) { _, season in
             guard let season, season.id != loadedSeasonId,
@@ -286,7 +298,12 @@ struct MediaDetailView: View {
             .padding(.bottom, DT.Spacing.md)
 #else
         HStack(spacing: 10) {
-            Button {} label: {
+            Button {
+                playbackRequest = PlaybackRequest(
+                    item: detail?.item ?? item,
+                    startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
+                )
+            } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill").font(.system(size: 14))
                     VStack(alignment: .leading, spacing: 1) {
@@ -311,7 +328,9 @@ struct MediaDetailView: View {
             .buttonStyle(.plain)
 
             if isResumable {
-                Button {} label: {
+                Button {
+                    playbackRequest = PlaybackRequest(item: detail?.item ?? item, startTicks: 0)
+                } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
