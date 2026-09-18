@@ -17,6 +17,7 @@ struct LibraryView: View {
     @State private var showDocPicker = false
     @State private var pickedURL: URL?
     @State private var navigateToLocalPlayer = false
+    @State private var searchQuery = ""
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: 12),
@@ -25,25 +26,16 @@ struct LibraryView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 28) {
-                    // ── Your Libraries ──────────────────────────────────────
-                    if !supportedLibraries.isEmpty {
-                        librariesSection
-                    }
-
-                    // ── Downloads ───────────────────────────────────────────
-                    downloadsSection
-
-                    // ── On This Device ──────────────────────────────────────
-                    onDeviceSection
+            Group {
+                if searchQuery.isEmpty {
+                    browseContent
+                } else {
+                    SearchView(query: $searchQuery)
                 }
-                .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.top, 8)
-                .padding(.bottom, 32)
             }
             .background(DT.Color.backgroundPrimary)
-            .navigationTitle("Library")
+            .navigationTitle("Browse")
+            .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
 #if !os(macOS) && !os(tvOS)
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -60,6 +52,9 @@ struct LibraryView: View {
                         collectionType: .unknown,
                         primaryImageTag: item.primaryImageTag))
                 }
+            }
+            .navigationDestination(for: MediaItem.self) { item in
+                MediaDetailView(item: item)
             }
             .onAppear { downloads = listDownloads() }
 #if canImport(UIKit) && !os(tvOS)
@@ -88,6 +83,26 @@ struct LibraryView: View {
                 LocalPlayerView(url: file.url)
 #endif
             }
+        }
+    }
+
+    private var browseContent: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 28) {
+                // ── Your Libraries ──────────────────────────────────────
+                if !supportedLibraries.isEmpty {
+                    librariesSection
+                }
+
+                // ── Downloads ───────────────────────────────────────────
+                downloadsSection
+
+                // ── On This Device ──────────────────────────────────────
+                onDeviceSection
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
     }
 

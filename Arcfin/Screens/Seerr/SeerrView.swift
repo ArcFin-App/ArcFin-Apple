@@ -173,9 +173,6 @@ struct SeerrView: View {
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 12)
-        .background(LinearGradient(
-            colors: [DT.Color.accent.opacity(0.05), .clear],
-            startPoint: .top, endPoint: .bottom))
     }
 
     // MARK: - Discover grid
@@ -223,6 +220,17 @@ struct SeerrView: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
+    private func toggleWatchlist(_ item: SeerrItem) {
+        HapticManager.impact(.light)
+        Task {
+            if seerrRepo.isInWatchlist(item) {
+                try? await seerrRepo.removeFromWatchlist(item)
+            } else {
+                try? await seerrRepo.addToWatchlist(item)
+            }
+        }
+    }
+
     private func discoverCard(_ item: SeerrItem) -> some View {
         let alreadyRequested = seerrRepo.requests.contains { $0.mediaTitle == item.title }
         let isAvailable = item.availabilityStatus == .available
@@ -241,7 +249,7 @@ struct SeerrView: View {
                 posterPlaceholder(item: item)
             }
 
-            // Type badge
+            // Type badge + watchlist toggle
             VStack {
                 HStack {
                     Text(item.mediaType == .tv ? "SERIES" : "MOVIE")
@@ -253,6 +261,16 @@ struct SeerrView: View {
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                     Spacer()
+                    Button { toggleWatchlist(item) } label: {
+                        Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(5)
+                            .background(.black.opacity(0.5))
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
                 Spacer()
             }

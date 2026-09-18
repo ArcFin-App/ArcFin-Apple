@@ -9,7 +9,9 @@ import AuthCore
 struct MainTabView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
+    #if os(tvOS)
     @State private var searchQuery = ""
+    #endif
     @AppStorage("showStatsTab") private var showStatsTab = true
     @AppStorage("showWatchlistTab") private var showWatchlistTab = true
 
@@ -22,13 +24,15 @@ struct MainTabView: View {
                 HomeView()
 #endif
             }
-            Tab("Library", systemImage: "square.grid.2x2") {
 #if os(tvOS)
+            Tab("Library", systemImage: "square.grid.2x2") {
                 TVLibraryView()
-#else
-                LibraryView()
-#endif
             }
+#else
+            Tab("Browse", systemImage: "square.grid.2x2") {
+                LibraryView()
+            }
+#endif
 #if !os(tvOS)
             if showStatsTab {
                 Tab("Stats", systemImage: "chart.xyaxis.line") {
@@ -50,6 +54,7 @@ struct MainTabView: View {
                     }
                 }
             }
+#if os(tvOS)
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 NavigationStack {
                     SearchView(query: $searchQuery)
@@ -57,15 +62,10 @@ struct MainTabView: View {
                         .arcfinNavTitleLarge("Search")
                         .background(DT.Color.backgroundPrimary)
                         .navigationDestination(for: MediaItem.self) { item in
-#if os(tvOS)
                             TVMediaDetailView(item: item)
-#else
-                            MediaDetailView(item: item)
-#endif
                         }
                 }
             }
-#if os(tvOS)
             Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                 NavigationStack { SettingsView() }
             }
@@ -98,6 +98,20 @@ struct HomeView: View {
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
+    @State private var heroPlaybackRequest: HeroPlaybackRequest?
+    @State private var seeAllShelf: SeeAllShelf?
+
+    struct HeroPlaybackRequest: Identifiable {
+        let id = UUID()
+        let item: MediaItem
+        let startTicks: Int64
+    }
+
+    struct SeeAllShelf: Identifiable, Hashable {
+        let id = UUID()
+        let title: String
+        let items: [MediaItem]
+    }
     @State private var seerrRequestItem: SeerrItem? = nil
     @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
@@ -115,6 +129,11 @@ struct HomeView: View {
         return items.filter { seen.insert($0.id).inserted }
     }
     private var usePortraitHero: Bool { sizeClass == .compact }
+
+    private var heroIsResumable: Bool {
+        guard let ud = heroItems[safe: heroIndex]?.userData else { return false }
+        return ud.playbackPositionTicks > 0 && !ud.played
+    }
 
     private var mergedContinueAndNextItems: [MediaItem] {
         var seen = Set<String>()
@@ -171,7 +190,7 @@ struct HomeView: View {
                 let imageH: CGFloat = screenH * 0.48
                 let heroH:  CGFloat = imageH + 180
 #else
-                let imageH = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.75
+                let imageH = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
                 let heroH  = usePortraitHero ? imageH : imageH + 220
 #endif
 
@@ -194,7 +213,9 @@ struct HomeView: View {
                             }
                             if mergeContinueWatchingAndUpNext {
                                 if !mergedContinueAndNextItems.isEmpty {
-                                    ShelfRow(title: "Continue Watching", onSeeAll: {}) {
+                                    ShelfRow(title: "Continue Watching", onSeeAll: {
+                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mergedContinueAndNextItems)
+                                    }) {
                                         ForEach(mergedContinueAndNextItems) { item in
                                             continueWatchingCard(item)
                                         }
@@ -202,36 +223,50 @@ struct HomeView: View {
                                 }
                             } else {
                                 if !mediaRepo.continueWatching.isEmpty {
-                                    ShelfRow(title: "Continue Watching", onSeeAll: {}) {
+                                    ShelfRow(title: "Continue Watching", onSeeAll: {
+                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mediaRepo.continueWatching)
+                                    }) {
                                         ForEach(mediaRepo.continueWatching) { item in
                                             continueWatchingCard(item)
                                         }
                                     }
                                 }
                                 if !mediaRepo.nextUp.isEmpty {
-                                    ShelfRow(title: "Next Up", onSeeAll: {}) {
+                                    ShelfRow(title: "Next Up", onSeeAll: {
+                                        seeAllShelf = SeeAllShelf(title: "Next Up", items: mediaRepo.nextUp)
+                                    }) {
                                         mediaShelfContent(mediaRepo.nextUp)
                                     }
                                 }
                             }
-                            ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {}) {
+                            ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
+                                seeAllShelf = SeeAllShelf(title: "Recently Added Movies", items: mediaRepo.recentlyAddedMovies)
+                            }) {
                                 mediaShelfContent(mediaRepo.recentlyAddedMovies)
                             }
-                            ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {}) {
+                            ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
+                                seeAllShelf = SeeAllShelf(title: "Recently Added Shows", items: mediaRepo.recentlyAddedShows)
+                            }) {
                                 mediaShelfContent(mediaRepo.recentlyAddedShows)
                             }
                             if !mediaRepo.recentlyReleasedMovies.isEmpty {
-                                ShelfRow(title: "Recently Released Movies", onSeeAll: {}) {
+                                ShelfRow(title: "Recently Released Movies", onSeeAll: {
+                                    seeAllShelf = SeeAllShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
+                                }) {
                                     mediaShelfContent(mediaRepo.recentlyReleasedMovies)
                                 }
                             }
                             if !mediaRepo.recentlyAiredEpisodes.isEmpty {
-                                ShelfRow(title: "Recently Aired Episodes", onSeeAll: {}) {
+                                ShelfRow(title: "Recently Aired Episodes", onSeeAll: {
+                                    seeAllShelf = SeeAllShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
+                                }) {
                                     mediaShelfContent(mediaRepo.recentlyAiredEpisodes)
                                 }
                             }
                             if !mediaRepo.watchAgain.isEmpty {
-                                ShelfRow(title: "Watch Again", onSeeAll: {}) {
+                                ShelfRow(title: "Watch Again", onSeeAll: {
+                                    seeAllShelf = SeeAllShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+                                }) {
                                     mediaShelfContent(mediaRepo.watchAgain)
                                 }
                             }
@@ -269,6 +304,16 @@ struct HomeView: View {
                 .navigationDestination(item: $heroDetailItem) { item in
                     MediaDetailView(item: item)
                 }
+                .navigationDestination(item: $seeAllShelf) { shelf in
+                    ShelfSeeAllView(title: shelf.title, items: shelf.items)
+                }
+#if os(iOS)
+                .fullScreenCover(item: $heroPlaybackRequest) { request in
+                    PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                        heroPlaybackRequest = HeroPlaybackRequest(item: next, startTicks: 0)
+                    }
+                }
+#endif
 
                 if mediaRepo.isLoading {
                     ProgressView()
@@ -441,7 +486,7 @@ struct HomeView: View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
                 heroBackground(imageH: imageH, screenW: screenW)
-                    .overlay(heroImageFade)
+                    .overlay(heroImageFade.allowsHitTesting(false))
                     .animation(DT.Animation.slow, value: heroIndex)
                     .contentShape(Rectangle())
                     // simultaneousGesture, not .onTapGesture directly — a plain tap gesture
@@ -463,6 +508,7 @@ struct HomeView: View {
                 LinearGradient(colors: [.clear, DT.Color.backgroundPrimary.opacity(0.3)],
                                startPoint: .leading, endPoint: .trailing).frame(width: 48)
             }
+            .allowsHitTesting(false)
 
             heroContent.padding(.bottom, usePortraitHero ? 32 : 24)
         }
@@ -587,7 +633,7 @@ struct HomeView: View {
 #if os(tvOS)
             HStack(spacing: 12 * DT.Scale.font) {
                 Button {} label: {
-                    TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
+                    TVHeroButtonLabel(icon: "play.fill", text: heroIsResumable ? "Resume" : "Play", isPrimary: true)
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -604,10 +650,17 @@ struct HomeView: View {
 #else
             GlassEffectContainer(spacing: 12) {
                 HStack(spacing: 12) {
-                    Button {} label: {
+                    Button {
+                        guard let item = heroItems[safe: heroIndex] else { return }
+                        let resumable = (item.userData?.playbackPositionTicks ?? 0) > 0 && !(item.userData?.played ?? false)
+                        heroPlaybackRequest = HeroPlaybackRequest(
+                            item: item,
+                            startTicks: resumable ? (item.userData?.playbackPositionTicks ?? 0) : 0
+                        )
+                    } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "play.fill").font(.system(size: 12 * DT.Scale.font))
-                            Text("Play").font(.system(size: 14 * DT.Scale.font, weight: .bold))
+                            Text(heroIsResumable ? "Resume" : "Play").font(.system(size: 14 * DT.Scale.font, weight: .bold))
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 28).padding(.vertical, 11)

@@ -285,10 +285,12 @@ struct MediaDetailView: View {
     }
 
     private var resumeTimeLabel: String? {
-        guard let ud = resumeUserData, ud.playbackPositionTicks > 0 else { return nil }
-        let totalMinutes = Int(Double(ud.playbackPositionTicks) / 10_000_000 / 60)
-        if totalMinutes >= 60 { return "\(totalMinutes / 60)h \(totalMinutes % 60)m in" }
-        return "\(totalMinutes)m in"
+        guard let ud = resumeUserData, ud.playbackPositionTicks > 0,
+              let runTimeTicks = detail?.runTimeTicks, runTimeTicks > ud.playbackPositionTicks
+        else { return nil }
+        let remainingMinutes = Int(Double(runTimeTicks - ud.playbackPositionTicks) / 10_000_000 / 60)
+        if remainingMinutes >= 60 { return "\(remainingMinutes / 60)h \(remainingMinutes % 60)m left" }
+        return "\(remainingMinutes)m left"
     }
 
     private var playButton: some View {

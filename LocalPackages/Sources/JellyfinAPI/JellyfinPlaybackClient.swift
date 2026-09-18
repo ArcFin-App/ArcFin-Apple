@@ -126,6 +126,19 @@ extension JellyfinMediaClient {
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
+        // Raw-JSON check, not the decoded model — confirms whether Jellyfin's response for
+        // THIS request actually has a TrickplayInfo key at all, since a struct field
+        // mismatch would silently decode to nil without throwing.
+        if let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let sources = raw["MediaSources"] as? [[String: Any]], let firstRaw = sources.first {
+            print("[Trickplay] raw mediaSource top-level keys: \(firstRaw.keys.sorted())")
+            if let tp = firstRaw["TrickplayInfo"] {
+                print("[Trickplay] raw TrickplayInfo value: \(tp)")
+            } else {
+                print("[Trickplay] raw JSON has NO TrickplayInfo key at all for this MediaSource")
+            }
+        }
+
         let decoded = try JSONDecoder().decode(PlaybackInfoResponse.self, from: data)
         guard let source = decoded.mediaSources.first else { throw URLError(.cannotParseResponse) }
 

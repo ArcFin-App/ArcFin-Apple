@@ -229,6 +229,39 @@ public actor SeerrHTTPClient {
         }
     }
 
+    public func addToWatchlist(tmdbId: Int, mediaType: RequestMediaType, title: String) async throws {
+        try await ensureAuthenticated()
+        let url = baseURL.appendingPathComponent("api/v1/watchlist")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        applyXSRF(to: &req)
+        let body: [String: Any] = ["tmdbId": tmdbId, "type": mediaType.rawValue, "title": title]
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        req.timeoutInterval = 15
+        let (data, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw SeerrError.requestFailed(status: status, body: String(data: data, encoding: .utf8) ?? "")
+        }
+    }
+
+    public func removeFromWatchlist(tmdbId: Int, mediaType: RequestMediaType) async throws {
+        try await ensureAuthenticated()
+        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/watchlist/\(tmdbId)"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [URLQueryItem(name: "mediaType", value: mediaType.rawValue)]
+        var req = URLRequest(url: comps.url!)
+        req.httpMethod = "DELETE"
+        applyXSRF(to: &req)
+        req.timeoutInterval = 15
+        let (data, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw SeerrError.requestFailed(status: status, body: String(data: data, encoding: .utf8) ?? "")
+        }
+    }
+
     /// Cancels a pending request, or removes a declined/available one from the list —
     /// Seerr uses the same DELETE for both.
     public func cancelRequest(requestID: Int) async throws {

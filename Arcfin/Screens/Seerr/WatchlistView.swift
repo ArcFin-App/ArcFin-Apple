@@ -56,7 +56,7 @@ struct WatchlistView: View {
 
     private func watchlistCard(_ item: SeerrItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            ZStack {
+            ZStack(alignment: .topTrailing) {
                 if let url = item.posterURL {
                     AsyncImage(url: url) { phase in
                         switch phase {
@@ -68,6 +68,18 @@ struct WatchlistView: View {
                 } else {
                     DT.Color.backgroundSecondary
                 }
+
+                Button { remove(item) } label: {
+                    Image(systemName: "bookmark.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(5)
+                        .background(.black.opacity(0.5))
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(6)
             }
             .aspectRatio(2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
@@ -83,5 +95,10 @@ struct WatchlistView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
+    }
+
+    private func remove(_ item: SeerrItem) {
+        HapticManager.impact(.light)
+        Task { try? await seerrRepo.removeFromWatchlist(item) }
     }
 }

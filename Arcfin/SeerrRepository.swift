@@ -111,6 +111,22 @@ final class SeerrRepository {
         requests.removeAll { $0.id == id }
     }
 
+    func isInWatchlist(_ item: SeerrItem) -> Bool {
+        watchlist.contains { $0.id == item.id && $0.mediaType == item.mediaType }
+    }
+
+    func addToWatchlist(_ item: SeerrItem) async throws {
+        guard let client else { throw URLError(.badURL) }
+        try await client.addToWatchlist(tmdbId: item.id, mediaType: item.mediaType, title: item.title)
+        if !isInWatchlist(item) { watchlist.append(item) }
+    }
+
+    func removeFromWatchlist(_ item: SeerrItem) async throws {
+        guard let client else { throw URLError(.badURL) }
+        try await client.removeFromWatchlist(tmdbId: item.id, mediaType: item.mediaType)
+        watchlist.removeAll { $0.id == item.id && $0.mediaType == item.mediaType }
+    }
+
     func clearAuthFailure() {
         authFailed = false
         if let c = client { Task { await c.clearAuthFailure() } }
