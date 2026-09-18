@@ -36,10 +36,20 @@ extension PlayerView {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(item.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    if playbackInfo?.isTranscoding == true {
+                        Text("TRANSCODING")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(DT.Color.accent, in: Capsule())
+                    }
+                }
                 if let subtitle = episodeSubtitle {
                     Text(subtitle)
                         .font(.system(size: 12))
@@ -64,6 +74,15 @@ extension PlayerView {
             }
             #endif
 
+            #if !os(tvOS)
+            Button { toggleOrientation() } label: {
+                Image(systemName: "rotate.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+            }
+            #endif
+
             Button { showTrackMenu = true } label: {
                 Image(systemName: "captions.bubble")
                     .font(.system(size: 16, weight: .semibold))
@@ -80,31 +99,6 @@ extension PlayerView {
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 8)
-        .sheet(isPresented: $showTrackMenu) {
-            TrackSelectionSheet(
-                audioStreams: playbackInfo?.audioStreams ?? [],
-                subtitleStreams: playbackInfo?.subtitleStreams ?? [],
-                selectedAudioIndex: selectedAudioIndex,
-                selectedSubtitleIndex: selectedSubtitleIndex,
-                onSelectAudio: { index in
-                    showTrackMenu = false
-                    changeTrack(audioIndex: index)
-                },
-                onSelectSubtitle: { index in
-                    showTrackMenu = false
-                    changeTrack(subtitleIndex: .some(index))
-                }
-            )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(.ultraThinMaterial)
-        }
-        .confirmationDialog("Quality", isPresented: $showQualityMenu, titleVisibility: .visible) {
-            ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
-                Button(q.label + (q == quality ? " ✓" : "")) { changeQuality(to: q) }
-            }
-            Button("Cancel", role: .cancel) {}
-        }
     }
 
     private var episodeSubtitle: String? {
@@ -310,6 +304,22 @@ extension PlayerView {
 
     // MARK: - Error / feedback views
 
+    func subtitleOverlay(_ text: String) -> some View {
+        VStack {
+            Spacer()
+            Text(text)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 10).padding(.vertical, 4)
+                .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
+                .padding(.horizontal, 24)
+                .padding(.bottom, isControlsVisible ? 110 : 32)
+        }
+        .allowsHitTesting(false)
+        .animation(DT.Animation.fast, value: isControlsVisible)
+    }
+
     func errorView(_ message: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
@@ -381,7 +391,7 @@ extension PlayerView {
 
 // MARK: - Audio & subtitle track selection
 
-private struct TrackSelectionSheet: View {
+struct TrackSelectionSheet: View {
     let audioStreams: [JellyfinMediaStream]
     let subtitleStreams: [JellyfinMediaStream]
     let selectedAudioIndex: Int?

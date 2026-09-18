@@ -12,6 +12,9 @@ public struct JellyfinMediaStream: Sendable, Equatable {
     public let isDefault: Bool
     public let isForced: Bool
     public let isExternal: Bool
+    /// Server-provided path to fetch this subtitle track's content (relative to base URL) —
+    /// nil for embedded/non-subtitle streams.
+    public let deliveryUrl: String?
 }
 
 /// Trickplay scrub-thumbnail sprite sheet info (Jellyfin 10.9+ "Trickplay" plugin/core
@@ -42,10 +45,15 @@ public struct JellyfinPlaybackInfo: Sendable {
 public struct StreamQualityCap: Sendable, Equatable {
     public let maxBitrate: Int?      // bits per second
     public let maxWidth: Int?
+    /// When true, forces a transcode even if the source would already qualify for direct
+    /// play under these caps (e.g. a 720p source with a 1080p cap) — a manual quality
+    /// override should always visibly re-encode, not silently no-op.
+    public let forceTranscode: Bool
 
-    public init(maxBitrate: Int?, maxWidth: Int?) {
+    public init(maxBitrate: Int?, maxWidth: Int?, forceTranscode: Bool = false) {
         self.maxBitrate = maxBitrate
         self.maxWidth = maxWidth
+        self.forceTranscode = forceTranscode
     }
 
     public static let auto = StreamQualityCap(maxBitrate: nil, maxWidth: nil)
@@ -84,6 +92,10 @@ extension JellyfinMediaClient {
         // metadata is missing or under the cap — MaxStreamingBitrate alone only forces a
         // transcode when the server actually has bitrate metadata to compare against.
         if let maxWidth = quality.maxWidth { body["MaxWidth"] = maxWidth }
+        if quality.forceTranscode {
+            body["EnableDirectPlay"] = false
+            body["EnableDirectStream"] = false
+        }
         if let audioStreamIndex { body["AudioStreamIndex"] = audioStreamIndex }
         if let subtitleStreamIndex { body["SubtitleStreamIndex"] = subtitleStreamIndex }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -236,11 +248,11 @@ extension JellyfinMediaClient {
             ["Type": "Video", "Codec": "h264",
              "Conditions": [["Condition": "LessThanEqual", "Property": "VideoBitDepth", "Value": "8"]]],
         ],
+        // vtt only — the client parses/renders subtitles itself (see SubtitleLoader), so a
+        // single consistent, easily-parsed format is preferable to juggling srt/ass too.
+        // Jellyfin converts any source subtitle format to vtt on request.
         "SubtitleProfiles": [
-            ["Format": "srt", "Method": "External"],
             ["Format": "vtt", "Method": "External"],
-            ["Format": "ass", "Method": "External"],
-            ["Format": "subrip", "Method": "External"],
         ],
     ] }
 }
@@ -304,18 +316,21 @@ private struct MediaStreamStreamResponse: Decodable {
     let isDefault: Bool?
     let isForced: Bool?
     let isExternal: Bool?
+    let deliveryUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case index = "Index", type = "Type", codec = "Codec", language = "Language"
         case displayTitle = "DisplayTitle", isDefault = "IsDefault"
         case isForced = "IsForced", isExternal = "IsExternal"
+        case deliveryUrl = "DeliveryUrl"
     }
 
     func toStream() -> JellyfinMediaStream {
         JellyfinMediaStream(
             index: index, type: type, codec: codec, language: language,
             displayTitle: displayTitle, isDefault: isDefault ?? false,
-            isForced: isForced ?? false, isExternal: isExternal ?? false
+            isForced: isForced ?? false, isExternal: isExternal ?? false,
+            deliveryUrl: deliveryUrl
         )
     }
 }

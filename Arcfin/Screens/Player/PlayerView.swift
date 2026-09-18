@@ -24,6 +24,8 @@ struct PlayerView: View {
     @State var quality: VideoQuality
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
+    @State var subtitleCues: [SubtitleCue] = []
+    @State var currentSubtitleText: String?
     @State var trickplayLoader: TrickplayLoader?
     @State var scrubThumbnail: UIImage?
     @State var lastThumbnailBucket: Int?
@@ -39,6 +41,7 @@ struct PlayerView: View {
     @State var dragBaseline: CGFloat = 0
     @State var dragValue: CGFloat = 0
     @State var lastHapticStep: Int?
+    @State var volumeObservation: NSKeyValueObservation?
     #endif
 
     let client = JellyfinMediaClient()
@@ -92,6 +95,10 @@ struct PlayerView: View {
                 errorView(errorMessage)
             }
 
+            if let currentSubtitleText {
+                subtitleOverlay(currentSubtitleText)
+            }
+
             if isControlsVisible {
                 controlsOverlay
                     .transition(.opacity)
@@ -103,10 +110,63 @@ struct PlayerView: View {
         .persistentSystemOverlays(.hidden)
         .task { await setup() }
         .onDisappear { Task { await teardown() } }
-        .onChange(of: player.status) { _, newStatus in
-            if newStatus == .playing { scheduleAutoHide() }
-            if newStatus == .ended { Task { await finishPlayback() } }
+        .onChange(of: player.positionTicks) { _, newValue in
+            updateSubtitleText(forTicks: newValue)
         }
+        .onChange(of: player.status) { _, newStatus in handleStatusChange(newStatus) }
+        // These must live on a view that's always mounted, not inside the conditionally
+        // -shown controlsOverlay — auto-hide removing that view from the tree while a
+        // sheet/dialog was presented from it was tearing the presentation down too.
+        .onChange(of: showTrackMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
+        .onChange(of: showQualityMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
+        .sheet(isPresented: $showTrackMenu) {
+            trackSelectionSheet
+        }
+        .confirmationDialog("Quality", isPresented: $showQualityMenu, titleVisibility: .visible) {
+            qualityMenuButtons
+        }
+    }
+
+    private func handleStatusChange(_ newStatus: PlaybackStatus) {
+        if newStatus == .playing { scheduleAutoHide() }
+        if newStatus == .ended { Task { await finishPlayback() } }
+    }
+
+    private func handleMenuVisibilityChange(_ isOpen: Bool) {
+        if isOpen {
+            hideControlsTask?.cancel()
+        } else {
+            scheduleAutoHide()
+        }
+    }
+
+    @ViewBuilder
+    private var trackSelectionSheet: some View {
+        TrackSelectionSheet(
+            audioStreams: playbackInfo?.audioStreams ?? [],
+            subtitleStreams: playbackInfo?.subtitleStreams ?? [],
+            selectedAudioIndex: selectedAudioIndex,
+            selectedSubtitleIndex: selectedSubtitleIndex,
+            onSelectAudio: { index in
+                showTrackMenu = false
+                changeTrack(audioIndex: index)
+            },
+            onSelectSubtitle: { index in
+                showTrackMenu = false
+                changeTrack(subtitleIndex: .some(index))
+            }
+        )
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(.ultraThinMaterial)
+    }
+
+    @ViewBuilder
+    private var qualityMenuButtons: some View {
+        ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
+            Button(q.label + (q == quality ? " ✓" : "")) { changeQuality(to: q) }
+        }
+        Button("Cancel", role: .cancel) {}
     }
 
     // MARK: - Setup / teardown
@@ -116,10 +176,25 @@ struct PlayerView: View {
         volumeController = SystemVolumeController()
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+            // The async activate() API needs iOS 27 — this project's min target is 26, so
+            // the synchronous call (and its one-time "may block main thread" advisory,
+            // harmless for a single per-session call) stays until the target moves up.
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
             // Not fatal — playback still works, just without the routing/background
             // guarantees .playback gives (this is also what PiP relies on being correct).
+        }
+        // The hidden MPVolumeView used to set volume programmatically also silently
+        // suppresses the system's own volume HUD — observe outputVolume so physical
+        // button presses still get a visible indicator via our own overlay.
+        volumeObservation = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.new]) { _, change in
+            guard let newValue = change.newValue else { return }
+            Task { @MainActor in
+                dragAxis = .volume
+                dragValue = CGFloat(newValue)
+                try? await Task.sleep(for: .seconds(1.2))
+                if dragAxis == .volume { dragAxis = nil }
+            }
         }
         #endif
         guard let credential, let authHeader else {
@@ -137,6 +212,7 @@ struct PlayerView: View {
             if let trickplay = info.trickplay {
                 trickplayLoader = TrickplayLoader(credential: credential, client: client, itemId: item.id, info: trickplay)
             }
+            await loadSubtitleCues(from: info, credential: credential)
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             await player.play()
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
@@ -159,6 +235,7 @@ struct PlayerView: View {
         hideControlsTask?.cancel()
         #if !os(tvOS)
         volumeController?.teardown()
+        volumeObservation?.invalidate()
         #endif
         if let credential, let authHeader, let info = playbackInfo {
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
@@ -197,10 +274,10 @@ struct PlayerView: View {
     private func qualityCap(for quality: VideoQuality) -> StreamQualityCap {
         switch quality {
         case .max, .auto: .auto
-        case .p4k:   StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840)
-        case .p1080: StreamQualityCap(maxBitrate: 20_000_000, maxWidth: 1920)
-        case .p720:  StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1280)
-        case .p480:  StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 854)
+        case .p4k:   StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840, forceTranscode: true)
+        case .p1080: StreamQualityCap(maxBitrate: 20_000_000, maxWidth: 1920, forceTranscode: true)
+        case .p720:  StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1280, forceTranscode: true)
+        case .p480:  StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 854, forceTranscode: true)
         }
     }
 
@@ -222,6 +299,23 @@ struct PlayerView: View {
         reload(errorContext: "switch track")
     }
 
+    private func loadSubtitleCues(from info: JellyfinPlaybackInfo, credential: ServerCredential) async {
+        guard let index = selectedSubtitleIndex,
+              let stream = info.subtitleStreams.first(where: { $0.index == index }),
+              let deliveryUrl = stream.deliveryUrl
+        else {
+            subtitleCues = []
+            currentSubtitleText = nil
+            return
+        }
+        subtitleCues = await SubtitleLoader.loadCues(deliveryUrl: deliveryUrl, credential: credential)
+    }
+
+    func updateSubtitleText(forTicks ticks: Int64) {
+        guard !subtitleCues.isEmpty else { return }
+        currentSubtitleText = SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
+    }
+
     private func reload(errorContext: String) {
         guard let credential, let authHeader else { return }
         let resumeTicks = player.positionTicks
@@ -233,6 +327,7 @@ struct PlayerView: View {
                     audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
                 )
                 playbackInfo = info
+                await loadSubtitleCues(from: info, credential: credential)
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
                 startProgressReporting(mediaSourceId: info.mediaSourceId)

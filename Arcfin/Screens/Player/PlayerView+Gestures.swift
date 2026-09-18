@@ -49,6 +49,15 @@ extension PlayerView {
             }
     }
 
+    func toggleOrientation() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+        else { return }
+        let isLandscape = scene.interfaceOrientation.isLandscape
+        let targetMask: UIInterfaceOrientationMask = isLandscape ? .portrait : .landscapeRight
+        scene.requestGeometryUpdate(.iOS(interfaceOrientations: targetMask)) { _ in }
+    }
+
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {
         let forward = location.x > width / 2
         HapticManager.impact(.medium)
