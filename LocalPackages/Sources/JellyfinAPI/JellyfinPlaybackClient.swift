@@ -161,6 +161,8 @@ extension JellyfinMediaClient {
         let audioStreams = streams.filter { $0.type == "Audio" }.map { $0.toStream() }
         let subtitleStreams = streams.filter { $0.type == "Subtitle" }.map { $0.toStream() }
 
+        print("[Trickplay] server sent widths: \(source.trickplayInfo?.keys.sorted() ?? [])")
+
         return JellyfinPlaybackInfo(
             mediaSourceId: source.id,
             playURL: playURL,

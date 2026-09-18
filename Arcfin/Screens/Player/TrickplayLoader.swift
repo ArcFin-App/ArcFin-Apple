@@ -42,8 +42,18 @@ final class TrickplayLoader {
         if let existing = inFlight[tileIndex] { return await existing.value }
         let url = client.trickplayTileURL(credential: credential, itemId: itemId, width: info.width, tileIndex: tileIndex)
         let task = Task<UIImage?, Never> {
-            guard let (data, _) = try? await URLSession.shared.data(from: url) else { return nil }
-            return UIImage(data: data)
+            do {
+                let (data, response) = try await URLSession.shared.data(from: url)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                guard status == 200, let image = UIImage(data: data) else {
+                    print("[Trickplay] tile \(tileIndex) fetch failed — status \(status), bytes \(data.count), url \(url)")
+                    return nil
+                }
+                return image
+            } catch {
+                print("[Trickplay] tile \(tileIndex) request error — \(error)")
+                return nil
+            }
         }
         inFlight[tileIndex] = task
         let image = await task.value
