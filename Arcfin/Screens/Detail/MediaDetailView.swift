@@ -261,6 +261,22 @@ struct MediaDetailView: View {
 
     // MARK: - Play button
 
+    private var resumeUserData: UserData? {
+        detail?.item.userData ?? item.userData
+    }
+
+    private var isResumable: Bool {
+        guard let ud = resumeUserData else { return false }
+        return ud.playbackPositionTicks > 0 && !ud.played
+    }
+
+    private var resumeTimeLabel: String? {
+        guard let ud = resumeUserData, ud.playbackPositionTicks > 0 else { return nil }
+        let totalMinutes = Int(Double(ud.playbackPositionTicks) / 10_000_000 / 60)
+        if totalMinutes >= 60 { return "\(totalMinutes / 60)h \(totalMinutes % 60)m in" }
+        return "\(totalMinutes)m in"
+    }
+
     private var playButton: some View {
 #if os(tvOS)
         Button {} label: { TVPlayButtonLabel() }
@@ -269,21 +285,45 @@ struct MediaDetailView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.md)
 #else
-        Button {} label: {
-            HStack(spacing: 8) {
-                Image(systemName: "play.fill").font(.system(size: 14))
-                Text("Play").font(.system(size: 16, weight: .bold))
+        HStack(spacing: 10) {
+            Button {} label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "play.fill").font(.system(size: 14))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(isResumable ? "Resume" : "Play")
+                            .font(.system(size: 16, weight: .bold))
+                        if let resumeTimeLabel {
+                            Text(resumeTimeLabel)
+                                .font(.system(size: 10, weight: .medium))
+                                .opacity(0.85)
+                        }
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, isResumable ? 10 : 14)
+                .background(LinearGradient(
+                    colors: [DT.Color.accentDeep, DT.Color.accent],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
             }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(LinearGradient(
-                colors: [DT.Color.accentDeep, DT.Color.accent],
-                startPoint: .topLeading, endPoint: .bottomTrailing))
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-            .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
+            .buttonStyle(.plain)
+
+            if isResumable {
+                Button {} label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .frame(width: 48, height: 48)
+                        .background(DT.Color.backgroundSecondary)
+                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Start Over")
+            }
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
 #endif
