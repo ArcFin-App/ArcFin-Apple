@@ -176,6 +176,18 @@ public struct SeerrCastMember: Sendable, Identifiable, Equatable {
     }
 }
 
+public struct SeerrSeasonInfo: Sendable, Identifiable, Equatable {
+    public var id: Int { number }
+    public let number: Int
+    public let episodeCount: Int?
+
+    public init(number: Int, episodeCount: Int?) {
+        self.number = number; self.episodeCount = episodeCount
+    }
+
+    public var label: String { number == 0 ? "Specials" : "Season \(number)" }
+}
+
 public struct SeerrMediaDetail: Sendable, Equatable {
     public let tagline: String?
     public let overview: String?
@@ -184,11 +196,13 @@ public struct SeerrMediaDetail: Sendable, Equatable {
     public let voteAverage: Double?
     public let status: String?
     public let cast: [SeerrCastMember]
+    public let seasons: [SeerrSeasonInfo]
 
     public init(tagline: String?, overview: String?, genres: [String], runtimeMinutes: Int?,
-                voteAverage: Double?, status: String?, cast: [SeerrCastMember]) {
+                voteAverage: Double?, status: String?, cast: [SeerrCastMember],
+                seasons: [SeerrSeasonInfo] = []) {
         self.tagline = tagline; self.overview = overview; self.genres = genres
         self.runtimeMinutes = runtimeMinutes; self.voteAverage = voteAverage
-        self.status = status; self.cast = cast
+        self.status = status; self.cast = cast; self.seasons = seasons
     }
 }

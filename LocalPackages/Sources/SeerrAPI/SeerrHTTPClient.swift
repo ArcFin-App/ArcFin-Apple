@@ -216,7 +216,9 @@ public actor SeerrHTTPClient {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         applyXSRF(to: &req)
         var body: [String: Any] = ["mediaType": mediaType.rawValue, "mediaId": mediaId]
-        if !seasons.isEmpty { body["seasons"] = seasons }
+        // Seerr requires an explicit seasons array for tv requests — omitting it
+        // (rather than sending all season numbers) does not request the full series.
+        if mediaType == .tv { body["seasons"] = seasons }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
         let (_, response) = try await session.data(for: req)
@@ -366,6 +368,7 @@ private struct SeerrDetailResponse: Decodable {
     let voteAverage: Double?
     let status: String?
     let credits: SeerrCredits?
+    let seasons: [SeerrSeason]?     // tv only
 
     struct SeerrGenre: Decodable { let name: String }
     struct SeerrCredits: Decodable { let cast: [SeerrCast]? }
@@ -375,11 +378,19 @@ private struct SeerrDetailResponse: Decodable {
         let character: String?
         let profilePath: String?
     }
+    struct SeerrSeason: Decodable {
+        let seasonNumber: Int
+        let episodeCount: Int?
+    }
 
     func toDetail() -> SeerrMediaDetail {
         let cast = (credits?.cast ?? []).prefix(10).map {
             SeerrCastMember(id: $0.id, name: $0.name, character: $0.character, profilePath: $0.profilePath)
         }
+        let seasonList = (seasons ?? [])
+            .filter { $0.seasonNumber > 0 }
+            .sorted { $0.seasonNumber < $1.seasonNumber }
+            .map { SeerrSeasonInfo(number: $0.seasonNumber, episodeCount: $0.episodeCount) }
         return SeerrMediaDetail(
             tagline: (tagline?.isEmpty ?? true) ? nil : tagline,
             overview: overview,
@@ -387,7 +398,8 @@ private struct SeerrDetailResponse: Decodable {
             runtimeMinutes: runtime ?? episodeRunTime?.first,
             voteAverage: voteAverage,
             status: status,
-            cast: Array(cast)
+            cast: Array(cast),
+            seasons: seasonList
         )
     }
 }

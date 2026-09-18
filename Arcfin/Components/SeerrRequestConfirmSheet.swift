@@ -9,6 +9,7 @@ struct SeerrRequestConfirmSheet: View {
 
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = true
+    @State private var selectedSeasons: Set<Int> = []
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -94,6 +95,46 @@ struct SeerrRequestConfirmSheet: View {
                     .padding(.bottom, DT.Spacing.sm)
                 }
 
+                if item.mediaType == .tv, let seasons = detail?.seasons, !seasons.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Seasons")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(DT.Color.textPrimary)
+                            Spacer()
+                            Button(selectedSeasons.count == seasons.count ? "Deselect All" : "Select All") {
+                                selectedSeasons = selectedSeasons.count == seasons.count
+                                    ? [] : Set(seasons.map(\.number))
+                            }
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(DT.Color.accent)
+                        }
+                        .padding(.horizontal, DT.Spacing.pagePad)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(seasons) { season in
+                                    let isSelected = selectedSeasons.contains(season.number)
+                                    Button {
+                                        if isSelected { selectedSeasons.remove(season.number) }
+                                        else { selectedSeasons.insert(season.number) }
+                                    } label: {
+                                        Text(season.label)
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundStyle(isSelected ? .white : DT.Color.textSecondary)
+                                            .padding(.horizontal, 10).padding(.vertical, 6)
+                                            .background(isSelected ? DT.Color.accent : Color.white.opacity(0.06))
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, DT.Spacing.pagePad)
+                        }
+                    }
+                    .padding(.bottom, DT.Spacing.md)
+                }
+
                 let overviewText = detail?.overview ?? item.overview
                 if let overviewText, !overviewText.isEmpty {
                     Text(overviewText)
@@ -142,11 +183,13 @@ struct SeerrRequestConfirmSheet: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.lg)
 
+                let requestDisabled = item.mediaType == .tv && selectedSeasons.isEmpty
                 Button {
                     HapticManager.impact(.medium)
                     let captured = item
+                    let seasons = captured.mediaType == .tv ? Array(selectedSeasons) : []
                     requestingItem = nil
-                    Task { try? await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id) }
+                    Task { try? await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id, seasons: seasons) }
                 } label: {
                     Text("Confirm Request")
                         .font(.system(size: 15, weight: .bold))
@@ -158,8 +201,10 @@ struct SeerrRequestConfirmSheet: View {
                             startPoint: .topLeading, endPoint: .bottomTrailing))
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                         .shadow(color: DT.Color.accent.opacity(0.35), radius: 16)
+                        .opacity(requestDisabled ? 0.5 : 1)
                 }
                 .buttonStyle(.plain)
+                .disabled(requestDisabled)
                 .padding(.horizontal, DT.Spacing.pagePad)
 
                 Button { requestingItem = nil } label: {
@@ -175,7 +220,11 @@ struct SeerrRequestConfirmSheet: View {
             }
         }
         .task {
-            detail = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
+            let fetched = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
+            detail = fetched
+            if item.mediaType == .tv {
+                selectedSeasons = Set(fetched?.seasons.map(\.number) ?? [])
+            }
             isLoadingDetail = false
         }
     }

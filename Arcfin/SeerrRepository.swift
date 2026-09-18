@@ -99,9 +99,9 @@ final class SeerrRepository {
         return (try? await client.search(query: query)) ?? []
     }
 
-    func createRequest(mediaType: RequestMediaType, mediaId: Int) async throws {
+    func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
         guard let client else { throw URLError(.badURL) }
-        try await client.createRequest(mediaType: mediaType, mediaId: mediaId)
+        try await client.createRequest(mediaType: mediaType, mediaId: mediaId, seasons: seasons)
         await loadRequests()
     }
 
