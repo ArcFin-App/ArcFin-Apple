@@ -115,6 +115,9 @@ struct HomeView: View {
                             .frame(height: heroH)
 
                         VStack(spacing: 0) {
+                            if mediaRepo.connectionFailed && !mediaRepo.isLoading {
+                                connectionFailedBanner
+                            }
                             if !mediaRepo.continueWatching.isEmpty {
                                 ShelfRow(title: "Continue Watching", onSeeAll: {}) {
                                     ForEach(mediaRepo.continueWatching) { item in
@@ -281,6 +284,37 @@ struct HomeView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
+    }
+
+    // MARK: - Connection failed banner
+
+    private var connectionFailedBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 18))
+                .foregroundStyle(Color(hex: "f59e0b"))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Can't reach your server")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                Text("Check your connection or Server Settings, then retry.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            Spacer()
+            Button("Retry") {
+                guard case .authenticated(let cred) = authManager.state else { return }
+                Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
+            }
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(DT.Color.accent)
+        }
+        .padding(12)
+        .background(Color(hex: "f59e0b").opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(Color(hex: "f59e0b").opacity(0.25), lineWidth: 1))
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.bottom, DT.Spacing.md)
     }
 
     // MARK: - Seerr shelf

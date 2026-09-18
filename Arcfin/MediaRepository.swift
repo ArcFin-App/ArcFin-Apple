@@ -22,6 +22,9 @@ final class MediaRepository {
     var playedEpisodeCount: Int = 0
     var serverID: String = ""
     var isLoading: Bool = false
+    /// True when the last load couldn't reach the server at all (vs. a genuinely empty
+    /// library) — HomeView surfaces this instead of silently rendering empty shelves.
+    var connectionFailed: Bool = false
 
     private(set) var baseURL: URL?
     private(set) var accessToken: String?
@@ -65,7 +68,12 @@ final class MediaRepository {
         topShows                = (try? await tShow) ?? []
         playedMovieCount        = (try? await cMov)  ?? 0
         playedEpisodeCount      = (try? await cEp)   ?? 0
-        serverID                = (try? await srvID) ?? ""
+        do {
+            serverID = try await srvID
+            connectionFailed = false
+        } catch {
+            connectionFailed = true
+        }
         nextUp                  = (try? await nUp)    ?? []
         recentlyAddedMovies     = (try? await raMov)  ?? []
         recentlyAddedShows      = (try? await raShow) ?? []
@@ -74,9 +82,13 @@ final class MediaRepository {
         watchAgain              = (try? await wAgain) ?? []
 
         isLoading = false
-        loaded = true
-        lastLoadedAt = Date()
-        lastLoadedUserID = credential.userID
+        // Only cache-guard a successful load — a failed attempt shouldn't block Retry
+        // behind the cooldown window.
+        if !connectionFailed {
+            loaded = true
+            lastLoadedAt = Date()
+            lastLoadedUserID = credential.userID
+        }
     }
 
     func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {
