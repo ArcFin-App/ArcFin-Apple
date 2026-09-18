@@ -4,6 +4,7 @@ import AuthCore
 import JellyfinAPI
 #if os(iOS)
 import NetworkExtension
+import CoreLocation
 #endif
 
 @Observable
@@ -68,7 +69,11 @@ final class AuthManager {
 
     static func currentWiFiSSID() async -> String? {
         #if os(iOS)
-        await withCheckedContinuation { continuation in
+        // Undocumented but widely-reported: NEHotspotNetwork.fetchCurrent silently
+        // fails ("invalid result code 1") without Location authorization too, despite
+        // Apple's docs saying the Access Wi-Fi Information capability alone suffices.
+        await LocationAuthWaiter().wait()
+        return await withCheckedContinuation { continuation in
             NEHotspotNetwork.fetchCurrent { network in
                 continuation.resume(returning: network?.ssid)
             }
@@ -170,3 +175,27 @@ final class AuthManager {
         }.value
     }
 }
+
+#if os(iOS)
+/// Requests When In Use location authorization if not yet determined, and waits for
+/// the user's decision before returning — NEHotspotNetwork.fetchCurrent needs it granted.
+@MainActor
+private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func wait() async {
+        guard manager.authorizationStatus == .notDetermined else { return }
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+            manager.delegate = self
+            manager.requestWhenInUseAuthorization()
+        }
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        continuation?.resume()
+        continuation = nil
+    }
+}
+#endif
