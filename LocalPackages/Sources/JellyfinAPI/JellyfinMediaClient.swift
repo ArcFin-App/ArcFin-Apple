@@ -196,6 +196,16 @@ public struct JellyfinMediaClient: Sendable {
         return comps.url!
     }
 
+    /// The original media file, for downloads — requires the signed-in account to have the
+    /// "Allow media downloading" permission granted server-side; a 403 means it isn't.
+    public static func originalFileDownloadURL(baseURL: URL, itemID: String, token: String) -> URL {
+        var comps = URLComponents(
+            url: baseURL.appendingPathComponent("Items/\(itemID)/Download"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [.init(name: "api_key", value: token)]
+        return comps.url!
+    }
+
     public static func userImageURL(baseURL: URL, userID: String, tag: String, fillWidth: Int = 100, token: String) -> URL {
         var comps = URLComponents(
             url: baseURL.appendingPathComponent("Users/\(userID)/Images/Primary"),

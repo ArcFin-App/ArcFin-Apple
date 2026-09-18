@@ -399,6 +399,17 @@ struct MediaDetailView: View {
     private var detailContent: some View {
         playButton
 
+        #if os(iOS)
+        if item.type == .movie {
+            HStack {
+                Spacer()
+                DownloadButton(item: item)
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.sm)
+        }
+        #endif
+
         // Genres
         if let d = detail, !d.genres.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -690,6 +701,10 @@ struct MediaDetailView: View {
                             .lineLimit(2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                    #if os(iOS)
+                    DownloadButton(item: ep)
+                    #endif
                 }
 
                 if let overview = ep.overview, !overview.isEmpty {

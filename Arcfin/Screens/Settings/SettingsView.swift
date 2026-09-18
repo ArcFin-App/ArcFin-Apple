@@ -26,6 +26,7 @@ struct SettingsView: View {
     @AppStorage("skipIntro")          private var skipIntro       = false
     @AppStorage("skipCredits")        private var skipCredits     = false
     @AppStorage("subtitleDefault")    private var subtitleDefault = false
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
     @AppStorage("wifiOnly")           private var wifiOnly          = true
     @AppStorage("downloadQuality")    private var downloadQuality   = VideoQuality.max
@@ -150,6 +151,24 @@ struct SettingsView: View {
             } header: {
                 sectionHeader("Account & Server", icon: "person.badge.key")
             }
+
+            // ── Offline ──────────────────────────────────────────────────
+#if os(iOS)
+            Section {
+                Toggle("Offline Mode", isOn: $offlineModeEnabled)
+                NavigationLink {
+                    DownloadsView()
+                } label: {
+                    Text("Downloads")
+                }
+            } header: {
+                sectionHeader("Offline", icon: "arrow.down.circle")
+            } footer: {
+                Text("Offline Mode shows only your downloaded content — no connection to your server is used or needed.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+#endif
 
             // ── Plugins ──────────────────────────────────────────────────
             Section {

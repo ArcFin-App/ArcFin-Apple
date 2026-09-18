@@ -95,6 +95,11 @@ struct LibraryView: View {
                 }
 
                 // ── Downloads ───────────────────────────────────────────
+                #if os(iOS)
+                jellyfinDownloadsSection
+                #endif
+
+                // ── Local Files ───────────────────────────────────────────
                 downloadsSection
 
                 // ── On This Device ──────────────────────────────────────
@@ -146,11 +151,48 @@ struct LibraryView: View {
         }
     }
 
-    // MARK: - Downloads section
+    // MARK: - Jellyfin downloads section
+
+    #if os(iOS)
+    @ViewBuilder
+    private var jellyfinDownloadsSection: some View {
+        NavigationLink {
+            DownloadsView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(DT.Color.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Downloads")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                    Text("Movies and episodes saved for offline playback")
+                        .font(.system(size: 12))
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: DT.Radius.card)
+                    .fill(DT.Color.backgroundSecondary)
+                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(Color.white.opacity(0.06), lineWidth: 1))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    #endif
+
+    // MARK: - Local files section
 
     private var downloadsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Downloads")
+            sectionHeader("Local Files")
 
             if downloads.isEmpty {
                 ContentUnavailableView(

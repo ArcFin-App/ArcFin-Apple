@@ -1,10 +1,11 @@
 import SwiftUI
+import SwiftData
 import AuthCore
 import JellyfinAPI
 import SeerrAPI
 
 private enum AppPhase: Equatable {
-    case splash, login, main
+    case splash, login, main, offline
 }
 
 // Posted by onOpenURL when the Top Shelf launches a play deep link.
@@ -14,11 +15,13 @@ extension Notification.Name {
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var modelContext
 
     @State private var authManager  = AuthManager()
     @State private var mediaRepo    = MediaRepository()
     @State private var seerrRepo    = SeerrRepository()
     @State private var statsRepo    = StreamystatsRepository()
+    @State private var downloadManager = DownloadManager()
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
 
@@ -27,9 +30,11 @@ struct ContentView: View {
     @AppStorage("seerrPassword")     private var seerrPassword    = ""
     @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = SeerrAuthMethod.jellyfin
     @AppStorage("streamystatsURL")   private var statsURL         = ""
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
     private var phase: AppPhase {
         guard splashDone && !authManager.isChecking else { return .splash }
+        if offlineModeEnabled { return .offline }
         switch authManager.state {
         case .authenticated:   return .main
         case .unauthenticated: return .login
@@ -48,6 +53,11 @@ struct ContentView: View {
             case .main:
                 MainTabView()
                     .transition(.opacity)
+            case .offline:
+                NavigationStack {
+                    DownloadsView(goBackOnline: { offlineModeEnabled = false })
+                }
+                .transition(.opacity)
             }
         }
         .animation(DT.Animation.standard, value: phase)
@@ -59,6 +69,7 @@ struct ContentView: View {
         .environment(mediaRepo)
         .environment(seerrRepo)
         .environment(statsRepo)
+        .environment(downloadManager)
         .onOpenURL { url in
             // arcfin://play/<itemId>  — from Top Shelf or Siri
             guard url.scheme == "arcfin",
@@ -76,6 +87,7 @@ struct ContentView: View {
         }
         .task { await authManager.checkStoredAuth() }
         .task { authManager.startNetworkMonitoring() }
+        .task { downloadManager.configure(modelContext: modelContext) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { startHeartbeat() } else { heartbeatTask?.cancel() }
         }

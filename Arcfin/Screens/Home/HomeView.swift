@@ -1,8 +1,10 @@
 import SwiftUI
+import SwiftData
 import Combine
 import JellyfinAPI
 import SeerrAPI
 import AuthCore
+import Persistence
 
 // MARK: - Main tab container
 
@@ -96,6 +98,10 @@ struct HomeView: View {
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
+    #if os(iOS)
+    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
+    @Query private var downloadedItems: [DownloadedItem]
+    #endif
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
@@ -432,25 +438,41 @@ struct HomeView: View {
     // MARK: - Connection failed banner
 
     private var connectionFailedBanner: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "wifi.slash")
-                .font(.system(size: 18))
-                .foregroundStyle(Color(hex: "f59e0b"))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Can't reach your server")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                Text("Check your connection or Server Settings, then retry.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(DT.Color.textSecondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: "wifi.slash")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color(hex: "f59e0b"))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Can't reach your server")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                    Text("Check your connection or Server Settings, then retry.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+                Spacer()
+                Button("Retry") {
+                    guard case .authenticated(let cred) = authManager.state else { return }
+                    Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(DT.Color.accent)
             }
-            Spacer()
-            Button("Retry") {
-                guard case .authenticated(let cred) = authManager.state else { return }
-                Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
+            #if os(iOS)
+            if !downloadedItems.isEmpty {
+                Button {
+                    offlineModeEnabled = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down.circle.fill")
+                        Text("Watch Downloads Instead")
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                }
             }
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(DT.Color.accent)
+            #endif
         }
         .padding(12)
         .background(Color(hex: "f59e0b").opacity(0.1))

@@ -15,6 +15,6 @@ public enum Persistence: Sendable {
 
     // Register new SwiftData models here as they are created.
     static var currentModels: [any PersistentModel.Type] {
-        []
+        [DownloadedItem.self]
     }
 }

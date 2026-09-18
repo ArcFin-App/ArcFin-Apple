@@ -13,9 +13,18 @@ struct SubtitleCue: Sendable {
 /// subtitles on its own, so cues are looked up by position and drawn as a SwiftUI overlay.
 enum SubtitleLoader {
     static func loadCues(deliveryUrl: String, credential: ServerCredential) async -> [SubtitleCue] {
+        guard let data = await fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential),
+              let text = String(data: data, encoding: .utf8)
+        else { return [] }
+        return parseVTT(text)
+    }
+
+    /// Raw VTT bytes, for saving to disk for offline playback — same URL construction as
+    /// loadCues, just without parsing.
+    static func fetchRawVTTData(deliveryUrl: String, credential: ServerCredential) async -> Data? {
         guard let relative = URLComponents(string: deliveryUrl),
               var combined = URLComponents(url: credential.baseURL, resolvingAgainstBaseURL: false)
-        else { return [] }
+        else { return nil }
         let basePath = combined.path.hasSuffix("/") ? String(combined.path.dropLast()) : combined.path
         let relativePath = relative.path.hasPrefix("/") ? relative.path : "/" + relative.path
         combined.path = basePath + relativePath
@@ -23,9 +32,14 @@ enum SubtitleLoader {
         query.append(.init(name: "api_key", value: credential.accessToken))
         combined.queryItems = query
         guard let url = combined.url,
-              let (data, _) = try? await URLSession.shared.data(from: url),
-              let text = String(data: data, encoding: .utf8)
-        else { return [] }
+              let (data, _) = try? await URLSession.shared.data(from: url)
+        else { return nil }
+        return data
+    }
+
+    /// Parses a locally-saved VTT file — used by offline playback.
+    static func loadCues(fileURL: URL) -> [SubtitleCue] {
+        guard let text = try? String(contentsOf: fileURL, encoding: .utf8) else { return [] }
         return parseVTT(text)
     }
 
