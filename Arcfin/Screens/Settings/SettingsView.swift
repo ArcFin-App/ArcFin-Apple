@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthCore
+import JellyfinAPI
 import SeerrAPI
 
 struct SettingsView: View {
@@ -8,6 +9,9 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
 
     @State private var showUsersSheet = false
+    @State private var quickConnectCode = ""
+    @State private var isAuthorizingQC = false
+    @State private var quickConnectResult: String?
     #if !os(tvOS)
     @State private var usersDetent: PresentationDetent = .medium
     #endif
@@ -17,14 +21,14 @@ struct SettingsView: View {
 
     // MARK: - Persisted preferences
 
-    @AppStorage("videoQuality")       private var videoQuality    = VideoQuality.auto
+    @AppStorage("videoQuality")       private var videoQuality    = VideoQuality.p4k
     @AppStorage("autoPlayNext")       private var autoPlayNext    = true
     @AppStorage("skipIntro")          private var skipIntro       = false
     @AppStorage("skipCredits")        private var skipCredits     = false
     @AppStorage("subtitleDefault")    private var subtitleDefault = false
 
     @AppStorage("wifiOnly")           private var wifiOnly          = true
-    @AppStorage("downloadQuality")    private var downloadQuality   = VideoQuality.p1080
+    @AppStorage("downloadQuality")    private var downloadQuality   = VideoQuality.p4k
 
     @AppStorage("notifyNewContent")   private var notifyNewContent  = true
     @AppStorage("notifyDownload")     private var notifyDownload    = true
@@ -36,6 +40,36 @@ struct SettingsView: View {
     var body: some View {
         List {
             profileSection
+
+            // ── Quick Connect ────────────────────────────────────────────
+#if !os(tvOS)
+            Section {
+                HStack(spacing: 10) {
+                    TextField("Code", text: $quickConnectCode)
+                        .keyboardType(.numberPad)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                    Button {
+                        authorizeQuickConnect()
+                    } label: {
+                        if isAuthorizingQC { ProgressView().scaleEffect(0.8) }
+                        else { Text("Authorize") }
+                    }
+                    .disabled(quickConnectCode.isEmpty || isAuthorizingQC)
+                }
+                if let quickConnectResult {
+                    Text(quickConnectResult)
+                        .font(.caption)
+                        .foregroundStyle(quickConnectResult.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                }
+            } header: {
+                sectionHeader("Quick Connect", icon: "qrcode")
+            } footer: {
+                Text("Enter the code shown on another device to sign it in instantly using this account.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+#endif
 
             // ── Playback ─────────────────────────────────────────────────
             Section {
@@ -346,6 +380,28 @@ struct SettingsView: View {
 #if !os(tvOS)
         .toolbar(.hidden, for: .tabBar)
 #endif
+    }
+
+    // MARK: - Quick Connect
+
+    private func authorizeQuickConnect() {
+        guard case .authenticated(let cred) = authManager.state else { return }
+        isAuthorizingQC = true
+        quickConnectResult = nil
+        let code = quickConnectCode
+        Task {
+            let header = authManager.authClient.authHeader(token: cred.accessToken)
+            do {
+                let ok = try await authManager.authClient.authorizeQuickConnect(
+                    baseURL: cred.baseURL, authHeader: header, code: code
+                )
+                quickConnectResult = ok ? "✓ Device authorized" : "✗ Invalid or expired code"
+                if ok { quickConnectCode = "" }
+            } catch {
+                quickConnectResult = "✗ \(error.localizedDescription)"
+            }
+            isAuthorizingQC = false
+        }
     }
 
     // MARK: - Helpers

@@ -171,6 +171,24 @@ public struct JellyfinAuthClient: Sendable {
                                 accessToken: result.accessToken, displayName: result.user.name)
     }
 
+    /// Authorizes a Quick Connect code shown on another, currently-signing-in device,
+    /// using this session's own credentials. Distinct from initiateQuickConnect/pollQuickConnect
+    /// above, which are the unauthenticated-device side of the same flow.
+    public func authorizeQuickConnect(baseURL: URL, authHeader header: String, code: String) async throws -> Bool {
+        var comps = URLComponents(url: baseURL.appendingPathComponent("QuickConnect/Authorize"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [URLQueryItem(name: "Code", value: code)]
+        var req = URLRequest(url: comps.url!)
+        req.httpMethod = "POST"
+        req.setValue(header, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw JellyfinAuthError.authFailed("Couldn't authorize that code.")
+        }
+        return (try? JSONDecoder().decode(Bool.self, from: data)) ?? true
+    }
+
     // MARK: - Token validation
 
     public func validateToken(credential: ServerCredential) async -> Bool {
@@ -178,8 +196,13 @@ public struct JellyfinAuthClient: Sendable {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
         req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
-        guard let (_, resp) = try? await URLSession.shared.data(for: req) else { return false }
-        return (resp as? HTTPURLResponse)?.statusCode == 200
+        guard let (_, resp) = try? await URLSession.shared.data(for: req) else {
+            // Request failed outright (offline, unreachable server) — don't force a
+            // logout over a transient connectivity issue, only over a rejected token.
+            return true
+        }
+        guard let http = resp as? HTTPURLResponse else { return true }
+        return http.statusCode != 401 && http.statusCode != 403
     }
 
     // MARK: - Helpers
