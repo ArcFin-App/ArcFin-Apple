@@ -13,6 +13,15 @@ import MediaPlayer
 final class PlayerSurfaceView: UIView {
     override class var layerClass: AnyClass { AVPlayerLayer.self }
     var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+
+    // layerClass normally keeps layer.bounds synced to the view automatically, but the
+    // XPC-based "video receiver" rendering path some HLS streams take
+    // (FigUseVideoReceiverForCALayer, seen throughout the no-video logs) may not pick up
+    // layout changes the same way — force it explicitly rather than trust that path.
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        playerLayer.frame = bounds
+    }
 }
 
 final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, ObservableObject {
