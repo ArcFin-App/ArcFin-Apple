@@ -1,14 +1,14 @@
 import SwiftUI
 import Combine
 import JellyfinAPI
-import JellyseerrAPI
+import SeerrAPI
 import AuthCore
 
 // MARK: - Main tab container
 
 struct MainTabView: View {
     @Environment(AuthManager.self) private var authManager
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
     @State private var searchQuery = ""
     @AppStorage("showStatsTab") private var showStatsTab = true
 
@@ -37,9 +37,9 @@ struct MainTabView: View {
 #endif
             Tab("Requests", systemImage: "clock") {
 #if os(tvOS)
-                TVJellyseerrView()
+                TVSeerrView()
 #else
-                JellyseerrView()
+                SeerrView()
 #endif
             }
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
@@ -80,7 +80,7 @@ struct MainTabView: View {
 struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(StreamystatsRepository.self) private var statsRepo
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -254,7 +254,7 @@ struct HomeView: View {
             isPresented: $seerrRequestPending,
             presenting: seerrRequestItem
         ) { item in
-            Button("Request via Jellyseerr") {
+            Button("Request via Seerr") {
                 Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
             }
             Button("Cancel", role: .cancel) {}
@@ -548,7 +548,7 @@ struct HomeView: View {
             Button {
                 Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
             } label: {
-                Label("Request via Jellyseerr", systemImage: "plus.circle")
+                Label("Request via Seerr", systemImage: "plus.circle")
             }
         }
     }
@@ -678,5 +678,5 @@ private extension Array {
     MainTabView()
         .environment(AuthManager())
         .environment(MediaRepository())
-        .environment(JellyseerrRepository())
+        .environment(SeerrRepository())
 }

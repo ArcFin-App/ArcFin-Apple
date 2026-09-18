@@ -1,13 +1,13 @@
 import SwiftUI
 import JellyfinAPI
-import JellyseerrAPI
+import SeerrAPI
 import AuthCore
 
 struct MediaDetailView: View {
     let item: MediaItem
 
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
 

@@ -1,6 +1,6 @@
 import SwiftUI
 import AuthCore
-import JellyseerrAPI
+import SeerrAPI
 
 private enum AppPhase: Equatable {
     case splash, login, main
@@ -14,14 +14,14 @@ extension Notification.Name {
 struct ContentView: View {
     @State private var authManager  = AuthManager()
     @State private var mediaRepo    = MediaRepository()
-    @State private var seerrRepo    = JellyseerrRepository()
+    @State private var seerrRepo    = SeerrRepository()
     @State private var statsRepo    = StreamystatsRepository()
     @State private var splashDone   = false
 
     @AppStorage("seerrURL")          private var seerrURL         = ""
     @AppStorage("seerrUsername")     private var seerrUsername    = ""
     @AppStorage("seerrPassword")     private var seerrPassword    = ""
-    @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = JellyseerrAuthMethod.jellyfin
+    @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = SeerrAuthMethod.jellyfin
     @AppStorage("streamystatsURL")   private var statsURL         = ""
 
     private var phase: AppPhase {

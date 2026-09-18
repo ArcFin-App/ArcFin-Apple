@@ -1,6 +1,6 @@
 import SwiftUI
 import JellyfinAPI
-import JellyseerrAPI
+import SeerrAPI
 import AuthCore
 
 struct SearchView: View {
@@ -8,7 +8,7 @@ struct SearchView: View {
 
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var jellyfinResults: [MediaItem] = []
     @State private var seerrResults: [SeerrItem] = []
@@ -43,9 +43,9 @@ struct SearchView: View {
                             }
                         }
 
-                        // ── Discover via Jellyseerr ──────────────────────────
+                        // ── Discover via Seerr ──────────────────────────
                         if seerrRepo.isConfigured && !seerrResults.isEmpty {
-                            ShelfRow(title: "Discover via Jellyseerr", onSeeAll: nil) {
+                            ShelfRow(title: "Discover via Seerr", onSeeAll: nil) {
                                 ForEach(seerrResults) { item in
                                     PosterCard(
                                         title: item.title,

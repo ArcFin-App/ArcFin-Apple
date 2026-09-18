@@ -1,10 +1,10 @@
 import Foundation
 import Observation
-import JellyseerrAPI
+import SeerrAPI
 
 @Observable
 @MainActor
-final class JellyseerrRepository {
+final class SeerrRepository {
     var trending: [SeerrItem] = []
     var popularMovies: [SeerrItem] = []
     var popularTV: [SeerrItem] = []
@@ -13,18 +13,18 @@ final class JellyseerrRepository {
     var isLoadingRequests = false
     var authFailed = false
 
-    @ObservationIgnored private var client: JellyseerrHTTPClient?
+    @ObservationIgnored private var client: SeerrHTTPClient?
     @ObservationIgnored private var isFetchingDiscover = false
     @ObservationIgnored private var isFetchingRequests = false
     @ObservationIgnored private var configuredURL: String = ""
     @ObservationIgnored private var configuredUsername: String = ""
     @ObservationIgnored private var configuredPassword: String = ""
-    @ObservationIgnored private var configuredMethod: JellyseerrAuthMethod = .jellyfin
+    @ObservationIgnored private var configuredMethod: SeerrAuthMethod = .jellyfin
 
     var isConfigured: Bool { client != nil }
 
     func configure(urlString: String, username: String, password: String,
-                   authMethod: JellyseerrAuthMethod = .jellyfin) {
+                   authMethod: SeerrAuthMethod = .jellyfin) {
         let trimURL  = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -45,7 +45,7 @@ final class JellyseerrRepository {
         if let old = client { Task { await old.clearAuthFailure() } }
         configuredURL = trimURL; configuredUsername = trimUser
         configuredPassword = trimPass; configuredMethod = authMethod
-        client = JellyseerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
+        client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
                                       authMethod: authMethod)
         authFailed = false
         trending = []; popularMovies = []; popularTV = []; requests = []
@@ -65,7 +65,7 @@ final class JellyseerrRepository {
             if !newM.isEmpty  || firstLoad { popularMovies = newM }
             if !newTV.isEmpty || firstLoad { popularTV = newTV }
             authFailed = false
-        } catch JellyseerrError.authFailed {
+        } catch SeerrError.authFailed {
             authFailed = true
         } catch {}
         if firstLoad { isLoadingDiscover = false }
@@ -81,7 +81,7 @@ final class JellyseerrRepository {
             let fetched = try await client.getRequests()
             requests = fetched
             authFailed = false
-        } catch JellyseerrError.authFailed {
+        } catch SeerrError.authFailed {
             authFailed = true
         } catch {}
         if firstLoad { isLoadingRequests = false }

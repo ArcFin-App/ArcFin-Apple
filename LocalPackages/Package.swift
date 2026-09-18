@@ -17,7 +17,7 @@ let package = Package(
         .library(name: "BackgroundKit",   targets: ["BackgroundKit"]),
         .library(name: "JellyfinAPI",     targets: ["JellyfinAPI"]),
         .library(name: "StreamystatsAPI", targets: ["StreamystatsAPI"]),
-        .library(name: "JellyseerrAPI",   targets: ["JellyseerrAPI"]),
+        .library(name: "SeerrAPI",   targets: ["SeerrAPI"]),
         // MARK: Feature Packages
         .library(name: "AppState",        targets: ["AppState"]),
         .library(name: "MediaEngine",     targets: ["MediaEngine"]),
@@ -109,7 +109,7 @@ let package = Package(
         ),
 
         .target(
-            name: "JellyseerrAPI",
+            name: "SeerrAPI",
             dependencies: [
                 "AuthCore",
                 "Telemetry",
@@ -126,7 +126,7 @@ let package = Package(
             dependencies: [
                 "JellyfinAPI",
                 "StreamystatsAPI",
-                "JellyseerrAPI",
+                "SeerrAPI",
                 "Persistence",
                 "AuthCore",
                 "Telemetry",

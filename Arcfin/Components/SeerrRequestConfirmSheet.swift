@@ -1,8 +1,8 @@
 import SwiftUI
-import JellyseerrAPI
+import SeerrAPI
 
 struct SeerrRequestConfirmSheet: View {
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     let item: SeerrItem
     @Binding var requestingItem: SeerrItem?
@@ -43,7 +43,7 @@ struct SeerrRequestConfirmSheet: View {
             .padding(.top, DT.Spacing.lg)
             .padding(.bottom, DT.Spacing.md)
 
-            Text("Send a request to your Jellyseerr server. You'll be notified when it becomes available.")
+            Text("Send a request to your Seerr server. You'll be notified when it becomes available.")
                 .font(DT.Font.caption)
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(3)

@@ -1,14 +1,14 @@
 #if os(tvOS)
 import SwiftUI
 import JellyfinAPI
-import JellyseerrAPI
+import SeerrAPI
 import AuthCore
 
 struct TVMediaDetailView: View {
     let item: MediaItem
 
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
 
     @State private var detail: MediaItemDetail?
@@ -591,7 +591,7 @@ private struct TVEpisodeCard: View {
         ))
         .environment(MediaRepository())
         .environment(AuthManager())
-        .environment(JellyseerrRepository())
+        .environment(SeerrRepository())
     }
 }
 #endif

@@ -1,8 +1,8 @@
 import SwiftUI
-import JellyseerrAPI
+import SeerrAPI
 
-struct JellyseerrView: View {
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+struct SeerrView: View {
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var selectedCategory = "All"
     @State private var searchText = ""
@@ -58,10 +58,10 @@ struct JellyseerrView: View {
             Image(systemName: "clock.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(DT.Color.accent)
-            Text("Jellyseerr Not Connected")
+            Text("Seerr Not Connected")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Add your Jellyseerr server URL and credentials in Settings → Plugins → Jellyseerr.")
+            Text("Add your Seerr server URL and credentials in Settings → Plugins → Seerr.")
                 .font(.system(size: 14))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
@@ -125,7 +125,7 @@ struct JellyseerrView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.white)
                 }
-                Text("Jellyseerr")
+                Text("Seerr")
                     .font(.system(size: 11, weight: .bold))
                     .tracking(0.8)
                     .textCase(.uppercase)
@@ -533,6 +533,6 @@ struct JellyseerrView: View {
 }
 
 #Preview {
-    JellyseerrView()
-        .environment(JellyseerrRepository())
+    SeerrView()
+        .environment(SeerrRepository())
 }

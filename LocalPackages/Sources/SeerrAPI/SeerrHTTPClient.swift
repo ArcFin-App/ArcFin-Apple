@@ -2,9 +2,9 @@ import Foundation
 
 // MARK: - Auth method
 
-public enum JellyseerrAuthMethod: String, Sendable, CaseIterable {
+public enum SeerrAuthMethod: String, Sendable, CaseIterable {
     case jellyfin = "jellyfin"   // Jellyfin-imported account — POST /api/v1/auth/jellyfin
-    case local    = "local"      // Local Jellyseerr account  — POST /api/v1/auth/local
+    case local    = "local"      // Local Seerr account  — POST /api/v1/auth/local
 
     public var label: String {
         switch self {
@@ -16,7 +16,7 @@ public enum JellyseerrAuthMethod: String, Sendable, CaseIterable {
     public var description: String {
         switch self {
         case .jellyfin: "Sign in with your Jellyfin username and password."
-        case .local:    "Sign in with a local Jellyseerr account."
+        case .local:    "Sign in with a local Seerr account."
         }
     }
 
@@ -25,13 +25,13 @@ public enum JellyseerrAuthMethod: String, Sendable, CaseIterable {
     }
 }
 
-// MARK: - Jellyseerr HTTP client
+// MARK: - Seerr HTTP client
 
-public actor JellyseerrHTTPClient {
+public actor SeerrHTTPClient {
     private let baseURL: URL
     private let username: String
     private let password: String
-    private let authMethod: JellyseerrAuthMethod
+    private let authMethod: SeerrAuthMethod
 
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
@@ -41,7 +41,7 @@ public actor JellyseerrHTTPClient {
     private let authFailedKey: String
 
     public init(baseURL: URL, username: String, password: String,
-                authMethod: JellyseerrAuthMethod = .jellyfin) {
+                authMethod: SeerrAuthMethod = .jellyfin) {
         self.baseURL    = baseURL
         self.username   = username
         self.password   = password
@@ -74,7 +74,7 @@ public actor JellyseerrHTTPClient {
             // Real credential rejection — back off to protect against Jellyfin brute-force lockout.
             authPermanentlyFailed = true
             UserDefaults.standard.set(Date().addingTimeInterval(3600), forKey: authFailedKey)
-            throw JellyseerrError.authFailed
+            throw SeerrError.authFailed
         }
         guard (200...299).contains(http.statusCode) else {
             // Transient server error (5xx, 503 during startup, etc.) — do not lock out.
@@ -86,11 +86,11 @@ public actor JellyseerrHTTPClient {
     }
 
     private func ensureAuthenticated() async throws {
-        guard !authPermanentlyFailed else { throw JellyseerrError.authFailed }
+        guard !authPermanentlyFailed else { throw SeerrError.authFailed }
         if let until = UserDefaults.standard.object(forKey: authFailedKey) as? Date,
            until > Date() {
             authPermanentlyFailed = true
-            throw JellyseerrError.authFailed
+            throw SeerrError.authFailed
         }
         guard !isAuthenticated else { return }
         // Actor suspends during network I/O, so concurrent callers can reach here while
@@ -194,7 +194,7 @@ public actor JellyseerrHTTPClient {
     // MARK: - Private helpers
 
     /// Reads the XSRF-TOKEN cookie from the session's cookie jar and injects it
-    /// as the XSRF-TOKEN header. Jellyseerr uses the double-submit cookie pattern —
+    /// as the XSRF-TOKEN header. Seerr uses the double-submit cookie pattern —
     /// the cookie alone is not enough; the value must also appear as a header.
     private func applyXSRF(to request: inout URLRequest) {
         guard let token = session.configuration.httpCookieStorage?
@@ -248,12 +248,12 @@ public actor JellyseerrHTTPClient {
 
 // MARK: - Errors
 
-public enum JellyseerrError: Error, LocalizedError {
+public enum SeerrError: Error, LocalizedError {
     case authFailed
 
     public var errorDescription: String? {
         switch self {
-        case .authFailed: "Invalid Jellyseerr username or password."
+        case .authFailed: "Invalid Seerr username or password."
         }
     }
 }
@@ -300,7 +300,7 @@ private struct SeerrRequestResponse: Decodable {
     let createdAt: String?
     let media: SeerrRequestMedia
 
-    // Jellyseerr's request media entity only stores identifiers/status —
+    // Seerr's request media entity only stores identifiers/status —
     // title, name, posterPath, backdropPath live on TMDB and are fetched separately.
     struct SeerrRequestMedia: Decodable {
         let tmdbId: Int?

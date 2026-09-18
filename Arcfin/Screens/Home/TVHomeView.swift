@@ -1,14 +1,14 @@
 #if os(tvOS)
 import SwiftUI
 import JellyfinAPI
-import JellyseerrAPI
+import SeerrAPI
 import AuthCore
 import ImageCache
 
 struct TVHomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
 
@@ -71,7 +71,7 @@ struct TVHomeView: View {
             isPresented: $seerrRequestPending,
             presenting: seerrRequestItem
         ) { item in
-            Button("Request via Jellyseerr") {
+            Button("Request via Seerr") {
                 Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
             }
             Button("Cancel", role: .cancel) {}
@@ -432,6 +432,6 @@ struct TVHomeView: View {
     TVHomeView()
         .environment(AuthManager())
         .environment(MediaRepository())
-        .environment(JellyseerrRepository())
+        .environment(SeerrRepository())
 }
 #endif

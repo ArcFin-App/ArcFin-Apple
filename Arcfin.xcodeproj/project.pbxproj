@@ -12,7 +12,7 @@
 		FAB5D7882FA79F5C002031A9 /* BackgroundKit in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7872FA79F5C002031A9 /* BackgroundKit */; };
 		FAB5D78A2FA79F5C002031A9 /* ImageCache in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7892FA79F5C002031A9 /* ImageCache */; };
 		FAB5D78C2FA79F5C002031A9 /* JellyfinAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78B2FA79F5C002031A9 /* JellyfinAPI */; };
-		FAB5D78E2FA79F5C002031A9 /* JellyseerrAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78D2FA79F5C002031A9 /* JellyseerrAPI */; };
+		FAB5D78E2FA79F5C002031A9 /* SeerrAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78D2FA79F5C002031A9 /* SeerrAPI */; };
 		FAB5D7902FA79F5C002031A9 /* MediaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78F2FA79F5C002031A9 /* MediaEngine */; };
 		FAB5D7922FA79F5C002031A9 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7912FA79F5C002031A9 /* Persistence */; };
 		FAB5D7942FA79F5C002031A9 /* SearchKit in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7932FA79F5C002031A9 /* SearchKit */; };
@@ -114,7 +114,7 @@
 				FAB5D7922FA79F5C002031A9 /* Persistence in Frameworks */,
 				FAB5D7882FA79F5C002031A9 /* BackgroundKit in Frameworks */,
 				FAB5D78A2FA79F5C002031A9 /* ImageCache in Frameworks */,
-				FAB5D78E2FA79F5C002031A9 /* JellyseerrAPI in Frameworks */,
+				FAB5D78E2FA79F5C002031A9 /* SeerrAPI in Frameworks */,
 				FAB5D7842FA79F5C002031A9 /* AppState in Frameworks */,
 				FAB5D7982FA79F5C002031A9 /* SyncEngine in Frameworks */,
 				FAB5D7862FA79F5C002031A9 /* AuthCore in Frameworks */,
@@ -208,7 +208,7 @@
 				FAB5D7872FA79F5C002031A9 /* BackgroundKit */,
 				FAB5D7892FA79F5C002031A9 /* ImageCache */,
 				FAB5D78B2FA79F5C002031A9 /* JellyfinAPI */,
-				FAB5D78D2FA79F5C002031A9 /* JellyseerrAPI */,
+				FAB5D78D2FA79F5C002031A9 /* SeerrAPI */,
 				FAB5D78F2FA79F5C002031A9 /* MediaEngine */,
 				FAB5D7912FA79F5C002031A9 /* Persistence */,
 				FAB5D7932FA79F5C002031A9 /* SearchKit */,
@@ -906,9 +906,9 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = JellyfinAPI;
 		};
-		FAB5D78D2FA79F5C002031A9 /* JellyseerrAPI */ = {
+		FAB5D78D2FA79F5C002031A9 /* SeerrAPI */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = JellyseerrAPI;
+			productName = SeerrAPI;
 		};
 		FAB5D78F2FA79F5C002031A9 /* MediaEngine */ = {
 			isa = XCSwiftPackageProductDependency;

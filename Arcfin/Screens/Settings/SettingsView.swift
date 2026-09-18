@@ -1,10 +1,10 @@
 import SwiftUI
 import AuthCore
-import JellyseerrAPI
+import SeerrAPI
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.openURL) private var openURL
 
     @State private var showUsersSheet = false
@@ -112,13 +112,13 @@ struct SettingsView: View {
             Section {
                 Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
                 NavigationLink {
-                    JellyseerrPluginView()
+                    SeerrPluginView()
 #if !os(tvOS)
                         .toolbar(.hidden, for: .tabBar)
 #endif
                 } label: {
                     HStack {
-                        Text("Jellyseerr")
+                        Text("Seerr")
                         Spacer()
                         seerrStatusPill
                     }
@@ -367,15 +367,15 @@ enum VideoQuality: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Jellyseerr plugin view
+// MARK: - Seerr plugin view
 
-struct JellyseerrPluginView: View {
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+struct SeerrPluginView: View {
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @AppStorage("seerrURL")         private var seerrURL        = ""
     @AppStorage("seerrUsername")    private var seerrUsername   = ""
     @AppStorage("seerrPassword")    private var seerrPassword   = ""
-    @AppStorage("seerrAuthMethod")  private var seerrAuthMethod = JellyseerrAuthMethod.jellyfin
+    @AppStorage("seerrAuthMethod")  private var seerrAuthMethod = SeerrAuthMethod.jellyfin
 
     // Draft copies — edits only commit to AppStorage (and re-trigger the live
     // connection) on Save, so browsing the form can't accidentally reconfigure it.
@@ -383,7 +383,7 @@ struct JellyseerrPluginView: View {
     @State private var draftURL = ""
     @State private var draftUsername = ""
     @State private var draftPassword = ""
-    @State private var draftAuthMethod = JellyseerrAuthMethod.jellyfin
+    @State private var draftAuthMethod = SeerrAuthMethod.jellyfin
     @State private var showRemoveConfirm = false
 
     @State private var testResult: String? = nil
@@ -401,7 +401,7 @@ struct JellyseerrPluginView: View {
         }
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
-        .arcfinNavTitleLarge("Jellyseerr")
+        .arcfinNavTitleLarge("Seerr")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 if isEditing {
@@ -419,7 +419,7 @@ struct JellyseerrPluginView: View {
         }
         .onAppear { if !isConfigured { beginEditing() } }
         .confirmationDialog(
-            "Remove Jellyseerr connection?",
+            "Remove Seerr connection?",
             isPresented: $showRemoveConfirm,
             titleVisibility: .visible
         ) {
@@ -475,7 +475,7 @@ struct JellyseerrPluginView: View {
         // Account type picker
         Section {
             Picker("Account Type", selection: $draftAuthMethod) {
-                ForEach(JellyseerrAuthMethod.allCases, id: \.self) { method in
+                ForEach(SeerrAuthMethod.allCases, id: \.self) { method in
                     Text(method.label).tag(method)
                 }
             }

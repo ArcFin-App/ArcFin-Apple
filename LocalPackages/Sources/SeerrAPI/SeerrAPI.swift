@@ -5,9 +5,9 @@ import AuthCore
 import Telemetry
 
 // MARK: - Client protocol
-// Stub — replace with OpenAPI-generated types once jellyseerr openapi.yaml is wired up.
+// Stub — replace with OpenAPI-generated types once seerr openapi.yaml is wired up.
 
-public protocol JellyseerrClientProtocol: Sendable {
+public protocol SeerrClientProtocol: Sendable {
     func getRequests(page: Int, filter: RequestFilter) async throws -> RequestsPage
     func requestMedia(mediaType: RequestMediaType, mediaID: Int, seasons: [Int]?) async throws -> MediaRequest
     func getRequestStatus(requestID: Int) async throws -> MediaRequest

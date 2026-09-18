@@ -1,9 +1,9 @@
 #if os(tvOS)
 import SwiftUI
-import JellyseerrAPI
+import SeerrAPI
 
-struct TVJellyseerrView: View {
-    @Environment(JellyseerrRepository.self) private var seerrRepo
+struct TVSeerrView: View {
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var requestingItem: SeerrItem? = nil
     @State private var showRequestAlert = false
@@ -53,7 +53,7 @@ struct TVJellyseerrView: View {
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Check your Jellyseerr credentials in Profile → Plugins → Jellyseerr.")
+            Text("Check your Seerr credentials in Profile → Plugins → Seerr.")
                 .font(.system(size: 22))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
@@ -69,10 +69,10 @@ struct TVJellyseerrView: View {
             Image(systemName: "clock.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(DT.Color.accent)
-            Text("Jellyseerr Not Connected")
+            Text("Seerr Not Connected")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Add your Jellyseerr server in Profile → Plugins → Jellyseerr.")
+            Text("Add your Seerr server in Profile → Plugins → Seerr.")
                 .font(.system(size: 22))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)

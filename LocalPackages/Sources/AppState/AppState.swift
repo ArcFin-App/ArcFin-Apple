@@ -48,7 +48,7 @@ public enum AppTab: String, Sendable, Equatable, CaseIterable {
     case library     = "Library"
     case search      = "Search"
     case stats       = "Stats"
-    case jellyseerr  = "Requests"
+    case seerr       = "Requests"
     case settings    = "Settings"
 }
 
