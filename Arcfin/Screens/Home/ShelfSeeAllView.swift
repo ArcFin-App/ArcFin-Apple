@@ -6,18 +6,25 @@ struct ShelfSeeAllView: View {
     let items: [MediaItem]
 
     @Environment(MediaRepository.self) private var mediaRepo
+    @State private var selectedItem: MediaItem?
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
+    /// Episodes only have a landscape screenshot — a uniform portrait grid crops most of
+    /// it away. A shelf's items are practically always all-episode or all-not, so this
+    /// decides per screen rather than trying to mix aspect ratios in one grid.
+    private var isLandscapeShelf: Bool {
+        items.first?.type == .episode
+    }
+
+    private var columns: [GridItem] {
+        let count = isLandscapeShelf ? 2 : 3
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(items) { item in
-                    NavigationLink(value: item) {
+                    Button { selectedItem = item } label: {
                         gridCard(item)
                     }
                     .buttonStyle(.plain)
@@ -30,6 +37,12 @@ struct ShelfSeeAllView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        // Self-contained rather than relying on an ancestor's navigationDestination(for:) —
+        // a NavigationLink pushed from a view that itself was pushed via
+        // navigationDestination(item:) could silently fail to navigate until popping back.
+        .navigationDestination(item: $selectedItem) { item in
+            MediaDetailView(item: item)
+        }
     }
 
     private func gridCard(_ item: MediaItem) -> some View {
@@ -47,19 +60,34 @@ struct ShelfSeeAllView: View {
                     DT.Color.backgroundSecondary
                 }
             }
-            .aspectRatio(2 / 3, contentMode: .fit)
+            .aspectRatio(isLandscapeShelf ? 16 / 9 : 2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
 
-            Text(item.name)
+            Text(cardTitle(item))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
-            if let year = item.productionYear {
-                Text(String(year))
+            if let subtitle = cardSubtitle(item) {
+                Text(subtitle)
                     .font(.system(size: 10))
                     .foregroundStyle(DT.Color.textSecondary)
+                    .lineLimit(1)
             }
         }
+    }
+
+    private func cardTitle(_ item: MediaItem) -> String {
+        item.type == .episode ? (item.seriesName ?? item.name) : item.name
+    }
+
+    private func cardSubtitle(_ item: MediaItem) -> String? {
+        guard item.type == .episode else {
+            return item.productionYear.map { String($0) }
+        }
+        let s = item.parentIndexNumber.map { "S\($0)" }
+        let e = item.indexNumber.map { "E\($0)" }
+        let code = [s, e].compactMap { $0 }.joined()
+        return [code.isEmpty ? nil : code, item.name].compactMap { $0 }.joined(separator: " · ")
     }
 }

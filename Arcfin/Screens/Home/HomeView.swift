@@ -151,12 +151,14 @@ struct HomeView: View {
 
     @ViewBuilder
     private func continueWatchingCard(_ item: MediaItem) -> some View {
-        NavigationLink(value: item) {
+        let size = cardSize(for: item)
+        return NavigationLink(value: item) {
             PosterCard(
                 title: itemDisplayTitle(item),
                 subtitle: itemDisplaySubtitle(item),
                 progress: item.userData?.playedPercentage.map { $0 / 100 },
-                imageURL: shelfImageURL(for: item)
+                imageURL: shelfImageURL(for: item),
+                width: size.width, height: size.height
             )
         }
 #if os(tvOS)
@@ -854,11 +856,13 @@ struct HomeView: View {
             }
         } else {
             ForEach(items) { item in
+                let size = cardSize(for: item)
                 NavigationLink(value: item) {
                     PosterCard(
                         title: itemDisplayTitle(item),
                         subtitle: itemDisplaySubtitle(item),
-                        imageURL: shelfImageURL(for: item)
+                        imageURL: shelfImageURL(for: item),
+                        width: size.width, height: size.height
                     )
                 }
 #if os(tvOS)
@@ -878,6 +882,20 @@ struct HomeView: View {
         mediaRepo.tvImageURL(for: item, fillWidth: 640)
 #else
         mediaRepo.imageURL(for: item)
+#endif
+    }
+
+    /// Episodes only have a landscape screenshot, not a portrait poster — forcing one into
+    /// a portrait card crops most of the frame away and (with a long subtitle) pushes text
+    /// out of the visible area. Landscape-shaped cards for episodes fixes both. tvOS's
+    /// default poster size is already landscape, so this only matters on iOS.
+    private func cardSize(for item: MediaItem) -> CGSize {
+#if os(tvOS)
+        DT.Size.posterCard
+#else
+        item.type == .episode
+            ? CGSize(width: 200, height: 113)
+            : DT.Size.posterCard
 #endif
     }
 

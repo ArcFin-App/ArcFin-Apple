@@ -111,6 +111,13 @@ struct ContentView: View {
     private func configureSeerr() {
         seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
                             password: seerrPassword, authMethod: seerrAuthMethod)
+        // Warms the Requests tab in the background as soon as Seerr is reachable, so it's
+        // already populated (no skeleton) the first time the user actually taps that tab.
+        guard seerrRepo.isConfigured else { return }
+        Task {
+            await seerrRepo.loadDiscover()
+            await seerrRepo.loadRequests()
+        }
     }
 
     private func configureStats() {

@@ -86,6 +86,8 @@ struct PosterCard: View {
                         Text(subtitle)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                     }
                     Text(title)
                         .font(.system(size: 12, weight: .semibold))

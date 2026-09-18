@@ -10,7 +10,6 @@ struct SeerrView: View {
     @State private var isSearching = false
     @State private var requestingItem: SeerrItem? = nil
     @State private var selectedRequest: SeerrRequestItem? = nil
-    @State private var isBootstrapping = false
 
     private let categories = ["All", "Movies", "Series"]
 
@@ -42,10 +41,11 @@ struct SeerrView: View {
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
-            isBootstrapping = true
+            // Refetches live every time this appears, but loadDiscover()/loadRequests()
+            // only flip the loading flags (and so only show a skeleton) when there's truly
+            // nothing cached yet — otherwise this updates the already-visible list in place.
             await seerrRepo.loadDiscover()
             await seerrRepo.loadRequests()
-            isBootstrapping = false
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)
@@ -86,16 +86,23 @@ struct SeerrView: View {
                 if !searchText.isEmpty {
                     searchResultsSection
                 } else {
-                    if isBootstrapping || (seerrRepo.isLoadingDiscover && displayItems.isEmpty) {
+                    if seerrRepo.isLoadingDiscover && displayItems.isEmpty {
                         loadingGrid
-                        requestsLoadingList
                     } else {
                         discoverGrid
+                    }
+                    if seerrRepo.isLoadingRequests && seerrRepo.requests.isEmpty {
+                        requestsLoadingList
+                    } else {
                         requestsList
                     }
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
+        }
+        .refreshable {
+            await seerrRepo.loadDiscover()
+            await seerrRepo.loadRequests()
         }
     }
 
@@ -108,10 +115,25 @@ struct SeerrView: View {
                 Spacer()
             }
             ForEach(0..<4, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.06))
-                    .frame(height: 66)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+                HStack(spacing: 10) {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.white.opacity(0.08))
+                        .frame(width: 32, height: 44)
+                    VStack(alignment: .leading, spacing: 6) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 140, height: 12)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.white.opacity(0.06))
+                            .frame(width: 90, height: 9)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 12).padding(.vertical, 11)
+                .frame(height: 66)
+                .background(.white.opacity(0.03))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
