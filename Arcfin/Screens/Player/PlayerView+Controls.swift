@@ -49,6 +49,20 @@ extension PlayerView {
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .background(method == .transcode ? DT.Color.accent : Color.white.opacity(0.6), in: Capsule())
                     }
+                    if let hdrLabel {
+                        Text(hdrLabel)
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundStyle(hdrIsToneMapped ? .black : .white)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(
+                                hdrIsToneMapped ? Color(hex: "F59E0B") : Color.clear,
+                                in: Capsule()
+                            )
+                            .overlay(
+                                Capsule().stroke(.white.opacity(hdrIsToneMapped ? 0 : 0.4), lineWidth: 1)
+                            )
+                    }
                 }
                 if let subtitle = episodeSubtitle {
                     Text(subtitle)
@@ -108,6 +122,22 @@ extension PlayerView {
         return [series, [s, e].joined()].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
+    // MARK: - HDR / Dolby Vision badge
+
+    /// The transcode profile only ever outputs h264/SDR (see JellyfinPlaybackClient's
+    /// TranscodingProfiles) — an HDR/DV source that gets transcoded is always tone-mapped
+    /// down to SDR, which is worth surfacing since it's a visible quality loss the user
+    /// didn't ask for.
+    private var hdrIsToneMapped: Bool {
+        (playbackInfo?.isHDR ?? false) && playbackInfo?.playMethod == .transcode
+    }
+
+    private var hdrLabel: String? {
+        guard let info = playbackInfo, info.isHDR else { return nil }
+        if hdrIsToneMapped { return "HDR → SDR" }
+        return info.isDolbyVision ? "DOLBY VISION" : "HDR"
+    }
+
     private var bottomBar: some View {
         VStack(spacing: 10) {
             scrubber
@@ -155,6 +185,15 @@ extension PlayerView {
                 Capsule().fill(.white.opacity(0.25)).frame(height: 4)
                 Capsule().fill(DT.Color.accent)
                     .frame(width: thumbX, height: 4)
+
+                ForEach(chapters.dropFirst(), id: \.startPositionTicks) { chapter in
+                    let x = proxy.size.width * min(max(Double(chapter.startPositionTicks) / Double(duration), 0), 1)
+                    Rectangle()
+                        .fill(.black.opacity(0.5))
+                        .frame(width: 2, height: 4)
+                        .offset(x: x - 1)
+                }
+
                 Circle().fill(.white)
                     .frame(width: isScrubbing ? 16 : 10, height: isScrubbing ? 16 : 10)
                     .offset(x: thumbX - (isScrubbing ? 8 : 5))
@@ -281,6 +320,66 @@ extension PlayerView {
             return "Skip Credits"
         }
         return nil
+    }
+
+    // MARK: - Up Next
+
+    func upNextCard(_ next: MediaItem) -> some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                HStack(spacing: 12) {
+                    if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let img): img.resizable().scaledToFill()
+                            default: DT.Color.backgroundSecondary
+                            }
+                        }
+                        .frame(width: 100, height: 56)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Up Next")
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundStyle(DT.Color.accent)
+                        Text(next.name)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        if let s = next.parentIndexNumber, let e = next.indexNumber {
+                            Text("S\(s) · E\(e)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+                    VStack(spacing: 10) {
+                        Button { playNextEpisode() } label: {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.black)
+                                .frame(width: 30, height: 30)
+                                .background(.white, in: Circle())
+                        }
+                        Button { dismissUpNext() } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
+                }
+                .padding(10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
+                .frame(maxWidth: 340)
+            }
+            .padding(.trailing, DT.Spacing.pagePad)
+            .padding(.bottom, 100)
+        }
+        .transition(.move(edge: .trailing).combined(with: .opacity))
+        .animation(DT.Animation.fast, value: showUpNext)
     }
 
     private func skipToSegmentEnd() {

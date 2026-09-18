@@ -15,6 +15,12 @@ public struct JellyfinMediaStream: Sendable, Equatable {
     /// Server-provided path to fetch this subtitle track's content (relative to base URL) —
     /// nil for embedded/non-subtitle streams.
     public let deliveryUrl: String?
+    /// Video-only — source pixel dimensions, used to cap the quality picker at what the
+    /// source actually offers (no point advertising 4K for a 1080p source).
+    public let width: Int?
+    public let height: Int?
+    /// Video-only — "SDR" | "HDR10" | "HDR10+" | "DolbyVision" | "HLG", nil if unknown.
+    public let videoRange: String?
 }
 
 /// Trickplay scrub-thumbnail sprite sheet info (Jellyfin 10.9+ "Trickplay" plugin/core
@@ -48,8 +54,13 @@ public struct JellyfinPlaybackInfo: Sendable {
     public let defaultAudioStreamIndex: Int?
     public let defaultSubtitleStreamIndex: Int?
     public let trickplay: JellyfinTrickplayInfo?
+    public let videoStream: JellyfinMediaStream?
 
     public var isTranscoding: Bool { playMethod == .transcode }
+    public var isDolbyVision: Bool { (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby") }
+    public var isHDR: Bool {
+        isDolbyVision || (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("hdr")
+    }
 }
 
 /// Caps applied when the user overrides automatic quality — nil means uncapped/Auto.
@@ -160,6 +171,7 @@ extension JellyfinMediaClient {
         let streams = source.mediaStreams ?? []
         let audioStreams = streams.filter { $0.type == "Audio" }.map { $0.toStream() }
         let subtitleStreams = streams.filter { $0.type == "Subtitle" }.map { $0.toStream() }
+        let videoStream = streams.first(where: { $0.type == "Video" })?.toStream()
 
         print("[Trickplay] server sent widths: \(source.trickplayInfo?.keys.sorted() ?? [])")
 
@@ -173,8 +185,38 @@ extension JellyfinMediaClient {
             subtitleStreams: subtitleStreams,
             defaultAudioStreamIndex: audioStreams.first(where: \.isDefault)?.index ?? audioStreams.first?.index,
             defaultSubtitleStreamIndex: subtitleStreams.first(where: \.isDefault)?.index,
-            trickplay: source.trickplayInfo?.preferred()
+            trickplay: source.trickplayInfo?.preferred(),
+            videoStream: videoStream
         )
+    }
+
+    // MARK: - Network bandwidth probe
+
+    /// Downloads a throwaway buffer of `sizeBytes` from Jellyfin's own bandwidth-test
+    /// endpoint and times it — used to pick a sane starting quality cap for Auto instead
+    /// of always starting uncapped and eating a stall-storm on a slow connection.
+    /// Returns measured throughput in bits per second, or nil if the probe failed/timed out.
+    public func testBitrate(
+        credential: ServerCredential,
+        authHeader: String,
+        sizeBytes: Int = 1_000_000
+    ) async -> Int? {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Playback/BitrateTest"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [.init(name: "size", value: "\(sizeBytes)")]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 8
+
+        let start = Date()
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode),
+              !data.isEmpty
+        else { return nil }
+        let elapsed = Date().timeIntervalSince(start)
+        guard elapsed > 0.05 else { return nil }
+        return Int(Double(data.count) * 8 / elapsed)
     }
 
     /// The tile-sheet URL for one trickplay tile — cache these client-side, each holds
@@ -350,12 +392,16 @@ private struct MediaStreamStreamResponse: Decodable {
     let isForced: Bool?
     let isExternal: Bool?
     let deliveryUrl: String?
+    let width: Int?
+    let height: Int?
+    let videoRange: String?
 
     enum CodingKeys: String, CodingKey {
         case index = "Index", type = "Type", codec = "Codec", language = "Language"
         case displayTitle = "DisplayTitle", isDefault = "IsDefault"
         case isForced = "IsForced", isExternal = "IsExternal"
         case deliveryUrl = "DeliveryUrl"
+        case width = "Width", height = "Height", videoRange = "VideoRange"
     }
 
     func toStream() -> JellyfinMediaStream {
@@ -363,7 +409,7 @@ private struct MediaStreamStreamResponse: Decodable {
             index: index, type: type, codec: codec, language: language,
             displayTitle: displayTitle, isDefault: isDefault ?? false,
             isForced: isForced ?? false, isExternal: isExternal ?? false,
-            deliveryUrl: deliveryUrl
+            deliveryUrl: deliveryUrl, width: width, height: height, videoRange: videoRange
         )
     }
 }

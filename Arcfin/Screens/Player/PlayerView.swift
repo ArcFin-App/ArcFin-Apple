@@ -10,8 +10,10 @@ import MediaEngine
 struct PlayerView: View {
     let item: MediaItem
     let startPositionTicks: Int64
+    let onPlayNext: (MediaItem) -> Void
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) var mediaRepo
     @Environment(\.dismiss) var dismiss
 
     @State var player = AVFoundationPlayer()
@@ -38,11 +40,18 @@ struct PlayerView: View {
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
     @State var stallObserver: NSObjectProtocol?
-    @State var autoDowngradeTier = 0
+    /// Index into `Self.autoBitrateLadder`, nil = uncapped. Only meaningful while
+    /// `quality == .auto` — a manual pick never touches this.
+    @State var autoLadderIndex: Int?
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
     @State var networkToast: String?
+    @State var chapters: [MediaChapter] = []
+    @State var nextEpisode: MediaItem?
+    @State var showUpNext = false
+    @State var upNextDismissed = false
+    @State var upNextCountdown: Task<Void, Never>?
 
     #if canImport(UIKit) && !os(tvOS)
     @StateObject var pip = PiPCoordinator()
@@ -62,9 +71,10 @@ struct PlayerView: View {
         let forward: Bool
     }
 
-    init(item: MediaItem, startPositionTicks: Int64 = 0) {
+    init(item: MediaItem, startPositionTicks: Int64 = 0, onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
         self.item = item
         self.startPositionTicks = startPositionTicks
+        self.onPlayNext = onPlayNext
         _quality = State(initialValue: VideoQuality(rawValue: UserDefaults.standard.string(forKey: "videoQuality") ?? "") ?? .max)
     }
 
@@ -119,6 +129,10 @@ struct PlayerView: View {
             }
 
             skipButton
+
+            if showUpNext, let nextEpisode {
+                upNextCard(nextEpisode)
+            }
         }
         #if canImport(UIKit) && !os(tvOS)
         .statusBarHidden()
@@ -128,6 +142,7 @@ struct PlayerView: View {
         .onDisappear { Task { await teardown() } }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
+            checkUpNextThreshold(positionTicks: newValue)
         }
         .onChange(of: player.status) { _, newStatus in handleStatusChange(newStatus) }
         // These must live on a view that's always mounted, not inside the conditionally
@@ -179,7 +194,13 @@ struct PlayerView: View {
 
     @ViewBuilder
     private var qualityMenuButtons: some View {
-        ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
+        // Don't offer a resolution the source can't actually supply (e.g. 4K for a 1080p
+        // source) — Jellyfin would just upscale into a bigger, pointless transcode.
+        let sourceHeight = playbackInfo?.videoStream?.height
+        ForEach(VideoQuality.allCases.filter { q in
+            guard let minHeight = q.minSourceHeight, let sourceHeight else { return true }
+            return sourceHeight >= minHeight
+        }) { q in
             Button(q.label + (q == quality ? " ✓" : "")) { changeQuality(to: q) }
         }
         Button("Cancel", role: .cancel) {}
@@ -224,6 +245,9 @@ struct PlayerView: View {
             errorMessage = "Not signed in."
             return
         }
+        if quality == .auto {
+            await primeAutoLadder(credential: credential, authHeader: authHeader)
+        }
         do {
             let info = try await client.getPlaybackInfo(
                 credential: credential, authHeader: authHeader, itemId: item.id,
@@ -256,7 +280,15 @@ struct PlayerView: View {
             let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
             introEnd = segments.introEnd
             creditsStart = segments.creditsStart
+
+            if let seriesId = item.seriesId {
+                let upNext = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: 1)
+                nextEpisode = upNext?.first
+            }
         }
+
+        let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
+        chapters = detail?.chapters ?? []
     }
 
     private func teardown() async {
@@ -301,28 +333,77 @@ struct PlayerView: View {
 
     // MARK: - Quality
 
+    /// Fine-grained fallback steps for Auto — used both as the starting point (picked from
+    /// a bandwidth probe) and as the reactive stall-downgrade ladder. Deliberately finer
+    /// than the manual picker's four resolution tiers so a bad connection degrades gracefully
+    /// instead of jumping straight to 480p.
+    static let autoBitrateLadder: [StreamQualityCap] = [
+        StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1920),
+        StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 1280),
+        StreamQualityCap(maxBitrate: 2_000_000, maxWidth: 960),
+        StreamQualityCap(maxBitrate: 1_000_000, maxWidth: 720),
+        StreamQualityCap(maxBitrate: 500_000, maxWidth: 480),
+        StreamQualityCap(maxBitrate: 250_000, maxWidth: 426),
+    ]
+
     private func qualityCap(for quality: VideoQuality) -> StreamQualityCap {
         // No forceTranscode — a picked quality is a cap, not a demand to re-encode.
         // If the source already qualifies for direct play under that cap, it should stay
         // direct play (forcing a transcode there was wasteful and confusing: Jellyfin's own
         // dashboard correctly said Direct Play while this app's badge said Transcoding).
-        switch quality {
-        case .max, .auto: .auto
-        case .p4k:   StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840)
-        case .p1080: StreamQualityCap(maxBitrate: 20_000_000, maxWidth: 1920)
-        case .p720:  StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1280)
-        case .p480:  StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 854)
+        if quality == .auto {
+            if let autoLadderIndex, autoLadderIndex < Self.autoBitrateLadder.count {
+                return Self.autoBitrateLadder[autoLadderIndex]
+            }
+            return .auto
         }
+        switch quality {
+        case .max, .auto: return .auto
+        case .p4k:   return StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840)
+        case .p1080: return StreamQualityCap(maxBitrate: 20_000_000, maxWidth: 1920)
+        case .p720:  return StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1280)
+        case .p480:  return StreamQualityCap(maxBitrate: 1_500_000, maxWidth: 854)
+        }
+    }
+
+    /// Probes actual throughput via Jellyfin's own bandwidth-test endpoint and picks a
+    /// starting ladder step from it, instead of always starting uncapped and finding out
+    /// the connection is slow only after a stall-storm. A generous 25% safety margin below
+    /// the measured rate covers overhead and fluctuation; a failed/timed-out probe (e.g. a
+    /// genuinely poor connection) falls back to the lowest step rather than uncapped.
+    private func primeAutoLadder(credential: ServerCredential, authHeader: String) async {
+        guard let measuredBps = await client.testBitrate(credential: credential, authHeader: authHeader) else {
+            autoLadderIndex = Self.autoBitrateLadder.count - 1
+            return
+        }
+        let safe = Double(measuredBps) * 0.75
+        // Comfortably above the ladder's top step — plenty of bandwidth, let the source's
+        // real bitrate through uncapped instead of pinning it to the ladder's ceiling.
+        guard let topBitrate = Self.autoBitrateLadder.first?.maxBitrate, safe < Double(topBitrate) else {
+            autoLadderIndex = nil
+            return
+        }
+        autoLadderIndex = Self.autoBitrateLadder.firstIndex { Double($0.maxBitrate ?? 0) <= safe }
     }
 
     func changeQuality(to newQuality: VideoQuality) {
         guard newQuality != quality else { return }
         quality = newQuality
-        reload(errorContext: "switch quality")
+        recentStallTimestamps.removeAll()
+        lastStallHandledAt = nil
+        if newQuality == .auto {
+            guard let credential, let authHeader else { reload(errorContext: "switch quality"); return }
+            Task {
+                await primeAutoLadder(credential: credential, authHeader: authHeader)
+                reload(errorContext: "switch quality")
+            }
+        } else {
+            reload(errorContext: "switch quality")
+        }
     }
 
-    /// Only acts when the user hasn't manually picked a quality — a deliberate pick is
-    /// never silently overridden by this.
+    /// Only acts while on Auto — a deliberate manual pick (including "Max") is never
+    /// silently overridden by this.
     ///
     /// AVPlayerItemPlaybackStalled fires for plenty of non-network reasons too (seeking,
     /// a reload's own startup buffering, backgrounding) — a single stall is not a reliable
@@ -330,7 +411,7 @@ struct PlayerView: View {
     /// twice (each reload's startup buffering looked like another stall). Now requires
     /// several stalls clustered in a short window, which normal one-off blips don't produce.
     func handlePlaybackStall() {
-        guard quality == .auto || quality == .max else { return }
+        guard quality == .auto else { return }
         if let lastLoad = lastLoadStartedAt, Date().timeIntervalSince(lastLoad) < 12 { return }
 
         let now = Date()
@@ -340,18 +421,55 @@ struct PlayerView: View {
         recentStallTimestamps.removeAll()
 
         if let last = lastStallHandledAt, now.timeIntervalSince(last) < 30 { return }
-        let tiers: [VideoQuality] = [.p1080, .p720, .p480]
-        guard autoDowngradeTier < tiers.count else { return }
+        let nextIndex = (autoLadderIndex ?? -1) + 1
+        guard nextIndex < Self.autoBitrateLadder.count else { return }
         lastStallHandledAt = now
-        let next = tiers[autoDowngradeTier]
-        autoDowngradeTier += 1
-        quality = next
+        autoLadderIndex = nextIndex
         reload(errorContext: "adjust quality")
-        networkToast = "Lowered to \(next.label) — your connection can't keep up"
+        let mbps = Double(Self.autoBitrateLadder[nextIndex].maxBitrate ?? 0) / 1_000_000
+        networkToast = "Lowered to \(mbps >= 1 ? String(format: "%.0f Mb/s", mbps) : String(format: "%.0f Kb/s", mbps * 1000)) — your connection can't keep up"
         Task {
             try? await Task.sleep(for: .seconds(3))
             networkToast = nil
         }
+    }
+
+    // MARK: - Up Next
+
+    private func checkUpNextThreshold(positionTicks: Int64) {
+        guard nextEpisode != nil, !upNextDismissed, player.durationTicks > 0 else { return }
+        let remainingSeconds = Double(player.durationTicks - positionTicks) / 10_000_000
+        let withinWindow = remainingSeconds <= 30 && remainingSeconds > 0
+        if withinWindow, !showUpNext {
+            showUpNext = true
+            if UserDefaults.standard.bool(forKey: "autoPlayNext") {
+                startUpNextCountdown()
+            }
+        } else if !withinWindow, showUpNext {
+            showUpNext = false
+            upNextCountdown?.cancel()
+        }
+    }
+
+    private func startUpNextCountdown() {
+        upNextCountdown?.cancel()
+        upNextCountdown = Task {
+            try? await Task.sleep(for: .seconds(8))
+            guard !Task.isCancelled else { return }
+            playNextEpisode()
+        }
+    }
+
+    func playNextEpisode() {
+        guard let nextEpisode else { return }
+        upNextCountdown?.cancel()
+        onPlayNext(nextEpisode)
+    }
+
+    func dismissUpNext() {
+        upNextDismissed = true
+        showUpNext = false
+        upNextCountdown?.cancel()
     }
 
     // MARK: - Audio/subtitle tracks

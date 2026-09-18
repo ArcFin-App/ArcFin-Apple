@@ -151,6 +151,18 @@ public struct MediaStream: Sendable, Equatable, Hashable {
     }
 }
 
+// MARK: - Chapter
+
+public struct MediaChapter: Sendable, Equatable, Hashable {
+    public let startPositionTicks: Int64
+    public let name: String?
+
+    public init(startPositionTicks: Int64, name: String? = nil) {
+        self.startPositionTicks = startPositionTicks
+        self.name = name
+    }
+}
+
 // MARK: - Item detail
 
 public struct MediaItemDetail: Sendable, Identifiable {
@@ -163,6 +175,7 @@ public struct MediaItemDetail: Sendable, Identifiable {
     public var officialRating: String?
     public var runTimeTicks: Int64?
     public var taglines: [String]
+    public var chapters: [MediaChapter]
 
     public var runtimeMinutes: Int? {
         guard let ticks = runTimeTicks, ticks > 0 else { return nil }
@@ -183,10 +196,10 @@ public struct MediaItemDetail: Sendable, Identifiable {
 
     public init(item: MediaItem, people: [MediaPerson] = [], mediaStreams: [MediaStream] = [],
                 genres: [String] = [], studios: [String] = [], officialRating: String? = nil,
-                runTimeTicks: Int64? = nil, taglines: [String] = []) {
+                runTimeTicks: Int64? = nil, taglines: [String] = [], chapters: [MediaChapter] = []) {
         self.item = item; self.people = people; self.mediaStreams = mediaStreams
         self.genres = genres; self.studios = studios; self.officialRating = officialRating
-        self.runTimeTicks = runTimeTicks; self.taglines = taglines
+        self.runTimeTicks = runTimeTicks; self.taglines = taglines; self.chapters = chapters
     }
 }
 

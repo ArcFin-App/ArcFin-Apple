@@ -433,6 +433,18 @@ enum VideoQuality: String, CaseIterable, Identifiable {
         case .p480:  "480p"
         }
     }
+    /// Source pixel height this tier requires — nil for Auto/Max, which have no fixed
+    /// resolution floor. Used to hide tiers the current item's source can't actually supply
+    /// (no point offering 4K for a 1080p source).
+    var minSourceHeight: Int? {
+        switch self {
+        case .max, .auto: nil
+        case .p4k:   2160
+        case .p1080: 1080
+        case .p720:  720
+        case .p480:  480
+        }
+    }
 }
 
 // MARK: - Seerr plugin view

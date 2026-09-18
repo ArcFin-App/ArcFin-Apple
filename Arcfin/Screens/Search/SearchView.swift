@@ -15,6 +15,12 @@ struct SearchView: View {
     @State private var isSearching = false
     @State private var requestingSeerrItem: SeerrItem?
 
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+    ]
+
     var body: some View {
         Group {
             if query.isEmpty {
@@ -27,40 +33,20 @@ struct SearchView: View {
                 ContentUnavailableView.search(text: query)
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
+                    VStack(alignment: .leading, spacing: DT.Spacing.xl) {
                         // ── Library section ──────────────────────────────────
                         if !jellyfinResults.isEmpty {
-                            ShelfRow(title: "Library", onSeeAll: nil) {
-                                ForEach(jellyfinResults) { item in
-                                    NavigationLink(value: item) {
-                                        PosterCard(
-                                            title: item.name,
-                                            subtitle: item.productionYear.map { String($0) },
-                                            imageURL: mediaRepo.imageURL(for: item)
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
+                            librarySection
                         }
 
-                        // ── Discover ──────────────────────────────────────────
+                        // ── Discover section ─────────────────────────────────
                         if seerrRepo.isConfigured && !seerrResults.isEmpty {
-                            ShelfRow(title: "Discover", onSeeAll: nil) {
-                                ForEach(seerrResults) { item in
-                                    Button { requestingSeerrItem = item } label: {
-                                        PosterCard(
-                                            title: item.title,
-                                            subtitle: item.year,
-                                            imageURL: item.posterURL
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
+                            discoverSection
                         }
                     }
-                    .padding(.top, 8)
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .padding(.top, 12)
+                    .padding(.bottom, 32)
                 }
             }
         }
@@ -73,6 +59,93 @@ struct SearchView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
+        }
+    }
+
+    // MARK: - Library section
+
+    private var librarySection: some View {
+        VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
+            Text("Library")
+                .font(DT.Font.cardTitle)
+                .foregroundStyle(DT.Color.textPrimary)
+
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(jellyfinResults) { item in
+                    NavigationLink(value: item) {
+                        gridCard(title: item.name, subtitle: item.productionYear.map { String($0) },
+                                 imageURL: mediaRepo.imageURL(for: item))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    // MARK: - Discover section
+
+    private var discoverSection: some View {
+        VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                Text("Discover")
+                    .font(DT.Font.cardTitle)
+                    .foregroundStyle(DT.Color.textPrimary)
+            }
+            Text("Not in your library — tap to request")
+                .font(.system(size: 11))
+                .foregroundStyle(DT.Color.textSecondary)
+
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(seerrResults) { item in
+                    Button { requestingSeerrItem = item } label: {
+                        gridCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(DT.Spacing.sm)
+        .background(DT.Color.backgroundSecondary.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: DT.Radius.lg)
+                .stroke(DT.Color.accent.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Grid card
+
+    private func gridCard(title: String, subtitle: String?, imageURL: URL?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ZStack {
+                if let imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: DT.Color.backgroundSecondary
+                        }
+                    }
+                    .clipped()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+            }
+            .aspectRatio(2 / 3, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
+
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
         }
     }
 

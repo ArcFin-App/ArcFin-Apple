@@ -67,6 +67,7 @@ public struct JellyfinMediaClient: Sendable {
     public func getNextUp(
         credential: ServerCredential,
         authHeader: String,
+        seriesId: String? = nil,
         limit: Int = 12
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
@@ -79,6 +80,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableImages", value: "true"),
         ]
+        if let seriesId { comps.queryItems?.append(.init(name: "SeriesId", value: seriesId)) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
@@ -283,7 +285,7 @@ public struct JellyfinMediaClient: Sendable {
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds"),
+            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -589,6 +591,7 @@ private struct ItemDetailResponse: Decodable {
     let runTimeTicks: Int64?
     let taglines: [String]?
     let providerIds: [String: String]?
+    let chapters: [ChapterResponse]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
@@ -601,6 +604,7 @@ private struct ItemDetailResponse: Decodable {
         case genres = "Genres", studios = "Studios"
         case officialRating = "OfficialRating", runTimeTicks = "RunTimeTicks"
         case taglines = "Taglines", providerIds = "ProviderIds"
+        case chapters = "Chapters"
     }
 
     func toDetail() -> MediaItemDetail {
@@ -640,8 +644,17 @@ private struct ItemDetailResponse: Decodable {
             studios: studios?.map { $0.name } ?? [],
             officialRating: officialRating,
             runTimeTicks: runTimeTicks,
-            taglines: taglines ?? []
+            taglines: taglines ?? [],
+            chapters: chapters?.map { MediaChapter(startPositionTicks: $0.startPositionTicks, name: $0.name) } ?? []
         )
+    }
+}
+
+private struct ChapterResponse: Decodable {
+    let startPositionTicks: Int64
+    let name: String?
+    enum CodingKeys: String, CodingKey {
+        case startPositionTicks = "StartPositionTicks", name = "Name"
     }
 }
 

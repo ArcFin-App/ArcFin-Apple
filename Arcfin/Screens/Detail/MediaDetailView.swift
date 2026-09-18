@@ -65,7 +65,9 @@ struct MediaDetailView: View {
         }
 #if os(iOS)
         .fullScreenCover(item: $playbackRequest) { request in
-            PlayerView(item: request.item, startPositionTicks: request.startTicks)
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
+            }
         }
 #endif
         .task { await load() }
