@@ -255,12 +255,26 @@ struct PlayerView: View {
             )
             playbackInfo = info
             selectedAudioIndex = info.defaultAudioStreamIndex
-            selectedSubtitleIndex = info.defaultSubtitleStreamIndex
+            // The server only marks a subtitle default when one's flagged default/forced
+            // there — most libraries don't have that set, so "Show Subtitles by Default"
+            // needs its own fallback to the first available track rather than staying nil.
+            if let serverDefault = info.defaultSubtitleStreamIndex {
+                selectedSubtitleIndex = serverDefault
+            } else if UserDefaults.standard.bool(forKey: "subtitleDefault") {
+                selectedSubtitleIndex = info.subtitleStreams.first?.index
+            } else {
+                selectedSubtitleIndex = nil
+            }
+            // PlaybackInfo's own TrickplayInfo field isn't reliably populated by Jellyfin —
+            // the general item-detail endpoint's Trickplay field (keyed by MediaSourceId) is
+            // what the official apps actually read it from.
+            let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
             #if canImport(UIKit)
-            if let trickplay = info.trickplay {
+            if let trickplay = detail?.trickplay[info.mediaSourceId] ?? info.trickplay {
                 trickplayLoader = TrickplayLoader(credential: credential, client: client, itemId: item.id, info: trickplay)
             }
             #endif
+            chapters = detail?.chapters ?? []
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
@@ -286,9 +300,6 @@ struct PlayerView: View {
                 nextEpisode = upNext?.first
             }
         }
-
-        let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
-        chapters = detail?.chapters ?? []
     }
 
     private func teardown() async {

@@ -281,6 +281,12 @@ struct SettingsView: View {
         }
     }
 
+    private func initialsLabel(_ initials: String) -> some View {
+        Text(initials)
+            .font(.system(size: 22, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+    }
+
     private func profileCard(cred: ServerCredential) -> some View {
         let initials = cred.displayName
             .split(separator: " ").prefix(2)
@@ -298,9 +304,18 @@ struct SettingsView: View {
                     ))
                     .frame(width: 64, height: 64)
                     .shadow(color: DT.Color.accent.opacity(0.4), radius: 12, y: 4)
-                Text(initials)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                if let tag = cred.userImageTag {
+                    AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 130, token: cred.accessToken)) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: initialsLabel(initials)
+                        }
+                    }
+                    .frame(width: 64, height: 64)
+                    .clipShape(Circle())
+                } else {
+                    initialsLabel(initials)
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {

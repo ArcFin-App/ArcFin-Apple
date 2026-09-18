@@ -299,7 +299,7 @@ public struct JellyfinMediaClient: Sendable {
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters"),
+            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters,Trickplay"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -608,6 +608,10 @@ private struct ItemDetailResponse: Decodable {
     let taglines: [String]?
     let providerIds: [String: String]?
     let chapters: [ChapterResponse]?
+    /// MediaSourceId -> width -> info. A completely different location from PlaybackInfo's
+    /// MediaSources[].TrickplayInfo, which Jellyfin does not reliably populate — the general
+    /// item-detail endpoint is the one that actually carries this.
+    let trickplay: [String: [String: TrickplayInfoResponse]]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
@@ -620,7 +624,7 @@ private struct ItemDetailResponse: Decodable {
         case genres = "Genres", studios = "Studios"
         case officialRating = "OfficialRating", runTimeTicks = "RunTimeTicks"
         case taglines = "Taglines", providerIds = "ProviderIds"
-        case chapters = "Chapters"
+        case chapters = "Chapters", trickplay = "Trickplay"
     }
 
     func toDetail() -> MediaItemDetail {
@@ -661,7 +665,8 @@ private struct ItemDetailResponse: Decodable {
             officialRating: officialRating,
             runTimeTicks: runTimeTicks,
             taglines: taglines ?? [],
-            chapters: chapters?.map { MediaChapter(startPositionTicks: $0.startPositionTicks, name: $0.name) } ?? []
+            chapters: chapters?.map { MediaChapter(startPositionTicks: $0.startPositionTicks, name: $0.name) } ?? [],
+            trickplay: trickplay?.compactMapValues { $0.preferred } ?? [:]
         )
     }
 }
@@ -671,6 +676,34 @@ private struct ChapterResponse: Decodable {
     let name: String?
     enum CodingKeys: String, CodingKey {
         case startPositionTicks = "StartPositionTicks", name = "Name"
+    }
+}
+
+struct TrickplayInfoResponse: Decodable {
+    let width: Int
+    let height: Int
+    let tileWidth: Int
+    let tileHeight: Int
+    let thumbnailCount: Int
+    let interval: Int
+
+    enum CodingKeys: String, CodingKey {
+        case width = "Width", height = "Height"
+        case tileWidth = "TileWidth", tileHeight = "TileHeight"
+        case thumbnailCount = "ThumbnailCount", interval = "Interval"
+    }
+
+    var toTrickplayInfo: JellyfinTrickplayInfo {
+        JellyfinTrickplayInfo(width: width, height: height, tileWidth: tileWidth,
+                              tileHeight: tileHeight, thumbnailCount: thumbnailCount, intervalMs: interval)
+    }
+}
+
+private extension [String: TrickplayInfoResponse] {
+    /// Smallest available resolution per media source — this is only ever shown at
+    /// thumbnail size, so a small, fast-loading image is preferable.
+    var preferred: JellyfinTrickplayInfo? {
+        values.min(by: { $0.width < $1.width })?.toTrickplayInfo
     }
 }
 

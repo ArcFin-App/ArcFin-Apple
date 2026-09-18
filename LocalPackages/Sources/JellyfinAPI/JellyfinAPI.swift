@@ -176,6 +176,9 @@ public struct MediaItemDetail: Sendable, Identifiable {
     public var runTimeTicks: Int64?
     public var taglines: [String]
     public var chapters: [MediaChapter]
+    /// Keyed by MediaSourceId — look up with the id PlaybackInfo actually returns for the
+    /// stream being played, since an item can have more than one version/source.
+    public var trickplay: [String: JellyfinTrickplayInfo]
 
     public var runtimeMinutes: Int? {
         guard let ticks = runTimeTicks, ticks > 0 else { return nil }
@@ -196,10 +199,12 @@ public struct MediaItemDetail: Sendable, Identifiable {
 
     public init(item: MediaItem, people: [MediaPerson] = [], mediaStreams: [MediaStream] = [],
                 genres: [String] = [], studios: [String] = [], officialRating: String? = nil,
-                runTimeTicks: Int64? = nil, taglines: [String] = [], chapters: [MediaChapter] = []) {
+                runTimeTicks: Int64? = nil, taglines: [String] = [], chapters: [MediaChapter] = [],
+                trickplay: [String: JellyfinTrickplayInfo] = [:]) {
         self.item = item; self.people = people; self.mediaStreams = mediaStreams
         self.genres = genres; self.studios = studios; self.officialRating = officialRating
         self.runTimeTicks = runTimeTicks; self.taglines = taglines; self.chapters = chapters
+        self.trickplay = trickplay
     }
 }
 
