@@ -31,6 +31,8 @@ struct PlayerView: View {
     @State var volumeController: SystemVolumeController?
     @State var dragAxis: DragAxis?
     @State var dragBaseline: CGFloat = 0
+    @State var dragValue: CGFloat = 0
+    @State var lastHapticStep: Int?
     #endif
 
     let client = JellyfinMediaClient()
@@ -69,6 +71,10 @@ struct PlayerView: View {
             if let seekFeedback {
                 seekFeedbackView(seekFeedback)
             }
+
+            #if !os(tvOS)
+            dragAxisIndicator
+            #endif
 
             if player.status == .loading || player.isBuffering {
                 ProgressView()

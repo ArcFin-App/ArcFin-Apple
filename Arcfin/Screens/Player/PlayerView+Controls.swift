@@ -160,6 +160,7 @@ extension PlayerView {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        if !isScrubbing { HapticManager.impact(.light) }
                         isScrubbing = true
                         hideControlsTask?.cancel()
                         let fraction = min(max(value.location.x / proxy.size.width, 0), 1)
@@ -278,6 +279,38 @@ extension PlayerView {
         .padding(24)
         .frame(maxWidth: 320)
     }
+
+    #if !os(tvOS)
+    @ViewBuilder
+    var dragAxisIndicator: some View {
+        if let dragAxis {
+            let isBrightness = dragAxis == .brightness
+            HStack {
+                if !isBrightness { Spacer() }
+                VStack(spacing: 10) {
+                    Image(systemName: isBrightness
+                        ? (dragValue < 0.5 ? "sun.min.fill" : "sun.max.fill")
+                        : (dragValue < 0.01 ? "speaker.slash.fill" : dragValue < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill"))
+                        .font(.system(size: 18))
+                        .foregroundStyle(.white)
+                    ZStack(alignment: .bottom) {
+                        Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
+                        Capsule().fill(.white).frame(width: 6, height: 90 * dragValue)
+                    }
+                    Text("\(Int(dragValue * 100))%")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.white)
+                }
+                .padding(14)
+                .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                if isBrightness { Spacer() }
+            }
+            .padding(.horizontal, 32)
+            .transition(.opacity)
+            .allowsHitTesting(false)
+        }
+    }
+    #endif
 
     func seekFeedbackView(_ feedback: SeekFeedback) -> some View {
         HStack {

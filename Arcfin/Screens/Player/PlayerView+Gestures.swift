@@ -25,20 +25,33 @@ extension PlayerView {
                     dragBaseline = axis == .brightness
                         ? UIScreen.main.brightness
                         : CGFloat(volumeController?.currentVolume ?? 0.5)
+                    lastHapticStep = nil
+                    HapticManager.impact(.light)
                 }
                 guard let dragAxis else { return }
                 let delta = -value.translation.height / 250
                 let newValue = min(max(dragBaseline + delta, 0), 1)
+                dragValue = newValue
                 switch dragAxis {
                 case .brightness: UIScreen.main.brightness = newValue
                 case .volume: volumeController?.setVolume(Float(newValue))
                 }
+                // Light tick every 10% crossed, not every pixel of drag.
+                let step = Int((newValue * 10).rounded())
+                if step != lastHapticStep {
+                    lastHapticStep = step
+                    HapticManager.impact(.light)
+                }
             }
-            .onEnded { _ in dragAxis = nil }
+            .onEnded { _ in
+                dragAxis = nil
+                lastHapticStep = nil
+            }
     }
 
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {
         let forward = location.x > width / 2
+        HapticManager.impact(.medium)
         seek(by: forward ? 10 : -10)
         seekFeedback = SeekFeedback(forward: forward)
         Task {
