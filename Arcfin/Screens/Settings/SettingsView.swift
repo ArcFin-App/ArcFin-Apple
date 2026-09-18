@@ -104,6 +104,13 @@ struct SettingsView: View {
 #if os(tvOS)
                 .listRowBackground(Color.clear)
 #endif
+#if !os(tvOS)
+                NavigationLink {
+                    ServerSettingsView()
+                } label: {
+                    Text("Server Settings")
+                }
+#endif
             } header: {
                 sectionHeader("Account & Server", icon: "person.badge.key")
             }

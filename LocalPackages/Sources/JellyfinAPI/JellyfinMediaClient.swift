@@ -10,6 +10,28 @@ public enum JellyfinImageType: String, Sendable {
     case thumb = "Thumb"
 }
 
+// MARK: - Public server info
+
+public struct JellyfinPublicServerInfo: Decodable, Sendable {
+    public let localAddress: String?
+    public let serverName: String?
+    public let version: String?
+    public let productName: String?
+    public let operatingSystem: String?
+    public let id: String
+    public let startupWizardCompleted: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case localAddress = "LocalAddress"
+        case serverName = "ServerName"
+        case version = "Version"
+        case productName = "ProductName"
+        case operatingSystem = "OperatingSystem"
+        case id = "Id"
+        case startupWizardCompleted = "StartupWizardCompleted"
+    }
+}
+
 // MARK: - Media client
 
 public struct JellyfinMediaClient: Sendable {
@@ -188,15 +210,17 @@ public struct JellyfinMediaClient: Sendable {
 
     /// Fetch the Jellyfin server UUID (needed for Streamystats jellyfinServerId param).
     public func getServerID(credential: ServerCredential) async throws -> String {
-        let url = credential.baseURL.appendingPathComponent("System/Info/Public")
+        try await getPublicInfo(baseURL: credential.baseURL).id
+    }
+
+    /// GET /System/Info/Public — unauthenticated, used both for the server UUID and
+    /// for the Server Settings screen's read-only server info display.
+    public func getPublicInfo(baseURL: URL) async throws -> JellyfinPublicServerInfo {
+        let url = baseURL.appendingPathComponent("System/Info/Public")
         var req = URLRequest(url: url)
         req.timeoutInterval = 10
         let (data, _) = try await URLSession.shared.data(for: req)
-        struct Info: Decodable {
-            let id: String
-            enum CodingKeys: String, CodingKey { case id = "Id" }
-        }
-        return try JSONDecoder().decode(Info.self, from: data).id
+        return try JSONDecoder().decode(JellyfinPublicServerInfo.self, from: data)
     }
 
     public func getTopPlayed(

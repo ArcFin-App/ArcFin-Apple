@@ -2,6 +2,9 @@ import Foundation
 import Observation
 import AuthCore
 import JellyfinAPI
+#if os(iOS)
+import NetworkExtension
+#endif
 
 @Observable
 @MainActor
@@ -24,10 +27,55 @@ final class AuthManager {
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID")
             .flatMap { UUID(uuidString: $0) }
         let candidate = all.first { $0.id == storedID } ?? all.first
-        guard let cred = candidate else { return }
+        guard var cred = candidate else { return }
+
+        // Local/Remote URL switching only takes effect on a fresh launch — resolve once here.
+        let resolvedURL = await Self.resolveBaseURL(for: cred.baseURL)
+        if resolvedURL != cred.baseURL {
+            cred.baseURL = resolvedURL
+            upsert(cred)
+        }
+
         guard await authClient.validateToken(credential: cred) else { return }
         state = .authenticated(cred)
         persist(active: cred)
+    }
+
+    // MARK: - Local/Remote server URL resolution
+
+    /// Picks the Local URL when the device is on the saved home Wi-Fi network,
+    /// otherwise falls back to the Remote URL, otherwise leaves the URL unchanged.
+    static func resolveBaseURL(for original: URL) async -> URL {
+        #if os(iOS)
+        let defaults = UserDefaults.standard
+        guard let localString = defaults.string(forKey: "serverLocalURL"), !localString.isEmpty,
+              let localURL = URL(string: localString),
+              let savedSSID = defaults.string(forKey: "serverHomeSSID"), !savedSSID.isEmpty
+        else { return original }
+
+        let currentSSID = await currentWiFiSSID()
+        if currentSSID == savedSSID { return localURL }
+
+        if let remoteString = defaults.string(forKey: "serverRemoteURL"), !remoteString.isEmpty,
+           let remoteURL = URL(string: remoteString) {
+            return remoteURL
+        }
+        return original
+        #else
+        return original
+        #endif
+    }
+
+    static func currentWiFiSSID() async -> String? {
+        #if os(iOS)
+        await withCheckedContinuation { continuation in
+            NEHotspotNetwork.fetchCurrent { network in
+                continuation.resume(returning: network?.ssid)
+            }
+        }
+        #else
+        nil
+        #endif
     }
 
     // MARK: - Save & activate (initial sign-in)
