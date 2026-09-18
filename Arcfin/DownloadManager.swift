@@ -498,12 +498,18 @@ final class DownloadManager: NSObject {
 
     // MARK: - Video download with progress
 
-    /// Retries a genuinely interrupted transfer (dropped connection, network switch, server
-    /// hiccup) using the resume data URLSession hands back on failure, instead of wiping all
-    /// progress and restarting from zero. Caps at 3 attempts with a short backoff — a failure
-    /// that comes back with no resume data (permission error, 404, etc.) isn't resumable and
-    /// is rethrown immediately rather than retried.
+    /// On iOS this session is already a true background session, and per Apple's own docs
+    /// ("Pausing and resuming downloads"): "downloads that use a background configuration
+    /// will handle resumption automatically, so manual resuming is only needed for
+    /// non-background downloads." Manually reconstructing a task from resumeData on top of
+    /// that turned out actively harmful here — it was producing NSURLErrorCannotDecodeRawData
+    /// (-1017) failures and prolonging the beginBackgroundTaskIfNeeded() window past its
+    /// grace period. tvOS/macOS use a plain .default session (see `session`'s config above),
+    /// which does need this manual retry since it has no automatic resumption of its own.
     private func downloadFile(from url: URL, authHeader: String, to destination: URL, itemId: String) async throws {
+        #if canImport(UIKit) && !os(tvOS)
+        try await attemptDownload(url: url, authHeader: authHeader, destination: destination, itemId: itemId, resumeData: nil)
+        #else
         var resumeData: Data?
         var lastError: Error?
         for attempt in 0..<3 {
@@ -522,6 +528,7 @@ final class DownloadManager: NSObject {
             }
         }
         throw lastError ?? URLError(.unknown)
+        #endif
     }
 
     private func attemptDownload(url: URL, authHeader: String, destination: URL, itemId: String, resumeData: Data?) async throws {
