@@ -438,6 +438,51 @@ extension PlayerView {
         .animation(DT.Animation.fast, value: showUpNext)
     }
 
+    // MARK: - Are you still watching
+
+    var stillWatchingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.85).ignoresSafeArea()
+            VStack(spacing: 20) {
+                Image(systemName: "eye.slash")
+                    .font(.system(size: 40, weight: .medium))
+                    .foregroundStyle(DT.Color.accent)
+                VStack(spacing: 6) {
+                    Text("Are you still watching?")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                    if let pendingAutoAdvanceEpisode {
+                        Text("Playback paused before \(pendingAutoAdvanceEpisode.name)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                VStack(spacing: 12) {
+                    Button { continueAfterStillWatchingPrompt() } label: {
+                        Text("Continue Watching")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button { stopAfterStillWatchingPrompt() } label: {
+                        Text("Stop")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(maxWidth: 280)
+            }
+        }
+        .transition(.opacity)
+    }
+
     private func skipToSegmentEnd() {
         let currentSeconds = Double(player.positionTicks) / 10_000_000
         if let introEnd, currentSeconds < introEnd {
@@ -450,6 +495,9 @@ extension PlayerView {
     // MARK: - Playback actions
 
     func togglePlayPause() {
+        // A manual play/pause is proof someone's actually there — same signal a manual
+        // Up Next tap gives, so it resets the "are you still watching" streak too.
+        UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
         Task {
             if player.status == .playing { await player.pause() } else { await player.play() }
         }

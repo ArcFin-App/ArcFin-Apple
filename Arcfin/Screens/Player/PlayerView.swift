@@ -57,6 +57,9 @@ struct PlayerView: View {
     @State var showUpNext = false
     @State var upNextDismissed = false
     @State var upNextCountdown: Task<Void, Never>?
+    @State var showStillWatchingPrompt = false
+    @State var pendingAutoAdvanceEpisode: MediaItem?
+    @State var stillWatchingTimeoutTask: Task<Void, Never>?
 
     #if canImport(UIKit) && !os(tvOS)
     @StateObject var pip = PiPCoordinator()
@@ -143,6 +146,10 @@ struct PlayerView: View {
 
             if showUpNext, let nextEpisode {
                 upNextCard(nextEpisode)
+            }
+
+            if showStillWatchingPrompt {
+                stillWatchingOverlay
             }
         }
         #if canImport(UIKit) && !os(tvOS)
@@ -386,6 +393,7 @@ struct PlayerView: View {
     private func teardown() async {
         progressReportTask?.cancel()
         hideControlsTask?.cancel()
+        stillWatchingTimeoutTask?.cancel()
         #if canImport(UIKit) && !os(tvOS)
         volumeController?.teardown()
         volumeObservation?.invalidate()
@@ -568,14 +576,64 @@ struct PlayerView: View {
         upNextCountdown = Task {
             try? await Task.sleep(for: .seconds(8))
             guard !Task.isCancelled else { return }
-            playNextEpisode()
+            playNextEpisode(isAutomatic: true)
         }
     }
 
-    func playNextEpisode() {
+    /// `isAutomatic` distinguishes the 8s countdown silently firing from the user actually
+    /// tapping Play on the Up Next card — only the former counts toward the "are you still
+    /// watching" streak (a manual tap is proof someone's there, and resets it).
+    func playNextEpisode(isAutomatic: Bool = false) {
         guard let nextEpisode else { return }
         upNextCountdown?.cancel()
+        if isAutomatic {
+            let streak = UserDefaults.standard.integer(forKey: Self.autoplayStreakKey) + 1
+            UserDefaults.standard.set(streak, forKey: Self.autoplayStreakKey)
+            if streak >= Self.stillWatchingThreshold {
+                pendingAutoAdvanceEpisode = nextEpisode
+                showStillWatchingPrompt = true
+                Task { await player.pause() }
+                scheduleStillWatchingTimeout()
+                return
+            }
+        } else {
+            UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
+        }
         onPlayNext(nextEpisode)
+    }
+
+    // MARK: - Are you still watching
+
+    static let stillWatchingThreshold = 3
+    static let autoplayStreakKey = "arcfin.autoplayStreak"
+
+    /// No response within 60s reads the same as nobody being there — stop rather than
+    /// leave a paused, forgotten stream open indefinitely.
+    private func scheduleStillWatchingTimeout() {
+        stillWatchingTimeoutTask?.cancel()
+        stillWatchingTimeoutTask = Task {
+            try? await Task.sleep(for: .seconds(60))
+            guard !Task.isCancelled else { return }
+            stopAfterStillWatchingPrompt()
+        }
+    }
+
+    func continueAfterStillWatchingPrompt() {
+        stillWatchingTimeoutTask?.cancel()
+        UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
+        showStillWatchingPrompt = false
+        if let pendingAutoAdvanceEpisode {
+            onPlayNext(pendingAutoAdvanceEpisode)
+        }
+        pendingAutoAdvanceEpisode = nil
+    }
+
+    func stopAfterStillWatchingPrompt() {
+        stillWatchingTimeoutTask?.cancel()
+        UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
+        showStillWatchingPrompt = false
+        pendingAutoAdvanceEpisode = nil
+        dismiss()
     }
 
     func dismissUpNext() {
