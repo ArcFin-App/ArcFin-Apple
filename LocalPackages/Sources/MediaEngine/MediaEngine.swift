@@ -145,19 +145,24 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         interruptionObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification, object: nil, queue: .main
         ) { [weak self] notification in
+            // Notification isn't Sendable (its userInfo is [AnyHashable: Any]) — pulling the
+            // plain Sendable values (UInt type/options) out here, in this nonisolated
+            // @Sendable callback, and passing only those across into the MainActor-isolated
+            // block below is what actually avoids the data race, not just silencing it.
+            guard let info = notification.userInfo,
+                  let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+            else { return }
+            let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt
             MainActor.assumeIsolated {
-                self?.handleInterruption(notification)
+                self?.handleInterruption(type: type, optionsValue: optionsValue)
             }
         }
         #endif
     }
 
     #if !os(macOS)
-    private func handleInterruption(_ notification: Notification) {
-        guard let info = notification.userInfo,
-              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: typeValue)
-        else { return }
+    private func handleInterruption(type: AVAudioSession.InterruptionType, optionsValue: UInt?) {
         switch type {
         case .began:
             if status == .playing {
@@ -166,9 +171,7 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
             }
         case .ended:
             defer { pausedByInterruption = false }
-            guard pausedByInterruption,
-                  let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt
-            else { return }
+            guard pausedByInterruption, let optionsValue else { return }
             if AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume) {
                 player.rate = playbackRate
                 status = .playing
