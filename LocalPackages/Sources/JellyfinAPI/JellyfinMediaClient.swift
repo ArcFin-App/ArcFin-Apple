@@ -806,7 +806,7 @@ private struct ItemDetailResponse: Decodable {
             chapters: chapters?.map { MediaChapter(startPositionTicks: $0.startPositionTicks, name: $0.name) } ?? [],
             trickplay: trickplay?.compactMapValues { $0.preferred } ?? [:],
             remoteTrailers: remoteTrailers?.compactMap { t in
-                t.url.flatMap(URL.init).map { RemoteTrailer(url: $0, name: t.name) }
+                t.url.flatMap { URL(string: $0) }.map { RemoteTrailer(url: $0, name: t.name) }
             } ?? []
         )
     }
