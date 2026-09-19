@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthCore
+import JellyfinAPI
 
 struct ServerAccountSettingsView: View {
     @Environment(AuthManager.self) private var authManager
