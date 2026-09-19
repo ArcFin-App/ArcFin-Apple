@@ -1,6 +1,8 @@
 import SwiftUI
+import AuthCore
 import JellyfinAPI
 import MediaEngine
+import CastKit
 
 extension PlayerView {
 
@@ -65,6 +67,13 @@ extension PlayerView {
             }
 
             Spacer()
+
+            #if canImport(GoogleCast)
+            if CastManager.shared.isCastAvailable {
+                CastButton()
+                    .frame(width: 24, height: 24)
+            }
+            #endif
 
             #if canImport(UIKit) && !os(tvOS)
             AirPlayButton()
@@ -404,7 +413,9 @@ extension PlayerView {
                 }
             }
             .navigationTitle("SyncPlay")
+#if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
+#endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { showSyncPlayMenu = false }
@@ -423,13 +434,13 @@ extension PlayerView {
     }
 
     private func refreshSyncPlayGroups() async {
-        guard case .authenticated(let credential) = authManager.state else { return }
+        guard let credential = authManager.state.credential else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         await syncPlayManager.refreshGroups(credential: credential, authHeader: authHeader)
     }
 
     private func createSyncPlayGroup() {
-        guard case .authenticated(let credential) = authManager.state else { return }
+        guard let credential = authManager.state.credential else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         let name = syncPlayGroupNameInput.trimmingCharacters(in: .whitespaces)
         isSyncPlayBusy = true
@@ -443,7 +454,7 @@ extension PlayerView {
     }
 
     private func joinSyncPlayGroup(_ group: SyncPlayGroupInfo) {
-        guard case .authenticated(let credential) = authManager.state else { return }
+        guard let credential = authManager.state.credential else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         isSyncPlayBusy = true
         Task {
@@ -456,7 +467,7 @@ extension PlayerView {
     }
 
     private func leaveSyncPlayGroup() {
-        guard case .authenticated(let credential) = authManager.state else { return }
+        guard let credential = authManager.state.credential else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         syncPlayManager.leaveGroup(credential: credential, authHeader: authHeader)
     }
@@ -492,12 +503,12 @@ extension PlayerView {
     private var skipButtonLabel: String? {
         guard UserDefaults.standard.bool(forKey: "skipIntro") || UserDefaults.standard.bool(forKey: "skipCredits") else { return nil }
         let currentSeconds = Double(player.positionTicks) / 10_000_000
-        if UserDefaults.standard.bool(forKey: "skipIntro"),
-           let introEnd, currentSeconds < introEnd, currentSeconds > 0.5 {
+          if UserDefaults.standard.bool(forKey: "skipIntro"),
+              let introEnd = introEnd, currentSeconds < introEnd, currentSeconds > 0.5 {
             return "Skip Intro"
         }
-        if UserDefaults.standard.bool(forKey: "skipCredits"),
-           let creditsStart, currentSeconds >= creditsStart {
+          if UserDefaults.standard.bool(forKey: "skipCredits"),
+              let creditsStart = creditsStart, currentSeconds >= creditsStart {
             return "Skip Credits"
         }
         return nil
@@ -576,7 +587,7 @@ extension PlayerView {
                     Text("Are you still watching?")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(.white)
-                    if let pendingAutoAdvanceEpisode {
+                    if let pendingAutoAdvanceEpisode = pendingAutoAdvanceEpisode {
                         Text("Playback paused before \(pendingAutoAdvanceEpisode.name)")
                             .font(.system(size: 13))
                             .foregroundStyle(.white.opacity(0.6))
@@ -608,11 +619,44 @@ extension PlayerView {
         .transition(.opacity)
     }
 
+    // MARK: - Casting
+
+    #if canImport(GoogleCast)
+    var castingOverlay: some View {
+        VStack {
+            HStack(spacing: 10) {
+                Image(systemName: "tv")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                Text("Casting to \(CastManager.shared.deviceName ?? "TV")")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                Spacer()
+                Button {
+                    CastManager.shared.endSession()
+                } label: {
+                    Text("Stop")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, 60)
+            Spacer()
+        }
+        .transition(.opacity)
+    }
+    #endif
+
     private func skipToSegmentEnd() {
         let currentSeconds = Double(player.positionTicks) / 10_000_000
-        if let introEnd, currentSeconds < introEnd {
+        if let introEnd = introEnd, currentSeconds < introEnd {
             Task { await player.seek(to: Int64(introEnd * 10_000_000)) }
-        } else if let creditsStart, currentSeconds >= creditsStart {
+        } else if let creditsStart = creditsStart, currentSeconds >= creditsStart {
             Task { await finishPlayback() }
         }
     }
@@ -623,8 +667,17 @@ extension PlayerView {
         // A manual play/pause is proof someone's actually there — same signal a manual
         // Up Next tap gives, so it resets the "are you still watching" streak too.
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
+        #if canImport(GoogleCast)
+        if CastManager.shared.isConnected {
+            // The receiver, not the local player, is the one actually playing — control
+            // it instead.
+            CastManager.shared.togglePlayPause()
+            toggleControlsVisibilityOnAction()
+            return
+        }
+        #endif
         #if !os(tvOS)
-        if syncPlayManager.isInGroup, case .authenticated(let credential) = authManager.state {
+        if syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             if player.status == .playing {
                 syncPlayManager.requestPause(credential: credential, authHeader: authHeader)
@@ -651,8 +704,14 @@ extension PlayerView {
     /// over the WebSocket, same as every other group member sees it) instead of seeking the
     /// local player directly — see PlayerView.applySyncPlayCommand.
     func performSeek(to ticks: Int64) {
+        #if canImport(GoogleCast)
+        if CastManager.shared.isConnected {
+            CastManager.shared.seek(toSeconds: Double(ticks) / 10_000_000)
+            return
+        }
+        #endif
         #if !os(tvOS)
-        if syncPlayManager.isInGroup, case .authenticated(let credential) = authManager.state {
+        if syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             syncPlayManager.requestSeek(credential: credential, authHeader: authHeader, positionTicks: ticks)
             return

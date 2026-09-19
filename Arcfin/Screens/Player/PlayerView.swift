@@ -8,6 +8,7 @@ import AuthCore
 import JellyfinAPI
 import MediaEngine
 import SwiftVLC
+import CastKit
 
 struct PlayerView: View {
     let item: MediaItem
@@ -152,6 +153,12 @@ struct PlayerView: View {
                 upNextCard(nextEpisode)
             }
 
+            #if canImport(GoogleCast)
+            if CastManager.shared.isConnected {
+                castingOverlay
+            }
+            #endif
+
             if showStillWatchingPrompt {
                 stillWatchingOverlay
             }
@@ -197,6 +204,15 @@ struct PlayerView: View {
         .onChange(of: syncPlayManager.incomingCommand) { _, command in
             guard let command else { return }
             applySyncPlayCommand(command)
+        }
+        #endif
+        #if canImport(GoogleCast)
+        .onChange(of: CastManager.shared.isConnected) { wasConnected, isConnected in
+            if isConnected {
+                startCasting()
+            } else if wasConnected {
+                resumeLocalPlaybackAfterCast()
+            }
         }
         #endif
     }
@@ -424,6 +440,44 @@ struct PlayerView: View {
     }
     #endif
 
+    // MARK: - Chromecast
+
+    #if canImport(GoogleCast)
+    /// A Cast session took over — the receiver plays the stream itself, so the local
+    /// player pauses rather than playing the same thing twice.
+    private func startCasting() {
+        guard let url = playbackInfo?.playURL else { return }
+        Task { await player.pause() }
+        let posterURL = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
+        CastManager.shared.loadMedia(
+            streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
+            contentType: castContentType(for: playbackInfo?.container),
+            startPositionSeconds: Double(player.positionTicks) / 10_000_000
+        )
+    }
+
+    /// The session ended — pick local playback back up from wherever the receiver had
+    /// gotten to, best-effort (no precise handoff protocol, just "close enough").
+    private func resumeLocalPlaybackAfterCast() {
+        if let seconds = CastManager.shared.currentPositionSeconds() {
+            Task {
+                await player.seek(to: Int64(seconds * 10_000_000))
+                await player.play()
+            }
+        } else {
+            Task { await player.play() }
+        }
+    }
+
+    private func castContentType(for container: String?) -> String {
+        switch (container ?? "").lowercased() {
+        case "m3u8": return "application/x-mpegurl"
+        case "mov":  return "video/quicktime"
+        default:     return "video/mp4"
+        }
+    }
+    #endif
+
     private func teardown() async {
         progressReportTask?.cancel()
         hideControlsTask?.cancel()
@@ -432,7 +486,7 @@ struct PlayerView: View {
         // Closing the player closes the group too — an orphaned WebSocket connection with
         // nobody watching isn't useful, and simpler than trying to keep it alive across
         // whatever the user navigates to next.
-        if syncPlayManager.isInGroup, case .authenticated(let credential) = authManager.state {
+        if syncPlayManager.isInGroup, let credential = authManager.state.credential {
             syncPlayManager.leaveGroup(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
         }
         #endif

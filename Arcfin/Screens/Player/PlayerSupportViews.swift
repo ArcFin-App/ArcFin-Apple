@@ -6,6 +6,9 @@ import Combine
 import UIKit
 import MediaPlayer
 #endif
+#if canImport(GoogleCast)
+import GoogleCast
+#endif
 
 // MARK: - Video surface (AVPlayerLayer) + Picture in Picture
 
@@ -121,6 +124,19 @@ struct AirPlayButton: UIViewRepresentable {
     }
     func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
 }
+
+// MARK: - Chromecast button
+
+#if canImport(GoogleCast)
+struct CastButton: UIViewRepresentable {
+    func makeUIView(context: Context) -> GCKUICastButton {
+        let view = GCKUICastButton(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
+        view.tintColor = .white
+        return view
+    }
+    func updateUIView(_ uiView: GCKUICastButton, context: Context) {}
+}
+#endif
 
 // MARK: - System volume control (swipe-to-adjust-volume support)
 

@@ -26,6 +26,7 @@ let package = Package(
         .library(name: "MediaEngine",     targets: ["MediaEngine"]),
         .library(name: "SyncEngine",      targets: ["SyncEngine"]),
         .library(name: "SearchKit",       targets: ["SearchKit"]),
+        .library(name: "CastKit",         targets: ["CastKit"]),
     ],
     dependencies: [
         // State management
@@ -58,6 +59,14 @@ let package = Package(
         .package(
             url: "https://github.com/harflabs/SwiftVLC.git",
             from: "1.0.0"
+        ),
+        // Chromecast sender SDK — Google doesn't publish an SPM package itself, this is the
+        // most actively maintained community SPM wrapper around Google's own XCFramework
+        // release (not a reimplementation). iOS only; CastKit's dependency on it is
+        // platform-conditioned so tvOS/macOS builds don't try to link it at all.
+        .package(
+            url: "https://github.com/SRGSSR/google-cast-sdk",
+            from: "4.8.0"
         ),
     ],
     targets: [
@@ -177,6 +186,15 @@ let package = Package(
                 "JellyfinAPI",
                 "Persistence",
                 "Telemetry",
+            ]
+        ),
+
+        .target(
+            name: "CastKit",
+            dependencies: [
+                "JellyfinAPI",
+                "Telemetry",
+                .product(name: "GoogleCast", package: "google-cast-sdk", condition: .when(platforms: [.iOS])),
             ]
         ),
 
