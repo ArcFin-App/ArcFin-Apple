@@ -668,6 +668,7 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
     case releaseDateDesc = "Release Date (Newest)"
     case releaseDateAsc = "Release Date (Oldest)"
     case ratingDesc = "Rating (Highest)"
+    case genreAsc = "Genre"
 
     var id: String { rawValue }
 
@@ -677,6 +678,7 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
         case .dateAddedDesc: return "DateCreated"
         case .releaseDateDesc, .releaseDateAsc: return "PremiereDate"
         case .ratingDesc: return "CommunityRating"
+        case .genreAsc: return "Genres"
         }
     }
 
@@ -684,6 +686,37 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
         switch self {
         case .nameAsc, .releaseDateAsc: return "Ascending"
         case .nameDesc, .dateAddedDesc, .releaseDateDesc, .ratingDesc: return "Descending"
+        case .genreAsc: return "Ascending"
+        }
+    }
+}
+
+enum LibraryGridDensity: String, CaseIterable, Identifiable {
+    case compact, normal, comfortable
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .compact: return "Compact"
+        case .normal: return "Normal"
+        case .comfortable: return "Comfortable"
+        }
+    }
+
+    var systemIcon: String {
+        switch self {
+        case .compact: return "square.grid.4x3.fill"
+        case .normal: return "square.grid.3x2.fill"
+        case .comfortable: return "square.grid.2x2.fill"
+        }
+    }
+
+    var columnCount: Int {
+        switch self {
+        case .compact: return 5
+        case .normal: return 3
+        case .comfortable: return 2
         }
     }
 }
@@ -736,10 +769,9 @@ struct LibraryDetailView: View {
 #if os(tvOS)
     private let columns = [GridItem(.adaptive(minimum: 200), spacing: DT.Spacing.shelfGap)]
 #else
-    @AppStorage("compactLibraryGrid") private var compactGrid = false
+    @AppStorage("libraryGridDensity") private var gridDensity = LibraryGridDensity.normal
     private var columns: [GridItem] {
-        let count = compactGrid ? 4 : 3
-        return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
+        Array(repeating: GridItem(.flexible(), spacing: 12), count: gridDensity.columnCount)
     }
 #endif
 
@@ -820,6 +852,17 @@ struct LibraryDetailView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button { showFilterSheet = true } label: {
                     Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("Grid Density", selection: $gridDensity) {
+                        ForEach(LibraryGridDensity.allCases) { density in
+                            Label(density.label, systemImage: density.systemIcon).tag(density)
+                        }
+                    }
+                } label: {
+                    Image(systemName: gridDensity.systemIcon)
                 }
             }
         }

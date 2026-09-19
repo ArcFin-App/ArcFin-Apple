@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AppearanceView: View {
     @AppStorage("reduceMotion") private var reduceMotion = false
-    @AppStorage("compactLibraryGrid") private var compactLibraryGrid = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
     #if canImport(UIKit) && !os(tvOS)
@@ -62,18 +61,6 @@ struct AppearanceView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
-            Section {
-                Toggle("Compact Grid", isOn: $compactLibraryGrid)
-            } header: {
-                Label("Library", systemImage: "square.grid.3x3")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            } footer: {
-                Text("Shows more, smaller posters per row in Library grids.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
 
             Section {
                 Toggle("Haptic Feedback", isOn: $hapticsEnabled)
