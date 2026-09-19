@@ -44,7 +44,7 @@ struct DownloadedSeriesDetailView: View {
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(DT.Color.textSecondary)
                             if let year = series?.productionYear {
-                                Text("· \(year)")
+                                Text("· \(String(year))")
                                     .font(.system(size: 11))
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
@@ -116,15 +116,26 @@ struct DownloadedSeriesDetailView: View {
                     }
                 }
             }
-            if editMode.isEditing && !selection.isEmpty {
-                ToolbarItem(placement: .bottomBar) {
-                    Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
-                        Text("Delete \(selection.count) Selected")
-                    }
-                }
-            }
             #endif
         }
+        #if os(iOS)
+        // See DownloadsView's own comment — a .bottomBar toolbar item here rendered
+        // underneath the floating tab bar when this is pushed from a tabbed stack.
+        .safeAreaInset(edge: .bottom) {
+            if editMode.isEditing && !selection.isEmpty {
+                Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
+                    Text("Delete \(selection.count) Selected")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.red, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Size.tabBarHeight + 8)
+            }
+        }
+        #endif
         .onAppear {
             if selectedSeason == nil { selectedSeason = seasonNumbers.first }
         }
@@ -133,16 +144,16 @@ struct DownloadedSeriesDetailView: View {
             OfflinePlayerView(downloadedItem: item)
         }
         #endif
-        .confirmationDialog("Delete this episode?", isPresented: Binding(
+        .alert("Delete this episode?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
-        ), titleVisibility: .visible) {
+        )) {
             Button("Delete", role: .destructive) {
                 if let pendingDelete { downloadManager.deleteDownload(pendingDelete) }
                 pendingDelete = nil
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         }
-        .confirmationDialog("Delete \(selection.count) selected episode\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm, titleVisibility: .visible) {
+        .alert("Delete \(selection.count) selected episode\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) { deleteSelection() }
             Button("Cancel", role: .cancel) {}
         }
@@ -181,23 +192,24 @@ struct DownloadedSeriesDetailView: View {
     }
 
     private var seasonPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(seasonNumbers, id: \.self) { season in
-                    Button {
-                        selectedSeason = season
-                    } label: {
-                        Text("Season \(season)")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(selectedSeason == season ? .black : DT.Color.textPrimary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(selectedSeason == season ? DT.Color.accent : Color.white.opacity(0.08), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
+        Menu {
+            ForEach(seasonNumbers, id: \.self) { season in
+                Button("Season \(String(season))") { selectedSeason = season }
             }
+        } label: {
+            HStack(spacing: 5) {
+                Text(selectedSeason.map { "Season \(String($0))" } ?? "Season")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.white.opacity(0.08), in: Capsule())
         }
+        .buttonStyle(.plain)
     }
 
     #if os(iOS)

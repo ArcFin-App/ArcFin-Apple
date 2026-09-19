@@ -22,7 +22,7 @@ struct DownloadedItemDetailView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(DT.Color.textSecondary)
                         if let year = item.productionYear {
-                            Text("· \(year)")
+                            Text("· \(String(year))")
                                 .font(.system(size: 11))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
@@ -99,7 +99,7 @@ struct DownloadedItemDetailView: View {
             OfflinePlayerView(downloadedItem: item)
         }
         #endif
-        .confirmationDialog("Delete this download?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+        .alert("Delete this download?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 downloadManager.deleteDownload(item)
                 dismiss()
