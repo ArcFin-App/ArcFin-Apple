@@ -2,6 +2,10 @@ import SwiftUI
 import JellyfinAPI
 import SeerrAPI
 import AuthCore
+#if os(iOS)
+import SwiftData
+import Persistence
+#endif
 
 struct MediaDetailView: View {
     let item: MediaItem
@@ -11,6 +15,7 @@ struct MediaDetailView: View {
     @Environment(AuthManager.self) private var authManager
     #if os(iOS)
     @Environment(DownloadManager.self) private var downloadManager
+    @Environment(\.modelContext) private var modelContext
     #endif
     @Environment(\.dismiss) private var dismiss
 
@@ -31,7 +36,20 @@ struct MediaDetailView: View {
     @State private var requestingSeerrItem: SeerrItem?
     @State private var playbackRequest: PlaybackRequest?
     #if os(iOS)
-    @State private var showSeasonDownloadConfirm = false
+    @State private var seasonDownloadPreview: DownloadManager.DownloadPreview?
+    @State private var isLoadingSeasonPreview = false
+    /// Set when the target is already downloaded — offers a choice instead of always
+    /// streaming, since previously Play/Resume ignored a local copy entirely.
+    @State private var pendingPlaybackChoice: PlaybackChoice?
+    @State private var offlinePlaybackTarget: DownloadedItem?
+    @State private var offlineStartOverride: Int64?
+
+    private struct PlaybackChoice: Identifiable {
+        let id = UUID()
+        let item: MediaItem
+        let startTicks: Int64
+        let isExplicitStartOver: Bool
+    }
     #endif
 
     struct PlaybackRequest: Identifiable {
@@ -84,12 +102,35 @@ struct MediaDetailView: View {
                 .presentationBackground(.ultraThinMaterial)
         }
         #if os(iOS)
-        .alert(
-            "Download all \(episodes.count) episodes of \(selectedSeason?.name ?? "this season")?",
-            isPresented: $showSeasonDownloadConfirm
+        .sheet(item: $seasonDownloadPreview) { preview in
+            DownloadConfirmSheet(item: selectedSeason ?? item, preview: preview) { bitrateCap in
+                downloadSeason(bitrateCap: bitrateCap)
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .confirmationDialog(
+            "This is downloaded — play the offline copy or stream from the server?",
+            isPresented: Binding(get: { pendingPlaybackChoice != nil }, set: { if !$0 { pendingPlaybackChoice = nil } }),
+            titleVisibility: .visible
         ) {
-            Button("Download Season") { downloadSeason() }
-            Button("Cancel", role: .cancel) {}
+            Button("Play Downloaded") {
+                if let choice = pendingPlaybackChoice, let downloaded = fetchDownloadedItem(itemId: choice.item.id) {
+                    offlineStartOverride = choice.isExplicitStartOver ? 0 : nil
+                    offlinePlaybackTarget = downloaded
+                }
+                pendingPlaybackChoice = nil
+            }
+            Button("Stream Online") {
+                if let choice = pendingPlaybackChoice {
+                    playbackRequest = PlaybackRequest(item: choice.item, startTicks: choice.startTicks)
+                }
+                pendingPlaybackChoice = nil
+            }
+            Button("Cancel", role: .cancel) { pendingPlaybackChoice = nil }
+        }
+        .fullScreenCover(item: $offlinePlaybackTarget) { downloaded in
+            OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: offlineStartOverride)
         }
         #endif
 #if os(iOS)
@@ -115,12 +156,67 @@ struct MediaDetailView: View {
     // MARK: - Load
 
     #if os(iOS)
-    private func downloadSeason() {
+    /// Every episode in the current season already downloaded — the "Download Season"
+    /// button should be inert then, not just silently no-op every episode it loops over.
+    private var isSeasonFullyDownloaded: Bool {
+        !episodes.isEmpty && episodes.allSatisfy { downloadManager.isDownloaded($0.id) }
+    }
+
+    /// Fetches one representative preview (from the first not-yet-downloaded episode) to
+    /// show real quality/size info in the confirm sheet, instead of the bare "Download all
+    /// N episodes?" text alert that gave no size/quality info at all.
+    private func loadSeasonPreview() {
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let pending = episodes.filter { !downloadManager.isDownloaded($0.id) }
+        guard let firstPending = pending.first else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        isLoadingSeasonPreview = true
+        Task {
+            let single = await downloadManager.preview(for: firstPending, credential: credential, authHeader: authHeader)
+            isLoadingSeasonPreview = false
+            let count = Int64(pending.count)
+            // Scaled from one representative episode to the whole season's pending count —
+            // an honest total rather than one episode's numbers presented for the whole
+            // season, without needing a HEAD/playback-info round trip per episode.
+            seasonDownloadPreview = DownloadManager.DownloadPreview(
+                subtitleLanguages: single?.subtitleLanguages ?? [],
+                audioLanguages: single?.audioLanguages ?? [],
+                estimatedSizeBytes: single?.estimatedSizeBytes.map { $0 * count },
+                estimatedSizeIsApproximate: true,
+                willRemux: single?.willRemux ?? false,
+                sourceBitrate: single?.sourceBitrate,
+                runtimeTicks: single?.runtimeTicks.map { $0 * count },
+                container: single?.container,
+                videoCodec: single?.videoCodec,
+                videoWidth: single?.videoWidth,
+                videoHeight: single?.videoHeight,
+                videoRange: single?.videoRange
+            )
+        }
+    }
+
+    private func downloadSeason(bitrateCap: Int?) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         for episode in episodes where !downloadManager.isDownloaded(episode.id) {
-            Task { await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader) }
+            Task { await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap) }
         }
+    }
+
+    // MARK: - Play downloaded vs. stream
+
+    private func requestPlayback(startTicks: Int64, isExplicitStartOver: Bool = false) {
+        let target = playTargetItem
+        if downloadManager.isDownloaded(target.id) {
+            pendingPlaybackChoice = PlaybackChoice(item: target, startTicks: startTicks, isExplicitStartOver: isExplicitStartOver)
+        } else {
+            playbackRequest = PlaybackRequest(item: target, startTicks: startTicks)
+        }
+    }
+
+    private func fetchDownloadedItem(itemId: String) -> DownloadedItem? {
+        let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
+        return try? modelContext.fetch(descriptor).first
     }
     #endif
 
@@ -359,10 +455,14 @@ struct MediaDetailView: View {
 #else
         HStack(spacing: 10) {
             Button {
+                #if os(iOS)
+                requestPlayback(startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0)
+                #else
                 playbackRequest = PlaybackRequest(
                     item: playTargetItem,
                     startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
                 )
+                #endif
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill").font(.system(size: 14))
@@ -396,7 +496,11 @@ struct MediaDetailView: View {
 
             if isResumable {
                 Button {
+                    #if os(iOS)
+                    requestPlayback(startTicks: 0, isExplicitStartOver: true)
+                    #else
                     playbackRequest = PlaybackRequest(item: playTargetItem, startTicks: 0)
+                    #endif
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 16, weight: .semibold))
@@ -619,19 +723,28 @@ struct MediaDetailView: View {
                 Spacer()
 
                 #if os(iOS)
-                Button { showSeasonDownloadConfirm = true } label: {
+                Button {
+                    if isLoadingSeasonPreview { return }
+                    loadSeasonPreview()
+                } label: {
                     HStack(spacing: 5) {
-                        Image(systemName: "arrow.down.circle")
-                        Text("Download Season")
+                        if isLoadingSeasonPreview {
+                            ProgressView().scaleEffect(0.7).tint(DT.Color.accent)
+                        } else {
+                            Image(systemName: isSeasonFullyDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
+                        }
+                        Text(isSeasonFullyDownloaded ? "Season Downloaded" : "Download Season")
                     }
                     .font(.system(size: 12, weight: .semibold))
                     // A hardcoded accent color didn't dim when disabled (episodes still
-                    // loading) — tapping it then did nothing with zero visual feedback,
-                    // which read as "no confirm popup ever shows up".
-                    .foregroundStyle(episodes.isEmpty ? DT.Color.accent.opacity(0.35) : DT.Color.accent)
+                    // loading, or the whole season already downloaded) — tapping it then
+                    // did nothing with zero visual feedback, which read as "no confirm
+                    // popup ever shows up". Tapping an already-fully-downloaded season's
+                    // button was also what produced the -1017 "Download Failed" error.
+                    .foregroundStyle(episodes.isEmpty || isSeasonFullyDownloaded ? DT.Color.accent.opacity(0.35) : DT.Color.accent)
                 }
                 .buttonStyle(.plain)
-                .disabled(episodes.isEmpty)
+                .disabled(episodes.isEmpty || isSeasonFullyDownloaded)
                 #else
                 Text("Episodes")
                     .font(.system(size: 13, weight: .medium))
