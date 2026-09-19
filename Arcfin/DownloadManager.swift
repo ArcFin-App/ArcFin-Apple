@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Observation
 import SwiftData
 import AuthCore
@@ -66,6 +67,12 @@ final class DownloadManager: NSObject {
     /// previous one fully drained) — drives the Live Activity's "N of M" display.
     @ObservationIgnored private var queueCompletedCount = 0
     @ObservationIgnored private var queueTotalCount = 0
+    /// Own path monitor rather than reusing AuthManager's (which only re-resolves the
+    /// server URL and doesn't expose its current path) — kept running for the app's
+    /// lifetime, same pattern as AuthManager's own monitor.
+    @ObservationIgnored private var wifiPathMonitor: NWPathMonitor?
+    @ObservationIgnored private var isOnWiFi = true
+    @ObservationIgnored private var isRunningSmartDownloads = false
     /// True background session on iOS — transfer keeps going, managed by nsurlsessiond,
     /// even if the app is suspended or killed; iOS relaunches the app to redeliver the
     /// delegate callback via AppDelegate's handleEventsForBackgroundURLSession. tvOS/macOS
@@ -95,9 +102,34 @@ final class DownloadManager: NSObject {
         // the point the OS still had its temp file around. Touching it here forces that
         // registration immediately at launch instead.
         _ = session
+        startWiFiMonitoringIfNeeded()
         #if canImport(ActivityKit) && os(iOS)
         reconcileStaleActivitiesOnLaunch()
         #endif
+        runSmartDownloadsOnLaunch()
+    }
+
+    private func startWiFiMonitoringIfNeeded() {
+        guard wifiPathMonitor == nil else { return }
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            let onWiFi = path.usesInterfaceType(.wifi)
+            Task { @MainActor in self?.isOnWiFi = onWiFi }
+        }
+        monitor.start(queue: DispatchQueue(label: "arcfin.downloads.pathMonitor"))
+        wifiPathMonitor = monitor
+    }
+
+    /// Mirrors reconcileStaleActivitiesOnLaunch's own delay — authManager.checkStoredAuth()
+    /// runs concurrently from ContentView's own `.task`, so `authManager.state` isn't
+    /// reliably `.authenticated` yet at the moment `configure` itself is called.
+    private func runSmartDownloadsOnLaunch() {
+        Task {
+            try? await Task.sleep(for: .seconds(5))
+            guard let authManager, let credential = authManager.state.credential else { return }
+            let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+            await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
+        }
     }
 
     #if canImport(ActivityKit) && os(iOS)
@@ -691,6 +723,58 @@ final class DownloadManager: NSObject {
         DownloadStore.deleteDirectory(for: seriesId)
         modelContext.delete(series)
         try? modelContext.save()
+    }
+
+    // MARK: - Smart Downloads
+
+    private static let smartDownloadsEnabledKey = "smartDownloadsEnabled"
+    private static let smartDownloadsEpisodeCountKey = "smartDownloadsEpisodeCount"
+    private static let smartDownloadsStorageBudgetGBKey = "smartDownloadsStorageBudgetGB"
+
+    /// Netflix-style auto-management for shows the user already has downloads/progress in:
+    /// tops up the next few unwatched episodes per show and clears out watched ones to make
+    /// room, all capped by a hard storage budget. Only wired to run at launch (see
+    /// runSmartDownloadsOnLaunch) — deliberately NOT called from performDownload's own
+    /// completion path: that would reenter this same queue (pendingQueue/isProcessingQueue)
+    /// while its own while-loop is still mid-iteration, so startDownload would just append
+    /// and return immediately instead of actually awaiting the download, which would make
+    /// the budget check below (totalDownloadedBytes) race against downloads that haven't
+    /// happened yet. isRunningSmartDownloads still guards reentrancy generally.
+    func runSmartDownloadsIfNeeded(credential: ServerCredential, authHeader: String) async {
+        guard let modelContext else { return }
+        guard UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false else { return }
+        let wifiOnly = UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true
+        guard !wifiOnly || isOnWiFi else { return }
+        guard !isRunningSmartDownloads else { return }
+        isRunningSmartDownloads = true
+        defer { isRunningSmartDownloads = false }
+
+        let episodeCount = max(1, min(5, UserDefaults.standard.object(forKey: Self.smartDownloadsEpisodeCountKey) as? Int ?? 2))
+        let budgetGB = UserDefaults.standard.object(forKey: Self.smartDownloadsStorageBudgetGBKey) as? Int ?? 10
+        let budgetBytes = Int64(budgetGB) * 1_000_000_000
+
+        let allDownloaded = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+        let seriesIds = Set(allDownloaded.compactMap { $0.seriesId })
+        guard !seriesIds.isEmpty else { return }
+
+        // Clear fully watched episodes first, freeing space for whatever's next up.
+        for item in allDownloaded where item.seriesId != nil && item.played {
+            deleteDownload(item)
+        }
+
+        func totalDownloadedBytes() -> Int64 {
+            let current = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+            return current.reduce(0) { $0 + $1.fileSizeBytes }
+        }
+
+        for seriesId in seriesIds {
+            guard let nextUp = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: episodeCount) else { continue }
+            for episode in nextUp {
+                guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
+                guard totalDownloadedBytes() < budgetBytes else { return }
+                await startDownload(item: episode, credential: credential, authHeader: authHeader)
+            }
+        }
     }
 
     // MARK: - Video download with progress
