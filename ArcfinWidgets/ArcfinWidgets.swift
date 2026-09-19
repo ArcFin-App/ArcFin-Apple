@@ -135,6 +135,14 @@ struct DownloadLiveActivity: Widget {
                     }
                     .font(.system(size: 11))
                     .foregroundStyle(WidgetDT.textSecondary)
+                } else {
+                    HStack(spacing: 5) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(Color(red: 0x10 / 255, green: 0xB9 / 255, blue: 0x81 / 255))
+                        Text(state.totalCount > 1 ? "\(state.totalCount) items ready to watch offline" : "Ready to watch offline")
+                    }
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(WidgetDT.textSecondary)
                 }
             }
         }

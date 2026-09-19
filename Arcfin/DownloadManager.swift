@@ -100,13 +100,18 @@ final class DownloadManager: NSObject {
         )
     }
 
-    private func refreshLiveActivity(isFinished: Bool = false) {
+    private func refreshLiveActivity(
+        isFinished: Bool = false,
+        finishedTitle: String? = nil,
+        finishedMeta: (posterData: Data?, season: Int?, episode: Int?)? = nil
+    ) {
         guard let liveActivity else { return }
         let itemId = activeItemIds.first
         let stat = itemId.flatMap { stats[$0] }
-        let meta = itemId.flatMap { liveActivityItemMeta[$0] }
+        let meta = isFinished ? finishedMeta : itemId.flatMap { liveActivityItemMeta[$0] }
+        let title = isFinished ? (finishedTitle ?? "") : (itemId.flatMap { activeItemTitles[$0] } ?? "")
         let state = DownloadActivityAttributes.ContentState(
-            currentItemTitle: itemId.flatMap { activeItemTitles[$0] } ?? "",
+            currentItemTitle: title,
             bytesWritten: stat?.bytesWritten ?? 0, totalBytes: stat?.totalBytes ?? 0,
             bytesPerSecond: stat?.bytesPerSecond ?? 0,
             completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished,
@@ -117,11 +122,18 @@ final class DownloadManager: NSObject {
 
     /// Small thumbnail for the Live Activity — no App Group exists to share a file path with
     /// the widget extension, so a downsized JPEG rides along in the content state itself.
+    /// For an episode this prefers the series' own poster over the episode's screenshot —
+    /// a landscape episode screenshot crops badly into the activity's portrait thumbnail,
+    /// and "which show is this" is more useful at a glance than "which frame of it".
     private func fetchLiveActivityPoster(item: MediaItem, credential: ServerCredential) async {
         let imageType: JellyfinImageType
         let imageID: String
         let tag: String
-        if let primaryTag = item.primaryImageTag {
+        if item.type == .episode, let seriesID = item.seriesId, let seriesTag = item.seriesPrimaryImageTag {
+            imageID = seriesID
+            imageType = .primary
+            tag = seriesTag
+        } else if let primaryTag = item.primaryImageTag {
             imageID = item.id
             imageType = .primary
             tag = primaryTag
@@ -159,10 +171,14 @@ final class DownloadManager: NSObject {
 
     /// Shows a brief "Download Complete" state before dismissing — matching every other
     /// list's stats/progress reset at this same point, so there's nothing stale left over
-    /// for the next queue run to accidentally inherit.
-    private func endLiveActivity() {
+    /// for the next queue run to accidentally inherit. Takes the last item's title/poster
+    /// explicitly since by the time this runs, performDownload has already cleared
+    /// activeItemIds/activeItemTitles/liveActivityItemMeta for it — reading those here
+    /// (like the in-progress path does) produced an empty "Download Complete" card with
+    /// no title or thumbnail.
+    private func endLiveActivity(lastTitle: String, lastMeta: (posterData: Data?, season: Int?, episode: Int?)?) {
         guard let liveActivity else { return }
-        refreshLiveActivity(isFinished: true)
+        refreshLiveActivity(isFinished: true, finishedTitle: lastTitle, finishedMeta: lastMeta)
         self.liveActivity = nil
         Task {
             try? await Task.sleep(for: .seconds(2))
@@ -402,7 +418,7 @@ final class DownloadManager: NSObject {
                 trickplayTileWidth: trickplay?.tileWidth, trickplayTileHeight: trickplay?.tileHeight,
                 trickplayIntervalMs: trickplay?.intervalMs, trickplayThumbnailCount: trickplay?.thumbnailCount,
                 introEndSeconds: introEnd, creditsStartSeconds: creditsStart,
-                fileSizeBytes: fileSize ?? 0
+                fileSizeBytes: fileSize
             )
             modelContext.insert(downloaded)
             try? modelContext.save()
@@ -415,6 +431,10 @@ final class DownloadManager: NSObject {
             DownloadStore.deleteDirectory(for: item.id)
         }
 
+        #if canImport(ActivityKit) && os(iOS)
+        let finishedTitle = activeItemTitles[item.id] ?? item.name
+        let finishedMeta = liveActivityItemMeta[item.id]
+        #endif
         activeItemIds.remove(item.id)
         activeItemTitles[item.id] = nil
         progress[item.id] = nil
@@ -425,7 +445,7 @@ final class DownloadManager: NSObject {
         liveActivityItemMeta[item.id] = nil
         queueCompletedCount += 1
         if pendingQueue.isEmpty {
-            endLiveActivity()
+            endLiveActivity(lastTitle: finishedTitle, lastMeta: finishedMeta)
         } else {
             refreshLiveActivity()
         }
@@ -504,8 +524,14 @@ final class DownloadManager: NSObject {
     private func beginBackgroundTaskIfNeeded() {
         #if canImport(UIKit) && !os(tvOS)
         guard backgroundTaskId == .invalid else { return }
+        // Per Apple's docs, the expiration handler is called synchronously on the main
+        // thread right as the app's background time runs out — dispatching a fresh Task
+        // to hop back to MainActor here raced that deadline and regularly lost, producing
+        // "Background task still not ended after expiration handlers were called". Calling
+        // straight through with assumeIsolated (safe: we're already guaranteed main thread)
+        // ends it within the handler itself instead of after it returns.
         backgroundTaskId = UIApplication.shared.beginBackgroundTask(withName: "ArcfinDownload") { [weak self] in
-            Task { @MainActor in self?.endBackgroundTaskIfIdle(force: true) }
+            MainActor.assumeIsolated { self?.endBackgroundTaskIfIdle(force: true) }
         }
         #endif
     }
@@ -672,10 +698,11 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 moveError = error
             }
         }
+        let capturedMoveError = moveError
         Task { @MainActor in
             guard let continuation = self.continuations[taskId] else { return }
             self.continuations[taskId] = nil
-            if let moveError { continuation.resume(throwing: moveError) } else { continuation.resume() }
+            if let capturedMoveError { continuation.resume(throwing: capturedMoveError) } else { continuation.resume() }
         }
     }
 
