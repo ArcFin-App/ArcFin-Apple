@@ -8,7 +8,6 @@ import SeerrAPI
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
-    @Environment(\.openURL) private var openURL
 
     @State private var showUsersSheet = false
     #if !os(tvOS)
@@ -234,13 +233,6 @@ struct SettingsView: View {
                 LabeledContent("Build") {
                     Text(buildNumber).foregroundStyle(.secondary)
                 }
-#if !os(tvOS)
-                Button {
-                    openURL(URL(string: "https://jellyfin.org")!)
-                } label: {
-                    Text("Jellyfin Website")
-                }
-#endif
                 NavigationLink {
                     OpenSourceLicensesView()
                 } label: {
@@ -249,6 +241,14 @@ struct SettingsView: View {
 #if os(tvOS)
                 .listRowBackground(Color.clear)
 #endif
+                HStack {
+                    Spacer()
+                    Text("Made by PSMattas")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(DT.Color.textSecondary)
+                    Spacer()
+                }
+                .listRowBackground(Color.clear)
             } header: {
                 sectionHeader("About", icon: "info.circle")
             }
