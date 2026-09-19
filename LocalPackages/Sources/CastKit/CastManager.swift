@@ -119,35 +119,41 @@ extension CastManager: GCKSessionManagerListener {
     // concurrency flags a @MainActor class conforming to it as crossing isolation, so each
     // requirement is nonisolated here and hops back in with assumeIsolated (safe given
     // that documented guarantee), same pattern as DownloadManager's background-task handler.
+    // GCKSession/GCKMediaStatus aren't Sendable, so all the actual work touching them
+    // (reading friendlyName, add/remove listener) happens out here in the nonisolated
+    // scope, before assumeIsolated — only plain Sendable values (String?, Bool) cross into
+    // the closure that actually writes the @Observable properties.
     public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, willStart session: GCKSession) {
         MainActor.assumeIsolated { isConnecting = true }
     }
 
     public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didStart session: GCKSession) {
+        let name = session.device.friendlyName
+        (session as? GCKCastSession)?.remoteMediaClient?.add(self)
         MainActor.assumeIsolated {
             isConnecting = false
             isConnected = true
-            deviceName = session.device.friendlyName
-            (session as? GCKCastSession)?.remoteMediaClient?.add(self)
+            deviceName = name
         }
     }
 
     public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didResumeSession session: GCKSession) {
+        let name = session.device.friendlyName
+        (session as? GCKCastSession)?.remoteMediaClient?.add(self)
         MainActor.assumeIsolated {
             isConnecting = false
             isConnected = true
-            deviceName = session.device.friendlyName
-            (session as? GCKCastSession)?.remoteMediaClient?.add(self)
+            deviceName = name
         }
     }
 
     public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didEnd session: GCKSession, withError error: Error?) {
+        (session as? GCKCastSession)?.remoteMediaClient?.remove(self)
         MainActor.assumeIsolated {
             isConnecting = false
             isConnected = false
             isPaused = false
             deviceName = nil
-            (session as? GCKCastSession)?.remoteMediaClient?.remove(self)
         }
     }
 
@@ -161,8 +167,9 @@ extension CastManager: GCKSessionManagerListener {
 
 extension CastManager: GCKRemoteMediaClientListener {
     public nonisolated func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
+        let paused = mediaStatus?.playerState == .paused
         MainActor.assumeIsolated {
-            isPaused = mediaStatus?.playerState == .paused
+            isPaused = paused
         }
     }
 }
