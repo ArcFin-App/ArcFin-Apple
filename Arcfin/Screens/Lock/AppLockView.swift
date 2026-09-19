@@ -2,56 +2,182 @@
 import SwiftUI
 import LocalAuthentication
 import AuthCore
+import JellyfinAPI
 
 /// Full-screen gate shown when the active profile has a PIN set and the app just launched or
-/// returned from the background — reuses the same PINPadView/stored-PIN plumbing UsersView
-/// already built for "PIN required to switch to this profile," just triggered by app
-/// lifecycle instead of a profile switch. No cancel button — there's no bypass, only unlock.
+/// returned from the background. Netflix-style: leads with a profile picker across every
+/// saved profile (not just the active one), same as switching profiles from Settings — so
+/// unlocking and switching who you are are the same screen instead of two. No cancel button
+/// on the PIN pad itself — there's no bypass, only unlock or pick a different profile.
 struct AppLockView: View {
     @Environment(AuthManager.self) private var authManager
     let useFaceID: Bool
     let onUnlock: () -> Void
 
+    @State private var pinStates: [UUID: Bool] = [:]
+    @State private var pinTarget: ServerCredential?
     @State private var storedPIN: String?
     @State private var errorMessage: String?
     @State private var resetToken = 0
-    @State private var didAttemptBiometrics = false
+    @State private var didAttemptBiometricsFor: UUID?
+
+    private var activeID: UUID? { authManager.state.credential?.id }
 
     var body: some View {
-        PINPadView(
-            title: "Arcfin Locked",
-            subtitle: authManager.state.credential?.displayName,
-            errorMessage: errorMessage,
-            resetToken: resetToken
-        ) { entered in
-            guard let storedPIN else { return }
-            if entered == storedPIN {
-                errorMessage = nil
-                onUnlock()
+        ZStack {
+            DT.Color.backgroundPrimary.ignoresSafeArea()
+
+            if let pinTarget {
+                PINPadView(
+                    title: "Enter PIN",
+                    subtitle: pinTarget.displayName,
+                    errorMessage: errorMessage,
+                    resetToken: resetToken,
+                    onCancel: { pinTarget = nil; errorMessage = nil }
+                ) { entered in
+                    guard entered == storedPIN else {
+                        errorMessage = "Incorrect PIN"
+                        resetToken += 1
+                        return
+                    }
+                    errorMessage = nil
+                    unlock(as: pinTarget)
+                }
+                .task(id: pinTarget.id) { await attemptBiometricsIfNeeded(for: pinTarget) }
             } else {
-                errorMessage = "Incorrect PIN"
-                resetToken += 1
+                pickerBody
             }
         }
-        .task {
-            if let cred = authManager.state.credential {
-                storedPIN = await authManager.pin(for: cred.id)
+        .task { await loadPINStates() }
+    }
+
+    // MARK: - Profile picker
+
+    private var pickerBody: some View {
+        VStack(spacing: 28) {
+            Spacer()
+
+            VStack(spacing: 6) {
+                Text("Arcfin Locked")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                Text("Who's unlocking?")
+                    .font(.system(size: 14))
+                    .foregroundStyle(DT.Color.textSecondary)
             }
-            if useFaceID, !didAttemptBiometrics {
-                didAttemptBiometrics = true
-                await attemptBiometrics()
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 20)], spacing: 20) {
+                ForEach(authManager.profiles) { profile in
+                    Button { selectProfile(profile) } label: {
+                        profileTile(profile)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.horizontal, 32)
+
+            Spacer()
+            Spacer()
         }
     }
 
-    private func attemptBiometrics() async {
+    private func profileTile(_ profile: ServerCredential) -> some View {
+        let initials = profile.displayName
+            .split(separator: " ").prefix(2)
+            .compactMap { $0.first }
+            .map { String($0).uppercased() }
+            .joined()
+
+        return VStack(spacing: 8) {
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            colors: [DT.Color.accent, DT.Color.accentDeep],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 80, height: 80)
+                    if let tag = profile.userImageTag {
+                        AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: profile.baseURL, userID: profile.userID, tag: tag, fillWidth: 160, token: profile.accessToken)) { phase in
+                            switch phase {
+                            case .success(let img): img.resizable().scaledToFill()
+                            default: Text(initials).font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                            }
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
+                    } else {
+                        Text(initials).font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    }
+                }
+                .overlay(Circle().stroke(profile.id == activeID ? DT.Color.accent : .clear, lineWidth: 3))
+
+                if pinStates[profile.id] == true {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(Circle().fill(DT.Color.backgroundSecondary))
+                }
+            }
+
+            Text(profile.displayName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+            Text(profile.baseURL.host ?? "")
+                .font(.system(size: 11))
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(1)
+        }
+        .frame(width: 96)
+    }
+
+    // MARK: - Actions
+
+    private func selectProfile(_ profile: ServerCredential) {
+        HapticManager.impact(.light)
+        guard pinStates[profile.id] == true else {
+            unlock(as: profile)
+            return
+        }
+        errorMessage = nil
+        resetToken = 0
+        Task {
+            storedPIN = await authManager.pin(for: profile.id)
+            pinTarget = profile
+        }
+    }
+
+    private func unlock(as profile: ServerCredential) {
+        if profile.id != activeID {
+            authManager.switchTo(profile)
+        }
+        onUnlock()
+    }
+
+    private func loadPINStates() async {
+        var states: [UUID: Bool] = [:]
+        for profile in authManager.profiles {
+            states[profile.id] = await authManager.pin(for: profile.id) != nil
+        }
+        pinStates = states
+    }
+
+    private func attemptBiometricsIfNeeded(for profile: ServerCredential) async {
+        // Only the already-active profile gets an automatic Face ID prompt — biometrics
+        // enrolled on this device authenticate the device owner, not a specific Jellyfin
+        // profile, so auto-prompting for a DIFFERENT profile the moment it's tapped would
+        // let Face ID silently switch identities without the PIN ever being the real gate.
+        guard useFaceID, profile.id == activeID, didAttemptBiometricsFor != profile.id else { return }
+        didAttemptBiometricsFor = profile.id
         let context = LAContext()
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return }
         guard let success = try? await context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
             localizedReason: "Unlock Arcfin"
         ), success else { return }
-        onUnlock()
+        unlock(as: profile)
     }
 }
 #endif
