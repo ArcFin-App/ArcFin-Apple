@@ -221,7 +221,9 @@ extension PlayerView {
                 Capsule().fill(DT.Color.accent)
                     .frame(width: thumbX, height: 4)
 
-                ForEach(chapters.dropFirst(), id: \.startPositionTicks) { chapter in
+                // Some sources report duplicate chapter start times — id'd by array offset
+                // rather than startPositionTicks so SwiftUI never sees a colliding identity.
+                ForEach(Array(chapters.dropFirst().enumerated()), id: \.offset) { _, chapter in
                     let x = proxy.size.width * min(max(Double(chapter.startPositionTicks) / Double(duration), 0), 1)
                     Rectangle()
                         .fill(.black.opacity(0.5))
