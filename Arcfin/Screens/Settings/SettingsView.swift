@@ -241,16 +241,19 @@ struct SettingsView: View {
 #if os(tvOS)
                 .listRowBackground(Color.clear)
 #endif
-                HStack {
-                    Spacer()
-                    Text("Made by PSMattas")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(DT.Color.textSecondary)
-                    Spacer()
-                }
-                .listRowBackground(Color.clear)
             } header: {
                 sectionHeader("About", icon: "info.circle")
+            } footer: {
+                // A footer, not a row — an extra row with a cleared background broke the
+                // section's rounded-corner silhouette at the bottom edge (a List quirk: the
+                // last row's background normally supplies that corner).
+                Text("Made by PSMattas")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.5)
+                    .textCase(.uppercase)
+                    .foregroundStyle(DT.Color.textSecondary.opacity(0.6))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 8)
             }
 
             // ── Sign Out ─────────────────────────────────────────────────
