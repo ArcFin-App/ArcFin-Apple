@@ -286,16 +286,11 @@ struct PlayerView: View {
         ) { _ in
             Task { @MainActor in handlePlaybackStall() }
         }
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
-            // The async activate() API needs iOS 27 — this project's min target is 26, so
-            // the synchronous call (and its one-time "may block main thread" advisory,
-            // harmless for a single per-session call) stays until the target moves up.
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            // Not fatal — playback still works, just without the routing/background
-            // guarantees .playback gives (this is also what PiP relies on being correct).
-        }
+        // AVAudioSession's setCategory/setActive are synchronous, blocking calls — Xcode's
+        // Hang Risk diagnostic flags calling them on the main thread. The async activate()
+        // API needs iOS 27 (min target here is 26), so instead this just runs the same
+        // synchronous calls off the main actor via a detached task.
+        await activateAudioSession()
         // The hidden MPVolumeView used to set volume programmatically also silently
         // suppresses the system's own volume HUD — observe outputVolume so physical
         // button presses still get a visible indicator via our own overlay.
@@ -398,9 +393,29 @@ struct PlayerView: View {
         }
         await player.stop()
         #if canImport(UIKit) && !os(tvOS)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        await deactivateAudioSession()
         #endif
     }
+
+    #if canImport(UIKit) && !os(tvOS)
+    private func activateAudioSession() async {
+        await Task.detached(priority: .userInitiated) {
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+                try AVAudioSession.sharedInstance().setActive(true)
+            } catch {
+                // Not fatal — playback still works, just without the routing/background
+                // guarantees .playback gives (this is also what PiP relies on being correct).
+            }
+        }.value
+    }
+
+    private func deactivateAudioSession() async {
+        await Task.detached(priority: .utility) {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }.value
+    }
+    #endif
 
     func finishPlayback() async {
         guard let credential, let authHeader else { return }
