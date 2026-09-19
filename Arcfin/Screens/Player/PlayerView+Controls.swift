@@ -105,6 +105,15 @@ extension PlayerView {
                 }
             }
 
+            #if !os(tvOS)
+            Button { showSyncPlayMenu = true } label: {
+                Image(systemName: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(syncPlayManager.isInGroup ? DT.Color.accent : .white)
+                    .frame(width: 32, height: 32)
+            }
+            #endif
+
             Button { showTrackMenu = true } label: {
                 Image(systemName: "captions.bubble")
                     .font(.system(size: 16, weight: .semibold))
@@ -236,14 +245,12 @@ extension PlayerView {
                         #endif
                     }
                     .onEnded { _ in
-                        Task {
-                            await player.seek(to: Int64(scrubTicks))
-                            isScrubbing = false
-                            #if canImport(UIKit)
-                            scrubThumbnail = nil
-                            #endif
-                            scheduleAutoHide()
-                        }
+                        performSeek(to: Int64(scrubTicks))
+                        isScrubbing = false
+                        #if canImport(UIKit)
+                        scrubThumbnail = nil
+                        #endif
+                        scheduleAutoHide()
                     }
             )
             #endif
@@ -336,6 +343,124 @@ extension PlayerView {
         Task { await player.seek(to: chapter.startPositionTicks) }
         HapticManager.impact(.light)
     }
+
+    // MARK: - SyncPlay
+
+    #if !os(tvOS)
+    var syncPlaySheet: some View {
+        NavigationStack {
+            Group {
+                if syncPlayManager.isInGroup {
+                    List {
+                        Section("Group") {
+                            LabeledContent("Name", value: syncPlayManager.groupName ?? "—")
+                        }
+                        Section {
+                            Button(role: .destructive) {
+                                leaveSyncPlayGroup()
+                            } label: {
+                                Text("Leave Group")
+                            }
+                        }
+                    }
+                } else {
+                    List {
+                        Section("Create a Group") {
+                            TextField("Group name", text: $syncPlayGroupNameInput)
+                            Button {
+                                createSyncPlayGroup()
+                            } label: {
+                                if isSyncPlayBusy { ProgressView() } else { Text("Create") }
+                            }
+                            .disabled(syncPlayGroupNameInput.trimmingCharacters(in: .whitespaces).isEmpty || isSyncPlayBusy)
+                        }
+                        Section {
+                            if syncPlayManager.availableGroups.isEmpty {
+                                Text(syncPlayManager.isRefreshingGroups ? "Looking for groups…" : "No joinable groups right now.")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(DT.Color.textSecondary)
+                            } else {
+                                ForEach(syncPlayManager.availableGroups) { group in
+                                    Button {
+                                        joinSyncPlayGroup(group)
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(group.groupName).foregroundStyle(DT.Color.textPrimary)
+                                            Text("\(group.participants.count) watching" + (group.playingItemName.map { " · \($0)" } ?? ""))
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(DT.Color.textSecondary)
+                                        }
+                                    }
+                                }
+                            }
+                        } header: {
+                            Text("Join a Group")
+                        } footer: {
+                            Text("Everyone in a group needs \(item.name) already open in their own player — SyncPlay keeps play, pause, and seek in sync from there.")
+                        }
+                    }
+                    .task { await refreshSyncPlayGroups() }
+                    .refreshable { await refreshSyncPlayGroups() }
+                }
+            }
+            .navigationTitle("SyncPlay")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showSyncPlayMenu = false }
+                }
+            }
+            .alert("SyncPlay", isPresented: Binding(
+                get: { syncPlayManager.lastError != nil }, set: { if !$0 { syncPlayManager.lastError = nil } }
+            )) {
+                Button("OK") {}
+            } message: {
+                Text(syncPlayManager.lastError ?? "")
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func refreshSyncPlayGroups() async {
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        await syncPlayManager.refreshGroups(credential: credential, authHeader: authHeader)
+    }
+
+    private func createSyncPlayGroup() {
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        let name = syncPlayGroupNameInput.trimmingCharacters(in: .whitespaces)
+        isSyncPlayBusy = true
+        Task {
+            await syncPlayManager.createGroup(
+                credential: credential, authHeader: authHeader, groupName: name,
+                itemId: item.id, startPositionTicks: player.positionTicks
+            )
+            isSyncPlayBusy = false
+        }
+    }
+
+    private func joinSyncPlayGroup(_ group: SyncPlayGroupInfo) {
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        isSyncPlayBusy = true
+        Task {
+            await syncPlayManager.joinGroup(
+                group, credential: credential, authHeader: authHeader,
+                itemId: item.id, startPositionTicks: player.positionTicks
+            )
+            isSyncPlayBusy = false
+        }
+    }
+
+    private func leaveSyncPlayGroup() {
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        syncPlayManager.leaveGroup(credential: credential, authHeader: authHeader)
+    }
+    #endif
 
     // MARK: - Skip intro/credits
 
@@ -498,6 +623,18 @@ extension PlayerView {
         // A manual play/pause is proof someone's actually there — same signal a manual
         // Up Next tap gives, so it resets the "are you still watching" streak too.
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
+        #if !os(tvOS)
+        if syncPlayManager.isInGroup, case .authenticated(let credential) = authManager.state {
+            let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+            if player.status == .playing {
+                syncPlayManager.requestPause(credential: credential, authHeader: authHeader)
+            } else {
+                syncPlayManager.requestPlay(credential: credential, authHeader: authHeader)
+            }
+            toggleControlsVisibilityOnAction()
+            return
+        }
+        #endif
         Task {
             if player.status == .playing { await player.pause() } else { await player.play() }
         }
@@ -505,9 +642,23 @@ extension PlayerView {
     }
 
     func seek(by seconds: Int) {
-        let newTicks = max(0, player.positionTicks + Int64(seconds) * 10_000_000)
-        Task { await player.seek(to: min(newTicks, player.durationTicks)) }
+        let newTicks = min(max(0, player.positionTicks + Int64(seconds) * 10_000_000), player.durationTicks)
+        performSeek(to: newTicks)
         toggleControlsVisibilityOnAction()
+    }
+
+    /// Routes through SyncPlay's Seek command when in a group (applied once it echoes back
+    /// over the WebSocket, same as every other group member sees it) instead of seeking the
+    /// local player directly — see PlayerView.applySyncPlayCommand.
+    func performSeek(to ticks: Int64) {
+        #if !os(tvOS)
+        if syncPlayManager.isInGroup, case .authenticated(let credential) = authManager.state {
+            let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+            syncPlayManager.requestSeek(credential: credential, authHeader: authHeader, positionTicks: ticks)
+            return
+        }
+        #endif
+        Task { await player.seek(to: ticks) }
     }
 
     private func toggleControlsVisibilityOnAction() {

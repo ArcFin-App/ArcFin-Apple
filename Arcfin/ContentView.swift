@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var seerrRepo    = SeerrRepository()
     @State private var statsRepo    = StreamystatsRepository()
     @State private var downloadManager = DownloadManager()
+    @State private var syncPlayManager = SyncPlayManager()
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
     #if os(iOS)
@@ -103,6 +104,7 @@ struct ContentView: View {
         .environment(seerrRepo)
         .environment(statsRepo)
         .environment(downloadManager)
+        .environment(syncPlayManager)
         .onOpenURL { url in
             guard url.scheme == "arcfin" else { return }
             switch url.host {

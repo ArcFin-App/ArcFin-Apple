@@ -14,8 +14,9 @@ struct PlayerView: View {
     let startPositionTicks: Int64
     let onPlayNext: (MediaItem) -> Void
 
-    @Environment(AuthManager.self) private var authManager
+    @Environment(AuthManager.self) var authManager
     @Environment(MediaRepository.self) var mediaRepo
+    @Environment(SyncPlayManager.self) var syncPlayManager
     @Environment(\.dismiss) var dismiss
 
     @State var player: any MediaPlayerProtocol = AVFoundationPlayer()
@@ -30,6 +31,9 @@ struct PlayerView: View {
     @State var showQualityMenu = false
     @State var showRateMenu = false
     @State var showChapterMenu = false
+    @State var showSyncPlayMenu = false
+    @State var syncPlayGroupNameInput = ""
+    @State var isSyncPlayBusy = false
     @State var quality: VideoQuality
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
@@ -185,6 +189,16 @@ struct PlayerView: View {
         .sheet(isPresented: $showChapterMenu) {
             chapterListSheet
         }
+        #if !os(tvOS)
+        .onChange(of: showSyncPlayMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
+        .sheet(isPresented: $showSyncPlayMenu) {
+            syncPlaySheet
+        }
+        .onChange(of: syncPlayManager.incomingCommand) { _, command in
+            guard let command else { return }
+            applySyncPlayCommand(command)
+        }
+        #endif
     }
 
     #if canImport(UIKit) && !os(tvOS)
@@ -390,10 +404,38 @@ struct PlayerView: View {
         }
     }
 
+    // MARK: - SyncPlay
+
+    #if !os(tvOS)
+    /// Applies a command that came back over the WebSocket — the one and only place local
+    /// playback state actually changes in response to SyncPlay, whether this client sent
+    /// the original request or another group member did.
+    private func applySyncPlayCommand(_ command: SyncPlayCommand) {
+        switch command.kind {
+        case .play:
+            Task { await player.play() }
+        case .pause:
+            Task { await player.pause() }
+        case .seek, .stop:
+            if let ticks = command.positionTicks {
+                Task { await player.seek(to: ticks) }
+            }
+        }
+    }
+    #endif
+
     private func teardown() async {
         progressReportTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
+        #if !os(tvOS)
+        // Closing the player closes the group too — an orphaned WebSocket connection with
+        // nobody watching isn't useful, and simpler than trying to keep it alive across
+        // whatever the user navigates to next.
+        if syncPlayManager.isInGroup, case .authenticated(let credential) = authManager.state {
+            syncPlayManager.leaveGroup(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
+        }
+        #endif
         #if canImport(UIKit) && !os(tvOS)
         volumeController?.teardown()
         volumeObservation?.invalidate()
