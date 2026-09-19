@@ -100,6 +100,13 @@ struct SettingsView: View {
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
                 Toggle("Skip Credits Automatically", isOn: $skipCredits)
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
+#if !os(tvOS)
+                NavigationLink {
+                    CodecProfileSettingsView()
+                } label: {
+                    Text("Codec Compatibility")
+                }
+#endif
             } header: {
                 sectionHeader("Playback", icon: "play.circle")
             }

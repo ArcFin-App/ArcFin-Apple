@@ -291,19 +291,29 @@ extension JellyfinMediaClient {
 
     // MARK: - Device profile
 
-    private static var deviceProfile: [String: Any] { [
-        "MaxStreamingBitrate": 120_000_000,
-        // AudioCodec lists are deliberately narrow: AVFoundation can't reliably decode
-        // ac3/eac3/dts to the built-in speaker/headphones on-device (only passthrough to
-        // a compatible receiver, which isn't guaranteed) — claiming them as direct-play
+    /// Two escape hatches for device-specific codec issues, surfaced as user-facing toggles
+    /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
+    /// hardcoded — a struct, not a View, so read straight from UserDefaults like the rest
+    /// of the playback code's own settings reads (skipIntro/autoPlayNext etc.) already do.
+    private static var deviceProfile: [String: Any] {
+        let allowHEVC = (UserDefaults.standard.object(forKey: "codecAllowHEVCDirectPlay") as? Bool) ?? true
+        let allowSurroundAudio = UserDefaults.standard.bool(forKey: "codecAllowSurroundAudioDirectPlay")
+        let videoCodecs = allowHEVC ? "h264,hevc" : "h264"
+        // AudioCodec lists are deliberately narrow by default: AVFoundation can't reliably
+        // decode ac3/eac3/dts to the built-in speaker/headphones on-device (only passthrough
+        // to a compatible receiver, which isn't guaranteed) — claiming them as direct-play
         // compatible produced video with silent audio. Anything else gets remuxed with
         // audio transcoded to AAC while video stays copied, via the profiles below.
+        let mp4AudioCodecs = "aac,mp3,alac,flac" + (allowSurroundAudio ? ",ac3,eac3,dts" : "")
+        let movAudioCodecs = "aac,mp3,alac" + (allowSurroundAudio ? ",ac3,eac3,dts" : "")
+        return [
+        "MaxStreamingBitrate": 120_000_000,
         // mkv is deliberately absent — AVFoundation's native Matroska support is
         // unreliable even for codec-compatible files (routinely "Cannot Open" on
         // real-world encodes), so mkv sources always remux into HLS below instead.
         "DirectPlayProfiles": [
-            ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac,flac"],
-            ["Container": "mov", "Type": "Video", "VideoCodec": "h264,hevc", "AudioCodec": "aac,mp3,alac"],
+            ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": mp4AudioCodecs],
+            ["Container": "mov", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": movAudioCodecs],
         ],
         // h264-only for the transcode OUTPUT. The real cause of the "audio plays, video is
         // black" bug turned out to be AVFoundation's documented requirement that HEVC be
