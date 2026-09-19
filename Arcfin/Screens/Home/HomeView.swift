@@ -5,6 +5,7 @@ import JellyfinAPI
 import SeerrAPI
 import AuthCore
 import Persistence
+import Telemetry
 
 // MARK: - Main tab container
 
@@ -862,6 +863,7 @@ struct HomeView: View {
     /// player does — reusing getPlaybackInfo rather than hand-building a stream URL, since
     /// it already handles direct-play vs transcode negotiation correctly.
     private func loadHeroVideoBackdrop() {
+        let log = Telemetry.logger(category: "HeroVideoBackdrop")
         heroVideoBackdropTask?.cancel()
         heroVideoBackdropURL = nil
         heroVideoBackdropIndex = nil
@@ -874,12 +876,25 @@ struct HomeView: View {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
             let client = JellyfinMediaClient()
-            guard let trailer = (try? await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1))?.first,
-                  !Task.isCancelled
-            else { return }
-            guard let info = try? await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: trailer.id),
-                  !Task.isCancelled, heroIndex == index
-            else { return }
+            let trailer: MediaItem?
+            do {
+                trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1).first
+            } catch {
+                log.error("getTrailers failed for \(item.id, privacy: .public): \(error, privacy: .public)")
+                return
+            }
+            guard let trailer, !Task.isCancelled else {
+                log.debug("no local trailer indexed for \(item.id, privacy: .public)")
+                return
+            }
+            let info: JellyfinPlaybackInfo
+            do {
+                info = try await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: trailer.id)
+            } catch {
+                log.error("getPlaybackInfo failed for trailer \(trailer.id, privacy: .public): \(error, privacy: .public)")
+                return
+            }
+            guard !Task.isCancelled, heroIndex == index else { return }
             withAnimation(.easeIn(duration: 0.6)) {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropIndex = index
