@@ -17,6 +17,11 @@ struct DownloadedSeriesDetailView: View {
     @State private var selectedSeason: Int?
     @State private var playingItem: DownloadedItem?
     @State private var pendingDelete: DownloadedItem?
+    #if os(iOS)
+    @State private var editMode: EditMode = .inactive
+    #endif
+    @State private var selection = Set<String>()
+    @State private var showBulkDeleteConfirm = false
 
     private var series: DownloadedSeries? { allSeries.first { $0.seriesId == seriesId } }
     private var episodes: [DownloadedItem] { allItems.filter { $0.seriesId == seriesId } }
@@ -28,55 +33,72 @@ struct DownloadedSeriesDetailView: View {
     private var dir: URL { DownloadStore.directory(for: seriesId) }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                backdrop
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 0) {
+                    backdrop
 
-                VStack(alignment: .leading, spacing: DT.Spacing.md) {
-                    HStack(spacing: 8) {
-                        Text("Series")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(DT.Color.textSecondary)
-                        if let year = series?.productionYear {
-                            Text("· \(year)")
+                    VStack(alignment: .leading, spacing: DT.Spacing.md) {
+                        HStack(spacing: 8) {
+                            Text("Series")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(DT.Color.textSecondary)
+                            if let year = series?.productionYear {
+                                Text("· \(year)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(DT.Color.textSecondary)
+                            }
+                            Text("· \(episodes.count) episode\(episodes.count == 1 ? "" : "s") downloaded")
                                 .font(.system(size: 11))
                                 .foregroundStyle(DT.Color.textSecondary)
-                        }
-                        Text("· \(episodes.count) episode\(episodes.count == 1 ? "" : "s") downloaded")
-                            .font(.system(size: 11))
-                            .foregroundStyle(DT.Color.textSecondary)
-                        if let rating = series?.communityRating, rating > 0 {
-                            HStack(spacing: 2) {
-                                Image(systemName: "star.fill").font(.system(size: 9))
-                                Text(String(format: "%.1f", rating))
+                            if let rating = series?.communityRating, rating > 0 {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "star.fill").font(.system(size: 9))
+                                    Text(String(format: "%.1f", rating))
+                                }
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color(hex: "f59e0b"))
                             }
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color(hex: "f59e0b"))
+                        }
+
+                        if let genres = series?.genres, !genres.isEmpty {
+                            Text(genres.joined(separator: " · "))
+                                .font(.system(size: 12))
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+
+                        if let overview = series?.overview, !overview.isEmpty {
+                            Text(overview)
+                                .font(.system(size: 13))
+                                .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
+                                .lineSpacing(3)
+                        }
+
+                        if seasonNumbers.count > 1 {
+                            seasonPicker
                         }
                     }
-
-                    if let genres = series?.genres, !genres.isEmpty {
-                        Text(genres.joined(separator: " · "))
-                            .font(.system(size: 12))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-
-                    if let overview = series?.overview, !overview.isEmpty {
-                        Text(overview)
-                            .font(.system(size: 13))
-                            .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
-                            .lineSpacing(3)
-                    }
-
-                    if seasonNumbers.count > 1 {
-                        seasonPicker
-                    }
-
-                    episodeList
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .padding(.top, DT.Spacing.md)
                 }
-                .padding(DT.Spacing.pagePad)
+            }
+            .listRowInsets(EdgeInsets())
+            #if os(iOS)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            #endif
+
+            Section {
+                ForEach(episodesInSelectedSeason) { episode in
+                    episodeRow(episode)
+                }
             }
         }
+        #if os(iOS)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .environment(\.editMode, $editMode)
+        #endif
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
@@ -84,6 +106,25 @@ struct DownloadedSeriesDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         #endif
+        .toolbar {
+            #if os(iOS)
+            if !episodes.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(editMode.isEditing ? "Done" : "Select") {
+                        editMode = editMode.isEditing ? .inactive : .active
+                        selection.removeAll()
+                    }
+                }
+            }
+            if editMode.isEditing && !selection.isEmpty {
+                ToolbarItem(placement: .bottomBar) {
+                    Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
+                        Text("Delete \(selection.count) Selected")
+                    }
+                }
+            }
+            #endif
+        }
         .onAppear {
             if selectedSeason == nil { selectedSeason = seasonNumbers.first }
         }
@@ -101,6 +142,19 @@ struct DownloadedSeriesDetailView: View {
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         }
+        .confirmationDialog("Delete \(selection.count) selected episode\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { deleteSelection() }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func deleteSelection() {
+        let toDelete = episodes.filter { selection.contains($0.itemId) }
+        downloadManager.deleteDownloads(toDelete)
+        selection.removeAll()
+        #if os(iOS)
+        editMode = .inactive
+        #endif
     }
 
     private var backdrop: some View {
@@ -146,41 +200,72 @@ struct DownloadedSeriesDetailView: View {
         }
     }
 
-    private var episodeList: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(episodesInSelectedSeason) { episode in
-                episodeRow(episode)
-            }
-        }
+    #if os(iOS)
+    private func toggleSelection(_ id: String) {
+        if selection.contains(id) { selection.remove(id) } else { selection.insert(id) }
     }
 
+    private func selectionIndicator(_ id: String) -> some View {
+        Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 20))
+            .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
+    }
+    #endif
+
+    @ViewBuilder
     private func episodeRow(_ episode: DownloadedItem) -> some View {
-        Button { playingItem = episode } label: {
-            HStack(spacing: 12) {
-                episodeThumbnail(episode)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(episodeLabel(episode))
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(DT.Color.accent)
-                    Text(episode.name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(1)
-                    Text(ByteCountFormatter.string(fromByteCount: episode.fileSizeBytes, countStyle: .file))
-                        .font(.system(size: 10))
-                        .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
+        #if os(iOS)
+        if editMode.isEditing {
+            Button { toggleSelection(episode.itemId) } label: {
+                HStack(spacing: 12) {
+                    selectionIndicator(episode.itemId)
+                    episodeRowContent(episode)
                 }
-                Spacer()
-                Image(systemName: episode.played ? "checkmark.circle.fill" : "play.circle")
-                    .font(.system(size: 20))
-                    .foregroundStyle(episode.played ? Color(hex: "10b981") : DT.Color.textSecondary)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button { playingItem = episode } label: {
+                episodeRowContent(episode)
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button(role: .destructive) { pendingDelete = episode } label: {
+                    Label("Delete Download", systemImage: "trash")
+                }
+            }
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) { pendingDelete = episode } label: {
+                    Label("Delete", systemImage: "trash")
+                }
             }
         }
+        #else
+        Button { playingItem = episode } label: {
+            episodeRowContent(episode)
+        }
         .buttonStyle(.plain)
-        .contextMenu {
-            Button(role: .destructive) { pendingDelete = episode } label: {
-                Label("Delete Download", systemImage: "trash")
+        #endif
+    }
+
+    private func episodeRowContent(_ episode: DownloadedItem) -> some View {
+        HStack(spacing: 12) {
+            episodeThumbnail(episode)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(episodeLabel(episode))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                Text(episode.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                Text(ByteCountFormatter.string(fromByteCount: episode.fileSizeBytes, countStyle: .file))
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
             }
+            Spacer()
+            Image(systemName: episode.played ? "checkmark.circle.fill" : "play.circle")
+                .font(.system(size: 20))
+                .foregroundStyle(episode.played ? Color(hex: "10b981") : DT.Color.textSecondary)
         }
     }
 
