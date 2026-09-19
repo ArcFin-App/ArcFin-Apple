@@ -9,6 +9,7 @@ struct PlaybackSettingsView: View {
     @AppStorage("skipCredits")     private var skipCredits     = false
     @AppStorage("skipRecap")       private var skipRecap       = false
     @AppStorage("subtitleDefault") private var subtitleDefault = false
+    @AppStorage("trailersEnabled") private var trailersEnabled = true
     @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
     @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
 
@@ -65,6 +66,14 @@ struct PlaybackSettingsView: View {
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
                 Toggle("Skip Credits Automatically", isOn: $skipCredits)
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
+            }
+
+            Section {
+                Toggle("Trailers", isOn: $trailersEnabled)
+            } footer: {
+                Text("Shows a Trailers row on the detail screen when the server has a local trailer indexed, or a YouTube trailer as a fallback.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {

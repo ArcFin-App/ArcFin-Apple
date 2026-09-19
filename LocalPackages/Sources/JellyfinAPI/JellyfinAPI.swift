@@ -179,6 +179,10 @@ public struct MediaItemDetail: Sendable, Identifiable {
     /// Keyed by MediaSourceId — look up with the id PlaybackInfo actually returns for the
     /// stream being played, since an item can have more than one version/source.
     public var trickplay: [String: JellyfinTrickplayInfo]
+    /// External trailer links (YouTube, etc.) a metadata provider attached to the item —
+    /// distinct from LocalTrailers, which are real files the server can stream directly.
+    /// Fallback when there's no local trailer indexed.
+    public var remoteTrailers: [RemoteTrailer]
 
     public var runtimeMinutes: Int? {
         guard let ticks = runTimeTicks, ticks > 0 else { return nil }
@@ -200,11 +204,41 @@ public struct MediaItemDetail: Sendable, Identifiable {
     public init(item: MediaItem, people: [MediaPerson] = [], mediaStreams: [MediaStream] = [],
                 genres: [String] = [], studios: [String] = [], officialRating: String? = nil,
                 runTimeTicks: Int64? = nil, taglines: [String] = [], chapters: [MediaChapter] = [],
-                trickplay: [String: JellyfinTrickplayInfo] = [:]) {
+                trickplay: [String: JellyfinTrickplayInfo] = [:], remoteTrailers: [RemoteTrailer] = []) {
         self.item = item; self.people = people; self.mediaStreams = mediaStreams
         self.genres = genres; self.studios = studios; self.officialRating = officialRating
         self.runTimeTicks = runTimeTicks; self.taglines = taglines; self.chapters = chapters
-        self.trickplay = trickplay
+        self.trickplay = trickplay; self.remoteTrailers = remoteTrailers
+    }
+}
+
+public struct RemoteTrailer: Sendable, Identifiable, Equatable {
+    public var id: String { url.absoluteString }
+    public let url: URL
+    public let name: String?
+
+    public init(url: URL, name: String?) {
+        self.url = url
+        self.name = name
+    }
+
+    /// YouTube's own embeddable player URL for this trailer's video id, or nil if this
+    /// remote trailer isn't a YouTube link at all (some providers attach other hosts).
+    public var youTubeEmbedURL: URL? {
+        guard let host = url.host?.lowercased() else { return nil }
+        var videoId: String?
+        if host.contains("youtu.be") {
+            videoId = url.pathComponents.dropFirst().first
+        } else if host.contains("youtube.com") {
+            if url.path.hasPrefix("/embed/") {
+                videoId = url.pathComponents.dropFirst(2).first
+            } else {
+                videoId = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                    .queryItems?.first(where: { $0.name == "v" })?.value
+            }
+        }
+        guard let videoId, !videoId.isEmpty else { return nil }
+        return URL(string: "https://www.youtube.com/embed/\(videoId)?playsinline=1&modestbranding=1&rel=0")
     }
 }
 

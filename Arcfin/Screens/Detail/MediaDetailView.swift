@@ -34,6 +34,9 @@ struct MediaDetailView: View {
     @State private var selectedPerson: MediaPerson?
     @State private var loadedSeasonId: String?
     @State private var trailers: [MediaItem] = []
+    @State private var remoteTrailer: RemoteTrailer?
+    @State private var youTubeTrailer: RemoteTrailer?
+    @AppStorage("trailersEnabled") private var trailersEnabled = true
     @State private var isLoading = true
     @State private var requestingSeerrItem: SeerrItem?
     @State private var playbackRequest: PlaybackRequest?
@@ -170,6 +173,11 @@ struct MediaDetailView: View {
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
         }
+        .fullScreenCover(item: $youTubeTrailer) { trailer in
+            if let embed = trailer.youTubeEmbedURL {
+                YouTubeTrailerPlayerView(embedURL: embed, title: trailer.name ?? item.name)
+            }
+        }
 #endif
         .task { await load() }
         .onChange(of: selectedSeason) { _, season in
@@ -286,15 +294,24 @@ struct MediaDetailView: View {
             similarItems = []
         }
 
-        Task {
-            let fetchedTrailers = (try? await client.getTrailers(
-                credential: cred,
-                authHeader: header,
-                itemId: item.id,
-                limit: 6
-            )) ?? []
-            await MainActor.run {
-                trailers = fetchedTrailers
+        remoteTrailer = nil
+        if trailersEnabled {
+            Task {
+                let fetchedTrailers = (try? await client.getTrailers(
+                    credential: cred,
+                    authHeader: header,
+                    itemId: item.id,
+                    limit: 6
+                )) ?? []
+                await MainActor.run {
+                    trailers = fetchedTrailers
+                    // Only fall back to a remote (YouTube) trailer once we know there's
+                    // genuinely no local one — a local file always streams better than an
+                    // embedded web player.
+                    if fetchedTrailers.isEmpty {
+                        remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeEmbedURL != nil }
+                    }
+                }
             }
         }
 
@@ -625,7 +642,7 @@ struct MediaDetailView: View {
         if !seasons.isEmpty { seriesSection }
 
         // Trailers
-        if !trailers.isEmpty { trailersSection }
+        if trailersEnabled, !trailers.isEmpty || remoteTrailer != nil { trailersSection }
 
         // Similar / recommended
         if !seerrRelatedItems.isEmpty {
@@ -1100,11 +1117,26 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(trailers) { trailer in
-                        NavigationLink(value: trailer) {
+                        Button { playbackRequest = PlaybackRequest(item: trailer, startTicks: 0) } label: {
                             PosterCard(
                                 title: trailer.name,
                                 subtitle: nil,
                                 imageURL: mediaRepo.imageURL(for: trailer)
+                            )
+                        }
+#if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+#else
+                        .buttonStyle(.plain)
+#endif
+                    }
+                    if trailers.isEmpty, let remoteTrailer {
+                        Button { youTubeTrailer = remoteTrailer } label: {
+                            PosterCard(
+                                title: remoteTrailer.name ?? "Trailer",
+                                subtitle: "YouTube",
+                                imageURL: mediaRepo.imageURL(for: item)
                             )
                         }
 #if os(tvOS)

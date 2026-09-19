@@ -342,7 +342,7 @@ public struct JellyfinMediaClient: Sendable {
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters,Trickplay"),
+            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters,Trickplay,RemoteTrailers"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -748,6 +748,7 @@ private struct ItemDetailResponse: Decodable {
     /// MediaSources[].TrickplayInfo, which Jellyfin does not reliably populate — the general
     /// item-detail endpoint is the one that actually carries this.
     let trickplay: [String: [String: TrickplayInfoResponse]]?
+    let remoteTrailers: [RemoteTrailerResponse]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
@@ -761,6 +762,7 @@ private struct ItemDetailResponse: Decodable {
         case officialRating = "OfficialRating", runTimeTicks = "RunTimeTicks"
         case taglines = "Taglines", providerIds = "ProviderIds"
         case chapters = "Chapters", trickplay = "Trickplay"
+        case remoteTrailers = "RemoteTrailers"
     }
 
     func toDetail() -> MediaItemDetail {
@@ -802,7 +804,10 @@ private struct ItemDetailResponse: Decodable {
             runTimeTicks: runTimeTicks,
             taglines: taglines ?? [],
             chapters: chapters?.map { MediaChapter(startPositionTicks: $0.startPositionTicks, name: $0.name) } ?? [],
-            trickplay: trickplay?.compactMapValues { $0.preferred } ?? [:]
+            trickplay: trickplay?.compactMapValues { $0.preferred } ?? [:],
+            remoteTrailers: remoteTrailers?.compactMap { t in
+                t.url.flatMap(URL.init).map { RemoteTrailer(url: $0, name: t.name) }
+            } ?? []
         )
     }
 }
@@ -920,6 +925,12 @@ private struct SearchHintResponse: Decodable {
 private struct StudioResponse: Decodable {
     let name: String
     enum CodingKeys: String, CodingKey { case name = "Name" }
+}
+
+private struct RemoteTrailerResponse: Decodable {
+    let url: String?
+    let name: String?
+    enum CodingKeys: String, CodingKey { case url = "Url", name = "Name" }
 }
 
 private struct LibraryViewsResponse: Decodable {
