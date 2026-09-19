@@ -452,6 +452,20 @@ public struct JellyfinMediaClient: Sendable {
         _ = try await URLSession.shared.data(for: req)
     }
 
+    public func markFavorite(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String,
+        favorite: Bool
+    ) async throws {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/FavoriteItems/\(itemId)")
+        var req = URLRequest(url: url)
+        req.httpMethod = favorite ? "POST" : "DELETE"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        _ = try await URLSession.shared.data(for: req)
+    }
+
     public func getLibraryItems(
         credential: ServerCredential,
         authHeader: String,

@@ -20,6 +20,7 @@ struct MediaDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: MediaItemDetail?
+    @State private var isFavorite = false
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
     @State private var seriesItem: MediaItem?
@@ -88,6 +89,12 @@ struct MediaDetailView: View {
         #if os(iOS)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { toggleFavorite() } label: {
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
+                }
+            }
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .topBarTrailing) {
                     DownloadButton(item: item)
@@ -263,6 +270,7 @@ struct MediaDetailView: View {
         
         let fetchedDetail = try? await detailTask
         detail = fetchedDetail
+        isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
 
         if let fetchedDetail, let mediaType = seerrMediaType(for: fetchedDetail.item),
            let tmdbId = fetchedDetail.item.tmdbId {
@@ -927,6 +935,16 @@ struct MediaDetailView: View {
                     .font(.system(size: 20))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.3))
             )
+    }
+
+    private func toggleFavorite() {
+        guard let cred = credential, let header = authHeader else { return }
+        let newValue = !isFavorite
+        isFavorite = newValue
+        HapticManager.impact(.light)
+        Task {
+            try? await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: newValue)
+        }
     }
 
     private func markEpisodeWatched(_ ep: MediaItem, watched: Bool) {
