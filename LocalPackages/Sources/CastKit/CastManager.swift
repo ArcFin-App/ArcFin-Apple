@@ -114,41 +114,56 @@ public final class CastManager: NSObject {
 
 #if canImport(GoogleCast)
 extension CastManager: GCKSessionManagerListener {
-    public func sessionManager(_ sessionManager: GCKSessionManager, willStart session: GCKSession) {
-        isConnecting = true
+    // GCK's listener callbacks are documented as always delivered on the main thread, but
+    // the protocol itself carries no Swift concurrency annotation — Swift 6 strict
+    // concurrency flags a @MainActor class conforming to it as crossing isolation, so each
+    // requirement is nonisolated here and hops back in with assumeIsolated (safe given
+    // that documented guarantee), same pattern as DownloadManager's background-task handler.
+    public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, willStart session: GCKSession) {
+        MainActor.assumeIsolated { isConnecting = true }
     }
 
-    public func sessionManager(_ sessionManager: GCKSessionManager, didStart session: GCKSession) {
-        isConnecting = false
-        isConnected = true
-        deviceName = session.device?.friendlyName
-        (session as? GCKCastSession)?.remoteMediaClient?.add(self)
+    public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didStart session: GCKSession) {
+        MainActor.assumeIsolated {
+            isConnecting = false
+            isConnected = true
+            deviceName = session.device.friendlyName
+            (session as? GCKCastSession)?.remoteMediaClient?.add(self)
+        }
     }
 
-    public func sessionManager(_ sessionManager: GCKSessionManager, didResumeSession session: GCKSession) {
-        isConnecting = false
-        isConnected = true
-        deviceName = session.device?.friendlyName
-        (session as? GCKCastSession)?.remoteMediaClient?.add(self)
+    public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didResumeSession session: GCKSession) {
+        MainActor.assumeIsolated {
+            isConnecting = false
+            isConnected = true
+            deviceName = session.device.friendlyName
+            (session as? GCKCastSession)?.remoteMediaClient?.add(self)
+        }
     }
 
-    public func sessionManager(_ sessionManager: GCKSessionManager, didEnd session: GCKSession, withError error: Error?) {
-        isConnecting = false
-        isConnected = false
-        isPaused = false
-        deviceName = nil
-        (session as? GCKCastSession)?.remoteMediaClient?.remove(self)
+    public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didEnd session: GCKSession, withError error: Error?) {
+        MainActor.assumeIsolated {
+            isConnecting = false
+            isConnected = false
+            isPaused = false
+            deviceName = nil
+            (session as? GCKCastSession)?.remoteMediaClient?.remove(self)
+        }
     }
 
-    public func sessionManager(_ sessionManager: GCKSessionManager, didFailToStart session: GCKSession, withError error: Error) {
-        isConnecting = false
-        isConnected = false
+    public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didFailToStart session: GCKSession, withError error: Error) {
+        MainActor.assumeIsolated {
+            isConnecting = false
+            isConnected = false
+        }
     }
 }
 
 extension CastManager: GCKRemoteMediaClientListener {
-    public func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
-        isPaused = mediaStatus?.playerState == .paused
+    public nonisolated func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
+        MainActor.assumeIsolated {
+            isPaused = mediaStatus?.playerState == .paused
+        }
     }
 }
 #endif
