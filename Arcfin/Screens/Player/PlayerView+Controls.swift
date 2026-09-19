@@ -96,6 +96,15 @@ extension PlayerView {
             }
             #endif
 
+            if !chapters.isEmpty {
+                Button { showChapterMenu = true } label: {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                }
+            }
+
             Button { showTrackMenu = true } label: {
                 Image(systemName: "captions.bubble")
                     .font(.system(size: 16, weight: .semibold))
@@ -285,6 +294,47 @@ extension PlayerView {
         let m = (totalSeconds % 3600) / 60
         let s = totalSeconds % 60
         return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+    }
+
+    // MARK: - Chapters
+
+    var chapterListSheet: some View {
+        List {
+            ForEach(Array(chapters.enumerated()), id: \.offset) { index, chapter in
+                let isCurrent = currentChapterIndex == index
+                Button {
+                    showChapterMenu = false
+                    jumpToChapter(chapter)
+                } label: {
+                    HStack {
+                        Text(chapter.name ?? "Chapter \(index + 1)")
+                            .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
+                            .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
+                        Spacer()
+                        Text(timeLabel(ticks: chapter.startPositionTicks))
+                            .font(.system(size: 13, design: .monospaced))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(.ultraThinMaterial)
+    }
+
+    private var currentChapterIndex: Int? {
+        var result: Int?
+        for (index, chapter) in chapters.enumerated() where chapter.startPositionTicks <= player.positionTicks {
+            result = index
+        }
+        return result
+    }
+
+    private func jumpToChapter(_ chapter: MediaChapter) {
+        Task { await player.seek(to: chapter.startPositionTicks) }
+        HapticManager.impact(.light)
     }
 
     // MARK: - Skip intro/credits

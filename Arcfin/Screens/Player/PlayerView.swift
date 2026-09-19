@@ -29,6 +29,7 @@ struct PlayerView: View {
     @State var showTrackMenu = false
     @State var showQualityMenu = false
     @State var showRateMenu = false
+    @State var showChapterMenu = false
     @State var quality: VideoQuality
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
@@ -164,6 +165,7 @@ struct PlayerView: View {
         .onChange(of: showTrackMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .onChange(of: showQualityMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .onChange(of: showRateMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
+        .onChange(of: showChapterMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .sheet(isPresented: $showTrackMenu) {
             trackSelectionSheet
         }
@@ -172,6 +174,9 @@ struct PlayerView: View {
         }
         .confirmationDialog("Playback Speed", isPresented: $showRateMenu, titleVisibility: .visible) {
             rateMenuButtons
+        }
+        .sheet(isPresented: $showChapterMenu) {
+            chapterListSheet
         }
     }
 
