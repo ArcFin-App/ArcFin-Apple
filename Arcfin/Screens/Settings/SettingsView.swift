@@ -138,16 +138,17 @@ struct SettingsView: View {
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow
-                NavigationLink {
-                    placeholderDetail("Switch Server")
-                } label: {
+                // Reuses the same profile switcher already built for the avatar/profile
+                // card — "switching server" here means picking a different saved profile,
+                // same as that sheet already does.
+                Button { showUsersSheet = true } label: {
                     Text("Switch Server")
                 }
 #if os(tvOS)
                 .listRowBackground(Color.clear)
 #endif
                 NavigationLink {
-                    placeholderDetail("Add Server")
+                    AddServerFlowView()
                 } label: {
                     Text("Add Server")
                 }
@@ -168,12 +169,10 @@ struct SettingsView: View {
             // ── Offline ──────────────────────────────────────────────────
 #if os(iOS)
             Section {
+                // No separate "Downloads" link here — turning this on already replaces the
+                // whole app with the downloads screen, so a link to the same place inside
+                // Settings (which offline mode is about to leave) was redundant.
                 Toggle("Offline Mode", isOn: $offlineModeEnabled)
-                NavigationLink {
-                    DownloadsView()
-                } label: {
-                    Text("Downloads")
-                }
             } header: {
                 sectionHeader("Offline", icon: "arrow.down.circle")
             } footer: {

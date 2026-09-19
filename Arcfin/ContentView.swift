@@ -27,6 +27,11 @@ struct ContentView: View {
     @State private var downloadManager = DownloadManager()
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
+    #if os(iOS)
+    @State private var showOfflineDocPicker = false
+    @State private var offlinePickedURL: URL?
+    @State private var navigateToOfflineLocalPlayer = false
+    #endif
 
     @AppStorage("seerrURL")          private var seerrURL         = ""
     @AppStorage("seerrUsername")     private var seerrUsername    = ""
@@ -65,6 +70,30 @@ struct ContentView: View {
                         .navigationDestination(for: DownloadedSeriesRef.self) { ref in
                             DownloadedSeriesDetailView(seriesId: ref.seriesId)
                         }
+                        #if os(iOS)
+                        // Offline mode replaces the whole app with DownloadsView, which
+                        // previously had no way to reach "On This Device" — the only local
+                        // playback option left offline was Jellyfin downloads themselves.
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button { showOfflineDocPicker = true } label: {
+                                    Image(systemName: "folder")
+                                }
+                            }
+                        }
+                        .sheet(isPresented: $showOfflineDocPicker) {
+                            DocumentPickerView { url in
+                                offlinePickedURL = url
+                                navigateToOfflineLocalPlayer = true
+                            }
+                        }
+                        .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
+                            if let url = offlinePickedURL {
+                                LocalPlayerView(url: url)
+                                    .toolbar(.hidden, for: .tabBar)
+                            }
+                        }
+                        #endif
                 }
                 .transition(.opacity)
             }

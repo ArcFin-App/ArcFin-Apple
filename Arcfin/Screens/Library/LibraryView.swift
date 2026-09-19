@@ -873,7 +873,9 @@ struct LibraryDetailView: View {
 // MARK: - Document picker (UIKit bridge)
 
 #if canImport(UIKit) && !os(tvOS)
-private struct DocumentPickerView: UIViewControllerRepresentable {
+// Not private — reused by ContentView's offline-mode flow for the same "On This Device"
+// file picker outside of Browse.
+struct DocumentPickerView: UIViewControllerRepresentable {
     var onPick: (URL) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
