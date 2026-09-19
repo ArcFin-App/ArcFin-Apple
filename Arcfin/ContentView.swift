@@ -29,6 +29,11 @@ struct ContentView: View {
     @State private var syncPlayManager = SyncPlayManager()
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
+    #if !os(tvOS)
+    @State private var isAppLocked = false
+    @State private var activeProfileHasPIN = false
+    @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
+    #endif
     #if os(iOS)
     @State private var showOfflineDocPicker = false
     @State private var offlinePickedURL: URL?
@@ -93,8 +98,19 @@ struct ContentView: View {
                 }
                 .transition(.opacity)
             }
+
+            #if !os(tvOS)
+            if isAppLocked {
+                AppLockView(useFaceID: appLockUseFaceID) { isAppLocked = false }
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
+            #endif
         }
         .animation(DT.Animation.standard, value: phase)
+        #if !os(tvOS)
+        .animation(DT.Animation.standard, value: isAppLocked)
+        #endif
         .preferredColorScheme(.dark)
 #if os(tvOS)
         .focusEffectDisabled()
@@ -126,12 +142,32 @@ struct ContentView: View {
                 break
             }
         }
-        .task { await authManager.checkStoredAuth() }
+        .task {
+            await authManager.checkStoredAuth()
+            #if !os(tvOS)
+            await refreshLockRequirement()
+            if activeProfileHasPIN { isAppLocked = true }
+            #endif
+        }
         .task { authManager.startNetworkMonitoring() }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { startHeartbeat() } else { heartbeatTask?.cancel() }
+            #if !os(tvOS)
+            // Re-reads the keychain fresh rather than trusting the cached flag, so a PIN
+            // enabled/disabled moments ago in Settings (same session, no state change since
+            // that doesn't touch authManager.state) is still honored on this very transition.
+            if newPhase == .background {
+                Task {
+                    await refreshLockRequirement()
+                    if activeProfileHasPIN { isAppLocked = true }
+                }
+            }
+            #endif
         }
+        #if !os(tvOS)
+        .onChange(of: authManager.state) { _, _ in Task { await refreshLockRequirement() } }
+        #endif
         .onAppear { configureSeerr() }
         .onChange(of: seerrURL)        { configureSeerr() }
         .onChange(of: seerrUsername)   { configureSeerr() }
@@ -152,6 +188,16 @@ struct ContentView: View {
             if !isOffline { syncOfflineProgress() }
         }
     }
+
+    #if !os(tvOS)
+    private func refreshLockRequirement() async {
+        guard case .authenticated(let cred) = authManager.state else {
+            activeProfileHasPIN = false
+            return
+        }
+        activeProfileHasPIN = await authManager.pin(for: cred.id) != nil
+    }
+    #endif
 
     private func syncOfflineProgress() {
         guard case .authenticated = authManager.state else { return }

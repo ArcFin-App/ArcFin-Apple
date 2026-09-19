@@ -16,6 +16,7 @@ struct UsersView: View {
     @State private var switchPINError: String? = nil
     @State private var switchStoredPIN: String? = nil
     @State private var showAddProfile = false
+    @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
 
     private var activeID: UUID? { authManager.state.credential?.id }
 
@@ -81,6 +82,17 @@ struct UsersView: View {
                 .navigationDestination(isPresented: $showAddProfile) {
                     AddProfileFlowView()
                 }
+            }
+
+            // ── App Lock ─────────────────────────────────────────────────
+            Section {
+                Toggle("Use Face ID", isOn: $appLockUseFaceID)
+            } header: {
+                sectionLabel("App Lock")
+            } footer: {
+                Text("When the active profile has a PIN set (above), Arcfin asks for it on launch and when returning from the background. Face ID offers a faster unlock — the PIN is always the fallback.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
         }
         .arcfinListStyle()
