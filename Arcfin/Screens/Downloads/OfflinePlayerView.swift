@@ -81,9 +81,11 @@ struct OfflinePlayerView: View {
                 .allowsHitTesting(false)
             }
 
-            if isControlsVisible {
-                controlsOverlay.transition(.opacity)
-            }
+            // Always mounted — see PlayerView's own note on why conditionally mounting this
+            // (mount/unmount on every tap) was the real cause of the video+UI zoom glitch.
+            controlsOverlay
+                .opacity(isControlsVisible ? 1 : 0)
+                .allowsHitTesting(isControlsVisible)
         }
         #if canImport(UIKit) && !os(tvOS)
         .statusBarHidden()

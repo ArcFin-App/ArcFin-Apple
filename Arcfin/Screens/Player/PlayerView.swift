@@ -147,10 +147,19 @@ struct PlayerView: View {
                 subtitleOverlay(currentSubtitleText)
             }
 
-            if isControlsVisible {
-                controlsOverlay
-                    .transition(.opacity)
-            }
+            // Always mounted, visibility driven purely by opacity — this used to be `if
+            // isControlsVisible { controlsOverlay }`, which mounts/unmounts a ZStack sibling
+            // on every tap. SwiftUI's insertion/removal transition recomputes layout for the
+            // whole ZStack while animating (not just this view), and since the video's
+            // GeometryReader ignores safe areas while controlsOverlay's own padding doesn't,
+            // that recompute briefly disagreed on the effective content region — which is
+            // what actually looked like the whole screen (video AND the buttons/text, since
+            // both are ZStack siblings sharing that region) zooming in and clipping off
+            // screen on every tap. Keeping the view always mounted means there's nothing to
+            // insert/remove, so there's no layout pass to get wrong.
+            controlsOverlay
+                .opacity(isControlsVisible ? 1 : 0)
+                .allowsHitTesting(isControlsVisible)
 
             skipButton
 
