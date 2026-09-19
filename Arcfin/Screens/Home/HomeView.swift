@@ -6,6 +6,7 @@ import SeerrAPI
 import AuthCore
 import Persistence
 import Telemetry
+import os
 
 // MARK: - Main tab container
 
