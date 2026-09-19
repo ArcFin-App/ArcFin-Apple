@@ -8,6 +8,7 @@ struct PlayerFeaturesSettingsView: View {
     @AppStorage("syncPlayEnabled") private var syncPlayEnabled = true
     @AppStorage("castEnabled") private var castEnabled = true
     @AppStorage("stillWatchingPromptEnabled") private var stillWatchingPromptEnabled = true
+    @AppStorage("matchContentFrameRate") private var matchContentFrameRate = false
 
     var body: some View {
         List {
@@ -39,6 +40,14 @@ struct PlayerFeaturesSettingsView: View {
                 Toggle("\"Are You Still Watching?\" Prompt", isOn: $stillWatchingPromptEnabled)
             } footer: {
                 Text("Pauses and asks for confirmation after 3 episodes have auto-played in a row with no interaction.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle("Match Content Frame Rate", isOn: $matchContentFrameRate)
+            } footer: {
+                Text("Switches the display's refresh rate to match the video's frame rate (e.g. 24fps film) so panning motion doesn't judder. Only applies to AVFoundation playback — off by default since some TVs/displays show a brief black flash when the refresh rate switches.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

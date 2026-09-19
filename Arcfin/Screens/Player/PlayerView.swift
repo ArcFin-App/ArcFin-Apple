@@ -85,6 +85,8 @@ struct PlayerView: View {
     @State var dragValue: CGFloat = 0
     @State var lastHapticStep: Int?
     @State var volumeObservation: NSKeyValueObservation?
+    @State var displayCriteriaMatcher = DisplayCriteriaMatcher()
+    @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
     #endif
 
     let client = JellyfinMediaClient()
@@ -424,8 +426,11 @@ struct PlayerView: View {
             #if canImport(UIKit) && !os(tvOS)
             // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's
             // custom PiPCoordinator needs this explicit activation step.
-            if player is AVFoundationPlayer {
+            if let avPlayer = player as? AVFoundationPlayer {
                 pip.activateIfNeeded()
+                if matchContentFrameRate {
+                    displayCriteriaMatcher.attach(player: avPlayer.player)
+                }
             }
             #endif
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
@@ -521,6 +526,7 @@ struct PlayerView: View {
         #if canImport(UIKit) && !os(tvOS)
         volumeController?.teardown()
         volumeObservation?.invalidate()
+        displayCriteriaMatcher.detach()
         #endif
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
