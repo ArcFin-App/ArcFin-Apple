@@ -4,6 +4,7 @@ import AuthCore
 import JellyfinAPI
 import Persistence
 import SeerrAPI
+import SyncEngine
 
 private enum AppPhase: Equatable {
     case splash, login, main, offline
@@ -146,6 +147,26 @@ struct ContentView: View {
         // A profile switch keeps the same serverID when staying on one server, so
         // Streamystats needs its own trigger to pick up the new credential's token.
         .onChange(of: authManager.state)  { configureStats() }
+        .onChange(of: authManager.state) { _, newState in
+            if case .authenticated = newState { syncOfflineProgress() }
+        }
+        // The explicit "I'm back online" moment — items played while offline sync then too,
+        // not just at next cold launch.
+        .onChange(of: offlineModeEnabled) { _, isOffline in
+            if !isOffline { syncOfflineProgress() }
+        }
+    }
+
+    private func syncOfflineProgress() {
+        guard case .authenticated = authManager.state else { return }
+        let profiles = authManager.profiles
+        let authClient = authManager.authClient
+        Task {
+            await OfflineProgressSync.syncPending(
+                modelContext: modelContext, profiles: profiles,
+                authHeader: { authClient.authHeader(token: $0.accessToken) }
+            )
+        }
     }
 
     /// Jellyfin marks a session "active" from any authenticated request — the app's own

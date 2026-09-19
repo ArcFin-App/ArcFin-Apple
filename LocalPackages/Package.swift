@@ -163,6 +163,7 @@ let package = Package(
             name: "SyncEngine",
             dependencies: [
                 "AppState",
+                "AuthCore",
                 "JellyfinAPI",
                 "Persistence",
                 "Telemetry",

@@ -47,6 +47,9 @@ public final class DownloadedItem {
     public var downloadedAt: Date
     public var playbackPositionTicks: Int64
     public var played: Bool
+    /// Set whenever position/played changes from offline playback — cleared once
+    /// OfflineProgressSync (SyncEngine) has successfully reported it back to the server.
+    public var needsSync: Bool
 
     public init(
         itemId: String, name: String, typeRaw: String, overview: String? = nil,
@@ -61,7 +64,7 @@ public final class DownloadedItem {
         trickplayIntervalMs: Int? = nil, trickplayThumbnailCount: Int? = nil,
         introEndSeconds: Double? = nil, creditsStartSeconds: Double? = nil,
         fileSizeBytes: Int64 = 0, downloadedAt: Date = Date(),
-        playbackPositionTicks: Int64 = 0, played: Bool = false
+        playbackPositionTicks: Int64 = 0, played: Bool = false, needsSync: Bool = false
     ) {
         self.itemId = itemId; self.name = name; self.typeRaw = typeRaw; self.overview = overview
         self.runtimeTicks = runtimeTicks; self.productionYear = productionYear
@@ -77,7 +80,7 @@ public final class DownloadedItem {
         self.trickplayIntervalMs = trickplayIntervalMs; self.trickplayThumbnailCount = trickplayThumbnailCount
         self.introEndSeconds = introEndSeconds; self.creditsStartSeconds = creditsStartSeconds
         self.fileSizeBytes = fileSizeBytes; self.downloadedAt = downloadedAt
-        self.playbackPositionTicks = playbackPositionTicks; self.played = played
+        self.playbackPositionTicks = playbackPositionTicks; self.played = played; self.needsSync = needsSync
     }
 }
 
