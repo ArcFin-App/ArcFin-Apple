@@ -2,8 +2,6 @@ import SwiftUI
 import AVFoundation
 import AVKit
 import Combine
-import Telemetry
-import os
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 import MediaPlayer
@@ -41,12 +39,6 @@ final class PlayerSurfaceView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         playerLayer.frame = bounds
-        // Temporary — pinpointing the zoom-on-tap bug. Logs every relayout pass with the
-        // resulting bounds so we can see whether the bounds value itself goes wrong (a real
-        // SwiftUI/AutoLayout sizing bug) or stays correct while the picture still visibly
-        // zooms (which would mean it's inside AVPlayerLayer's own rendering, not our layout).
-        Telemetry.logger(category: "PlayerZoomDebug")
-            .debug("PlayerSurfaceView.layoutSubviews bounds=\(String(describing: self.bounds), privacy: .public) window=\(String(describing: self.window?.bounds), privacy: .public)")
     }
 }
 
