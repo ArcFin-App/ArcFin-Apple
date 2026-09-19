@@ -740,12 +740,7 @@ extension PlayerView {
     func subtitleOverlay(_ text: String) -> some View {
         VStack {
             Spacer()
-            Text(text)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 10).padding(.vertical, 4)
-                .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
+            SubtitleText(text: text, size: subtitleTextSize, color: subtitleTextColor, background: subtitleBackgroundStyle)
                 .padding(.horizontal, 24)
                 .padding(.bottom, isControlsVisible ? 110 : 32)
         }

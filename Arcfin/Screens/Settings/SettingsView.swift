@@ -111,6 +111,11 @@ struct SettingsView: View {
                 } label: {
                     Text("Player Features")
                 }
+                NavigationLink {
+                    SubtitleStyleSettingsView()
+                } label: {
+                    Text("Subtitle Style")
+                }
 #endif
             } header: {
                 sectionHeader("Playback", icon: "play.circle")

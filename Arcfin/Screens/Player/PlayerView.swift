@@ -45,6 +45,9 @@ struct PlayerView: View {
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
     @State var currentSubtitleText: String?
+    @AppStorage("subtitleTextSize") var subtitleTextSize = SubtitleTextSize.medium
+    @AppStorage("subtitleTextColor") var subtitleTextColor = SubtitleTextColorOption.white
+    @AppStorage("subtitleBackgroundStyle") var subtitleBackgroundStyle = SubtitleBackgroundStyle.box
     #if canImport(UIKit)
     @State var trickplayLoader: TrickplayLoader?
     @State var scrubThumbnail: UIImage?

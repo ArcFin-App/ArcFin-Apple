@@ -32,6 +32,9 @@ struct OfflinePlayerView: View {
     @State private var currentSubtitleText: String?
     @State private var selectedSubtitleIndex: Int?
     @State private var showTrackMenu = false
+    @AppStorage("subtitleTextSize") private var subtitleTextSize = SubtitleTextSize.medium
+    @AppStorage("subtitleTextColor") private var subtitleTextColor = SubtitleTextColorOption.white
+    @AppStorage("subtitleBackgroundStyle") private var subtitleBackgroundStyle = SubtitleBackgroundStyle.box
     @State private var progressSaveTask: Task<Void, Never>?
     #if canImport(UIKit) && !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?
@@ -73,12 +76,7 @@ struct OfflinePlayerView: View {
             if let currentSubtitleText {
                 VStack {
                     Spacer()
-                    Text(currentSubtitleText)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
+                    SubtitleText(text: currentSubtitleText, size: subtitleTextSize, color: subtitleTextColor, background: subtitleBackgroundStyle)
                         .padding(.horizontal, 24)
                         .padding(.bottom, isControlsVisible ? 110 : 32)
                 }
