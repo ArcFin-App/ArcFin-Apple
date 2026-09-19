@@ -221,26 +221,6 @@ struct OfflinePlayerView: View {
             Spacer()
             #if canImport(UIKit) && !os(tvOS)
             AirPlayButton().frame(width: 30, height: 30)
-            if AVPictureInPictureController.isPictureInPictureSupported() {
-                Button { vlcPipController?.toggle() } label: {
-                    Image(systemName: "pip.enter")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                }
-            }
-            Button { togglePlayerOrientation() } label: {
-                Image(systemName: "rotate.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-            }
-            Button { isFillScreen.toggle() } label: {
-                Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(isFillScreen ? DT.Color.accent : .white)
-                    .frame(width: 32, height: 32)
-            }
             #endif
             if !downloadedItem.subtitleFileNames.isEmpty {
                 Button { showTrackMenu = true } label: {
@@ -250,6 +230,27 @@ struct OfflinePlayerView: View {
                         .frame(width: 32, height: 32)
                 }
             }
+            #if canImport(UIKit) && !os(tvOS)
+            Menu {
+                if AVPictureInPictureController.isPictureInPictureSupported() {
+                    Button { vlcPipController?.toggle() } label: {
+                        Label("Picture in Picture", systemImage: "pip.enter")
+                    }
+                }
+                Button { togglePlayerOrientation() } label: {
+                    Label("Rotate", systemImage: "rotate.right")
+                }
+                Button { isFillScreen.toggle() } label: {
+                    Label(isFillScreen ? "Fit to Screen" : "Fill Screen",
+                          systemImage: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+            }
+            #endif
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 8)

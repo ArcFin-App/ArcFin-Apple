@@ -78,76 +78,64 @@ extension PlayerView {
             #if canImport(UIKit) && !os(tvOS)
             AirPlayButton()
                 .frame(width: 30, height: 30)
-
-            if isPiPSupported {
-                Button { togglePiP() } label: {
-                    Image(systemName: "pip.enter")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                }
-            }
             #endif
 
-            #if canImport(UIKit) && !os(tvOS)
-            Button { toggleOrientation() } label: {
-                Image(systemName: "rotate.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-            }
+            moreMenu
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, 8)
+    }
 
+    // Everything besides Cast/AirPlay (which are native system widgets, not plain buttons)
+    // lives behind a single icon — with SyncPlay, Chapters, subtitles, speed, quality, PiP,
+    // rotate and fill-screen all as separate top-bar icons, the HStack was routinely wider
+    // than the screen on a phone, pushing later buttons (and the whole row) off the edge.
+    private var moreMenu: some View {
+        Menu {
+            #if canImport(UIKit) && !os(tvOS)
+            if isPiPSupported {
+                Button { togglePiP() } label: {
+                    Label("Picture in Picture", systemImage: "pip.enter")
+                }
+            }
+            Button { toggleOrientation() } label: {
+                Label("Rotate", systemImage: "rotate.right")
+            }
             Button { isFillScreen.toggle() } label: {
-                Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(isFillScreen ? DT.Color.accent : .white)
-                    .frame(width: 32, height: 32)
+                Label(isFillScreen ? "Fit to Screen" : "Fill Screen",
+                      systemImage: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
             }
             #endif
 
             if chapterListEnabled, !chapters.isEmpty {
                 Button { showChapterMenu = true } label: {
-                    Image(systemName: "list.bullet")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
+                    Label("Chapters", systemImage: "list.bullet")
                 }
             }
 
             #if !os(tvOS)
             if syncPlayEnabled {
                 Button { showSyncPlayMenu = true } label: {
-                    Image(systemName: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(syncPlayManager.isInGroup ? DT.Color.accent : .white)
-                        .frame(width: 32, height: 32)
+                    Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }
             }
             #endif
 
             Button { showTrackMenu = true } label: {
-                Image(systemName: "captions.bubble")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
+                Label("Subtitles & Audio", systemImage: "captions.bubble")
             }
-
             Button { showRateMenu = true } label: {
-                Image(systemName: "gauge.with.dots.needle.67percent")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
+                Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
             }
-
             Button { showQualityMenu = true } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
+                Label("Quality", systemImage: "slider.horizontal.3")
             }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 32, height: 32)
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, 8)
     }
 
     private var episodeSubtitle: String? {
