@@ -83,7 +83,36 @@ final class DownloadManager: NSObject {
 
     func configure(modelContext: ModelContext) {
         self.modelContext = modelContext
+        // `session` was only ever touched lazily, on the first actual download action —
+        // meaning after a relaunch (e.g. the app was killed while a background download
+        // was in flight), nothing registered this session's delegate until the user
+        // happened to start/cancel some other download, so a task that had already
+        // finished or failed while the app wasn't running sat undelivered, possibly past
+        // the point the OS still had its temp file around. Touching it here forces that
+        // registration immediately at launch instead.
+        _ = session
+        #if canImport(ActivityKit) && os(iOS)
+        reconcileStaleActivitiesOnLaunch()
+        #endif
     }
+
+    #if canImport(ActivityKit) && os(iOS)
+    /// A Live Activity survives independently of this (fresh, per-launch) DownloadManager
+    /// instance — if the app was killed mid-download and relaunched, the activity from
+    /// before is still sitting there even though activeItemIds/pendingQueue start empty
+    /// again, looking exactly like "the queue is empty but the Live Activity is still up".
+    /// Gives any redelivered background-session events a moment to repopulate real state
+    /// first; only ends activities that are still unaccounted for after that.
+    private func reconcileStaleActivitiesOnLaunch() {
+        Task {
+            try? await Task.sleep(for: .seconds(4))
+            guard activeItemIds.isEmpty, pendingQueue.isEmpty else { return }
+            for activity in Activity<DownloadActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
+    #endif
 
     // MARK: - Live Activity
 
