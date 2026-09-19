@@ -10,9 +10,6 @@ struct SettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var showUsersSheet = false
-    #if !os(tvOS)
-    @State private var showSwitchServerSheet = false
-    #endif
     @State private var quickConnectCode = ""
     @State private var isAuthorizingQC = false
     @State private var quickConnectResult: String?
@@ -23,23 +20,21 @@ struct SettingsView: View {
     @State private var listID = UUID()
     #endif
 
-    // MARK: - Persisted preferences
-
+    // MARK: - Persisted preferences (tvOS's single-page layout only — the iOS/iPadOS hub
+    // below reads the same keys from each dedicated sub-screen instead).
+#if os(tvOS)
     @AppStorage("videoQuality")       private var videoQuality    = VideoQuality.max
     @AppStorage("playbackEngine")     private var playbackEngine  = PlaybackEngineKind.auto
     @AppStorage("autoPlayNext")       private var autoPlayNext    = true
     @AppStorage("skipIntro")          private var skipIntro       = false
     @AppStorage("skipCredits")        private var skipCredits     = false
     @AppStorage("subtitleDefault")    private var subtitleDefault = false
-    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
-
     @AppStorage("wifiOnly")           private var wifiOnly          = true
     @AppStorage("downloadQuality")    private var downloadQuality   = VideoQuality.max
-
     @AppStorage("notifyNewContent")   private var notifyNewContent  = true
     @AppStorage("notifyDownload")     private var notifyDownload    = true
-
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
+#endif
     @AppStorage("seerrURL")            private var seerrURL             = ""
     @AppStorage("streamystatsURL")     private var streamystatsURL      = ""
 
@@ -47,15 +42,11 @@ struct SettingsView: View {
         List {
             profileSection
 
+#if os(tvOS)
             // ── Quick Connect ────────────────────────────────────────────
-#if !os(tvOS)
             Section {
                 HStack(spacing: 10) {
                     TextField("Code", text: $quickConnectCode)
-                        #if os(iOS)
-                        .keyboardType(.numberPad)
-                        .textInputAutocapitalization(.characters)
-                        #endif
                         .autocorrectionDisabled()
                     Button {
                         authorizeQuickConnect()
@@ -77,7 +68,6 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
-#endif
 
             // ── Playback ─────────────────────────────────────────────────
             Section {
@@ -100,23 +90,6 @@ struct SettingsView: View {
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
                 Toggle("Skip Credits Automatically", isOn: $skipCredits)
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
-#if !os(tvOS)
-                NavigationLink {
-                    CodecProfileSettingsView()
-                } label: {
-                    Text("Codec Compatibility")
-                }
-                NavigationLink {
-                    PlayerFeaturesSettingsView()
-                } label: {
-                    Text("Player Features")
-                }
-                NavigationLink {
-                    SubtitleStyleSettingsView()
-                } label: {
-                    Text("Subtitle Style")
-                }
-#endif
             } header: {
                 sectionHeader("Playback", icon: "play.circle")
             }
@@ -141,83 +114,28 @@ struct SettingsView: View {
                 sectionHeader("Notifications", icon: "bell")
             }
 
-            // ── Appearance ───────────────────────────────────────────────
-#if !os(tvOS)
-            Section {
-                NavigationLink {
-                    AppearanceView()
-                } label: {
-                    Text("Appearance")
-                }
-            } header: {
-                sectionHeader("Appearance", icon: "paintbrush")
-            }
-#endif
-
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow
-#if os(tvOS)
                 Button { showUsersSheet = true } label: {
                     Text("Switch Server")
                 }
                 .listRowBackground(Color.clear)
-#else
-                Button { showSwitchServerSheet = true } label: {
-                    Text("Switch Server")
-                }
-                .disabled(distinctServerCount <= 1)
-#endif
                 NavigationLink {
                     AddServerFlowView()
                 } label: {
                     Text("Add Server")
                 }
-#if os(tvOS)
                 .listRowBackground(Color.clear)
-#endif
-#if !os(tvOS)
-                NavigationLink {
-                    ServerSettingsView()
-                } label: {
-                    Text("Server Settings")
-                }
-                if authManager.isAdmin {
-                    NavigationLink {
-                        AdminSessionsView()
-                    } label: {
-                        Text("Active Sessions")
-                    }
-                }
-#endif
             } header: {
                 sectionHeader("Account & Server", icon: "person.badge.key")
             }
-
-            // ── Offline ──────────────────────────────────────────────────
-#if os(iOS)
-            Section {
-                // No separate "Downloads" link here — turning this on already replaces the
-                // whole app with the downloads screen, so a link to the same place inside
-                // Settings (which offline mode is about to leave) was redundant.
-                Toggle("Offline Mode", isOn: $offlineModeEnabled)
-            } header: {
-                sectionHeader("Offline", icon: "arrow.down.circle")
-            } footer: {
-                Text("Offline Mode shows only your downloaded content — no connection to your server is used or needed.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-#endif
 
             // ── Plugins ──────────────────────────────────────────────────
             Section {
                 Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
                 NavigationLink {
                     SeerrPluginView()
-#if os(iOS)
-                        .toolbar(.hidden, for: .tabBar)
-#endif
                 } label: {
                     HStack {
                         Text("Seerr")
@@ -225,14 +143,9 @@ struct SettingsView: View {
                         seerrStatusPill
                     }
                 }
-#if os(tvOS)
                 .listRowBackground(Color.clear)
-#endif
                 NavigationLink {
                     StreamystatsPluginView()
-#if os(iOS)
-                        .toolbar(.hidden, for: .tabBar)
-#endif
                 } label: {
                     HStack {
                         Text("Streamystats")
@@ -242,12 +155,49 @@ struct SettingsView: View {
                         }
                     }
                 }
-#if os(tvOS)
                 .listRowBackground(Color.clear)
-#endif
             } header: {
                 sectionHeader("Plugins", icon: "puzzlepiece.extension")
             }
+#else
+            // Grouped hub — each row below pushes to its own focused screen instead of
+            // stacking every preference into one long page.
+            Section {
+                NavigationLink {
+                    PlaybackSettingsView()
+                } label: {
+                    settingsRow("Playback", icon: "play.circle")
+                }
+                NavigationLink {
+                    DownloadsSettingsView()
+                } label: {
+                    settingsRow("Downloads", icon: "arrow.down.circle")
+                }
+                NavigationLink {
+                    AppearanceView()
+                } label: {
+                    settingsRow("Appearance", icon: "paintbrush")
+                }
+                NavigationLink {
+                    NotificationsSettingsView()
+                } label: {
+                    settingsRow("Notifications", icon: "bell")
+                }
+            }
+
+            Section {
+                NavigationLink {
+                    ServerAccountSettingsView()
+                } label: {
+                    settingsRow("Server", icon: "person.badge.key")
+                }
+                NavigationLink {
+                    IntegrationsSettingsView()
+                } label: {
+                    settingsRow("Integrations", icon: "puzzlepiece.extension")
+                }
+            }
+#endif
 
             // ── About ────────────────────────────────────────────────────
             Section {
@@ -258,9 +208,9 @@ struct SettingsView: View {
                     Text(buildNumber).foregroundStyle(.secondary)
                 }
                 NavigationLink {
-                    OpenSourceLicensesView()
+                    LicensesView()
                 } label: {
-                    Text("Open Source Licenses")
+                    Text("Licenses & Third-Party Notices")
                 }
 #if os(tvOS)
                 .listRowBackground(Color.clear)
@@ -317,20 +267,8 @@ struct SettingsView: View {
                 .presentationDragIndicator(.visible)
                 .preferredColorScheme(.dark)
         }
-        .sheet(isPresented: $showSwitchServerSheet) {
-            NavigationStack { SwitchServerView() }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .preferredColorScheme(.dark)
-        }
 #endif
     }
-
-    #if !os(tvOS)
-    private var distinctServerCount: Int {
-        Set(authManager.profiles.map { $0.baseURL.host ?? $0.baseURL.absoluteString }).count
-    }
-    #endif
 
     // MARK: - Profile section
 
@@ -358,8 +296,18 @@ struct SettingsView: View {
 
     private func initialsLabel(_ initials: String) -> some View {
         Text(initials)
-            .font(.system(size: 22, weight: .bold, design: .rounded))
+            .font(.system(size: 18, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
+    }
+
+    private func settingsRow(_ title: String, icon: String) -> some View {
+        Label {
+            Text(title).foregroundStyle(DT.Color.textPrimary)
+        } icon: {
+            Image(systemName: icon)
+                .foregroundStyle(DT.Color.accent)
+                .frame(width: 22)
+        }
     }
 
     private func profileCard(cred: ServerCredential) -> some View {
@@ -377,49 +325,45 @@ struct SettingsView: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
-                    .frame(width: 64, height: 64)
-                    .shadow(color: DT.Color.accent.opacity(0.4), radius: 12, y: 4)
+                    .frame(width: 52, height: 52)
+                    .shadow(color: DT.Color.accent.opacity(0.35), radius: 10, y: 3)
                 if let tag = cred.userImageTag {
-                    AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 130, token: cred.accessToken)) { phase in
+                    AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: initialsLabel(initials)
                         }
                     }
-                    .frame(width: 64, height: 64)
+                    .frame(width: 52, height: 52)
                     .clipShape(Circle())
                 } else {
                     initialsLabel(initials)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(cred.displayName)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 HStack(spacing: 4) {
                     Image(systemName: "server.rack")
-                        .font(.system(size: 11))
-                        .foregroundStyle(DT.Color.accent)
+                        .font(.system(size: 10))
+                        .foregroundStyle(DT.Color.textSecondary)
                     Text(cred.baseURL.host ?? cred.baseURL.absoluteString)
                         .font(.system(size: 13))
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color(hex: "10b981"))
-                        .frame(width: 6, height: 6)
-                    Text("Connected")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color(hex: "10b981"))
-                }
             }
 
             Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary.opacity(0.5))
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: DT.Radius.lg)
                 .fill(DT.Color.backgroundSecondary)

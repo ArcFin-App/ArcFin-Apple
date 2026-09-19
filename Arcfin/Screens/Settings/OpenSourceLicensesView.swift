@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct OpenSourceLicensesView: View {
+struct LicensesView: View {
     private struct License: Identifiable {
         let id = UUID()
         let name: String
@@ -59,14 +59,14 @@ struct OpenSourceLicensesView: View {
                     .padding(.vertical, 4)
                 }
             } footer: {
-                Text("Arcfin uses these open-source libraries. Each remains under its own license; using them does not require Arcfin's own source to be published.")
+                Text("Most of these are open-source libraries — each remains under its own license, and using them does not require Arcfin's own source to be published. A few (like the Google Cast SDK) are proprietary components listed here for attribution, not open source, as noted next to each.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
-        .navigationTitle("Open Source Licenses")
+        .navigationTitle("Licenses & Third-Party Notices")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
