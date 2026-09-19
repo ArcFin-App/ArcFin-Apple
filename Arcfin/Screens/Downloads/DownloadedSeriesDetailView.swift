@@ -226,6 +226,7 @@ struct DownloadedSeriesDetailView: View {
         } else {
             Button { playingItem = episode } label: {
                 episodeRowContent(episode)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .contextMenu {

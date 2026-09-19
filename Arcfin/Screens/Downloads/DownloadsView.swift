@@ -208,7 +208,9 @@ struct DownloadsView: View {
         } else {
             NavigationLink(value: DownloadedSeriesRef(seriesId: group.seriesId)) {
                 seriesRowContent(group)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
                     Label("Delete", systemImage: "trash")
@@ -237,7 +239,9 @@ struct DownloadsView: View {
         } else {
             NavigationLink(value: item) {
                 downloadRowContent(item)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) { pendingDelete = item } label: {
                     Label("Delete", systemImage: "trash")
