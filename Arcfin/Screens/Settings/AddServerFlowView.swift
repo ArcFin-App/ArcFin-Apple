@@ -44,9 +44,9 @@ struct AddServerFlowView: View {
             }
         }
         .animation(DT.Animation.standard, value: stepTag)
-        .navigationTitle("Add Server")
+        .navigationBarBackButtonHidden(true)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
     }
 

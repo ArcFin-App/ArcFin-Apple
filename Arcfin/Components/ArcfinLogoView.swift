@@ -4,33 +4,18 @@ struct ArcfinLogoView: View {
     var size: CGFloat = 52
 
     private var cornerRadius: CGFloat { size * 0.31 }
-    private var iconSize: CGFloat { size * 0.56 }
 
     var body: some View {
         VStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(
-                        LinearGradient(
-                            colors: [DT.Color.accentDeep, DT.Color.accent],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: size, height: size)
-                    .shadow(color: DT.Color.accent.opacity(0.4), radius: size * 0.4)
-                    .shadow(color: .black.opacity(0.6), radius: size * 0.25, y: size * 0.08)
+            Image("ArcfinLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                .shadow(color: DT.Color.accent.opacity(0.4), radius: size * 0.4)
+                .shadow(color: .black.opacity(0.6), radius: size * 0.25, y: size * 0.08)
 
-                FinIconShape()
-                    .stroke(.white, style: StrokeStyle(lineWidth: 2.5 * (iconSize / 28), lineCap: .round, lineJoin: .round))
-                    .frame(width: iconSize, height: iconSize)
-
-                FinCrossbarShape()
-                    .stroke(.white, style: StrokeStyle(lineWidth: 2.2 * (iconSize / 28), lineCap: .round))
-                    .frame(width: iconSize, height: iconSize)
-            }
-
-            Text("arcfin")
+            Text("Arcfin")
                 .font(.system(size: size * 0.42, weight: .heavy))
                 .foregroundStyle(.white)
                 .tracking(-0.8)

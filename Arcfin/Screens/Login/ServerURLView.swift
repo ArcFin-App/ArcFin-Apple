@@ -148,6 +148,8 @@ struct ServerURLView: View {
                     Text("Need help?").font(DT.Font.caption).foregroundStyle(DT.Color.textSecondary)
                     Button { showSetupGuide = true } label: {
                         Text("Setup guide").font(DT.Font.caption).foregroundStyle(.white).fontWeight(.medium)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .capsule)
                 }
