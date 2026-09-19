@@ -49,7 +49,7 @@ public final class DownloadedItem {
     public var played: Bool
     /// Set whenever position/played changes from offline playback — cleared once
     /// OfflineProgressSync (SyncEngine) has successfully reported it back to the server.
-    public var needsSync: Bool
+    public var needsSync: Bool = false
 
     public init(
         itemId: String, name: String, typeRaw: String, overview: String? = nil,
