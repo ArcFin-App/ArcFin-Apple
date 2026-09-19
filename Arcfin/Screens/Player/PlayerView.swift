@@ -9,6 +9,8 @@ import JellyfinAPI
 import MediaEngine
 import SwiftVLC
 import CastKit
+import Telemetry
+import os
 
 struct PlayerView: View {
     let item: MediaItem
@@ -823,6 +825,7 @@ struct PlayerView: View {
     }
 
     func toggleControls() {
+        Telemetry.logger(category: "PlayerZoomDebug").debug("tap: toggling controls, will become \(!isControlsVisible, privacy: .public)")
         withAnimation(DT.Animation.fast) { isControlsVisible.toggle() }
         if isControlsVisible { scheduleAutoHide() }
     }
