@@ -227,6 +227,27 @@ public struct JellyfinAuthClient: Sendable {
         return (try? JSONDecoder().decode(UserResp.self, from: data))?.primaryImageTag
     }
 
+    /// Whether this credential's user has server admin rights — gates the Active Sessions
+    /// screen. Not persisted on ServerCredential itself (keeps the keychain-stored shape
+    /// stable); callers re-check this once per sign-in/app-launch instead.
+    public func fetchIsAdministrator(credential: ServerCredential) async -> Bool {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
+        req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 8
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200
+        else { return false }
+        struct UserResp: Decodable {
+            struct Policy: Decodable {
+                let isAdministrator: Bool
+                enum CodingKeys: String, CodingKey { case isAdministrator = "IsAdministrator" }
+            }
+            let policy: Policy?
+            enum CodingKeys: String, CodingKey { case policy = "Policy" }
+        }
+        return (try? JSONDecoder().decode(UserResp.self, from: data))?.policy?.isAdministrator ?? false
+    }
+
     // MARK: - Helpers
 
     public func authHeader(token: String? = nil) -> String {

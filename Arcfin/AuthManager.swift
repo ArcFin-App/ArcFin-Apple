@@ -36,6 +36,9 @@ final class AuthManager {
     var state: AuthState = .unauthenticated
     var isChecking: Bool = true
     var profiles: [ServerCredential] = []
+    /// Not persisted — re-checked once per sign-in/cold launch (see checkStoredAuth/save).
+    /// Gates the Active Sessions settings screen.
+    var isAdmin: Bool = false
 
     let authClient = JellyfinAuthClient()
     private let keychain = KeychainStore()
@@ -79,6 +82,7 @@ final class AuthManager {
             self.upsert(updated)
             self.state = .authenticated(updated)
         }
+        refreshIsAdmin(for: cred)
     }
 
     // MARK: - Live Wi-Fi switching
@@ -208,6 +212,7 @@ final class AuthManager {
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
+        refreshIsAdmin(for: credential)
     }
 
     // MARK: - Multi-profile management
@@ -216,11 +221,24 @@ final class AuthManager {
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
+        refreshIsAdmin(for: credential)
     }
 
     func switchTo(_ credential: ServerCredential) {
         persist(active: credential)
         state = .authenticated(credential)
+        refreshIsAdmin(for: credential)
+    }
+
+    /// isAdmin isn't persisted per profile — every place that makes a credential the
+    /// active one re-checks it fresh so switching profiles can't show a stale value from
+    /// whichever profile was active before.
+    private func refreshIsAdmin(for credential: ServerCredential) {
+        isAdmin = false
+        Task { [weak self] in
+            guard let self else { return }
+            self.isAdmin = await self.authClient.fetchIsAdministrator(credential: credential)
+        }
     }
 
     func removeProfile(id: UUID) {

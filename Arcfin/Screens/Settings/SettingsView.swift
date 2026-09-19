@@ -172,6 +172,13 @@ struct SettingsView: View {
                 } label: {
                     Text("Server Settings")
                 }
+                if authManager.isAdmin {
+                    NavigationLink {
+                        AdminSessionsView()
+                    } label: {
+                        Text("Active Sessions")
+                    }
+                }
 #endif
             } header: {
                 sectionHeader("Account & Server", icon: "person.badge.key")

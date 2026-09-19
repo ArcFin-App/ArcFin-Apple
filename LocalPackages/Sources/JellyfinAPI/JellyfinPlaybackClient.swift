@@ -71,6 +71,19 @@ public struct JellyfinPlaybackInfo: Sendable {
     }
 }
 
+/// One row of GET /Sessions — a currently-connected client, playing or idle.
+public struct JellyfinSession: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let userName: String?
+    public let deviceName: String
+    public let clientName: String
+    public let nowPlayingItemName: String?
+    public let isPaused: Bool
+    public let positionTicks: Int64?
+    public let runTimeTicks: Int64?
+    public let lastActivityDate: Date?
+}
+
 /// Caps applied when the user overrides automatic quality — nil means uncapped/Auto.
 public struct StreamQualityCap: Sendable, Equatable {
     public let maxBitrate: Int?      // bits per second
@@ -289,6 +302,23 @@ extension JellyfinMediaClient {
         return (try? JSONDecoder().decode(Segment.self, from: data))?.end
     }
 
+    // MARK: - Active sessions (admin)
+
+    /// GET /Sessions — every active session server-wide, not just this user's. Jellyfin
+    /// itself returns 403 for a non-admin caller, which callers should treat the same as
+    /// an empty result (the Admin Sessions screen is only reachable for admins anyway,
+    /// but a token that stops being admin mid-session shouldn't crash, just show nothing).
+    public func getActiveSessions(credential: ServerCredential, authHeader: String) async throws -> [JellyfinSession] {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions"))
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return try JSONDecoder().decode([SessionResponse].self, from: data).map { $0.toSession() }
+    }
+
     // MARK: - Device profile
 
     /// Two escape hatches for device-specific codec issues, surfaced as user-facing toggles
@@ -349,6 +379,66 @@ extension JellyfinMediaClient {
 }
 
 // MARK: - Private response decoders
+
+private struct SessionResponse: Decodable {
+    struct NowPlayingItem: Decodable {
+        let name: String?
+        let runTimeTicks: Int64?
+        enum CodingKeys: String, CodingKey {
+            case name = "Name"
+            case runTimeTicks = "RunTimeTicks"
+        }
+    }
+    struct PlayState: Decodable {
+        let isPaused: Bool?
+        let positionTicks: Int64?
+        enum CodingKeys: String, CodingKey {
+            case isPaused = "IsPaused"
+            case positionTicks = "PositionTicks"
+        }
+    }
+    let id: String
+    let userName: String?
+    let deviceName: String?
+    let client: String?
+    let nowPlayingItem: NowPlayingItem?
+    let playState: PlayState?
+    // Decoded as a raw string, not Date — Jellyfin's timestamp format (fractional-second
+    // ISO 8601) doesn't match JSONDecoder's default .deferredToDate strategy, and a single
+    // unparseable field on one session shouldn't fail decoding the whole session list.
+    let lastActivityDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id = "Id"
+        case userName = "UserName"
+        case deviceName = "DeviceName"
+        case client = "Client"
+        case nowPlayingItem = "NowPlayingItem"
+        case playState = "PlayState"
+        case lastActivityDate = "LastActivityDate"
+    }
+
+    func toSession() -> JellyfinSession {
+        // Created fresh per call rather than cached statically — this only ever runs over
+        // a short Sessions list (not a hot path), and ISO8601DateFormatter isn't Sendable,
+        // so a shared static instance would need extra ceremony for no real benefit here.
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plainFormatter = ISO8601DateFormatter()
+        let parsedDate = lastActivityDate.flatMap {
+            fractionalFormatter.date(from: $0) ?? plainFormatter.date(from: $0)
+        }
+        return JellyfinSession(
+            id: id, userName: userName, deviceName: deviceName ?? "Unknown Device",
+            clientName: client ?? "Unknown Client",
+            nowPlayingItemName: nowPlayingItem?.name,
+            isPaused: playState?.isPaused ?? false,
+            positionTicks: playState?.positionTicks,
+            runTimeTicks: nowPlayingItem?.runTimeTicks,
+            lastActivityDate: parsedDate
+        )
+    }
+}
 
 private struct PlaybackInfoResponse: Decodable {
     let mediaSources: [MediaSourceResponse]
