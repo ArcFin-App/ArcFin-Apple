@@ -20,6 +20,12 @@ struct DownloadsView: View {
 
     @State private var pendingDelete: DownloadedItem?
     @State private var pendingDeleteSeriesId: String?
+    // Owned here rather than relying on an ancestor's navigationDestination(for:) — this
+    // view is itself pushed non-root (Library's Downloads row, offline mode's stack), and a
+    // NavigationLink(value:) pushed from a nested view can silently fail to resolve against
+    // a destination declared further up the stack (see the See All fix, 306aaf3).
+    @State private var selectedItem: DownloadedItem?
+    @State private var selectedSeriesRef: DownloadedSeriesRef?
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
     #endif
@@ -128,13 +134,12 @@ struct DownloadsView: View {
             }
             #endif
         }
-        // Deliberately NOT declared here — DownloadsView is pushed as a non-root child in
-        // LibraryView/SettingsView's stacks (only root in ContentView's offline stack), and
-        // Apple's own guidance is that navigationDestination modifiers belong as close to a
-        // stack's root as possible; attached to a frequently re-rendering pushed view (this
-        // one re-renders on every @Query/download-progress change) it produced "declared
-        // earlier on the stack" warnings and dead NavigationLinks. See each host's own
-        // navigationDestination(for: DownloadedItem.self)/(for: DownloadedSeriesRef.self).
+        .navigationDestination(item: $selectedItem) { item in
+            DownloadedItemDetailView(item: item)
+        }
+        .navigationDestination(item: $selectedSeriesRef) { ref in
+            DownloadedSeriesDetailView(seriesId: ref.seriesId)
+        }
         .confirmationDialog("Delete this download?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
         ), titleVisibility: .visible) {
@@ -206,7 +211,7 @@ struct DownloadsView: View {
             }
             .buttonStyle(.plain)
         } else {
-            NavigationLink(value: DownloadedSeriesRef(seriesId: group.seriesId)) {
+            Button { selectedSeriesRef = DownloadedSeriesRef(seriesId: group.seriesId) } label: {
                 seriesRowContent(group)
                     .contentShape(Rectangle())
             }
@@ -218,9 +223,10 @@ struct DownloadsView: View {
             }
         }
         #else
-        NavigationLink(value: DownloadedSeriesRef(seriesId: group.seriesId)) {
+        Button { selectedSeriesRef = DownloadedSeriesRef(seriesId: group.seriesId) } label: {
             seriesRowContent(group)
         }
+        .buttonStyle(.plain)
         #endif
     }
 
@@ -237,7 +243,7 @@ struct DownloadsView: View {
             }
             .buttonStyle(.plain)
         } else {
-            NavigationLink(value: item) {
+            Button { selectedItem = item } label: {
                 downloadRowContent(item)
                     .contentShape(Rectangle())
             }
@@ -249,9 +255,10 @@ struct DownloadsView: View {
             }
         }
         #else
-        NavigationLink(value: item) {
+        Button { selectedItem = item } label: {
             downloadRowContent(item)
         }
+        .buttonStyle(.plain)
         #endif
     }
 

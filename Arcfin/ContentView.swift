@@ -65,12 +65,6 @@ struct ContentView: View {
             case .offline:
                 NavigationStack {
                     DownloadsView(goBackOnline: { offlineModeEnabled = false })
-                        .navigationDestination(for: DownloadedItem.self) { item in
-                            DownloadedItemDetailView(item: item)
-                        }
-                        .navigationDestination(for: DownloadedSeriesRef.self) { ref in
-                            DownloadedSeriesDetailView(seriesId: ref.seriesId)
-                        }
                         #if os(iOS)
                         // Offline mode replaces the whole app with DownloadsView, which
                         // previously had no way to reach "On This Device" — the only local
