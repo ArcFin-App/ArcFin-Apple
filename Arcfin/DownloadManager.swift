@@ -114,7 +114,8 @@ final class DownloadManager: NSObject {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let onWiFi = path.usesInterfaceType(.wifi)
-            Task { @MainActor in self?.isOnWiFi = onWiFi }
+            guard let self else { return }
+            Task { @MainActor in self.isOnWiFi = onWiFi }
         }
         monitor.start(queue: DispatchQueue(label: "arcfin.downloads.pathMonitor"))
         wifiPathMonitor = monitor
