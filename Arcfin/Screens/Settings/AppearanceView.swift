@@ -10,13 +10,18 @@ struct AppearanceView: View {
         List {
             Section {
                 Toggle("Merge Continue Watching & Up Next", isOn: $mergeContinueWatchingAndUpNext)
+                NavigationLink {
+                    HomeShelfSettingsView()
+                } label: {
+                    Text("Home Shelves")
+                }
             } header: {
                 Label("Home", systemImage: "house")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Shows Continue Watching and Up Next as a single combined row instead of two separate ones.")
+                Text("Shows Continue Watching and Up Next as a single combined row instead of two separate ones. Home Shelves lets you reorder or hide individual rows.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

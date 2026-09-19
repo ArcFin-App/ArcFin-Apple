@@ -103,6 +103,8 @@ struct HomeView: View {
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
+    @AppStorage(HomeShelfPrefs.orderKey) private var homeShelfOrderString = ""
+    @AppStorage(HomeShelfPrefs.activeKey) private var homeShelfActiveString = ""
     #if os(iOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @Query private var downloadedItems: [DownloadedItem]
@@ -160,6 +162,107 @@ struct HomeView: View {
     private var mergedContinueAndNextItems: [MediaItem] {
         var seen = Set<String>()
         return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
+    }
+
+    private var orderedVisibleShelves: [HomeShelf] {
+        let active = HomeShelfPrefs.active(from: homeShelfActiveString)
+        return HomeShelfPrefs.order(from: homeShelfOrderString).filter { active.contains($0) }
+    }
+
+    /// Sequencing/visibility is data-driven (order + on/off per HomeShelfSettingsView) —
+    /// each case's own content/empty-state gating is unchanged from before this existed.
+    @ViewBuilder
+    private func shelfView(for shelf: HomeShelf) -> some View {
+        switch shelf {
+        case .continueWatching:
+            if mergeContinueWatchingAndUpNext {
+                if !mergedContinueAndNextItems.isEmpty {
+                    ShelfRow(title: "Continue Watching", onSeeAll: {
+                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mergedContinueAndNextItems, isLandscape: true)
+                    }) {
+                        ForEach(mergedContinueAndNextItems) { item in
+                            continueWatchingCard(item)
+                        }
+                    }
+                }
+            } else if !mediaRepo.continueWatching.isEmpty {
+                ShelfRow(title: "Continue Watching", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mediaRepo.continueWatching, isLandscape: true)
+                }) {
+                    ForEach(mediaRepo.continueWatching) { item in
+                        continueWatchingCard(item)
+                    }
+                }
+            }
+        case .nextUp:
+            if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
+                ShelfRow(title: "Next Up", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Next Up", items: mediaRepo.nextUp, isLandscape: true)
+                }) {
+                    ForEach(mediaRepo.nextUp) { item in
+                        continueWatchingCard(item)
+                    }
+                }
+            }
+        case .recentlyAddedMovies:
+            if !mediaRepo.recentlyAddedMovies.isEmpty || !mediaRepo.connectionFailed {
+                ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Recently Added Movies", items: mediaRepo.recentlyAddedMovies)
+                }) {
+                    mediaShelfContent(mediaRepo.recentlyAddedMovies)
+                }
+            }
+        case .recentlyAddedShows:
+            if !mediaRepo.recentlyAddedShows.isEmpty || !mediaRepo.connectionFailed {
+                ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Recently Added Shows", items: mediaRepo.recentlyAddedShows)
+                }) {
+                    mediaShelfContent(mediaRepo.recentlyAddedShows)
+                }
+            }
+        case .recentlyReleasedMovies:
+            if !mediaRepo.recentlyReleasedMovies.isEmpty {
+                ShelfRow(title: "Recently Released Movies", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
+                }) {
+                    mediaShelfContent(mediaRepo.recentlyReleasedMovies)
+                }
+            }
+        case .recentlyAiredEpisodes:
+            if !mediaRepo.recentlyAiredEpisodes.isEmpty {
+                ShelfRow(title: "Recently Aired Episodes", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes, isLandscape: true)
+                }) {
+                    ForEach(mediaRepo.recentlyAiredEpisodes) { item in
+                        continueWatchingCard(item)
+                    }
+                }
+            }
+        case .watchAgain:
+            if !mediaRepo.watchAgain.isEmpty {
+                ShelfRow(title: "Watch Again", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+                }) {
+                    mediaShelfContent(mediaRepo.watchAgain)
+                }
+            }
+        case .seerrWatchlist:
+            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
+                seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
+            }
+        case .seerrTrending:
+            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
+                seerrShelf(title: "Trending", items: seerrRepo.trending)
+            }
+        case .seerrPopularMovies:
+            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
+                seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
+            }
+        case .seerrPopularSeries:
+            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
+                seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
+            }
+        }
     }
 
     @ViewBuilder
@@ -246,87 +349,8 @@ struct HomeView: View {
                             if mediaRepo.connectionFailed && !mediaRepo.isLoading {
                                 connectionFailedBanner
                             }
-                            if mergeContinueWatchingAndUpNext {
-                                if !mergedContinueAndNextItems.isEmpty {
-                                    ShelfRow(title: "Continue Watching", onSeeAll: {
-                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mergedContinueAndNextItems, isLandscape: true)
-                                    }) {
-                                        ForEach(mergedContinueAndNextItems) { item in
-                                            continueWatchingCard(item)
-                                        }
-                                    }
-                                }
-                            } else {
-                                if !mediaRepo.continueWatching.isEmpty {
-                                    ShelfRow(title: "Continue Watching", onSeeAll: {
-                                        seeAllShelf = SeeAllShelf(title: "Continue Watching", items: mediaRepo.continueWatching, isLandscape: true)
-                                    }) {
-                                        ForEach(mediaRepo.continueWatching) { item in
-                                            continueWatchingCard(item)
-                                        }
-                                    }
-                                }
-                                if !mediaRepo.nextUp.isEmpty {
-                                    ShelfRow(title: "Next Up", onSeeAll: {
-                                        seeAllShelf = SeeAllShelf(title: "Next Up", items: mediaRepo.nextUp, isLandscape: true)
-                                    }) {
-                                        ForEach(mediaRepo.nextUp) { item in
-                                            continueWatchingCard(item)
-                                        }
-                                    }
-                                }
-                            }
-                            if !mediaRepo.recentlyAddedMovies.isEmpty || !mediaRepo.connectionFailed {
-                                ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
-                                    seeAllShelf = SeeAllShelf(title: "Recently Added Movies", items: mediaRepo.recentlyAddedMovies)
-                                }) {
-                                    mediaShelfContent(mediaRepo.recentlyAddedMovies)
-                                }
-                            }
-                            if !mediaRepo.recentlyAddedShows.isEmpty || !mediaRepo.connectionFailed {
-                                ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
-                                    seeAllShelf = SeeAllShelf(title: "Recently Added Shows", items: mediaRepo.recentlyAddedShows)
-                                }) {
-                                    mediaShelfContent(mediaRepo.recentlyAddedShows)
-                                }
-                            }
-                            if !mediaRepo.recentlyReleasedMovies.isEmpty {
-                                ShelfRow(title: "Recently Released Movies", onSeeAll: {
-                                    seeAllShelf = SeeAllShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
-                                }) {
-                                    mediaShelfContent(mediaRepo.recentlyReleasedMovies)
-                                }
-                            }
-                            if !mediaRepo.recentlyAiredEpisodes.isEmpty {
-                                ShelfRow(title: "Recently Aired Episodes", onSeeAll: {
-                                    seeAllShelf = SeeAllShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes, isLandscape: true)
-                                }) {
-                                    ForEach(mediaRepo.recentlyAiredEpisodes) { item in
-                                        continueWatchingCard(item)
-                                    }
-                                }
-                            }
-                            if !mediaRepo.watchAgain.isEmpty {
-                                ShelfRow(title: "Watch Again", onSeeAll: {
-                                    seeAllShelf = SeeAllShelf(title: "Watch Again", items: mediaRepo.watchAgain)
-                                }) {
-                                    mediaShelfContent(mediaRepo.watchAgain)
-                                }
-                            }
-
-                            if seerrRepo.isConfigured && seerrDiscoverEnabled {
-                                if !seerrRepo.watchlist.isEmpty {
-                                    seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
-                                }
-                                if !seerrRepo.trending.isEmpty {
-                                    seerrShelf(title: "Trending", items: seerrRepo.trending)
-                                }
-                                if !seerrRepo.popularMovies.isEmpty {
-                                    seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
-                                }
-                                if !seerrRepo.popularTV.isEmpty {
-                                    seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
-                                }
+                            ForEach(orderedVisibleShelves) { shelf in
+                                shelfView(for: shelf)
                             }
                         }
                         .padding(.top, 12)
