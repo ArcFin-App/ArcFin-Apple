@@ -788,7 +788,7 @@ struct LibraryDetailView: View {
                             .contextMenu { quickLookMenu(item) }
 #endif
                             .onAppear {
-                                if item.id == items.last?.id && hasMore && !isLoadingMore {
+                                if shouldLoadMore(after: item) {
                                     Task { await loadMore() }
                                 }
                             }
@@ -815,7 +815,7 @@ struct LibraryDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
 #endif
-#if !os(tvOS)
+#if !os(macOS) && !os(tvOS)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showFilterSheet = true } label: {
@@ -848,6 +848,10 @@ struct LibraryDetailView: View {
 
     private func navTarget(for item: MediaItem) -> LibraryNavTarget {
         item.type == .boxSet ? .collection(item) : .media(item)
+    }
+
+    private func shouldLoadMore(after item: MediaItem) -> Bool {
+        item.id == items.last?.id && hasMore && !isLoadingMore
     }
 
     private func libraryItemCard(_ item: MediaItem) -> some View {
@@ -969,7 +973,7 @@ struct LibraryDetailView: View {
 
 // MARK: - Library filter sheet
 
-#if !os(tvOS)
+#if !os(macOS) && !os(tvOS)
 struct LibraryFilterSheet: View {
     let availableGenres: [String]
     let availableYears: [Int]

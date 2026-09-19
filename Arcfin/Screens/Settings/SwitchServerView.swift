@@ -52,7 +52,9 @@ struct SwitchServerView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .navigationTitle("Switch Server")
+    #if !os(macOS)
         .navigationBarTitleDisplayMode(.inline)
+    #endif
         .navigationDestination(for: ServerGroup.self) { group in
             List {
                 ForEach(group.profiles) { profile in
@@ -65,7 +67,9 @@ struct SwitchServerView: View {
             .arcfinListStyle()
             .background(DT.Color.backgroundPrimary)
             .navigationTitle(group.host)
+#if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
+#endif
         }
         .task { await loadPINStates() }
         .sheet(item: $switchTarget) { target in
