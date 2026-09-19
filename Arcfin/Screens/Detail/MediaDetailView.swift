@@ -43,6 +43,9 @@ struct MediaDetailView: View {
     @State private var pendingPlaybackChoice: PlaybackChoice?
     @State private var offlinePlaybackTarget: DownloadedItem?
     @State private var offlineStartOverride: Int64?
+    /// Surfaces a season download failure that would otherwise only show up as a raw
+    /// NSURLError buried in per-episode state nobody's looking at during a bulk download.
+    @State private var seasonDownloadErrorMessage: String?
 
     private struct PlaybackChoice: Identifiable {
         let id = UUID()
@@ -132,6 +135,23 @@ struct MediaDetailView: View {
         .fullScreenCover(item: $offlinePlaybackTarget) { downloaded in
             OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: offlineStartOverride)
         }
+        .alert("Download Failed", isPresented: Binding(
+            get: { seasonDownloadErrorMessage != nil }, set: { if !$0 { seasonDownloadErrorMessage = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(seasonDownloadErrorMessage ?? "")
+        }
+        .onChange(of: downloadManager.errors) { _, newErrors in
+            guard seasonDownloadErrorMessage == nil else { return }
+            for episode in episodes {
+                if let raw = newErrors[episode.id] {
+                    seasonDownloadErrorMessage = friendlyDownloadError(raw)
+                    downloadManager.errors[episode.id] = nil
+                    break
+                }
+            }
+        }
         #endif
 #if os(iOS)
         .fullScreenCover(item: $playbackRequest) { request in
@@ -217,6 +237,19 @@ struct MediaDetailView: View {
     private func fetchDownloadedItem(itemId: String) -> DownloadedItem? {
         let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
         return try? modelContext.fetch(descriptor).first
+    }
+
+    /// The raw error DownloadManager surfaces per-item is a real but unhelpful string
+    /// (e.g. "Download failed: The operation couldn't be completed. (NSURLErrorDomain
+    /// error -1017.)") — translated into something a user can actually act on.
+    private func friendlyDownloadError(_ raw: String) -> String {
+        if raw.contains("-1017") {
+            return "One of the episodes couldn't be downloaded because of a network hiccup mid-transfer. Try downloading it again — if it keeps happening, check your connection and available storage."
+        }
+        if raw.localizedCaseInsensitiveContains("permission") {
+            return "One of the episodes couldn't be downloaded — this account doesn't have permission to download media. Ask your Jellyfin admin to enable it."
+        }
+        return "One of the episodes in this season failed to download: \(raw)"
     }
     #endif
 
