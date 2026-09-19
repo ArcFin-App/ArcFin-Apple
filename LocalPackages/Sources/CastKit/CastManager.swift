@@ -24,6 +24,13 @@ public final class CastManager: NSObject {
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
     public private(set) var deviceName: String?
+    /// Updated on every GCKRemoteMediaClient status tick (at least once/second while
+    /// playing) rather than read on demand — by the time a session actually ends,
+    /// `currentSession` is already nil, so `currentPositionSeconds()` can no longer see
+    /// where playback left off. This is what local playback resumes from after a cast
+    /// session ends. Cleared at the start of the next session so a stale value never leaks
+    /// into it.
+    public private(set) var lastKnownPositionSeconds: TimeInterval?
 
     private var didStart = false
 
@@ -134,6 +141,7 @@ extension CastManager: GCKSessionManagerListener {
             isConnecting = false
             isConnected = true
             deviceName = name
+            lastKnownPositionSeconds = nil
         }
     }
 
@@ -144,6 +152,7 @@ extension CastManager: GCKSessionManagerListener {
             isConnecting = false
             isConnected = true
             deviceName = name
+            lastKnownPositionSeconds = nil
         }
     }
 
@@ -168,8 +177,10 @@ extension CastManager: GCKSessionManagerListener {
 extension CastManager: GCKRemoteMediaClientListener {
     public nonisolated func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
         let paused = mediaStatus?.playerState == .paused
+        let position = mediaStatus?.streamPosition
         MainActor.assumeIsolated {
             isPaused = paused
+            if let position { lastKnownPositionSeconds = position }
         }
     }
 }

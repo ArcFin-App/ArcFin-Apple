@@ -68,28 +68,79 @@ extension PlayerView {
 
             Spacer()
 
-            #if canImport(GoogleCast)
-            if castEnabled, CastManager.shared.isCastAvailable {
-                CastButton()
-                    .frame(width: 24, height: 24)
-            }
-            #endif
-
             #if canImport(UIKit) && !os(tvOS)
-            AirPlayButton()
-                .frame(width: 30, height: 30)
+            quickActionIcons
             #endif
 
             moreMenu
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 8)
+        #if canImport(UIKit) && !os(tvOS)
+        .background(routeButtonHost)
+        #endif
     }
 
-    // Everything besides Cast/AirPlay (which are native system widgets, not plain buttons)
-    // lives behind a single icon — with SyncPlay, Chapters, subtitles, speed, quality, PiP,
-    // rotate and fill-screen all as separate top-bar icons, the HStack was routinely wider
-    // than the screen on a phone, pushing later buttons (and the whole row) off the edge.
+    // MARK: - Quick-access controls
+
+    #if canImport(UIKit) && !os(tvOS)
+    private struct QuickAction: Identifiable {
+        let id: String
+        let icon: String
+        let perform: () -> Void
+    }
+
+    /// Rotate/Fill/Chapters used to live in the overflow menu — moved out here since
+    /// they're used far more often than the menu's other contents. Portrait only has room
+    /// for 3; landscape has room for 5, so Subtitles/Speed join as quick shortcuts there
+    /// too (they stay reachable from the menu either way).
+    private var quickActionItems: [QuickAction] {
+        var items: [QuickAction] = [
+            QuickAction(id: "rotate", icon: "rotate.right") { toggleOrientation() },
+            QuickAction(
+                id: "fill",
+                icon: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+            ) { isFillScreen.toggle() },
+        ]
+        if chapterListEnabled, !chapters.isEmpty {
+            items.append(QuickAction(id: "chapters", icon: "list.bullet") { showChapterMenu = true })
+        }
+        items.append(QuickAction(id: "tracks", icon: "captions.bubble") { showTrackMenu = true })
+        items.append(QuickAction(id: "speed", icon: "gauge.with.dots.needle.67percent") { showRateMenu = true })
+        return items
+    }
+
+    private var quickActionIcons: some View {
+        HStack(spacing: 14) {
+            ForEach(quickActionItems.prefix(isLandscape ? 5 : 3)) { action in
+                Button(action: action.perform) {
+                    Image(systemName: action.icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                }
+            }
+        }
+    }
+
+    /// AVRoutePickerView/GCKUICastButton mounted off-screen so their real tap targets can
+    /// be fired from the overflow menu instead of showing as their own top-bar icons — see
+    /// RouteButtonBridge's doc comment.
+    private var routeButtonHost: some View {
+        ZStack {
+            AirPlayButton(bridge: routeBridge)
+            #if canImport(GoogleCast)
+            if castEnabled, CastManager.shared.isCastAvailable {
+                CastButton(bridge: routeBridge)
+            }
+            #endif
+        }
+        .frame(width: 1, height: 1)
+        .opacity(0.02)
+        .allowsHitTesting(false)
+    }
+    #endif
+
     private var moreMenu: some View {
         Menu {
             #if canImport(UIKit) && !os(tvOS)
@@ -98,20 +149,31 @@ extension PlayerView {
                     Label("Picture in Picture", systemImage: "pip.enter")
                 }
             }
-            Button { toggleOrientation() } label: {
-                Label("Rotate", systemImage: "rotate.right")
+            #endif
+
+            #if canImport(GoogleCast)
+            if castEnabled, CastManager.shared.isCastAvailable {
+                Button { routeBridge.fireCast() } label: {
+                    Label("Cast", systemImage: "tv")
+                }
             }
-            Button { isFillScreen.toggle() } label: {
-                Label(isFillScreen ? "Fit to Screen" : "Fill Screen",
-                      systemImage: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+            #endif
+            #if canImport(UIKit) && !os(tvOS)
+            Button { routeBridge.fireAirPlay() } label: {
+                Label("AirPlay", systemImage: "airplayvideo")
             }
             #endif
 
+            // Rotate/Fill Screen/Chapters live as quick-access icons in the top bar on
+            // iOS/iPadOS instead (see quickActionIcons) — tvOS has no equivalent row, so
+            // Chapters stays reachable here for that platform only.
+            #if os(tvOS)
             if chapterListEnabled, !chapters.isEmpty {
                 Button { showChapterMenu = true } label: {
                     Label("Chapters", systemImage: "list.bullet")
                 }
             }
+            #endif
 
             #if !os(tvOS)
             if syncPlayEnabled {
@@ -141,7 +203,7 @@ extension PlayerView {
         }
     }
 
-    private var episodeSubtitle: String? {
+    var episodeSubtitle: String? {
         guard item.type == .episode, let series = item.seriesName else { return nil }
         let s = item.parentIndexNumber.map { "S\($0)" } ?? ""
         let e = item.indexNumber.map { "E\($0)" } ?? ""
@@ -180,7 +242,7 @@ extension PlayerView {
                         Image(systemName: "gobackward.10").font(.system(size: 20)).foregroundStyle(.white)
                     }
                     Button { togglePlayPause() } label: {
-                        Image(systemName: player.status == .playing ? "pause.fill" : "play.fill")
+                        Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 30))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
@@ -294,6 +356,17 @@ extension PlayerView {
     }
     #endif
 
+    /// `player.status` alone stays `.paused` for the whole duration of a Cast session (see
+    /// startCasting) — on platforms that support Cast, the icon needs to reflect the
+    /// receiver's actual state instead, or it reads as "stuck paused" while casting.
+    var playPauseIconIsPlaying: Bool {
+        #if canImport(UIKit) && !os(tvOS)
+        return isEffectivelyPlaying
+        #else
+        return player.status == .playing
+        #endif
+    }
+
     private var remainingLabel: String {
         let remaining = max(player.durationTicks - player.positionTicks, 0)
         return "-" + timeLabel(ticks: remaining)
@@ -310,26 +383,39 @@ extension PlayerView {
     // MARK: - Chapters
 
     var chapterListSheet: some View {
-        List {
-            ForEach(Array(chapters.enumerated()), id: \.offset) { index, chapter in
-                let isCurrent = currentChapterIndex == index
-                Button {
-                    showChapterMenu = false
-                    jumpToChapter(chapter)
-                } label: {
-                    HStack {
-                        Text(chapter.name ?? "Chapter \(index + 1)")
-                            .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
-                            .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
-                        Spacer()
-                        Text(timeLabel(ticks: chapter.startPositionTicks))
-                            .font(.system(size: 13, design: .monospaced))
-                            .foregroundStyle(DT.Color.textSecondary)
+        NavigationStack {
+            List {
+                ForEach(Array(chapters.enumerated()), id: \.offset) { index, chapter in
+                    let isCurrent = currentChapterIndex == index
+                    Button {
+                        showChapterMenu = false
+                        jumpToChapter(chapter)
+                    } label: {
+                        HStack {
+                            Text(chapter.name ?? "Chapter \(index + 1)")
+                                .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
+                                .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
+                            Spacer()
+                            Text(timeLabel(ticks: chapter.startPositionTicks))
+                                .font(.system(size: 13, design: .monospaced))
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
                     }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+            }
+            .navigationTitle("Chapters")
+            #if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showChapterMenu = false }
+                }
             }
         }
+        // Landscape sheets in .medium can render narrow enough that the drag indicator is
+        // the only way to dismiss and hard to grab — an explicit Done button always works.
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
@@ -351,6 +437,7 @@ extension PlayerView {
     // MARK: - Media info
 
     var mediaInfoSheet: some View {
+        NavigationStack {
         List {
             if let info = playbackInfo {
                 Section("Video") {
@@ -402,6 +489,16 @@ extension PlayerView {
         .scrollContentBackground(.hidden)
         #endif
         .background(DT.Color.backgroundPrimary)
+        .navigationTitle("Media Info")
+        #if !os(macOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { showInfoSheet = false }
+            }
+        }
+        }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
@@ -702,31 +799,47 @@ extension PlayerView {
     // MARK: - Casting
 
     #if canImport(GoogleCast)
-    var castingOverlay: some View {
-        VStack {
-            HStack(spacing: 10) {
+    /// Replaces the live video surface entirely while a Cast session is active (see
+    /// PlayerView.body) — a frozen last frame behind a small banner read as "stuck paused"
+    /// rather than "playing somewhere else", the actual complaint this fixes.
+    var castingPlaceholder: some View {
+        ZStack {
+            Color.black
+            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: Color.clear
+                    }
+                }
+                .overlay(.black.opacity(0.75))
+                .blur(radius: 40)
+            }
+            VStack(spacing: 18) {
                 Image(systemName: "tv")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 46, weight: .medium))
                     .foregroundStyle(DT.Color.accent)
-                Text("Casting to \(CastManager.shared.deviceName ?? "TV")")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white)
-                Spacer()
+                VStack(spacing: 6) {
+                    Text("Casting to \(CastManager.shared.deviceName ?? "TV")")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(item.name)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .lineLimit(1)
+                }
                 Button {
                     CastManager.shared.endSession()
                 } label: {
-                    Text("Stop")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.8))
+                    Text("Stop Casting")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .padding(.horizontal, 18).padding(.vertical, 9)
+                        .background(.white.opacity(0.15), in: Capsule())
+                        .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.top, 60)
-            Spacer()
         }
         .transition(.opacity)
     }

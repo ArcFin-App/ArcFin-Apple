@@ -138,26 +138,58 @@ func resetPlayerOrientation() {
     scene.requestGeometryUpdate(.iOS(interfaceOrientations: .all)) { _ in }
 }
 
+// MARK: - AirPlay / Cast route trigger bridge
+
+/// Cast and AirPlay are native system widgets (AVRoutePickerView, GCKUICastButton) that
+/// present their own picker UI internally on tap — they can't be dropped into a SwiftUI
+/// `Menu`'s content as a plain row. Instead both are mounted off-screen (see
+/// PlayerView+Controls' routeButtonHost) and this bridge fires their real tap target
+/// programmatically from an ordinary Menu button. GCKUICastButton IS a UIButton subclass,
+/// so sendActions is plain public UIKit API for it; AVRoutePickerView wraps a single
+/// internal UIButton it forwards taps to — reaching into its subviews to trigger that same
+/// button is a widely used, stable pattern (the view has had exactly that one-button
+/// internal structure since AVRoutePickerView shipped in iOS 11).
+@MainActor
+final class RouteButtonBridge {
+    weak var airPlayButton: UIButton?
+    weak var castButton: UIButton?
+
+    func fireAirPlay() { airPlayButton?.sendActions(for: .touchUpInside) }
+    func fireCast() { castButton?.sendActions(for: .touchUpInside) }
+}
+
 // MARK: - AirPlay route picker
 
 struct AirPlayButton: UIViewRepresentable {
+    // Defaulted so existing call sites that show this as a plain visible button (Library,
+    // OfflinePlayerView) don't need a bridge — only PlayerView's hidden/triggered mount does.
+    var bridge: RouteButtonBridge = RouteButtonBridge()
+
     func makeUIView(context: Context) -> AVRoutePickerView {
         let view = AVRoutePickerView()
         view.tintColor = .white
         view.activeTintColor = UIColor(DT.Color.accent)
         view.prioritizesVideoDevices = true
+        bridge.airPlayButton = view.subviews.compactMap { $0 as? UIButton }.first
         return view
     }
-    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
+    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {
+        if bridge.airPlayButton == nil {
+            bridge.airPlayButton = uiView.subviews.compactMap { $0 as? UIButton }.first
+        }
+    }
 }
 
 // MARK: - Chromecast button
 
 #if canImport(GoogleCast)
 struct CastButton: UIViewRepresentable {
+    var bridge: RouteButtonBridge = RouteButtonBridge()
+
     func makeUIView(context: Context) -> GCKUICastButton {
         let view = GCKUICastButton(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
         view.tintColor = .white
+        bridge.castButton = view
         return view
     }
     func updateUIView(_ uiView: GCKUICastButton, context: Context) {}

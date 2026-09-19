@@ -89,6 +89,9 @@ struct PlayerView: View {
     @State var volumeObservation: NSKeyValueObservation?
     @State var displayCriteriaMatcher = DisplayCriteriaMatcher()
     @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
+    @State var routeBridge = RouteButtonBridge()
+    @State var isLandscape = false
+    @State var nowPlayingManager = NowPlayingManager()
     #endif
 
     let client = JellyfinMediaClient()
@@ -116,19 +119,33 @@ struct PlayerView: View {
             Color.black.ignoresSafeArea()
 
             #if canImport(UIKit) && !os(tvOS)
-            GeometryReader { proxy in
-                videoSurface
-                    // GeometryReader only proposes its size to a child — it doesn't force it.
-                    // Without pinning explicitly to proxy.size, the UIViewRepresentable-hosted
-                    // AVPlayerLayer view is free to size itself off its own content instead of
-                    // the screen, which is what the "zoom" actually was: the surface's bounds
-                    // genuinely growing wider than the window, not an animation artifact.
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                    .contentShape(Rectangle())
-                    .gesture(tapGesture(width: proxy.size.width))
-                    .simultaneousGesture(dragGesture(width: proxy.size.width))
+            if CastManager.shared.isConnected {
+                // The receiver is playing the video, not this screen — leaving the last
+                // local frame frozen behind the controls read as "stuck paused" rather
+                // than "actively casting elsewhere", so the surface is swapped for a
+                // dedicated placeholder instead.
+                castingPlaceholder
+                    .ignoresSafeArea()
+            } else {
+                GeometryReader { proxy in
+                    videoSurface
+                        // GeometryReader only proposes its size to a child — it doesn't force
+                        // it. Without pinning explicitly to proxy.size, the UIViewRepresentable
+                        // -hosted AVPlayerLayer view is free to size itself off its own content
+                        // instead of the screen, which is what the "zoom" actually was: the
+                        // surface's bounds genuinely growing wider than the window, not an
+                        // animation artifact.
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .contentShape(Rectangle())
+                        .gesture(tapGesture(width: proxy.size.width))
+                        .simultaneousGesture(dragGesture(width: proxy.size.width))
+                        .onChange(of: proxy.size) { _, newSize in
+                            isLandscape = newSize.width > newSize.height
+                        }
+                        .onAppear { isLandscape = proxy.size.width > proxy.size.height }
+                }
+                .ignoresSafeArea()
             }
-            .ignoresSafeArea()
             #endif
 
             if let seekFeedback {
@@ -180,12 +197,6 @@ struct PlayerView: View {
                 upNextCard(nextEpisode)
             }
 
-            #if canImport(GoogleCast)
-            if CastManager.shared.isConnected {
-                castingOverlay
-            }
-            #endif
-
             if showStillWatchingPrompt {
                 stillWatchingOverlay
             }
@@ -204,8 +215,16 @@ struct PlayerView: View {
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
+            #if canImport(UIKit) && !os(tvOS)
+            updateNowPlayingInfo()
+            #endif
         }
-        .onChange(of: player.status) { _, newStatus in handleStatusChange(newStatus) }
+        .onChange(of: player.status) { _, newStatus in
+            handleStatusChange(newStatus)
+            #if canImport(UIKit) && !os(tvOS)
+            updateNowPlayingInfo()
+            #endif
+        }
         #if canImport(UIKit) && !os(tvOS)
         .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
         #endif
@@ -291,6 +310,90 @@ struct PlayerView: View {
         if newStatus == .ended { Task { await finishPlayback() } }
     }
 
+    // MARK: - Now Playing / AirPlay metadata
+
+    #if canImport(UIKit) && !os(tvOS)
+    /// Reflects Cast state too — the local player stays paused for the whole cast session
+    /// (see startCasting), so its own `.status` alone would show "paused" the entire time.
+    var isEffectivelyPlaying: Bool {
+        #if canImport(GoogleCast)
+        if CastManager.shared.isConnected { return !CastManager.shared.isPaused }
+        #endif
+        return player.status == .playing
+    }
+
+    func nowPlayingPlay() {
+        #if canImport(GoogleCast)
+        if CastManager.shared.isConnected { CastManager.shared.play(); return }
+        #endif
+        Task { await player.play() }
+    }
+
+    func nowPlayingPause() {
+        #if canImport(GoogleCast)
+        if CastManager.shared.isConnected { CastManager.shared.pause(); return }
+        #endif
+        Task { await player.pause() }
+    }
+
+    private func setUpNowPlayingCommandsIfNeeded() {
+        nowPlayingManager.configureCommands(
+            isPlaying: { isEffectivelyPlaying },
+            onPlay: nowPlayingPlay,
+            onPause: nowPlayingPause,
+            onSkip: { seconds in seek(by: seconds) },
+            onSeek: { seconds in performSeek(to: Int64(seconds * 10_000_000)) },
+            onNextTrack: item.type == .episode ? { playNextEpisode() } : nil
+        )
+    }
+
+    private func updateNowPlayingInfo() {
+        let durationSeconds = Double(player.durationTicks) / 10_000_000
+        guard durationSeconds > 0 else { return }
+        nowPlayingManager.update(
+            title: item.name,
+            artist: episodeSubtitle,
+            duration: durationSeconds,
+            elapsed: Double(player.positionTicks) / 10_000_000,
+            rate: isEffectivelyPlaying ? player.playbackRate : 0,
+            artwork: nowPlayingArtwork
+        )
+    }
+
+    @MainActor private static var artworkCache: [String: UIImage] = [:]
+    private var nowPlayingArtwork: UIImage? { Self.artworkCache[item.id] }
+
+    private func fetchAndApplyNowPlayingArtwork() async {
+        guard nowPlayingArtwork == nil,
+              let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600),
+              let (data, _) = try? await URLSession.shared.data(from: url),
+              let image = UIImage(data: data)
+        else { return }
+        Self.artworkCache[item.id] = image
+        updateNowPlayingInfo()
+    }
+
+    /// AirPlay-receiving hardware (Apple TV etc.) draws its own Now Playing card straight off
+    /// the AVPlayerItem's embedded metadata, not off MPNowPlayingInfoCenter — without this an
+    /// AirPlayed title showed only generic/blank info on the TV side.
+    private func airPlayExternalMetadata() -> [AVMetadataItem] {
+        var items: [AVMetadataItem] = []
+        let titleItem = AVMutableMetadataItem()
+        titleItem.identifier = .commonIdentifierTitle
+        titleItem.value = item.name as NSString
+        titleItem.extendedLanguageTag = "und"
+        items.append(titleItem)
+        if let subtitle = episodeSubtitle {
+            let artistItem = AVMutableMetadataItem()
+            artistItem.identifier = .commonIdentifierArtist
+            artistItem.value = subtitle as NSString
+            artistItem.extendedLanguageTag = "und"
+            items.append(artistItem)
+        }
+        return items
+    }
+    #endif
+
     private func handleMenuVisibilityChange(_ isOpen: Bool) {
         if isOpen {
             hideControlsTask?.cancel()
@@ -301,20 +404,33 @@ struct PlayerView: View {
 
     @ViewBuilder
     private var trackSelectionSheet: some View {
-        TrackSelectionSheet(
-            audioStreams: playbackInfo?.audioStreams ?? [],
-            subtitleStreams: playbackInfo?.subtitleStreams ?? [],
-            selectedAudioIndex: selectedAudioIndex,
-            selectedSubtitleIndex: selectedSubtitleIndex,
-            onSelectAudio: { index in
-                showTrackMenu = false
-                changeTrack(audioIndex: index)
-            },
-            onSelectSubtitle: { index in
-                showTrackMenu = false
-                changeTrack(subtitleIndex: .some(index))
+        NavigationStack {
+            TrackSelectionSheet(
+                audioStreams: playbackInfo?.audioStreams ?? [],
+                subtitleStreams: playbackInfo?.subtitleStreams ?? [],
+                selectedAudioIndex: selectedAudioIndex,
+                selectedSubtitleIndex: selectedSubtitleIndex,
+                onSelectAudio: { index in
+                    showTrackMenu = false
+                    changeTrack(audioIndex: index)
+                },
+                onSelectSubtitle: { index in
+                    showTrackMenu = false
+                    changeTrack(subtitleIndex: .some(index))
+                }
+            )
+            .navigationTitle("Subtitles & Audio")
+            #if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showTrackMenu = false }
+                }
             }
-        )
+        }
+        // Landscape sheets in .medium can render narrow enough that the drag indicator is
+        // the only way to dismiss and hard to grab — an explicit Done button always works.
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
@@ -465,7 +581,14 @@ struct PlayerView: View {
                 if matchContentFrameRate {
                     displayCriteriaMatcher.attach(player: avPlayer.player)
                 }
+                // Drives what an AirPlay-receiving device (Apple TV etc.) shows on its own
+                // Now Playing card — separate from MPNowPlayingInfoCenter below, which
+                // drives the sending device's own lock screen/Control Center.
+                avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
             }
+            setUpNowPlayingCommandsIfNeeded()
+            updateNowPlayingInfo()
+            Task { await fetchAndApplyNowPlayingArtwork() }
             #endif
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
@@ -525,9 +648,11 @@ struct PlayerView: View {
     }
 
     /// The session ended — pick local playback back up from wherever the receiver had
-    /// gotten to, best-effort (no precise handoff protocol, just "close enough").
+    /// gotten to. `currentPositionSeconds()` reads the live session and is already nil by
+    /// the time this runs (the session is gone), so this uses CastManager's own
+    /// continuously-updated `lastKnownPositionSeconds` instead — see its doc comment.
     private func resumeLocalPlaybackAfterCast() {
-        if let seconds = CastManager.shared.currentPositionSeconds() {
+        if let seconds = CastManager.shared.lastKnownPositionSeconds {
             Task {
                 await player.seek(to: Int64(seconds * 10_000_000))
                 await player.play()
@@ -562,6 +687,7 @@ struct PlayerView: View {
         volumeController?.teardown()
         volumeObservation?.invalidate()
         displayCriteriaMatcher.detach()
+        nowPlayingManager.clear()
         #endif
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
@@ -854,6 +980,12 @@ struct PlayerView: View {
                 lastLoadStartedAt = Date()
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
+                #if canImport(UIKit) && !os(tvOS)
+                if let avPlayer = player as? AVFoundationPlayer {
+                    avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
+                }
+                updateNowPlayingInfo()
+                #endif
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
             } catch {
                 errorMessage = "Couldn't \(errorContext): \(error.localizedDescription)"
