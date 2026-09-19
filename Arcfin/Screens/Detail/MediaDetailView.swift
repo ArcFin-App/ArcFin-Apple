@@ -699,7 +699,6 @@ struct MediaDetailView: View {
         if !seasons.isEmpty { seriesSection }
 
         // Trailers
-        if trailersEnabled, !trailers.isEmpty || remoteTrailer != nil { trailersSection }
 
         // Similar / recommended
         if !seerrRelatedItems.isEmpty {
@@ -1196,51 +1195,6 @@ struct MediaDetailView: View {
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
-            }
-        }
-        .padding(.bottom, DT.Spacing.md)
-    }
-
-    private var trailersSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("Trailers").padding(.horizontal, DT.Spacing.pagePad)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(trailers) { trailer in
-                        Button { playbackRequest = PlaybackRequest(item: trailer, startTicks: 0) } label: {
-                            PosterCard(
-                                title: trailer.name,
-                                subtitle: nil,
-                                imageURL: mediaRepo.imageURL(for: trailer)
-                            )
-                        }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
-                        .buttonStyle(.plain)
-#endif
-                    }
-                    if trailers.isEmpty, let remoteTrailer {
-                        Button { youTubeTrailer = remoteTrailer } label: {
-                            PosterCard(
-                                title: remoteTrailer.name ?? "Trailer",
-                                subtitle: "YouTube",
-                                imageURL: mediaRepo.imageURL(for: item)
-                            )
-                        }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
-                        .buttonStyle(.plain)
-#endif
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-#if os(tvOS)
-                .focusSection()
-#endif
             }
         }
         .padding(.bottom, DT.Spacing.md)
