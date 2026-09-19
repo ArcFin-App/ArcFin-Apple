@@ -90,7 +90,12 @@ struct OfflinePlayerView: View {
         .persistentSystemOverlays(.hidden)
         #endif
         .task { await setup() }
-        .onDisappear { savePosition(final: true) }
+        .onDisappear {
+            savePosition(final: true)
+            #if canImport(UIKit) && !os(tvOS)
+            resetPlayerOrientation()
+            #endif
+        }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
         }

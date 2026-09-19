@@ -180,7 +180,12 @@ struct PlayerView: View {
         .persistentSystemOverlays(.hidden)
         #endif
         .task { await setup() }
-        .onDisappear { Task { await teardown() } }
+        .onDisappear {
+            Task { await teardown() }
+            #if canImport(UIKit) && !os(tvOS)
+            resetPlayerOrientation()
+            #endif
+        }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)

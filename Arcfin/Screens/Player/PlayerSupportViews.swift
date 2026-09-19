@@ -120,6 +120,17 @@ func togglePlayerOrientation() {
     scene.requestGeometryUpdate(.iOS(interfaceOrientations: targetMask)) { _ in }
 }
 
+/// requestGeometryUpdate's mask sticks app-wide until something else calls it again — without
+/// this, using the rotate button and then leaving the player (any dismiss path) locks the
+/// whole app in landscape. Called unconditionally on player teardown, not just when the user
+/// actually tapped rotate, so it self-heals regardless of how the button was left.
+func resetPlayerOrientation() {
+    guard let scene = UIApplication.shared.connectedScenes
+        .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+    else { return }
+    scene.requestGeometryUpdate(.iOS(interfaceOrientations: .all)) { _ in }
+}
+
 // MARK: - AirPlay route picker
 
 struct AirPlayButton: UIViewRepresentable {
