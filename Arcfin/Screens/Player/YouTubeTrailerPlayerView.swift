@@ -17,7 +17,7 @@ struct YouTubeTrailerPlayerView: View {
         ZStack(alignment: .topLeading) {
             Color.black.ignoresSafeArea()
 
-            YouTubeEmbedWebView(url: embedURL)
+            YouTubeEmbedWebView(embedURL: embedURL)
                 .ignoresSafeArea()
 
             Button { dismiss() } label: {
@@ -35,7 +35,7 @@ struct YouTubeTrailerPlayerView: View {
 }
 
 private struct YouTubeEmbedWebView: UIViewRepresentable {
-    let url: URL
+    let embedURL: URL
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -45,7 +45,21 @@ private struct YouTubeEmbedWebView: UIViewRepresentable {
         webView.backgroundColor = .black
         webView.isOpaque = false
         webView.scrollView.isScrollEnabled = false
-        webView.load(URLRequest(url: url))
+        // Loading the embed URL directly as the top-level page (webView.load(URLRequest))
+        // is a different, unsupported context to YouTube's player than being hosted inside
+        // an actual <iframe> — that mismatch is what "video player configuration error"
+        // (error 153) actually means. Wrapping it in a minimal HTML document with a real
+        // youtube.com baseURL gives the iframe a proper embedding origin to validate against.
+        let html = """
+        <!DOCTYPE html><html><head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden;}
+        iframe{position:fixed;top:0;left:0;width:100%;height:100%;border:0;}</style>
+        </head><body>
+        <iframe src="\(embedURL.absoluteString)" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        </body></html>
+        """
+        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
         return webView
     }
 
