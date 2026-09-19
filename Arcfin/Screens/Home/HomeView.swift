@@ -13,6 +13,7 @@ import os
 struct MainTabView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(MediaRepository.self) private var mediaRepo
     #if os(tvOS)
     @State private var searchQuery = ""
     #else
@@ -77,18 +78,23 @@ struct MainTabView: View {
         .focusEffectDisabled()
         .preferredColorScheme(.dark)
 #else
-        TabView(selection: $selectedTab) {
-            ForEach(visibleTabs) { tab in
-                Tab(tab.title, systemImage: tab.icon, value: tab) {
-                    tabDestination(tab)
+        if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
+            NoConnectionView()
+                .preferredColorScheme(.dark)
+        } else {
+            TabView(selection: $selectedTab) {
+                ForEach(visibleTabs) { tab in
+                    Tab(tab.title, systemImage: tab.icon, value: tab) {
+                        tabDestination(tab)
+                    }
                 }
             }
-        }
-        .tabViewStyle(.sidebarAdaptable)
-        .preferredColorScheme(.dark)
-        // arcfin://downloads — from the download Live Activity's tap target.
-        .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
-            selectedTab = .browse
+            .tabViewStyle(.sidebarAdaptable)
+            .preferredColorScheme(.dark)
+            // arcfin://downloads — from the download Live Activity's tap target.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
+                selectedTab = .browse
+            }
         }
 #endif
     }

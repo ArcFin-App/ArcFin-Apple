@@ -25,6 +25,13 @@ final class MediaRepository {
     /// True when the last load couldn't reach the server at all (vs. a genuinely empty
     /// library) — HomeView surfaces this instead of silently rendering empty shelves.
     var connectionFailed: Bool = false
+    /// Whether there's anything at all to show — MainTabView uses this alongside
+    /// connectionFailed to decide between the full-screen NoConnectionView (nothing loaded
+    /// yet, e.g. cold launch with no network) and just an inline banner over stale-but-still
+    /// -useful content from an earlier successful load.
+    var hasAnyContent: Bool {
+        !libraries.isEmpty || !recentlyAdded.isEmpty || !continueWatching.isEmpty || !nextUp.isEmpty
+    }
 
     private(set) var baseURL: URL?
     private(set) var accessToken: String?
