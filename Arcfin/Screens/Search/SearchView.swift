@@ -74,12 +74,22 @@ struct SearchView: View {
                 ForEach(jellyfinResults) { item in
                     NavigationLink(value: item) {
                         gridCard(title: item.name, subtitle: item.productionYear.map { String($0) },
-                                 imageURL: mediaRepo.imageURL(for: item))
+                                 imageURL: posterImageURL(for: item))
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
+    }
+
+    /// An episode's own Primary image is a landscape screenshot — forced into this grid's
+    /// portrait 2:3 cards it rendered badly (cards visually collided). Episodes use their
+    /// series' portrait poster here instead, same as any other result.
+    private func posterImageURL(for item: MediaItem) -> URL? {
+        guard item.type == .episode, let seriesId = item.seriesId, let tag = item.seriesPrimaryImageTag,
+              let base = mediaRepo.baseURL, let token = mediaRepo.accessToken
+        else { return mediaRepo.imageURL(for: item) }
+        return JellyfinMediaClient.imageURL(baseURL: base, itemID: seriesId, tag: tag, type: .primary, fillWidth: 300, token: token)
     }
 
     // MARK: - Discover section
