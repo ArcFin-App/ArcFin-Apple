@@ -238,7 +238,17 @@ public struct RemoteTrailer: Sendable, Identifiable, Equatable {
             }
         }
         guard let videoId, !videoId.isEmpty else { return nil }
-        return URL(string: "https://www.youtube.com/embed/\(videoId)?playsinline=1&modestbranding=1&rel=0")
+        var comps = URLComponents(string: "https://www.youtube.com/embed/\(videoId)")!
+        // origin must match the WKWebView's own baseURL exactly — YouTube's player validates
+        // the embedding page's origin against it, and without a matching origin some videos
+        // fail with a generic "video player configuration error" (error 153).
+        comps.queryItems = [
+            .init(name: "playsinline", value: "1"),
+            .init(name: "modestbranding", value: "1"),
+            .init(name: "rel", value: "0"),
+            .init(name: "origin", value: "https://www.youtube.com"),
+        ]
+        return comps.url
     }
 }
 

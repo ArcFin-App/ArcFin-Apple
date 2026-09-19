@@ -14,21 +14,26 @@ struct YouTubeTrailerPlayerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
 
             YouTubeEmbedWebView(embedURL: embedURL)
                 .ignoresSafeArea()
 
+            // YouTube's own title/channel overlay bar sits top-leading when controls are
+            // visible, which used to sit right behind this button (barely visible against
+            // it) when this was in that same corner — top-trailing avoids that entirely,
+            // plus a solid background and a border so it stands out against any video frame.
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
-                    .background(.black.opacity(0.5), in: Circle())
+                    .background(.black.opacity(0.85), in: Circle())
+                    .overlay(Circle().stroke(.white.opacity(0.25), lineWidth: 1))
             }
             .padding(.top, 16)
-            .padding(.leading, 16)
+            .padding(.trailing, 16)
         }
         .statusBarHidden()
     }
@@ -49,9 +54,11 @@ private struct YouTubeEmbedWebView: UIViewRepresentable {
         // is a different, unsupported context to YouTube's player than being hosted inside
         // an actual <iframe> — that mismatch is what "video player configuration error"
         // (error 153) actually means. Wrapping it in a minimal HTML document fixes that.
-        // baseURL is intentionally nil, not youtube.com — a self-referential origin (as if
-        // youtube.com were embedding itself) is an unusual, non-standard third-party-embed
-        // context and risks tripping video-level embed checks for a different reason.
+        // baseURL here must be https://www.youtube.com, matching the embed URL's own
+        // `origin` query param (see youTubeEmbedURL) — this is the exact pattern Google's
+        // own official youtube-ios-player-helper library uses. A nil baseURL gives the
+        // iframe's requests an Origin of "null", which YouTube's player rejects with the
+        // same error 153 for a different reason (no matching/valid origin at all).
         let html = """
         <!DOCTYPE html><html><head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -61,7 +68,7 @@ private struct YouTubeEmbedWebView: UIViewRepresentable {
         <iframe src="\(embedURL.absoluteString)" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
         </body></html>
         """
-        webView.loadHTMLString(html, baseURL: nil)
+        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
         return webView
     }
 
