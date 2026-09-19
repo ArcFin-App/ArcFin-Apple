@@ -118,6 +118,13 @@ struct DownloadsView: View {
             }
             #if os(iOS)
             if goBackOnline == nil, !items.isEmpty {
+                if editMode.isEditing && !selection.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Delete (\(selection.count))", role: .destructive) {
+                            showBulkDeleteConfirm = true
+                        }
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button(editMode.isEditing ? "Done" : "Select") {
                         editMode = editMode.isEditing ? .inactive : .active
@@ -127,25 +134,6 @@ struct DownloadsView: View {
             }
             #endif
         }
-        #if os(iOS)
-        // A .bottomBar toolbar item here rendered underneath the floating tab bar
-        // (unreachable/unclickable) rather than above it — a manual safeAreaInset with
-        // explicit bottom padding for the tab bar's own height sidesteps that entirely.
-        .safeAreaInset(edge: .bottom) {
-            if editMode.isEditing && !selection.isEmpty {
-                Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
-                    Text("Delete \(selection.count) Selected")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.red, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.bottom, goBackOnline == nil ? DT.Size.tabBarHeight + 8 : 8)
-            }
-        }
-        #endif
         .navigationDestination(item: $selectedItem) { item in
             DownloadedItemDetailView(item: item)
         }

@@ -108,6 +108,13 @@ struct DownloadedSeriesDetailView: View {
         #endif
         .toolbar {
             #if os(iOS)
+            if editMode.isEditing && !selection.isEmpty {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Delete (\(selection.count))", role: .destructive) {
+                        showBulkDeleteConfirm = true
+                    }
+                }
+            }
             if !episodes.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(editMode.isEditing ? "Done" : "Select") {
@@ -118,24 +125,6 @@ struct DownloadedSeriesDetailView: View {
             }
             #endif
         }
-        #if os(iOS)
-        // See DownloadsView's own comment — a .bottomBar toolbar item here rendered
-        // underneath the floating tab bar when this is pushed from a tabbed stack.
-        .safeAreaInset(edge: .bottom) {
-            if editMode.isEditing && !selection.isEmpty {
-                Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
-                    Text("Delete \(selection.count) Selected")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.red, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.bottom, DT.Size.tabBarHeight + 8)
-            }
-        }
-        #endif
         .onAppear {
             if selectedSeason == nil { selectedSeason = seasonNumbers.first }
         }
