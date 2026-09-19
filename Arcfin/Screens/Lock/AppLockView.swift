@@ -81,12 +81,42 @@ struct AppLockView: View {
         }
     }
 
-    private func profileTile(_ profile: ServerCredential) -> some View {
-        let initials = profile.displayName
+    private func initials(for profile: ServerCredential) -> String {
+        profile.displayName
             .split(separator: " ").prefix(2)
             .compactMap { $0.first }
             .map { String($0).uppercased() }
             .joined()
+    }
+
+    @ViewBuilder
+    private func avatarContent(_ profile: ServerCredential) -> some View {
+        if let tag = profile.userImageTag {
+            let url = JellyfinMediaClient.userImageURL(baseURL: profile.baseURL, userID: profile.userID, tag: tag, fillWidth: 160, token: profile.accessToken)
+            AsyncImage(url: url) { phase in
+                if case .success(let img) = phase {
+                    img.resizable().scaledToFill()
+                } else {
+                    avatarInitials(profile)
+                }
+            }
+            .frame(width: 80, height: 80)
+            .clipShape(Circle())
+        } else {
+            avatarInitials(profile)
+        }
+    }
+
+    private func avatarInitials(_ profile: ServerCredential) -> some View {
+        Text(initials(for: profile))
+            .font(.system(size: 26, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+    }
+
+    private func profileTile(_ profile: ServerCredential) -> some View {
+        let isActive = profile.id == activeID
+        let hasPIN = pinStates[profile.id] == true
+        let ringColor: Color = isActive ? DT.Color.accent : .clear
 
         return VStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
@@ -97,22 +127,11 @@ struct AppLockView: View {
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         ))
                         .frame(width: 80, height: 80)
-                    if let tag = profile.userImageTag {
-                        AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: profile.baseURL, userID: profile.userID, tag: tag, fillWidth: 160, token: profile.accessToken)) { phase in
-                            switch phase {
-                            case .success(let img): img.resizable().scaledToFill()
-                            default: Text(initials).font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                            }
-                        }
-                        .frame(width: 80, height: 80)
-                        .clipShape(Circle())
-                    } else {
-                        Text(initials).font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                    }
+                    avatarContent(profile)
                 }
-                .overlay(Circle().stroke(profile.id == activeID ? DT.Color.accent : .clear, lineWidth: 3))
+                .overlay(Circle().stroke(ringColor, lineWidth: 3))
 
-                if pinStates[profile.id] == true {
+                if hasPIN {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(.white)
