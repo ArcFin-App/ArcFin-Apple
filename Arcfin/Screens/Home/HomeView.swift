@@ -116,6 +116,16 @@ struct HomeView: View {
     @State private var heroPlaybackRequest: HeroPlaybackRequest?
     @State private var seeAllShelf: SeeAllShelf?
     @State private var showOfflinePrompt = false
+    #if canImport(UIKit) && !os(tvOS)
+    // Keyed by heroItems index — only the current slide's trailer is ever fetched/played,
+    // and only after a short delay once it's actually the one on screen (see
+    // loadHeroVideoBackdrop), so swiping past several slides quickly doesn't fire off a
+    // burst of trailer lookups + stream negotiations for slides nobody paused on.
+    @State private var heroVideoBackdropIndex: Int?
+    @State private var heroVideoBackdropURL: URL?
+    @State private var heroVideoBackdropTask: Task<Void, Never>?
+    @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    #endif
 
     struct HeroPlaybackRequest: Identifiable {
         let id = UUID()
@@ -131,7 +141,7 @@ struct HomeView: View {
     }
     @State private var seerrRequestItem: SeerrItem? = nil
     @State private var deepLinkItemID: String? = nil
-    private let heroTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
+    private let heroTimer = Timer.publish(every: 8, on: .main, in: .common).autoconnect()
 
     /// 2 Continue Watching + 2 Up Next + 6 Recently Added — deduped in case the same item
     /// shows up in more than one list. TabView's page style only instantiates the current
@@ -431,6 +441,10 @@ struct HomeView: View {
             guard heroItems.count > 1 else { return }
             withAnimation(DT.Animation.slow) { heroIndex = (heroIndex + 1) % heroItems.count }
         }
+        #if canImport(UIKit) && !os(tvOS)
+        .onChange(of: heroIndex) { _, _ in loadHeroVideoBackdrop() }
+        .onAppear { loadHeroVideoBackdrop() }
+        #endif
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
@@ -661,19 +675,31 @@ struct HomeView: View {
     private func heroImage(item: MediaItem, index: Int, imageH: CGFloat, screenW: CGFloat) -> some View {
         let imageType: JellyfinImageType = usePortraitHero ? .primary : .backdrop
         let fillW = usePortraitHero ? 600 : 900
-        return Group {
-            if let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img.resizable().scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    default: heroGradient(for: index)
+        return ZStack {
+            Group {
+                if let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img):
+                            img.resizable().scaledToFill()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        default: heroGradient(for: index)
+                        }
                     }
+                } else {
+                    heroGradient(for: index)
                 }
-            } else {
-                heroGradient(for: index)
             }
+
+            // Layered on top of the still image rather than replacing it — the image is
+            // already loading/visible instantly, so the video only ever enhances it once
+            // its own fetch+negotiation finishes, instead of the slide going blank first.
+            #if canImport(UIKit) && !os(tvOS)
+            if heroVideoBackdropIndex == index, let videoURL = heroVideoBackdropURL {
+                HeroVideoBackdropView(url: videoURL)
+                    .transition(.opacity)
+            }
+            #endif
         }
         .frame(width: screenW, height: imageH)
         .clipped()
@@ -714,11 +740,32 @@ struct HomeView: View {
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.3), value: heroIndex)
 
-                Text(heroMeta(item))
-                    .font(.system(size: 12 * DT.Scale.font))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .padding(.top, 7)
+                HStack(spacing: 8) {
+                    if let rating = item.communityRating, rating > 0 {
+                        HStack(spacing: 3) {
+                            Image(systemName: "star.fill").font(.system(size: 10 * DT.Scale.font))
+                            Text(String(format: "%.1f", rating)).font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                        }
+                        .foregroundStyle(Color(hex: "f59e0b"))
+                    }
+                    Text(heroMeta(item))
+                        .font(.system(size: 12 * DT.Scale.font))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .padding(.top, 7)
+                .animation(nil, value: heroIndex)
+
+                if let pct = item.userData?.playedPercentage, pct > 0 {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(.white.opacity(0.25)).frame(height: 3)
+                            Capsule().fill(DT.Color.accent).frame(width: geo.size.width * CGFloat(min(pct / 100, 1)), height: 3)
+                        }
+                    }
+                    .frame(width: 120, height: 3)
+                    .padding(.top, 8)
                     .animation(nil, value: heroIndex)
+                }
             }
 
 #if os(tvOS)
@@ -805,6 +852,41 @@ struct HomeView: View {
         }
         return parts.joined(separator: " · ")
     }
+
+    // MARK: - Hero video backdrop
+
+    #if canImport(UIKit) && !os(tvOS)
+    /// Fetches (after a short pause, so quickly swiping past several slides doesn't fire a
+    /// burst of these) whether the current hero slide has a local trailer indexed on the
+    /// server, and if so resolves it to a real playable stream URL the same way the main
+    /// player does — reusing getPlaybackInfo rather than hand-building a stream URL, since
+    /// it already handles direct-play vs transcode negotiation correctly.
+    private func loadHeroVideoBackdrop() {
+        heroVideoBackdropTask?.cancel()
+        heroVideoBackdropURL = nil
+        heroVideoBackdropIndex = nil
+        guard heroVideoBackdropsEnabled, let item = heroItems[safe: heroIndex],
+              case .authenticated(let credential) = authManager.state
+        else { return }
+        let index = heroIndex
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        heroVideoBackdropTask = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            let client = JellyfinMediaClient()
+            guard let trailer = (try? await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1))?.first,
+                  !Task.isCancelled
+            else { return }
+            guard let info = try? await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: trailer.id),
+                  !Task.isCancelled, heroIndex == index
+            else { return }
+            withAnimation(.easeIn(duration: 0.6)) {
+                heroVideoBackdropURL = info.playURL
+                heroVideoBackdropIndex = index
+            }
+        }
+    }
+    #endif
 
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {

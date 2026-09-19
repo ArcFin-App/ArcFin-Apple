@@ -5,11 +5,17 @@ struct AppearanceView: View {
     @AppStorage("compactLibraryGrid") private var compactLibraryGrid = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
+    #if canImport(UIKit) && !os(tvOS)
+    @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    #endif
 
     var body: some View {
         List {
             Section {
                 Toggle("Merge Continue Watching & Up Next", isOn: $mergeContinueWatchingAndUpNext)
+                #if canImport(UIKit) && !os(tvOS)
+                Toggle("Hero Video Backdrops", isOn: $heroVideoBackdropsEnabled)
+                #endif
                 NavigationLink {
                     HomeShelfSettingsView()
                 } label: {
@@ -21,7 +27,7 @@ struct AppearanceView: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Shows Continue Watching and Up Next as a single combined row instead of two separate ones. Home Shelves lets you reorder or hide individual rows.")
+                Text("Shows Continue Watching and Up Next as a single combined row instead of two separate ones. Hero Video Backdrops autoplays a muted trailer behind the featured title when the server has one available. Home Shelves lets you reorder or hide individual rows.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
