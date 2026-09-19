@@ -58,10 +58,10 @@ struct AppLockView: View {
             Spacer()
 
             VStack(spacing: 6) {
-                Text("Arcfin Locked")
+                Text("Welcome to Arcfin")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
-                Text("Who's unlocking?")
+                Text("Please select your profile to continue")
                     .font(.system(size: 14))
                     .foregroundStyle(DT.Color.textSecondary)
             }
