@@ -372,6 +372,32 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// Server-wide "recommended movies" categories (e.g. "because you watched X", "more with
+    /// an actor you like") — NOT scoped to one item; Jellyfin has no per-movie recommendations
+    /// endpoint, only this library-wide one. Callers that want something tied to a specific
+    /// movie should filter the returned categories by baselineItemName.
+    public func getMovieRecommendations(
+        credential: ServerCredential,
+        authHeader: String,
+        categoryLimit: Int = 5,
+        itemLimit: Int = 8
+    ) async throws -> [MovieRecommendationCategory] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Movies/Recommendations"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "userId", value: credential.userID),
+            .init(name: "categoryLimit", value: "\(categoryLimit)"),
+            .init(name: "itemLimit", value: "\(itemLimit)"),
+            .init(name: "fields", value: "Overview,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode([MovieRecommendationResponse].self, from: data).map { $0.toCategory() }
+    }
+
     /// Other titles credited to a person (actor/director/writer), in the user's library.
     public func getPersonItems(
         credential: ServerCredential,
@@ -931,6 +957,27 @@ private struct RemoteTrailerResponse: Decodable {
     let url: String?
     let name: String?
     enum CodingKeys: String, CodingKey { case url = "Url", name = "Name" }
+}
+
+private struct MovieRecommendationResponse: Decodable {
+    let items: [JellyfinItemResponse]?
+    let recommendationType: String
+    let baselineItemName: String?
+    let categoryId: String
+
+    enum CodingKeys: String, CodingKey {
+        case items = "Items", recommendationType = "RecommendationType"
+        case baselineItemName = "BaselineItemName", categoryId = "CategoryId"
+    }
+
+    func toCategory() -> MovieRecommendationCategory {
+        MovieRecommendationCategory(
+            id: categoryId,
+            recommendationType: recommendationType,
+            baselineItemName: baselineItemName,
+            items: items?.map { $0.toMediaItem() } ?? []
+        )
+    }
 }
 
 private struct LibraryViewsResponse: Decodable {

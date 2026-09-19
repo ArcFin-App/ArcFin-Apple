@@ -23,6 +23,10 @@ struct MediaDetailView: View {
     @State private var isFavorite = false
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
+    /// Jellyfin-native fallback for the "Recommended" row when Seerr isn't configured —
+    /// Movies/Recommendations is server-wide, not per-item, so this is filtered down to
+    /// whichever returned category (if any) names this movie as its baseline.
+    @State private var jellyfinRecommended: MovieRecommendationCategory?
     @State private var seriesItem: MediaItem?
     /// The episode a series-level Play/Resume button actually starts — a series itself
     /// isn't playable, so this is what getNextEpisode() resolves to.
@@ -292,6 +296,14 @@ struct MediaDetailView: View {
             similarItems = (try? await client.getSimilarItems(credential: cred, authHeader: header, itemId: item.id)) ?? []
         } else {
             similarItems = []
+        }
+
+        jellyfinRecommended = nil
+        if seerrRelatedItems.isEmpty, item.type == .movie {
+            let categories = (try? await client.getMovieRecommendations(credential: cred, authHeader: header)) ?? []
+            jellyfinRecommended = categories.first {
+                $0.baselineItemName?.caseInsensitiveCompare(item.name) == .orderedSame
+            }
         }
 
         remoteTrailer = nil
@@ -649,6 +661,9 @@ struct MediaDetailView: View {
             seerrRelatedSection
         } else if !similarItems.isEmpty {
             similarSection
+        }
+        if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
+            jellyfinRecommendedSection(jellyfinRecommended)
         }
     }
 
@@ -1070,6 +1085,36 @@ struct MediaDetailView: View {
                                 title: sim.name,
                                 subtitle: sim.productionYear.map { String($0) },
                                 imageURL: mediaRepo.imageURL(for: sim)
+                            )
+                        }
+#if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+#else
+                        .buttonStyle(.plain)
+#endif
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+#if os(tvOS)
+                .focusSection()
+#endif
+            }
+        }
+        .padding(.bottom, DT.Spacing.md)
+    }
+
+    private func jellyfinRecommendedSection(_ category: MovieRecommendationCategory) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(category.title).padding(.horizontal, DT.Spacing.pagePad)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(category.items) { rec in
+                        NavigationLink(value: rec) {
+                            PosterCard(
+                                title: rec.name,
+                                subtitle: rec.productionYear.map { String($0) },
+                                imageURL: mediaRepo.imageURL(for: rec)
                             )
                         }
 #if os(tvOS)

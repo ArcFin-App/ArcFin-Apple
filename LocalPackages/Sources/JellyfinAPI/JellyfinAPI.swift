@@ -242,6 +242,34 @@ public struct RemoteTrailer: Sendable, Identifiable, Equatable {
     }
 }
 
+/// One category from GET /Movies/Recommendations — e.g. "movies like something you recently
+/// watched" or "more from an actor you like." Server-wide, not scoped to a single item.
+public struct MovieRecommendationCategory: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let recommendationType: String
+    public let baselineItemName: String?
+    public let items: [MediaItem]
+
+    public init(id: String, recommendationType: String, baselineItemName: String?, items: [MediaItem]) {
+        self.id = id
+        self.recommendationType = recommendationType
+        self.baselineItemName = baselineItemName
+        self.items = items
+    }
+
+    public var title: String {
+        switch recommendationType {
+        case "SimilarToRecentlyPlayed":     "Because You Watched \(baselineItemName ?? "")"
+        case "SimilarToLikedItem":          "Because You Liked \(baselineItemName ?? "")"
+        case "HasDirectorFromRecentlyPlayed": "More From This Director"
+        case "HasActorFromRecentlyPlayed":  "More With This Cast"
+        case "HasLikedDirector":            "More From Directors You Like"
+        case "HasLikedActor":               "More With Actors You Like"
+        default:                            "Recommended"
+        }
+    }
+}
+
 // MARK: - Library
 
 public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
