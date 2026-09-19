@@ -31,6 +31,7 @@ struct MediaDetailView: View {
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
     @State private var selectedEpisode: MediaItem?
+    @State private var selectedPerson: MediaPerson?
     @State private var loadedSeasonId: String?
     @State private var trailers: [MediaItem] = []
     @State private var isLoading = true
@@ -104,6 +105,9 @@ struct MediaDetailView: View {
         #endif
         .navigationDestination(item: $selectedEpisode) { ep in
             MediaDetailView(item: ep)
+        }
+        .navigationDestination(item: $selectedPerson) { person in
+            PersonDetailView(person: person)
         }
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
@@ -654,38 +658,46 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(d.cast) { person in
-                        VStack(spacing: 6) {
-                            if let tag = person.primaryImageTag,
-                               let url = mediaRepo.personImageURL(personId: person.id, tag: tag, fillWidth: 120) {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .success(let img): img.resizable().scaledToFill()
-                                    default: personPlaceholder
+                        Button { selectedPerson = person } label: {
+                            VStack(spacing: 6) {
+                                if let tag = person.primaryImageTag,
+                                   let url = mediaRepo.personImageURL(personId: person.id, tag: tag, fillWidth: 120) {
+                                    AsyncImage(url: url) { phase in
+                                        switch phase {
+                                        case .success(let img): img.resizable().scaledToFill()
+                                        default: personPlaceholder
+                                        }
                                     }
-                                }
-                                .frame(width: 60, height: 60)
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(.white.opacity(0.1), lineWidth: 1))
-                            } else {
-                                personPlaceholder
                                     .frame(width: 60, height: 60)
                                     .clipShape(Circle())
-                            }
+                                    .overlay(Circle().stroke(.white.opacity(0.1), lineWidth: 1))
+                                } else {
+                                    personPlaceholder
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(Circle())
+                                }
 
-                            Text(person.name)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(DT.Color.textPrimary)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.center)
+                                Text(person.name)
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(DT.Color.textPrimary)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
 
-                            if let role = person.role, !role.isEmpty {
-                                Text(role)
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(DT.Color.textSecondary)
-                                    .lineLimit(1)
+                                if let role = person.role, !role.isEmpty {
+                                    Text(role)
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(DT.Color.textSecondary)
+                                        .lineLimit(1)
+                                }
                             }
+                            .frame(width: 70, alignment: .top)
                         }
-                        .frame(width: 70, alignment: .top)
+#if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+#else
+                        .buttonStyle(.plain)
+#endif
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -759,6 +771,33 @@ struct MediaDetailView: View {
 #else
                 .buttonStyle(.plain)
                 .fixedSize()
+#endif
+
+                Menu {
+                    Button { markScopeWatched(.season, watched: true) } label: {
+                        Label("Mark Season Watched", systemImage: "checkmark.circle")
+                    }
+                    Button { markScopeWatched(.season, watched: false) } label: {
+                        Label("Mark Season Unwatched", systemImage: "circle")
+                    }
+                    Divider()
+                    Button { markScopeWatched(.series, watched: true) } label: {
+                        Label("Mark Series Watched", systemImage: "checkmark.circle.fill")
+                    }
+                    Button { markScopeWatched(.series, watched: false) } label: {
+                        Label("Mark Series Unwatched", systemImage: "circle.slash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+#if os(tvOS)
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .tvFocusRing(cornerRadius: DT.Radius.pill)
+#else
+                .buttonStyle(.plain)
 #endif
 
                 Spacer()
@@ -952,16 +991,51 @@ struct MediaDetailView: View {
         Task {
             try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
             if let idx = episodes.firstIndex(where: { $0.id == ep.id }) {
-                var updated = episodes[idx]
-                let old = updated.userData ?? UserData()
-                updated.userData = UserData(
-                    playbackPositionTicks: watched ? 0 : old.playbackPositionTicks,
-                    playCount: watched ? old.playCount + 1 : max(0, old.playCount - 1),
-                    isFavorite: old.isFavorite,
-                    played: watched,
-                    playedPercentage: watched ? nil : old.playedPercentage
-                )
-                episodes[idx] = updated
+                episodes[idx] = withWatchedUserData(episodes[idx], watched: watched)
+            }
+        }
+    }
+
+    private func withWatchedUserData(_ item: MediaItem, watched: Bool) -> MediaItem {
+        var updated = item
+        let old = updated.userData ?? UserData()
+        updated.userData = UserData(
+            playbackPositionTicks: watched ? 0 : old.playbackPositionTicks,
+            playCount: watched ? old.playCount + 1 : max(0, old.playCount - 1),
+            isFavorite: old.isFavorite,
+            played: watched,
+            playedPercentage: watched ? nil : old.playedPercentage
+        )
+        return updated
+    }
+
+    // MARK: - Batch watched/unwatched
+
+    private enum WatchScope { case season, series }
+
+    /// Marks a whole season or series watched/unwatched by looping markWatched over the
+    /// episode ids already available (current season) or fetched per-season (whole series).
+    /// The visible `episodes` array is updated optimistically so watched indicators refresh
+    /// without a manual pull-to-refresh, matching markEpisodeWatched's single-item approach.
+    private func markScopeWatched(_ scope: WatchScope, watched: Bool) {
+        guard let cred = credential, let header = authHeader, let seriesId = seasonSeriesId else { return }
+        HapticManager.impact(.light)
+        episodes = episodes.map { withWatchedUserData($0, watched: watched) }
+        Task {
+            switch scope {
+            case .season:
+                for ep in episodes {
+                    try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
+                }
+            case .series:
+                for season in seasons {
+                    let seasonEpisodes = (try? await client.getEpisodes(
+                        credential: cred, authHeader: header, seriesId: seriesId, seasonId: season.id
+                    )) ?? []
+                    for ep in seasonEpisodes {
+                        try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
+                    }
+                }
             }
         }
     }

@@ -372,6 +372,31 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// Other titles credited to a person (actor/director/writer), in the user's library.
+    public func getPersonItems(
+        credential: ServerCredential,
+        authHeader: String,
+        personId: String,
+        limit: Int = 50
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "PersonIds", value: personId),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
     public func getSeasons(
         credential: ServerCredential,
         authHeader: String,
