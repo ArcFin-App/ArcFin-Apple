@@ -9,8 +9,6 @@ import JellyfinAPI
 import MediaEngine
 import SwiftVLC
 import CastKit
-import Telemetry
-import os
 
 struct PlayerView: View {
     let item: MediaItem
@@ -113,6 +111,12 @@ struct PlayerView: View {
             #if canImport(UIKit) && !os(tvOS)
             GeometryReader { proxy in
                 videoSurface
+                    // GeometryReader only proposes its size to a child — it doesn't force it.
+                    // Without pinning explicitly to proxy.size, the UIViewRepresentable-hosted
+                    // AVPlayerLayer view is free to size itself off its own content instead of
+                    // the screen, which is what the "zoom" actually was: the surface's bounds
+                    // genuinely growing wider than the window, not an animation artifact.
+                    .frame(width: proxy.size.width, height: proxy.size.height)
                     .contentShape(Rectangle())
                     .gesture(tapGesture(width: proxy.size.width))
                     .simultaneousGesture(dragGesture(width: proxy.size.width))
@@ -825,7 +829,6 @@ struct PlayerView: View {
     }
 
     func toggleControls() {
-        Telemetry.logger(category: "PlayerZoomDebug").debug("tap: toggling controls, will become \(!isControlsVisible, privacy: .public)")
         withAnimation(DT.Animation.fast) { isControlsVisible.toggle() }
         if isControlsVisible { scheduleAutoHide() }
     }

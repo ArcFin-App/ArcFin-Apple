@@ -54,6 +54,10 @@ struct OfflinePlayerView: View {
                     PiPVideoView(player.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
                         .allowsHitTesting(false)
                 }
+                // See PlayerView's own note — GeometryReader only proposes its size, it
+                // doesn't force it, so the video surface needs pinning to proxy.size explicitly
+                // or it's free to size itself off its own content instead of the screen.
+                .frame(width: proxy.size.width, height: proxy.size.height)
                 .contentShape(Rectangle())
                 .onTapGesture { toggleControls() }
             }
