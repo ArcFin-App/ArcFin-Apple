@@ -124,16 +124,16 @@ struct SplashView: View {
             }
         }
 
-        // 6. Exit — minimum presentation time, but won't actually leave until loading is
-        // also done (see attemptFinish/onChange(of: isLoading)).
+        // 6. Exit after the minimum presentation time; authentication continues in the
+        // background.
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
             minimumTimeElapsed = true
-            attemptFinish()
+            attemptFinish(force: true)
         }
     }
 
-    private func attemptFinish() {
-        guard minimumTimeElapsed, !isLoading else { return }
+    private func attemptFinish(force: Bool = false) {
+        guard minimumTimeElapsed, force || !isLoading else { return }
         withAnimation(.easeInOut(duration: 0.48)) {
             sceneOpacity = 0
             sceneScale = 0.94

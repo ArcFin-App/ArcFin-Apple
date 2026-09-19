@@ -36,7 +36,7 @@ struct ContentView: View {
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
     private var phase: AppPhase {
-        guard splashDone && !authManager.isChecking else { return .splash }
+        guard splashDone else { return .splash }
         if offlineModeEnabled { return .offline }
         switch authManager.state {
         case .authenticated:   return .main

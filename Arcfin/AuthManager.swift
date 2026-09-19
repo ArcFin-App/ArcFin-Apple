@@ -8,6 +8,27 @@ import CoreLocation
 import Network
 #endif
 
+private final class TimeoutResult<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Value, Never>
+
+    init(continuation: CheckedContinuation<Value, Never>) {
+        self.continuation = continuation
+    }
+
+    func finish(_ value: Value) {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        continuation.resume(returning: value)
+    }
+}
+
 @Observable
 @MainActor
 final class AuthManager {
@@ -23,7 +44,9 @@ final class AuthManager {
 
     func checkStoredAuth() async {
         defer { isChecking = false }
-        let all = await backgroundKeychainRead()
+        let all = await Self.withTimeout(seconds: 5, fallback: [ServerCredential]()) {
+            await self.backgroundKeychainRead()
+        }
         profiles = all
         guard !all.isEmpty else { return }
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID")
@@ -37,15 +60,24 @@ final class AuthManager {
             upsert(cred)
         }
 
-        guard await authClient.validateToken(credential: cred) else { return }
-        // Backfills the avatar tag for credentials saved before it existed, and picks up
-        // any server-side avatar change — cheap, and only happens once per cold launch.
-        if let tag = await authClient.fetchUserImageTag(credential: cred), tag != cred.userImageTag {
-            cred.userImageTag = tag
-            upsert(cred)
+        let isValid = await Self.withTimeout(seconds: 10, fallback: true) {
+            await self.authClient.validateToken(credential: cred)
         }
+        guard isValid else { return }
         state = .authenticated(cred)
         persist(active: cred)
+
+        // Backfills the avatar tag for credentials saved before it existed, and picks up
+        // any server-side avatar change — cheap, and only happens once per cold launch.
+        Task { [weak self] in
+            guard let self,
+                  let tag = await self.authClient.fetchUserImageTag(credential: cred),
+                  tag != cred.userImageTag else { return }
+            var updated = cred
+            updated.userImageTag = tag
+            self.upsert(updated)
+            self.state = .authenticated(updated)
+        }
     }
 
     // MARK: - Live Wi-Fi switching
@@ -107,6 +139,8 @@ final class AuthManager {
               let savedSSID = defaults.string(forKey: "serverHomeSSID"), !savedSSID.isEmpty
         else { return original }
 
+                guard original.host != localURL.host || original.port != localURL.port else { return original }
+
         let currentSSID = await currentWiFiSSID()
         if currentSSID == savedSSID { return localURL }
 
@@ -122,6 +156,12 @@ final class AuthManager {
 
     static func currentWiFiSSID() async -> String? {
         #if os(iOS)
+        let authorizationStatus = CLLocationManager.authorizationStatus()
+        guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
+            guard authorizationStatus == .notDetermined,
+                  await LocationAuthWaiter().wait() else { return nil }
+            return await currentWiFiSSID()
+        }
         // Undocumented but widely-reported: NEHotspotNetwork.fetchCurrent silently
         // fails ("invalid result code 1") without Location authorization too, despite
         // Apple's docs saying the Access Wi-Fi Information capability alone suffices.
@@ -133,7 +173,6 @@ final class AuthManager {
         // dangling forever). This whole call sits directly in checkStoredAuth()'s path,
         // which the splash screen blocks on — an unbounded hang here was a silent "stuck
         // at splash" bug. Both now race against a timeout instead.
-        await withTimeout(seconds: 3, fallback: ()) { await LocationAuthWaiter().wait() }
         return await withTimeout(seconds: 3, fallback: nil) {
             await withCheckedContinuation { continuation in
                 NEHotspotNetwork.fetchCurrent { network in
@@ -150,15 +189,15 @@ final class AuthManager {
     /// for the two system callbacks above that have no guaranteed completion time of their
     /// own — without this, a callback that never fires hangs checkStoredAuth() forever.
     private static func withTimeout<T: Sendable>(seconds: Double, fallback: T, operation: @escaping @Sendable () async -> T) async -> T {
-        await withTaskGroup(of: T.self) { group in
-            group.addTask { await operation() }
-            group.addTask {
-                try? await Task.sleep(for: .seconds(seconds))
-                return fallback
+        await withCheckedContinuation { continuation in
+            let result = TimeoutResult(continuation: continuation)
+            Task {
+                result.finish(await operation())
             }
-            let result = await group.next()!
-            group.cancelAll()
-            return result
+            Task {
+                try? await Task.sleep(for: .seconds(seconds))
+                result.finish(fallback)
+            }
         }
     }
 
@@ -261,20 +300,36 @@ final class AuthManager {
 @MainActor
 private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
-    private var continuation: CheckedContinuation<Void, Never>?
+    private var continuation: CheckedContinuation<Bool, Never>?
+    private var timeoutTask: Task<Void, Never>?
 
-    func wait() async {
-        guard manager.authorizationStatus == .notDetermined else { return }
-        await withCheckedContinuation { continuation in
+    func wait() async -> Bool {
+        guard manager.authorizationStatus == .notDetermined else {
+            return manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
+        }
+        return await withCheckedContinuation { continuation in
             self.continuation = continuation
             manager.delegate = self
             manager.requestWhenInUseAuthorization()
+            timeoutTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(3))
+                guard !Task.isCancelled else { return }
+                self?.finish(false)
+            }
         }
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        continuation?.resume()
-        continuation = nil
+        let granted = manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
+        finish(granted)
+    }
+
+    private func finish(_ granted: Bool) {
+        guard let continuation else { return }
+        self.continuation = nil
+        timeoutTask?.cancel()
+        timeoutTask = nil
+        continuation.resume(returning: granted)
     }
 }
 #endif

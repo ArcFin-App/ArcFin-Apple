@@ -84,8 +84,7 @@ struct DownloadLiveActivity: Widget {
                     .padding(.bottom, 2)
                 }
             } compactLeading: {
-                Image(systemName: "arrow.down.circle.fill")
-                    .foregroundStyle(WidgetDT.accent)
+                posterOrIcon(context.state, size: 16)
             } compactTrailing: {
                 Text("\(Int(context.state.fractionComplete * 100))%")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))

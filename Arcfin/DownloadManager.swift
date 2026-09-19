@@ -118,13 +118,43 @@ final class DownloadManager: NSObject {
     /// Small thumbnail for the Live Activity — no App Group exists to share a file path with
     /// the widget extension, so a downsized JPEG rides along in the content state itself.
     private func fetchLiveActivityPoster(item: MediaItem, credential: ServerCredential) async {
-        guard let tag = item.primaryImageTag else { return }
-        let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .primary, fillWidth: 120, token: credential.accessToken)
-        guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
+        let imageType: JellyfinImageType
+        let imageID: String
+        let tag: String
+        if let primaryTag = item.primaryImageTag {
+            imageID = item.id
+            imageType = .primary
+            tag = primaryTag
+        } else if let thumbTag = item.thumbImageTag {
+            imageID = item.id
+            imageType = .thumb
+            tag = thumbTag
+        } else if let seriesID = item.seriesId, let seriesTag = item.seriesPrimaryImageTag {
+            imageID = seriesID
+            imageType = .primary
+            tag = seriesTag
+        } else {
+            return
+        }
+          let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: imageID, tag: tag, type: imageType, fillWidth: 120, token: credential.accessToken)
+          guard let (data, response) = try? await URLSession.shared.data(from: url),
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return }
         guard var existing = liveActivityItemMeta[item.id] else { return }
-        existing.posterData = data
+        existing.posterData = Self.liveActivityThumbnail(from: data)
         liveActivityItemMeta[item.id] = existing
         refreshLiveActivity()
+    }
+
+    private static func liveActivityThumbnail(from data: Data) -> Data? {
+        guard let image = UIImage(data: data) else { return nil }
+        let maxDimension: CGFloat = 56
+        let scale = min(1, maxDimension / max(image.size.width, image.size.height))
+        let size = CGSize(width: max(1, image.size.width * scale), height: max(1, image.size.height * scale))
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let thumbnail = renderer.jpegData(withCompressionQuality: 0.1) { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        return thumbnail.count <= 1_800 ? thumbnail : nil
     }
 
     /// Shows a brief "Download Complete" state before dismissing — matching every other
@@ -261,7 +291,6 @@ final class DownloadManager: NSObject {
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = (nil, item.parentIndexNumber, item.indexNumber)
         refreshLiveActivity()
-        Task { await fetchLiveActivityPoster(item: item, credential: credential) }
         #endif
 
         do {
@@ -269,6 +298,15 @@ final class DownloadManager: NSObject {
             async let playbackTask = client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id)
             let detail = try await detailTask
             let info = try await playbackTask
+
+            #if canImport(ActivityKit) && os(iOS)
+            var posterItem = item
+            posterItem.primaryImageTag = detail.item.primaryImageTag
+            posterItem.thumbImageTag = detail.item.thumbImageTag
+            posterItem.seriesId = detail.item.seriesId
+            posterItem.seriesPrimaryImageTag = detail.item.seriesPrimaryImageTag
+            await fetchLiveActivityPoster(item: posterItem, credential: credential)
+            #endif
 
             let dir = try DownloadStore.ensureDirectory(for: item.id)
 
