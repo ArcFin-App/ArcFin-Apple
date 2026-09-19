@@ -84,9 +84,9 @@ struct MediaDetailView: View {
                 .presentationBackground(.ultraThinMaterial)
         }
         #if os(iOS)
-        .confirmationDialog(
+        .alert(
             "Download all \(episodes.count) episodes of \(selectedSeason?.name ?? "this season")?",
-            isPresented: $showSeasonDownloadConfirm, titleVisibility: .visible
+            isPresented: $showSeasonDownloadConfirm
         ) {
             Button("Download Season") { downloadSeason() }
             Button("Cancel", role: .cancel) {}
@@ -625,7 +625,10 @@ struct MediaDetailView: View {
                         Text("Download Season")
                     }
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DT.Color.accent)
+                    // A hardcoded accent color didn't dim when disabled (episodes still
+                    // loading) — tapping it then did nothing with zero visual feedback,
+                    // which read as "no confirm popup ever shows up".
+                    .foregroundStyle(episodes.isEmpty ? DT.Color.accent.opacity(0.35) : DT.Color.accent)
                 }
                 .buttonStyle(.plain)
                 .disabled(episodes.isEmpty)

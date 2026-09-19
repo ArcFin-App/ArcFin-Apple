@@ -125,33 +125,45 @@ struct DownloadsView: View {
                     }
                 }
             }
-            if editMode.isEditing && !selection.isEmpty {
-                ToolbarItem(placement: .bottomBar) {
-                    Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
-                        Text("Delete \(selection.count) Selected")
-                    }
-                }
-            }
             #endif
         }
+        #if os(iOS)
+        // A .bottomBar toolbar item here rendered underneath the floating tab bar
+        // (unreachable/unclickable) rather than above it — a manual safeAreaInset with
+        // explicit bottom padding for the tab bar's own height sidesteps that entirely.
+        .safeAreaInset(edge: .bottom) {
+            if editMode.isEditing && !selection.isEmpty {
+                Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
+                    Text("Delete \(selection.count) Selected")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.red, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, goBackOnline == nil ? DT.Size.tabBarHeight + 8 : 8)
+            }
+        }
+        #endif
         .navigationDestination(item: $selectedItem) { item in
             DownloadedItemDetailView(item: item)
         }
         .navigationDestination(item: $selectedSeriesRef) { ref in
             DownloadedSeriesDetailView(seriesId: ref.seriesId)
         }
-        .confirmationDialog("Delete this download?", isPresented: Binding(
+        .alert("Delete this download?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
-        ), titleVisibility: .visible) {
+        )) {
             Button("Delete", role: .destructive) {
                 if let pendingDelete { downloadManager.deleteDownload(pendingDelete) }
                 pendingDelete = nil
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         }
-        .confirmationDialog("Delete this show's downloads?", isPresented: Binding(
+        .alert("Delete this show's downloads?", isPresented: Binding(
             get: { pendingDeleteSeriesId != nil }, set: { if !$0 { pendingDeleteSeriesId = nil } }
-        ), titleVisibility: .visible) {
+        )) {
             Button("Delete All Episodes", role: .destructive) {
                 if let seriesId = pendingDeleteSeriesId {
                     downloadManager.deleteDownloads(items.filter { $0.seriesId == seriesId })
@@ -160,7 +172,7 @@ struct DownloadsView: View {
             }
             Button("Cancel", role: .cancel) { pendingDeleteSeriesId = nil }
         }
-        .confirmationDialog("Delete \(selection.count) selected download\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm, titleVisibility: .visible) {
+        .alert("Delete \(selection.count) selected download\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 deleteSelection()
             }

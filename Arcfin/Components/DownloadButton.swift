@@ -53,7 +53,7 @@ struct DownloadButton: View {
             .frame(width: 30, height: 30)
         }
         .buttonStyle(.plain)
-        .confirmationDialog("Delete this download?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+        .alert("Delete this download?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 // The button only needs the itemId to remove files + the SwiftData row, but
                 // DownloadManager's public delete takes the record itself — look it up.
