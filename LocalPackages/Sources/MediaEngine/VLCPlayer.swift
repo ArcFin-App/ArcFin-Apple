@@ -131,18 +131,18 @@ public enum PlaybackEngineKind: String, CaseIterable, Sendable {
 }
 
 public enum PlaybackEngineSelector {
-    /// A container AVFoundation can't open, or HEVC (routinely mistagged hev1 vs the hvc1
-    /// AVFoundation requires) — picks VLC instead of AVFoundation for Auto. AVFoundation
-    /// stays preferred otherwise: less battery, native PiP/AirPlay/Now-Playing/HDR
-    /// tone-mapping, and it's the better fit for HLS transcode output too.
+    /// A container AVFoundation can't open — picks VLC instead of AVFoundation for Auto.
+    /// AVFoundation stays preferred otherwise, including HEVC (natively hardware-decoded on
+    /// every iOS 26 device): less battery, native PiP/AirPlay/Now-Playing/HDR tone-mapping,
+    /// the better fit for HLS transcode output, and — unlike VLC's PiPVideoView — its surface
+    /// has a working implicit-animation fix for the player's tap-to-toggle-controls zoom glitch.
     public static func choose(preference: PlaybackEngineKind, container: String?, videoCodec: String?) -> PlaybackEngineKind {
         switch preference {
         case .avFoundation, .vlc:
             return preference
         case .auto:
             let container = (container ?? "").lowercased()
-            let videoCodec = (videoCodec ?? "").lowercased()
-            let needsVLC = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(container) || videoCodec == "hevc"
+            let needsVLC = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(container)
             return needsVLC ? .vlc : .avFoundation
         }
     }
