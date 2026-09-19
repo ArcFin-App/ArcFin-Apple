@@ -41,6 +41,8 @@ struct MediaDetailView: View {
     @State private var remoteTrailer: RemoteTrailer?
     @State private var youTubeTrailer: RemoteTrailer?
     @AppStorage("trailersEnabled") private var trailersEnabled = true
+    @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
+    @State private var showTrailerPicker = false
     @State private var isLoading = true
     @State private var requestingSeerrItem: SeerrItem?
     @State private var playbackRequest: PlaybackRequest?
@@ -320,7 +322,7 @@ struct MediaDetailView: View {
                     // Only fall back to a remote (YouTube) trailer once we know there's
                     // genuinely no local one — a local file always streams better than an
                     // embedded web player.
-                    if fetchedTrailers.isEmpty {
+                    if fetchedTrailers.isEmpty, youtubeTrailersEnabled {
                         remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeEmbedURL != nil }
                     }
                 }
@@ -593,6 +595,48 @@ struct MediaDetailView: View {
 #endif
     }
 
+    private var hasPlayableTrailer: Bool {
+        guard trailersEnabled else { return false }
+        return !trailers.isEmpty || (youtubeTrailersEnabled && remoteTrailer != nil)
+    }
+
+    @ViewBuilder
+    private var trailerButton: some View {
+#if !os(tvOS)
+        if hasPlayableTrailer {
+            Button {
+                if trailers.count > 1 {
+                    showTrailerPicker = true
+                } else if let single = trailers.first {
+                    playbackRequest = PlaybackRequest(item: single, startTicks: 0)
+                } else if let remoteTrailer {
+                    youTubeTrailer = remoteTrailer
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "film").font(.system(size: 14))
+                    Text("Play Trailer").font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundStyle(DT.Color.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(DT.Color.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
+            .confirmationDialog("Play Trailer", isPresented: $showTrailerPicker, titleVisibility: .visible) {
+                ForEach(trailers) { trailer in
+                    Button(trailer.name) { playbackRequest = PlaybackRequest(item: trailer, startTicks: 0) }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+        }
+#endif
+    }
+
     // MARK: - Loading skeleton
 
     private var loadingContent: some View {
@@ -612,6 +656,7 @@ struct MediaDetailView: View {
     @ViewBuilder
     private var detailContent: some View {
         playButton
+        trailerButton
 
         // Genres
         if let d = detail, !d.genres.isEmpty {

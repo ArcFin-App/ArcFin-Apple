@@ -10,6 +10,7 @@ struct PlaybackSettingsView: View {
     @AppStorage("skipRecap")       private var skipRecap       = false
     @AppStorage("subtitleDefault") private var subtitleDefault = false
     @AppStorage("trailersEnabled") private var trailersEnabled = true
+    @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
     @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
     @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
 
@@ -70,8 +71,13 @@ struct PlaybackSettingsView: View {
 
             Section {
                 Toggle("Trailers", isOn: $trailersEnabled)
+                if trailersEnabled {
+                    Toggle("YouTube Fallback", isOn: $youtubeTrailersEnabled)
+                }
             } footer: {
-                Text("Shows a Trailers row on the detail screen when the server has a local trailer indexed, or a YouTube trailer as a fallback.")
+                Text(trailersEnabled
+                     ? "Shows a Play Trailer button when the server has a local trailer indexed. YouTube Fallback plays a YouTube trailer in-app when no local one is available."
+                     : "Turns off trailer playback entirely, including the YouTube fallback.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
