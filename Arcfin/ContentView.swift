@@ -153,17 +153,12 @@ struct ContentView: View {
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active { startHeartbeat() } else { heartbeatTask?.cancel() }
-            #if !os(tvOS)
-            // Re-reads the keychain fresh rather than trusting the cached flag, so a PIN
-            // enabled/disabled moments ago in Settings (same session, no state change since
-            // that doesn't touch authManager.state) is still honored on this very transition.
-            if newPhase == .background {
-                Task {
-                    await refreshLockRequirement()
-                    if activeProfileHasPIN { isAppLocked = true }
-                }
-            }
-            #endif
+            // Deliberately no re-lock here. scenePhase drops to .background not just when
+            // the app is actually left, but also pulling down Notification/Control Center
+            // over it and entering Picture in Picture (the app's own UI is off-screen, so
+            // the system backgrounds the scene) — locking on every one of those made the
+            // PIN/Face ID prompt reappear on nearly every interaction. The PIN/Face ID
+            // gate now only ever applies at cold launch (see the initial .task above).
         }
         #if !os(tvOS)
         .onChange(of: authManager.state) { _, _ in Task { await refreshLockRequirement() } }
