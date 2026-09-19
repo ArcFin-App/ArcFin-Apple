@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		4C7FC774A251FD7AA9B93916 /* LiveActivityKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3971DC795356C888F780CE58 /* LiveActivityKit */; };
 		5815AABD47E13900B5960B6B /* LiveActivityKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3971DC795356C888F780CE58 /* LiveActivityKit */; };
+		9AAD799AC974BBBF888EBA9C /* CastKit in Frameworks */ = {isa = PBXBuildFile; productRef = 33B25E2EDB0AABA56119E88B /* CastKit */; };
 		FA2E193C305DEF7900513FD4 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA2E193B305DEF7900513FD4 /* WidgetKit.framework */; };
 		FA2E193E305DEF7900513FD4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA2E193D305DEF7900513FD4 /* SwiftUI.framework */; };
 		FA2E1949305DEF7A00513FD4 /* ArcfinWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FA2E193A305DEF7900513FD4 /* ArcfinWidgetsExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -23,7 +24,6 @@
 		FAB5D7942FA79F5C002031A9 /* SearchKit in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7932FA79F5C002031A9 /* SearchKit */; };
 		FAB5D7962FA79F5C002031A9 /* StreamystatsAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */; };
 		FAB5D7982FA79F5C002031A9 /* SyncEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7972FA79F5C002031A9 /* SyncEngine */; };
-		9AAD799AC974BBBF888EBA9C /* CastKit in Frameworks */ = {isa = PBXBuildFile; productRef = 33B25E2EDB0AABA56119E88B /* CastKit */; };
 		FAB5D79A2FA79F5C002031A9 /* Telemetry in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7992FA79F5C002031A9 /* Telemetry */; };
 		FAB5D86E2FA9621A002031A9 /* TVServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAB5D86D2FA9621A002031A9 /* TVServices.framework */; };
 		FAB5D8752FA9621A002031A9 /* ArcfinTopShelf.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */; platformFilters = (tvos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -1113,6 +1113,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		33B25E2EDB0AABA56119E88B /* CastKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CastKit;
+		};
 		3971DC795356C888F780CE58 /* LiveActivityKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LiveActivityKit;
@@ -1144,10 +1148,6 @@
 		FAB5D78F2FA79F5C002031A9 /* MediaEngine */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MediaEngine;
-		};
-		33B25E2EDB0AABA56119E88B /* CastKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = CastKit;
 		};
 		FAB5D7912FA79F5C002031A9 /* Persistence */ = {
 			isa = XCSwiftPackageProductDependency;
