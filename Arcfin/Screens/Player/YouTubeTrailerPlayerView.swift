@@ -48,8 +48,10 @@ private struct YouTubeEmbedWebView: UIViewRepresentable {
         // Loading the embed URL directly as the top-level page (webView.load(URLRequest))
         // is a different, unsupported context to YouTube's player than being hosted inside
         // an actual <iframe> — that mismatch is what "video player configuration error"
-        // (error 153) actually means. Wrapping it in a minimal HTML document with a real
-        // youtube.com baseURL gives the iframe a proper embedding origin to validate against.
+        // (error 153) actually means. Wrapping it in a minimal HTML document fixes that.
+        // baseURL is intentionally nil, not youtube.com — a self-referential origin (as if
+        // youtube.com were embedding itself) is an unusual, non-standard third-party-embed
+        // context and risks tripping video-level embed checks for a different reason.
         let html = """
         <!DOCTYPE html><html><head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -59,7 +61,7 @@ private struct YouTubeEmbedWebView: UIViewRepresentable {
         <iframe src="\(embedURL.absoluteString)" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
         </body></html>
         """
-        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
+        webView.loadHTMLString(html, baseURL: nil)
         return webView
     }
 
