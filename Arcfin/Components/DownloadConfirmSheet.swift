@@ -25,9 +25,9 @@ struct DownloadConfirmSheet: View {
     }
 
     /// Fixed quality tiers — always the same list regardless of what the server reports for
-    /// this source (matching streamyfin's BitrateSelector), since gating this on server-
-    /// reported bitrate metadata is unreliable: plenty of libraries never get a deep
-    /// metadata scan and report no bitrate on either the source or its streams at all.
+    /// this source, since gating this on server-reported bitrate metadata is unreliable:
+    /// plenty of libraries never get a deep metadata scan and report no bitrate on either
+    /// the source or its streams at all.
     private static let options: [DownloadBitrateOption] = [
         DownloadBitrateOption(label: "Max", bitrate: nil),
         DownloadBitrateOption(label: "8 Mb/s", bitrate: 8_000_000),

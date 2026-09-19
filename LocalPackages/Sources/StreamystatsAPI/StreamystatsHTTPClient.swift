@@ -1,8 +1,7 @@
 import Foundation
 
 // MARK: - Streamystats HTTP client
-// Auth: MediaBrowser Token (Jellyfin token) — matches Streamyfin's integration.
-// No separate credentials needed.
+// Auth: MediaBrowser Token (Jellyfin token). No separate credentials needed.
 
 public actor StreamystatsHTTPClient {
     private let baseURL: URL
