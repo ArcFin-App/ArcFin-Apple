@@ -18,6 +18,23 @@ struct OpenSourceLicensesView: View {
         License(name: "swift-openapi-runtime", license: "Apache 2.0", url: "https://github.com/apple/swift-openapi-runtime", note: nil),
         License(name: "swift-openapi-urlsession", license: "Apache 2.0", url: "https://github.com/apple/swift-openapi-urlsession", note: nil),
         License(name: "swift-openapi-generator", license: "Apache 2.0", url: "https://github.com/apple/swift-openapi-generator", note: nil),
+        License(name: "Google Cast SDK", license: "Google APIs Terms of Service", url: "https://developers.google.com/terms/",
+                note: "Powers Chromecast support. A prebuilt binary distributed under Google's own terms, not an open-source license."),
+        License(name: "google-cast-sdk (SRGSSR)", license: "See repository", url: "https://github.com/SRGSSR/google-cast-sdk",
+                note: "Community-maintained Swift Package Manager wrapper that packages Google's official Cast SDK for SPM projects — not a reimplementation of it."),
+        // The Composable Architecture's own runtime dependencies — all pointfreeco/Apple
+        // projects, and all actually linked into the app (not just used at compile time).
+        License(name: "swift-case-paths", license: "MIT", url: "https://github.com/pointfreeco/swift-case-paths", note: nil),
+        License(name: "swift-dependencies", license: "MIT", url: "https://github.com/pointfreeco/swift-dependencies", note: nil),
+        License(name: "swift-navigation", license: "MIT", url: "https://github.com/pointfreeco/swift-navigation", note: nil),
+        License(name: "swift-perception", license: "MIT", url: "https://github.com/pointfreeco/swift-perception", note: nil),
+        License(name: "swift-sharing", license: "MIT", url: "https://github.com/pointfreeco/swift-sharing", note: nil),
+        License(name: "swift-identified-collections", license: "MIT", url: "https://github.com/pointfreeco/swift-identified-collections", note: nil),
+        License(name: "swift-custom-dump", license: "MIT", url: "https://github.com/pointfreeco/swift-custom-dump", note: nil),
+        License(name: "swift-clocks", license: "MIT", url: "https://github.com/pointfreeco/swift-clocks", note: nil),
+        License(name: "swift-concurrency-extras", license: "MIT", url: "https://github.com/pointfreeco/swift-concurrency-extras", note: nil),
+        License(name: "combine-schedulers", license: "MIT", url: "https://github.com/pointfreeco/combine-schedulers", note: nil),
+        License(name: "swift-collections", license: "Apache 2.0", url: "https://github.com/apple/swift-collections", note: nil),
     ]
 
     var body: some View {
