@@ -28,8 +28,9 @@ struct AppLockView: View {
     // across layout passes, which is what caused the picker to visibly jump from left-packed
     // to centered right after appearing. A size-class-driven fixed count never has to guess.
     private var columnCount: Int { sizeClass == .compact ? 2 : 3 }
-    private let tileWidth: CGFloat = 96
-    private let gridSpacing: CGFloat = 20
+    private let tileWidth: CGFloat = 116
+    private let avatarSize: CGFloat = 100
+    private let gridSpacing: CGFloat = 24
     private var gridColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: gridSpacing), count: columnCount)
     }
@@ -71,14 +72,14 @@ struct AppLockView: View {
         VStack(spacing: 28) {
             Spacer()
 
-            ArcfinLogoView(size: 52)
+            ArcfinLogoView(size: 84)
 
             VStack(spacing: 6) {
                 Text("Welcome to Arcfin")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Text("Please select your profile to continue")
-                    .font(.system(size: 14))
+                    .font(.system(size: 15))
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
@@ -108,7 +109,7 @@ struct AppLockView: View {
     @ViewBuilder
     private func avatarContent(_ profile: ServerCredential) -> some View {
         if let tag = profile.userImageTag {
-            let url = JellyfinMediaClient.userImageURL(baseURL: profile.baseURL, userID: profile.userID, tag: tag, fillWidth: 160, token: profile.accessToken)
+            let url = JellyfinMediaClient.userImageURL(baseURL: profile.baseURL, userID: profile.userID, tag: tag, fillWidth: 200, token: profile.accessToken)
             AsyncImage(url: url) { phase in
                 if case .success(let img) = phase {
                     img.resizable().scaledToFill()
@@ -116,7 +117,7 @@ struct AppLockView: View {
                     avatarInitials(profile)
                 }
             }
-            .frame(width: 80, height: 80)
+            .frame(width: avatarSize, height: avatarSize)
             .clipShape(Circle())
         } else {
             avatarInitials(profile)
@@ -125,7 +126,7 @@ struct AppLockView: View {
 
     private func avatarInitials(_ profile: ServerCredential) -> some View {
         Text(initials(for: profile))
-            .font(.system(size: 26, weight: .bold, design: .rounded))
+            .font(.system(size: 32, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
     }
 
@@ -142,30 +143,30 @@ struct AppLockView: View {
                             colors: [DT.Color.accent, DT.Color.accentDeep],
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         ))
-                        .frame(width: 80, height: 80)
+                        .frame(width: avatarSize, height: avatarSize)
                     avatarContent(profile)
                 }
                 .overlay(Circle().stroke(ringColor, lineWidth: 3))
 
                 if hasPIN {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.white)
-                        .padding(6)
+                        .padding(7)
                         .background(Circle().fill(DT.Color.backgroundSecondary))
                 }
             }
 
             Text(profile.displayName)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             Text(profile.baseURL.host ?? "")
-                .font(.system(size: 11))
+                .font(.system(size: 12))
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineLimit(1)
         }
-        .frame(width: 96)
+        .frame(width: tileWidth)
     }
 
     // MARK: - Actions
