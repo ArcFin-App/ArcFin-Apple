@@ -23,7 +23,15 @@ final class PlayerSurfaceView: UIView {
     // layout changes the same way — force it explicitly rather than trust that path.
     override func layoutSubviews() {
         super.layoutSubviews()
+        // Without disabling implicit actions, this frame reassignment picks up whatever
+        // SwiftUI animation happens to be ambient at the moment layoutSubviews fires (e.g.
+        // toggleControls()'s withAnimation, triggered by a single tap) — CoreAnimation
+        // then animates the layer's frame using that transaction's curve, which looked
+        // like the whole video zooming in and settling back on every tap.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         playerLayer.frame = bounds
+        CATransaction.commit()
     }
 }
 
