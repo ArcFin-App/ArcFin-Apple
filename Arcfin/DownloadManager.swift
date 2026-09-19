@@ -45,6 +45,9 @@ final class DownloadManager: NSObject {
     var errors: [String: String] = [:]
 
     @ObservationIgnored private var modelContext: ModelContext?
+    /// Weak, and only ever used for orphan recovery (see recoverOrphanedDownload) — every
+    /// normal download call site already passes its own credential/authHeader explicitly.
+    @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private let client = JellyfinMediaClient()
     @ObservationIgnored private var downloadTasks: [String: URLSessionDownloadTask] = [:]
     @ObservationIgnored private var taskItemIds: [Int: String] = [:]
@@ -81,8 +84,9 @@ final class DownloadManager: NSObject {
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
 
-    func configure(modelContext: ModelContext) {
+    func configure(modelContext: ModelContext, authManager: AuthManager) {
         self.modelContext = modelContext
+        self.authManager = authManager
         // `session` was only ever touched lazily, on the first actual download action —
         // meaning after a relaunch (e.g. the app was killed while a background download
         // was in flight), nothing registered this session's delegate until the user
@@ -335,11 +339,16 @@ final class DownloadManager: NSObject {
         isProcessingQueue = false
     }
 
-    private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?) async {
+    /// `skipVideoDownload` is set only by orphan recovery (see recoverOrphanedDownload) —
+    /// the video file is already correctly at its destination by that point (the OS-level
+    /// delegate callback moved it there independent of whether this app process was alive),
+    /// so only the metadata/subtitles/trickplay/poster/SwiftData tail needs to run.
+    private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, skipVideoDownload: Bool = false) async {
         guard let modelContext else { return }
         activeItemIds.insert(item.id)
-        progress[item.id] = 0
+        progress[item.id] = skipVideoDownload ? 1 : 0
         beginBackgroundTaskIfNeeded()
+        savePendingDescriptor(itemId: item.id, credentialId: credential.id.uuidString, bitrateCap: bitrateCap)
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = (nil, item.parentIndexNumber, item.indexNumber)
         refreshLiveActivity()
@@ -372,7 +381,9 @@ final class DownloadManager: NSObject {
             let videoURL = needsRemux
                 ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, videoBitRate: min(bitrateCap!, info.bitrate ?? bitrateCap!), token: credential.accessToken)
                 : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
-            try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
+            if !skipVideoDownload {
+                try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
+            }
 
             // Subtitles — external tracks only (embedded ones travel with the video file itself).
             var subtitleFileNames: [String] = []
@@ -466,6 +477,7 @@ final class DownloadManager: NSObject {
             errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
             DownloadStore.deleteDirectory(for: item.id)
         }
+        removePendingDescriptor(itemId: item.id)
 
         #if canImport(ActivityKit) && os(iOS)
         let finishedTitle = activeItemTitles[item.id] ?? item.name
@@ -539,6 +551,7 @@ final class DownloadManager: NSObject {
         speedSamples[itemId] = nil
         DownloadStore.deleteDirectory(for: itemId)
         endBackgroundTaskIfIdle()
+        removePendingDescriptor(itemId: itemId)
         #if canImport(ActivityKit) && os(iOS)
         if wasQueued {
             queueTotalCount = max(queueTotalCount - 1, queueCompletedCount)
@@ -549,6 +562,69 @@ final class DownloadManager: NSObject {
             }
         }
         #endif
+    }
+
+    // MARK: - Orphan recovery (app killed mid-download, relaunched)
+
+    /// Just enough to finish a download's metadata pipeline after a relaunch — deliberately
+    /// not the access token itself (that stays in Keychain via AuthManager; this only
+    /// records which saved profile to look it up from).
+    private struct PendingDownloadDescriptor: Codable {
+        let itemId: String
+        let credentialId: String
+        let bitrateCap: Int?
+    }
+
+    private static let pendingDownloadsKey = "arcfin.pendingDownloads"
+
+    private func savePendingDescriptor(itemId: String, credentialId: String, bitrateCap: Int?) {
+        var all = loadPendingDescriptors().filter { $0.itemId != itemId }
+        all.append(PendingDownloadDescriptor(itemId: itemId, credentialId: credentialId, bitrateCap: bitrateCap))
+        if let data = try? JSONEncoder().encode(all) {
+            UserDefaults.standard.set(data, forKey: Self.pendingDownloadsKey)
+        }
+    }
+
+    private func removePendingDescriptor(itemId: String) {
+        let remaining = loadPendingDescriptors().filter { $0.itemId != itemId }
+        if let data = try? JSONEncoder().encode(remaining) {
+            UserDefaults.standard.set(data, forKey: Self.pendingDownloadsKey)
+        }
+    }
+
+    private func loadPendingDescriptors() -> [PendingDownloadDescriptor] {
+        guard let data = UserDefaults.standard.data(forKey: Self.pendingDownloadsKey),
+              let decoded = try? JSONDecoder().decode([PendingDownloadDescriptor].self, from: data)
+        else { return [] }
+        return decoded
+    }
+
+    /// Called when a background download task's completion is redelivered with no matching
+    /// continuation — meaning this app instance didn't start it, so nothing is waiting on
+    /// it. The video file is already safely moved to its destination by the delegate
+    /// callback above (that part doesn't depend on any of performDownload's in-memory
+    /// state), but the rest of the pipeline — metadata, subtitles, trickplay, poster, the
+    /// SwiftData record — never ran, since that WAS tied to the original call's state,
+    /// which died with the old process. Without this, the file would just sit orphaned on
+    /// disk forever with no record of it and no way to play it from the Downloads screen.
+    private func recoverOrphanedDownload(destinationPath: String) async {
+        let itemId = URL(fileURLWithPath: destinationPath).deletingLastPathComponent().lastPathComponent
+        guard !isDownloaded(itemId),
+              let descriptor = loadPendingDescriptors().first(where: { $0.itemId == itemId }),
+              let authManager,
+              let credential = authManager.profiles.first(where: { $0.id.uuidString == descriptor.credentialId })
+        else {
+            removePendingDescriptor(itemId: itemId)
+            return
+        }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        // Placeholder — performDownload re-fetches the real item detail itself and uses
+        // that (detail.item.name/type/etc) to build the actual DownloadedItem record; this
+        // is only ever read for the Downloads list's in-progress row title and Live
+        // Activity meta, neither of which meaningfully applies to a recovery that's already
+        // finished downloading its video by the time this runs.
+        let placeholder = MediaItem(id: itemId, name: "Resuming…", type: .movie)
+        await performDownload(item: placeholder, credential: credential, authHeader: authHeader, bitrateCap: descriptor.bitrateCap, skipVideoDownload: true)
     }
 
     // MARK: - Background continuation
@@ -735,20 +811,39 @@ extension DownloadManager: URLSessionDownloadDelegate {
             }
         }
         let capturedMoveError = moveError
+        let capturedPath = downloadTask.taskDescription
         Task { @MainActor in
-            guard let continuation = self.continuations[taskId] else { return }
-            self.continuations[taskId] = nil
-            if let capturedMoveError { continuation.resume(throwing: capturedMoveError) } else { continuation.resume() }
+            if let continuation = self.continuations[taskId] {
+                self.continuations[taskId] = nil
+                if let capturedMoveError { continuation.resume(throwing: capturedMoveError) } else { continuation.resume() }
+                return
+            }
+            // No continuation means this app instance didn't originate the transfer — most
+            // likely relaunched specifically to receive this exact redelivered event. The
+            // file's already safely moved above; finish the rest of the pipeline for it.
+            if capturedMoveError == nil, let capturedPath {
+                await self.recoverOrphanedDownload(destinationPath: capturedPath)
+            }
         }
     }
 
     nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         guard let error else { return }
         let taskId = task.taskIdentifier
+        let capturedPath = task.taskDescription
         Task { @MainActor in
-            guard let continuation = self.continuations[taskId] else { return }
-            self.continuations[taskId] = nil
-            continuation.resume(throwing: error)
+            if let continuation = self.continuations[taskId] {
+                self.continuations[taskId] = nil
+                continuation.resume(throwing: error)
+                return
+            }
+            // Orphaned and it failed outright — there'll never be a video file to trigger
+            // recovery via didFinishDownloadingTo, so the pending descriptor would otherwise
+            // sit around forever. Best-effort cleanup only; nothing else was watching this.
+            if let capturedPath {
+                let itemId = URL(fileURLWithPath: capturedPath).deletingLastPathComponent().lastPathComponent
+                self.removePendingDescriptor(itemId: itemId)
+            }
         }
     }
 
