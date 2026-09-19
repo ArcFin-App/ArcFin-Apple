@@ -28,7 +28,7 @@ extension PlayerView {
                     let axis: DragAxis = value.startLocation.x < width / 2 ? .brightness : .volume
                     dragAxis = axis
                     dragBaseline = axis == .brightness
-                        ? (activeWindowScene?.screen.brightness ?? UIScreen.main.brightness)
+                        ? (activeWindowScene?.screen.brightness ?? 0.5)
                         : CGFloat(volumeController?.currentVolume ?? 0.5)
                     lastHapticStep = nil
                     HapticManager.impact(.light)

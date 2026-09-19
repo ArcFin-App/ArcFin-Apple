@@ -38,11 +38,15 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
     /// mode internally; doing that before the layer has any content set up (i.e. right when
     /// the view appears, before the stream has loaded) is the likely cause of some HLS
     /// streams never actually rendering video afterward.
-    func captureLayer(_ layer: AVPlayerLayer) {
+    ///
+    /// Named `stashLayer` rather than `captureLayer` — the latter nearly matched the
+    /// selector of `AVPictureInPictureControllerDelegate`'s optional `pictureInPictureController`
+    /// requirement closely enough that the compiler warned about accidental-override risk.
+    func stashLayer(_ layer: AVPlayerLayer) {
         pendingLayer = layer
     }
 
-    /// Call once playback has actually started — see captureLayer's note on why this isn't
+    /// Call once playback has actually started — see stashLayer's note on why this isn't
     /// done any earlier.
     func activateIfNeeded() {
         guard controller == nil, let layer = pendingLayer,
@@ -80,7 +84,7 @@ struct PlayerLayerRepresentable: UIViewRepresentable {
         view.playerLayer.player = player
         view.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
         view.backgroundColor = .black
-        pip.captureLayer(view.playerLayer)
+        pip.stashLayer(view.playerLayer)
         return view
     }
 

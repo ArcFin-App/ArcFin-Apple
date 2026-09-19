@@ -60,8 +60,9 @@ final class AuthManager {
             upsert(cred)
         }
 
+        let credForValidation = cred
         let isValid = await Self.withTimeout(seconds: 10, fallback: true) {
-            await self.authClient.validateToken(credential: cred)
+            await self.authClient.validateToken(credential: credForValidation)
         }
         guard isValid else { return }
         state = .authenticated(cred)
@@ -156,7 +157,7 @@ final class AuthManager {
 
     static func currentWiFiSSID() async -> String? {
         #if os(iOS)
-        let authorizationStatus = CLLocationManager.authorizationStatus()
+        let authorizationStatus = CLLocationManager().authorizationStatus
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
             guard authorizationStatus == .notDetermined,
                   await LocationAuthWaiter().wait() else { return nil }
