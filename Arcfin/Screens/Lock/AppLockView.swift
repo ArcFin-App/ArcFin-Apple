@@ -11,6 +11,7 @@ import JellyfinAPI
 /// on the PIN pad itself — there's no bypass, only unlock or pick a different profile.
 struct AppLockView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let useFaceID: Bool
     let onUnlock: () -> Void
 
@@ -22,6 +23,19 @@ struct AppLockView: View {
     @State private var didAttemptBiometricsFor: UUID?
 
     private var activeID: UUID? { authManager.state.credential?.id }
+
+    // Fixed, not .adaptive — an adaptive grid resolves its column count from measured width
+    // across layout passes, which is what caused the picker to visibly jump from left-packed
+    // to centered right after appearing. A size-class-driven fixed count never has to guess.
+    private var columnCount: Int { sizeClass == .compact ? 2 : 3 }
+    private let tileWidth: CGFloat = 96
+    private let gridSpacing: CGFloat = 20
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: gridSpacing), count: columnCount)
+    }
+    private var gridMaxWidth: CGFloat {
+        CGFloat(columnCount) * tileWidth + CGFloat(columnCount - 1) * gridSpacing
+    }
 
     var body: some View {
         ZStack {
@@ -57,6 +71,8 @@ struct AppLockView: View {
         VStack(spacing: 28) {
             Spacer()
 
+            ArcfinLogoView(size: 52)
+
             VStack(spacing: 6) {
                 Text("Welcome to Arcfin")
                     .font(.system(size: 22, weight: .bold))
@@ -66,7 +82,7 @@ struct AppLockView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 20)], spacing: 20) {
+            LazyVGrid(columns: gridColumns, spacing: gridSpacing) {
                 ForEach(authManager.profiles) { profile in
                     Button { selectProfile(profile) } label: {
                         profileTile(profile)
@@ -74,7 +90,7 @@ struct AppLockView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 32)
+            .frame(maxWidth: gridMaxWidth)
 
             Spacer()
             Spacer()
