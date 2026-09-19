@@ -16,6 +16,7 @@ struct DownloadedSeriesDetailView: View {
 
     @State private var selectedSeason: Int?
     @State private var playingItem: DownloadedItem?
+    @State private var playStartOverride: Int64?
     @State private var pendingDelete: DownloadedItem?
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
@@ -130,7 +131,7 @@ struct DownloadedSeriesDetailView: View {
         }
         #if os(iOS)
         .fullScreenCover(item: $playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
+            OfflinePlayerView(downloadedItem: item, startPositionOverride: playStartOverride)
         }
         #endif
         .alert("Delete this episode?", isPresented: Binding(
@@ -225,12 +226,23 @@ struct DownloadedSeriesDetailView: View {
             }
             .buttonStyle(.plain)
         } else {
-            Button { playingItem = episode } label: {
+            Button {
+                playStartOverride = nil
+                playingItem = episode
+            } label: {
                 episodeRowContent(episode)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .contextMenu {
+                if episode.playbackPositionTicks > 0 && !episode.played {
+                    Button {
+                        playStartOverride = 0
+                        playingItem = episode
+                    } label: {
+                        Label("Start Over", systemImage: "arrow.counterclockwise")
+                    }
+                }
                 Button(role: .destructive) { pendingDelete = episode } label: {
                     Label("Delete Download", systemImage: "trash")
                 }
@@ -242,7 +254,10 @@ struct DownloadedSeriesDetailView: View {
             }
         }
         #else
-        Button { playingItem = episode } label: {
+        Button {
+            playStartOverride = nil
+            playingItem = episode
+        } label: {
             episodeRowContent(episode)
         }
         .buttonStyle(.plain)

@@ -7,7 +7,10 @@ struct DownloadedItemDetailView: View {
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(\.dismiss) private var dismiss
     @State private var playingItem: DownloadedItem?
+    @State private var startOverride: Int64?
     @State private var showDeleteConfirm = false
+
+    private var isResumable: Bool { item.playbackPositionTicks > 0 && !item.played }
 
     private var dir: URL { DownloadStore.directory(for: item.itemId) }
 
@@ -47,19 +50,41 @@ struct DownloadedItemDetailView: View {
                             .foregroundStyle(DT.Color.textSecondary)
                     }
 
-                    Button { playingItem = item } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "play.fill")
-                            Text(item.playbackPositionTicks > 0 && !item.played ? "Resume" : "Play")
+                    HStack(spacing: 10) {
+                        Button {
+                            startOverride = nil
+                            playingItem = item
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "play.fill")
+                                Text(isResumable ? "Resume" : "Play")
+                            }
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                         }
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                        .buttonStyle(.plain)
+
+                        if isResumable {
+                            Button {
+                                startOverride = 0
+                                playingItem = item
+                            } label: {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(DT.Color.textPrimary)
+                                    .frame(width: 48, height: 48)
+                                    .background(DT.Color.backgroundSecondary)
+                                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Start Over")
+                        }
                     }
-                    .buttonStyle(.plain)
 
                     if let overview = item.overview, !overview.isEmpty {
                         Text(overview)
@@ -96,7 +121,7 @@ struct DownloadedItemDetailView: View {
         #endif
         #if os(iOS)
         .fullScreenCover(item: $playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
+            OfflinePlayerView(downloadedItem: item, startPositionOverride: startOverride)
         }
         #endif
         .alert("Delete this download?", isPresented: $showDeleteConfirm) {

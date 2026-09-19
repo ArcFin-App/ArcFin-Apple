@@ -14,6 +14,9 @@ import UIKit
 /// progress reporting (position is saved to the local SwiftData record instead).
 struct OfflinePlayerView: View {
     let downloadedItem: DownloadedItem
+    /// Overrides the saved resume position — nil (the default) resumes from
+    /// downloadedItem.playbackPositionTicks as before; 0 is how "Start Over" is expressed.
+    var startPositionOverride: Int64? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -114,7 +117,7 @@ struct OfflinePlayerView: View {
         #endif
         let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
         do {
-            try await player.load(url: videoURL, startPositionTicks: downloadedItem.playbackPositionTicks)
+            try await player.load(url: videoURL, startPositionTicks: startPositionOverride ?? downloadedItem.playbackPositionTicks)
             await player.play()
         } catch {
             // Nothing more to fall back to offline — surfaced via the stalled/failed state
