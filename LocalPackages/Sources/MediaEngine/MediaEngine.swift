@@ -117,6 +117,13 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     @ObservationIgnored private var itemStatusObservation: NSKeyValueObservation?
     @ObservationIgnored private var bufferObservation: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
+    #if !os(macOS)
+    @ObservationIgnored private var interruptionObserver: NSObjectProtocol?
+    /// Only true when handleInterruption itself paused playback — distinguishes that from
+    /// the user having already paused before the interruption began, so .ended doesn't
+    /// resume something the user deliberately stopped.
+    @ObservationIgnored private var pausedByInterruption = false
+    #endif
     @ObservationIgnored private var audioGroup: AVMediaSelectionGroup?
     @ObservationIgnored private var subtitleGroup: AVMediaSelectionGroup?
 
@@ -125,7 +132,52 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // (e.g. after a variant change) based on system language/accessibility criteria,
         // overriding an explicit setAudioTrack/setSubtitleTrack call the user just made.
         player.appliesMediaSelectionCriteriaAutomatically = false
+        #if !os(macOS)
+        // `status` here is a plain flag this class owns, only ever set by its own play()/
+        // pause() calls — it doesn't track player.rate or timeControlStatus. System UI that
+        // briefly takes audio focus (Notification Center / Control Center appearing over the
+        // app is a known trigger, not just phone calls/Siri) interrupts the session and
+        // silently drops actual playback without going through pause() — so `status` was
+        // left stuck on .playing while the video sat genuinely paused, and the first tap on
+        // play/pause just resynced the flag instead of resuming anything. This keeps status
+        // truthful and, per Apple's documented interruption-handling pattern, auto-resumes
+        // when the interruption ends with the system's own shouldResume hint.
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            MainActor.assumeIsolated {
+                self?.handleInterruption(notification)
+            }
+        }
+        #endif
     }
+
+    #if !os(macOS)
+    private func handleInterruption(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+        else { return }
+        switch type {
+        case .began:
+            if status == .playing {
+                status = .paused
+                pausedByInterruption = true
+            }
+        case .ended:
+            defer { pausedByInterruption = false }
+            guard pausedByInterruption,
+                  let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt
+            else { return }
+            if AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume) {
+                player.rate = playbackRate
+                status = .playing
+            }
+        @unknown default:
+            break
+        }
+    }
+    #endif
 
     public func load(url: URL, startPositionTicks: Int64) async throws {
         teardownObservers()
@@ -185,6 +237,9 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // starts playback at a non-default speed.
         player.rate = playbackRate
         status = .playing
+        #if !os(macOS)
+        pausedByInterruption = false
+        #endif
     }
 
     public func setRate(_ rate: Float) async {
@@ -195,6 +250,9 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     public func pause() async {
         player.pause()
         status = .paused
+        #if !os(macOS)
+        pausedByInterruption = false
+        #endif
     }
 
     public func seek(to positionTicks: Int64) async {
@@ -295,5 +353,10 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         itemStatusObservation?.invalidate(); itemStatusObservation = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
+        // interruptionObserver is deliberately not torn down here — teardownObservers()
+        // runs at the top of every load()/reload(), not just final stop(), and an
+        // interruption can legitimately happen mid-reload. It lives for this player
+        // instance's whole lifetime instead; NotificationCenter auto-unregisters a stored
+        // observer token when it's deallocated, so no explicit deinit is needed for it.
     }
 }
