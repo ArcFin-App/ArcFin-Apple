@@ -35,6 +35,8 @@ struct LicensesView: View {
         License(name: "swift-concurrency-extras", license: "MIT", url: "https://github.com/pointfreeco/swift-concurrency-extras", note: nil),
         License(name: "combine-schedulers", license: "MIT", url: "https://github.com/pointfreeco/combine-schedulers", note: nil),
         License(name: "swift-collections", license: "Apache 2.0", url: "https://github.com/apple/swift-collections", note: nil),
+        License(name: "YouTube", license: "YouTube Terms of Service", url: "https://www.youtube.com/t/terms",
+                note: "Trailers without a local file fall back to YouTube's own embedded player, per YouTube's Terms of Service — no SDK, API key, or account required."),
     ]
 
     var body: some View {
@@ -59,7 +61,7 @@ struct LicensesView: View {
                     .padding(.vertical, 4)
                 }
             } footer: {
-                Text("Most of these are open-source libraries — each remains under its own license, and using them does not require Arcfin's own source to be published. A few (like the Google Cast SDK) are proprietary components listed here for attribution, not open source, as noted next to each.")
+                Text("Licenses and other third-party components Arcfin uses.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
