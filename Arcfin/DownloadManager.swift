@@ -185,6 +185,13 @@ final class DownloadManager: NSObject {
             await liveActivity.end(nil, dismissalPolicy: .after(.now + 60 * 20))
         }
     }
+
+    /// Cancelling isn't completing — no "Download Complete" flourish, no lingering card.
+    private func endLiveActivityImmediately() {
+        guard let liveActivity else { return }
+        self.liveActivity = nil
+        Task { await liveActivity.end(nil, dismissalPolicy: .immediate) }
+    }
     #endif
 
     func isDownloaded(_ itemId: String) -> Bool {
@@ -507,7 +514,7 @@ final class DownloadManager: NSObject {
         if wasQueued {
             queueTotalCount = max(queueTotalCount - 1, queueCompletedCount)
             if pendingQueue.isEmpty && activeItemIds.isEmpty {
-                endLiveActivity()
+                endLiveActivityImmediately()
             } else {
                 refreshLiveActivity()
             }
