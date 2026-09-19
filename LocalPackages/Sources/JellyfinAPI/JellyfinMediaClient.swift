@@ -473,7 +473,13 @@ public struct JellyfinMediaClient: Sendable {
         startIndex: Int = 0,
         limit: Int = 100,
         recursive: Bool = true,
-        includeItemTypes: String? = nil
+        includeItemTypes: String? = nil,
+        genres: [String] = [],
+        years: [Int] = [],
+        isPlayed: Bool? = nil,
+        isFavorite: Bool? = nil,
+        sortBy: String = "SortName",
+        sortOrder: String = "Ascending"
     ) async throws -> (items: [MediaItem], total: Int) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
@@ -481,8 +487,8 @@ public struct JellyfinMediaClient: Sendable {
         var queryItems: [URLQueryItem] = [
             .init(name: "ParentId", value: libraryId),
             .init(name: "Recursive", value: recursive ? "true" : "false"),
-            .init(name: "SortBy", value: "SortName"),
-            .init(name: "SortOrder", value: "Ascending"),
+            .init(name: "SortBy", value: sortBy),
+            .init(name: "SortOrder", value: sortOrder),
             .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
             .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
@@ -492,6 +498,18 @@ public struct JellyfinMediaClient: Sendable {
         if let types = includeItemTypes {
             queryItems.append(.init(name: "IncludeItemTypes", value: types))
         }
+        if !genres.isEmpty {
+            queryItems.append(.init(name: "Genres", value: genres.joined(separator: "|")))
+        }
+        if !years.isEmpty {
+            queryItems.append(.init(name: "Years", value: years.map(String.init).joined(separator: ",")))
+        }
+        if let isPlayed {
+            queryItems.append(.init(name: "IsPlayed", value: isPlayed ? "true" : "false"))
+        }
+        if let isFavorite {
+            queryItems.append(.init(name: "IsFavorite", value: isFavorite ? "true" : "false"))
+        }
         comps.queryItems = queryItems
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -499,6 +517,30 @@ public struct JellyfinMediaClient: Sendable {
         let (data, _) = try await URLSession.shared.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
         return (items: page.items.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0)
+    }
+
+    /// Available filter facets (genres/years) for a library — from /Items/Filters2, scoped
+    /// to what's actually present under this ParentId rather than a global, mostly-empty list.
+    public func getLibraryFilterOptions(
+        credential: ServerCredential,
+        authHeader: String,
+        libraryId: String,
+        includeItemTypes: String? = nil
+    ) async throws -> (genres: [String], years: [Int]) {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Items/Filters2"),
+            resolvingAgainstBaseURL: false)!
+        var queryItems: [URLQueryItem] = [.init(name: "ParentId", value: libraryId)]
+        if let types = includeItemTypes {
+            queryItems.append(.init(name: "IncludeItemTypes", value: types))
+        }
+        comps.queryItems = queryItems
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let response = try JSONDecoder().decode(LibraryFiltersResponse.self, from: data)
+        return (genres: response.genres.map(\.name).sorted(), years: response.years.sorted(by: >))
     }
 
     /// Uses /Search/Hints rather than a plain /Items SearchTerm filter — Hints also
@@ -554,6 +596,18 @@ private struct ItemsPage: Decodable {
     enum CodingKeys: String, CodingKey {
         case items = "Items"
         case totalRecordCount = "TotalRecordCount"
+    }
+}
+
+private struct LibraryFiltersResponse: Decodable {
+    struct NamedFacet: Decodable { let name: String
+        enum CodingKeys: String, CodingKey { case name = "Name" }
+    }
+    let genres: [NamedFacet]
+    let years: [Int]
+    enum CodingKeys: String, CodingKey {
+        case genres = "Genres"
+        case years = "Years"
     }
 }
 

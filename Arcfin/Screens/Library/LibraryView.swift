@@ -656,6 +656,38 @@ enum LibraryNavTarget: Hashable {
     case collection(MediaItem)   // BoxSet item — routed to collection detail
 }
 
+enum LibraryWatchedFilter: String, CaseIterable, Identifiable {
+    case all = "All", unwatched = "Unwatched", watched = "Watched"
+    var id: String { rawValue }
+}
+
+enum LibrarySortOption: String, CaseIterable, Identifiable {
+    case nameAsc = "Name (A–Z)"
+    case nameDesc = "Name (Z–A)"
+    case dateAddedDesc = "Recently Added"
+    case releaseDateDesc = "Release Date (Newest)"
+    case releaseDateAsc = "Release Date (Oldest)"
+    case ratingDesc = "Rating (Highest)"
+
+    var id: String { rawValue }
+
+    var sortBy: String {
+        switch self {
+        case .nameAsc, .nameDesc: return "SortName"
+        case .dateAddedDesc: return "DateCreated"
+        case .releaseDateDesc, .releaseDateAsc: return "PremiereDate"
+        case .ratingDesc: return "CommunityRating"
+        }
+    }
+
+    var sortOrder: String {
+        switch self {
+        case .nameAsc, .releaseDateAsc: return "Ascending"
+        case .nameDesc, .dateAddedDesc, .releaseDateDesc, .ratingDesc: return "Descending"
+        }
+    }
+}
+
 struct LibraryDetailView: View {
     let library: JellyfinLibrary
 
@@ -670,6 +702,19 @@ struct LibraryDetailView: View {
     @State private var hasLoaded = false
     @State private var scrolledItemID: MediaItem.ID? = nil
     private let pageSize = 100
+
+    // Filters
+    @State private var availableGenres: [String] = []
+    @State private var availableYears: [Int] = []
+    @State private var selectedGenres: Set<String> = []
+    @State private var selectedYears: Set<Int> = []
+    @State private var watchedFilter: LibraryWatchedFilter = .all
+    @State private var favoritesOnly = false
+    @State private var sortOption: LibrarySortOption = .nameAsc
+
+    private var filtersActive: Bool {
+        !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
+    }
 
     private var hasMore: Bool { items.count < totalItems }
     private var isCollections: Bool { library.collectionType == .boxsets }
@@ -770,8 +815,36 @@ struct LibraryDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
 #endif
+#if !os(tvOS)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showFilterSheet = true } label: {
+                    Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showFilterSheet) {
+            LibraryFilterSheet(
+                availableGenres: availableGenres, availableYears: availableYears,
+                selectedGenres: $selectedGenres, selectedYears: $selectedYears,
+                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .onChange(of: selectedGenres) { _, _ in Task { await reload() } }
+        .onChange(of: selectedYears) { _, _ in Task { await reload() } }
+        .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
+        .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
+        .onChange(of: sortOption) { _, _ in Task { await reload() } }
+#endif
         .task { await load() }
+        .task { await loadFilterOptions() }
     }
+
+    #if !os(tvOS)
+    @State private var showFilterSheet = false
+    #endif
 
     private func navTarget(for item: MediaItem) -> LibraryNavTarget {
         item.type == .boxSet ? .collection(item) : .media(item)
@@ -830,6 +903,16 @@ struct LibraryDetailView: View {
     private func load() async {
         guard !hasLoaded else { return }
         hasLoaded = true
+        await fetchFirstPage()
+    }
+
+    /// Re-fetches from the top with the current filter/sort selection — used whenever a
+    /// filter or sort option changes, not just on first appearance.
+    private func reload() async {
+        await fetchFirstPage()
+    }
+
+    private func fetchFirstPage() async {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
@@ -837,7 +920,11 @@ struct LibraryDetailView: View {
             credential: cred, authHeader: header,
             libraryId: library.id, startIndex: 0, limit: pageSize,
             recursive: true,
-            includeItemTypes: includeTypes
+            includeItemTypes: includeTypes,
+            genres: Array(selectedGenres), years: Array(selectedYears),
+            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
+            isFavorite: favoritesOnly ? true : nil,
+            sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
         )
         items = fetched?.items ?? []
         totalItems = fetched?.total ?? 0
@@ -854,13 +941,129 @@ struct LibraryDetailView: View {
             credential: cred, authHeader: header,
             libraryId: library.id, startIndex: items.count, limit: pageSize,
             recursive: true,
-            includeItemTypes: includeTypes
+            includeItemTypes: includeTypes,
+            genres: Array(selectedGenres), years: Array(selectedYears),
+            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
+            isFavorite: favoritesOnly ? true : nil,
+            sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
         )
         items.append(contentsOf: fetched?.items ?? [])
         if let total = fetched?.total { totalItems = total }
         isLoadingMore = false
     }
+
+    #if !os(tvOS)
+    private func loadFilterOptions() async {
+        guard let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let options = try? await client.getLibraryFilterOptions(
+            credential: cred, authHeader: header, libraryId: library.id, includeItemTypes: includeTypes
+        )
+        availableGenres = options?.genres ?? []
+        availableYears = options?.years ?? []
+    }
+    #else
+    private func loadFilterOptions() async {}
+    #endif
 }
+
+// MARK: - Library filter sheet
+
+#if !os(tvOS)
+struct LibraryFilterSheet: View {
+    let availableGenres: [String]
+    let availableYears: [Int]
+    @Binding var selectedGenres: Set<String>
+    @Binding var selectedYears: Set<Int>
+    @Binding var watchedFilter: LibraryWatchedFilter
+    @Binding var favoritesOnly: Bool
+    @Binding var sortOption: LibrarySortOption
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Sort By") {
+                    Picker("Sort By", selection: $sortOption) {
+                        ForEach(LibrarySortOption.allCases) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                }
+
+                Section("Status") {
+                    Picker("Status", selection: $watchedFilter) {
+                        ForEach(LibraryWatchedFilter.allCases) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Toggle("Favorites Only", isOn: $favoritesOnly)
+                }
+
+                if !availableGenres.isEmpty {
+                    Section("Genre") {
+                        ForEach(availableGenres, id: \.self) { genre in
+                            filterRow(genre, isSelected: selectedGenres.contains(genre)) {
+                                toggle(genre, in: &selectedGenres)
+                            }
+                        }
+                    }
+                }
+
+                if !availableYears.isEmpty {
+                    Section("Year") {
+                        ForEach(availableYears, id: \.self) { year in
+                            filterRow(String(year), isSelected: selectedYears.contains(year)) {
+                                toggle(year, in: &selectedYears)
+                            }
+                        }
+                    }
+                }
+
+                if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly {
+                    Section {
+                        Button(role: .destructive) {
+                            selectedGenres.removeAll()
+                            selectedYears.removeAll()
+                            watchedFilter = .all
+                            favoritesOnly = false
+                        } label: {
+                            Text("Clear All Filters").frame(maxWidth: .infinity, alignment: .center)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Filter & Sort")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func filterRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(label).foregroundStyle(DT.Color.textPrimary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
+                }
+            }
+        }
+    }
+
+    private func toggle<T: Hashable>(_ value: T, in set: inout Set<T>) {
+        if set.contains(value) { set.remove(value) } else { set.insert(value) }
+    }
+}
+#endif
 
 // MARK: - Document picker (UIKit bridge)
 
