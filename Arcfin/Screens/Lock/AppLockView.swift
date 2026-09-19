@@ -27,10 +27,10 @@ struct AppLockView: View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
-            if let pinTarget {
+            if let target = pinTarget {
                 PINPadView(
                     title: "Enter PIN",
-                    subtitle: pinTarget.displayName,
+                    subtitle: target.displayName,
                     errorMessage: errorMessage,
                     resetToken: resetToken,
                     onCancel: { pinTarget = nil; errorMessage = nil }
@@ -41,9 +41,9 @@ struct AppLockView: View {
                         return
                     }
                     errorMessage = nil
-                    unlock(as: pinTarget)
+                    unlock(as: target)
                 }
-                .task(id: pinTarget.id) { await attemptBiometricsIfNeeded(for: pinTarget) }
+                .task(id: target.id) { await attemptBiometricsIfNeeded(for: target) }
             } else {
                 pickerBody
             }
