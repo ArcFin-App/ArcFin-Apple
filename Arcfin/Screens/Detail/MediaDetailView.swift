@@ -180,8 +180,8 @@ struct MediaDetailView: View {
             }
         }
         .fullScreenCover(item: $youTubeTrailer) { trailer in
-            if let embed = trailer.youTubeEmbedURL {
-                YouTubeTrailerPlayerView(embedURL: embed, title: trailer.name ?? item.name)
+            if let videoID = trailer.youTubeVideoID {
+                YouTubeTrailerPlayerView(videoID: videoID, title: trailer.name ?? item.name)
             }
         }
 #endif
@@ -323,7 +323,7 @@ struct MediaDetailView: View {
                     // genuinely no local one — a local file always streams better than an
                     // embedded web player.
                     if fetchedTrailers.isEmpty, youtubeTrailersEnabled {
-                        remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeEmbedURL != nil }
+                        remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeVideoID != nil }
                     }
                 }
             }

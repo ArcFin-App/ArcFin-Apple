@@ -68,6 +68,15 @@ let package = Package(
             url: "https://github.com/SRGSSR/google-cast-sdk",
             from: "4.8.0"
         ),
+        // In-app YouTube trailer playback fallback (when a title has no local trailer) —
+        // a proper YouTube Terms of Service-compliant iframe player wrapper, replacing an
+        // earlier hand-rolled WKWebView+HTML approach that kept hitting real embed errors
+        // (origin/config validation YouTube's player does isn't something worth
+        // reimplementing by hand when a maintained, MIT-licensed package already does it).
+        .package(
+            url: "https://github.com/SvenTiigi/YouTubePlayerKit.git",
+            from: "2.0.0"
+        ),
     ],
     targets: [
 
@@ -165,6 +174,7 @@ let package = Package(
                 "JellyfinAPI",
                 "Telemetry",
                 .product(name: "SwiftVLC", package: "SwiftVLC"),
+                .product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
             ]
         ),
 

@@ -222,9 +222,10 @@ public struct RemoteTrailer: Sendable, Identifiable, Equatable {
         self.name = name
     }
 
-    /// YouTube's own embeddable player URL for this trailer's video id, or nil if this
-    /// remote trailer isn't a YouTube link at all (some providers attach other hosts).
-    public var youTubeEmbedURL: URL? {
+    /// The raw YouTube video id, or nil if this remote trailer isn't a YouTube link at all
+    /// (some providers attach other hosts). YouTubePlayerKit takes it from here — actually
+    /// building an embeddable player (origin/config validation etc.) is its job, not ours.
+    public var youTubeVideoID: String? {
         guard let host = url.host?.lowercased() else { return nil }
         var videoId: String?
         if host.contains("youtu.be") {
@@ -237,18 +238,7 @@ public struct RemoteTrailer: Sendable, Identifiable, Equatable {
                     .queryItems?.first(where: { $0.name == "v" })?.value
             }
         }
-        guard let videoId, !videoId.isEmpty else { return nil }
-        var comps = URLComponents(string: "https://www.youtube.com/embed/\(videoId)")!
-        // origin must match the WKWebView's own baseURL exactly — YouTube's player validates
-        // the embedding page's origin against it, and without a matching origin some videos
-        // fail with a generic "video player configuration error" (error 153).
-        comps.queryItems = [
-            .init(name: "playsinline", value: "1"),
-            .init(name: "modestbranding", value: "1"),
-            .init(name: "rel", value: "0"),
-            .init(name: "origin", value: "https://www.youtube.com"),
-        ]
-        return comps.url
+        return (videoId?.isEmpty == false) ? videoId : nil
     }
 }
 

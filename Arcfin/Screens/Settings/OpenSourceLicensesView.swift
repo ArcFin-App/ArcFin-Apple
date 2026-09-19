@@ -35,8 +35,10 @@ struct LicensesView: View {
         License(name: "swift-concurrency-extras", license: "MIT", url: "https://github.com/pointfreeco/swift-concurrency-extras", note: nil),
         License(name: "combine-schedulers", license: "MIT", url: "https://github.com/pointfreeco/combine-schedulers", note: nil),
         License(name: "swift-collections", license: "Apache 2.0", url: "https://github.com/apple/swift-collections", note: nil),
-        License(name: "YouTube", license: "YouTube Terms of Service", url: "https://www.youtube.com/t/terms",
-                note: "Trailers without a local file fall back to YouTube's own embedded player, per YouTube's Terms of Service — no SDK, API key, or account required."),
+        License(name: "YouTubePlayerKit", license: "MIT", url: "https://github.com/SvenTiigi/YouTubePlayerKit",
+                note: "Plays a YouTube trailer in-app when a title has no local trailer file."),
+        License(name: "YouTube API Services", license: "YouTube API Services Terms of Service", url: "https://developers.google.com/youtube/terms/api-services-terms-of-service",
+                note: "Governs use of the embedded player above — not an open-source license."),
     ]
 
     var body: some View {
