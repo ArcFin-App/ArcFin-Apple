@@ -286,10 +286,16 @@ extension JellyfinMediaClient {
 
     // MARK: - Intro/credits skip markers (community "Intro Skipper" plugin — optional)
 
-    public func getSkipSegments(credential: ServerCredential, authHeader: String, itemId: String) async -> (introEnd: Double?, creditsStart: Double?) {
+    public func getSkipSegments(credential: ServerCredential, authHeader: String, itemId: String) async -> (introEnd: Double?, creditsStart: Double?, recapEnd: Double?) {
         async let intro = fetchSegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Introduction")
         async let credits = fetchSegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Credits")
-        return (await intro, await credits)
+        // The Intro Skipper plugin's IntroTimestamps endpoint only ever documented
+        // Introduction/Credits — Recap isn't a kind it's known to serve, but this reuses
+        // the exact same endpoint/parsing shape (rather than a separate network call) on
+        // the chance a server-side segment provider does return one; an unsupported kind
+        // just 404s and fetchSegment already treats that as nil, same as any other miss.
+        async let recap = fetchSegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Recap")
+        return (await intro, await credits, await recap)
     }
 
     private func fetchSegment(credential: ServerCredential, authHeader: String, itemId: String, kind: String) async -> Double? {

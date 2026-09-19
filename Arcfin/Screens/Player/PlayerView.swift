@@ -32,6 +32,7 @@ struct PlayerView: View {
     @State var showQualityMenu = false
     @State var showRateMenu = false
     @State var showChapterMenu = false
+    @State var showInfoSheet = false
     @State var showSyncPlayMenu = false
     @State var syncPlayGroupNameInput = ""
     @State var isSyncPlayBusy = false
@@ -55,6 +56,7 @@ struct PlayerView: View {
     @State var lastThumbnailBucket: Int?
     @State var introEnd: Double?
     @State var creditsStart: Double?
+    @State var recapEnd: Double?
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
     @State var stallObserver: NSObjectProtocol?
@@ -214,6 +216,7 @@ struct PlayerView: View {
         .onChange(of: showQualityMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .onChange(of: showRateMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .onChange(of: showChapterMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
+        .onChange(of: showInfoSheet) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .sheet(isPresented: $showTrackMenu) {
             trackSelectionSheet
         }
@@ -225,6 +228,9 @@ struct PlayerView: View {
         }
         .sheet(isPresented: $showChapterMenu) {
             chapterListSheet
+        }
+        .sheet(isPresented: $showInfoSheet) {
+            mediaInfoSheet
         }
         #if !os(tvOS)
         .onChange(of: showSyncPlayMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
@@ -384,11 +390,10 @@ struct PlayerView: View {
             await primeAutoLadder(credential: credential, authHeader: authHeader)
         }
         do {
-            let info = try await client.getPlaybackInfo(
+            var info = try await client.getPlaybackInfo(
                 credential: credential, authHeader: authHeader, itemId: item.id,
                 quality: qualityCap(for: quality)
             )
-            playbackInfo = info
             // .choose always resolves Auto down to a concrete engine — only two outcomes here.
             let engine = PlaybackEngineSelector.choose(
                 preference: playbackEnginePreference, container: info.container, videoCodec: info.videoStream?.codec
@@ -409,6 +414,35 @@ struct PlayerView: View {
             } else {
                 selectedSubtitleIndex = nil
             }
+            // Settings > Playback's global language defaults only steer this very first
+            // pick, and only when a track in that language actually exists — a later
+            // change always goes through changeTrack()/reload() instead.
+            var languagePreferenceApplied = false
+            let preferredAudioLang = UserDefaults.standard.string(forKey: "preferredAudioLanguage") ?? ""
+            if !preferredAudioLang.isEmpty,
+               let match = info.audioStreams.first(where: { $0.language == preferredAudioLang }),
+               match.index != selectedAudioIndex {
+                selectedAudioIndex = match.index
+                languagePreferenceApplied = true
+            }
+            let preferredSubtitleLang = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
+            if !preferredSubtitleLang.isEmpty,
+               let match = info.subtitleStreams.first(where: { $0.language == preferredSubtitleLang }),
+               match.index != selectedSubtitleIndex {
+                selectedSubtitleIndex = match.index
+                languagePreferenceApplied = true
+            }
+            // Jellyfin negotiates audio/subtitle selection server-side (see changeTrack) —
+            // a language default that actually changed the pick needs the same re-fetch
+            // with explicit indices before the very first play, not just a local index change.
+            if languagePreferenceApplied, let reInfo = try? await client.getPlaybackInfo(
+                credential: credential, authHeader: authHeader, itemId: item.id,
+                quality: qualityCap(for: quality),
+                audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
+            ) {
+                info = reInfo
+            }
+            playbackInfo = info
             // PlaybackInfo's own TrickplayInfo field isn't reliably populated by Jellyfin —
             // the general item-detail endpoint's Trickplay field (keyed by MediaSourceId) is
             // what the official apps actually read it from.
@@ -445,6 +479,7 @@ struct PlayerView: View {
             let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
             introEnd = segments.introEnd
             creditsStart = segments.creditsStart
+            recapEnd = segments.recapEnd
 
             if let seriesId = item.seriesId {
                 let upNext = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: 1)

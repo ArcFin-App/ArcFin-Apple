@@ -130,6 +130,9 @@ extension PlayerView {
             Button { showQualityMenu = true } label: {
                 Label("Quality", systemImage: "slider.horizontal.3")
             }
+            Button { showInfoSheet = true } label: {
+                Label("Media Info", systemImage: "info.circle")
+            }
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.system(size: 18, weight: .semibold))
@@ -345,6 +348,85 @@ extension PlayerView {
         HapticManager.impact(.light)
     }
 
+    // MARK: - Media info
+
+    var mediaInfoSheet: some View {
+        List {
+            if let info = playbackInfo {
+                Section("Video") {
+                    if let codec = info.videoStream?.codec {
+                        LabeledContent("Codec", value: codec.uppercased())
+                    }
+                    if let width = info.videoStream?.width, let height = info.videoStream?.height {
+                        LabeledContent("Resolution", value: "\(width)×\(height)")
+                    }
+                    if let range = info.videoStream?.videoRange {
+                        LabeledContent("Video Range", value: range)
+                    }
+                }
+                Section("Audio") {
+                    if let stream = currentAudioStream {
+                        if let codec = stream.codec {
+                            LabeledContent("Codec", value: codec.uppercased())
+                        }
+                        LabeledContent("Track", value: mediaInfoTrackLabel(stream))
+                    } else {
+                        Text("No audio track selected.")
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+                Section("Subtitle") {
+                    if let stream = currentSubtitleStream {
+                        LabeledContent("Track", value: mediaInfoTrackLabel(stream))
+                    } else {
+                        Text("Off")
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+                Section("Stream") {
+                    if let container = info.container {
+                        LabeledContent("Container", value: container.uppercased())
+                    }
+                    LabeledContent("Play Method", value: info.playMethod.rawValue)
+                    if let bitrate = info.bitrate {
+                        LabeledContent("Bitrate", value: mediaInfoBitrateLabel(bitrate))
+                    }
+                }
+            } else {
+                Text("No playback info available.")
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        }
+        #if canImport(UIKit) && !os(tvOS)
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        #endif
+        .background(DT.Color.backgroundPrimary)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(.ultraThinMaterial)
+    }
+
+    private var currentAudioStream: JellyfinMediaStream? {
+        playbackInfo?.audioStreams.first(where: { $0.index == selectedAudioIndex })
+    }
+
+    private var currentSubtitleStream: JellyfinMediaStream? {
+        guard let selectedSubtitleIndex else { return nil }
+        return playbackInfo?.subtitleStreams.first(where: { $0.index == selectedSubtitleIndex })
+    }
+
+    private func mediaInfoTrackLabel(_ stream: JellyfinMediaStream) -> String {
+        if let title = stream.displayTitle, !title.isEmpty { return title }
+        let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
+        return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+    }
+
+    private func mediaInfoBitrateLabel(_ bitrate: Int) -> String {
+        let mbps = Double(bitrate) / 1_000_000
+        return mbps >= 1 ? String(format: "%.1f Mb/s", mbps) : String(format: "%.0f Kb/s", Double(bitrate) / 1000)
+    }
+
     // MARK: - SyncPlay
 
     #if !os(tvOS)
@@ -493,8 +575,14 @@ extension PlayerView {
     }
 
     private var skipButtonLabel: String? {
-        guard UserDefaults.standard.bool(forKey: "skipIntro") || UserDefaults.standard.bool(forKey: "skipCredits") else { return nil }
+        guard UserDefaults.standard.bool(forKey: "skipIntro") || UserDefaults.standard.bool(forKey: "skipCredits") || UserDefaults.standard.bool(forKey: "skipRecap") else { return nil }
         let currentSeconds = Double(player.positionTicks) / 10_000_000
+        // Recap ("previously on") is the cold open, ahead of the intro/title sequence —
+        // checked first so both can coexist without one's button hiding the other's.
+          if UserDefaults.standard.bool(forKey: "skipRecap"),
+              let recapEnd = recapEnd, currentSeconds < recapEnd, currentSeconds > 0.5 {
+            return "Skip Recap"
+        }
           if UserDefaults.standard.bool(forKey: "skipIntro"),
               let introEnd = introEnd, currentSeconds < introEnd, currentSeconds > 0.5 {
             return "Skip Intro"
@@ -646,7 +734,9 @@ extension PlayerView {
 
     private func skipToSegmentEnd() {
         let currentSeconds = Double(player.positionTicks) / 10_000_000
-        if let introEnd = introEnd, currentSeconds < introEnd {
+        if let recapEnd = recapEnd, currentSeconds < recapEnd {
+            Task { await player.seek(to: Int64(recapEnd * 10_000_000)) }
+        } else if let introEnd = introEnd, currentSeconds < introEnd {
             Task { await player.seek(to: Int64(introEnd * 10_000_000)) }
         } else if let creditsStart = creditsStart, currentSeconds >= creditsStart {
             Task { await finishPlayback() }

@@ -7,7 +7,37 @@ struct PlaybackSettingsView: View {
     @AppStorage("autoPlayNext")    private var autoPlayNext    = true
     @AppStorage("skipIntro")       private var skipIntro       = false
     @AppStorage("skipCredits")     private var skipCredits     = false
+    @AppStorage("skipRecap")       private var skipRecap       = false
     @AppStorage("subtitleDefault") private var subtitleDefault = false
+    @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
+    @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
+
+    private static let audioLanguageOptions: [(code: String, name: String)] = [
+        ("", "None"),
+        ("eng", "English"),
+        ("spa", "Spanish"),
+        ("fre", "French"),
+        ("ger", "German"),
+        ("jpn", "Japanese"),
+        ("kor", "Korean"),
+        ("chi", "Chinese"),
+        ("ita", "Italian"),
+        ("por", "Portuguese"),
+        ("rus", "Russian"),
+    ]
+    private static let subtitleLanguageOptions: [(code: String, name: String)] = [
+        ("", "Off"),
+        ("eng", "English"),
+        ("spa", "Spanish"),
+        ("fre", "French"),
+        ("ger", "German"),
+        ("jpn", "Japanese"),
+        ("kor", "Korean"),
+        ("chi", "Chinese"),
+        ("ita", "Italian"),
+        ("por", "Portuguese"),
+        ("rus", "Russian"),
+    ]
 
     var body: some View {
         List {
@@ -31,9 +61,27 @@ struct PlaybackSettingsView: View {
 
             Section {
                 Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
+                Toggle("Skip Recap Automatically", isOn: $skipRecap)
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
                 Toggle("Skip Credits Automatically", isOn: $skipCredits)
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
+            }
+
+            Section {
+                Picker("Preferred Audio Language", selection: $preferredAudioLanguage) {
+                    ForEach(Self.audioLanguageOptions, id: \.code) { option in
+                        Text(option.name).tag(option.code)
+                    }
+                }
+                Picker("Preferred Subtitle Language", selection: $preferredSubtitleLanguage) {
+                    ForEach(Self.subtitleLanguageOptions, id: \.code) { option in
+                        Text(option.name).tag(option.code)
+                    }
+                }
+            } footer: {
+                Text("Used to pick a starting audio/subtitle track when a title has a matching language available — otherwise falls back to the server's default.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
