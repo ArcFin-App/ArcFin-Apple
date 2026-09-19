@@ -35,6 +35,11 @@ struct PlayerView: View {
     @State var showSyncPlayMenu = false
     @State var syncPlayGroupNameInput = ""
     @State var isSyncPlayBusy = false
+    // Per-feature on/off toggles — Settings > Playback > Player Features.
+    @AppStorage("chapterListEnabled") var chapterListEnabled = true
+    @AppStorage("syncPlayEnabled") var syncPlayEnabled = true
+    @AppStorage("castEnabled") var castEnabled = true
+    @AppStorage("stillWatchingPromptEnabled") var stillWatchingPromptEnabled = true
     @State var quality: VideoQuality
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
@@ -689,7 +694,7 @@ struct PlayerView: View {
     func playNextEpisode(isAutomatic: Bool = false) {
         guard let nextEpisode else { return }
         upNextCountdown?.cancel()
-        if isAutomatic {
+        if isAutomatic, stillWatchingPromptEnabled {
             let streak = UserDefaults.standard.integer(forKey: Self.autoplayStreakKey) + 1
             UserDefaults.standard.set(streak, forKey: Self.autoplayStreakKey)
             if streak >= Self.stillWatchingThreshold {

@@ -106,6 +106,11 @@ struct SettingsView: View {
                 } label: {
                     Text("Codec Compatibility")
                 }
+                NavigationLink {
+                    PlayerFeaturesSettingsView()
+                } label: {
+                    Text("Player Features")
+                }
 #endif
             } header: {
                 sectionHeader("Playback", icon: "play.circle")

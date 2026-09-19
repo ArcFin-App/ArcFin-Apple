@@ -69,7 +69,7 @@ extension PlayerView {
             Spacer()
 
             #if canImport(GoogleCast)
-            if CastManager.shared.isCastAvailable {
+            if castEnabled, CastManager.shared.isCastAvailable {
                 CastButton()
                     .frame(width: 24, height: 24)
             }
@@ -105,7 +105,7 @@ extension PlayerView {
             }
             #endif
 
-            if !chapters.isEmpty {
+            if chapterListEnabled, !chapters.isEmpty {
                 Button { showChapterMenu = true } label: {
                     Image(systemName: "list.bullet")
                         .font(.system(size: 16, weight: .semibold))
@@ -115,11 +115,13 @@ extension PlayerView {
             }
 
             #if !os(tvOS)
-            Button { showSyncPlayMenu = true } label: {
-                Image(systemName: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(syncPlayManager.isInGroup ? DT.Color.accent : .white)
-                    .frame(width: 32, height: 32)
+            if syncPlayEnabled {
+                Button { showSyncPlayMenu = true } label: {
+                    Image(systemName: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(syncPlayManager.isInGroup ? DT.Color.accent : .white)
+                        .frame(width: 32, height: 32)
+                }
             }
             #endif
 
