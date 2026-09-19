@@ -116,13 +116,6 @@ struct PlayerView: View {
                     .simultaneousGesture(dragGesture(width: proxy.size.width))
             }
             .ignoresSafeArea()
-            // A single tap toggles controls via withAnimation — that ambient animation was
-            // also picking up the video surface's own hosting-view frame (SwiftUI animates
-            // a UIViewRepresentable's frame same as any other view unless told not to),
-            // which looked like the whole video zooming in and settling back on every tap.
-            // Cutting off animation propagation here, not just the CALayer-level fix in
-            // PlayerSurfaceView.layoutSubviews, since that alone didn't fully account for it.
-            .transaction { $0.disablesAnimations = true }
             #endif
 
             if let seekFeedback {

@@ -17,21 +17,28 @@ final class PlayerSurfaceView: UIView {
     override class var layerClass: AnyClass { AVPlayerLayer.self }
     var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
 
-    // layerClass normally keeps layer.bounds synced to the view automatically, but the
-    // XPC-based "video receiver" rendering path some HLS streams take
-    // (FigUseVideoReceiverForCALayer, seen throughout the no-video logs) may not pick up
-    // layout changes the same way — force it explicitly rather than trust that path.
+    // Because layerClass makes this view's own backing layer the AVPlayerLayer, any ambient
+    // animation active when the hosting view gets resized (e.g. toggleControls()'s
+    // withAnimation, fired by an unrelated tap elsewhere in the tree) implicitly animates
+    // this layer's bounds/position too — the whole video visibly zooms in and settles back,
+    // or now gets stuck mid-transition looking permanently zoomed. Wrapping the redundant
+    // `playerLayer.frame = bounds` reassignment below in CATransaction.setDisableActions
+    // doesn't reach this: UIKit sets the frame directly (not through that reassignment) as
+    // part of the ambient transaction already in flight by the time layoutSubviews runs, so
+    // the implicit action is already queued. Overriding the layer-delegate action hook
+    // instead suppresses it unconditionally, regardless of what transaction is ambient.
+    override func action(for layer: CALayer, forKey event: String) -> CAAction? {
+        switch event {
+        case "bounds", "position", "frame", "transform", "sublayerTransform":
+            return NSNull()
+        default:
+            return super.action(for: layer, forKey: event)
+        }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Without disabling implicit actions, this frame reassignment picks up whatever
-        // SwiftUI animation happens to be ambient at the moment layoutSubviews fires (e.g.
-        // toggleControls()'s withAnimation, triggered by a single tap) — CoreAnimation
-        // then animates the layer's frame using that transaction's curve, which looked
-        // like the whole video zooming in and settling back on every tap.
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
         playerLayer.frame = bounds
-        CATransaction.commit()
     }
 }
 

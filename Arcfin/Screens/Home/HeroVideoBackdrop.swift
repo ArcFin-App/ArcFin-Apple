@@ -45,14 +45,22 @@ final class LoopingPlayerUIView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // See PlayerSurfaceView's own note in PlayerSupportViews.swift — this view's own backing
+    // layer IS the AVPlayerLayer (layerClass above), so suppressing implicit animation has to
+    // happen at the layer-delegate hook, not by wrapping a redundant frame reassignment in
+    // CATransaction.setDisableActions in layoutSubviews.
+    override func action(for layer: CALayer, forKey event: String) -> CAAction? {
+        switch event {
+        case "bounds", "position", "frame", "transform", "sublayerTransform":
+            return NSNull()
+        default:
+            return super.action(for: layer, forKey: event)
+        }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
-        // See PlayerSurfaceView's own note — without this, the frame reassignment can pick
-        // up whatever ambient SwiftUI animation happens to be active and visibly "zoom".
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
         playerLayer.frame = bounds
-        CATransaction.commit()
     }
 }
 #endif
