@@ -11,6 +11,9 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
 
     @State private var showUsersSheet = false
+    #if !os(tvOS)
+    @State private var showSwitchServerSheet = false
+    #endif
     @State private var quickConnectCode = ""
     @State private var isAuthorizingQC = false
     @State private var quickConnectResult: String?
@@ -138,14 +141,16 @@ struct SettingsView: View {
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow
-                // Reuses the same profile switcher already built for the avatar/profile
-                // card — "switching server" here means picking a different saved profile,
-                // same as that sheet already does.
+#if os(tvOS)
                 Button { showUsersSheet = true } label: {
                     Text("Switch Server")
                 }
-#if os(tvOS)
                 .listRowBackground(Color.clear)
+#else
+                Button { showSwitchServerSheet = true } label: {
+                    Text("Switch Server")
+                }
+                .disabled(distinctServerCount <= 1)
 #endif
                 NavigationLink {
                     AddServerFlowView()
@@ -285,8 +290,20 @@ struct SettingsView: View {
                 .presentationDragIndicator(.visible)
                 .preferredColorScheme(.dark)
         }
+        .sheet(isPresented: $showSwitchServerSheet) {
+            NavigationStack { SwitchServerView() }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .preferredColorScheme(.dark)
+        }
 #endif
     }
+
+    #if !os(tvOS)
+    private var distinctServerCount: Int {
+        Set(authManager.profiles.map { $0.baseURL.host ?? $0.baseURL.absoluteString }).count
+    }
+    #endif
 
     // MARK: - Profile section
 
