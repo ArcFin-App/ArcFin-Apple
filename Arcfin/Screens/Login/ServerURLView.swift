@@ -4,6 +4,10 @@ import JellyfinAPI
 
 struct ServerURLView: View {
     var onConnected: (URL, String) -> Void
+    /// nil for the very first login (nothing to go back to) — set when this screen is
+    /// reached from Settings > Add Server, where the system nav bar is hidden and this was
+    /// the only step of that flow with no way back at all.
+    var onBack: (() -> Void)? = nil
 
     @Environment(AuthManager.self) private var authManager
 
@@ -20,6 +24,23 @@ struct ServerURLView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                if let onBack {
+                    HStack {
+                        Button(action: onBack) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                                Text("Back").font(DT.Font.caption)
+                            }
+                            .foregroundStyle(DT.Color.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                    }
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .padding(.top, 12)
+                }
+
                 stepIndicator
 
                 ArcfinLogoView(size: 52)

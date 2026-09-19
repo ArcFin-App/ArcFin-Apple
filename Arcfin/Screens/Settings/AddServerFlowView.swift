@@ -20,11 +20,11 @@ struct AddServerFlowView: View {
 
             switch step {
             case .serverURL:
-                ServerURLView { url, name in
+                ServerURLView(onConnected: { url, name in
                     withAnimation(DT.Animation.standard) {
                         step = .auth(serverURL: url, serverName: name)
                     }
-                }
+                }, onBack: { dismiss() })
                 .transition(.asymmetric(
                     insertion: .opacity,
                     removal: .move(edge: .leading).combined(with: .opacity)
