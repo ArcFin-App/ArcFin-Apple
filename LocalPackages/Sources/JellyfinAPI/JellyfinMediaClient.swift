@@ -612,7 +612,44 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.shared.data(for: req)
         let page = try JSONDecoder().decode(SearchHintsResponse.self, from: data)
-        return page.searchHints.compactMap { $0.toMediaItem() }
+        var results = page.searchHints.compactMap { $0.toMediaItem() }
+
+        // Search/Hints' own schema has no SeriesId/SeriesPrimaryImageTag (only a plain
+        // Series name string) — episode results would otherwise have no way to show their
+        // series' portrait poster instead of the episode's own landscape screenshot. One
+        // batched follow-up call (by id, not per-episode) fills that in when there are any.
+        let episodeIds = results.filter { $0.type == .episode }.map(\.id)
+        if !episodeIds.isEmpty,
+           let seriesInfo = try? await episodeSeriesPosterInfo(credential: credential, authHeader: authHeader, episodeIds: episodeIds) {
+            for i in results.indices {
+                guard let info = seriesInfo[results[i].id] else { continue }
+                results[i].seriesId = info.seriesId
+                results[i].seriesPrimaryImageTag = info.seriesPrimaryImageTag
+            }
+        }
+        return results
+    }
+
+    private func episodeSeriesPosterInfo(
+        credential: ServerCredential,
+        authHeader: String,
+        episodeIds: [String]
+    ) async throws -> [String: (seriesId: String?, seriesPrimaryImageTag: String?)] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Ids", value: episodeIds.joined(separator: ",")),
+            .init(name: "Fields", value: "SeriesId,SeriesPrimaryImageTag"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let page = try JSONDecoder().decode(ItemsPage.self, from: data)
+        return Dictionary(uniqueKeysWithValues: page.items.map { item in
+            (item.id, (seriesId: item.seriesId, seriesPrimaryImageTag: item.seriesPrimaryImageTag))
+        })
     }
 
     /// Local trailers attached to a specific item.
