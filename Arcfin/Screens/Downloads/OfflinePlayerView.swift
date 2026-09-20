@@ -51,6 +51,7 @@ struct OfflinePlayerView: View {
     @State private var macVolume: Double = 1.0
     @State private var macVolumeHUD: Double?
     @State private var macVolumeHUDTask: Task<Void, Never>?
+    @FocusState private var isPlayerFocused: Bool
     #endif
 
     private var dir: URL { DownloadStore.directory(for: downloadedItem.itemId) }
@@ -147,16 +148,18 @@ struct OfflinePlayerView: View {
         })
         .focusable()
         .focusEffectDisabled()
-        .onKeyPress(.space) { togglePlayPause(); return .handled }
-        .onKeyPress(.leftArrow) { seek(by: -10); return .handled }
-        .onKeyPress(.rightArrow) { seek(by: 10); return .handled }
-        .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
-        .onKeyPress(.downArrow) { adjustMacVolume(by: -0.05); return .handled }
+        .focused($isPlayerFocused)
+        .onAppear { isPlayerFocused = true }
+        .onKeyPress(.space) { _ in togglePlayPause(); return .handled }
+        .onKeyPress(.leftArrow) { _ in seek(by: -10); return .handled }
+        .onKeyPress(.rightArrow) { _ in seek(by: 10); return .handled }
+        .onKeyPress(.upArrow) { _ in adjustMacVolume(by: 0.05); return .handled }
+        .onKeyPress(.downArrow) { _ in adjustMacVolume(by: -0.05); return .handled }
         .onKeyPress(characters: CharacterSet(charactersIn: "fF")) { _ in
             toggleMacWindowFullScreen(macWindow)
             return .handled
         }
-        .onKeyPress(.escape) {
+        .onKeyPress(.escape) { _ in
             if isMacFullScreen {
                 toggleMacWindowFullScreen(macWindow)
             } else {
