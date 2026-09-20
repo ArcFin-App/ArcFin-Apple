@@ -111,6 +111,17 @@ struct MediaDetailView: View {
                 }
             }
         }
+        #elseif os(macOS)
+        // Downloads are iOS-only (DownloadManager isn't wired up on macOS elsewhere in
+        // the app), but Favorite has no other entry point here without this toolbar.
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { toggleFavorite() } label: {
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
+                }
+            }
+        }
         #endif
         .navigationDestination(item: $selectedEpisode) { ep in
             MediaDetailView(item: ep)
@@ -121,7 +132,9 @@ struct MediaDetailView: View {
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
                 .presentationDetents([.medium, .large])
+                #if !os(macOS)
                 .presentationDragIndicator(.visible)
+                #endif
                 .presentationBackground(.ultraThinMaterial)
         }
         #if os(iOS)
@@ -183,6 +196,17 @@ struct MediaDetailView: View {
             if let videoID = trailer.youTubeVideoID {
                 YouTubeTrailerPlayerView(videoID: videoID, title: trailer.name ?? item.name)
             }
+        }
+#elseif os(macOS)
+        // No fullScreenCover on macOS — a window-modal sheet is the native equivalent.
+        // (YouTubeTrailerPlayerView itself is UIKit-only — the "Play Trailer" button for a
+        // title with no local trailer, only a remote one, is a known gap on macOS until
+        // that view grows an AppKit path.)
+        .sheet(item: $playbackRequest) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
+            }
+            .frame(minWidth: 900, minHeight: 560)
         }
 #endif
         .task { await load() }
@@ -735,38 +759,14 @@ struct MediaDetailView: View {
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(d.cast) { person in
                         Button { selectedPerson = person } label: {
-                            VStack(spacing: 6) {
-                                if let tag = person.primaryImageTag,
-                                   let url = mediaRepo.personImageURL(personId: person.id, tag: tag, fillWidth: 120) {
-                                    AsyncImage(url: url) { phase in
-                                        switch phase {
-                                        case .success(let img): img.resizable().scaledToFill()
-                                        default: personPlaceholder
-                                        }
-                                    }
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(Circle())
-                                    .overlay(Circle().stroke(.white.opacity(0.1), lineWidth: 1))
-                                } else {
-                                    personPlaceholder
-                                        .frame(width: 60, height: 60)
-                                        .clipShape(Circle())
-                                }
-
-                                Text(person.name)
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(DT.Color.textPrimary)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-
-                                if let role = person.role, !role.isEmpty {
-                                    Text(role)
-                                        .font(.system(size: 9))
-                                        .foregroundStyle(DT.Color.textSecondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .frame(width: 70, alignment: .top)
+                            CastPersonCard(
+                                imageURL: person.primaryImageTag.flatMap {
+                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120)
+                                },
+                                name: person.name,
+                                role: person.role,
+                                placeholder: { personPlaceholder }
+                            )
                         }
 #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
@@ -1243,6 +1243,54 @@ struct MediaDetailView: View {
             .font(.system(size: 16, weight: .bold))
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.3)
+    }
+}
+
+// MARK: - Cast card
+
+private struct CastPersonCard<Placeholder: View>: View {
+    let imageURL: URL?
+    let name: String
+    let role: String?
+    @ViewBuilder let placeholder: () -> Placeholder
+
+    @State private var hovered = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Group {
+                if let imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: placeholder()
+                        }
+                    }
+                } else {
+                    placeholder()
+                }
+            }
+            .frame(width: 60, height: 60)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : Color.white.opacity(0.1), lineWidth: hovered ? 2 : 1))
+            .scaleEffect(hovered ? 1.06 : 1)
+
+            Text(name)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+
+            if let role, !role.isEmpty {
+                Text(role)
+                    .font(.system(size: 9))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(width: 70, alignment: .top)
+        .animation(DT.Animation.fast, value: hovered)
+        .onHover { hovered = $0 }
     }
 }
 
