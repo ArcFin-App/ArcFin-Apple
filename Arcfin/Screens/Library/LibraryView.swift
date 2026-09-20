@@ -21,10 +21,18 @@ struct LibraryView: View {
     @State private var navigateToDownloadsDeepLink = false
     @State private var searchQuery = ""
 
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
+    private var gridColumns: [GridItem] {
+#if os(macOS)
+        // Fixed 2-up stretches library cards absurdly wide on a resizable Mac window —
+        // adaptive reflows into more columns as it grows instead.
+        [GridItem(.adaptive(minimum: 220), spacing: 12)]
+#else
+        [
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+        ]
+#endif
+    }
 
     var body: some View {
         NavigationStack {
@@ -293,6 +301,8 @@ private struct LibraryCard: View {
     let library: JellyfinLibrary
     let imageURL: URL?
 
+    @State private var hovered = false
+
     var body: some View {
         ZStack {
             background
@@ -319,9 +329,12 @@ private struct LibraryCard: View {
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
         .overlay(
             RoundedRectangle(cornerRadius: DT.Radius.card)
-                .stroke(Color(hex: library.collectionType.accentHex).opacity(0.18), lineWidth: 1)
+                .stroke(hovered ? DT.Color.accent.opacity(0.5) : Color(hex: library.collectionType.accentHex).opacity(0.18), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+        .scaleEffect(hovered ? 1.02 : 1)
+        .animation(DT.Animation.fast, value: hovered)
+        .onHover { hovered = $0 }
     }
 
     @ViewBuilder
@@ -352,6 +365,55 @@ private struct LibraryCard: View {
     }
 }
 
+// MARK: - Library grid item card
+
+private struct LibraryItemCard: View {
+    let imageURL: URL?
+    let title: String
+    let year: String?
+
+    @State private var hovered = false
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            if let imageURL {
+                AsyncImage(url: imageURL) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: Color(DT.Color.backgroundSecondary)
+                    }
+                }
+                .clipped()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+            LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .top)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                if let year {
+                    Text(year)
+                        .font(.system(size: 9))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            .padding(8)
+        }
+        .aspectRatio(2/3, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(hovered ? DT.Color.accent.opacity(0.4) : Color.white.opacity(0.06), lineWidth: 1)
+        )
+        .scaleEffect(hovered ? 1.03 : 1)
+        .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
+        .animation(DT.Animation.fast, value: hovered)
+        .onHover { hovered = $0 }
+    }
+}
+
 // MARK: - Local player
 
 /// Plays any file the user picks via Files (the "On This Device" section) — always VLC,
@@ -372,6 +434,8 @@ struct LocalPlayerView: View {
     @State private var showTrackMenu = false
     #if canImport(UIKit) && !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?
+    #endif
+    #if !os(tvOS)
     @State private var isFillScreen = false
     #endif
 
@@ -392,6 +456,12 @@ struct LocalPlayerView: View {
                 .onTapGesture { toggleControls() }
             }
             .ignoresSafeArea()
+            #elseif os(macOS)
+            // No PiPVideoView on macOS (it's built on UIKit) — SwiftVLC's plain VideoView
+            // is the cross-platform drawable surface and is all a windowed Mac player needs.
+            SwiftVLC.VideoView(player.vlcPlayer)
+                .contentShape(Rectangle())
+                .onTapGesture { toggleControls() }
             #endif
 
             if player.status == .idle || player.status == .loading || player.isBuffering {
@@ -419,7 +489,7 @@ struct LocalPlayerView: View {
             if status == .playing { scheduleAutoHide() }
             if status == .ended { dismiss() }
         }
-        #if canImport(UIKit) && !os(tvOS)
+        #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
             player.vlcPlayer.aspectRatio = newValue ? .fill : .default
         }
@@ -482,6 +552,8 @@ struct LocalPlayerView: View {
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
             }
+            #endif
+            #if !os(tvOS)
             Button { isFillScreen.toggle() } label: {
                 Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                     .font(.system(size: 16, weight: .semibold))
@@ -549,7 +621,9 @@ struct LocalPlayerView: View {
             }
             .frame(maxHeight: .infinity, alignment: .center)
             .contentShape(Rectangle())
-            #if canImport(UIKit) && !os(tvOS)
+            #if !os(tvOS)
+            // A plain DragGesture works with a mouse drag on macOS same as a touch drag
+            // on iOS — no UIKit dependency, so this isn't restricted to canImport(UIKit).
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -719,6 +793,17 @@ enum LibraryGridDensity: String, CaseIterable, Identifiable {
         case .comfortable: return 2
         }
     }
+
+    /// Minimum poster width for macOS's adaptive grid — a fixed column count doesn't
+    /// reflow as the window resizes, so density instead sets how small a card can get
+    /// before another column joins.
+    var macMinimumWidth: CGFloat {
+        switch self {
+        case .compact: return 110
+        case .normal: return 140
+        case .comfortable: return 180
+        }
+    }
 }
 
 struct LibraryDetailView: View {
@@ -768,6 +853,14 @@ struct LibraryDetailView: View {
     private let client = JellyfinMediaClient()
 #if os(tvOS)
     private let columns = [GridItem(.adaptive(minimum: 200), spacing: DT.Spacing.shelfGap)]
+#elseif os(macOS)
+    @AppStorage("libraryGridDensity") private var gridDensity = LibraryGridDensity.normal
+    private var columns: [GridItem] {
+        // A fixed column count leaves a resizable Mac window either cramped or with
+        // cards stretched absurdly wide — adaptive reflows as the window resizes,
+        // with density still controlling how small a card can get first.
+        [GridItem(.adaptive(minimum: gridDensity.macMinimumWidth), spacing: 12)]
+    }
 #else
     @AppStorage("libraryGridDensity") private var gridDensity = LibraryGridDensity.normal
     private var columns: [GridItem] {
@@ -842,12 +935,19 @@ struct LibraryDetailView: View {
                 .background(DT.Color.backgroundPrimary)
             }
         }
+#if os(macOS)
+        // The inline "library.name" heading above only renders on iOS — macOS relies on
+        // the window/sidebar title instead, so an empty string here left the screen with
+        // no visible name anywhere.
+        .navigationTitle(library.name)
+#else
         .navigationTitle("")
+#endif
 #if !os(macOS) && !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
 #endif
-#if !os(macOS) && !os(tvOS)
+#if !os(tvOS)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showFilterSheet = true } label: {
@@ -873,7 +973,9 @@ struct LibraryDetailView: View {
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
             )
             .presentationDetents([.medium, .large])
+            #if !os(macOS)
             .presentationDragIndicator(.visible)
+            #endif
         }
         .onChange(of: selectedGenres) { _, _ in Task { await reload() } }
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }
@@ -898,35 +1000,11 @@ struct LibraryDetailView: View {
     }
 
     private func libraryItemCard(_ item: MediaItem) -> some View {
-        ZStack(alignment: .bottomLeading) {
-            if let url = mediaRepo.imageURL(for: item) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: Color(DT.Color.backgroundSecondary)
-                    }
-                }
-                .clipped()
-            } else {
-                DT.Color.backgroundSecondary
-            }
-            LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .top)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.name)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                if let year = item.productionYear {
-                    Text(String(year))
-                        .font(.system(size: 9))
-                        .foregroundStyle(.white.opacity(0.6))
-                }
-            }
-            .padding(8)
-        }
-        .aspectRatio(2/3, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.06), lineWidth: 1))
+        LibraryItemCard(
+            imageURL: mediaRepo.imageURL(for: item),
+            title: item.name,
+            year: item.productionYear.map { String($0) }
+        )
     }
 
     @ViewBuilder
@@ -1016,7 +1094,7 @@ struct LibraryDetailView: View {
 
 // MARK: - Library filter sheet
 
-#if !os(macOS) && !os(tvOS)
+#if !os(tvOS)
 struct LibraryFilterSheet: View {
     let availableGenres: [String]
     let availableYears: [Int]
@@ -1085,7 +1163,9 @@ struct LibraryFilterSheet: View {
                 }
             }
             .navigationTitle("Filter & Sort")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
