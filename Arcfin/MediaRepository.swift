@@ -4,6 +4,7 @@ import AuthCore
 import JellyfinAPI
 import Telemetry
 import Network
+import os
 
 /// Races a one-shot NWPathMonitor read against a timeout — mirrors AuthManager's
 /// TimeoutResult, which uses the same lock-guarded resume-once pattern for a system
