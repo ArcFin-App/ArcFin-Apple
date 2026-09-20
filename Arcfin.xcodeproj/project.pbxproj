@@ -475,6 +475,7 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/GoogleCast.framework/GoogleCast",
 			);
 			name = "Generate GoogleCast dSYM";
 			outputFileListPaths = (
@@ -484,7 +485,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# GoogleCast.xcframework ships no companion dSYM of its own, which App Store Connect\n# rejects on upload (\"did not include a dSYM for the GoogleCast.framework\"). The DWARF\n# debug info is still embedded in the framework's own binary though, so dsymutil can\n# extract it into the .dSYM bundle Apple expects, straight from the copy already sitting\n# in the built product by this point in the build.\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  FRAMEWORK_BINARY=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleCast.framework/GoogleCast\"\n  if [ -f \"$FRAMEWORK_BINARY\" ]; then\n    dsymutil \"$FRAMEWORK_BINARY\" -o \"${DWARF_DSYM_FOLDER_PATH}/GoogleCast.framework.dSYM\"\n  else\n    echo \"warning: GoogleCast framework binary not found at $FRAMEWORK_BINARY — skipping dSYM generation\"\n  fi\nfi\n";
+			shellScript = "# GoogleCast.xcframework ships no companion dSYM of its own, which App Store Connect\n# rejects on upload (\"did not include a dSYM for the GoogleCast.framework\"). The DWARF\n# debug info is still embedded in the framework's own binary though, so dsymutil can\n# extract it into the .dSYM bundle Apple expects, straight from the copy already sitting\n# in the built product by this point in the build.\nif [ \"$CONFIGURATION\" = \"Release\" ]; then\n    FRAMEWORK_BINARY=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleCast.framework/GoogleCast\"\n    OUTPUT_DSYM=\"${DWARF_DSYM_FOLDER_PATH}/GoogleCast.framework.dSYM\"\n\n    if [ -f \"$FRAMEWORK_BINARY\" ]; then\n        echo \"Generating dSYM for GoogleCast...\"\n        dsymutil \"$FRAMEWORK_BINARY\" -o \"$OUTPUT_DSYM\"\n    else\n        echo \"warning: GoogleCast framework binary not found at $FRAMEWORK_BINARY - skipping dSYM generation\"\n    fi\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -766,7 +767,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
@@ -837,8 +838,9 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -853,6 +855,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Arcfin/Info.plist;
