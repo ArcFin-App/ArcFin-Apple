@@ -398,6 +398,16 @@ struct HomeView: View {
                         heroPlaybackRequest = HeroPlaybackRequest(item: next, startTicks: 0)
                     }
                 }
+#elseif os(macOS)
+                // No fullScreenCover on macOS — a window-modal sheet is the native
+                // equivalent, since the Play button otherwise set state that nothing
+                // ever presented.
+                .sheet(item: $heroPlaybackRequest) { request in
+                    PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                        heroPlaybackRequest = HeroPlaybackRequest(item: next, startTicks: 0)
+                    }
+                    .frame(minWidth: 900, minHeight: 560)
+                }
 #endif
             }
             .navigationTitle("")
@@ -418,6 +428,28 @@ struct HomeView: View {
                 }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
+#elseif os(macOS)
+            // No pull-to-refresh gesture on a pointer-driven window — an explicit
+            // toolbar action stands in for it. Settings has no other entry point from
+            // Home on macOS (the avatar button that opens it on iOS lived only in the
+            // iOS-only toolbar above).
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        Task { await loadHome(force: true) }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .help("Refresh")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showSettings = true } label: {
+                        avatarView
+                            .frame(width: 22, height: 22)
+                    }
+                    .help("Settings")
+                }
+            }
 #endif
         }
         .task { await loadHome() }

@@ -6,11 +6,17 @@ struct WatchlistView: View {
     @State private var isLoading = false
     @State private var requestingItem: SeerrItem? = nil
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
+    private var columns: [GridItem] {
+        #if os(macOS)
+        [GridItem(.adaptive(minimum: 140, maximum: 200), spacing: 12)]
+        #else
+        [
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+        ]
+        #endif
+    }
 
     var body: some View {
         Group {
@@ -84,6 +90,13 @@ struct WatchlistView: View {
             .aspectRatio(2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
+            .contextMenu {
+                Button(role: .destructive) {
+                    remove(item)
+                } label: {
+                    Label("Remove from Watchlist", systemImage: "bookmark.slash")
+                }
+            }
 
             Text(item.title)
                 .font(.system(size: 12, weight: .semibold))

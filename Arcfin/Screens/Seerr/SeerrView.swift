@@ -230,6 +230,13 @@ struct SeerrView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .focusSection()
             }
+#elseif os(macOS)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
+                ForEach(displayItems) { item in
+                    discoverCard(item)
+                }
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
 #else
             LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
                 ForEach(displayItems) { item in
@@ -343,6 +350,23 @@ struct SeerrView: View {
         .aspectRatio(2/3, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+        .contextMenu {
+            Button {
+                toggleWatchlist(item)
+            } label: {
+                Label(
+                    seerrRepo.isInWatchlist(item) ? "Remove from Watchlist" : "Add to Watchlist",
+                    systemImage: seerrRepo.isInWatchlist(item) ? "bookmark.slash" : "bookmark"
+                )
+            }
+            if !isAvailable && !alreadyRequested {
+                Button {
+                    requestingItem = item
+                } label: {
+                    Label("Request", systemImage: "plus.circle")
+                }
+            }
+        }
     }
 
     private func posterPlaceholder(item: SeerrItem) -> some View {
@@ -411,6 +435,13 @@ struct SeerrView: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .focusSection()
                 }
+#elseif os(macOS)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
+                    ForEach(searchResults) { item in
+                        discoverCard(item)
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
 #else
                 LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
                     ForEach(searchResults) { item in
@@ -455,6 +486,18 @@ struct SeerrView: View {
                         requestRow(req)
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            selectedRequest = req
+                        } label: {
+                            Label("View Details", systemImage: "info.circle")
+                        }
+                        Button(role: .destructive) {
+                            Task { try? await seerrRepo.cancelRequest(id: req.id) }
+                        } label: {
+                            Label("Remove Request", systemImage: "trash")
+                        }
+                    }
                 }
             }
         }

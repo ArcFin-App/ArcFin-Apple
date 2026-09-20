@@ -181,7 +181,7 @@ struct AuthView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 fieldLabel("Username")
-                glassField(icon: "person", placeholder: "jellyfin_user", text: $username, isSecure: false)
+                glassField(icon: "person", placeholder: "jellyfin_user", text: $username, isSecure: false, onSubmit: submitCredentials)
             }
             .padding(.top, DT.Spacing.md)
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -189,7 +189,7 @@ struct AuthView: View {
             VStack(alignment: .leading, spacing: 6) {
                 fieldLabel("Password")
                 ZStack(alignment: .trailing) {
-                    glassField(icon: "lock", placeholder: "••••••••", text: $password, isSecure: !passwordVisible)
+                    glassField(icon: "lock", placeholder: "••••••••", text: $password, isSecure: !passwordVisible, onSubmit: submitCredentials)
                     Button { passwordVisible.toggle() } label: {
                         Image(systemName: passwordVisible ? "eye.slash" : "eye")
                             .font(.system(size: 13))
@@ -292,7 +292,7 @@ struct AuthView: View {
             .foregroundStyle(DT.Color.textSecondary)
     }
 
-    private func glassField(icon: String, placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {
+    private func glassField(icon: String, placeholder: String, text: Binding<String>, isSecure: Bool, onSubmit: (() -> Void)? = nil) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon).font(.system(size: 13)).foregroundStyle(DT.Color.textSecondary)
             if isSecure {
@@ -302,6 +302,7 @@ struct AuthView: View {
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
                     #endif
+                    .onSubmit { onSubmit?() }
             } else {
                 TextField(placeholder, text: text)
                     .textFieldStyle(.plain)
@@ -309,6 +310,7 @@ struct AuthView: View {
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
                     #endif
+                    .onSubmit { onSubmit?() }
             }
         }
         .padding(.horizontal, 14)
@@ -348,6 +350,13 @@ struct AuthView: View {
     }
 
     // MARK: - Actions
+
+    // Return-key submission (physical keyboard, Mac especially) mirrors the Sign In
+    // button's own disabled condition — password stays optional, username doesn't.
+    private func submitCredentials() {
+        guard !username.isEmpty, !signingIn else { return }
+        Task { await handleSignIn() }
+    }
 
     private func handleSignIn() async {
         authError = nil

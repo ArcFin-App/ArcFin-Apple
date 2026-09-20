@@ -10,8 +10,14 @@ struct ShelfSeeAllView: View {
     @State private var selectedItem: MediaItem?
 
     private var columns: [GridItem] {
+#if os(macOS)
+        // Fixed 2/3-up columns leave a resizable Mac window either cramped or with cards
+        // stretched absurdly wide — adaptive reflows the grid as the window resizes instead.
+        [GridItem(.adaptive(minimum: isLandscape ? 220 : 130), spacing: 12)]
+#else
         let count = isLandscape ? 2 : 3
         return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
+#endif
     }
 
     var body: some View {
