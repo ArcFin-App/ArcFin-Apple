@@ -973,9 +973,7 @@ struct LibraryDetailView: View {
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
             )
             .presentationDetents([.medium, .large])
-            #if !os(macOS)
             .presentationDragIndicator(.visible)
-            #endif
         }
         .onChange(of: selectedGenres) { _, _ in Task { await reload() } }
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }

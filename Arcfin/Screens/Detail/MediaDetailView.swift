@@ -132,9 +132,7 @@ struct MediaDetailView: View {
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
                 .presentationDetents([.medium, .large])
-                #if !os(macOS)
                 .presentationDragIndicator(.visible)
-                #endif
                 .presentationBackground(.ultraThinMaterial)
         }
         #if os(iOS)
