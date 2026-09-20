@@ -39,7 +39,7 @@ struct OfflinePlayerView: View {
     @State private var showTrackMenu = false
     @AppStorage("subtitleTextSize") private var subtitleTextSize = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") private var subtitleTextColor = SubtitleTextColorOption.white
-    @AppStorage("subtitleBackgroundStyle") private var subtitleBackgroundStyle = SubtitleBackgroundStyle.box
+    @AppStorage("subtitleBackgroundStyle") private var subtitleBackgroundStyle = SubtitleBackgroundStyle.outline
     @State private var progressSaveTask: Task<Void, Never>?
     #if !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?

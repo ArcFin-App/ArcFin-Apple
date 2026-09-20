@@ -5,7 +5,7 @@ import SwiftUI
 struct SubtitleStyleSettingsView: View {
     @AppStorage("subtitleTextSize") private var size = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") private var color = SubtitleTextColorOption.white
-    @AppStorage("subtitleBackgroundStyle") private var background = SubtitleBackgroundStyle.box
+    @AppStorage("subtitleBackgroundStyle") private var background = SubtitleBackgroundStyle.outline
 
     var body: some View {
         List {
