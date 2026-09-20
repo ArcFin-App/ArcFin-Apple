@@ -20,6 +20,15 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: account,
+            // macOS defaults SecItem* to the legacy file-based login keychain unless told
+            // otherwise, which scopes items to the running binary's ad-hoc/dev code
+            // signature — a fresh build from Xcode gets a different implicit access group
+            // each time, so items saved by a previous run silently stop resolving on the
+            // next launch (looks like sign-in "didn't persist" even though the save appeared
+            // to succeed). This opts into the same per-container Data Protection Keychain
+            // iOS already uses unconditionally, which doesn't have that instability. A no-op
+            // on iOS/tvOS, where it's already the default.
+            kSecUseDataProtectionKeychain: true,
         ]
         let attrs: [CFString: Any] = [kSecValueData: data]
         var status = SecItemUpdate(query as CFDictionary, attrs as CFDictionary)
@@ -38,6 +47,7 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecAttrAccount: serverID.uuidString,
             kSecReturnData: true,
             kSecMatchLimit: kSecMatchLimitOne,
+            kSecUseDataProtectionKeychain: true,
         ]
         var ref: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &ref)
@@ -53,6 +63,7 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: serverID.uuidString,
+            kSecUseDataProtectionKeychain: true,
         ]
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
@@ -66,6 +77,7 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecAttrService: service,
             kSecReturnData: true,
             kSecMatchLimit: kSecMatchLimitAll,
+            kSecUseDataProtectionKeychain: true,
         ]
         var ref: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &ref)
@@ -85,6 +97,7 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecAttrService:     pinService,
             kSecAttrAccount:     credentialID.uuidString,
             kSecAttrAccessible:  kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            kSecUseDataProtectionKeychain: true,
         ]
         var status = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
         if status == errSecItemNotFound {
@@ -102,6 +115,7 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecAttrAccount:  credentialID.uuidString,
             kSecReturnData:   true,
             kSecMatchLimit:   kSecMatchLimitOne,
+            kSecUseDataProtectionKeychain: true,
         ]
         var ref: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &ref)
@@ -117,6 +131,7 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecClass:       kSecClassGenericPassword,
             kSecAttrService: pinService,
             kSecAttrAccount: credentialID.uuidString,
+            kSecUseDataProtectionKeychain: true,
         ]
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {

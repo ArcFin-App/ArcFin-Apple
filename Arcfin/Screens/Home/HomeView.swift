@@ -354,11 +354,15 @@ struct HomeView: View {
 #else
         let rawImageH: CGFloat = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
         // On iPad/Mac (regular width — usePortraitHero is iPhone-only), the hero banner
-        // was nearly filling the window before any shelves came into view. Capped to 60%
-        // of the available height there; iPhone's portrait hero is already sized off its
-        // own aspect ratio and is left alone.
+        // was nearly filling the window before any shelves came into view. Capped there;
+        // iPhone's portrait hero is already sized off its own aspect ratio and left alone.
         guard !usePortraitHero else { return (rawImageH, rawImageH) }
-        let cap = screenH * 0.6
+#if os(macOS)
+        let capFraction: CGFloat = 0.6
+#else
+        let capFraction: CGFloat = 0.7
+#endif
+        let cap = screenH * capFraction
         let heroH = min(rawImageH + 220, cap)
         let imageH = max(0, heroH - 220)
         return (imageH, heroH)
