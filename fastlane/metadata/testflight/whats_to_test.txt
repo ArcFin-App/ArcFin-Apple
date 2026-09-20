@@ -1,0 +1,8 @@
+This build focuses on:
+• Playback controls — AirPlay/Chromecast metadata, Now Playing/Control Center, Picture in Picture, and the reshuffled in-player quick-access icons (portrait vs. landscape)
+• The Netflix-style profile picker and per-profile Face ID/PIN lock
+• Trailer playback, including the in-app YouTube fallback when a title has no local trailer
+• The no-connection screen and offline mode
+• Downloads and smart storage management
+
+Try casting to AirPlay/Chromecast mid-playback, backgrounding the app (including via Notification Center and Picture in Picture) and coming back, and switching between Wi-Fi and cellular. Please note your device model and Jellyfin server version (Settings > Server) with any report.

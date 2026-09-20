@@ -1,0 +1,29 @@
+Arcfin is a client app for Jellyfin, a free/open-source self-hosted media server (jellyfin.org) — it has no content or account system of its own, so a server is required to sign in and evaluate playback.
+
+Suggested path to test:
+1. Launch Arcfin.
+2. On the "Add Server" screen, enter a reachable Jellyfin server URL.
+3. Sign in with a Jellyfin account on that server.
+
+For review, the official public Jellyfin demo server can be used:
+  Server URL: https://demo.jellyfin.org/stable
+  Username / Password: see demo_user.txt / demo_password.txt
+
+NOTE TO SELF BEFORE SUBMITTING: verify the demo server is online and these
+credentials still work — Jellyfin's public demo is commonly documented as
+username "demo" / password "demo", but this was not confirmed live and
+demo server credentials/uptime can change without notice. If it's down or
+credentials have changed, submit a private Jellyfin server + test account
+of your own instead, since Apple's reviewer needs *something* that works
+to actually evaluate the app.
+
+Once signed in, the reviewer can browse the library, play a video (direct
+play or transcoded depending on the source), and try Settings > Playback,
+Downloads, and the profile picker (Face ID/PIN lock is off by default —
+it's an opt-in per-profile setting under Settings, not required to use
+the app).
+
+Local network permission (server/Chromecast discovery) and location
+permission (home Wi-Fi network name, used only to switch between a
+server's local/remote address) are both optional — declining either
+still leaves the app fully usable by entering a server URL manually.

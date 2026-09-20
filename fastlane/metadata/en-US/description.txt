@@ -1,0 +1,34 @@
+Arcfin is a premium, ground-up native client for Jellyfin — the free, open-source media server you run yourself. No subscriptions, no ads, no account with us. Point Arcfin at your own server and it feels like it was built by Apple.
+
+REQUIRES A JELLYFIN SERVER
+Arcfin is a client, not a media library on its own. You'll need access to a Jellyfin server (self-hosted or one you've been invited to) to use it. Don't have one yet? Jellyfin is free and open-source — see jellyfin.org.
+
+BUILT FOR iOS 26
+A true SwiftUI app designed around iOS 26 and iPadOS 26's Liquid Glass — not a wrapped web view, not a cross-platform port. Fast, native navigation throughout, with a proper iPad layout.
+
+PLAYBACK, DONE RIGHT
+• Direct play and transcoded streaming, with automatic quality stepping if your connection can't keep up
+• A second playback engine (VLC) for containers and codecs AVFoundation can't open
+• AirPlay and Google Cast, with full Now Playing / Control Center integration
+• Picture in Picture
+• Judder-free playback with optional display frame-rate matching
+• Custom subtitle styling — size, color, and background
+• Chapters, skip intro/credits/recap, playback speed control, and an Up Next card with an "are you still watching" check for long binge sessions
+
+DOWNLOAD FOR OFFLINE
+Download movies and episodes for offline playback, with Wi-Fi-only and quality controls, a Live Activity for progress, and smart storage management.
+
+DISCOVER & TRACK
+• Home screen with Continue Watching, Next Up, and Recommended sections
+• Full library browsing with sorting (including by genre), filtering, and search
+• Cast and crew pages
+• Optional trailer playback, with an in-app YouTube fallback when a title has no local trailer
+• Connect Jellyseerr to browse and request new content without leaving Arcfin
+• Connect Streamystats to see your own watch stats
+
+BUILT-IN PRIVACY
+• A Netflix-style profile picker with optional per-profile Face ID or PIN lock
+• SyncPlay to watch together with others on your server, in sync
+• No analytics, no tracking, no third-party ad SDKs — Arcfin talks directly to your own server and nowhere else
+
+Arcfin is actively developed and updated. Feedback and bug reports are always welcome — see the Support link on the app's product page.
