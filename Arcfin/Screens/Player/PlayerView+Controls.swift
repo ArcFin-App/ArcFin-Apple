@@ -9,23 +9,43 @@ extension PlayerView {
     // MARK: - Controls overlay
 
     var controlsOverlay: some View {
-        VStack(spacing: 0) {
-            topBar
-            Spacer()
-            bottomBar
-        }
-        .background(
-            LinearGradient(
-                stops: [
-                    .init(color: .black.opacity(0.55), location: 0),
-                    .init(color: .clear, location: 0.22),
-                    .init(color: .clear, location: 0.7),
-                    .init(color: .black.opacity(0.65), location: 1),
-                ],
-                startPoint: .top, endPoint: .bottom
+        // GeometryReader here does NOT ignoresSafeArea() itself, so proxy.size reports the
+        // safe-area-inset region — topBar/bottomBar still position exactly as before, only
+        // the background below bleeds past it. Needed for the width tapGesture takes, and
+        // to give the middle gap below an actual frame to fill.
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                topBar
+                // A plain Spacer() here left the whole middle of the screen hit-testable
+                // (via the background below) but with nothing wired to handle a touch that
+                // landed on it — once controls were visible, double-tapping to seek again or
+                // tapping to dismiss them early just silently did nothing, since the tap
+                // never reached videoSurface's gesture underneath. Giving this region the
+                // exact same gesture lets it behave like the video surface whenever it's the
+                // one actually receiving the touch.
+                Color.clear
+                    .contentShape(Rectangle())
+                    #if canImport(UIKit) && !os(tvOS)
+                    .gesture(tapGesture(width: proxy.size.width))
+                    #elseif os(macOS)
+                    .gesture(macTapGesture(width: proxy.size.width))
+                    #endif
+                bottomBar
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.55), location: 0),
+                        .init(color: .clear, location: 0.22),
+                        .init(color: .clear, location: 0.7),
+                        .init(color: .black.opacity(0.65), location: 1),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+                .ignoresSafeArea()
             )
-            .ignoresSafeArea()
-        )
+        }
     }
 
     private var topBar: some View {
