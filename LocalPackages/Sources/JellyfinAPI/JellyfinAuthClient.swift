@@ -83,6 +83,19 @@ public struct JellyfinAuthClient: Sendable {
     private let deviceId: String
     private let deviceName: String
 
+    /// Keeps the MediaBrowser auth header's Device="..." field to plain, printable ASCII
+    /// with no double quotes or backslashes — those would break the quoted-string field
+    /// outright, and there's no guarantee every Jellyfin server (or a reverse proxy in
+    /// front of one) parses that header as strictly/leniently as another. A name that's
+    /// empty after stripping falls back to a safe default rather than sending Device="".
+    private static func sanitize(_ name: String) -> String {
+        let cleaned = String(name.unicodeScalars.filter { scalar in
+            scalar.isASCII && scalar.value >= 0x20 && scalar != "\"" && scalar != "\\"
+        })
+        let trimmed = cleaned.trimmingCharacters(in: .whitespaces)
+        return trimmed.isEmpty ? "Arcfin" : trimmed
+    }
+
     public init() {
         let key = "arcfin.deviceId"
         if let stored = UserDefaults.standard.string(forKey: key) {
@@ -92,13 +105,21 @@ public struct JellyfinAuthClient: Sendable {
             UserDefaults.standard.set(id, forKey: key)
             deviceId = id
         }
+        let rawName: String
         #if os(iOS) || os(tvOS)
-        deviceName = MainActor.assumeIsolated { UIDevice.current.name }
+        rawName = MainActor.assumeIsolated { UIDevice.current.name }
         #elseif os(macOS)
-        deviceName = Host.current().localizedName ?? "Mac"
+        // Host.current().localizedName is the user-editable "Computer Name" from System
+        // Settings > Sharing — unlike UIDevice's iOS device name, this can contain
+        // non-ASCII characters (emoji, accents) a naive server-side auth-header parser may
+        // not expect inside the quoted Device="..." field, which reads to the server as a
+        // malformed header (400 Bad Request) rather than an auth failure. Sanitized below,
+        // same as deviceName always is now regardless of platform.
+        rawName = Host.current().localizedName ?? "Mac"
         #else
-        deviceName = "Arcfin"
+        rawName = "Arcfin"
         #endif
+        deviceName = Self.sanitize(rawName)
     }
 
     // MARK: - Server validation
