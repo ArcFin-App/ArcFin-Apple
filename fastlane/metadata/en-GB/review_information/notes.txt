@@ -6,20 +6,22 @@ Suggested path to test:
 3. Sign in with a Jellyfin account on that server.
 
 For review, the official public Jellyfin demo server can be used:
-  Server URL: https://demo.jellyfin.org/stable
+  Server URL to enter in Arcfin: https://demo.jellyfin.org/stable
+  (You can preview the same server in a browser first at https://demo.jellyfin.org/stable/web
+  — that /web path is Jellyfin's own bundled web client, not the server address itself, so
+  don't enter it into Arcfin's Add Server field or sign-in will fail.)
   Username: demo
   Password: (none — leave the password field in Arcfin's sign-in screen empty and tap Sign In)
 
 The demo account genuinely has no password set. Arcfin's sign-in screen only requires a
 username to enable the Sign In button — the password field is optional, matching Jellyfin
 itself, which allows accounts configured with no password (common for demo/kid profiles).
-If the button still looks disabled, that's a stale build; this build fixes it.
 
-NOTE TO SELF BEFORE SUBMITTING: verify the demo server is online and the "demo" account
-still exists/still has no password — this was not confirmed live immediately before
-submission and demo server uptime/config can change without notice. If it's down or no
-longer passwordless, submit a private Jellyfin server + test account of your own instead,
-since Apple's reviewer needs *something* that works to actually evaluate the app.
+NOTE TO SELF BEFORE SUBMITTING: do one final end-to-end sign-in test against
+https://demo.jellyfin.org/stable right before submitting — demo server uptime/config can
+change without notice. If it's down or no longer passwordless, submit a private Jellyfin
+server + test account of your own instead, since Apple's reviewer needs *something* that
+works to actually evaluate the app.
 
 Once signed in, the reviewer can browse the library, play a video (direct play or
 transcoded depending on the source), and try Settings > Playback, Downloads, and the
