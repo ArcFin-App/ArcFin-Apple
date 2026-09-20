@@ -1,5 +1,8 @@
 import SwiftUI
 import Persistence
+#if os(macOS)
+import AppKit
+#endif
 
 struct DownloadedItemDetailView: View {
     let item: DownloadedItem
@@ -139,6 +142,13 @@ struct DownloadedItemDetailView: View {
             if let fileName = item.backdropFileName ?? item.posterFileName,
                let uiImage = UIImage(contentsOfFile: dir.appendingPathComponent(fileName).path) {
                 Image(uiImage: uiImage).resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+            #elseif os(macOS)
+            if let fileName = item.backdropFileName ?? item.posterFileName,
+               let nsImage = NSImage(contentsOfFile: dir.appendingPathComponent(fileName).path) {
+                Image(nsImage: nsImage).resizable().scaledToFill()
             } else {
                 DT.Color.backgroundSecondary
             }

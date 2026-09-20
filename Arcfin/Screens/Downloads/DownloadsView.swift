@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import Persistence
+#if os(macOS)
+import AppKit
+#endif
 
 /// Navigation payload for a series container row — a thin wrapper instead of a bare String
 /// so `.navigationDestination(for:)` can dispatch to the series detail view specifically,
@@ -417,6 +420,15 @@ struct DownloadsView: View {
             } else {
                 DT.Color.backgroundSecondary
             }
+            #elseif os(macOS)
+            if let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: seriesId).appendingPathComponent("poster.jpg").path) {
+                Image(nsImage: nsImage).resizable().scaledToFill()
+            } else if let fallbackItem, let fileName = fallbackItem.posterFileName,
+                      let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: fallbackItem.itemId).appendingPathComponent(fileName).path) {
+                Image(nsImage: nsImage).resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
+            }
             #else
             DT.Color.backgroundSecondary
             #endif
@@ -456,6 +468,13 @@ struct DownloadsView: View {
             if let fileName = item.posterFileName,
                let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: item.itemId).appendingPathComponent(fileName).path) {
                 Image(uiImage: uiImage).resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+            #elseif os(macOS)
+            if let fileName = item.posterFileName,
+               let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: item.itemId).appendingPathComponent(fileName).path) {
+                Image(nsImage: nsImage).resizable().scaledToFill()
             } else {
                 DT.Color.backgroundSecondary
             }

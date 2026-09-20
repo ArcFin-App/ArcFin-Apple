@@ -60,6 +60,18 @@ struct UsersView: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        // onDelete below gives iOS its swipe gesture for free, but macOS has
+                        // no swipe — a right-click is the only path to remove a profile there.
+                        #if os(macOS)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                authManager.removeProfile(id: profile.id)
+                                Task { await loadPINStates() }
+                            } label: {
+                                Label("Remove Profile", systemImage: "trash")
+                            }
+                        }
+                        #endif
                     }
                     .onDelete { indices in
                         for i in indices {

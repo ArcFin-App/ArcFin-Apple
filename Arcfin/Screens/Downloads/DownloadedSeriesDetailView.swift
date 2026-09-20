@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import Persistence
+#if os(macOS)
+import AppKit
+#endif
 
 /// Series container detail for downloads — mirrors MediaDetailView's shape (backdrop,
 /// overview, season picker, episode list) but only ever shows what's actually downloaded:
@@ -187,6 +190,13 @@ struct DownloadedSeriesDetailView: View {
             } else {
                 DT.Color.backgroundSecondary
             }
+            #elseif os(macOS)
+            if let fileName = series?.backdropFileName ?? series?.posterFileName,
+               let nsImage = NSImage(contentsOfFile: dir.appendingPathComponent(fileName).path) {
+                Image(nsImage: nsImage).resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
+            }
             #else
             DT.Color.backgroundSecondary
             #endif
@@ -322,6 +332,13 @@ struct DownloadedSeriesDetailView: View {
             if let fileName = episode.posterFileName,
                let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
                 Image(uiImage: uiImage).resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+            #elseif os(macOS)
+            if let fileName = episode.posterFileName,
+               let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
+                Image(nsImage: nsImage).resizable().scaledToFill()
             } else {
                 DT.Color.backgroundSecondary
             }
