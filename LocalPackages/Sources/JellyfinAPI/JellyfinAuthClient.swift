@@ -1,6 +1,11 @@
 import Foundation
 import AuthCore
 import Telemetry
+// Needed for the privacy-annotated string interpolation in the error log below — Telemetry
+// wraps os.Logger, but that doesn't re-export the OSLogMessage interpolation machinery to
+// callers (see MediaRepository.swift, which hit the identical "missing import of defining
+// module 'os'" compile error for the same reason).
+import os
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -125,20 +130,58 @@ public struct JellyfinAuthClient: Sendable {
     // MARK: - Server validation
 
     /// Normalises the raw URL string, contacts /System/Info/Public, returns (URL, serverName).
+    ///
+    /// A bare host:port — the natural way to type a local server's address — has no scheme
+    /// to go on. Silently defaulting that to HTTPS alone broke every plain-HTTP local
+    /// Jellyfin instance (the common case: most LAN setups have no TLS cert at all), and the
+    /// resulting TLS handshake failure collapsed into the same generic "Cannot reach server"
+    /// message with nothing to tell it apart from a genuinely offline server. An address
+    /// typed WITH an explicit scheme is trusted exactly as given, no fallback; one without
+    /// tries HTTPS first (so a real TLS server still connects on the first attempt) and only
+    /// falls back to HTTP if that fails.
     public func validateServer(url rawURL: String) async throws -> (url: URL, serverName: String) {
-        guard let base = normalise(rawURL) else { throw JellyfinAuthError.invalidServerURL }
+        let trimmed = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw JellyfinAuthError.invalidServerURL }
+
+        let candidates: [URL]
+        if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+            guard let url = normalise(trimmed) else { throw JellyfinAuthError.invalidServerURL }
+            candidates = [url]
+        } else {
+            guard let httpsURL = normalise("https://" + trimmed),
+                  let httpURL = normalise("http://" + trimmed)
+            else { throw JellyfinAuthError.invalidServerURL }
+            candidates = [httpsURL, httpURL]
+        }
+
+        var lastError: Error = JellyfinAuthError.serverUnreachable
+        for base in candidates {
+            do {
+                return try await fetchPublicInfo(base: base)
+            } catch {
+                lastError = error
+            }
+        }
+        // Whichever candidate failed last is the one worth logging — the real reason
+        // ("Cannot reach server" was previously the ONLY thing ever surfaced, regardless of
+        // whether the cause was a bad cert, DNS failure, wrong port, or an offline server).
+        let nsError = lastError as NSError
+        Self.log.error(
+            "validateServer failed for \(trimmed, privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+        )
+        throw JellyfinAuthError.serverUnreachable
+    }
+
+    private func fetchPublicInfo(base: URL) async throws -> (url: URL, serverName: String) {
         var req = URLRequest(url: base.appendingPathComponent("System/Info/Public"))
         req.setValue(authHeader(), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
-        do {
-            let (data, resp) = try await URLSession.arcfin.data(for: req)
-            guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
-                throw JellyfinAuthError.serverUnreachable
-            }
-            let info = try JSONDecoder().decode(PublicInfo.self, from: data)
-            return (base, info.serverName)
-        } catch let e as JellyfinAuthError { throw e }
-        catch { throw JellyfinAuthError.serverUnreachable }
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
+        guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
+            throw JellyfinAuthError.serverUnreachable
+        }
+        let info = try JSONDecoder().decode(PublicInfo.self, from: data)
+        return (base, info.serverName)
     }
 
     // MARK: - Password auth
