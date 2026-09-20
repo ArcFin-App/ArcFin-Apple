@@ -86,6 +86,56 @@ public struct SubtitleTrack: Sendable, Equatable, Identifiable {
     }
 }
 
+/// Races a one-shot seekableTimeRanges read against a timeout — same lock-guarded
+/// resume-once pattern as MediaRepository's PathWait, for a KVO callback with no bounded
+/// completion time of its own (a stream that never covers the target shouldn't hang load()).
+private final class SeekableRangeWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Void, Never>
+    private var observation: NSKeyValueObservation?
+
+    init(continuation: CheckedContinuation<Void, Never>) {
+        self.continuation = continuation
+    }
+
+    func start(item: AVPlayerItem, targetSeconds: Double, timeoutSeconds: Double) {
+        if Self.covers(item.seekableTimeRanges, targetSeconds) {
+            finish()
+            return
+        }
+        observation = item.observe(\.seekableTimeRanges, options: [.new]) { [weak self] item, _ in
+            guard Self.covers(item.seekableTimeRanges, targetSeconds) else { return }
+            self?.finish()
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self.finish()
+        }
+    }
+
+    private static func covers(_ ranges: [NSValue], _ targetSeconds: Double) -> Bool {
+        ranges.contains { value in
+            let range = value.timeRangeValue
+            let start = CMTimeGetSeconds(range.start)
+            let end = CMTimeGetSeconds(CMTimeAdd(range.start, range.duration))
+            return targetSeconds >= start && targetSeconds <= end
+        }
+    }
+
+    private func finish() {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        observation?.invalidate()
+        continuation.resume()
+    }
+}
+
 // MARK: - AVFoundation adapter (primary until MPV wrapper lands)
 
 @MainActor
@@ -213,9 +263,24 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         try await waitUntilReady(item: item)
 
         if startPositionTicks > 0 {
+            // .readyToPlay doesn't mean seekableTimeRanges covers startPositionTicks yet —
+            // for a Jellyfin HLS transcode (switching audio/subtitle tracks reloads via a
+            // fresh transcode, see PlayerView.reload) the manifest/segment map streams in
+            // progressively, so seeking here before it catches up gets silently clamped
+            // back toward 0 instead of landing at the resume position. Direct-play files
+            // know their full range immediately, which is why this only ever showed up
+            // "sometimes" and specifically around a track change.
+            await waitUntilSeekable(item: item, targetSeconds: Double(startPositionTicks) / 10_000_000)
             await seek(to: startPositionTicks)
         }
         status = .paused
+    }
+
+    private func waitUntilSeekable(item: AVPlayerItem, targetSeconds: Double, timeoutSeconds: Double = 5) async {
+        await withCheckedContinuation { continuation in
+            SeekableRangeWait(continuation: continuation)
+                .start(item: item, targetSeconds: targetSeconds, timeoutSeconds: timeoutSeconds)
+        }
     }
 
     private func waitUntilReady(item: AVPlayerItem) async throws {
