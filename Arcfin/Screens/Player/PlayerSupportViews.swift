@@ -50,6 +50,16 @@ extension PlatformImage {
     }
 }
 
+extension Image {
+    init(platformImage: PlatformImage) {
+        #if canImport(UIKit)
+        self.init(uiImage: platformImage)
+        #elseif canImport(AppKit)
+        self.init(nsImage: platformImage)
+        #endif
+    }
+}
+
 // MARK: - Video surface (AVPlayerLayer) + Picture in Picture
 
 #if canImport(UIKit) && !os(tvOS)

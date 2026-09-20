@@ -1,6 +1,8 @@
 import SwiftUI
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 import AVFoundation
 import AVKit
@@ -49,10 +51,8 @@ struct PlayerView: View {
     @AppStorage("subtitleTextSize") var subtitleTextSize = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") var subtitleTextColor = SubtitleTextColorOption.white
     @AppStorage("subtitleBackgroundStyle") var subtitleBackgroundStyle = SubtitleBackgroundStyle.box
-    #if canImport(UIKit)
     @State var trickplayLoader: TrickplayLoader?
-    @State var scrubThumbnail: UIImage?
-    #endif
+    @State var scrubThumbnail: PlatformImage?
     @State var lastThumbnailBucket: Int?
     @State var introEnd: Double?
     @State var creditsStart: Double?
@@ -76,11 +76,14 @@ struct PlayerView: View {
     @State var pendingAutoAdvanceEpisode: MediaItem?
     @State var stillWatchingTimeoutTask: Task<Void, Never>?
 
-    #if canImport(UIKit) && !os(tvOS)
+    #if !os(tvOS)
     @StateObject var pip = PiPCoordinator()
     @State var vlcPipController: SwiftVLC.PiPController?
     @State var isPiPSupported = AVPictureInPictureController.isPictureInPictureSupported()
     @State var isFillScreen = false
+    @State var nowPlayingManager = NowPlayingManager()
+    #endif
+    #if canImport(UIKit) && !os(tvOS)
     @State var volumeController: SystemVolumeController?
     @State var dragAxis: DragAxis?
     @State var dragBaseline: CGFloat = 0
@@ -91,7 +94,13 @@ struct PlayerView: View {
     @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
     @State var routeBridge = RouteButtonBridge()
     @State var isLandscape = false
-    @State var nowPlayingManager = NowPlayingManager()
+    #endif
+    #if os(macOS)
+    @State var macWindow: NSWindow?
+    @State var isMacFullScreen = false
+    @State var macVolume: Double = 1.0
+    @State var macVolumeHUD: Double?
+    @State var macVolumeHUDTask: Task<Void, Never>?
     #endif
 
     let client = JellyfinMediaClient()
@@ -118,7 +127,7 @@ struct PlayerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            #if canImport(UIKit) && !os(tvOS)
+            #if !os(tvOS)
             if CastManager.shared.isConnected {
                 // The receiver is playing the video, not this screen — leaving the last
                 // local frame frozen behind the controls read as "stuck paused" rather
@@ -137,12 +146,22 @@ struct PlayerView: View {
                         // animation artifact.
                         .frame(width: proxy.size.width, height: proxy.size.height)
                         .contentShape(Rectangle())
+                        #if canImport(UIKit)
                         .gesture(tapGesture(width: proxy.size.width))
                         .simultaneousGesture(dragGesture(width: proxy.size.width))
                         .onChange(of: proxy.size) { _, newSize in
                             isLandscape = newSize.width > newSize.height
                         }
                         .onAppear { isLandscape = proxy.size.width > proxy.size.height }
+                        #elseif os(macOS)
+                        // Mouse/keyboard equivalents of the touch gestures above — click
+                        // toggles controls the same as a tap, double-click seeks ±10s, and
+                        // moving the mouse re-reveals controls the way a touch tap does
+                        // (there's no "tap" on a pointer-driven surface, so hover is the
+                        // signal instead).
+                        .gesture(macTapGesture(width: proxy.size.width))
+                        .onContinuousHover { _ in handleMacMouseActivity() }
+                        #endif
                 }
                 .ignoresSafeArea()
             }
@@ -154,6 +173,10 @@ struct PlayerView: View {
 
             #if canImport(UIKit) && !os(tvOS)
             dragAxisIndicator
+            #elseif os(macOS)
+            if let macVolumeHUD {
+                macVolumeIndicator(macVolumeHUD)
+            }
             #endif
 
             // .idle covers the gap between the screen appearing and setup() actually calling
@@ -210,23 +233,50 @@ struct PlayerView: View {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)
             resetPlayerOrientation()
+            #elseif os(macOS)
+            macVolumeHUDTask?.cancel()
             #endif
         }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
-            #if canImport(UIKit) && !os(tvOS)
+            #if !os(tvOS)
             updateNowPlayingInfo()
             #endif
         }
         .onChange(of: player.status) { _, newStatus in
             handleStatusChange(newStatus)
-            #if canImport(UIKit) && !os(tvOS)
+            #if !os(tvOS)
             updateNowPlayingInfo()
             #endif
         }
-        #if canImport(UIKit) && !os(tvOS)
+        #if !os(tvOS)
         .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
+        #endif
+        #if os(macOS)
+        .background(WindowAccessor { window in
+            macWindow = window
+            isMacFullScreen = isMacWindowFullScreen(window)
+        })
+        .focusable()
+        .focusEffectDisabled()
+        .onKeyPress(.space) { togglePlayPause(); return .handled }
+        .onKeyPress(.leftArrow) { seek(by: -10); return .handled }
+        .onKeyPress(.rightArrow) { seek(by: 10); return .handled }
+        .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
+        .onKeyPress(.downArrow) { adjustMacVolume(by: -0.05); return .handled }
+        .onKeyPress(characters: CharacterSet(charactersIn: "fF")) { _ in
+            toggleMacWindowFullScreen(macWindow)
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            if isMacFullScreen {
+                toggleMacWindowFullScreen(macWindow)
+            } else {
+                dismiss()
+            }
+            return .handled
+        }
         #endif
         // These must live on a view that's always mounted, not inside the conditionally
         // -shown controlsOverlay — auto-hide removing that view from the tree while a
@@ -272,7 +322,7 @@ struct PlayerView: View {
         #endif
     }
 
-    #if canImport(UIKit) && !os(tvOS)
+    #if !os(tvOS)
     @ViewBuilder
     var videoSurface: some View {
         if let avPlayer = player as? AVFoundationPlayer {
@@ -312,7 +362,7 @@ struct PlayerView: View {
 
     // MARK: - Now Playing / AirPlay metadata
 
-    #if canImport(UIKit) && !os(tvOS)
+    #if !os(tvOS)
     /// Reflects Cast state too — the local player stays paused for the whole cast session
     /// (see startCasting), so its own `.status` alone would show "paused" the entire time.
     var isEffectivelyPlaying: Bool {
@@ -360,14 +410,14 @@ struct PlayerView: View {
         )
     }
 
-    @MainActor private static var artworkCache: [String: UIImage] = [:]
-    private var nowPlayingArtwork: UIImage? { Self.artworkCache[item.id] }
+    @MainActor private static var artworkCache: [String: PlatformImage] = [:]
+    private var nowPlayingArtwork: PlatformImage? { Self.artworkCache[item.id] }
 
     private func fetchAndApplyNowPlayingArtwork() async {
         guard nowPlayingArtwork == nil,
               let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600),
               let (data, _) = try? await URLSession.shared.data(from: url),
-              let image = UIImage(data: data)
+              let image = PlatformImage(data: data)
         else { return }
         Self.artworkCache[item.id] = image
         updateNowPlayingInfo()
@@ -563,24 +613,26 @@ struct PlayerView: View {
             // the general item-detail endpoint's Trickplay field (keyed by MediaSourceId) is
             // what the official apps actually read it from.
             let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
-            #if canImport(UIKit)
             if let trickplay = detail?.trickplay[info.mediaSourceId] ?? info.trickplay {
                 trickplayLoader = TrickplayLoader(credential: credential, authHeader: authHeader, client: client, itemId: item.id, info: trickplay)
             }
-            #endif
             chapters = detail?.chapters ?? []
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
             try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             await player.play()
-            #if canImport(UIKit) && !os(tvOS)
+            #if !os(tvOS)
             // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's
             // custom PiPCoordinator needs this explicit activation step.
             if let avPlayer = player as? AVFoundationPlayer {
                 pip.activateIfNeeded()
+                #if canImport(UIKit)
+                // Display-criteria (refresh rate) matching is only exposed through
+                // AVPlayerViewController's display manager — no macOS equivalent.
                 if matchContentFrameRate {
                     displayCriteriaMatcher.attach(player: avPlayer.player)
                 }
+                #endif
                 // Drives what an AirPlay-receiving device (Apple TV etc.) shows on its own
                 // Now Playing card — separate from MPNowPlayingInfoCenter below, which
                 // drives the sending device's own lock screen/Control Center.
@@ -687,6 +739,8 @@ struct PlayerView: View {
         volumeController?.teardown()
         volumeObservation?.invalidate()
         displayCriteriaMatcher.detach()
+        #endif
+        #if !os(tvOS)
         nowPlayingManager.clear()
         #endif
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
@@ -980,7 +1034,7 @@ struct PlayerView: View {
                 lastLoadStartedAt = Date()
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
-                #if canImport(UIKit) && !os(tvOS)
+                #if !os(tvOS)
                 if let avPlayer = player as? AVFoundationPlayer {
                     avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
                 }

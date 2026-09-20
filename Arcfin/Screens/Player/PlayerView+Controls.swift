@@ -70,6 +70,8 @@ extension PlayerView {
 
             #if canImport(UIKit) && !os(tvOS)
             quickActionIcons
+            #elseif os(macOS)
+            macQuickActionIcons
             #endif
 
             moreMenu
@@ -139,11 +141,57 @@ extension PlayerView {
         .opacity(0.02)
         .allowsHitTesting(false)
     }
+    #elseif os(macOS)
+    private struct QuickAction: Identifiable {
+        let id: String
+        let icon: String
+        let perform: () -> Void
+    }
+
+    /// No rotate button (nothing to rotate on a windowed player) — Fill Screen and window
+    /// Fullscreen are two distinct concepts here, so both get their own icon: Fill Screen
+    /// changes how the video scales within the player view, Fullscreen changes the window
+    /// itself (see toggleMacWindowFullScreen). AirPlay is a plain visible button instead of
+    /// hidden/triggered — see AirPlayButton's macOS variant for why.
+    private var macQuickActionItems: [QuickAction] {
+        var items: [QuickAction] = [
+            QuickAction(
+                id: "fill",
+                icon: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+            ) { isFillScreen.toggle() },
+            QuickAction(
+                id: "fullscreen",
+                icon: isMacFullScreen ? "arrow.down.right.and.arrow.up.left.circle" : "arrow.up.left.and.arrow.down.right.circle"
+            ) { toggleMacWindowFullScreen(macWindow) },
+        ]
+        if chapterListEnabled, !chapters.isEmpty {
+            items.append(QuickAction(id: "chapters", icon: "list.bullet") { showChapterMenu = true })
+        }
+        items.append(QuickAction(id: "tracks", icon: "captions.bubble") { showTrackMenu = true })
+        items.append(QuickAction(id: "speed", icon: "gauge.with.dots.needle.67percent") { showRateMenu = true })
+        return items
+    }
+
+    private var macQuickActionIcons: some View {
+        HStack(spacing: 14) {
+            ForEach(macQuickActionItems) { action in
+                Button(action: action.perform) {
+                    Image(systemName: action.icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+            }
+            AirPlayButton(player: (player as? AVFoundationPlayer)?.player)
+                .frame(width: 22, height: 22)
+        }
+    }
     #endif
 
     private var moreMenu: some View {
         Menu {
-            #if canImport(UIKit) && !os(tvOS)
+            #if !os(tvOS)
             if isPiPSupported {
                 Button { togglePiP() } label: {
                     Label("Picture in Picture", systemImage: "pip.enter")
@@ -288,16 +336,17 @@ extension PlayerView {
                     .frame(width: isScrubbing ? 16 : 10, height: isScrubbing ? 16 : 10)
                     .offset(x: thumbX - (isScrubbing ? 8 : 5))
 
-                #if canImport(UIKit)
                 if isScrubbing, trickplayLoader != nil {
                     trickplayPreview
                         .offset(x: min(max(thumbX - 70, 0), proxy.size.width - 140), y: -100)
                 }
-                #endif
             }
             .frame(maxHeight: .infinity, alignment: .center)
             .contentShape(Rectangle())
-            #if canImport(UIKit) && !os(tvOS)
+            // DragGesture tracks a mouse drag on macOS the same way it tracks a touch drag on
+            // iOS — no platform split needed for the gesture itself, only for what's iOS-only
+            // inside it (HapticManager already safely no-ops off iOS on its own).
+            #if !os(tvOS)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -306,16 +355,12 @@ extension PlayerView {
                         hideControlsTask?.cancel()
                         let fraction = min(max(value.location.x / proxy.size.width, 0), 1)
                         scrubTicks = Double(player.durationTicks) * fraction
-                        #if canImport(UIKit)
                         updateScrubThumbnail()
-                        #endif
                     }
                     .onEnded { _ in
                         performSeek(to: Int64(scrubTicks))
                         isScrubbing = false
-                        #if canImport(UIKit)
                         scrubThumbnail = nil
-                        #endif
                         scheduleAutoHide()
                     }
             )
@@ -324,11 +369,10 @@ extension PlayerView {
         .frame(height: 20)
     }
 
-    #if canImport(UIKit)
     private var trickplayPreview: some View {
         Group {
             if let scrubThumbnail {
-                Image(uiImage: scrubThumbnail)
+                Image(platformImage: scrubThumbnail)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } else {
@@ -354,13 +398,12 @@ extension PlayerView {
             scrubThumbnail = image
         }
     }
-    #endif
 
     /// `player.status` alone stays `.paused` for the whole duration of a Cast session (see
     /// startCasting) — on platforms that support Cast, the icon needs to reflect the
     /// receiver's actual state instead, or it reads as "stuck paused" while casting.
     var playPauseIconIsPlaying: Bool {
-        #if canImport(UIKit) && !os(tvOS)
+        #if !os(tvOS)
         return isEffectivelyPlaying
         #else
         return player.status == .playing
@@ -798,7 +841,13 @@ extension PlayerView {
 
     // MARK: - Casting
 
-    #if canImport(GoogleCast)
+    // Not canImport(GoogleCast) — CastManager's isConnected/deviceName/endSession() are all
+    // plain cross-platform API that no-ops on their own where GoogleCast isn't linked (see
+    // CastManager's own doc comment), and PlayerView.body's `!os(tvOS)` video-surface block
+    // (which macOS is now part of) references this view unconditionally within that scope,
+    // so it needs to actually exist there even though CastManager.isConnected can never be
+    // true on macOS — the branch is simply unreachable there, not absent.
+    #if !os(tvOS)
     /// Replaces the live video surface entirely while a Cast session is active (see
     /// PlayerView.body) — a frozen last frame behind a small banner read as "stuck paused"
     /// rather than "playing somewhere else", the actual complaint this fixes.
@@ -997,6 +1046,32 @@ extension PlayerView {
             .transition(.opacity)
             .allowsHitTesting(false)
         }
+    }
+    #elseif os(macOS)
+    /// Same visual language as dragAxisIndicator above (there's no brightness axis to show on
+    /// macOS — no touch-drag gesture, and no public per-app brightness control either — so
+    /// this is volume-only), triggered by the Up/Down arrow key shortcuts instead of a drag.
+    func macVolumeIndicator(_ volume: Double) -> some View {
+        HStack {
+            Spacer()
+            VStack(spacing: 10) {
+                Image(systemName: volume < 0.01 ? "speaker.slash.fill" : volume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.white)
+                ZStack(alignment: .bottom) {
+                    Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
+                    Capsule().fill(.white).frame(width: 6, height: 90 * volume)
+                }
+                Text("\(Int(volume * 100))%")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white)
+            }
+            .padding(14)
+            .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+        }
+        .padding(.horizontal, 32)
+        .transition(.opacity)
+        .allowsHitTesting(false)
     }
     #endif
 
