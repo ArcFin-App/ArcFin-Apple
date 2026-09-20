@@ -1,8 +1,39 @@
-This build focuses on:
-• Playback controls — AirPlay/Chromecast metadata, Now Playing/Control Center, Picture in Picture, and the reshuffled in-player quick-access icons (portrait vs. landscape)
-• The Netflix-style profile picker and per-profile Face ID/PIN lock
-• Trailer playback, including the in-app YouTube fallback when a title has no local trailer
-• The no-connection screen and offline mode
-• Downloads and smart storage management
+This is Arcfin's first TestFlight build — please put the whole app through its paces, not just one feature. You'll need a Jellyfin server to sign in with (your own, or ask for a demo login).
 
-Try casting to AirPlay/Chromecast mid-playback, backgrounding the app (including via Notification Center and Picture in Picture) and coming back, and switching between Wi-Fi and cellular. Please note your device model and Jellyfin server version (Settings > Server) with any report.
+GETTING STARTED
+• Add a server by URL, or let it auto-discover one on your local network
+• Sign in with username/password or Quick Connect
+• Add a second profile (same or different server) and switch between them
+
+BROWSING
+• Home: Continue Watching, Next Up, Recently Added, recommended shelves, the hero video backdrop
+• Library: search, filter (genre/year/watched/favourites), sort including by genre
+• Title detail pages: cast/crew, trailers (local, or the in-app YouTube fallback), mark favourite/watched
+
+PLAYBACK
+• Direct play and transcoded streaming, manual and Auto quality
+• Subtitles — turn on/off, and try the style options (size/colour/background)
+• Chapters, skip intro/credits/recap, playback speed, the Up Next card
+• Both playback engines if you can — Settings > Playback > Playback Engine (Auto/AVFoundation/VLC) — useful if a video won't play on the default engine
+
+CASTING & LOCK SCREEN
+• AirPlay and Chromecast — start a cast, pause/seek/stop from Arcfin, then end the session and confirm local playback resumes where the TV left off
+• Picture in Picture
+• Lock screen / Control Center — Now Playing metadata and playback controls
+• Background the app (home button, Notification Center, or Control Center) mid-playback and come back — should resume cleanly, not get stuck
+
+DOWNLOADS
+• Download a movie and an episode, then play both fully offline (Airplane Mode)
+• Try Wi-Fi-only and a quality tier in Settings > Downloads
+• Delete a download, and try multi-select delete
+
+SECURITY
+• Settings > Profiles: turn on a PIN and/or Face ID for a profile, then sign out and back in to see the profile picker
+• Switch to a PIN-protected profile from Settings — Face ID should be offered first if enabled
+
+INTEGRATIONS (optional — skip if you don't have these servers)
+• Seerr: browse and request new content
+• Streamystats: watch stats dashboard
+• SyncPlay: watch together with another signed-in device in the same group
+
+Please note your device model, iOS version, and Jellyfin server version (visible in Settings > Server) with any bug report — screen recordings help a lot for anything visual.
