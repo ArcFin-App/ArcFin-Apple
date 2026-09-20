@@ -33,19 +33,40 @@ works (username only, no password — see the note there for why).
 
 ## App Privacy ("Nutrition Label") questionnaire
 
-Based on an audit of what the app actually does (not aspirational — see `CLAUDE.md`'s
-CloudKit-sync line, which isn't implemented yet, so isn't answered here):
+**Do you or your third-party partners collect data? Yes** — not because Arcfin's own code
+phones home anywhere (see `Telemetry`, which is local `OSLog` only, no analytics SDK), but
+because two embedded third-party SDKs are responsible for their own data practices, and
+Apple's questionnaire explicitly covers "third-party partners... whose code you have added
+to the app":
 
-| Data type | Collected? | Notes |
-|---|---|---|
-| Contact Info, Health, Financial, Browsing History, Search History, Identifiers, Purchases | **No** | None of these are gathered anywhere in the app. |
-| **Location** | **No** | Arcfin requests When-In-Use location permission, but only as an OS-level gate `NEHotspotNetwork.fetchCurrent` requires to read the *current Wi-Fi network name* (for switching between a server's local/remote address at home vs. away). It never calls `startUpdatingLocation()` or reads a coordinate — no location data is ever actually collected, stored, or transmitted. Answer "No" here; don't let the permission prompt's existence make you answer "Yes." |
-| **User Content** (e.g. photos/videos) | **No, not collected by us** | Downloaded media and any credentials/library data live only on-device and on the user's own server — nothing is sent to us, because there's no "us" server in the data path. |
-| **Diagnostics** (crash data) | Depends on whether the user opts into sharing crash reports with Apple | Arcfin itself has no crash reporting or analytics SDK (see `Telemetry` package — it's local `OSLog` only). If you don't add Apple's own opt-in crash reporting toggle, answer "No" across the board. |
-| **Usage Data / Analytics** | **No** | No analytics SDK of any kind is integrated. |
+| Data type | Purpose | Linked to identity | Used for tracking | Source |
+|---|---|---|---|---|
+| **Device ID** | App Functionality + Analytics | No | No | Google Cast SDK (confirmed via its own embedded manifest — see below) |
+| **Product Interaction** | App Functionality + Analytics | No | No | Google Cast SDK |
+| **Other Diagnostic Data** | App Functionality + Analytics | No | No | Google Cast SDK |
 
-**Tracking:** answer "No, we do not track users" — there's no advertising SDK, no
-cross-app/cross-site tracking, no IDFA usage.
+Confirmed straight from Xcode's own Privacy Report for the archive (Organizer > archive >
+"..." > Generate Privacy Report — a copy is saved in `metadata/privacy-reports/`), which
+reads `GoogleCast.framework`'s actual embedded `PrivacyInfo.xcprivacy` manifest. This is a
+more authoritative source than Google's own Cast SDK support-page prose, which additionally
+claims Coarse Location and "Performance Data" apply — the real, shipped manifest doesn't
+declare Location at all, and uses "Other Diagnostic Data" rather than "Performance Data."
+Trust the manifest (it's what's actually in the binary and what Apple's own tooling reads),
+not the support page. If you ever bump the Cast SDK version, re-run Generate Privacy Report
+and diff it against this table.
+
+Open question, your call: whether **Third-Party Advertising** should also apply to Device
+ID / Product Interaction because of YouTube's embedded trailer player (SvenTiigi/
+YouTubePlayerKit) — trailers can carry pre-roll ads the video's own uploader enabled, which
+Arcfin has no control over or visibility into. Not something I can verify with certainty
+from the code, so it's a risk-tolerance call, not a correctness one.
+
+Everything else — Contact Info, Health, Financial, **Location** (the Wi-Fi-name permission
+never reads an actual coordinate — see Info.plist notes below), User Content, Browsing/
+Search History, User ID, Purchases, Crash Data, Surroundings, Body — **No**, not collected.
+
+**Tracking:** answer "No, we do not track users" for the app as a whole — nothing here
+links data across other companies' apps/sites for ad targeting from Arcfin's own side.
 
 ## Permission usage strings actually in the app (Info.plist)
 
