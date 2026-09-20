@@ -3,6 +3,12 @@
 [<img src="assets/badges/app-store-badge-black.svg" alt="Download on the App Store" height="48">](https://apps.apple.com/us/app/arcfin/id6813273961)
 [<img src="assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://arcfin.psmattas.com)
 
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS-lightgrey?logo=apple&logoColor=white)
+![Minimum OS](https://img.shields.io/badge/iOS-26%2B-black?logo=apple&logoColor=white)
+![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
+![License](https://img.shields.io/badge/license-Proprietary-red)
+
 Version 0.1.0 — [uploaded to App Store Connect](https://apps.apple.com/us/app/arcfin/id6813273961), currently processing/pending review. TestFlight's public join link isn't live yet — the badge above points at the site until it is.
 
 A premium native Jellyfin media client for the Apple ecosystem.
