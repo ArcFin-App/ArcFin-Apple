@@ -464,7 +464,19 @@ struct HomeView: View {
             }
 #endif
         }
-        .task { await loadHome() }
+        // .task(id:) rather than a bare .task { } — a bare .task only ever runs once, at
+        // this view's first mount, reading whatever authManager.state happens to be at that
+        // exact instant. That race was invisible on iOS's plain TabView (one tab root alive
+        // at a time), but macOS's .tabViewStyle(.sidebarAdaptable) renders via
+        // NavigationSplitView under the hood, mounting differently — the first .task run
+        // could see a not-yet-settled auth state and silently no-op, leaving Home blank
+        // until something else (the manual refresh button) triggered a reload. Keying to
+        // the credential's own id (not the whole AuthState) re-runs this whenever it
+        // actually changes — sign-in, profile switch — without also re-firing on incidental
+        // field updates to the same credential (e.g. the avatar-tag backfill in
+        // checkStoredAuth). Also makes the separate onChange(of: authManager.state) that
+        // used to be right below this redundant, since it did the same thing less reliably.
+        .task(id: authManager.state.credential?.id) { await loadHome() }
         .refreshable { await loadHome(force: true) }
         #if os(iOS)
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
@@ -485,10 +497,6 @@ struct HomeView: View {
             Text("Check your connection or Server Settings, then retry.")
         }
         #endif
-        .onChange(of: authManager.state) { old, new in
-            guard let cred = new.credential, old.credential?.id != cred.id else { return }
-            Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
-        }
         .onReceive(heroTimer) { _ in
             guard heroItems.count > 1 else { return }
             withAnimation(DT.Animation.slow) { heroIndex = (heroIndex + 1) % heroItems.count }
