@@ -15,11 +15,19 @@ struct SearchView: View {
     @State private var isSearching = false
     @State private var requestingSeerrItem: SeerrItem?
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
+    private var columns: [GridItem] {
+#if os(macOS)
+        // Fixed 3-up leaves a resizable Mac window either cramped or with cards
+        // stretched absurdly wide — adaptive reflows the grid as the window resizes.
+        [GridItem(.adaptive(minimum: 130), spacing: 12)]
+#else
+        [
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+        ]
+#endif
+    }
 
     var body: some View {
         Group {
@@ -57,7 +65,9 @@ struct SearchView: View {
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
                 .presentationDetents([.medium, .large])
+                #if !os(macOS)
                 .presentationDragIndicator(.visible)
+                #endif
                 .presentationBackground(.ultraThinMaterial)
         }
     }
@@ -73,8 +83,8 @@ struct SearchView: View {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(jellyfinResults) { item in
                     NavigationLink(value: item) {
-                        gridCard(title: item.name, subtitle: item.productionYear.map { String($0) },
-                                 imageURL: posterImageURL(for: item))
+                        SearchResultCard(title: item.name, subtitle: item.productionYear.map { String($0) },
+                                          imageURL: posterImageURL(for: item))
                     }
                     .buttonStyle(.plain)
                 }
@@ -111,7 +121,7 @@ struct SearchView: View {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(seerrResults) { item in
                     Button { requestingSeerrItem = item } label: {
-                        gridCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
+                        SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
                     }
                     .buttonStyle(.plain)
                 }
@@ -124,39 +134,6 @@ struct SearchView: View {
             RoundedRectangle(cornerRadius: DT.Radius.lg)
                 .stroke(DT.Color.accent.opacity(0.2), lineWidth: 1)
         )
-    }
-
-    // MARK: - Grid card
-
-    private func gridCard(title: String, subtitle: String?, imageURL: URL?) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ZStack {
-                if let imageURL {
-                    AsyncImage(url: imageURL) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: DT.Color.backgroundSecondary
-                        }
-                    }
-                    .clipped()
-                } else {
-                    DT.Color.backgroundSecondary
-                }
-            }
-            .aspectRatio(2 / 3, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
-
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(1)
-            if let subtitle {
-                Text(subtitle)
-                    .font(.system(size: 10))
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-        }
     }
 
     private func performSearch(query: String) {
@@ -178,5 +155,53 @@ struct SearchView: View {
             seerrResults    = await seerrTask
             isSearching = false
         }
+    }
+}
+
+// MARK: - Grid card
+
+private struct SearchResultCard: View {
+    let title: String
+    let subtitle: String?
+    let imageURL: URL?
+
+    @State private var hovered = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ZStack {
+                if let imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: DT.Color.backgroundSecondary
+                        }
+                    }
+                    .clipped()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+            }
+            .aspectRatio(2 / 3, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+            .overlay(
+                RoundedRectangle(cornerRadius: DT.Radius.card)
+                    .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .scaleEffect(hovered ? 1.03 : 1)
+            .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
+
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        }
+        .animation(DT.Animation.fast, value: hovered)
+        .onHover { hovered = $0 }
     }
 }
