@@ -56,6 +56,8 @@ struct PlayerView: View {
     @AppStorage("syncPlayEnabled") var syncPlayEnabled = true
     @AppStorage("castEnabled") var castEnabled = true
     @AppStorage("stillWatchingPromptEnabled") var stillWatchingPromptEnabled = true
+    @AppStorage("skipForwardSeconds") var skipForwardSeconds = 10
+    @AppStorage("skipBackwardSeconds") var skipBackwardSeconds = 10
     @State var quality: VideoQuality
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
@@ -133,11 +135,13 @@ struct PlayerView: View {
     struct SeekFeedback: Identifiable, Equatable {
         let id = UUID()
         let forward: Bool
-        /// Which side of the screen was actually tapped — separate from `forward` since the
-        /// tapped side no longer determines seek direction (right tap seeks back, left tap
-        /// seeks forward). The indicator still shows up where the tap happened, just with
-        /// whichever icon/direction now belongs to that side.
+        /// Which side of the screen was actually tapped — kept separate from `forward` so the
+        /// indicator's on-screen position is driven by where the tap landed, not by which
+        /// direction that tap happens to seek.
         let onRight: Bool
+        /// Forward and backward can be configured to different skip amounts (Settings >
+        /// Playback), so the indicator has to show whichever one this particular tap used.
+        let seconds: Int
     }
 
     init(item: MediaItem, startPositionTicks: Int64 = 0, onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
@@ -323,8 +327,8 @@ struct PlayerView: View {
         // () -> KeyPress.Result closure, unlike the characters: overload below, which takes
         // (KeyPress) -> KeyPress.Result — `{ _ in ... }` only compiles for the latter.
         .onKeyPress(.space) { togglePlayPause(); return .handled }
-        .onKeyPress(.leftArrow) { seek(by: -10); return .handled }
-        .onKeyPress(.rightArrow) { seek(by: 10); return .handled }
+        .onKeyPress(.leftArrow) { seek(by: -skipBackwardSeconds); return .handled }
+        .onKeyPress(.rightArrow) { seek(by: skipForwardSeconds); return .handled }
         .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
         .onKeyPress(.downArrow) { adjustMacVolume(by: -0.05); return .handled }
         .onKeyPress(characters: CharacterSet(charactersIn: "fF")) { _ in

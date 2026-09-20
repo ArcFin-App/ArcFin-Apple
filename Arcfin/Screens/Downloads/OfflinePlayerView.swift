@@ -40,6 +40,8 @@ struct OfflinePlayerView: View {
     @AppStorage("subtitleTextSize") private var subtitleTextSize = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") private var subtitleTextColor = SubtitleTextColorOption.white
     @AppStorage("subtitleBackgroundStyle") private var subtitleBackgroundStyle = SubtitleBackgroundStyle.outline
+    @AppStorage("skipForwardSeconds") private var skipForwardSeconds = 10
+    @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
     @State private var progressSaveTask: Task<Void, Never>?
     #if !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?
@@ -179,8 +181,8 @@ struct OfflinePlayerView: View {
         // () -> KeyPress.Result closure, unlike the characters: overload below, which takes
         // (KeyPress) -> KeyPress.Result — `{ _ in ... }` only compiles for the latter.
         .onKeyPress(.space) { togglePlayPause(); return .handled }
-        .onKeyPress(.leftArrow) { seek(by: -10); return .handled }
-        .onKeyPress(.rightArrow) { seek(by: 10); return .handled }
+        .onKeyPress(.leftArrow) { seek(by: -skipBackwardSeconds); return .handled }
+        .onKeyPress(.rightArrow) { seek(by: skipForwardSeconds); return .handled }
         .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
         .onKeyPress(.downArrow) { adjustMacVolume(by: -0.05); return .handled }
         .onKeyPress(characters: CharacterSet(charactersIn: "fF")) { _ in
@@ -432,8 +434,9 @@ struct OfflinePlayerView: View {
                     .foregroundStyle(.white.opacity(0.8))
                 Spacer()
                 HStack(spacing: 28) {
-                    Button { seek(by: -10) } label: {
-                        Image(systemName: "gobackward.10").font(.system(size: 20)).foregroundStyle(.white)
+                    Button { seek(by: -skipBackwardSeconds) } label: {
+                        Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                            .font(.system(size: 20)).foregroundStyle(.white)
                     }
                     Button { togglePlayPause() } label: {
                         Image(systemName: player.status == .playing ? "pause.fill" : "play.fill")
@@ -441,8 +444,9 @@ struct OfflinePlayerView: View {
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                     }
-                    Button { seek(by: 10) } label: {
-                        Image(systemName: "goforward.10").font(.system(size: 20)).foregroundStyle(.white)
+                    Button { seek(by: skipForwardSeconds) } label: {
+                        Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                            .font(.system(size: 20)).foregroundStyle(.white)
                     }
                 }
                 Spacer()

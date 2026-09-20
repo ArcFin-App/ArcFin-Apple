@@ -50,6 +50,21 @@ extension PlatformImage {
     }
 }
 
+// MARK: - Skip interval
+
+/// Curated so every option maps to a real SF Symbol — goforward./gobackward. numbered
+/// variants only exist for these specific values, not arbitrary integers.
+let skipIntervalOptions = [5, 10, 15, 20, 30, 45, 60]
+
+/// Falls back to the plain (unnumbered) glyph for a value with no matching numbered symbol —
+/// shouldn't happen via the Settings picker above, but a future direct-entry field or a
+/// leftover value from before the option list changes could still produce one.
+func skipIconName(seconds: Int, forward: Bool) -> String {
+    let base = forward ? "goforward" : "gobackward"
+    guard skipIntervalOptions.contains(seconds) else { return base }
+    return "\(base).\(seconds)"
+}
+
 extension Image {
     init(platformImage: PlatformImage) {
         #if canImport(UIKit)

@@ -306,8 +306,9 @@ extension PlayerView {
                 Spacer()
 
                 HStack(spacing: 28) {
-                    Button { seek(by: -10) } label: {
-                        Image(systemName: "gobackward.10").font(.system(size: 20)).foregroundStyle(.white)
+                    Button { seek(by: -skipBackwardSeconds) } label: {
+                        Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                            .font(.system(size: 20)).foregroundStyle(.white)
                     }
                     Button { togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
@@ -315,8 +316,9 @@ extension PlayerView {
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                     }
-                    Button { seek(by: 10) } label: {
-                        Image(systemName: "goforward.10").font(.system(size: 20)).foregroundStyle(.white)
+                    Button { seek(by: skipForwardSeconds) } label: {
+                        Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                            .font(.system(size: 20)).foregroundStyle(.white)
                     }
                 }
 
@@ -1204,9 +1206,9 @@ extension PlayerView {
         HStack {
             if feedback.onRight { Spacer() }
             VStack(spacing: 4) {
-                Image(systemName: feedback.forward ? "goforward.10" : "gobackward.10")
+                Image(systemName: skipIconName(seconds: feedback.seconds, forward: feedback.forward))
                     .font(.system(size: 28))
-                Text("10s")
+                Text("\(feedback.seconds)s")
                     .font(.system(size: 11, weight: .semibold))
             }
             .foregroundStyle(.white)

@@ -82,9 +82,10 @@ extension PlayerView {
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {
         let tappedRight = location.x > width / 2
         let forward = tappedRight
+        let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
         HapticManager.impact(.medium)
-        seek(by: forward ? 10 : -10)
-        seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight)
+        seek(by: forward ? seconds : -seconds)
+        seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight, seconds: seconds)
         Task {
             try? await Task.sleep(for: .seconds(0.6))
             seekFeedback = nil
@@ -95,7 +96,8 @@ extension PlayerView {
 extension PlayerView {
 
     /// Mouse-pointer analog of the iOS tapGesture above: click toggles controls the same as
-    /// a tap, double-click seeks ±10s. No drag-to-adjust-brightness/volume gesture on macOS
+    /// a tap, double-click seeks by the configured skip amount (Settings > Playback). No
+    /// drag-to-adjust-brightness/volume gesture on macOS
     /// (that's a touch-surface idiom) — Up/Down arrow keys cover volume instead (see
     /// adjustMacVolume), and there's no equivalent brightness control at all outside System
     /// Settings, so it's simply not offered.
@@ -111,8 +113,9 @@ extension PlayerView {
     private func handleMacDoubleClick(at location: CGPoint, width: CGFloat) {
         let tappedRight = location.x > width / 2
         let forward = tappedRight
-        seek(by: forward ? 10 : -10)
-        seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight)
+        let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
+        seek(by: forward ? seconds : -seconds)
+        seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight, seconds: seconds)
         Task {
             try? await Task.sleep(for: .seconds(0.6))
             seekFeedback = nil

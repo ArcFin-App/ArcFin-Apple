@@ -13,6 +13,8 @@ struct PlaybackSettingsView: View {
     @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
     @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
     @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
+    @AppStorage("skipForwardSeconds")  private var skipForwardSeconds  = 10
+    @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
 
     private static let audioLanguageOptions: [(code: String, name: String)] = [
         ("", "None"),
@@ -59,6 +61,23 @@ struct PlaybackSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }
+            }
+
+            Section {
+                Picker("Skip Forward", selection: $skipForwardSeconds) {
+                    ForEach(skipIntervalOptions, id: \.self) { seconds in
+                        Text("\(seconds)s").tag(seconds)
+                    }
+                }
+                Picker("Skip Backward", selection: $skipBackwardSeconds) {
+                    ForEach(skipIntervalOptions, id: \.self) { seconds in
+                        Text("\(seconds)s").tag(seconds)
+                    }
+                }
+            } footer: {
+                Text("Used by the on-screen skip buttons, double-tap to seek, and the left/right arrow keys.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
