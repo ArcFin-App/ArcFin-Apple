@@ -205,7 +205,10 @@ struct AuthView: View {
             signInButton(
                 label: "Sign In",
                 loadingLabel: "Signing in…",
-                disabled: username.isEmpty || password.isEmpty
+                // Password is deliberately not required here — Jellyfin allows accounts
+                // with no password set at all (common for demo/kid profiles), and this
+                // button used to block signing into one of those entirely.
+                disabled: username.isEmpty
             ) { Task { await handleSignIn() } }
             .padding(.top, DT.Spacing.lg)
             .padding(.horizontal, DT.Spacing.pagePad)
