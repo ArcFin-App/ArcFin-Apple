@@ -17,7 +17,7 @@ A premium native Jellyfin media client for the Apple ecosystem.
 
 ## What is Arcfin?
 
-A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming (AVFoundation, with a VLC fallback for containers AVFoundation can't open), downloads for offline playback, AirPlay/Chromecast/Picture in Picture, a Netflix-style profile picker with per-profile Face ID/PIN lock, and optional Seerr (content requests) and Streamystats (watch stats) integrations. Built around iOS 26/iPadOS 26's Liquid Glass design, with tvOS support in active development.
+A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming (AVFoundation, with a VLC fallback for containers AVFoundation can't open), downloads for offline playback, AirPlay/Chromecast/Picture in Picture, a Netflix-style profile picker with per-profile Face ID/PIN lock, and optional Seerr (content requests) and Streamystats (watch stats) integrations. Built around iOS 26/iPadOS 26's Liquid Glass design on iPhone/iPad, and a native AppKit sidebar UI with full feature parity on Mac. tvOS support is in active development.
 
 ### Features
 
@@ -36,8 +36,8 @@ A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming
 | Platform | Status |
 |---|---|
 | iOS 26 + iPadOS 26 | Primary — v0.1.0 uploaded to App Store Connect, processing |
+| macOS | Full feature parity with iOS — native AppKit video surface, sidebar navigation, mouse/keyboard controls, Touch ID, AirPlay/PiP. A few gaps documented inline: judder-free frame matching (no public API on macOS), AirPlay from the offline/VLC-engine player (needs a real AVPlayer to route, which VLC playback doesn't have) |
 | tvOS 26 | In development |
-| macOS | Not a target yet |
 
 ---
 
