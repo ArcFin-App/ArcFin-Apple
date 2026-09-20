@@ -62,6 +62,7 @@ struct AppearanceView: View {
             }
 
 
+            #if !os(macOS)
             Section {
                 Toggle("Haptic Feedback", isOn: $hapticsEnabled)
             } header: {
@@ -74,6 +75,7 @@ struct AppearanceView: View {
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
+            #endif
         }
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)

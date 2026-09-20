@@ -97,6 +97,9 @@ struct ServerSettingsView: View {
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     Spacer()
+                    // currentWiFiSSID() only resolves on iOS (see AuthManager) — no point
+                    // offering a capture button elsewhere that can only ever come back nil.
+                    #if os(iOS)
                     Button {
                         captureCurrentSSID()
                     } label: {
@@ -104,6 +107,7 @@ struct ServerSettingsView: View {
                         else { Text("Use Current") }
                     }
                     .disabled(isCapturingSSID)
+                    #endif
                 }
             } header: {
                 Label("Local URL", systemImage: "wifi")

@@ -87,11 +87,11 @@ struct UsersView: View {
 
             // ── App Lock ─────────────────────────────────────────────────
             Section {
-                Toggle("Use Face ID", isOn: $appLockUseFaceID)
+                Toggle("Use \(biometricLabel)", isOn: $appLockUseFaceID)
             } header: {
                 sectionLabel("App Lock")
             } footer: {
-                Text("When the active profile has a PIN set (above), Arcfin asks for it on launch and when returning from the background. Face ID offers a faster unlock — the PIN is always the fallback.")
+                Text("When the active profile has a PIN set (above), Arcfin asks for it on launch and when returning from the background. \(biometricLabel) offers a faster unlock — the PIN is always the fallback.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -155,6 +155,19 @@ struct UsersView: View {
                 switchTarget = profile
             }
         }
+    }
+
+    // Face ID is the only biometry iOS/iPadOS devices in this fleet ship with, but Macs
+    // pair the same LAContext API with Touch ID instead — asking canEvaluatePolicy first
+    // populates biometryType so the toggle/footer name the capability actually on this Mac.
+    private var biometricLabel: String {
+        #if os(macOS)
+        let context = LAContext()
+        _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
+        return context.biometryType == .touchID ? "Touch ID" : "Face ID"
+        #else
+        return "Face ID"
+        #endif
     }
 
     private func attemptBiometrics(for profile: ServerCredential) async -> Bool {
