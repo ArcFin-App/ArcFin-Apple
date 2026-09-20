@@ -35,7 +35,7 @@ Security issues relevant to Arcfin include:
 
 ## Out of Scope
 
-- Vulnerabilities in Jellyfin server, Jellyseerr, or Streamystats themselves
+- Vulnerabilities in Jellyfin server, Seerr, or Streamystats themselves
 - Issues requiring physical device access
 - Theoretical attacks with no practical exploit path
 

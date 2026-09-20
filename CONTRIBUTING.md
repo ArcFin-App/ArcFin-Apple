@@ -11,18 +11,18 @@ This file is here for maintainability as the project matures.
 ### Getting Started
 
 1. Clone the repo and open `Arcfin.xcodeproj` in Xcode 26+.
-2. Add local packages: **File → Add Package Dependencies → Add Local** → select `Packages/`.
+2. Local packages live in `LocalPackages/` and are already wired into the project — no manual "Add Package Dependencies" step needed.
 3. Build target: **Arcfin** on a simulator or device running iOS 26.
 
 ### Stack
 
-See `CLAUDE.md` for the full locked stack and architecture overview.
+See `CLAUDE.md` for the full stack and architecture overview.
 
 ### Code Standards
 
 - **Swift 6** strict concurrency — all code must compile without warnings.
 - **SwiftUI only** — no UIKit unless absolutely forced by a system API.
-- **TCA** for all state and side effects.
+- **Plain `@Observable` classes** for state and side effects — not TCA, despite it being a dependency (see the README's Stack table).
 - **No comments** unless the WHY is non-obvious. No docstrings, no inline narration.
 - **Tests use Swift Testing**, not XCTest. Every new feature should have corresponding tests.
 

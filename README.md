@@ -6,64 +6,67 @@ A premium native Jellyfin media client for the Apple ecosystem.
 
 ## What is Arcfin?
 
-Arcfin goes beyond existing Jellyfin clients by natively integrating play stats, content requests, a customisable home screen, and a first-class experience across iPhone, iPad, Apple TV, and Mac — all built on iOS 26.
+A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming (AVFoundation, with a VLC fallback for containers AVFoundation can't open), downloads for offline playback, AirPlay/Chromecast/Picture in Picture, a Netflix-style profile picker with per-profile Face ID/PIN lock, and optional Seerr (content requests) and Streamystats (watch stats) integrations. Built around iOS 26/iPadOS 26's Liquid Glass design, with tvOS support in active development.
 
-### Features (planned)
+### Features
 
-- **Home** — hero banner, customisable shelves, Continue Watching, Recently Added
-- **Library** — browse, filter, search with Spotlight integration
-- **Player** — chapters, intro skip, audio/subtitle track switching, progress sync
-- **Stats** — Streamystats dashboard, play history heatmap, top content, watch time
-- **Requests** — Jellyseerr browse, request, and approval status
-- **Plugins** — native plugin host with manifest-based third-party plugins
-- **Sync** — settings sync via companion Jellyfin server plugin + iCloud CloudKit fallback
-- **Admin** — server dashboard and user management
+- **Home** — Continue Watching, Next Up, Recently Added, and recommended shelves
+- **Library** — browse, filter, search, sort (including by genre)
+- **Player** — direct play/transcode with automatic quality stepping, AirPlay, Chromecast, Picture in Picture, Now Playing/Control Center integration, chapters, skip intro/credits/recap, custom subtitle styling, playback speed, Up Next with an "are you still watching" check, SyncPlay
+- **Downloads** — offline playback with Wi-Fi-only/quality controls and a Live Activity for progress
+- **Trailers** — local trailers, with an in-app YouTube fallback when a title has none
+- **Requests** — Seerr browse/request, right alongside the library
+- **Stats** — Streamystats dashboard
+- **Profiles** — Netflix-style picker, per-profile Face ID/PIN app lock
+- **Settings** — grouped hub (Playback, Downloads, Appearance, Notifications, Server, Integrations), Privacy Policy/Terms/Data Protection links
 
 ### Platform Targets
 
 | Platform | Status |
 |---|---|
-| iOS 26 + iPadOS 26 | Primary |
-| tvOS 26 | Planned |
-| macOS 26 (native SwiftUI) | Planned |
+| iOS 26 + iPadOS 26 | Primary — preparing for TestFlight/App Store |
+| tvOS 26 | In development |
+| macOS | Not a target yet |
 
 ---
 
 ## Architecture
 
-Four-layer SPM monorepo under `Packages/` — single `Package.swift`, all targets inside.
+SPM monorepo under `LocalPackages/` — single `Package.swift`, all targets inside.
 
 ```
-Packages/
+LocalPackages/Sources/
 ├── Core Services
-│   ├── Telemetry        — OSLog wrapper
-│   ├── AuthCore         — Keychain, token refresh, multi-server
-│   ├── Persistence      — SwiftData models and migrations
+│   ├── Telemetry        — OSLog wrapper (no analytics/crash SDK)
+│   ├── AuthCore         — Keychain, multi-server/multi-profile auth
+│   ├── Persistence      — SwiftData models
 │   ├── ImageCache       — Nuke disk + memory cache
-│   ├── BackgroundKit    — BGTask scheduling
+│   ├── BackgroundKit    — BGTask scheduling (smart downloads)
+│   ├── LiveActivityKit  — Download progress Live Activity (shared with the widget extension)
 │   ├── JellyfinAPI      — Jellyfin REST + WebSocket client
 │   ├── StreamystatsAPI  — Streamystats REST client
-│   └── JellyseerrAPI    — Jellyseerr REST client
+│   └── SeerrAPI         — Seerr REST client
 └── Feature Packages
-    ├── AppState         — TCA store, reducers, actions, effects
-    ├── MediaEngine      — MPV (primary) + AVFoundation (fallback) player
-    ├── SyncEngine       — Settings sync protocol + conflict resolution
-    └── SearchKit        — Server search + Spotlight + local index
+    ├── AppState         — thin scaffold; not currently used by any shipping feature
+    ├── MediaEngine       — AVFoundation (default) + VLC (SwiftVLC) player engines behind one protocol
+    ├── SyncEngine        — offline progress sync
+    ├── SearchKit         — server search
+    └── CastKit           — Chromecast (Google Cast SDK) sender wrapper
 ```
 
 ### Stack
 
 | Concern | Choice |
 |---|---|
-| Language | Swift 6 |
+| Language | Swift 6 (strict concurrency) |
 | UI | SwiftUI + iOS 26 Liquid Glass |
-| State | TCA (The Composable Architecture) |
-| Storage | SwiftData |
+| State | Plain `@Observable` classes + `@State`/`@Environment` — **not** TCA. TCA is a dependency and exists in one unused `AppState` scaffold file, but no shipping feature uses it; every real feature (auth, media, downloads, casting, sync play, etc.) is a plain `@Observable` class. Docs previously claimed TCA as the locked choice — this reflects what's actually shipping instead. |
+| Storage | SwiftData (models in `Persistence`) |
 | Images | Nuke |
-| Player | MPV wrapper (primary), AVFoundation (fallback) |
-| API clients | OpenAPI codegen (swift-openapi-generator) |
-| Testing | Swift Testing |
-| Sync | Jellyfin companion plugin + CloudKit fallback |
+| Player | AVFoundation (default) / VLC via SwiftVLC (selectable in Settings; downloads always use VLC) — both behind `MediaPlayerProtocol` |
+| API clients | Manual clients (JellyfinAPI, StreamystatsAPI, SeerrAPI) — not OpenAPI-generated despite the dependency being present |
+| Testing | Swift Testing (not XCTest) |
+| Sync | Offline playback-progress sync (`SyncEngine`); no CloudKit sync shipped yet |
 
 ---
 
@@ -80,7 +83,7 @@ Token namespace: `DT` (`Arcfin/DesignTokens.swift`)
 | Text primary | `#FFFFFF` |
 | Text secondary | `#8E8E93` |
 
-Typography uses SF Pro Display for hero titles and SF Pro Text for body and labels. Full iOS 26 Liquid Glass throughout — nav bars, tab bar, player overlay, modal sheets.
+Typography uses SF Pro Display for hero titles and SF Pro Text for body and labels. Liquid Glass throughout — nav bars, tab bar, player overlay, modal sheets.
 
 ---
 
@@ -88,7 +91,9 @@ Typography uses SF Pro Display for hero titles and SF Pro Text for body and labe
 
 - [Jellyfin](https://jellyfin.org) — media server (REST + WebSocket)
 - [Streamystats](https://github.com/fredrikburmester/streamystats) — self-hosted play stats
-- [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) — content requests
+- [Seerr](https://github.com/Fallenbagel/jellyseerr) — content requests (formerly Jellyseerr)
+
+None of these are servers Arcfin operates — the app connects directly from the device to a server you already run or have access to. See [arcfin.psmattas.com/privacy](https://arcfin.psmattas.com/privacy).
 
 ---
 
@@ -107,7 +112,7 @@ I am a software engineer. AI makes certain tasks faster and easier, but the arch
 
 ## Project Status
 
-Early development. Scaffold and design system complete. Home screen in progress.
+Feature-complete for an initial release — playback, library, downloads, casting, profiles, and Settings are all built. Currently preparing for TestFlight and App Store submission (see `fastlane/metadata/`).
 
 ---
 
