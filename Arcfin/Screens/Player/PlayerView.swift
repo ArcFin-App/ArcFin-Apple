@@ -639,10 +639,16 @@ struct PlayerView: View {
                     displayCriteriaMatcher.attach(player: avPlayer.player)
                 }
                 #endif
+                #if !os(macOS)
                 // Drives what an AirPlay-receiving device (Apple TV etc.) shows on its own
                 // Now Playing card — separate from MPNowPlayingInfoCenter below, which
                 // drives the sending device's own lock screen/Control Center.
+                // AVPlayerItem.externalMetadata doesn't exist on macOS at all (iOS/iPadOS/
+                // Mac Catalyst/tvOS/visionOS only, confirmed against Apple's own docs) —
+                // not a priority to work around given macOS's own system-level AirPlay
+                // mirroring already covers this.
                 avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
+                #endif
             }
             setUpNowPlayingCommandsIfNeeded()
             updateNowPlayingInfo()
@@ -1041,9 +1047,11 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
                 #if !os(tvOS)
+                #if !os(macOS)
                 if let avPlayer = player as? AVFoundationPlayer {
                     avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
                 }
+                #endif
                 updateNowPlayingInfo()
                 #endif
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
