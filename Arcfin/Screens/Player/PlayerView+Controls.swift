@@ -995,12 +995,22 @@ extension PlayerView {
     }
 
     func subtitleOverlay(_ text: String) -> some View {
-        VStack {
-            Spacer()
-            SubtitleText(text: text, size: subtitleTextSize, color: subtitleTextColor, background: subtitleBackgroundStyle)
-                .padding(.horizontal, 24)
-                .padding(.bottom, isControlsVisible ? 110 : 32)
+        // The fixed bottom padding below is only clearance ABOVE the safe area, not a
+        // substitute for it — on a device where an ancestor's ignoresSafeArea() (the video
+        // surface, Color.black) leaves no safe-area context to inherit, 32/110pt alone
+        // wasn't enough to clear the home indicator, and long cues sat behind/under it.
+        // Reading the real inset via GeometryReader and adding it explicitly guarantees
+        // clearance regardless of what the rest of the hierarchy is doing with safe areas.
+        GeometryReader { proxy in
+            VStack {
+                Spacer()
+                SubtitleText(text: text, size: subtitleTextSize, color: subtitleTextColor, background: subtitleBackgroundStyle)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, (isControlsVisible ? 110 : 32) + proxy.safeAreaInsets.bottom)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
+        .ignoresSafeArea()
         .allowsHitTesting(false)
         .animation(DT.Animation.fast, value: isControlsVisible)
     }

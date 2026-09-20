@@ -99,12 +99,21 @@ struct OfflinePlayerView: View {
             }
 
             if let currentSubtitleText {
-                VStack {
-                    Spacer()
-                    SubtitleText(text: currentSubtitleText, size: subtitleTextSize, color: subtitleTextColor, background: subtitleBackgroundStyle)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, isControlsVisible ? 110 : 32)
+                // See PlayerView+Controls.subtitleOverlay — the fixed bottom padding alone
+                // isn't a substitute for the safe area; reading the real inset via
+                // GeometryReader and adding it explicitly guarantees clearance from the
+                // home indicator regardless of what the rest of the hierarchy is doing
+                // with safe areas.
+                GeometryReader { proxy in
+                    VStack {
+                        Spacer()
+                        SubtitleText(text: currentSubtitleText, size: subtitleTextSize, color: subtitleTextColor, background: subtitleBackgroundStyle)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, (isControlsVisible ? 110 : 32) + proxy.safeAreaInsets.bottom)
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
                 }
+                .ignoresSafeArea()
                 .allowsHitTesting(false)
             }
 
