@@ -8,6 +8,8 @@ struct StorageManagementView: View {
 
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #elseif os(macOS)
+    @State private var isSelectingMac = false
     #endif
     @State private var selection = Set<String>()
     @State private var showBulkDeleteConfirm = false
@@ -100,6 +102,22 @@ struct StorageManagementView: View {
                     }
                 }
             }
+            #elseif os(macOS)
+            if !entries.isEmpty {
+                if isSelectingMac && !selection.isEmpty {
+                    ToolbarItem {
+                        Button("Free Up Space (\(selection.count))", role: .destructive) {
+                            showBulkDeleteConfirm = true
+                        }
+                    }
+                }
+                ToolbarItem {
+                    Button(isSelectingMac ? "Done" : "Select") {
+                        isSelectingMac.toggle()
+                        selection.removeAll()
+                    }
+                }
+            }
             #endif
         }
         .alert("Delete this download?", isPresented: Binding(
@@ -142,10 +160,12 @@ struct StorageManagementView: View {
         selection.removeAll()
         #if os(iOS)
         editMode = .inactive
+        #elseif os(macOS)
+        isSelectingMac = false
         #endif
     }
 
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
     private func toggleSelection(_ id: String) {
         if selection.contains(id) { selection.remove(id) } else { selection.insert(id) }
     }
@@ -157,10 +177,20 @@ struct StorageManagementView: View {
     }
     #endif
 
+    private var isSelecting: Bool {
+        #if os(iOS)
+        editMode.isEditing
+        #elseif os(macOS)
+        isSelectingMac
+        #else
+        false
+        #endif
+    }
+
     @ViewBuilder
     private func entryRow(_ entry: StorageEntry) -> some View {
-        #if os(iOS)
-        if editMode.isEditing {
+        #if os(iOS) || os(macOS)
+        if isSelecting {
             Button { toggleSelection(entry.id) } label: {
                 HStack(spacing: 12) {
                     selectionIndicator(entry.id)
@@ -170,6 +200,19 @@ struct StorageManagementView: View {
             .buttonStyle(.plain)
         } else {
             entryRowContent(entry)
+                #if os(macOS)
+                .contextMenu {
+                    Button(role: .destructive) {
+                        if let movie = entry.movie {
+                            pendingDeleteMovie = movie
+                        } else {
+                            pendingDeleteSeriesId = entry.seriesId
+                        }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+                #endif
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
                         if let movie = entry.movie {

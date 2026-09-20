@@ -20,6 +20,8 @@ struct DownloadedSeriesDetailView: View {
     @State private var pendingDelete: DownloadedItem?
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #elseif os(macOS)
+    @State private var isSelectingMac = false
     #endif
     @State private var selection = Set<String>()
     @State private var showBulkDeleteConfirm = false
@@ -124,6 +126,22 @@ struct DownloadedSeriesDetailView: View {
                     }
                 }
             }
+            #elseif os(macOS)
+            if isSelectingMac && !selection.isEmpty {
+                ToolbarItem {
+                    Button("Delete (\(selection.count))", role: .destructive) {
+                        showBulkDeleteConfirm = true
+                    }
+                }
+            }
+            if !episodes.isEmpty {
+                ToolbarItem {
+                    Button(isSelectingMac ? "Done" : "Select") {
+                        isSelectingMac.toggle()
+                        selection.removeAll()
+                    }
+                }
+            }
             #endif
         }
         .onAppear {
@@ -155,6 +173,8 @@ struct DownloadedSeriesDetailView: View {
         selection.removeAll()
         #if os(iOS)
         editMode = .inactive
+        #elseif os(macOS)
+        isSelectingMac = false
         #endif
     }
 
@@ -202,7 +222,7 @@ struct DownloadedSeriesDetailView: View {
         .buttonStyle(.plain)
     }
 
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
     private func toggleSelection(_ id: String) {
         if selection.contains(id) { selection.remove(id) } else { selection.insert(id) }
     }
@@ -214,10 +234,20 @@ struct DownloadedSeriesDetailView: View {
     }
     #endif
 
+    private var isSelecting: Bool {
+        #if os(iOS)
+        editMode.isEditing
+        #elseif os(macOS)
+        isSelectingMac
+        #else
+        false
+        #endif
+    }
+
     @ViewBuilder
     private func episodeRow(_ episode: DownloadedItem) -> some View {
-        #if os(iOS)
-        if editMode.isEditing {
+        #if os(iOS) || os(macOS)
+        if isSelecting {
             Button { toggleSelection(episode.itemId) } label: {
                 HStack(spacing: 12) {
                     selectionIndicator(episode.itemId)

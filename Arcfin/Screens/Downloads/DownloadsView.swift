@@ -28,6 +28,8 @@ struct DownloadsView: View {
     @State private var selectedSeriesRef: DownloadedSeriesRef?
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #elseif os(macOS)
+    @State private var isSelectingMac = false
     #endif
     @State private var selection = Set<String>()
     @State private var showBulkDeleteConfirm = false
@@ -132,6 +134,22 @@ struct DownloadsView: View {
                     }
                 }
             }
+            #elseif os(macOS)
+            if goBackOnline == nil, !items.isEmpty {
+                if isSelectingMac && !selection.isEmpty {
+                    ToolbarItem {
+                        Button("Delete (\(selection.count))", role: .destructive) {
+                            showBulkDeleteConfirm = true
+                        }
+                    }
+                }
+                ToolbarItem {
+                    Button(isSelectingMac ? "Done" : "Select") {
+                        isSelectingMac.toggle()
+                        selection.removeAll()
+                    }
+                }
+            }
             #endif
         }
         .navigationDestination(item: $selectedItem) { item in
@@ -183,10 +201,12 @@ struct DownloadsView: View {
         selection.removeAll()
         #if os(iOS)
         editMode = .inactive
+        #elseif os(macOS)
+        isSelectingMac = false
         #endif
     }
 
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
     private func toggleSelection(_ id: String) {
         if selection.contains(id) { selection.remove(id) } else { selection.insert(id) }
     }
@@ -222,6 +242,33 @@ struct DownloadsView: View {
                 }
             }
         }
+        #elseif os(macOS)
+        if isSelectingMac {
+            let id = "series:\(group.seriesId)"
+            Button { toggleSelection(id) } label: {
+                HStack(spacing: 12) {
+                    selectionIndicator(id)
+                    seriesRowContent(group)
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button { selectedSeriesRef = DownloadedSeriesRef(seriesId: group.seriesId) } label: {
+                seriesRowContent(group)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
+                    Label("Delete All Episodes", systemImage: "trash")
+                }
+            }
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
         #else
         Button { selectedSeriesRef = DownloadedSeriesRef(seriesId: group.seriesId) } label: {
             seriesRowContent(group)
@@ -248,6 +295,33 @@ struct DownloadsView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) { pendingDelete = item } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        #elseif os(macOS)
+        if isSelectingMac {
+            let id = "movie:\(item.itemId)"
+            Button { toggleSelection(id) } label: {
+                HStack(spacing: 12) {
+                    selectionIndicator(id)
+                    downloadRowContent(item)
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button { selectedItem = item } label: {
+                downloadRowContent(item)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button(role: .destructive) { pendingDelete = item } label: {
+                    Label("Delete Download", systemImage: "trash")
+                }
+            }
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) { pendingDelete = item } label: {
                     Label("Delete", systemImage: "trash")
