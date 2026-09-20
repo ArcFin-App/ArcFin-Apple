@@ -1,4 +1,4 @@
-Arcfin is a premium, ground-up native client for Jellyfin — the free, open-source media server you run yourself. No subscriptions, no ads, no account with us. Point Arcfin at your own server and it feels like it was built by Apple.
+Arcfin is a premium, ground-up native client for Jellyfin — the free, open-source media server you run yourself. No subscriptions, no ads, no account with us. Point Arcfin at your own server and get a fast, polished, truly native experience — not a wrapped web view.
 
 REQUIRES A JELLYFIN SERVER
 Arcfin is a client, not a media library on its own. You'll need access to a Jellyfin server (self-hosted or one you've been invited to) to use it. Don't have one yet? Jellyfin is free and open-source — see jellyfin.org.
