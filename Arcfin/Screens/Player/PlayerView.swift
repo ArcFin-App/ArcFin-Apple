@@ -108,6 +108,10 @@ struct PlayerView: View {
     @State var dragValue: CGFloat = 0
     @State var lastHapticStep: Int?
     @State var volumeObservation: NSKeyValueObservation?
+    /// True while a volume drag gesture is actively driving dragValue — see the
+    /// outputVolume observer in setup(), which must ignore its own echo while this is set.
+    @State var isDraggingVolume = false
+    @State var volumeEchoSuppressTask: Task<Void, Never>?
     @State var displayCriteriaMatcher = DisplayCriteriaMatcher()
     @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
     @State var routeBridge = RouteButtonBridge()
@@ -594,10 +598,15 @@ struct PlayerView: View {
         await activateAudioSession()
         // The hidden MPVolumeView used to set volume programmatically also silently
         // suppresses the system's own volume HUD — observe outputVolume so physical
-        // button presses still get a visible indicator via our own overlay.
+        // button presses still get a visible indicator via our own overlay. The gesture in
+        // dragGesture(width:) drives the SAME outputVolume through volumeController, so
+        // without the isDraggingVolume guard this observer's own echo of that call kept
+        // overwriting dragValue mid-drag with a quantized, async-delayed system value —
+        // the touch tracked smoothly but the displayed % randomly jumped away from it.
         volumeObservation = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.new]) { _, change in
             guard let newValue = change.newValue else { return }
             Task { @MainActor in
+                guard !isDraggingVolume else { return }
                 dragAxis = .volume
                 dragValue = CGFloat(newValue)
                 try? await Task.sleep(for: .seconds(1.2))
@@ -806,6 +815,7 @@ struct PlayerView: View {
         #if canImport(UIKit) && !os(tvOS)
         volumeController?.teardown()
         volumeObservation?.invalidate()
+        volumeEchoSuppressTask?.cancel()
         displayCriteriaMatcher.detach()
         #endif
         #if !os(tvOS)

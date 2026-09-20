@@ -32,6 +32,10 @@ extension PlayerView {
                     guard abs(value.translation.height) > abs(value.translation.width) else { return }
                     let axis: DragAxis = value.startLocation.x < width / 2 ? .brightness : .volume
                     dragAxis = axis
+                    if axis == .volume {
+                        volumeEchoSuppressTask?.cancel()
+                        isDraggingVolume = true
+                    }
                     dragBaseline = axis == .brightness
                         ? (activeWindowScene?.screen.brightness ?? 0.5)
                         : CGFloat(volumeController?.currentVolume ?? 0.5)
@@ -56,6 +60,18 @@ extension PlayerView {
             .onEnded { _ in
                 dragAxis = nil
                 lastHapticStep = nil
+                // The final setVolume call's own echo through the outputVolume observer
+                // can still arrive briefly after the finger lifts — keep swallowing it a
+                // moment longer so it doesn't reopen the HUD with a stale value right as
+                // this gesture's own indicator was fading out. Cancellable so a fresh drag
+                // starting within that window (see onChanged above) isn't cut short by this
+                // stale reset firing mid-gesture.
+                volumeEchoSuppressTask?.cancel()
+                volumeEchoSuppressTask = Task {
+                    try? await Task.sleep(for: .seconds(0.5))
+                    guard !Task.isCancelled else { return }
+                    isDraggingVolume = false
+                }
             }
     }
 
