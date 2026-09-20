@@ -95,6 +95,13 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 selectedTab = .browse
             }
+            #if os(macOS)
+            // Cmd+, / Arcfin > Settings… — switches to Home so its own
+            // arcfinShowSettings listener (below) can actually present it.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
+                selectedTab = .home
+            }
+            #endif
         }
 #endif
     }
@@ -383,6 +390,11 @@ struct HomeView: View {
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
                 }
+                #if os(macOS)
+                .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
+                    showSettings = true
+                }
+                #endif
                 .navigationDestination(for: MediaItem.self) { item in
                     MediaDetailView(item: item)
                 }
