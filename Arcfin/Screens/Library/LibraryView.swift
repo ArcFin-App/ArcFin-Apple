@@ -794,10 +794,11 @@ enum LibraryGridDensity: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Minimum poster width for macOS's adaptive grid — a fixed column count doesn't
-    /// reflow as the window resizes, so density instead sets how small a card can get
+    /// Minimum poster width for the adaptive grid (macOS and iPad) — a fixed column
+    /// count doesn't reflow as the window resizes or leaves iPad's much larger screen
+    /// with absurdly wide cards, so density instead sets how small a card can get
     /// before another column joins.
-    var macMinimumWidth: CGFloat {
+    var adaptiveMinimumWidth: CGFloat {
         switch self {
         case .compact: return 110
         case .normal: return 140
@@ -859,12 +860,18 @@ struct LibraryDetailView: View {
         // A fixed column count leaves a resizable Mac window either cramped or with
         // cards stretched absurdly wide — adaptive reflows as the window resizes,
         // with density still controlling how small a card can get first.
-        [GridItem(.adaptive(minimum: gridDensity.macMinimumWidth), spacing: 12)]
+        [GridItem(.adaptive(minimum: gridDensity.adaptiveMinimumWidth), spacing: 12)]
     }
 #else
     @AppStorage("libraryGridDensity") private var gridDensity = LibraryGridDensity.normal
     private var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: 12), count: gridDensity.columnCount)
+        // iPad's much larger screen stretched a fixed 3-flexible-column grid into
+        // oversized posters — the same adaptive, density-driven sizing as macOS keeps
+        // cards a sane size there instead, with iPhone left on its fixed column count.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return [GridItem(.adaptive(minimum: gridDensity.adaptiveMinimumWidth), spacing: 12)]
+        }
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: gridDensity.columnCount)
     }
 #endif
 

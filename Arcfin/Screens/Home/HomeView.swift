@@ -355,8 +355,21 @@ struct HomeView: View {
                 let imageH: CGFloat = screenH * 0.48
                 let heroH:  CGFloat = imageH + 180
 #else
-                let imageH = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
-                let heroH  = usePortraitHero ? imageH : imageH + 220
+                let rawImageH = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
+                // On iPad/Mac (regular width — usePortraitHero is iPhone-only), the hero
+                // banner was nearly filling the window before any shelves came into view.
+                // Capped to 60% of the available height there; iPhone's portrait hero is
+                // already sized off its own aspect ratio and is left alone.
+                let imageH: CGFloat
+                let heroH: CGFloat
+                if usePortraitHero {
+                    imageH = rawImageH
+                    heroH = rawImageH
+                } else {
+                    let cap = screenH * 0.6
+                    heroH = min(rawImageH + 220, cap)
+                    imageH = max(0, heroH - 220)
+                }
 #endif
 
                 ScrollView(showsIndicators: false) {

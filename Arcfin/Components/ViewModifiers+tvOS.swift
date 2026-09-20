@@ -9,7 +9,11 @@ extension View {
         self.listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
 #else
+        // Settings Lists were stretching full window width on macOS — every row's
+        // label/value pair spread edge to edge instead of reading as a compact form.
         self.scrollContentBackground(.hidden)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
 #endif
     }
 

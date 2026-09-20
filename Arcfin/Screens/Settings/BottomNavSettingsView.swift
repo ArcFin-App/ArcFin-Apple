@@ -3,9 +3,26 @@ import SwiftUI
 struct BottomNavSettingsView: View {
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
+    #if canImport(UIKit) && !os(tvOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
 
     private var order: [BottomNavItem] { BottomNavPrefs.order(from: orderString) }
     private var active: Set<BottomNavItem> { BottomNavPrefs.active(from: activeString) }
+
+    /// Same reasoning as AppearanceView.usesBottomBar — iPad/Mac show this exact order as
+    /// a sidebar, not a bottom bar, so the screen title needs to stop claiming otherwise.
+    private var usesBottomBar: Bool {
+        #if os(macOS)
+        false
+        #elseif os(iOS)
+        sizeClass == .compact
+        #else
+        false
+        #endif
+    }
+
+    private var navTitle: String { usesBottomBar ? "Bottom Navigation" : "Navigation" }
 
     var body: some View {
         List {
@@ -31,7 +48,7 @@ struct BottomNavSettingsView: View {
                 }
                 .onMove(perform: move)
             } header: {
-                Text("Bottom Navigation")
+                Text(navTitle)
             } footer: {
                 Text("Drag to reorder. Up to \(BottomNavPrefs.maxActive) tabs can be active at once — the rest stay hidden but keep their place in the order if you turn them back on.")
             }
@@ -41,7 +58,7 @@ struct BottomNavSettingsView: View {
         #endif
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
-        .arcfinNavTitleLarge("Bottom Navigation")
+        .arcfinNavTitleLarge(navTitle)
         .onAppear {
             // Persist the resolved default explicitly so an empty stored string only ever
             // means "not configured yet", never "user turned everything off".

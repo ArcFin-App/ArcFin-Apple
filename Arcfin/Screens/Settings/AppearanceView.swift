@@ -6,7 +6,24 @@ struct AppearanceView: View {
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
     #if canImport(UIKit) && !os(tvOS)
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
+
+    /// The tab strip only renders at the bottom on a compact-width iPhone — iPad and Mac
+    /// render the exact same order/visibility as a sidebar instead, so the settings label
+    /// calling it "Bottom Navigation" there was just wrong, not merely imprecise.
+    private var usesBottomBar: Bool {
+        #if os(macOS)
+        false
+        #elseif os(iOS)
+        sizeClass == .compact
+        #else
+        false
+        #endif
+    }
+
+    private var navSectionTitle: String { usesBottomBar ? "Bottom Navigation" : "Navigation" }
+    private var navSectionIcon: String { usesBottomBar ? "rectangle.bottomthird.inset.filled" : "sidebar.left" }
 
     var body: some View {
         List {
@@ -35,10 +52,10 @@ struct AppearanceView: View {
                 NavigationLink {
                     BottomNavSettingsView()
                 } label: {
-                    Text("Bottom Navigation")
+                    Text(navSectionTitle)
                 }
             } header: {
-                Label("Bottom Navigation", systemImage: "rectangle.bottomthird.inset.filled")
+                Label(navSectionTitle, systemImage: navSectionIcon)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
