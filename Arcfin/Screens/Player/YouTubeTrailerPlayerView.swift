@@ -1,5 +1,5 @@
 import SwiftUI
-#if canImport(UIKit) && !os(tvOS)
+#if !os(tvOS)
 import YouTubePlayerKit
 
 /// Fallback when a title has no local trailer indexed on the server but does have a
@@ -66,7 +66,9 @@ struct YouTubeTrailerPlayerView: View {
             .padding(.top, 16)
             .padding(.trailing, 16)
         }
+        #if canImport(UIKit)
         .statusBarHidden()
+        #endif
     }
 }
 #endif

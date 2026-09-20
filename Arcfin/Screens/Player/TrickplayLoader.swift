@@ -1,5 +1,8 @@
 #if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import JellyfinAPI
 import AuthCore
 
@@ -12,8 +15,8 @@ final class TrickplayLoader {
     private let client: JellyfinMediaClient
     private let itemId: String
     private let info: JellyfinTrickplayInfo
-    private var tileCache: [Int: UIImage] = [:]
-    private var inFlight: [Int: Task<UIImage?, Never>] = [:]
+    private var tileCache: [Int: PlatformImage] = [:]
+    private var inFlight: [Int: Task<PlatformImage?, Never>] = [:]
 
     init(credential: ServerCredential, authHeader: String, client: JellyfinMediaClient, itemId: String, info: JellyfinTrickplayInfo) {
         self.credential = credential
@@ -23,7 +26,7 @@ final class TrickplayLoader {
         self.info = info
     }
 
-    func thumbnail(forPositionTicks ticks: Int64) async -> UIImage? {
+    func thumbnail(forPositionTicks ticks: Int64) async -> PlatformImage? {
         guard info.intervalMs > 0, info.thumbnailCount > 0 else { return nil }
         let positionMs = Int(Double(ticks) / 10_000)
         let thumbIndex = min(max(positionMs / info.intervalMs, 0), info.thumbnailCount - 1)
@@ -33,18 +36,18 @@ final class TrickplayLoader {
         let row = indexInTile / info.tileWidth
         let col = indexInTile % info.tileWidth
 
-        guard let tileImage = await loadTile(tileIndex), let cgTile = tileImage.cgImage else { return nil }
+        guard let tileImage = await loadTile(tileIndex), let cgTile = tileImage.cgImageRepresentation else { return nil }
         let cropRect = CGRect(x: col * info.width, y: row * info.height, width: info.width, height: info.height)
         guard let cropped = cgTile.cropping(to: cropRect) else { return nil }
-        return UIImage(cgImage: cropped)
+        return PlatformImage.from(cgImage: cropped)
     }
 
-    private func loadTile(_ tileIndex: Int) async -> UIImage? {
+    private func loadTile(_ tileIndex: Int) async -> PlatformImage? {
         if let cached = tileCache[tileIndex] { return cached }
         if let existing = inFlight[tileIndex] { return await existing.value }
         let url = client.trickplayTileURL(credential: credential, itemId: itemId, width: info.width, tileIndex: tileIndex)
         let authHeader = authHeader
-        let task = Task<UIImage?, Never> {
+        let task = Task<PlatformImage?, Never> {
             do {
                 var req = URLRequest(url: url)
                 // The api_key query param alone 401s on this endpoint — unlike Items/Images,
@@ -52,7 +55,7 @@ final class TrickplayLoader {
                 req.setValue(authHeader, forHTTPHeaderField: "Authorization")
                 let (data, response) = try await URLSession.shared.data(for: req)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-                guard status == 200, let image = UIImage(data: data) else {
+                guard status == 200, let image = PlatformImage(data: data) else {
                     print("[Trickplay] tile \(tileIndex) fetch failed — status \(status), bytes \(data.count), url \(url)")
                     return nil
                 }
@@ -69,4 +72,3 @@ final class TrickplayLoader {
         return image
     }
 }
-#endif

@@ -1,11 +1,12 @@
 import Foundation
-#if canImport(UIKit)
-import UIKit
+#if !os(tvOS)
 import MediaPlayer
 
 /// Lock screen / Control Center / AirPods "Now Playing" surface — driven off whichever
 /// engine (AVFoundation or VLC) is actually playing via MediaPlayerProtocol, not tied to
-/// AVPlayer directly, since PlayerView abstracts over both.
+/// AVPlayer directly, since PlayerView abstracts over both. MediaPlayer itself (unlike
+/// UIKit) is available on macOS too — Control Center and the keyboard media keys are its
+/// macOS equivalent of iOS's lock screen/AirPods surface, driven by this same class.
 @MainActor
 final class NowPlayingManager {
     private let commandCenter = MPRemoteCommandCenter.shared()
@@ -70,7 +71,7 @@ final class NowPlayingManager {
         commandCenter.seekBackwardCommand.isEnabled = false
     }
 
-    func update(title: String, artist: String?, duration: TimeInterval, elapsed: TimeInterval, rate: Float, artwork: UIImage?) {
+    func update(title: String, artist: String?, duration: TimeInterval, elapsed: TimeInterval, rate: Float, artwork: PlatformImage?) {
         guard duration.isFinite, duration > 0 else { return }
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: title,
