@@ -498,7 +498,16 @@ struct HomeView: View {
         // field updates to the same credential (e.g. the avatar-tag backfill in
         // checkStoredAuth). Also makes the separate onChange(of: authManager.state) that
         // used to be right below this redundant, since it did the same thing less reliably.
-        .task(id: authManager.state.credential?.id) { await loadHome() }
+        //
+        // A bare `await loadHome()` here would be cancelled right along with the .task
+        // itself whenever SwiftUI reruns it — on macOS this reliably killed every retry
+        // attempt mid-flight during the exact NavigationSplitView remount churn this
+        // modifier exists to work around, logging "cancelled" (NSURLErrorCancelled) for
+        // every attempt even though the server was actually reachable. The Retry button
+        // below never hit this because it fires a plain Task of its own, untied to this
+        // view's task lifecycle — detaching into one here the same way lets the load
+        // survive that cancellation instead of losing the race every cold launch.
+        .task(id: authManager.state.credential?.id) { Task { await loadHome() } }
         .refreshable { await loadHome(force: true) }
         #if os(iOS)
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
