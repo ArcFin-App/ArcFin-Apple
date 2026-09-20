@@ -1073,6 +1073,91 @@ extension PlayerView {
         .transition(.opacity)
         .allowsHitTesting(false)
     }
+
+    // MARK: - macOS menu panels
+    // .sheet doesn't reliably present from PlayerView on macOS — see the note where these
+    // are used in the body. Rendered as plain in-place overlay panels instead, reusing the
+    // same content views the iOS/tvOS .sheet presentations already use.
+
+    func macMenuBackdrop(dismiss: @escaping () -> Void) -> some View {
+        Color.black.opacity(0.35)
+            .ignoresSafeArea()
+            .contentShape(Rectangle())
+            .onTapGesture { dismiss() }
+            .transition(.opacity)
+    }
+
+    func macMenuPanel<Content: View>(title: String, onDone: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                Spacer()
+                Button("Done", action: onDone)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(DT.Color.accent)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            Divider().overlay(.white.opacity(0.1))
+            content()
+        }
+        .frame(width: 380, height: 420)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.1), lineWidth: 1))
+        .shadow(color: .black.opacity(0.4), radius: 30)
+        .transition(.scale(scale: 0.95).combined(with: .opacity))
+    }
+
+    var macTrackSelectionPanel: some View {
+        macMenuPanel(title: "Subtitles & Audio", onDone: { showTrackMenu = false }) {
+            TrackSelectionSheet(
+                audioStreams: playbackInfo?.audioStreams ?? [],
+                subtitleStreams: playbackInfo?.subtitleStreams ?? [],
+                selectedAudioIndex: selectedAudioIndex,
+                selectedSubtitleIndex: selectedSubtitleIndex,
+                onSelectAudio: { index in
+                    showTrackMenu = false
+                    changeTrack(audioIndex: index)
+                },
+                onSelectSubtitle: { index in
+                    showTrackMenu = false
+                    changeTrack(subtitleIndex: .some(index))
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+    }
+
+    var macChapterListPanel: some View {
+        macMenuPanel(title: "Chapters", onDone: { showChapterMenu = false }) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(chapters.enumerated()), id: \.offset) { index, chapter in
+                        let isCurrent = currentChapterIndex == index
+                        Button {
+                            showChapterMenu = false
+                            jumpToChapter(chapter)
+                        } label: {
+                            HStack {
+                                Text(chapter.name ?? "Chapter \(index + 1)")
+                                    .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
+                                    .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
+                                Spacer()
+                                Text(timeLabel(ticks: chapter.startPositionTicks))
+                                    .font(.system(size: 13, design: .monospaced))
+                                    .foregroundStyle(DT.Color.textSecondary)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
     #endif
 
     func seekFeedbackView(_ feedback: SeekFeedback) -> some View {

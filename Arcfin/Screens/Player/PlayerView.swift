@@ -248,6 +248,23 @@ struct PlayerView: View {
             if showStillWatchingPrompt {
                 stillWatchingOverlay
             }
+
+            #if os(macOS)
+            // .sheet doesn't reliably present here — PlayerView is a raw full-window ZStack
+            // overlay in ContentView (see PlaybackPresenter), not a screen reached through a
+            // real NavigationStack push or .sheet/.fullScreenCover presentation, and macOS's
+            // sheet machinery needs that normal presentation chain to attach to. Rendered as
+            // a plain in-place overlay instead — the same mechanism the volume HUD above
+            // already uses successfully in this exact context.
+            if showTrackMenu {
+                macMenuBackdrop { showTrackMenu = false }
+                macTrackSelectionPanel
+            }
+            if showChapterMenu {
+                macMenuBackdrop { showChapterMenu = false }
+                macChapterListPanel
+            }
+            #endif
         }
         #if canImport(UIKit) && !os(tvOS)
         .statusBarHidden()
@@ -317,18 +334,22 @@ struct PlayerView: View {
         .onChange(of: showRateMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .onChange(of: showChapterMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .onChange(of: showInfoSheet) { _, isOpen in handleMenuVisibilityChange(isOpen) }
+        #if !os(macOS)
         .sheet(isPresented: $showTrackMenu) {
             trackSelectionSheet
         }
+        #endif
         .confirmationDialog("Quality", isPresented: $showQualityMenu, titleVisibility: .visible) {
             qualityMenuButtons
         }
         .confirmationDialog("Playback Speed", isPresented: $showRateMenu, titleVisibility: .visible) {
             rateMenuButtons
         }
+        #if !os(macOS)
         .sheet(isPresented: $showChapterMenu) {
             chapterListSheet
         }
+        #endif
         .sheet(isPresented: $showInfoSheet) {
             mediaInfoSheet
         }
