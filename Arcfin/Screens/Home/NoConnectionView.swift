@@ -73,6 +73,9 @@ struct NoConnectionView: View {
                         }
                         .disabled(mediaRepo.isLoading)
 
+                        // Downloads/offline playback aren't wired up on macOS — see
+                        // SettingsView/NotificationsSettingsView, which hide the same feature.
+                        #if os(iOS)
                         Button {
                             offlineModeEnabled = true
                         } label: {
@@ -83,6 +86,7 @@ struct NoConnectionView: View {
                                 .frame(height: 48)
                                 .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.md))
                         }
+                        #endif
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
