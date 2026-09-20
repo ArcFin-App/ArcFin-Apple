@@ -19,7 +19,13 @@ struct YouTubeTrailerPlayerView: View {
         self.title = title
         _player = State(initialValue: YouTubePlayer(
             source: .video(id: videoID),
-            parameters: .init(autoPlay: true, showControls: true)
+            parameters: .init(autoPlay: true, showControls: true),
+            // Without this, YouTube's embedded player gets a persistent WKWebsiteDataStore —
+            // cookies it sets survive across app launches, giving it a standing identifier to
+            // link repeat trailer plays back to this device. A non-persistent (ephemeral, like
+            // Private Browsing) store means every trailer starts clean with nothing carried
+            // over from the last one.
+            configuration: .init(useNonPersistentWebsiteDataStore: true)
         ))
     }
 
