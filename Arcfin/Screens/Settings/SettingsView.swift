@@ -215,6 +215,36 @@ struct SettingsView: View {
 #if os(tvOS)
                 .listRowBackground(Color.clear)
 #endif
+                Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
+                    HStack {
+                        Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
+                Link(destination: URL(string: "https://arcfin.psmattas.com/terms")!) {
+                    HStack {
+                        Text("Terms of Use").foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
+                Link(destination: URL(string: "https://arcfin.psmattas.com/data-protection")!) {
+                    HStack {
+                        Text("Data Protection").foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+#if os(tvOS)
+                .listRowBackground(Color.clear)
+#endif
             } header: {
                 sectionHeader("About", icon: "info.circle")
             } footer: {

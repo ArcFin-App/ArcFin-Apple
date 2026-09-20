@@ -7,7 +7,6 @@
 		<string>audio</string>
 		<string>fetch</string>
 		<string>processing</string>
-		<string>location</string>
 	</array>
 	<key>NSBonjourServices</key>
 	<array>
@@ -17,6 +16,10 @@
 	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID is used to unlock Arcfin when App Lock is enabled for your profile.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Arcfin looks for Jellyfin servers and Chromecast devices on your local network so you can connect and cast without typing in an address.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>
