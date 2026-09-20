@@ -7,6 +7,8 @@ import Persistence
 import SwiftVLC
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 /// Fully offline playback of a DownloadedItem — no network calls of any kind. Simpler than
@@ -23,6 +25,9 @@ struct OfflinePlayerView: View {
 
     // Always VLC, not AVFoundation — a downloaded file's container/codec can be anything the
     // server has, and VLC plays that natively without AVFoundation's mkv/HEVC-tag limitations.
+    // PiPVideoView (SwiftVLC) is itself an NSViewRepresentable on macOS and a
+    // UIViewRepresentable on iOS with the same public init, so the video surface below needs
+    // no per-platform branch of its own the way PlayerView's AVFoundation surface does.
     @State private var player = VLCEnginePlayer()
     @State private var isControlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
@@ -36,9 +41,16 @@ struct OfflinePlayerView: View {
     @AppStorage("subtitleTextColor") private var subtitleTextColor = SubtitleTextColorOption.white
     @AppStorage("subtitleBackgroundStyle") private var subtitleBackgroundStyle = SubtitleBackgroundStyle.box
     @State private var progressSaveTask: Task<Void, Never>?
-    #if canImport(UIKit) && !os(tvOS)
+    #if !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?
     @State private var isFillScreen = false
+    #endif
+    #if os(macOS)
+    @State private var macWindow: NSWindow?
+    @State private var isMacFullScreen = false
+    @State private var macVolume: Double = 1.0
+    @State private var macVolumeHUD: Double?
+    @State private var macVolumeHUDTask: Task<Void, Never>?
     #endif
 
     private var dir: URL { DownloadStore.directory(for: downloadedItem.itemId) }
@@ -47,7 +59,7 @@ struct OfflinePlayerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            #if canImport(UIKit) && !os(tvOS)
+            #if !os(tvOS)
             GeometryReader { proxy in
                 // PiPVideoView's native drawable is itself interactive (unlike AVFoundation's
                 // inert surface) and was swallowing the tap before onTapGesture below saw it.
@@ -62,7 +74,12 @@ struct OfflinePlayerView: View {
                 // or it's free to size itself off its own content instead of the screen.
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .contentShape(Rectangle())
+                #if canImport(UIKit)
                 .onTapGesture { toggleControls() }
+                #elseif os(macOS)
+                .gesture(macOfflineTapGesture(width: proxy.size.width))
+                .onContinuousHover { _ in handleMacMouseActivity() }
+                #endif
             }
             .ignoresSafeArea()
             #endif
@@ -88,6 +105,12 @@ struct OfflinePlayerView: View {
             controlsOverlay
                 .opacity(isControlsVisible ? 1 : 0)
                 .allowsHitTesting(isControlsVisible)
+
+            #if os(macOS)
+            if let macVolumeHUD {
+                macOfflineVolumeIndicator(macVolumeHUD)
+            }
+            #endif
         }
         #if canImport(UIKit) && !os(tvOS)
         .statusBarHidden()
@@ -98,6 +121,8 @@ struct OfflinePlayerView: View {
             savePosition(final: true)
             #if canImport(UIKit) && !os(tvOS)
             resetPlayerOrientation()
+            #elseif os(macOS)
+            macVolumeHUDTask?.cancel()
             #endif
         }
         .onChange(of: player.positionTicks) { _, newValue in
@@ -107,7 +132,7 @@ struct OfflinePlayerView: View {
             if status == .playing { scheduleAutoHide() }
             if status == .ended { savePosition(final: true); dismiss() }
         }
-        #if canImport(UIKit) && !os(tvOS)
+        #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
             player.vlcPlayer.aspectRatio = newValue ? .fill : .default
         }
@@ -115,6 +140,31 @@ struct OfflinePlayerView: View {
         .sheet(isPresented: $showTrackMenu) {
             subtitleSheet
         }
+        #if os(macOS)
+        .background(WindowAccessor { window in
+            macWindow = window
+            isMacFullScreen = isMacWindowFullScreen(window)
+        })
+        .focusable()
+        .focusEffectDisabled()
+        .onKeyPress(.space) { togglePlayPause(); return .handled }
+        .onKeyPress(.leftArrow) { seek(by: -10); return .handled }
+        .onKeyPress(.rightArrow) { seek(by: 10); return .handled }
+        .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
+        .onKeyPress(.downArrow) { adjustMacVolume(by: -0.05); return .handled }
+        .onKeyPress(characters: CharacterSet(charactersIn: "fF")) { _ in
+            toggleMacWindowFullScreen(macWindow)
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            if isMacFullScreen {
+                toggleMacWindowFullScreen(macWindow)
+            } else {
+                dismiss()
+            }
+            return .handled
+        }
+        #endif
     }
 
     // MARK: - Setup
@@ -217,6 +267,11 @@ struct OfflinePlayerView: View {
                     .foregroundStyle(DT.Color.accent)
             }
             Spacer()
+            // No macOS AirPlayButton here — unlike PlayerView's AVFoundation engine,
+            // AVRoutePickerView on macOS needs a real AVPlayer instance to route (see
+            // AirPlayButton's macOS variant), and offline playback is VLC-only with no
+            // AVPlayer to hand it. Not something VLC's macOS backend bridges either — a
+            // genuine gap, not an oversight.
             #if canImport(UIKit) && !os(tvOS)
             AirPlayButton().frame(width: 30, height: 30)
             #endif
@@ -247,6 +302,32 @@ struct OfflinePlayerView: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
+            }
+            #elseif os(macOS)
+            HStack(spacing: 14) {
+                Button { isFillScreen.toggle() } label: {
+                    Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                Button { toggleMacWindowFullScreen(macWindow) } label: {
+                    Image(systemName: isMacFullScreen ? "arrow.down.right.and.arrow.up.left.circle" : "arrow.up.left.and.arrow.down.right.circle")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                if AVPictureInPictureController.isPictureInPictureSupported() {
+                    Button { vlcPipController?.toggle() } label: {
+                        Image(systemName: "pip.enter")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             #endif
         }
@@ -347,7 +428,9 @@ struct OfflinePlayerView: View {
             }
             .frame(maxHeight: .infinity, alignment: .center)
             .contentShape(Rectangle())
-            #if canImport(UIKit) && !os(tvOS)
+            // DragGesture tracks a mouse drag on macOS the same way it tracks a touch drag —
+            // no platform split needed here.
+            #if !os(tvOS)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -371,15 +454,11 @@ struct OfflinePlayerView: View {
 
     private var trickplayPreview: some View {
         Group {
-            #if canImport(UIKit)
             if let image = trickplayImage(forTicks: Int64(scrubTicks)) {
-                Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
+                Image(platformImage: image).resizable().aspectRatio(contentMode: .fill)
             } else {
                 Color.black
             }
-            #else
-            Color.black
-            #endif
         }
         .frame(width: 140, height: 79)
         .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -388,8 +467,7 @@ struct OfflinePlayerView: View {
         .allowsHitTesting(false)
     }
 
-    #if canImport(UIKit)
-    private func trickplayImage(forTicks ticks: Int64) -> UIImage? {
+    private func trickplayImage(forTicks ticks: Int64) -> PlatformImage? {
         guard let intervalMs = downloadedItem.trickplayIntervalMs, intervalMs > 0,
               let thumbnailCount = downloadedItem.trickplayThumbnailCount, thumbnailCount > 0,
               let tileWidth = downloadedItem.trickplayTileWidth, tileWidth > 0,
@@ -404,14 +482,13 @@ struct OfflinePlayerView: View {
         let row = indexInTile / tileWidth
         let col = indexInTile % tileWidth
         guard downloadedItem.trickplayFileNames.indices.contains(tileIndex),
-              let tileImage = UIImage(contentsOfFile: dir.appendingPathComponent(downloadedItem.trickplayFileNames[tileIndex]).path),
-              let cgTile = tileImage.cgImage
+              let tileImage = PlatformImage.from(contentsOfFile: dir.appendingPathComponent(downloadedItem.trickplayFileNames[tileIndex]).path),
+              let cgTile = tileImage.cgImageRepresentation
         else { return nil }
         let cropRect = CGRect(x: col * width, y: row * height, width: width, height: height)
         guard let cropped = cgTile.cropping(to: cropRect) else { return nil }
-        return UIImage(cgImage: cropped)
+        return PlatformImage.from(cgImage: cropped)
     }
-    #endif
 
     private var subtitleSheet: some View {
         NavigationStack {
@@ -446,6 +523,68 @@ struct OfflinePlayerView: View {
         }
         .presentationDetents([.medium])
     }
+
+    // MARK: - macOS mouse/keyboard
+
+    #if os(macOS)
+    /// Mirrors PlayerView+Gestures' macTapGesture (click toggles controls, double-click seeks
+    /// ±10s) — kept local rather than shared since that extension is scoped to PlayerView,
+    /// not this view. Takes the surface's width from the caller's GeometryReader, same as
+    /// PlayerView's own version does.
+    private func macOfflineTapGesture(width: CGFloat) -> some Gesture {
+        SpatialTapGesture(count: 2)
+            .onEnded { value in
+                let forward = value.location.x > width / 2
+                seek(by: forward ? 10 : -10)
+            }
+            .exclusively(before:
+                SpatialTapGesture(count: 1)
+                    .onEnded { _ in toggleControls() }
+            )
+    }
+
+    private func handleMacMouseActivity() {
+        if !isControlsVisible {
+            withAnimation(DT.Animation.fast) { isControlsVisible = true }
+        }
+        scheduleAutoHide()
+    }
+
+    private func adjustMacVolume(by delta: Double) {
+        macVolume = min(max(macVolume + delta, 0), 1)
+        try? player.vlcPlayer.setAudioVolume(Volume(Float(macVolume)))
+        macVolumeHUD = macVolume
+        macVolumeHUDTask?.cancel()
+        macVolumeHUDTask = Task {
+            try? await Task.sleep(for: .seconds(1.2))
+            guard !Task.isCancelled else { return }
+            macVolumeHUD = nil
+        }
+    }
+
+    private func macOfflineVolumeIndicator(_ volume: Double) -> some View {
+        HStack {
+            Spacer()
+            VStack(spacing: 10) {
+                Image(systemName: volume < 0.01 ? "speaker.slash.fill" : volume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.white)
+                ZStack(alignment: .bottom) {
+                    Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
+                    Capsule().fill(.white).frame(width: 6, height: 90 * volume)
+                }
+                Text("\(Int(volume * 100))%")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white)
+            }
+            .padding(14)
+            .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+        }
+        .padding(.horizontal, 32)
+        .transition(.opacity)
+        .allowsHitTesting(false)
+    }
+    #endif
 
     // MARK: - Actions
 
