@@ -72,6 +72,11 @@ struct PlayerView: View {
     @State var recapEnd: Double?
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
+    /// Optimistic target of the most recent seek request — player.positionTicks only
+    /// updates once the AVPlayer seek actually completes, which lags behind on a slow
+    /// server. Rapid skip taps must accumulate on this, not on the stale confirmed
+    /// position, or they collapse into far less than the sum requested.
+    @State var pendingSeekTargetTicks: Int64?
     @State var stallObserver: NSObjectProtocol?
     /// Index into `Self.autoBitrateLadder`, nil = uncapped. Only meaningful while
     /// `quality == .auto` — a manual pick never touches this.

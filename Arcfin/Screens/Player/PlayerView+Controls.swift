@@ -279,7 +279,7 @@ extension PlayerView {
             scrubber
 
             HStack {
-                Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks))
+                Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)))
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
 
@@ -314,7 +314,7 @@ extension PlayerView {
     private var scrubber: some View {
         GeometryReader { proxy in
             let duration = max(player.durationTicks, 1)
-            let fraction = Double(isScrubbing ? Int64(scrubTicks) : player.positionTicks) / Double(duration)
+            let fraction = Double(isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)) / Double(duration)
             let thumbX = proxy.size.width * min(max(fraction, 0), 1)
 
             ZStack(alignment: .leading) {
@@ -411,7 +411,7 @@ extension PlayerView {
     }
 
     private var remainingLabel: String {
-        let remaining = max(player.durationTicks - player.positionTicks, 0)
+        let remaining = max(player.durationTicks - (pendingSeekTargetTicks ?? player.positionTicks), 0)
         return "-" + timeLabel(ticks: remaining)
     }
 
@@ -939,7 +939,8 @@ extension PlayerView {
     }
 
     func seek(by seconds: Int) {
-        let newTicks = min(max(0, player.positionTicks + Int64(seconds) * 10_000_000), player.durationTicks)
+        let base = pendingSeekTargetTicks ?? player.positionTicks
+        let newTicks = min(max(0, base + Int64(seconds) * 10_000_000), player.durationTicks)
         performSeek(to: newTicks)
         toggleControlsVisibilityOnAction()
     }
@@ -948,6 +949,7 @@ extension PlayerView {
     /// over the WebSocket, same as every other group member sees it) instead of seeking the
     /// local player directly — see PlayerView.applySyncPlayCommand.
     func performSeek(to ticks: Int64) {
+        pendingSeekTargetTicks = ticks
         #if canImport(GoogleCast)
         if CastManager.shared.isConnected {
             CastManager.shared.seek(toSeconds: Double(ticks) / 10_000_000)
@@ -961,7 +963,10 @@ extension PlayerView {
             return
         }
         #endif
-        Task { await player.seek(to: ticks) }
+        Task {
+            await player.seek(to: ticks)
+            if pendingSeekTargetTicks == ticks { pendingSeekTargetTicks = nil }
+        }
     }
 
     private func toggleControlsVisibilityOnAction() {
