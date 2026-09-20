@@ -25,7 +25,12 @@ struct ShelfSeeAllView: View {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(items) { item in
                     Button { selectedItem = item } label: {
-                        gridCard(item)
+                        ShelfSeeAllCard(
+                            imageURL: imageURL(for: item),
+                            isLandscape: isLandscape,
+                            title: cardTitle(item),
+                            subtitle: cardSubtitle(item)
+                        )
                     }
                     .buttonStyle(.plain)
                 }
@@ -54,38 +59,6 @@ struct ShelfSeeAllView: View {
             ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 500)
     }
 
-    private func gridCard(_ item: MediaItem) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ZStack {
-                if let url = imageURL(for: item) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: DT.Color.backgroundSecondary
-                        }
-                    }
-                    .clipped()
-                } else {
-                    DT.Color.backgroundSecondary
-                }
-            }
-            .aspectRatio(isLandscape ? 16 / 9 : 2 / 3, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
-
-            Text(cardTitle(item))
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(1)
-            if let subtitle = cardSubtitle(item) {
-                Text(subtitle)
-                    .font(.system(size: 10))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(1)
-            }
-        }
-    }
-
     private func cardTitle(_ item: MediaItem) -> String {
         item.type == .episode ? (item.seriesName ?? item.name) : item.name
     }
@@ -98,5 +71,55 @@ struct ShelfSeeAllView: View {
         let e = item.indexNumber.map { "E\($0)" }
         let code = [s, e].compactMap { $0 }.joined()
         return [code.isEmpty ? nil : code, item.name].compactMap { $0 }.joined(separator: " · ")
+    }
+}
+
+// MARK: - Grid card
+
+private struct ShelfSeeAllCard: View {
+    let imageURL: URL?
+    let isLandscape: Bool
+    let title: String
+    let subtitle: String?
+
+    @State private var hovered = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ZStack {
+                if let imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: DT.Color.backgroundSecondary
+                        }
+                    }
+                    .clipped()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+            }
+            .aspectRatio(isLandscape ? 16 / 9 : 2 / 3, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+            .overlay(
+                RoundedRectangle(cornerRadius: DT.Radius.card)
+                    .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .scaleEffect(hovered ? 1.03 : 1)
+            .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
+
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .lineLimit(1)
+            }
+        }
+        .animation(DT.Animation.fast, value: hovered)
+        .onHover { hovered = $0 }
     }
 }
