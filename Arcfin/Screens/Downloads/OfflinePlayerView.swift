@@ -120,6 +120,15 @@ struct OfflinePlayerView: View {
         .task { await setup() }
         .onDisappear {
             savePosition(final: true)
+            // Dismissing (back chevron, Escape) previously left VLC playing in the
+            // background with no way to stop it short of killing the app — the player
+            // was never actually told to stop, just visually torn down.
+            Task {
+                await player.stop()
+                #if canImport(UIKit) && !os(tvOS)
+                await deactivateAudioSession()
+                #endif
+            }
             #if canImport(UIKit) && !os(tvOS)
             resetPlayerOrientation()
             #elseif os(macOS)
@@ -177,8 +186,7 @@ struct OfflinePlayerView: View {
 
     private func setup() async {
         #if canImport(UIKit) && !os(tvOS)
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
-        try? AVAudioSession.sharedInstance().setActive(true)
+        await activateAudioSession()
         #endif
         let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
         do {
@@ -190,6 +198,23 @@ struct OfflinePlayerView: View {
         }
         startProgressSaving()
     }
+
+    #if canImport(UIKit) && !os(tvOS)
+    // Off the main thread — AVAudioSession's synchronous setActive can block long enough
+    // to trip Xcode's "Hang Risk" instrument when called directly from the main actor.
+    private func activateAudioSession() async {
+        await Task.detached(priority: .userInitiated) {
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+            try? AVAudioSession.sharedInstance().setActive(true)
+        }.value
+    }
+
+    private func deactivateAudioSession() async {
+        await Task.detached(priority: .utility) {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }.value
+    }
+    #endif
 
     private func startProgressSaving() {
         progressSaveTask?.cancel()

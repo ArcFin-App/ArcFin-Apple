@@ -132,7 +132,6 @@ struct HomeView: View {
     @State private var heroPlaybackRequest: HeroPlaybackRequest?
     @State private var seeAllShelf: SeeAllShelf?
     @State private var showOfflinePrompt = false
-    #if canImport(UIKit) && !os(tvOS)
     // Keyed by heroItems index — only the current slide's trailer is ever fetched/played,
     // and only after a short delay once it's actually the one on screen (see
     // loadHeroVideoBackdrop), so swiping past several slides quickly doesn't fire off a
@@ -141,7 +140,6 @@ struct HomeView: View {
     @State private var heroVideoBackdropURL: URL?
     @State private var heroVideoBackdropTask: Task<Void, Never>?
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
-    #endif
 
     struct HeroPlaybackRequest: Identifiable, Equatable {
         let id = UUID()
@@ -346,31 +344,35 @@ struct HomeView: View {
             .foregroundStyle(.white)
     }
 
+    /// Pulled out of the GeometryReader closure in body — inline ternary + if/else there
+    /// pushed the surrounding ViewBuilder expression past the type-checker's time budget.
+    private func heroDimensions(screenW: CGFloat, screenH: CGFloat) -> (imageH: CGFloat, heroH: CGFloat) {
+#if os(tvOS)
+        let imageH: CGFloat = screenH * 0.48
+        let heroH: CGFloat = imageH + 180
+        return (imageH, heroH)
+#else
+        let rawImageH: CGFloat = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
+        // On iPad/Mac (regular width — usePortraitHero is iPhone-only), the hero banner
+        // was nearly filling the window before any shelves came into view. Capped to 60%
+        // of the available height there; iPhone's portrait hero is already sized off its
+        // own aspect ratio and is left alone.
+        guard !usePortraitHero else { return (rawImageH, rawImageH) }
+        let cap = screenH * 0.6
+        let heroH = min(rawImageH + 220, cap)
+        let imageH = max(0, heroH - 220)
+        return (imageH, heroH)
+#endif
+    }
+
     var body: some View {
         NavigationStack {
             GeometryReader { proxy in
                 let screenW = proxy.size.width
                 let screenH = proxy.size.height
-#if os(tvOS)
-                let imageH: CGFloat = screenH * 0.48
-                let heroH:  CGFloat = imageH + 180
-#else
-                let rawImageH = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
-                // On iPad/Mac (regular width — usePortraitHero is iPhone-only), the hero
-                // banner was nearly filling the window before any shelves came into view.
-                // Capped to 60% of the available height there; iPhone's portrait hero is
-                // already sized off its own aspect ratio and is left alone.
-                let imageH: CGFloat
-                let heroH: CGFloat
-                if usePortraitHero {
-                    imageH = rawImageH
-                    heroH = rawImageH
-                } else {
-                    let cap = screenH * 0.6
-                    heroH = min(rawImageH + 220, cap)
-                    imageH = max(0, heroH - 220)
-                }
-#endif
+                let dims = heroDimensions(screenW: screenW, screenH: screenH)
+                let imageH = dims.imageH
+                let heroH = dims.heroH
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -517,10 +519,8 @@ struct HomeView: View {
             guard heroItems.count > 1 else { return }
             withAnimation(DT.Animation.slow) { heroIndex = (heroIndex + 1) % heroItems.count }
         }
-        #if canImport(UIKit) && !os(tvOS)
         .onChange(of: heroIndex) { _, _ in loadHeroVideoBackdrop() }
         .onAppear { loadHeroVideoBackdrop() }
-        #endif
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
@@ -714,23 +714,32 @@ struct HomeView: View {
 #if !os(iOS)
         let imageType: JellyfinImageType = usePortraitHero ? .primary : .backdrop
         let fillW = usePortraitHero ? 600 : 900
-        if let item = heroItems[safe: heroIndex],
-           let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let img):
-                    img
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                default: heroGradient(for: heroIndex)
+        ZStack {
+            if let item = heroItems[safe: heroIndex],
+               let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    default: heroGradient(for: heroIndex)
+                    }
                 }
+            } else {
+                heroGradient(for: heroIndex)
             }
-            .frame(width: screenW, height: imageH)
-            .clipped()
-        } else {
-            heroGradient(for: heroIndex).frame(width: screenW, height: imageH)
+
+            // Same reasoning as heroImage's overlay below — layered on top of the still
+            // image rather than replacing it.
+            if let videoURL = heroVideoBackdropURL, heroVideoBackdropIndex == heroIndex {
+                HeroVideoBackdropView(url: videoURL)
+                    .transition(.opacity)
+            }
         }
+        .frame(width: screenW, height: imageH)
+        .clipped()
 #else
         // Page-style TabView, not a single crossfading image — lets the user swipe
         // between hero items, and only ever instantiates the current page plus its
@@ -770,12 +779,10 @@ struct HomeView: View {
             // Layered on top of the still image rather than replacing it — the image is
             // already loading/visible instantly, so the video only ever enhances it once
             // its own fetch+negotiation finishes, instead of the slide going blank first.
-            #if canImport(UIKit) && !os(tvOS)
             if heroVideoBackdropIndex == index, let videoURL = heroVideoBackdropURL {
                 HeroVideoBackdropView(url: videoURL)
                     .transition(.opacity)
             }
-            #endif
         }
         .frame(width: screenW, height: imageH)
         .clipped()
@@ -931,7 +938,6 @@ struct HomeView: View {
 
     // MARK: - Hero video backdrop
 
-    #if canImport(UIKit) && !os(tvOS)
     /// Fetches (after a short pause, so quickly swiping past several slides doesn't fire a
     /// burst of these) whether the current hero slide has a local trailer indexed on the
     /// server, and if so resolves it to a real playable stream URL the same way the main
@@ -974,9 +980,16 @@ struct HomeView: View {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropIndex = index
             }
+            // Loops indefinitely otherwise — auto-reverts to the still backdrop after a
+            // short preview instead, same idea as tvOS's own featured-app hero rotators.
+            try? await Task.sleep(for: .seconds(15))
+            guard !Task.isCancelled, heroIndex == index else { return }
+            withAnimation(.easeOut(duration: 0.6)) {
+                heroVideoBackdropURL = nil
+                heroVideoBackdropIndex = nil
+            }
         }
     }
-    #endif
 
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {

@@ -4,8 +4,8 @@ struct AppearanceView: View {
     @AppStorage("reduceMotion") private var reduceMotion = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
-    #if canImport(UIKit) && !os(tvOS)
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    #if canImport(UIKit) && !os(tvOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
 
@@ -29,9 +29,7 @@ struct AppearanceView: View {
         List {
             Section {
                 Toggle("Merge Continue Watching & Up Next", isOn: $mergeContinueWatchingAndUpNext)
-                #if canImport(UIKit) && !os(tvOS)
                 Toggle("Hero Video Backdrops", isOn: $heroVideoBackdropsEnabled)
-                #endif
                 NavigationLink {
                     HomeShelfSettingsView()
                 } label: {
