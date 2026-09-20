@@ -1,5 +1,8 @@
 import Foundation
 import JellyfinAPI
+#if os(macOS)
+import AppKit
+#endif
 
 /// Shared, app-wide "what's currently playing" state — only actually used on macOS, where
 /// PlayerView is rendered as a full-window ZStack overlay in ContentView (the same pattern
@@ -26,5 +29,15 @@ final class PlaybackPresenter {
 
     func dismiss() {
         request = nil
+        #if os(macOS)
+        // PlayerView grabs first responder via .focusable()/@FocusState for its keyboard
+        // shortcuts (space, arrows, f, Escape). Because it's a manually-toggled ZStack
+        // overlay rather than a real sheet/window AppKit tears down itself, removing it
+        // doesn't hand first responder back to the main window on its own — left as-is,
+        // every click after closing the player silently hits a torn-down responder and
+        // nothing behind it (Home's tiles, the sidebar, everything) reacts. Clearing it
+        // lets the window re-establish first responder from the next actual click.
+        NSApp.keyWindow?.makeFirstResponder(nil)
+        #endif
     }
 }
