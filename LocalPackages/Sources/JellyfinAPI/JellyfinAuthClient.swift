@@ -12,7 +12,15 @@ public enum JellyfinAuthError: Error, LocalizedError, Sendable {
     case serverUnreachable
     case authFailed(String)
     case invalidResponse
-    case quickConnectUnavailable
+    /// A 401/403 from QuickConnect/Initiate — the server actively rejected the request,
+    /// e.g. Quick Connect really is turned off in Dashboard > General.
+    case quickConnectDisabled
+    /// Any other non-200 from QuickConnect/Initiate. `quickConnectUnavailable` used to be
+    /// thrown for this whole category with a hardcoded "not enabled" message regardless of
+    /// the real cause (wrong path, a proxy/gateway error page, a genuine server error) —
+    /// actively misleading when the real cause was something else. Carries the real status
+    /// code so it's at least honest about what actually happened.
+    case quickConnectFailed(statusCode: Int)
 
     public var errorDescription: String? {
         switch self {
@@ -20,7 +28,9 @@ public enum JellyfinAuthError: Error, LocalizedError, Sendable {
         case .serverUnreachable:      return "Cannot reach server — check the address and try again."
         case .authFailed(let msg):    return msg
         case .invalidResponse:        return "Unexpected server response."
-        case .quickConnectUnavailable: return "Quick Connect is not enabled on this server."
+        case .quickConnectDisabled:   return "Quick Connect is not enabled on this server."
+        case .quickConnectFailed(let statusCode):
+            return "Quick Connect request failed (server returned HTTP \(statusCode)). If Quick Connect is enabled in Dashboard > General, check the server URL and try again."
         }
     }
 }
@@ -140,8 +150,12 @@ public struct JellyfinAuthClient: Sendable {
         req.setValue(authHeader(), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
         let (data, resp) = try await URLSession.shared.data(for: req)
-        guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
-            throw JellyfinAuthError.quickConnectUnavailable
+        guard let httpResp = resp as? HTTPURLResponse else { throw JellyfinAuthError.invalidResponse }
+        guard httpResp.statusCode == 200 else {
+            if httpResp.statusCode == 401 || httpResp.statusCode == 403 {
+                throw JellyfinAuthError.quickConnectDisabled
+            }
+            throw JellyfinAuthError.quickConnectFailed(statusCode: httpResp.statusCode)
         }
         let result = try JSONDecoder().decode(QCInitResponse.self, from: data)
         return (result.code, result.secret)

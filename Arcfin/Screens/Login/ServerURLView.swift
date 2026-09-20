@@ -178,6 +178,16 @@ struct ServerURLView: View {
             }
             .padding(.top, 52)
             .padding(.bottom, DT.Spacing.xxxl)
+            #if os(macOS)
+            // Nothing here constrained content width, so every field/button stretched to
+            // the full ~1280pt default window width — a phone-width login form blown up
+            // that wide doesn't just look big, it looks broken. Real macOS sign-in panels
+            // (Mail, System Settings' account setup, etc.) are narrow and centered even in
+            // a much wider window; capping then re-expanding-to-center is the standard
+            // SwiftUI idiom for that.
+            .frame(maxWidth: 440)
+            .frame(maxWidth: .infinity)
+            #endif
         }
         .task { await runDiscovery() }
         .sheet(isPresented: $showSetupGuide) { SetupGuideSheet() }

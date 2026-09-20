@@ -83,6 +83,13 @@ struct AuthView: View {
                 }
                 .padding(.top, 52)
                 .padding(.bottom, DT.Spacing.xxxl)
+                #if os(macOS)
+                // Same fix as ServerURLView — nothing capped content width, so the sign-in
+                // form stretched to the full default window width instead of staying a
+                // narrow, centered panel the way a real macOS sign-in screen would.
+                .frame(maxWidth: 440)
+                .frame(maxWidth: .infinity)
+                #endif
             }
             .animation(DT.Animation.standard, value: mode)
             .task(id: mode) {
