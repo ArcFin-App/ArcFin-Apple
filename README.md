@@ -1,7 +1,9 @@
 # Arcfin
 
-[![App Store](https://img.shields.io/badge/App%20Store-Pending%20Review-lightgrey?logo=apple&logoColor=white)](https://apps.apple.com/us/app/arcfin/id6813273961)
-[![TestFlight](https://img.shields.io/badge/TestFlight-Coming%20Soon-blue?logo=apple&logoColor=white)](https://arcfin.psmattas.com)
+[<img src="assets/badges/app-store-badge-black.svg" alt="Download on the App Store" height="48">](https://apps.apple.com/us/app/arcfin/id6813273961)
+[<img src="assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://arcfin.psmattas.com)
+
+Version 0.1.0 — [uploaded to App Store Connect](https://apps.apple.com/us/app/arcfin/id6813273961), currently processing/pending review. TestFlight's public join link isn't live yet — the badge above points at the site until it is.
 
 A premium native Jellyfin media client for the Apple ecosystem.
 
@@ -27,7 +29,7 @@ A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming
 
 | Platform | Status |
 |---|---|
-| iOS 26 + iPadOS 26 | Primary — preparing for TestFlight/App Store |
+| iOS 26 + iPadOS 26 | Primary — v0.1.0 uploaded to App Store Connect, processing |
 | tvOS 26 | In development |
 | macOS | Not a target yet |
 
@@ -115,7 +117,7 @@ I am a software engineer. AI makes certain tasks faster and easier, but the arch
 
 ## Project Status
 
-Feature-complete for an initial release — playback, library, downloads, casting, profiles, and Settings are all built. Currently preparing for TestFlight and App Store submission (see `fastlane/metadata/`).
+Feature-complete for an initial release — playback, library, downloads, casting, profiles, and Settings are all built. v0.1.0 is uploaded to App Store Connect and currently processing; TestFlight and App Store submission are next (see `fastlane/metadata/`).
 
 ---
 
