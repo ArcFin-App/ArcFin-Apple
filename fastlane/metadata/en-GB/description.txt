@@ -12,7 +12,7 @@ PLAYBACK, DONE RIGHT
 • AirPlay and Google Cast, with full Now Playing / Control Center integration
 • Picture in Picture
 • Judder-free playback with optional display frame-rate matching
-• Custom subtitle styling — size, color, and background
+• Custom subtitle styling — size, colour, and background
 • Chapters, skip intro/credits/recap, playback speed control, and an Up Next card with an "are you still watching" check for long binge sessions
 
 DOWNLOAD FOR OFFLINE
@@ -23,7 +23,7 @@ DISCOVER & TRACK
 • Full library browsing with sorting (including by genre), filtering, and search
 • Cast and crew pages
 • Optional trailer playback, with an in-app YouTube fallback when a title has no local trailer
-• Connect Jellyseerr to browse and request new content without leaving Arcfin
+• Connect Seerr to browse and request new content without leaving Arcfin
 • Connect Streamystats to see your own watch stats
 
 BUILT-IN PRIVACY

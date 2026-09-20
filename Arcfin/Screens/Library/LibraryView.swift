@@ -1048,7 +1048,7 @@ struct LibraryFilterSheet: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    Toggle("Favorites Only", isOn: $favoritesOnly)
+                    Toggle("Favourites Only", isOn: $favoritesOnly)
                 }
 
                 if !availableGenres.isEmpty {

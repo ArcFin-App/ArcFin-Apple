@@ -5,17 +5,22 @@ folder layout used as a plain reference, so this content lives in git next to th
 instead of only existing inside App Store Connect's web form. Copy each file's contents
 into the matching App Store Connect field.
 
-- `metadata/en-US/*.txt` — App Store listing fields (App Information / Version Information)
-- `metadata/en-US/review_information/*.txt` — App Review Information tab (sign-in demo account + notes)
+- `metadata/en-GB/*.txt` — App Store listing fields (App Information / Version Information)
+- `metadata/en-GB/review_information/*.txt` — App Review Information tab (sign-in demo account + notes)
 - `metadata/testflight/*.txt` — TestFlight's Test Information tab (not a real `deliver` path, just grouped here for the same copy-paste purpose)
 - `metadata/copyright.txt` — App Information > copyright line
 
-**Before submitting**, see the caveat in `en-US/review_information/notes.txt` — the demo
-Jellyfin server credentials there (`demo`/`demo`) were not verified live and should be
-checked, or swapped for a real test account, before you submit for review.
+The locale is `en-GB` (English, UK), not `en-US` — set **App Store Connect > App Information
+> Primary Language** to "English (UK)" to match. All copy here is written in British
+English (colour, favourites, etc.) — keep it that way in any future edits.
+
+**Before submitting**, see the caveat in `en-GB/review_information/notes.txt` — the demo
+Jellyfin server sign-in there was updated to match how the public demo account actually
+works (username only, no password — see the note there for why).
 
 ## App Information (not file-backed — set directly in App Store Connect)
 
+- **Primary language:** English (UK)
 - **Primary category:** Entertainment
 - **Secondary category:** none needed, or Utilities if you want a second one listed
 - **Age rating:** recommend **17+**. Arcfin plays whatever's on the Jellyfin server it's

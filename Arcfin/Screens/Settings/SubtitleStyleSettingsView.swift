@@ -26,7 +26,7 @@ struct SubtitleStyleSettingsView: View {
                         Text(option.label).tag(option)
                     }
                 }
-                Picker("Color", selection: $color) {
+                Picker("Colour", selection: $color) {
                     ForEach(SubtitleTextColorOption.allCases) { option in
                         Text(option.label).tag(option)
                     }
