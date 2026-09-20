@@ -59,7 +59,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode([JellyfinItemResponse].self, from: data).map { $0.toMediaItem() }
     }
 
@@ -84,7 +84,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
@@ -110,7 +110,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
@@ -136,7 +136,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
@@ -162,7 +162,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
         return page.items.map { $0.toMediaItem() }
     }
@@ -257,7 +257,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: url)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(LibraryViewsResponse.self, from: data)
         return page.items.map {
             JellyfinLibrary(id: $0.id, name: $0.name,
@@ -278,7 +278,7 @@ public struct JellyfinMediaClient: Sendable {
         let url = baseURL.appendingPathComponent("System/Info/Public")
         var req = URLRequest(url: url)
         req.timeoutInterval = 10
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(JellyfinPublicServerInfo.self, from: data)
     }
 
@@ -303,7 +303,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
         return page.items.map { $0.toMediaItem() }
     }
@@ -325,7 +325,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         struct CountPage: Decodable {
             let totalRecordCount: Int
             enum CodingKeys: String, CodingKey { case totalRecordCount = "TotalRecordCount" }
@@ -347,7 +347,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemDetailResponse.self, from: data).toDetail()
     }
 
@@ -368,7 +368,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
@@ -394,7 +394,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode([MovieRecommendationResponse].self, from: data).map { $0.toCategory() }
     }
 
@@ -419,7 +419,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
@@ -439,7 +439,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
@@ -463,7 +463,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
@@ -485,7 +485,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.first?.toMediaItem()
     }
 
@@ -500,7 +500,7 @@ public struct JellyfinMediaClient: Sendable {
         req.httpMethod = watched ? "POST" : "DELETE"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        _ = try await URLSession.shared.data(for: req)
+        _ = try await URLSession.arcfin.data(for: req)
     }
 
     public func markFavorite(
@@ -514,7 +514,7 @@ public struct JellyfinMediaClient: Sendable {
         req.httpMethod = favorite ? "POST" : "DELETE"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        _ = try await URLSession.shared.data(for: req)
+        _ = try await URLSession.arcfin.data(for: req)
     }
 
     public func getLibraryItems(
@@ -565,7 +565,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
         return (items: page.items.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0)
     }
@@ -589,7 +589,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let response = try JSONDecoder().decode(LibraryFiltersResponse.self, from: data)
         return (genres: response.genres.map(\.name).sorted(), years: response.years.sorted(by: >))
     }
@@ -610,7 +610,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(SearchHintsResponse.self, from: data)
         var results = page.searchHints.compactMap { $0.toMediaItem() }
 
@@ -645,7 +645,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
         return Dictionary(uniqueKeysWithValues: page.items.map { item in
             (item.id, (seriesId: item.seriesId, seriesPrimaryImageTag: item.seriesPrimaryImageTag))
@@ -670,7 +670,7 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await URLSession.arcfin.data(for: req)
         let items = (try? JSONDecoder().decode([JellyfinItemResponse].self, from: data)) ?? []
         return Array(items.prefix(limit).map { $0.toMediaItem() })
     }

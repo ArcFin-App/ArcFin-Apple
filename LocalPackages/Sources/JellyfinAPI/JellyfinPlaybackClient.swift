@@ -143,7 +143,7 @@ extension JellyfinMediaClient {
         if let subtitleStreamIndex { body["SubtitleStreamIndex"] = subtitleStreamIndex }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -231,7 +231,7 @@ extension JellyfinMediaClient {
         req.timeoutInterval = 8
 
         let start = Date()
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
               let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode),
               !data.isEmpty
         else { return nil }
@@ -281,7 +281,7 @@ extension JellyfinMediaClient {
             "PlayMethod": "DirectPlay",
         ]
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        _ = try? await URLSession.shared.data(for: req)
+        _ = try? await URLSession.arcfin.data(for: req)
     }
 
     // MARK: - Intro/credits skip markers (community "Intro Skipper" plugin — optional)
@@ -302,7 +302,7 @@ extension JellyfinMediaClient {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Episode/\(itemId)/IntroTimestamps/\(kind)"))
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 6
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
               let http = resp as? HTTPURLResponse, http.statusCode == 200 else { return nil }
         struct Segment: Decodable { let end: Double? }
         return (try? JSONDecoder().decode(Segment.self, from: data))?.end
@@ -318,7 +318,7 @@ extension JellyfinMediaClient {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions"))
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }

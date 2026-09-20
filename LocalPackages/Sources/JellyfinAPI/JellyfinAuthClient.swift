@@ -131,7 +131,7 @@ public struct JellyfinAuthClient: Sendable {
         req.setValue(authHeader(), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
         do {
-            let (data, resp) = try await URLSession.shared.data(for: req)
+            let (data, resp) = try await URLSession.arcfin.data(for: req)
             guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
                 throw JellyfinAuthError.serverUnreachable
             }
@@ -151,7 +151,7 @@ public struct JellyfinAuthClient: Sendable {
         req.timeoutInterval = 15
         req.httpBody = try JSONEncoder().encode(["Username": username, "Pw": password])
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse else { throw JellyfinAuthError.invalidResponse }
         guard http.statusCode == 200 else {
             let msg = http.statusCode == 401 ? "Invalid username or password." : "Sign-in failed (HTTP \(http.statusCode))."
@@ -170,7 +170,7 @@ public struct JellyfinAuthClient: Sendable {
         req.httpMethod = "POST"
         req.setValue(authHeader(), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let httpResp = resp as? HTTPURLResponse else { throw JellyfinAuthError.invalidResponse }
         guard httpResp.statusCode == 200 else {
             if httpResp.statusCode == 401 || httpResp.statusCode == 403 {
@@ -189,7 +189,7 @@ public struct JellyfinAuthClient: Sendable {
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader(), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard (resp as? HTTPURLResponse)?.statusCode == 200 else { return false }
         return (try? JSONDecoder().decode(QCStatusResponse.self, from: data))?.authenticated ?? false
     }
@@ -202,7 +202,7 @@ public struct JellyfinAuthClient: Sendable {
         req.timeoutInterval = 15
         req.httpBody = try JSONEncoder().encode(["Secret": secret])
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse else { throw JellyfinAuthError.invalidResponse }
         guard http.statusCode == 200 else { throw JellyfinAuthError.authFailed("Quick Connect auth failed.") }
         let result = try JSONDecoder().decode(AuthResponse.self, from: data)
@@ -222,7 +222,7 @@ public struct JellyfinAuthClient: Sendable {
         req.httpMethod = "POST"
         req.setValue(header, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw JellyfinAuthError.authFailed("Couldn't authorize that code.")
         }
@@ -236,7 +236,7 @@ public struct JellyfinAuthClient: Sendable {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
         req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
-        guard let (_, resp) = try? await URLSession.shared.data(for: req) else {
+        guard let (_, resp) = try? await URLSession.arcfin.data(for: req) else {
             // Request failed outright (offline, unreachable server) — don't force a
             // logout over a transient connectivity issue, only over a rejected token.
             return true
@@ -252,7 +252,7 @@ public struct JellyfinAuthClient: Sendable {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
         req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200
         else { return nil }
         struct UserResp: Decodable {
@@ -269,7 +269,7 @@ public struct JellyfinAuthClient: Sendable {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
         req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200
         else { return false }
         struct UserResp: Decodable {

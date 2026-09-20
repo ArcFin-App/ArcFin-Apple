@@ -33,7 +33,7 @@ extension JellyfinMediaClient {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("SyncPlay/List"))
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -83,7 +83,7 @@ extension JellyfinMediaClient {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try JSONSerialization.data(withJSONObject: body)
         }
-        let (_, resp) = try await URLSession.shared.data(for: req)
+        let (_, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
