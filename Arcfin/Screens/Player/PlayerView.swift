@@ -263,16 +263,19 @@ struct PlayerView: View {
         .focusEffectDisabled()
         .focused($isPlayerFocused)
         .onAppear { isPlayerFocused = true }
-        .onKeyPress(.space) { _ in togglePlayPause(); return .handled }
-        .onKeyPress(.leftArrow) { _ in seek(by: -10); return .handled }
-        .onKeyPress(.rightArrow) { _ in seek(by: 10); return .handled }
-        .onKeyPress(.upArrow) { _ in adjustMacVolume(by: 0.05); return .handled }
-        .onKeyPress(.downArrow) { _ in adjustMacVolume(by: -0.05); return .handled }
+        // The specific-key overload (.space, .leftArrow, etc.) takes a zero-argument
+        // () -> KeyPress.Result closure, unlike the characters: overload below, which takes
+        // (KeyPress) -> KeyPress.Result — `{ _ in ... }` only compiles for the latter.
+        .onKeyPress(.space) { togglePlayPause(); return .handled }
+        .onKeyPress(.leftArrow) { seek(by: -10); return .handled }
+        .onKeyPress(.rightArrow) { seek(by: 10); return .handled }
+        .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
+        .onKeyPress(.downArrow) { adjustMacVolume(by: -0.05); return .handled }
         .onKeyPress(characters: CharacterSet(charactersIn: "fF")) { _ in
             toggleMacWindowFullScreen(macWindow)
             return .handled
         }
-        .onKeyPress(.escape) { _ in
+        .onKeyPress(.escape) {
             if isMacFullScreen {
                 toggleMacWindowFullScreen(macWindow)
             } else {
