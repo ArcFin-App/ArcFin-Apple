@@ -1,5 +1,8 @@
 # Arcfin
 
+[![App Store](https://img.shields.io/badge/App%20Store-Pending%20Review-lightgrey?logo=apple&logoColor=white)](https://apps.apple.com/us/app/arcfin/id6813273961)
+[![TestFlight](https://img.shields.io/badge/TestFlight-Coming%20Soon-blue?logo=apple&logoColor=white)](https://arcfin.psmattas.com)
+
 A premium native Jellyfin media client for the Apple ecosystem.
 
 ---
