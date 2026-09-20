@@ -3,6 +3,45 @@ import Observation
 import AuthCore
 import JellyfinAPI
 import Telemetry
+import Network
+
+/// Races a one-shot NWPathMonitor read against a timeout — mirrors AuthManager's
+/// TimeoutResult, which uses the same lock-guarded resume-once pattern for a system
+/// callback with no bounded completion time of its own.
+private final class PathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Void, Never>
+    private let monitor = NWPathMonitor()
+
+    init(continuation: CheckedContinuation<Void, Never>) {
+        self.continuation = continuation
+    }
+
+    func start(timeoutSeconds: Double) {
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            self?.finish()
+        }
+        monitor.start(queue: DispatchQueue(label: "arcfin.mediarepo.pathwait"))
+        Task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self.finish()
+        }
+    }
+
+    private func finish() {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        monitor.cancel()
+        continuation.resume()
+    }
+}
 
 @Observable
 @MainActor
@@ -52,15 +91,19 @@ final class MediaRepository {
         guard !isLoading else { return }
         isLoading = true
 
+        // AuthManager.checkStoredAuth() treats an unreachable validateToken call as "still
+        // valid" (by design — a network blip shouldn't force a logout), so the app can reach
+        // Home before the network path has actually come up, most visibly right at macOS
+        // cold launch. Firing straight into a 13-request burst at that moment reliably lost
+        // the race even with the retry backoff below, since a fixed delay is a guess rather
+        // than a real check. Wait for NWPathMonitor to actually report a satisfied path first
+        // (bounded, so a genuinely unreachable server still fails promptly) instead.
+        await Self.waitForNetworkPath()
+
         var succeeded = await attemptLoad(credential: credential, authClient: authClient, attempt: 1)
-        // The very first request right after sign-in or cold launch can fail transiently —
-        // most visibly on macOS, where connecting to a LAN server for the first time can race
-        // the system's Local Network permission prompt (slower to resolve at cold launch,
-        // with the rest of process startup competing for the same moment). That previously
-        // left the connection-failed banner up until the user tapped Reload themselves, even
-        // though a later attempt succeeds on its own. A couple of silent retries with backoff
-        // cover that without masking a genuinely unreachable server, which just fails all of
-        // them too.
+        // A couple of silent retries with backoff cover any remaining transient failure
+        // (e.g. the server itself still waking up) without masking a genuinely unreachable
+        // server, which just fails all of them too.
         for (index, delay) in [1.5, 3].enumerated() where !succeeded {
             try? await Task.sleep(for: .seconds(delay))
             succeeded = await attemptLoad(credential: credential, authClient: authClient, attempt: index + 2)
@@ -74,6 +117,12 @@ final class MediaRepository {
             loaded = true
             lastLoadedAt = Date()
             lastLoadedUserID = credential.userID
+        }
+    }
+
+    private static func waitForNetworkPath(timeoutSeconds: Double = 6) async {
+        await withCheckedContinuation { continuation in
+            PathWait(continuation: continuation).start(timeoutSeconds: timeoutSeconds)
         }
     }
 
