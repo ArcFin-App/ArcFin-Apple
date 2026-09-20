@@ -115,6 +115,7 @@ struct PlayerView: View {
     @State var macVolumeHUD: Double?
     @State var macVolumeHUDTask: Task<Void, Never>?
     @FocusState var isPlayerFocused: Bool
+    @State var lastMacHoverLocation: CGPoint?
     #endif
 
     let client = JellyfinMediaClient()
@@ -174,7 +175,17 @@ struct PlayerView: View {
                         // (there's no "tap" on a pointer-driven surface, so hover is the
                         // signal instead).
                         .gesture(macTapGesture(width: proxy.size.width))
-                        .onContinuousHover { _ in handleMacMouseActivity() }
+                        // onContinuousHover fires on more than just genuine pointer movement
+                        // (real mouse hardware reports sub-pixel jitter even "at rest," and
+                        // the video surface fills the whole window) — reacting to every call
+                        // kept resetting the auto-hide timer nonstop, so controls (and the
+                        // window toolbar, which follows them) never actually hid. Only actual
+                        // position changes count as activity now.
+                        .onContinuousHover { phase in
+                            guard case .active(let location) = phase, location != lastMacHoverLocation else { return }
+                            lastMacHoverLocation = location
+                            handleMacMouseActivity()
+                        }
                         #endif
                 }
                 .ignoresSafeArea()

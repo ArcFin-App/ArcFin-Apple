@@ -52,6 +52,7 @@ struct OfflinePlayerView: View {
     @State private var macVolumeHUD: Double?
     @State private var macVolumeHUDTask: Task<Void, Never>?
     @FocusState private var isPlayerFocused: Bool
+    @State private var lastMacHoverLocation: CGPoint?
     #endif
 
     private var dir: URL { DownloadStore.directory(for: downloadedItem.itemId) }
@@ -79,7 +80,13 @@ struct OfflinePlayerView: View {
                 .onTapGesture { toggleControls() }
                 #elseif os(macOS)
                 .gesture(macOfflineTapGesture(width: proxy.size.width))
-                .onContinuousHover { _ in handleMacMouseActivity() }
+                // See PlayerView's own note — onContinuousHover fires on more than genuine
+                // pointer movement, which kept resetting the auto-hide timer nonstop.
+                .onContinuousHover { phase in
+                    guard case .active(let location) = phase, location != lastMacHoverLocation else { return }
+                    lastMacHoverLocation = location
+                    handleMacMouseActivity()
+                }
                 #endif
             }
             .ignoresSafeArea()
