@@ -273,6 +273,7 @@
 				FAB5D7512FA79A9B002031A9 /* Frameworks */,
 				FAB5D7522FA79A9B002031A9 /* Resources */,
 				FAB5D87A2FA9621A002031A9 /* Embed Foundation Extensions */,
+				C9E2F0949C4D8A20F69CAA8B /* Generate GoogleCast dSYM */,
 			);
 			buildRules = (
 			);
@@ -464,6 +465,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C9E2F0949C4D8A20F69CAA8B /* Generate GoogleCast dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate GoogleCast dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# GoogleCast.xcframework ships no companion dSYM of its own, which App Store Connect\n# rejects on upload (\"did not include a dSYM for the GoogleCast.framework\"). The DWARF\n# debug info is still embedded in the framework's own binary though, so dsymutil can\n# extract it into the .dSYM bundle Apple expects, straight from the copy already sitting\n# in the built product by this point in the build.\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  FRAMEWORK_BINARY=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleCast.framework/GoogleCast\"\n  if [ -f \"$FRAMEWORK_BINARY\" ]; then\n    dsymutil \"$FRAMEWORK_BINARY\" -o \"${DWARF_DSYM_FOLDER_PATH}/GoogleCast.framework.dSYM\"\n  else\n    echo \"warning: GoogleCast framework binary not found at $FRAMEWORK_BINARY — skipping dSYM generation\"\n  fi\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		FA2E1936305DEF7900513FD4 /* Sources */ = {
