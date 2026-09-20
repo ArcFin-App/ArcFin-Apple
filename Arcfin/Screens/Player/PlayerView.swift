@@ -899,7 +899,16 @@ struct PlayerView: View {
 
         if let last = lastStallHandledAt, now.timeIntervalSince(last) < 30 { return }
         let nextIndex = (autoLadderIndex ?? -1) + 1
-        guard nextIndex < Self.autoBitrateLadder.count else { return }
+        guard nextIndex < Self.autoBitrateLadder.count else {
+            // The ladder's exhausted and it's STILL stalling repeatedly — that's not a
+            // bandwidth problem a lower bitrate can fix (already tried every step), it's
+            // something else entirely (a codec/output failure, a dead source, etc.). Silently
+            // returning here left the video frozen on a spinner forever with zero feedback —
+            // surface it instead of pretending nothing's wrong.
+            lastStallHandledAt = now
+            errorMessage = "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC."
+            return
+        }
         lastStallHandledAt = now
         autoLadderIndex = nextIndex
         reload(errorContext: "adjust quality")
