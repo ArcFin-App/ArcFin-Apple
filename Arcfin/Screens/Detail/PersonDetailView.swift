@@ -21,7 +21,13 @@ struct PersonDetailView: View {
     }
 
     private var columns: [GridItem] {
+#if os(macOS)
+        // Fixed 3-up stretches cards absurdly wide on a resizable Mac window — adaptive
+        // reflows the grid as the window resizes instead.
+        [GridItem(.adaptive(minimum: 130), spacing: 12)]
+#else
         Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+#endif
     }
 
     var body: some View {
