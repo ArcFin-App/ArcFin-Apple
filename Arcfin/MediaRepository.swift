@@ -49,9 +49,34 @@ final class MediaRepository {
         if !force, loaded, credential.userID == lastLoadedUserID,
            let t = lastLoadedAt, Date().timeIntervalSince(t) < 60 { return }
         guard !isLoading else { return }
+        isLoading = true
+
+        var succeeded = await attemptLoad(credential: credential, authClient: authClient)
+        // The very first request right after sign-in can fail transiently — most visibly on
+        // macOS, where connecting to a LAN server for the first time can race the system's
+        // Local Network permission prompt. That previously left the connection-failed banner
+        // up until the user tapped Reload themselves, even though a second attempt moments
+        // later succeeds on its own. One silent retry covers that without masking a genuinely
+        // unreachable server, which will just fail the retry too.
+        if !succeeded {
+            try? await Task.sleep(for: .seconds(1.5))
+            succeeded = await attemptLoad(credential: credential, authClient: authClient)
+        }
+
+        isLoading = false
+        connectionFailed = !succeeded
+        // Only cache-guard a successful load — a failed attempt shouldn't block Retry
+        // behind the cooldown window.
+        if succeeded {
+            loaded = true
+            lastLoadedAt = Date()
+            lastLoadedUserID = credential.userID
+        }
+    }
+
+    private func attemptLoad(credential: ServerCredential, authClient: JellyfinAuthClient) async -> Bool {
         baseURL = credential.baseURL
         accessToken = credential.accessToken
-        isLoading = true
         let header = authClient.authHeader(token: credential.accessToken)
 
         async let cw      = client.getContinueWatching(credential: credential, authHeader: header)
@@ -76,11 +101,12 @@ final class MediaRepository {
         topShows                = (try? await tShow) ?? []
         playedMovieCount        = (try? await cMov)  ?? 0
         playedEpisodeCount      = (try? await cEp)   ?? 0
+        let succeeded: Bool
         do {
             serverID = try await srvID
-            connectionFailed = false
+            succeeded = true
         } catch {
-            connectionFailed = true
+            succeeded = false
         }
         nextUp                  = (try? await nUp)    ?? []
         recentlyAddedMovies     = (try? await raMov)  ?? []
@@ -89,14 +115,7 @@ final class MediaRepository {
         recentlyAiredEpisodes   = (try? await raEp)   ?? []
         watchAgain              = (try? await wAgain) ?? []
 
-        isLoading = false
-        // Only cache-guard a successful load — a failed attempt shouldn't block Retry
-        // behind the cooldown window.
-        if !connectionFailed {
-            loaded = true
-            lastLoadedAt = Date()
-            lastLoadedUserID = credential.userID
-        }
+        return succeeded
     }
 
     func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {
