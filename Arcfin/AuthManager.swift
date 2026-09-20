@@ -57,7 +57,7 @@ final class AuthManager {
         let candidate = all.first { $0.id == storedID } ?? all.first
         guard var cred = candidate else { return }
 
-        let resolvedURL = await Self.resolveBaseURL(for: cred.baseURL)
+        let resolvedURL = await Self.resolveBaseURL(for: cred.baseURL, profileID: cred.id)
         if resolvedURL != cred.baseURL {
             cred.baseURL = resolvedURL
             upsert(cred)
@@ -123,7 +123,7 @@ final class AuthManager {
 
     private func reresolveBaseURLIfNeeded() async {
         guard case .authenticated(var cred) = state else { return }
-        let resolved = await Self.resolveBaseURL(for: cred.baseURL)
+        let resolved = await Self.resolveBaseURL(for: cred.baseURL, profileID: cred.id)
         guard resolved != cred.baseURL else { return }
         cred.baseURL = resolved
         upsert(cred)
@@ -136,20 +136,29 @@ final class AuthManager {
 
     /// Picks the Local URL when the device is on the saved home Wi-Fi network,
     /// otherwise falls back to the Remote URL, otherwise leaves the URL unchanged.
-    static func resolveBaseURL(for original: URL) async -> URL {
+    /// `profileID` scopes the stored Local/Remote URL + home SSID to the specific signed-in
+    /// profile they were configured for — these used to live under flat, unscoped keys
+    /// ("serverLocalURL" etc.), shared by every profile regardless of which server it was
+    /// actually for. Switching to (or signing into) a different server still found the
+    /// previous server's settings sitting there and applied them anyway, silently pointing
+    /// requests at the wrong host. Keyed by profile ID rather than server host because the
+    /// host itself isn't stable across calls — it flips between the local and remote address
+    /// as this very function resolves it.
+    static func resolveBaseURL(for original: URL, profileID: UUID) async -> URL {
         #if os(iOS)
         let defaults = UserDefaults.standard
-        guard let localString = defaults.string(forKey: "serverLocalURL"), !localString.isEmpty,
+        let idKey = profileID.uuidString
+        guard let localString = defaults.string(forKey: "serverLocalURL.\(idKey)"), !localString.isEmpty,
               let localURL = URL(string: localString),
-              let savedSSID = defaults.string(forKey: "serverHomeSSID"), !savedSSID.isEmpty
+              let savedSSID = defaults.string(forKey: "serverHomeSSID.\(idKey)"), !savedSSID.isEmpty
         else { return original }
 
-                guard original.host != localURL.host || original.port != localURL.port else { return original }
+        guard original.host != localURL.host || original.port != localURL.port else { return original }
 
         let currentSSID = await currentWiFiSSID()
         if currentSSID == savedSSID { return localURL }
 
-        if let remoteString = defaults.string(forKey: "serverRemoteURL"), !remoteString.isEmpty,
+        if let remoteString = defaults.string(forKey: "serverRemoteURL.\(idKey)"), !remoteString.isEmpty,
            let remoteURL = URL(string: remoteString) {
             return remoteURL
         }

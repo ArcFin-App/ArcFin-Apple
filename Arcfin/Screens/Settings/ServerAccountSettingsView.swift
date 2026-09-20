@@ -27,10 +27,12 @@ struct ServerAccountSettingsView: View {
                 } label: {
                     Text("Add Server")
                 }
-                NavigationLink {
-                    ServerSettingsView()
-                } label: {
-                    Text("Server Settings")
+                if let activeID = authManager.state.credential?.id {
+                    NavigationLink {
+                        ServerSettingsView(profileID: activeID)
+                    } label: {
+                        Text("Server Settings")
+                    }
                 }
                 if authManager.isAdmin {
                     NavigationLink {

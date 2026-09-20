@@ -5,9 +5,12 @@ import JellyfinAPI
 struct ServerSettingsView: View {
     @Environment(AuthManager.self) private var authManager
 
-    @AppStorage("serverRemoteURL") private var remoteURL = ""
-    @AppStorage("serverLocalURL")  private var localURL = ""
-    @AppStorage("serverHomeSSID")  private var homeSSID = ""
+    // Scoped to the profile these were configured for — a flat, unscoped key here is what
+    // let one server's Local/Remote URL silently get applied to a completely different
+    // server after switching profiles or signing into a new one. See AuthManager.resolveBaseURL.
+    @AppStorage private var remoteURL: String
+    @AppStorage private var localURL: String
+    @AppStorage private var homeSSID: String
 
     @State private var publicInfo: JellyfinPublicServerInfo?
     @State private var isLoadingInfo = true
@@ -15,6 +18,13 @@ struct ServerSettingsView: View {
     @State private var isCapturingSSID = false
 
     private let client = JellyfinMediaClient()
+
+    init(profileID: UUID) {
+        let idKey = profileID.uuidString
+        _remoteURL = AppStorage(wrappedValue: "", "serverRemoteURL.\(idKey)")
+        _localURL = AppStorage(wrappedValue: "", "serverLocalURL.\(idKey)")
+        _homeSSID = AppStorage(wrappedValue: "", "serverHomeSSID.\(idKey)")
+    }
 
     private var activeBaseURL: URL? { authManager.state.credential?.baseURL }
 
