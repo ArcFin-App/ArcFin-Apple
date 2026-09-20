@@ -32,3 +32,5 @@ BUILT-IN PRIVACY
 • No analytics, no tracking, no third-party ad SDKs — Arcfin talks directly to your own server and nowhere else
 
 Arcfin is actively developed and updated. Feedback and bug reports are always welcome — see the Support link on the app's product page.
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
