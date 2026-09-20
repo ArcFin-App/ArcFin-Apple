@@ -130,12 +130,17 @@ final class PlayerSurfaceView: NSView {
         playerLayer.frame = bounds
     }
 
-    override func action(for layer: CALayer, forKey event: String) -> CAAction? {
+    // Not an override — unlike UIView, NSView has no concrete base-class implementation of
+    // this to override or call super on, only the CALayerDelegate protocol requirement
+    // (optional, implicitly satisfied). Returning nil for anything not explicitly suppressed
+    // tells CALayer to fall back to its own default action, same effect `super` would have
+    // had on UIView.
+    func action(for layer: CALayer, forKey event: String) -> CAAction? {
         switch event {
         case "bounds", "position", "frame", "transform", "sublayerTransform":
             return NSNull()
         default:
-            return super.action(for: layer, forKey: event)
+            return nil
         }
     }
 }
