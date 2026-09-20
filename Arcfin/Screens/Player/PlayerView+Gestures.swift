@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 #elseif os(macOS)
 import AppKit
+import AVFoundation
 import MediaEngine
 import SwiftVLC
 #endif

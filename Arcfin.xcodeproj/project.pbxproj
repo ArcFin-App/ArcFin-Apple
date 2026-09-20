@@ -480,6 +480,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(DWARF_DSYM_FOLDER_PATH)/GoogleCast.framework.dSYM",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
