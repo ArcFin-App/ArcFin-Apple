@@ -1,5 +1,6 @@
 #if !os(tvOS)
 import SwiftUI
+import LocalAuthentication
 import AuthCore
 import JellyfinAPI
 
@@ -133,17 +134,37 @@ struct UsersView: View {
     // MARK: - Actions
 
     private func handleTapOtherProfile(_ profile: ServerCredential) {
-        if pinStates[profile.id] == true {
-            switchPINError = nil
-            switchPINResetToken = 0
-            Task {
-                switchStoredPIN = await authManager.pin(for: profile.id)
-                switchTarget = profile
-            }
-        } else {
+        guard pinStates[profile.id] == true else {
             authManager.switchTo(profile)
             Task { await loadPINStates() }
+            return
         }
+        switchPINError = nil
+        switchPINResetToken = 0
+        Task {
+            switchStoredPIN = await authManager.pin(for: profile.id)
+            // Explicitly switching to a specific profile from Settings (unlike the boot-time
+            // lock screen) is a deliberate "become this person" action already gated behind
+            // having the device unlocked — Face ID here just confirms the device owner again,
+            // same as the PIN would, so it's offered first with the PIN as fallback instead
+            // of skipping straight to the PIN pad.
+            if appLockUseFaceID, await attemptBiometrics(for: profile) {
+                authManager.switchTo(profile)
+                await loadPINStates()
+            } else {
+                switchTarget = profile
+            }
+        }
+    }
+
+    private func attemptBiometrics(for profile: ServerCredential) async -> Bool {
+        let context = LAContext()
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return false }
+        guard let success = try? await context.evaluatePolicy(
+            .deviceOwnerAuthenticationWithBiometrics,
+            localizedReason: "Switch to \(profile.displayName)"
+        ), success else { return false }
+        return true
     }
 
     private func loadPINStates() async {
