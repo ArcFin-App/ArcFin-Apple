@@ -52,14 +52,16 @@ final class MediaRepository {
         isLoading = true
 
         var succeeded = await attemptLoad(credential: credential, authClient: authClient)
-        // The very first request right after sign-in can fail transiently — most visibly on
-        // macOS, where connecting to a LAN server for the first time can race the system's
-        // Local Network permission prompt. That previously left the connection-failed banner
-        // up until the user tapped Reload themselves, even though a second attempt moments
-        // later succeeds on its own. One silent retry covers that without masking a genuinely
-        // unreachable server, which will just fail the retry too.
-        if !succeeded {
-            try? await Task.sleep(for: .seconds(1.5))
+        // The very first request right after sign-in or cold launch can fail transiently —
+        // most visibly on macOS, where connecting to a LAN server for the first time can race
+        // the system's Local Network permission prompt (slower to resolve at cold launch,
+        // with the rest of process startup competing for the same moment). That previously
+        // left the connection-failed banner up until the user tapped Reload themselves, even
+        // though a later attempt succeeds on its own. A couple of silent retries with backoff
+        // cover that without masking a genuinely unreachable server, which just fails all of
+        // them too.
+        for delay in [1.5, 3] where !succeeded {
+            try? await Task.sleep(for: .seconds(delay))
             succeeded = await attemptLoad(credential: credential, authClient: authClient)
         }
 

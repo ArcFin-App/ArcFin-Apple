@@ -286,6 +286,15 @@ func toggleMacWindowFullScreen(_ window: NSWindow?) {
 func isMacWindowFullScreen(_ window: NSWindow?) -> Bool {
     window?.styleMask.contains(.fullScreen) ?? false
 }
+
+/// PlayerView is a full-window content overlay (see PlaybackPresenter), not a separate
+/// window of its own — the real window's native toolbar (sidebar toggle, back chevron, and
+/// whatever toolbar items the screen underneath contributed, e.g. MediaDetailView's favorite
+/// button) sits above it and doesn't hide on its own when the player's own on-screen controls
+/// fade out for an immersive look. Toggling the toolbar itself keeps both in sync.
+func setMacWindowToolbarVisible(_ window: NSWindow?, _ visible: Bool) {
+    window?.toolbar?.isVisible = visible
+}
 #endif
 
 // MARK: - AirPlay / Cast route trigger bridge

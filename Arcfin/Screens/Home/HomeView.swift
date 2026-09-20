@@ -521,6 +521,10 @@ struct HomeView: View {
         #endif
         .onReceive(heroTimer) { _ in
             guard heroItems.count > 1 else { return }
+            // A trailer is actively showing for this slide — let loadHeroVideoBackdrop's own
+            // 15s timeout advance instead of jumping away mid-playback just because the
+            // regular rotation interval happened to land first.
+            guard heroVideoBackdropIndex != heroIndex else { return }
             withAnimation(DT.Animation.slow) { heroIndex = (heroIndex + 1) % heroItems.count }
         }
         .onChange(of: heroIndex) { _, _ in loadHeroVideoBackdrop() }
@@ -991,6 +995,13 @@ struct HomeView: View {
             withAnimation(.easeOut(duration: 0.6)) {
                 heroVideoBackdropURL = nil
                 heroVideoBackdropIndex = nil
+            }
+            // The regular rotation timer skips advancing while this slide's trailer is
+            // playing (see its onReceive guard) — advance here instead, right as the
+            // trailer ends, rather than leaving the still image sitting until the timer's
+            // next regular tick.
+            if heroItems.count > 1 {
+                withAnimation(DT.Animation.slow) { heroIndex = (index + 1) % heroItems.count }
             }
         }
     }

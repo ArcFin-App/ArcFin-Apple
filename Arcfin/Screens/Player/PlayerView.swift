@@ -276,6 +276,7 @@ struct PlayerView: View {
         .focusEffectDisabled()
         .focused($isPlayerFocused)
         .onAppear { isPlayerFocused = true }
+        .onChange(of: isControlsVisible) { _, visible in setMacWindowToolbarVisible(macWindow, visible) }
         // The specific-key overload (.space, .leftArrow, etc.) takes a zero-argument
         // () -> KeyPress.Result closure, unlike the characters: overload below, which takes
         // (KeyPress) -> KeyPress.Result — `{ _ in ... }` only compiles for the latter.
@@ -752,6 +753,11 @@ struct PlayerView: View {
         progressReportTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
+        #if os(macOS)
+        // The window's toolbar is real window chrome, not part of this view — left hidden,
+        // it would stay hidden on whatever screen is underneath once the player closes.
+        setMacWindowToolbarVisible(macWindow, true)
+        #endif
         #if !os(tvOS)
         // Closing the player closes the group too — an orphaned WebSocket connection with
         // nobody watching isn't useful, and simpler than trying to keep it alive across

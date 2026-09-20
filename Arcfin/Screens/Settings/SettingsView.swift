@@ -168,11 +168,15 @@ struct SettingsView: View {
                 } label: {
                     settingsRow("Playback", icon: "play.circle")
                 }
+                // Downloads aren't wired up on macOS — DownloadManager's UI entry points are
+                // iOS-only, so this row would push to a screen with nothing it can actually do.
+                #if os(iOS)
                 NavigationLink {
                     DownloadsSettingsView()
                 } label: {
                     settingsRow("Downloads", icon: "arrow.down.circle")
                 }
+                #endif
                 NavigationLink {
                     AppearanceView()
                 } label: {
