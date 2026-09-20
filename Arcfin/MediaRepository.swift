@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import AuthCore
 import JellyfinAPI
+import Telemetry
 
 @Observable
 @MainActor
@@ -51,7 +52,7 @@ final class MediaRepository {
         guard !isLoading else { return }
         isLoading = true
 
-        var succeeded = await attemptLoad(credential: credential, authClient: authClient)
+        var succeeded = await attemptLoad(credential: credential, authClient: authClient, attempt: 1)
         // The very first request right after sign-in or cold launch can fail transiently —
         // most visibly on macOS, where connecting to a LAN server for the first time can race
         // the system's Local Network permission prompt (slower to resolve at cold launch,
@@ -60,9 +61,9 @@ final class MediaRepository {
         // though a later attempt succeeds on its own. A couple of silent retries with backoff
         // cover that without masking a genuinely unreachable server, which just fails all of
         // them too.
-        for delay in [1.5, 3] where !succeeded {
+        for (index, delay) in [1.5, 3].enumerated() where !succeeded {
             try? await Task.sleep(for: .seconds(delay))
-            succeeded = await attemptLoad(credential: credential, authClient: authClient)
+            succeeded = await attemptLoad(credential: credential, authClient: authClient, attempt: index + 2)
         }
 
         isLoading = false
@@ -76,7 +77,7 @@ final class MediaRepository {
         }
     }
 
-    private func attemptLoad(credential: ServerCredential, authClient: JellyfinAuthClient) async -> Bool {
+    private func attemptLoad(credential: ServerCredential, authClient: JellyfinAuthClient, attempt: Int) async -> Bool {
         baseURL = credential.baseURL
         accessToken = credential.accessToken
         let header = authClient.authHeader(token: credential.accessToken)
@@ -109,6 +110,13 @@ final class MediaRepository {
             succeeded = true
         } catch {
             succeeded = false
+            // getServerID is the pass/fail gate for the whole load — logged here (rather than
+            // silently swallowed like the other calls above) because "can't reach server" has
+            // recurred across several rounds of fixes without a concrete error to point at.
+            let nsError = error as NSError
+            Telemetry.logger(category: "MediaRepository").error(
+                "Home load attempt \(attempt, privacy: .public) failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+            )
         }
         nextUp                  = (try? await nUp)    ?? []
         recentlyAddedMovies     = (try? await raMov)  ?? []
