@@ -17,6 +17,9 @@ struct MediaDetailView: View {
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(\.modelContext) private var modelContext
     #endif
+    #if os(macOS)
+    @Environment(PlaybackPresenter.self) private var playbackPresenter
+    #endif
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: MediaItemDetail?
@@ -66,7 +69,7 @@ struct MediaDetailView: View {
     }
     #endif
 
-    struct PlaybackRequest: Identifiable {
+    struct PlaybackRequest: Identifiable, Equatable {
         let id = UUID()
         let item: MediaItem
         let startTicks: Int64
@@ -196,15 +199,15 @@ struct MediaDetailView: View {
             }
         }
 #elseif os(macOS)
-        // No fullScreenCover on macOS — a window-modal sheet is the native equivalent.
+        // A .sheet on macOS can't fill/fullscreen a window — PlayerView is rendered as a
+        // full-window overlay by ContentView instead, driven by the shared PlaybackPresenter.
         // (YouTubeTrailerPlayerView itself is UIKit-only — the "Play Trailer" button for a
         // title with no local trailer, only a remote one, is a known gap on macOS until
         // that view grows an AppKit path.)
-        .sheet(item: $playbackRequest) { request in
-            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
-            }
-            .frame(minWidth: 900, minHeight: 560)
+        .onChange(of: playbackRequest) { _, request in
+            guard let request else { return }
+            playbackPresenter.present(request.item, startTicks: request.startTicks)
+            playbackRequest = nil
         }
 #endif
         .task { await load() }

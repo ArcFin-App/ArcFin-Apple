@@ -27,6 +27,7 @@ struct ContentView: View {
 
     @State private var authManager  = AuthManager()
     @State private var mediaRepo    = MediaRepository()
+    @State private var playbackPresenter = PlaybackPresenter()
     @State private var seerrRepo    = SeerrRepository()
     @State private var statsRepo    = StreamystatsRepository()
     @State private var downloadManager = DownloadManager()
@@ -110,6 +111,22 @@ struct ContentView: View {
                     .zIndex(10)
             }
             #endif
+
+            #if os(macOS)
+            // A .sheet on macOS is an inherently small, modal, parent-attached panel — it
+            // can't properly fill or fullscreen a window, which is exactly why the player
+            // looked stuck small with a non-functional fullscreen button. This mirrors
+            // AppLockView's own full-window overlay pattern instead: real window-filling
+            // content, and a real working NSWindow-level fullscreen. iOS/tvOS are untouched
+            // and keep using their existing per-screen .fullScreenCover.
+            if let request = playbackPresenter.request {
+                PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                    playbackPresenter.present(next, onPlayNext: request.onPlayNext)
+                }
+                .transition(.opacity)
+                .zIndex(20)
+            }
+            #endif
         }
         .animation(DT.Animation.standard, value: phase)
         #if !os(tvOS)
@@ -121,6 +138,7 @@ struct ContentView: View {
 #endif
         .environment(authManager)
         .environment(mediaRepo)
+        .environment(playbackPresenter)
         .environment(seerrRepo)
         .environment(statsRepo)
         .environment(downloadManager)

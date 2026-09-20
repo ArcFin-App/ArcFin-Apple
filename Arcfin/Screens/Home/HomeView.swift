@@ -114,6 +114,7 @@ struct HomeView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(StreamystatsRepository.self) private var statsRepo
+    @Environment(PlaybackPresenter.self) private var playbackPresenter
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
@@ -142,7 +143,7 @@ struct HomeView: View {
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     #endif
 
-    struct HeroPlaybackRequest: Identifiable {
+    struct HeroPlaybackRequest: Identifiable, Equatable {
         let id = UUID()
         let item: MediaItem
         let startTicks: Int64
@@ -410,17 +411,19 @@ struct HomeView: View {
                         heroPlaybackRequest = HeroPlaybackRequest(item: next, startTicks: 0)
                     }
                 }
-#elseif os(macOS)
-                // No fullScreenCover on macOS — a window-modal sheet is the native
-                // equivalent, since the Play button otherwise set state that nothing
-                // ever presented.
-                .sheet(item: $heroPlaybackRequest) { request in
-                    PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                        heroPlaybackRequest = HeroPlaybackRequest(item: next, startTicks: 0)
-                    }
-                    .frame(minWidth: 900, minHeight: 560)
-                }
 #endif
+                // macOS doesn't present from heroPlaybackRequest at all — see
+                // PlaybackPresenter's doc comment. Its own onChange below forwards a set
+                // request straight to the shared presenter instead, which ContentView
+                // renders as a real full-window overlay (a .sheet can't fill or fullscreen
+                // a window the way a plain modal panel is designed to stay small).
+                #if os(macOS)
+                .onChange(of: heroPlaybackRequest) { _, request in
+                    guard let request else { return }
+                    playbackPresenter.present(request.item, startTicks: request.startTicks)
+                    heroPlaybackRequest = nil
+                }
+                #endif
             }
             .navigationTitle("")
 #if os(iOS)

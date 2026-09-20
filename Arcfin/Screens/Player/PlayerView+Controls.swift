@@ -30,7 +30,7 @@ extension PlayerView {
 
     private var topBar: some View {
         HStack(spacing: 16) {
-            Button { dismiss() } label: {
+            Button { closePlayer() } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white)
@@ -1009,7 +1009,7 @@ extension PlayerView {
                 .font(.system(size: 14))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-            Button("Close") { dismiss() }
+            Button("Close") { closePlayer() }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(DT.Color.accent)
         }

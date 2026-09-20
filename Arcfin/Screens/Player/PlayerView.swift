@@ -20,7 +20,20 @@ struct PlayerView: View {
     @Environment(AuthManager.self) var authManager
     @Environment(MediaRepository.self) var mediaRepo
     @Environment(SyncPlayManager.self) var syncPlayManager
+    @Environment(PlaybackPresenter.self) var playbackPresenter
     @Environment(\.dismiss) var dismiss
+
+    /// SwiftUI's own dismiss only does anything for a real .sheet/.fullScreenCover
+    /// presentation — on macOS this view is a plain full-window ZStack overlay in
+    /// ContentView instead (see PlaybackPresenter's own doc comment for why), so closing it
+    /// there means clearing the shared presenter's request, not calling dismiss at all.
+    func closePlayer() {
+        #if os(macOS)
+        playbackPresenter.dismiss()
+        #else
+        dismiss()
+        #endif
+    }
 
     @State var player: any MediaPlayerProtocol = AVFoundationPlayer()
     @AppStorage("playbackEngine") var playbackEnginePreference = PlaybackEngineKind.auto
@@ -279,7 +292,7 @@ struct PlayerView: View {
             if isMacFullScreen {
                 toggleMacWindowFullScreen(macWindow)
             } else {
-                dismiss()
+                closePlayer()
             }
             return .handled
         }
@@ -790,7 +803,7 @@ struct PlayerView: View {
     func finishPlayback() async {
         guard let credential, let authHeader else { return }
         _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
-        dismiss()
+        closePlayer()
     }
 
     private func startProgressReporting(mediaSourceId: String) {
@@ -999,7 +1012,7 @@ struct PlayerView: View {
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
         showStillWatchingPrompt = false
         pendingAutoAdvanceEpisode = nil
-        dismiss()
+        closePlayer()
     }
 
     func dismissUpNext() {
