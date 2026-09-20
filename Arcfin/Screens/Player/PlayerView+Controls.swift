@@ -1196,8 +1196,11 @@ extension PlayerView {
     #endif
 
     func seekFeedbackView(_ feedback: SeekFeedback) -> some View {
+        // Positioned by onRight (where the tap actually landed), not forward (which side now
+        // seeks which direction) — the indicator shows up under your finger, just with
+        // whichever icon/direction that side now performs.
         HStack {
-            if !feedback.forward { Spacer() }
+            if !feedback.onRight { Spacer() }
             VStack(spacing: 4) {
                 Image(systemName: feedback.forward ? "goforward.10" : "gobackward.10")
                     .font(.system(size: 28))
@@ -1207,7 +1210,7 @@ extension PlayerView {
             .foregroundStyle(.white)
             .padding(20)
             .background(.black.opacity(0.4), in: Circle())
-            if feedback.forward { Spacer() }
+            if feedback.onRight { Spacer() }
         }
         .padding(.horizontal, 40)
         .transition(.opacity)

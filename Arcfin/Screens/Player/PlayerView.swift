@@ -63,7 +63,7 @@ struct PlayerView: View {
     @State var currentSubtitleText: String?
     @AppStorage("subtitleTextSize") var subtitleTextSize = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") var subtitleTextColor = SubtitleTextColorOption.white
-    @AppStorage("subtitleBackgroundStyle") var subtitleBackgroundStyle = SubtitleBackgroundStyle.box
+    @AppStorage("subtitleBackgroundStyle") var subtitleBackgroundStyle = SubtitleBackgroundStyle.outline
     @State var trickplayLoader: TrickplayLoader?
     @State var scrubThumbnail: PlatformImage?
     @State var lastThumbnailBucket: Int?
@@ -133,6 +133,11 @@ struct PlayerView: View {
     struct SeekFeedback: Identifiable, Equatable {
         let id = UUID()
         let forward: Bool
+        /// Which side of the screen was actually tapped — separate from `forward` since the
+        /// tapped side no longer determines seek direction (right tap seeks back, left tap
+        /// seeks forward). The indicator still shows up where the tap happened, just with
+        /// whichever icon/direction now belongs to that side.
+        let onRight: Bool
     }
 
     init(item: MediaItem, startPositionTicks: Int64 = 0, onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
