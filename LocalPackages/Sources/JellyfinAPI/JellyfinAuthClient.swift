@@ -1,6 +1,7 @@
 import Foundation
 import AuthCore
 import Telemetry
+import Network
 // Needed for the privacy-annotated string interpolation in the error log below — Telemetry
 // wraps os.Logger, but that doesn't re-export the OSLogMessage interpolation machinery to
 // callers (see MediaRepository.swift, which hit the identical "missing import of defining
@@ -9,6 +10,44 @@ import os
 #if canImport(UIKit)
 import UIKit
 #endif
+
+/// Races a one-shot NWPathMonitor read against a timeout — same lock-guarded resume-once
+/// pattern as MediaRepository's PathWait (duplicated rather than shared across the module
+/// boundary, small enough not to be worth a cross-package refactor for now).
+private final class PathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Void, Never>
+    private let monitor = NWPathMonitor()
+
+    init(continuation: CheckedContinuation<Void, Never>) {
+        self.continuation = continuation
+    }
+
+    func start(timeoutSeconds: Double) {
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            self?.finish()
+        }
+        monitor.start(queue: DispatchQueue(label: "arcfin.jellyfinauth.pathwait"))
+        Task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self.finish()
+        }
+    }
+
+    private func finish() {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        monitor.cancel()
+        continuation.resume()
+    }
+}
 
 // MARK: - Errors
 
@@ -154,6 +193,15 @@ public struct JellyfinAuthClient: Sendable {
             candidates = [httpsURL, httpURL]
         }
 
+        // This is typically the very first network request the app ever makes (server
+        // setup screen, right after a fresh install/cold launch) — exactly when iOS/macOS's
+        // local-network authorization can still transiently report the path as prohibited
+        // even though the permission is already granted, until its own cache settles (the
+        // same condition confirmed by NWPathKey=unsatisfied "Local network prohibited" logs
+        // elsewhere in this app). Waiting for a satisfied path first, bounded so a genuinely
+        // offline server still fails promptly, avoids losing that race on the very first try.
+        await Self.waitForNetworkPath()
+
         var lastError: Error = JellyfinAuthError.serverUnreachable
         for base in candidates {
             do {
@@ -170,6 +218,12 @@ public struct JellyfinAuthClient: Sendable {
             "validateServer failed for \(trimmed, privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
         )
         throw JellyfinAuthError.serverUnreachable
+    }
+
+    private static func waitForNetworkPath(timeoutSeconds: Double = 6) async {
+        await withCheckedContinuation { continuation in
+            PathWait(continuation: continuation).start(timeoutSeconds: timeoutSeconds)
+        }
     }
 
     private func fetchPublicInfo(base: URL) async throws -> (url: URL, serverName: String) {
