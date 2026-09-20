@@ -81,9 +81,7 @@ extension PlayerView {
 
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {
         let tappedRight = location.x > width / 2
-        // Right taps seek backward, left taps seek forward — the opposite of the usual
-        // convention, per explicit request.
-        let forward = !tappedRight
+        let forward = tappedRight
         HapticManager.impact(.medium)
         seek(by: forward ? 10 : -10)
         seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight)
@@ -112,9 +110,7 @@ extension PlayerView {
 
     private func handleMacDoubleClick(at location: CGPoint, width: CGFloat) {
         let tappedRight = location.x > width / 2
-        // Right taps seek backward, left taps seek forward — the opposite of the usual
-        // convention, per explicit request.
-        let forward = !tappedRight
+        let forward = tappedRight
         seek(by: forward ? 10 : -10)
         seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight)
         Task {
