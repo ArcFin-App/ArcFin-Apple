@@ -90,9 +90,15 @@ struct SubtitleText: View {
     }
 
     private var styledText: some View {
+        // Without a width to wrap against, Text renders a long cue on one line at its
+        // natural width and runs off-screen instead of wrapping — frame(maxWidth:) gives
+        // it one to wrap against; fixedSize(vertical) lets it still grow tall enough for
+        // however many lines that wrap produces instead of clipping them.
         Text(text)
             .font(.system(size: size.pointSize, weight: .semibold))
             .foregroundStyle(color.color)
             .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
