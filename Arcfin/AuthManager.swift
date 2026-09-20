@@ -121,7 +121,12 @@ final class AuthManager {
         }
     }
 
-    private func reresolveBaseURLIfNeeded() async {
+    /// Not private — also called directly when the app returns to the foreground (see
+    /// ContentView), since NWPathMonitor's callback can be suspended along with the rest of
+    /// the app while backgrounded and not reliably fire again the moment it resumes. Coming
+    /// back from the background (or Notification Center/PiP briefly covering the app) is
+    /// exactly when the network is most likely to have actually changed underneath it.
+    func reresolveBaseURLIfNeeded() async {
         guard case .authenticated(var cred) = state else { return }
         let resolved = await Self.resolveBaseURL(for: cred.baseURL, profileID: cred.id)
         guard resolved != cred.baseURL else { return }
@@ -153,8 +158,11 @@ final class AuthManager {
               let savedSSID = defaults.string(forKey: "serverHomeSSID.\(idKey)"), !savedSSID.isEmpty
         else { return original }
 
-        guard original.host != localURL.host || original.port != localURL.port else { return original }
-
+        // No early-return when `original` already equals the Local URL — that used to skip
+        // the SSID check entirely once resolved to local, which meant leaving the home
+        // network while already on the Local URL never re-checked anything and just stayed
+        // on Local forever (turning Wi-Fi off never switched to Remote). Every call now
+        // always re-checks the current network against the saved home SSID.
         let currentSSID = await currentWiFiSSID()
         if currentSSID == savedSSID { return localURL }
 

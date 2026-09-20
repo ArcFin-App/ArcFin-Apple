@@ -159,6 +159,16 @@ struct ContentView: View {
             // the system backgrounds the scene) — locking on every one of those made the
             // PIN/Face ID prompt reappear on nearly every interaction. The PIN/Face ID
             // gate now only ever applies at cold launch (see the initial .task above).
+            #if os(iOS)
+            // NWPathMonitor's callback can be suspended along with the rest of the app while
+            // backgrounded and doesn't reliably fire again the instant it resumes — coming
+            // back to the foreground is exactly when the network is most likely to have
+            // actually changed (left/rejoined home Wi-Fi, Wi-Fi toggled off entirely) without
+            // Arcfin having noticed yet.
+            if newPhase == .active {
+                Task { await authManager.reresolveBaseURLIfNeeded() }
+            }
+            #endif
         }
         #if !os(tvOS)
         .onChange(of: authManager.state) { _, _ in Task { await refreshLockRequirement() } }
