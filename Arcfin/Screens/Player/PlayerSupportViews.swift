@@ -5,10 +5,50 @@ import Combine
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 import MediaPlayer
+#elseif os(macOS)
+import AppKit
 #endif
 #if canImport(GoogleCast)
 import GoogleCast
 #endif
+
+// MARK: - Cross-platform image typealias
+
+// TrickplayLoader, NowPlayingManager artwork, and OfflinePlayerView's trickplay cropping all
+// need a concrete image type — UIImage doesn't exist on macOS, so this is the one place that
+// picks the real type per platform and everything else spells `PlatformImage`.
+#if canImport(UIKit)
+public typealias PlatformImage = UIImage
+#elseif canImport(AppKit)
+public typealias PlatformImage = NSImage
+#endif
+
+extension PlatformImage {
+    var cgImageRepresentation: CGImage? {
+        #if canImport(UIKit)
+        return cgImage
+        #elseif canImport(AppKit)
+        var rect = CGRect(origin: .zero, size: size)
+        return cgImage(forProposedRect: &rect, context: nil, hints: nil)
+        #endif
+    }
+
+    static func from(cgImage: CGImage) -> PlatformImage {
+        #if canImport(UIKit)
+        return PlatformImage(cgImage: cgImage)
+        #elseif canImport(AppKit)
+        return PlatformImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        #endif
+    }
+
+    static func from(contentsOfFile path: String) -> PlatformImage? {
+        #if canImport(UIKit)
+        return PlatformImage(contentsOfFile: path)
+        #elseif canImport(AppKit)
+        return PlatformImage(contentsOfFile: path)
+        #endif
+    }
+}
 
 // MARK: - Video surface (AVPlayerLayer) + Picture in Picture
 
@@ -42,6 +82,90 @@ final class PlayerSurfaceView: UIView {
     }
 }
 
+struct PlayerLayerRepresentable: UIViewRepresentable {
+    let player: AVPlayer
+    let pip: PiPCoordinator
+    var isFillScreen: Bool = false
+
+    func makeUIView(context: Context) -> PlayerSurfaceView {
+        let view = PlayerSurfaceView()
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
+        view.backgroundColor = .black
+        pip.stashLayer(view.playerLayer)
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerSurfaceView, context: Context) {
+        if uiView.playerLayer.player !== player {
+            uiView.playerLayer.player = player
+        }
+        uiView.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
+    }
+}
+
+#elseif os(macOS)
+
+// AppKit equivalent of PlayerSurfaceView above — same reasoning applies: layer-backing the
+// view directly as the AVPlayerLayer (via makeBackingLayer, AppKit's analog of overriding
+// layerClass) means an ambient animation on this view's own resize (e.g. toggleControls()'s
+// withAnimation firing from an unrelated click elsewhere in the tree) would implicitly
+// animate the layer's bounds/position too — same zoom glitch iOS had. NSView's layer
+// delegate action hook is the exact same suppression mechanism as UIView's.
+final class PlayerSurfaceView: NSView {
+    let playerLayer = AVPlayerLayer()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func makeBackingLayer() -> CALayer { playerLayer }
+
+    override func layout() {
+        super.layout()
+        playerLayer.frame = bounds
+    }
+
+    override func action(for layer: CALayer, forKey event: String) -> CAAction? {
+        switch event {
+        case "bounds", "position", "frame", "transform", "sublayerTransform":
+            return NSNull()
+        default:
+            return super.action(for: layer, forKey: event)
+        }
+    }
+}
+
+struct PlayerLayerRepresentable: NSViewRepresentable {
+    let player: AVPlayer
+    let pip: PiPCoordinator
+    var isFillScreen: Bool = false
+
+    func makeNSView(context: Context) -> PlayerSurfaceView {
+        let view = PlayerSurfaceView()
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
+        view.layer?.backgroundColor = NSColor.black.cgColor
+        pip.stashLayer(view.playerLayer)
+        return view
+    }
+
+    func updateNSView(_ nsView: PlayerSurfaceView, context: Context) {
+        if nsView.playerLayer.player !== player {
+            nsView.playerLayer.player = player
+        }
+        nsView.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
+    }
+}
+#endif
+
+// PiPCoordinator itself is pure AVKit/AVFoundation — no UIView/NSView types — so it's shared
+// by both the iOS and macOS surfaces above rather than duplicated. tvOS has no PiP at all.
+#if !os(tvOS)
 final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, ObservableObject {
     @Published var isActive = false
     // Was previously a computed property derived from `controller`, which isn't @Published —
@@ -91,31 +215,11 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
         isActive = false
     }
 }
+#endif
 
-struct PlayerLayerRepresentable: UIViewRepresentable {
-    let player: AVPlayer
-    let pip: PiPCoordinator
-    var isFillScreen: Bool = false
+// MARK: - Rotate button (iOS/iPadOS only — no orientation concept on macOS)
 
-    func makeUIView(context: Context) -> PlayerSurfaceView {
-        let view = PlayerSurfaceView()
-        view.playerLayer.player = player
-        view.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
-        view.backgroundColor = .black
-        pip.stashLayer(view.playerLayer)
-        return view
-    }
-
-    func updateUIView(_ uiView: PlayerSurfaceView, context: Context) {
-        if uiView.playerLayer.player !== player {
-            uiView.playerLayer.player = player
-        }
-        uiView.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
-    }
-}
-
-// MARK: - Rotate button (shared by online + offline players)
-
+#if canImport(UIKit) && !os(tvOS)
 /// Flips between portrait and forced landscape — iPad/iPhone with multiple orientations
 /// enabled don't always rotate on their own for a video sheet, so this is a manual override.
 func togglePlayerOrientation() {
@@ -137,9 +241,41 @@ func resetPlayerOrientation() {
     else { return }
     scene.requestGeometryUpdate(.iOS(interfaceOrientations: .all)) { _ in }
 }
+#endif
+
+// MARK: - macOS window-level fullscreen
+
+#if os(macOS)
+/// SwiftUI on macOS has no `.fullScreenCover` — real fullscreen is a property of the hosting
+/// NSWindow. This mounts an invisible, zero-size NSView purely to read `.window` off the
+/// view hierarchy once it's attached, then hands it back through a callback (there's no
+/// public environment key for "the window this view is in").
+struct WindowAccessor: NSViewRepresentable {
+    let onResolve: (NSWindow?) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async { onResolve(view.window) }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { onResolve(nsView.window) }
+    }
+}
+
+func toggleMacWindowFullScreen(_ window: NSWindow?) {
+    window?.toggleFullScreen(nil)
+}
+
+func isMacWindowFullScreen(_ window: NSWindow?) -> Bool {
+    window?.styleMask.contains(.fullScreen) ?? false
+}
+#endif
 
 // MARK: - AirPlay / Cast route trigger bridge
 
+#if canImport(UIKit) && !os(tvOS)
 /// Cast and AirPlay are native system widgets (AVRoutePickerView, GCKUICastButton) that
 /// present their own picker UI internally on tap — they can't be dropped into a SwiftUI
 /// `Menu`'s content as a plain row. Instead both are mounted off-screen (see
@@ -149,6 +285,12 @@ func resetPlayerOrientation() {
 /// internal UIButton it forwards taps to — reaching into its subviews to trigger that same
 /// button is a widely used, stable pattern (the view has had exactly that one-button
 /// internal structure since AVRoutePickerView shipped in iOS 11).
+///
+/// AVRoutePickerView's internal view hierarchy on AppKit is not the same one-UIButton
+/// structure (and reaching into private AppKit control internals is a much less
+/// well-established pattern than the iOS one) — macOS instead shows the AirPlay button
+/// directly, visible in the controls, rather than hiding it behind this bridge. See
+/// AirPlayButton's macOS variant below.
 @MainActor
 final class RouteButtonBridge {
     weak var airPlayButton: UIButton?
@@ -157,9 +299,11 @@ final class RouteButtonBridge {
     func fireAirPlay() { airPlayButton?.sendActions(for: .touchUpInside) }
     func fireCast() { castButton?.sendActions(for: .touchUpInside) }
 }
+#endif
 
 // MARK: - AirPlay route picker
 
+#if canImport(UIKit) && !os(tvOS)
 struct AirPlayButton: UIViewRepresentable {
     // Defaulted so existing call sites that show this as a plain visible button (Library,
     // OfflinePlayerView) don't need a bridge — only PlayerView's hidden/triggered mount does.
@@ -180,6 +324,26 @@ struct AirPlayButton: UIViewRepresentable {
     }
 }
 
+#elseif os(macOS)
+/// AVRoutePickerView exists on macOS too, but as a plain NSView with no AVAudioSession to
+/// infer routing targets from — it needs the AVPlayer handed to it directly so it knows what
+/// to route. Shown as a normal visible button in the controls (see the "bridge" note above
+/// for why this isn't hidden/triggered the way the iOS one is).
+struct AirPlayButton: NSViewRepresentable {
+    var player: AVPlayer?
+
+    func makeNSView(context: Context) -> AVRoutePickerView {
+        let view = AVRoutePickerView()
+        view.player = player
+        view.isRoutePickerButtonBordered = false
+        return view
+    }
+    func updateNSView(_ nsView: AVRoutePickerView, context: Context) {
+        if nsView.player !== player { nsView.player = player }
+    }
+}
+#endif
+
 // MARK: - Chromecast button
 
 #if canImport(GoogleCast)
@@ -198,6 +362,7 @@ struct CastButton: UIViewRepresentable {
 
 // MARK: - System volume control (swipe-to-adjust-volume support)
 
+#if canImport(UIKit) && !os(tvOS)
 /// Programmatic system-volume changes are only possible through MPVolumeView's
 /// hidden slider — there is no public AVAudioSession API for it.
 @MainActor
