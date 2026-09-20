@@ -126,6 +126,13 @@ struct DownloadedItemDetailView: View {
         .fullScreenCover(item: $playingItem) { item in
             OfflinePlayerView(downloadedItem: item, startPositionOverride: startOverride)
         }
+        #elseif os(macOS)
+        // fullScreenCover is unavailable on macOS — OfflinePlayerView has its own in-window
+        // fullscreen (F key) now that it has a real macOS video surface, so a sheet is enough.
+        .sheet(item: $playingItem) { item in
+            OfflinePlayerView(downloadedItem: item, startPositionOverride: startOverride)
+                .frame(minWidth: 900, minHeight: 560)
+        }
         #endif
         .alert("Delete this download?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {

@@ -154,6 +154,13 @@ struct DownloadedSeriesDetailView: View {
         .fullScreenCover(item: $playingItem) { item in
             OfflinePlayerView(downloadedItem: item, startPositionOverride: playStartOverride)
         }
+        #elseif os(macOS)
+        // fullScreenCover is unavailable on macOS — OfflinePlayerView has its own in-window
+        // fullscreen (F key) now that it has a real macOS video surface, so a sheet is enough.
+        .sheet(item: $playingItem) { item in
+            OfflinePlayerView(downloadedItem: item, startPositionOverride: playStartOverride)
+                .frame(minWidth: 900, minHeight: 560)
+        }
         #endif
         .alert("Delete this episode?", isPresented: Binding(
             get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
