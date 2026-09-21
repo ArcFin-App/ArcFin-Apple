@@ -61,6 +61,9 @@ struct LicensesView: View {
                         }
                     }
                     .padding(.vertical, 4)
+                    #if os(tvOS)
+                    .focusable()
+                    #endif
                 }
             } footer: {
                 Text("Licenses and other third-party components Arcfin uses.")

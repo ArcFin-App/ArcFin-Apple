@@ -188,6 +188,14 @@ struct SettingsView: View {
 #if os(tvOS)
                 .listRowBackground(Color.clear)
 #endif
+#if os(tvOS)
+                LabeledContent("Privacy Policy", value: "arcfin.psmattas.com/privacy")
+                    .listRowBackground(Color.clear)
+                LabeledContent("Terms of Use", value: "arcfin.psmattas.com/terms")
+                    .listRowBackground(Color.clear)
+                LabeledContent("Data Protection", value: "arcfin.psmattas.com/data-protection")
+                    .listRowBackground(Color.clear)
+#else
                 Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
                     HStack {
                         Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
@@ -195,9 +203,6 @@ struct SettingsView: View {
                         Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
                     }
                 }
-#if os(tvOS)
-                .listRowBackground(Color.clear)
-#endif
                 Link(destination: URL(string: "https://arcfin.psmattas.com/terms")!) {
                     HStack {
                         Text("Terms of Use").foregroundStyle(DT.Color.textPrimary)
@@ -205,9 +210,6 @@ struct SettingsView: View {
                         Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
                     }
                 }
-#if os(tvOS)
-                .listRowBackground(Color.clear)
-#endif
                 Link(destination: URL(string: "https://arcfin.psmattas.com/data-protection")!) {
                     HStack {
                         Text("Data Protection").foregroundStyle(DT.Color.textPrimary)
@@ -215,8 +217,6 @@ struct SettingsView: View {
                         Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
                     }
                 }
-#if os(tvOS)
-                .listRowBackground(Color.clear)
 #endif
             } header: {
                 sectionHeader("About", icon: "info.circle")
