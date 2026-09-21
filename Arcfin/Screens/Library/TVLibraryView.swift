@@ -65,6 +65,7 @@ struct TVCollectionDetailView: View {
 
     @State private var items: [MediaItem] = []
     @State private var selectedItem: MediaItem?
+    @State private var playbackRequest: PlaybackRequest?
 
     private let client = JellyfinMediaClient()
     private var credential: ServerCredential? { authManager.state.credential }
@@ -92,6 +93,11 @@ struct TVCollectionDetailView: View {
         .background(DT.Color.backgroundPrimary)
         .navigationDestination(item: $selectedItem) { i in
             TVMediaDetailView(item: i)
+        }
+        .fullScreenCover(item: $playbackRequest) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
+            }
         }
         .task { await load() }
     }
@@ -144,7 +150,10 @@ struct TVCollectionDetailView: View {
                 }
 
                 HStack(spacing: 20) {
-                    Button {} label: {
+                    Button {
+                        guard let first = items.first else { return }
+                        playbackRequest = PlaybackRequest(item: first, startTicks: first.userData?.playbackPositionTicks ?? 0)
+                    } label: {
                         TVDetailButtonLabel(icon: "play.fill", text: "Play All", isPrimary: true)
                     }
                     .buttonStyle(TVCardButtonStyle())

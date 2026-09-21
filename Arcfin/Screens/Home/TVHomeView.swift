@@ -17,6 +17,7 @@ struct TVHomeView: View {
     @State private var deepLinkItemID: String? = nil
     @State private var seerrRequestItem: SeerrItem? = nil
     @State private var seerrRequestPending = false
+    @State private var playbackRequest: PlaybackRequest?
 
     private var focusedItem: MediaItem? {
         guard let id = focusedItemID else { return nil }
@@ -51,6 +52,11 @@ struct TVHomeView: View {
             }
             .navigationDestination(for: MediaItem.self) { item in
                 TVMediaDetailView(item: item)
+            }
+        }
+        .fullScreenCover(item: $playbackRequest) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
         }
         .task { await load() }
@@ -207,7 +213,9 @@ struct TVHomeView: View {
                 }
 
                 HStack(spacing: 20) {
-                    Button {} label: {
+                    Button {
+                        playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                    } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
                     }
                     .buttonStyle(TVCardButtonStyle())

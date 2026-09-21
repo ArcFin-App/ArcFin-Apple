@@ -23,6 +23,7 @@ struct TVMediaDetailView: View {
     @State private var selectedEpisode: MediaItem?
     @State private var initialEpisodeID: String?
     @State private var nextEpisode: MediaItem?
+    @State private var playbackRequest: PlaybackRequest?
 
     private let client = JellyfinMediaClient()
 
@@ -64,6 +65,11 @@ struct TVMediaDetailView: View {
         }
         .fullScreenCover(isPresented: $showFullDescription) {
             fullDescriptionCover
+        }
+        .fullScreenCover(item: $playbackRequest) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
+            }
         }
     }
 
@@ -180,7 +186,10 @@ struct TVMediaDetailView: View {
 
     private var actionColumn: some View {
         VStack(spacing: 14) {
-            Button {} label: {
+            Button {
+                let target = nextEpisode ?? item
+                playbackRequest = PlaybackRequest(item: target, startTicks: target.userData?.playbackPositionTicks ?? 0)
+            } label: {
                 TVDetailButtonLabel(icon: "play.fill", text: playLabel, isPrimary: true)
             }
             .buttonStyle(TVCardButtonStyle())

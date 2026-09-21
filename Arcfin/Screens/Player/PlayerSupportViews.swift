@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import AVKit
 import Combine
+import JellyfinAPI
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 import MediaPlayer
@@ -11,6 +12,14 @@ import AppKit
 #if canImport(GoogleCast)
 import GoogleCast
 #endif
+
+// MARK: - Shared playback request
+
+struct PlaybackRequest: Identifiable, Equatable {
+    let id = UUID()
+    let item: MediaItem
+    let startTicks: Int64
+}
 
 // MARK: - Cross-platform image typealias
 
