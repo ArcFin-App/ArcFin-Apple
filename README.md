@@ -1,15 +1,16 @@
 # Arcfin
 
-[<img src="assets/badges/app-store-badge-black.svg" alt="Download on the App Store" height="48">](https://apps.apple.com/us/app/arcfin/id6813273961)
+<img src="assets/badges/app-store-badge-black.svg" alt="App Store — pending review, not yet available" height="48" style="opacity:0.45">
+
 [<img src="assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)
+
+> **Not yet on the App Store.** Arcfin is currently available via [TestFlight](https://testflight.apple.com/join/kkC58n2w) only — v0.1.0 is uploaded to App Store Connect and pending Apple's review.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS-lightgrey?logo=apple&logoColor=white)
 ![Minimum OS](https://img.shields.io/badge/iOS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
-
-Version 0.1.0 — [uploaded to App Store Connect](https://apps.apple.com/us/app/arcfin/id6813273961), currently processing/pending review. [Join the TestFlight beta](https://testflight.apple.com/join/kkC58n2w).
 
 A premium native Jellyfin media client for the Apple ecosystem.
 
@@ -123,7 +124,7 @@ I am a software engineer. AI makes certain tasks faster and easier, but the arch
 
 ## Project Status
 
-Feature-complete for an initial release — playback, library, downloads, casting, profiles, and Settings are all built. v0.1.0 is uploaded to App Store Connect and currently processing; TestFlight and App Store submission are next (see `fastlane/metadata/`).
+Feature-complete for an initial release — playback, library, downloads, casting, profiles, and Settings are all built. v0.1.0 is on [TestFlight](https://testflight.apple.com/join/kkC58n2w) now; the same build is uploaded to App Store Connect and pending Apple's review (see `fastlane/metadata/`).
 
 ---
 
