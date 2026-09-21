@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import Foundation
 import Telemetry
 
@@ -9,13 +11,17 @@ public struct ServerCredential: Codable, Sendable, Identifiable, Equatable {
     public var userID: String
     public var accessToken: String
     public var displayName: String
+    /// Jellyfin's PrimaryImageTag for this user, if they've set an avatar server-side —
+    /// nil falls back to initials.
+    public var userImageTag: String?
 
-    public init(id: UUID = .init(), baseURL: URL, userID: String, accessToken: String, displayName: String) {
+    public init(id: UUID = .init(), baseURL: URL, userID: String, accessToken: String, displayName: String, userImageTag: String? = nil) {
         self.id = id
         self.baseURL = baseURL
         self.userID = userID
         self.accessToken = accessToken
         self.displayName = displayName
+        self.userImageTag = userImageTag
     }
 }
 
@@ -26,6 +32,9 @@ public protocol KeychainClientProtocol: Sendable {
     func load(serverID: UUID) throws -> ServerCredential?
     func delete(serverID: UUID) throws
     func allServers() throws -> [ServerCredential]
+    func savePin(_ pin: String, for credentialID: UUID) throws
+    func loadPin(for credentialID: UUID) throws -> String?
+    func deletePin(for credentialID: UUID) throws
 }
 
 // MARK: - Auth state
@@ -33,6 +42,11 @@ public protocol KeychainClientProtocol: Sendable {
 public enum AuthState: Sendable, Equatable {
     case unauthenticated
     case authenticated(ServerCredential)
+
+    public var credential: ServerCredential? {
+        if case .authenticated(let cred) = self { return cred }
+        return nil
+    }
 }
 
 // MARK: - Token refresh

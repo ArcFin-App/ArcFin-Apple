@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import BackgroundTasks
 import Foundation
 import Telemetry
@@ -19,6 +21,7 @@ public final class BackgroundScheduler: Sendable {
     private init() {}
 
     public func scheduleSettingsSync() {
+        #if !os(macOS)
         let request = BGProcessingTaskRequest(identifier: BackgroundTaskIdentifier.syncSettings)
         request.requiresNetworkConnectivity = true
         request.requiresExternalPower = false
@@ -27,5 +30,6 @@ public final class BackgroundScheduler: Sendable {
         } catch {
             Self.log.error("Failed to schedule settings sync: \(error)")
         }
+        #endif
     }
 }

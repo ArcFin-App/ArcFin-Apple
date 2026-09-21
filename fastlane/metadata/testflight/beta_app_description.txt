@@ -1,0 +1,5 @@
+Arcfin is a premium native Jellyfin client for iOS and iPadOS, built around iOS 26's Liquid Glass design. You'll need access to a Jellyfin server to use it — either your own or one you've been invited to (jellyfin.org for free, open-source server software).
+
+This beta covers core playback (direct play, transcoding, AirPlay, Chromecast, Picture in Picture), downloads for offline viewing, library browsing/search, the per-profile Face ID/PIN lock, and optional Seerr/Streamystats integrations.
+
+Please report anything that crashes, plays incorrectly, or looks wrong on your device/server combination — screen recordings help a lot when something's visual.

@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import SwiftUI
+import Foundation
 
 // MARK: - Design token system for Arcfin
 // Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass.
@@ -9,25 +12,27 @@ public enum DT {
 
     public enum Color {
         /// #0A0A0F — deep cinematic black, primary background
-        public static let backgroundPrimary   = SwiftUI.Color(arcfinHex: "0A0A0F")
+        public static let backgroundPrimary   = SwiftUI.Color(hex: "0A0A0F")
         /// #12121A — midnight navy, secondary surface
-        public static let backgroundSecondary = SwiftUI.Color(arcfinHex: "12121A")
+        public static let backgroundSecondary = SwiftUI.Color(hex: "12121A")
         /// #1C1C26 — deep charcoal cool tint, tertiary surface
-        public static let backgroundTertiary  = SwiftUI.Color(arcfinHex: "1C1C26")
+        public static let backgroundTertiary  = SwiftUI.Color(hex: "1C1C26")
         /// #06B6D4 — cyan/ice, accent — active states, progress bars, focus rings, CTAs
-        public static let accent              = SwiftUI.Color(arcfinHex: "06B6D4")
+        public static let accent              = SwiftUI.Color(hex: "06B6D4")
+        /// #0891b2 — deeper cyan, gradient start for buttons and logo
+        public static let accentDeep          = SwiftUI.Color(hex: "0891b2")
         /// Accent at reduced opacity for glass tinting
-        public static let accentSubtle        = SwiftUI.Color(arcfinHex: "06B6D4").opacity(0.15)
+        public static let accentSubtle        = SwiftUI.Color(hex: "06B6D4").opacity(0.15)
         /// White — primary text
         public static let textPrimary         = SwiftUI.Color.white
         /// #06B6D4 — active/selected labels
-        public static let textActive          = SwiftUI.Color(arcfinHex: "06B6D4")
+        public static let textActive          = SwiftUI.Color(hex: "06B6D4")
         /// #8E8E93 — secondary metadata (system grey)
-        public static let textSecondary       = SwiftUI.Color(arcfinHex: "8E8E93")
+        public static let textSecondary       = SwiftUI.Color(hex: "8E8E93")
         /// #3A3A4A — separator / divider lines
-        public static let separator           = SwiftUI.Color(arcfinHex: "3A3A4A")
+        public static let separator           = SwiftUI.Color(hex: "3A3A4A")
         /// Progress bar fill
-        public static let progressFill        = SwiftUI.Color(arcfinHex: "06B6D4")
+        public static let progressFill        = SwiftUI.Color(hex: "06B6D4")
         /// Progress bar track
         public static let progressTrack       = SwiftUI.Color.white.opacity(0.15)
     }
@@ -91,8 +96,12 @@ public enum DT {
     // MARK: - Sizing
 
     public enum Size {
-        /// Poster card: portrait 2:3
+        /// Poster card — portrait 2:3 on iOS, landscape 16:9 thumb on tvOS
+#if os(tvOS)
+        public static let posterCard        = CGSize(width: 320, height: 180)
+#else
         public static let posterCard        = CGSize(width: 110, height: 165)
+#endif
         /// Backdrop card: landscape 16:9
         public static let backdropCard      = CGSize(width: 240, height: 135)
         /// Hero banner height
@@ -106,10 +115,36 @@ public enum DT {
     // MARK: - Animation
 
     public enum Animation {
-        public static let standard = SwiftUI.Animation.spring(response: 0.35, dampingFraction: 0.80)
-        public static let fast     = SwiftUI.Animation.spring(response: 0.20, dampingFraction: 0.90)
-        public static let slow     = SwiftUI.Animation.spring(response: 0.50, dampingFraction: 0.75)
-        public static let playerFade = SwiftUI.Animation.easeInOut(duration: 0.25)
+        /// When the Appearance → Reduce Motion setting is on, every DT.Animation
+        /// collapses to a near-instant linear fade instead of its spring/duration.
+        private static var reduceMotion: Bool {
+            UserDefaults.standard.bool(forKey: "reduceMotion")
+        }
+        private static let reducedFallback = SwiftUI.Animation.linear(duration: 0.01)
+
+        public static var standard: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .spring(response: 0.35, dampingFraction: 0.80)
+        }
+        public static var fast: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .spring(response: 0.20, dampingFraction: 0.90)
+        }
+        public static var slow: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .spring(response: 0.50, dampingFraction: 0.75)
+        }
+        public static var playerFade: SwiftUI.Animation {
+            reduceMotion ? reducedFallback : .easeInOut(duration: 0.25)
+        }
+    }
+
+    // MARK: - Platform scale
+
+    public enum Scale {
+        /// Multiply hardcoded pt sizes by this for 10-foot TV readability.
+        #if os(tvOS)
+        public static let font: CGFloat = 2.0
+        #else
+        public static let font: CGFloat = 1.0
+        #endif
     }
 
     // MARK: - Glass
@@ -125,7 +160,7 @@ public enum DT {
 // MARK: - Hex colour initialiser
 
 extension SwiftUI.Color {
-    init(arcfinHex hex: String) {
+    init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var value: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&value)

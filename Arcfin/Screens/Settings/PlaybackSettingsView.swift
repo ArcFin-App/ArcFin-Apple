@@ -1,0 +1,176 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import SwiftUI
+import MediaEngine
+
+struct PlaybackSettingsView: View {
+    @AppStorage("videoQuality")    private var videoQuality    = VideoQuality.max
+    @AppStorage("playbackEngine")  private var playbackEngine  = PlaybackEngineKind.auto
+    @AppStorage("autoPlayNext")    private var autoPlayNext    = true
+    @AppStorage("skipIntro")       private var skipIntro       = false
+    @AppStorage("skipCredits")     private var skipCredits     = false
+    @AppStorage("skipRecap")       private var skipRecap       = false
+    @AppStorage("subtitleDefault") private var subtitleDefault = false
+    @AppStorage("trailersEnabled") private var trailersEnabled = true
+    @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
+    @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
+    @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
+    @AppStorage("skipForwardSeconds")  private var skipForwardSeconds  = 10
+    @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
+
+    private static let audioLanguageOptions: [(code: String, name: String)] = [
+        ("", "None"),
+        ("eng", "English"),
+        ("spa", "Spanish"),
+        ("fre", "French"),
+        ("ger", "German"),
+        ("jpn", "Japanese"),
+        ("kor", "Korean"),
+        ("chi", "Chinese"),
+        ("ita", "Italian"),
+        ("por", "Portuguese"),
+        ("rus", "Russian"),
+    ]
+    private static let subtitleLanguageOptions: [(code: String, name: String)] = [
+        ("", "Off"),
+        ("eng", "English"),
+        ("spa", "Spanish"),
+        ("fre", "French"),
+        ("ger", "German"),
+        ("jpn", "Japanese"),
+        ("kor", "Korean"),
+        ("chi", "Chinese"),
+        ("ita", "Italian"),
+        ("por", "Portuguese"),
+        ("rus", "Russian"),
+    ]
+
+    var body: some View {
+        List {
+            Section {
+                Picker("Video Quality", selection: $videoQuality) {
+                    ForEach(VideoQuality.allCases) { q in
+                        Text(q.label).tag(q)
+                    }
+                }
+                .tvListRow()
+                VStack(alignment: .leading, spacing: 4) {
+                    Picker("Playback Engine", selection: $playbackEngine) {
+                        ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
+                            Text(engine.rawValue).tag(engine)
+                        }
+                    }
+                    Text("Auto is recommended. If a video won't play, switch to VLC — then back to Auto once it's fixed.")
+                        .font(.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+                .tvListRow()
+            }
+
+            Section {
+                Picker("Skip Forward", selection: $skipForwardSeconds) {
+                    ForEach(skipIntervalOptions, id: \.self) { seconds in
+                        Text("\(seconds)s").tag(seconds)
+                    }
+                }
+                .tvListRow()
+                Picker("Skip Backward", selection: $skipBackwardSeconds) {
+                    ForEach(skipIntervalOptions, id: \.self) { seconds in
+                        Text("\(seconds)s").tag(seconds)
+                    }
+                }
+                .tvListRow()
+            } footer: {
+                Text("Used by the on-screen skip buttons, double-tap to seek, and the left/right arrow keys.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
+                    .tvListRow()
+                Toggle("Skip Recap Automatically", isOn: $skipRecap)
+                    .tvListRow()
+                Toggle("Skip Intro Automatically", isOn: $skipIntro)
+                    .tvListRow()
+                Toggle("Skip Credits Automatically", isOn: $skipCredits)
+                    .tvListRow()
+                Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
+                    .tvListRow()
+            }
+
+            Section {
+                Toggle("Trailers", isOn: $trailersEnabled)
+                    .tvListRow()
+                #if !os(tvOS)
+                // YouTubeTrailerPlayerView (YouTubePlayerKit, needs WebKit) isn't available
+                // on tvOS at all — only a local trailer indexed on the server plays there.
+                if trailersEnabled {
+                    Toggle("YouTube Fallback", isOn: $youtubeTrailersEnabled)
+                }
+                #endif
+            } footer: {
+                #if os(tvOS)
+                Text(trailersEnabled
+                     ? "Shows a Play Trailer button when the server has a local trailer indexed."
+                     : "Turns off trailer playback entirely.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+                #else
+                Text(trailersEnabled
+                     ? "Shows a Play Trailer button when the server has a local trailer indexed. YouTube Fallback plays a YouTube trailer in-app when no local one is available."
+                     : "Turns off trailer playback entirely, including the YouTube fallback.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+                #endif
+            }
+
+            Section {
+                Picker("Preferred Audio Language", selection: $preferredAudioLanguage) {
+                    ForEach(Self.audioLanguageOptions, id: \.code) { option in
+                        Text(option.name).tag(option.code)
+                    }
+                }
+                .tvListRow()
+                Picker("Preferred Subtitle Language", selection: $preferredSubtitleLanguage) {
+                    ForEach(Self.subtitleLanguageOptions, id: \.code) { option in
+                        Text(option.name).tag(option.code)
+                    }
+                }
+                .tvListRow()
+            } footer: {
+                Text("Used to pick a starting audio/subtitle track when a title has a matching language available — otherwise falls back to the server's default.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                NavigationLink {
+                    CodecProfileSettingsView()
+                } label: {
+                    Text("Codec Compatibility")
+                }
+                .tvListRow()
+                NavigationLink {
+                    PlayerFeaturesSettingsView()
+                } label: {
+                    Text("Player Features")
+                }
+                .tvListRow()
+                NavigationLink {
+                    SubtitleStyleSettingsView()
+                } label: {
+                    Text("Subtitle Style")
+                }
+                .tvListRow()
+            }
+        }
+        .arcfinListStyle()
+        .background(DT.Color.backgroundPrimary)
+        .arcfinNavTitleLarge("Playback")
+    }
+}
+
+#Preview {
+    NavigationStack { PlaybackSettingsView() }
+}

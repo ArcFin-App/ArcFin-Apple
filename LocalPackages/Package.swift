@@ -1,26 +1,34 @@
 // swift-tools-version: 6.2
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import PackageDescription
 
 let package = Package(
     name: "ArcfinPackages",
     platforms: [
         .iOS(.v26),
+        .tvOS(.v26),
+        .macOS(.v15),
     ],
     products: [
         // MARK: Core Services
         .library(name: "Telemetry",       targets: ["Telemetry"]),
+        // Shared ActivityAttributes for the download Live Activity — deliberately tiny
+        // (Foundation + ActivityKit only) since it's linked into the widget extension too.
+        .library(name: "LiveActivityKit", targets: ["LiveActivityKit"]),
         .library(name: "AuthCore",        targets: ["AuthCore"]),
         .library(name: "Persistence",     targets: ["Persistence"]),
         .library(name: "ImageCache",      targets: ["ImageCache"]),
         .library(name: "BackgroundKit",   targets: ["BackgroundKit"]),
         .library(name: "JellyfinAPI",     targets: ["JellyfinAPI"]),
         .library(name: "StreamystatsAPI", targets: ["StreamystatsAPI"]),
-        .library(name: "JellyseerrAPI",   targets: ["JellyseerrAPI"]),
+        .library(name: "SeerrAPI",   targets: ["SeerrAPI"]),
         // MARK: Feature Packages
         .library(name: "AppState",        targets: ["AppState"]),
         .library(name: "MediaEngine",     targets: ["MediaEngine"]),
         .library(name: "SyncEngine",      targets: ["SyncEngine"]),
         .library(name: "SearchKit",       targets: ["SearchKit"]),
+        .library(name: "CastKit",         targets: ["CastKit"]),
     ],
     dependencies: [
         // State management
@@ -47,6 +55,30 @@ let package = Package(
             url: "https://github.com/apple/swift-openapi-generator",
             from: "1.3.0"
         ),
+        // Secondary player engine — libVLC (LGPLv2.1) via a Swift 6/@Observable wrapper.
+        // AVFoundation stays primary/default; VLC exists for containers/codecs AVFoundation
+        // can't open (mkv, mistagged HEVC, etc.) and is selectable in Settings.
+        .package(
+            url: "https://github.com/harflabs/SwiftVLC.git",
+            from: "1.0.0"
+        ),
+        // Chromecast sender SDK — Google doesn't publish an SPM package itself, this is the
+        // most actively maintained community SPM wrapper around Google's own XCFramework
+        // release (not a reimplementation). iOS only; CastKit's dependency on it is
+        // platform-conditioned so tvOS/macOS builds don't try to link it at all.
+        .package(
+            url: "https://github.com/SRGSSR/google-cast-sdk",
+            from: "4.8.0"
+        ),
+        // In-app YouTube trailer playback fallback (when a title has no local trailer) —
+        // a proper YouTube Terms of Service-compliant iframe player wrapper, replacing an
+        // earlier hand-rolled WKWebView+HTML approach that kept hitting real embed errors
+        // (origin/config validation YouTube's player does isn't something worth
+        // reimplementing by hand when a maintained, MIT-licensed package already does it).
+        .package(
+            url: "https://github.com/SvenTiigi/YouTubePlayerKit.git",
+            from: "2.0.0"
+        ),
     ],
     targets: [
 
@@ -60,6 +92,11 @@ let package = Package(
         .target(
             name: "AuthCore",
             dependencies: ["Telemetry"]
+        ),
+
+        .target(
+            name: "LiveActivityKit",
+            dependencies: []
         ),
 
         .target(
@@ -107,7 +144,7 @@ let package = Package(
         ),
 
         .target(
-            name: "JellyseerrAPI",
+            name: "SeerrAPI",
             dependencies: [
                 "AuthCore",
                 "Telemetry",
@@ -124,7 +161,7 @@ let package = Package(
             dependencies: [
                 "JellyfinAPI",
                 "StreamystatsAPI",
-                "JellyseerrAPI",
+                "SeerrAPI",
                 "Persistence",
                 "AuthCore",
                 "Telemetry",
@@ -138,6 +175,13 @@ let package = Package(
                 "AppState",
                 "JellyfinAPI",
                 "Telemetry",
+                .product(name: "SwiftVLC", package: "SwiftVLC"),
+                // Not actually imported anywhere in this target — YouTubeTrailerPlayerView.swift
+                // (the only real consumer) lives in the app target and already excludes tvOS
+                // itself. Without this condition, SPM still builds YouTubePlayerKit for tvOS as
+                // part of this target's own platform list, which fails: it depends on WebKit,
+                // a framework that doesn't exist on tvOS at all.
+                .product(name: "YouTubePlayerKit", package: "YouTubePlayerKit", condition: .when(platforms: [.iOS, .macOS])),
             ]
         ),
 
@@ -145,6 +189,7 @@ let package = Package(
             name: "SyncEngine",
             dependencies: [
                 "AppState",
+                "AuthCore",
                 "JellyfinAPI",
                 "Persistence",
                 "Telemetry",
@@ -158,6 +203,15 @@ let package = Package(
                 "JellyfinAPI",
                 "Persistence",
                 "Telemetry",
+            ]
+        ),
+
+        .target(
+            name: "CastKit",
+            dependencies: [
+                "JellyfinAPI",
+                "Telemetry",
+                .product(name: "GoogleCast", package: "google-cast-sdk", condition: .when(platforms: [.iOS])),
             ]
         ),
 

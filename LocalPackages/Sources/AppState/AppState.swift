@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import ComposableArchitecture
 import Foundation
 import AuthCore
@@ -48,7 +50,7 @@ public enum AppTab: String, Sendable, Equatable, CaseIterable {
     case library     = "Library"
     case search      = "Search"
     case stats       = "Stats"
-    case jellyseerr  = "Requests"
+    case seerr       = "Requests"
     case settings    = "Settings"
 }
 

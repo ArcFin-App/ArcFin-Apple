@@ -1,0 +1,62 @@
+name: ❓ Support Request
+about: Get help using Arcfin
+labels:
+  - "type: question"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before opening this:** check the [README](../../) and [existing issues](../../issues).
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What do you need help with?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What I've Tried
+      value: |
+        1.
+        2.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - iPhone
+        - iPad
+        - Mac
+        - Apple TV
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Arcfin Version / Build
+      placeholder: e.g. 0.1.0 (5)
+
+  - type: input
+    id: server
+    attributes:
+      label: Jellyfin Server Version (if relevant)
+      placeholder: e.g. 10.9.x
+
+  - type: textarea
+    id: errors
+    attributes:
+      label: Error Messages
+      render: shell
+
+  - type: textarea
+    id: questions
+    attributes:
+      label: Questions
+      value: |
+        1.
+        2.

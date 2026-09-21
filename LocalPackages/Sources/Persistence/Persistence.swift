@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import SwiftData
 import Telemetry
 
@@ -15,6 +17,6 @@ public enum Persistence: Sendable {
 
     // Register new SwiftData models here as they are created.
     static var currentModels: [any PersistentModel.Type] {
-        []
+        [DownloadedItem.self, DownloadedSeries.self]
     }
 }

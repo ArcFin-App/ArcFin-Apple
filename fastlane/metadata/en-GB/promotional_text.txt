@@ -1,0 +1,1 @@
+A premium, ground-up native client for your own Jellyfin server — built for iOS 26's Liquid Glass, with AirPlay, Chromecast, downloads, and per-profile Face ID/PIN lock.

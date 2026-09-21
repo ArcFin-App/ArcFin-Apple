@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import Testing
 @testable import SearchKit
 
@@ -8,6 +10,8 @@ struct SearchKitTests {
     func emptyResultsByDefault() {
         let results = SearchResults()
         #expect(results.serverResults.isEmpty)
+#if !os(tvOS)
         #expect(results.spotlightResults.isEmpty)
+#endif
     }
 }
