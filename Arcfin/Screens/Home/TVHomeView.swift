@@ -5,6 +5,11 @@ import SeerrAPI
 import AuthCore
 import ImageCache
 import Telemetry
+// Needed for the privacy-annotated string interpolation in loadHeroVideoBackdrop()'s
+// logging below — Telemetry wraps os.Logger, but that doesn't re-export the OSLogMessage
+// interpolation machinery to callers (see MediaRepository.swift/JellyfinAuthClient.swift,
+// which hit the identical "missing import of defining module 'os'" error for the same reason).
+import os
 
 struct TVHomeView: View {
     @Environment(AuthManager.self) private var authManager
