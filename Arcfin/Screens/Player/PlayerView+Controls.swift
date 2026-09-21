@@ -56,6 +56,11 @@ extension PlayerView {
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
             }
+            #if os(tvOS)
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: 18)
+            #endif
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -100,6 +105,9 @@ extension PlayerView {
         .padding(.top, 8)
         #if canImport(UIKit) && !os(tvOS)
         .background(routeButtonHost)
+        #endif
+        #if os(tvOS)
+        .focusSection()
         #endif
     }
 
@@ -269,6 +277,11 @@ extension PlayerView {
                 .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
         }
+        #if os(tvOS)
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .tvFocusRing(cornerRadius: 16)
+        #endif
     }
 
     var episodeSubtitle: String? {
@@ -310,17 +323,35 @@ extension PlayerView {
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                             .font(.system(size: 20)).foregroundStyle(.white)
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: 14)
+                    #endif
                     Button { togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 30))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: 22)
+                    #endif
                     Button { seek(by: skipForwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.system(size: 20)).foregroundStyle(.white)
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: 14)
+                    #endif
                 }
+                #if os(tvOS)
+                .focusSection()
+                #endif
 
                 Spacer()
 
@@ -728,6 +759,11 @@ extension PlayerView {
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
                             .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
                         }
+                        #if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: DT.Radius.lg)
+                        #endif
                         .padding(.trailing, DT.Spacing.pagePad)
                         .padding(.bottom, 100)
                     }
@@ -797,17 +833,30 @@ extension PlayerView {
                                 .frame(width: 30, height: 30)
                                 .background(.white, in: Circle())
                         }
+                        #if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: 15)
+                        #endif
                         Button { dismissUpNext() } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.white.opacity(0.7))
                         }
+                        #if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: 11)
+                        #endif
                     }
                 }
                 .padding(10)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
                 .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
                 .frame(maxWidth: 340)
+                #if os(tvOS)
+                .focusSection()
+                #endif
             }
             .padding(.trailing, DT.Spacing.pagePad)
             .padding(.bottom, 100)
@@ -846,16 +895,31 @@ extension PlayerView {
                             .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent], startPoint: .topLeading, endPoint: .bottomTrailing))
                             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.lg)
+                    #else
                     .buttonStyle(.plain)
+                    #endif
 
                     Button { stopAfterStillWatchingPrompt() } label: {
                         Text("Stop")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.8))
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.md)
+                    #else
                     .buttonStyle(.plain)
+                    #endif
                 }
                 .frame(maxWidth: 280)
+                #if os(tvOS)
+                .focusSection()
+                #endif
             }
         }
         .transition(.opacity)
@@ -1049,6 +1113,11 @@ extension PlayerView {
             Button("Close") { closePlayer() }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(DT.Color.accent)
+                #if os(tvOS)
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .tvFocusRing(cornerRadius: DT.Radius.md)
+                #endif
         }
         .padding(24)
         .frame(maxWidth: 320)

@@ -346,6 +346,21 @@ struct PlayerView: View {
             return .handled
         }
         #endif
+        #if os(tvOS)
+        // No touch or mouse on tvOS to re-trigger the auto-hide timer once controls fade —
+        // togglePlayPause()/seek(by:) already do via toggleControlsVisibilityOnAction(), but
+        // those are only reachable while a control is still focusable. Once isControlsVisible
+        // is false, controlsOverlay is allowsHitTesting(false) and every button in it drops
+        // out of the focus chain, so nothing is left to focus and press. Making the root view
+        // itself focusable gives the remote's directional pad somewhere to land in that case
+        // (real Buttons still win focus over this whenever the overlay is visible) — same
+        // reveal-and-reschedule this app already does for a mouse move on macOS.
+        .focusable()
+        .onMoveCommand { _ in
+            if !isControlsVisible { withAnimation(DT.Animation.fast) { isControlsVisible = true } }
+            scheduleAutoHide()
+        }
+        #endif
         // These must live on a view that's always mounted, not inside the conditionally
         // -shown controlsOverlay — auto-hide removing that view from the tree while a
         // sheet/dialog was presented from it was tearing the presentation down too.
