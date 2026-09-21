@@ -1,7 +1,7 @@
 name: 🐛 Bug Report
 about: Report something that's broken or not working as expected
 labels:
-  - "type: bug"
+  - "Kind/Bug"
 body:
   - type: markdown
     attributes:
