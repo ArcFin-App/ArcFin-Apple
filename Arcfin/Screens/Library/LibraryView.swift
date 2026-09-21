@@ -1140,14 +1140,16 @@ struct LibraryFilterSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                // A Picker with .pickerStyle(.inline) here rendered as an empty section on
+                // macOS — a known-unreliable style inside a List on that platform. Plain
+                // tappable rows, same pattern as the Genre/Year sections below, work
+                // identically everywhere since nothing depends on a platform picker style.
                 Section("Sort By") {
-                    Picker("Sort By", selection: $sortOption) {
-                        ForEach(LibrarySortOption.allCases) { option in
-                            Text(option.rawValue).tag(option)
+                    ForEach(LibrarySortOption.allCases) { option in
+                        filterRow(option.rawValue, isSelected: sortOption == option) {
+                            sortOption = option
                         }
                     }
-                    .pickerStyle(.inline)
-                    .labelsHidden()
                 }
 
                 Section("Status") {
