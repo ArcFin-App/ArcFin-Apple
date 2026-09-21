@@ -380,8 +380,18 @@ extension JellyfinMediaClient {
         // vtt only — the client parses/renders subtitles itself (see SubtitleLoader), so a
         // single consistent, easily-parsed format is preferable to juggling srt/ass too.
         // Jellyfin converts any source subtitle format to vtt on request.
+        //
+        // Image-based subtitle formats (Blu-ray/DVD/DVB) have no text to extract, so they
+        // can never be satisfied by an External vtt profile — without a matching profile,
+        // Jellyfin just can't deliver them and SubtitleLoader gets no deliveryUrl at all,
+        // silently showing nothing. Encode tells Jellyfin to burn these into the transcoded
+        // video instead; SubtitleLoader's existing "no deliveryUrl -> no overlay cues" path
+        // already does the right thing here, since the text is now in the video itself.
         "SubtitleProfiles": [
             ["Format": "vtt", "Method": "External"],
+            ["Format": "pgssub", "Method": "Encode"],
+            ["Format": "dvdsub", "Method": "Encode"],
+            ["Format": "dvbsub", "Method": "Encode"],
         ],
     ] }
 }

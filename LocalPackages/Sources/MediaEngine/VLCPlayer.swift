@@ -63,6 +63,13 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
         vlcPlayer.pause()
 
         if startPositionTicks > 0 {
+            // vlcPlayer.isSeekable can still be false right when playback first reaches
+            // .playing/.paused for a fresh stream (libVLC determines seekability slightly
+            // after playback starts, especially for a transcode) — seek(to:) throws
+            // .invalidState in that window, and it was being swallowed by `try?` below,
+            // silently dropping the resume position. Same race AVFoundationPlayer already
+            // works around via waitUntilSeekable/SeekableRangeWait; ported here too.
+            await waitUntilSeekable()
             await seek(to: startPositionTicks)
         }
     }
@@ -74,6 +81,13 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
             guard case .stateChanged(let newState) = event else { continue }
             if newState == .playing || newState == .paused { return }
             if newState == .error { throw VLCError.playbackFailed(reason: "VLC reported a playback error") }
+        }
+    }
+
+    private func waitUntilSeekable(timeoutSeconds: Double = 5) async {
+        let deadline = Date().addingTimeInterval(timeoutSeconds)
+        while !vlcPlayer.isSeekable, Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
         }
     }
 
@@ -91,7 +105,14 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
     }
 
     public func seek(to positionTicks: Int64) async {
-        try? vlcPlayer.seek(to: Self.duration(fromTicks: positionTicks))
+        do throws(VLCError) {
+            try vlcPlayer.seek(to: Self.duration(fromTicks: positionTicks))
+        } catch {
+            // Previously a bare `try?` — silently dropped the resume position whenever this
+            // raced isSeekable (see waitUntilSeekable). Logging instead of swallowing so a
+            // real failure here is diagnosable if it ever happens again.
+            log.warning("VLC seek failed: \(error.localizedDescription)")
+        }
     }
 
     public func setAudioTrack(index: Int) async {
