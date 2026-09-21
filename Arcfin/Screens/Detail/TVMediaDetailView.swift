@@ -22,6 +22,7 @@ struct TVMediaDetailView: View {
     @State private var isLoading = true
     @State private var showFullDescription = false
     @State private var selectedEpisode: MediaItem?
+    @State private var selectedPerson: MediaPerson?
     @State private var initialEpisodeID: String?
     @State private var nextEpisode: MediaItem?
     @State private var playbackRequest: PlaybackRequest?
@@ -64,6 +65,9 @@ struct TVMediaDetailView: View {
         }
         .navigationDestination(item: $selectedEpisode) { ep in
             TVMediaDetailView(item: ep)
+        }
+        .navigationDestination(item: $selectedPerson) { person in
+            PersonDetailView(person: person)
         }
         .fullScreenCover(isPresented: $showFullDescription) {
             fullDescriptionCover
@@ -271,6 +275,7 @@ struct TVMediaDetailView: View {
     private var belowFoldSection: some View {
         if !seasons.isEmpty { seriesSection.focusSection() }
         if !trailers.isEmpty { trailersSection.focusSection() }
+        if let d = detail, !d.cast.isEmpty { castSection(d).focusSection() }
         if !seerrRelatedItems.isEmpty {
             seerrRelatedSection.focusSection()
         } else if !similarItems.isEmpty {
@@ -329,7 +334,9 @@ struct TVMediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(trailers) { trailer in
-                        NavigationLink(value: trailer) {
+                        Button {
+                            playbackRequest = PlaybackRequest(item: trailer, startTicks: 0)
+                        } label: {
                             PosterCard(
                                 title: trailer.name,
                                 imageURL: mediaRepo.imageURL(for: trailer)
@@ -346,6 +353,43 @@ struct TVMediaDetailView: View {
             .scrollClipDisabled()
         }
         .padding(.bottom, 56)
+    }
+
+    private func castSection(_ d: MediaItemDetail) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("Cast").padding(.horizontal, 80)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 16) {
+                    ForEach(d.cast) { person in
+                        Button { selectedPerson = person } label: {
+                            CastPersonCard(
+                                imageURL: person.primaryImageTag.flatMap {
+                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120)
+                                },
+                                name: person.name,
+                                role: person.role,
+                                placeholder: { personPlaceholder }
+                            )
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+                .padding(.horizontal, 80)
+                .padding(.top, 20)
+                .focusSection()
+            }
+            .scrollClipDisabled()
+        }
+        .padding(.bottom, 56)
+    }
+
+    private var personPlaceholder: some View {
+        Circle()
+            .fill(DT.Color.backgroundSecondary)
+            .overlay(Image(systemName: "person.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
     }
 
     private var similarSection: some View {
@@ -598,6 +642,53 @@ private struct TVEpisodeCard: View {
             .frame(width: 320, alignment: .leading)
         }
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Cast person card
+
+private struct CastPersonCard<Placeholder: View>: View {
+    let imageURL: URL?
+    let name: String
+    let role: String?
+    @ViewBuilder let placeholder: () -> Placeholder
+
+    @State private var hovered = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Group {
+                if let imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: placeholder()
+                        }
+                    }
+                } else {
+                    placeholder()
+                }
+            }
+            .frame(width: 60, height: 60)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : Color.white.opacity(0.1), lineWidth: hovered ? 2 : 1))
+            .scaleEffect(hovered ? 1.06 : 1)
+
+            Text(name)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+
+            if let role, !role.isEmpty {
+                Text(role)
+                    .font(.system(size: 9))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(width: 70, alignment: .top)
+        .animation(DT.Animation.fast, value: hovered)
     }
 }
 
