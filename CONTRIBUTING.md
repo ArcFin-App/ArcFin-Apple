@@ -1,16 +1,15 @@
 # Contributing
 
-Arcfin is currently maintained by a single developer and the codebase is
-still moving fast — external contributions aren't accepted yet. This file
-is here so the process is ready once that changes.
+Contributions are welcome. Arcfin is still maintained day-to-day by one
+person, so response times won't always be fast, but PRs and issues from
+anyone are genuinely wanted.
 
 ## License and the DCO
 
-Arcfin is licensed under [AGPL-3.0-or-later](LICENSE). When contributions do
-open up, every commit will need a **Developer Certificate of Origin (DCO)**
-sign-off — a `Signed-off-by:` trailer certifying you wrote the change (or
-otherwise have the right to submit it under the project's license). Add it
-automatically with:
+Arcfin is licensed under [AGPL-3.0-or-later](LICENSE). Every commit needs a
+**Developer Certificate of Origin (DCO)** sign-off — a `Signed-off-by:`
+trailer certifying you wrote the change (or otherwise have the right to
+submit it under the project's license). Add it automatically with:
 
 ```
 git commit -s
@@ -18,13 +17,15 @@ git commit -s
 
 No CLA, no copyright assignment — you keep copyright on your own
 contributions. Signing off just licenses your contribution to the project
-under the same AGPL-3.0-or-later terms as the rest of the codebase.
+under the same AGPL-3.0-or-later terms as the rest of the codebase. PRs
+without a sign-off will be asked to add one before merge.
+
+The "Arcfin" name and logo aren't covered by the code license — see
+[TRADEMARK.md](TRADEMARK.md) if you're forking rather than contributing back.
 
 ---
 
-## If You Are a Collaborator
-
-### Getting Started
+## Getting Started
 
 1. Clone the repo and open `Arcfin.xcodeproj` in Xcode 26+.
 2. Local packages live in `LocalPackages/` and are already wired into the project — no manual "Add Package Dependencies" step needed.
@@ -32,7 +33,7 @@ under the same AGPL-3.0-or-later terms as the rest of the codebase.
 
 ### Stack
 
-See `CLAUDE.md` for the full stack and architecture overview.
+See the [README](README.md#architecture) for the full stack and architecture overview.
 
 ### Code Standards
 

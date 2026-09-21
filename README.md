@@ -130,10 +130,8 @@ Feature-complete for an initial release — playback, library, downloads, castin
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). External contributions aren't open yet — the
-codebase is still moving too fast day-to-day to onboard outside contributors
-well. The plan is to open this up once things settle; this repo is licensed
-and structured for that now so it's ready when it happens.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the DCO
+sign-off process and coding standards.
 
 ## Code of Conduct
 
