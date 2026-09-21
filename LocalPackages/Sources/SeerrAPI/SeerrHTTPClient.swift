@@ -1,4 +1,5 @@
 import Foundation
+import Network
 
 // MARK: - Auth method
 
@@ -22,6 +23,44 @@ public enum SeerrAuthMethod: String, Sendable, CaseIterable {
 
     public var apiPath: String {
         "api/v1/auth/\(rawValue)"
+    }
+}
+
+/// Races a one-shot NWPathMonitor read against a timeout — same lock-guarded resume-once
+/// pattern as MediaRepository's/JellyfinAuthClient's PathWait (duplicated rather than shared
+/// across the package boundary).
+private final class PathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Void, Never>
+    private let monitor = NWPathMonitor()
+
+    init(continuation: CheckedContinuation<Void, Never>) {
+        self.continuation = continuation
+    }
+
+    func start(timeoutSeconds: Double) {
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            self?.finish()
+        }
+        monitor.start(queue: DispatchQueue(label: "arcfin.seerrapi.pathwait"))
+        Task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self.finish()
+        }
+    }
+
+    private func finish() {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        monitor.cancel()
+        continuation.resume()
     }
 }
 
@@ -49,6 +88,14 @@ public actor SeerrHTTPClient {
         let config = URLSessionConfiguration.ephemeral
         config.httpCookieAcceptPolicy = .always
         config.httpShouldSetCookies   = true
+        // Default is false — a request fired before the network path is fully established
+        // (cold launch, first connection to a LAN host) fails immediately instead of
+        // waiting, which is exactly the shape of "loadDiscover failed: domain=NSURLErrorDomain
+        // code=-1011" seen right at startup. Same fix already applied to JellyfinAPI's own
+        // shared session (URLSession+Arcfin.swift) — this client predates that and was never
+        // updated to match, being a separate package.
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
         self.authFailedKey = "arcfin.seerr.authFailedUntil.\(baseURL.host ?? "unknown")"
     }
@@ -61,7 +108,14 @@ public actor SeerrHTTPClient {
 
     // MARK: - Auth
 
+    private static func waitForNetworkPath(timeoutSeconds: Double = 6) async {
+        await withCheckedContinuation { continuation in
+            PathWait(continuation: continuation).start(timeoutSeconds: timeoutSeconds)
+        }
+    }
+
     public func login() async throws {
+        await Self.waitForNetworkPath()
         let url = baseURL.appendingPathComponent(authMethod.apiPath)
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
