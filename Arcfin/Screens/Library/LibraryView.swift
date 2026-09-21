@@ -5,6 +5,8 @@ import AuthCore
 import MediaEngine
 import Persistence
 import SwiftVLC
+import Telemetry
+import os
 
 #if canImport(UIKit)
 import UIKit
@@ -1046,16 +1048,28 @@ struct LibraryDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
-        let fetched = try? await client.getLibraryItems(
-            credential: cred, authHeader: header,
-            libraryId: library.id, startIndex: 0, limit: pageSize,
-            recursive: true,
-            includeItemTypes: includeTypes,
-            genres: Array(selectedGenres), years: Array(selectedYears),
-            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
-            isFavorite: favoritesOnly ? true : nil,
-            sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
-        )
+        // try? previously swallowed whatever went wrong here outright — a filter/sort
+        // combination that made the server reject the request (or any other failure) just
+        // silently rendered an empty grid with nothing to point at. Logged now so a real
+        // report of that has something concrete behind it instead of another guess.
+        var fetched: (items: [MediaItem], total: Int)?
+        do {
+            fetched = try await client.getLibraryItems(
+                credential: cred, authHeader: header,
+                libraryId: library.id, startIndex: 0, limit: pageSize,
+                recursive: true,
+                includeItemTypes: includeTypes,
+                genres: Array(selectedGenres), years: Array(selectedYears),
+                isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
+                isFavorite: favoritesOnly ? true : nil,
+                sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
+            )
+        } catch {
+            let nsError = error as NSError
+            Telemetry.logger(category: "LibraryView").error(
+                "getLibraryItems failed for library \(library.id, privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+            )
+        }
         items = fetched?.items ?? []
         totalItems = fetched?.total ?? 0
         mediaRepo.prefetchQuickLookAssets(for: items)
