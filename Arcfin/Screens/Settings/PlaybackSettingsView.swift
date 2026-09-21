@@ -51,6 +51,7 @@ struct PlaybackSettingsView: View {
                         Text(q.label).tag(q)
                     }
                 }
+                .tvListRow()
                 VStack(alignment: .leading, spacing: 4) {
                     Picker("Playback Engine", selection: $playbackEngine) {
                         ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
@@ -61,6 +62,7 @@ struct PlaybackSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }
+                .tvListRow()
             }
 
             Section {
@@ -69,11 +71,13 @@ struct PlaybackSettingsView: View {
                         Text("\(seconds)s").tag(seconds)
                     }
                 }
+                .tvListRow()
                 Picker("Skip Backward", selection: $skipBackwardSeconds) {
                     ForEach(skipIntervalOptions, id: \.self) { seconds in
                         Text("\(seconds)s").tag(seconds)
                     }
                 }
+                .tvListRow()
             } footer: {
                 Text("Used by the on-screen skip buttons, double-tap to seek, and the left/right arrow keys.")
                     .font(.caption)
@@ -82,14 +86,20 @@ struct PlaybackSettingsView: View {
 
             Section {
                 Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
+                    .tvListRow()
                 Toggle("Skip Recap Automatically", isOn: $skipRecap)
+                    .tvListRow()
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
+                    .tvListRow()
                 Toggle("Skip Credits Automatically", isOn: $skipCredits)
+                    .tvListRow()
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
+                    .tvListRow()
             }
 
             Section {
                 Toggle("Trailers", isOn: $trailersEnabled)
+                    .tvListRow()
                 #if !os(tvOS)
                 // YouTubeTrailerPlayerView (YouTubePlayerKit, needs WebKit) isn't available
                 // on tvOS at all — only a local trailer indexed on the server plays there.
@@ -119,11 +129,13 @@ struct PlaybackSettingsView: View {
                         Text(option.name).tag(option.code)
                     }
                 }
+                .tvListRow()
                 Picker("Preferred Subtitle Language", selection: $preferredSubtitleLanguage) {
                     ForEach(Self.subtitleLanguageOptions, id: \.code) { option in
                         Text(option.name).tag(option.code)
                     }
                 }
+                .tvListRow()
             } footer: {
                 Text("Used to pick a starting audio/subtitle track when a title has a matching language available — otherwise falls back to the server's default.")
                     .font(.caption)
@@ -136,16 +148,19 @@ struct PlaybackSettingsView: View {
                 } label: {
                     Text("Codec Compatibility")
                 }
+                .tvListRow()
                 NavigationLink {
                     PlayerFeaturesSettingsView()
                 } label: {
                     Text("Player Features")
                 }
+                .tvListRow()
                 NavigationLink {
                     SubtitleStyleSettingsView()
                 } label: {
                     Text("Subtitle Style")
                 }
+                .tvListRow()
             }
         }
         .arcfinListStyle()

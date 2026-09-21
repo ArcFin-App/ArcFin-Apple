@@ -29,12 +29,15 @@ struct AppearanceView: View {
         List {
             Section {
                 Toggle("Merge Continue Watching & Up Next", isOn: $mergeContinueWatchingAndUpNext)
+                    .tvListRow()
                 Toggle("Hero Video Backdrops", isOn: $heroVideoBackdropsEnabled)
+                    .tvListRow()
                 NavigationLink {
                     HomeShelfSettingsView()
                 } label: {
                     Text("Home Shelves")
                 }
+                .tvListRow()
             } header: {
                 Label("Home", systemImage: "house")
                     .font(.system(size: 12, weight: .semibold))
@@ -52,6 +55,7 @@ struct AppearanceView: View {
                 } label: {
                     Text(navSectionTitle)
                 }
+                .tvListRow()
             } header: {
                 Label(navSectionTitle, systemImage: navSectionIcon)
                     .font(.system(size: 12, weight: .semibold))
@@ -65,6 +69,7 @@ struct AppearanceView: View {
 
             Section {
                 Toggle("Reduce Motion", isOn: $reduceMotion)
+                    .tvListRow()
             } header: {
                 Label("Motion", systemImage: "sparkles")
                     .font(.system(size: 12, weight: .semibold))
@@ -80,6 +85,7 @@ struct AppearanceView: View {
             #if !os(macOS)
             Section {
                 Toggle("Haptic Feedback", isOn: $hapticsEnabled)
+                    .tvListRow()
             } header: {
                 Label("Feedback", systemImage: "iphone.radiowaves.left.and.right")
                     .font(.system(size: 12, weight: .semibold))

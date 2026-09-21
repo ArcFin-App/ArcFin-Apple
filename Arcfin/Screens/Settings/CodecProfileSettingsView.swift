@@ -11,6 +11,7 @@ struct CodecProfileSettingsView: View {
         List {
             Section {
                 Toggle("Direct Play HEVC (H.265)", isOn: $allowHEVC)
+                    .tvListRow()
             } footer: {
                 Text("On by default. Turn this off if HEVC sources stall or show a black screen on this device — everything falls back to an H.264 transcode instead.")
                     .font(.caption)
@@ -19,6 +20,7 @@ struct CodecProfileSettingsView: View {
 
             Section {
                 Toggle("Direct Play Surround Audio (AC3/EAC3/DTS)", isOn: $allowSurroundAudio)
+                    .tvListRow()
             } footer: {
                 Text("Off by default — this device's own speakers/headphones can't decode these, only pass them through to a connected receiver over AirPlay or HDMI. Turn on only if you're always routing audio to a receiver that supports them; otherwise direct-played audio will be silent.")
                     .font(.caption)

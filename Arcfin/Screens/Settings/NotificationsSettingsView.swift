@@ -8,6 +8,7 @@ struct NotificationsSettingsView: View {
         List {
             Section {
                 Toggle("New Content Added", isOn: $notifyNewContent)
+                    .tvListRow()
                 // No downloads on macOS — nothing would ever trigger this notification there.
                 #if os(iOS)
                 Toggle("Download Complete", isOn: $notifyDownload)
