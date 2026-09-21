@@ -9,6 +9,8 @@ struct WatchlistView: View {
     private var columns: [GridItem] {
         #if os(macOS)
         [GridItem(.adaptive(minimum: 140, maximum: 200), spacing: 12)]
+        #elseif os(tvOS)
+        [GridItem(.adaptive(minimum: 260), spacing: 20)]
         #else
         [
             GridItem(.flexible(), spacing: 12),
@@ -36,7 +38,12 @@ struct WatchlistView: View {
                             Button { requestingItem = item } label: {
                                 watchlistCard(item)
                             }
+#if os(tvOS)
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+#else
                             .buttonStyle(.plain)
+#endif
                         }
                     }
                     .padding(DT.Spacing.pagePad)

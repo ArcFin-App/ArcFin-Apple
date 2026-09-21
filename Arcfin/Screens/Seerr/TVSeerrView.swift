@@ -86,6 +86,11 @@ struct TVSeerrView: View {
     private var mainContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
+                watchlistLink
+                    .padding(.horizontal, 80)
+                    .padding(.bottom, 40)
+                    .focusSection()
+
                 if !seerrRepo.trending.isEmpty {
                     tvShelf(title: "Trending", items: seerrRepo.trending)
                 }
@@ -102,6 +107,28 @@ struct TVSeerrView: View {
             .padding(.vertical, 48)
             .focusSection()
         }
+    }
+
+    // MARK: - Watchlist entry
+
+    private var watchlistLink: some View {
+        NavigationLink {
+            WatchlistView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                Text("Watchlist")
+                    .font(.system(size: 20, weight: .semibold))
+            }
+            .foregroundStyle(DT.Color.textPrimary)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+            .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
     }
 
     // MARK: - Discover shelf
