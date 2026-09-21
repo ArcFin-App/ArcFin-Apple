@@ -100,9 +100,11 @@ struct PlayerView: View {
     @StateObject var pip = PiPCoordinator()
     @State var vlcPipController: SwiftVLC.PiPController?
     @State var isPiPSupported = AVPictureInPictureController.isPictureInPictureSupported()
-    @State var isFillScreen = false
     @State var nowPlayingManager = NowPlayingManager()
     #endif
+    // Not PiP-specific — used by videoSurface's own aspect-fill toggle, which is
+    // meaningful on tvOS too even though PiP itself isn't available there.
+    @State var isFillScreen = false
     #if canImport(UIKit) && !os(tvOS)
     @State var volumeController: SystemVolumeController?
     @State var dragAxis: DragAxis?
@@ -392,12 +394,24 @@ struct PlayerView: View {
         #endif
     }
 
-    #if !os(tvOS)
+    // Was entirely #if !os(tvOS) before — tvOS never got a real video rendering surface
+    // at all (playback "worked" in the sense that a PlayerView opened, but no video ever
+    // showed). AVPlayerLayer hosting and SwiftVLC's plain VideoView both work fine on
+    // tvOS; only the PiP-specific PiPVideoView path is genuinely iOS/macOS-only (SwiftVLC
+    // itself only compiles PiPVideoView for #if os(iOS)/AppKit, not tvOS).
     @ViewBuilder
     var videoSurface: some View {
         if let avPlayer = player as? AVFoundationPlayer {
+            #if os(tvOS)
+            PlayerLayerRepresentable(player: avPlayer.player, isFillScreen: isFillScreen)
+            #else
             PlayerLayerRepresentable(player: avPlayer.player, pip: pip, isFillScreen: isFillScreen)
+            #endif
         } else if let vlcEngine = player as? VLCEnginePlayer {
+            #if os(tvOS)
+            VideoView(vlcEngine.vlcPlayer)
+                .allowsHitTesting(false)
+            #else
             // Unlike AVFoundation's inert PlayerSurfaceView, PiPVideoView's native drawable
             // is itself interactive and was swallowing taps before our own tapGesture saw
             // them (single tap was toggling play/pause instead of the controls overlay).
@@ -405,6 +419,7 @@ struct PlayerView: View {
             // hit-testing on the surface itself is safe to turn off.
             PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
                 .allowsHitTesting(false)
+            #endif
         }
     }
 
@@ -416,6 +431,7 @@ struct PlayerView: View {
         // isFillScreen param above — no imperative call needed for that branch.
     }
 
+    #if !os(tvOS)
     func togglePiP() {
         if player is VLCEnginePlayer {
             vlcPipController?.toggle()

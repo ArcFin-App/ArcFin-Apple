@@ -87,7 +87,7 @@ extension Image {
 
 // MARK: - Video surface (AVPlayerLayer) + Picture in Picture
 
-#if canImport(UIKit) && !os(tvOS)
+#if canImport(UIKit)
 final class PlayerSurfaceView: UIView {
     override class var layerClass: AnyClass { AVPlayerLayer.self }
     var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
@@ -119,7 +119,11 @@ final class PlayerSurfaceView: UIView {
 
 struct PlayerLayerRepresentable: UIViewRepresentable {
     let player: AVPlayer
+    // PiP isn't available on tvOS at all (no PiPCoordinator there) — the video surface
+    // itself works identically otherwise, so only this one piece is excluded.
+    #if !os(tvOS)
     let pip: PiPCoordinator
+    #endif
     var isFillScreen: Bool = false
 
     func makeUIView(context: Context) -> PlayerSurfaceView {
@@ -127,7 +131,9 @@ struct PlayerLayerRepresentable: UIViewRepresentable {
         view.playerLayer.player = player
         view.playerLayer.videoGravity = isFillScreen ? .resizeAspectFill : .resizeAspect
         view.backgroundColor = .black
+        #if !os(tvOS)
         pip.stashLayer(view.playerLayer)
+        #endif
         return view
     }
 
