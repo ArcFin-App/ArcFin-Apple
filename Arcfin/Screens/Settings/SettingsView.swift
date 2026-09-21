@@ -23,16 +23,6 @@ struct SettingsView: View {
     // MARK: - Persisted preferences (tvOS's single-page layout only — the iOS/iPadOS hub
     // below reads the same keys from each dedicated sub-screen instead).
 #if os(tvOS)
-    @AppStorage("videoQuality")       private var videoQuality    = VideoQuality.max
-    @AppStorage("playbackEngine")     private var playbackEngine  = PlaybackEngineKind.auto
-    @AppStorage("autoPlayNext")       private var autoPlayNext    = true
-    @AppStorage("skipIntro")          private var skipIntro       = false
-    @AppStorage("skipCredits")        private var skipCredits     = false
-    @AppStorage("subtitleDefault")    private var subtitleDefault = false
-    @AppStorage("wifiOnly")           private var wifiOnly          = true
-    @AppStorage("downloadQuality")    private var downloadQuality   = VideoQuality.max
-    @AppStorage("notifyNewContent")   private var notifyNewContent  = true
-    @AppStorage("notifyDownload")     private var notifyDownload    = true
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
 #endif
     @AppStorage("seerrURL")            private var seerrURL             = ""
@@ -69,49 +59,28 @@ struct SettingsView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
-            // ── Playback ─────────────────────────────────────────────────
+            // ── Preferences ──────────────────────────────────────────────
             Section {
-                Picker("Video Quality", selection: $videoQuality) {
-                    ForEach(VideoQuality.allCases) { q in
-                        Text(q.label).tag(q)
-                    }
+                NavigationLink {
+                    PlaybackSettingsView()
+                } label: {
+                    settingsRow("Playback", icon: "play.circle")
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Picker("Playback Engine", selection: $playbackEngine) {
-                        ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
-                            Text(engine.rawValue).tag(engine)
-                        }
-                    }
-                    Text("Auto is recommended. If a video won't play, switch to VLC — then back to Auto once it's fixed.")
-                        .font(.caption)
-                        .foregroundStyle(DT.Color.textSecondary)
+                .listRowBackground(Color.clear)
+                NavigationLink {
+                    AppearanceView()
+                } label: {
+                    settingsRow("Appearance", icon: "paintbrush")
                 }
-                Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
-                Toggle("Skip Intro Automatically", isOn: $skipIntro)
-                Toggle("Skip Credits Automatically", isOn: $skipCredits)
-                Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
-            } header: {
-                sectionHeader("Playback", icon: "play.circle")
-            }
-
-            // ── Downloads ────────────────────────────────────────────────
-            Section {
-                Toggle("Wi-Fi Only", isOn: $wifiOnly)
-                Picker("Download Quality", selection: $downloadQuality) {
-                    ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
-                        Text(q.label).tag(q)
-                    }
+                .listRowBackground(Color.clear)
+                NavigationLink {
+                    NotificationsSettingsView()
+                } label: {
+                    settingsRow("Notifications", icon: "bell")
                 }
+                .listRowBackground(Color.clear)
             } header: {
-                sectionHeader("Downloads", icon: "arrow.down.circle")
-            }
-
-            // ── Notifications ────────────────────────────────────────────
-            Section {
-                Toggle("New Content Added", isOn: $notifyNewContent)
-                Toggle("Download Complete", isOn: $notifyDownload)
-            } header: {
-                sectionHeader("Notifications", icon: "bell")
+                sectionHeader("Preferences", icon: "slider.horizontal.3")
             }
 
             // ── Account & Server ─────────────────────────────────────────
