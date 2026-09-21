@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import SwiftUI
 
 /// Subtitle appearance shared by both players — read back via the same @AppStorage keys from
