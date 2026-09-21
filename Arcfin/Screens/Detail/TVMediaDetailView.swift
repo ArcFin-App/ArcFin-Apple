@@ -10,6 +10,7 @@ struct TVMediaDetailView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
+    @Environment(StreamystatsRepository.self) private var statsRepo
 
     @State private var detail: MediaItemDetail?
     @State private var seasons: [MediaItem] = []
@@ -24,6 +25,7 @@ struct TVMediaDetailView: View {
     @State private var initialEpisodeID: String?
     @State private var nextEpisode: MediaItem?
     @State private var playbackRequest: PlaybackRequest?
+    @State private var requestingSeerrItem: SeerrItem?
 
     private let client = JellyfinMediaClient()
 
@@ -70,6 +72,9 @@ struct TVMediaDetailView: View {
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
+        }
+        .sheet(item: $requestingSeerrItem) { item in
+            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
         }
     }
 
@@ -195,7 +200,11 @@ struct TVMediaDetailView: View {
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
 
-            Button {} label: {
+            Button {
+                if statsRepo.isConfigured {
+                    Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
+                }
+            } label: {
                 TVDetailButtonLabel(icon: "bookmark", text: "Watchlist")
             }
             .buttonStyle(TVCardButtonStyle())
@@ -371,7 +380,7 @@ struct TVMediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(seerrRelatedItems) { sim in
-                        Button {} label: {
+                        Button { requestingSeerrItem = sim } label: {
                             PosterCard(
                                 title: sim.title,
                                 subtitle: sim.year,

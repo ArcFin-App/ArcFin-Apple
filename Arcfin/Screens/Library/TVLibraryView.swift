@@ -62,6 +62,7 @@ struct TVCollectionDetailView: View {
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(AuthManager.self) private var authManager
+    @Environment(StreamystatsRepository.self) private var statsRepo
 
     @State private var items: [MediaItem] = []
     @State private var selectedItem: MediaItem?
@@ -159,7 +160,11 @@ struct TVCollectionDetailView: View {
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
 
-                    Button {} label: {
+                    Button {
+                        if statsRepo.isConfigured {
+                            Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
+                        }
+                    } label: {
                         TVDetailButtonLabel(icon: "bookmark", text: "Watchlist")
                     }
                     .buttonStyle(TVCardButtonStyle())

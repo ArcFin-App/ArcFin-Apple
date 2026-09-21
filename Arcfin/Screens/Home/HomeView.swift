@@ -47,36 +47,41 @@ struct MainTabView: View {
 
     var body: some View {
 #if os(tvOS)
-        TabView {
-            Tab("Home", systemImage: "house") {
-                TVHomeView()
-            }
-            Tab("Library", systemImage: "square.grid.2x2") {
-                TVLibraryView()
-            }
-            Tab("Requests", systemImage: "clock") {
-                TVSeerrView()
-            }
-            Tab("Search", systemImage: "magnifyingglass", role: .search) {
-                NavigationStack {
-                    SearchView(query: $searchQuery)
-                        .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
-                        .arcfinNavTitleLarge("Search")
-                        .background(DT.Color.backgroundPrimary)
-                        .navigationDestination(for: MediaItem.self) { item in
-                            TVMediaDetailView(item: item)
-                        }
+        if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
+            NoConnectionView()
+                .preferredColorScheme(.dark)
+        } else {
+            TabView {
+                Tab("Home", systemImage: "house") {
+                    TVHomeView()
+                }
+                Tab("Library", systemImage: "square.grid.2x2") {
+                    TVLibraryView()
+                }
+                Tab("Requests", systemImage: "clock") {
+                    TVSeerrView()
+                }
+                Tab("Search", systemImage: "magnifyingglass", role: .search) {
+                    NavigationStack {
+                        SearchView(query: $searchQuery)
+                            .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
+                            .arcfinNavTitleLarge("Search")
+                            .background(DT.Color.backgroundPrimary)
+                            .navigationDestination(for: MediaItem.self) { item in
+                                TVMediaDetailView(item: item)
+                            }
+                    }
+                }
+                Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
+                    NavigationStack { SettingsView() }
                 }
             }
-            Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
-                NavigationStack { SettingsView() }
-            }
+            // Suppress the system white focus halo across all screens.
+            // The focus ENGINE still works (remote nav, isFocused env); only
+            // the system visual highlight is replaced by per-element custom styling.
+            .focusEffectDisabled()
+            .preferredColorScheme(.dark)
         }
-        // Suppress the system white focus halo across all screens.
-        // The focus ENGINE still works (remote nav, isFocused env); only
-        // the system visual highlight is replaced by per-element custom styling.
-        .focusEffectDisabled()
-        .preferredColorScheme(.dark)
 #else
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
             NoConnectionView()
