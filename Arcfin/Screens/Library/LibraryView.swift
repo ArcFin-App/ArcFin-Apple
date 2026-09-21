@@ -823,6 +823,12 @@ struct LibraryDetailView: View {
     @State private var hasLoaded = false
     @State private var scrolledItemID: MediaItem.ID? = nil
     private let pageSize = 100
+    /// Every filter/sort change spawns its own uncancelled fetchFirstPage() Task (see the
+    /// onChange handlers below) — nothing stopped an older, still-in-flight request from
+    /// overwriting a newer one's results once it finally responded. Clicking through several
+    /// filters quickly (easy with a mouse, less so with touch) could land a stale response
+    /// for an earlier, narrower selection last, silently blanking out the correct one.
+    @State private var fetchGeneration = 0
 
     // Filters
     @State private var availableGenres: [String] = []
@@ -1048,6 +1054,8 @@ struct LibraryDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
+        fetchGeneration += 1
+        let generation = fetchGeneration
         // try? previously swallowed whatever went wrong here outright — a filter/sort
         // combination that made the server reject the request (or any other failure) just
         // silently rendered an empty grid with nothing to point at. Logged now so a real
@@ -1070,6 +1078,10 @@ struct LibraryDetailView: View {
                 "getLibraryItems failed for library \(library.id, privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
             )
         }
+        // A newer filter/sort change already started another fetch while this one was still
+        // in flight — applying this now-stale response would overwrite that newer request's
+        // correct result with whatever this older, possibly narrower selection matched.
+        guard generation == fetchGeneration else { return }
         items = fetched?.items ?? []
         totalItems = fetched?.total ?? 0
         mediaRepo.prefetchQuickLookAssets(for: items)
