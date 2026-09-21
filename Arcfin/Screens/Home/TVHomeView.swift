@@ -19,6 +19,12 @@ struct TVHomeView: View {
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
 
     @FocusState private var focusedItemID: String?
+    // @FocusState clears to nil the instant focus moves to anything not bound to it (e.g.
+    // the hero's own Play/More Info buttons) — using it directly for heroDisplayItem meant
+    // moving focus up off a shelf card immediately reset the hero back to
+    // continueWatching.first, discarding whatever the user had actually focused. This
+    // mirrors the last real focus instead and is never cleared, only updated.
+    @State private var lastFocusedItemID: String?
     @State private var heroDetailItem: MediaItem?
     @State private var deepLinkItemID: String? = nil
     @State private var seerrRequestItem: SeerrItem? = nil
@@ -30,8 +36,9 @@ struct TVHomeView: View {
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
 
     private var focusedItem: MediaItem? {
-        guard let id = focusedItemID else { return nil }
+        guard let id = lastFocusedItemID else { return nil }
         return mediaRepo.continueWatching.first { $0.id == id }
+            ?? mediaRepo.recentlyAdded.first { $0.id == id }
     }
 
     private var heroDisplayItem: MediaItem? {
@@ -75,7 +82,10 @@ struct TVHomeView: View {
                 focusedItemID = items.first?.id
             }
         }
-        .onChange(of: focusedItemID) { _, _ in loadHeroVideoBackdrop() }
+        .onChange(of: focusedItemID) { _, newValue in
+            if let newValue { lastFocusedItemID = newValue }
+            loadHeroVideoBackdrop()
+        }
         .onAppear { loadHeroVideoBackdrop() }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
@@ -409,6 +419,7 @@ struct TVHomeView: View {
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .focused($focusedItemID, equals: item.id)
                         .contextMenu { cwContextMenu(item) }
                     }
                 }
