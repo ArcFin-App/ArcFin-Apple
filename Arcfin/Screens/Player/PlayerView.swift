@@ -132,6 +132,15 @@ struct PlayerView: View {
     @FocusState var isPlayerFocused: Bool
     @State var lastMacHoverLocation: CGPoint?
     #endif
+    #if os(tvOS)
+    // tvOS's focus engine doesn't reliably move focus into a newly-presented
+    // .fullScreenCover on its own — a @FocusState still bound in the presenting screen
+    // (e.g. TVHomeView's shelf-row focus) can keep holding the remote's actual focus target
+    // even though it's now hidden behind the player, so directional/select presses land on
+    // the invisible screen underneath instead of anything here. Explicitly claiming focus
+    // onto a real player control once this view has appeared is what actually pulls it over.
+    @FocusState var tvInitialFocus: Bool
+    #endif
 
     let client = JellyfinMediaClient()
 
@@ -258,6 +267,15 @@ struct PlayerView: View {
         .persistentSystemOverlays(.hidden)
         #endif
         .task { await setup() }
+        #if os(tvOS)
+        .task {
+            // A short delay, not .onAppear directly — claiming focus before this view's own
+            // hierarchy has actually finished installing is a known-flaky pattern on tvOS
+            // (the @FocusState binding can silently no-op if the target isn't laid out yet).
+            try? await Task.sleep(for: .milliseconds(300))
+            tvInitialFocus = true
+        }
+        #endif
         .onDisappear {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)
@@ -417,7 +435,15 @@ struct PlayerView: View {
     var videoSurface: some View {
         if let avPlayer = player as? AVFoundationPlayer {
             #if os(tvOS)
+            // "Inert to touch" (see the PiPVideoView comment below) doesn't mean invisible to
+            // tvOS's focus engine — unlike touch hit-testing, which SwiftUI resolves to
+            // whichever ZStack sibling is topmost at a point, tvOS's spatial focus resolution
+            // can still treat a plain, screen-filling UIViewRepresentable-hosted view as a
+            // focusable candidate in its own right, competing with (and, being enormous,
+            // often winning against) the small buttons actually drawn on top of it. VLC's
+            // branch already excluded itself from hit-testing on tvOS; this one hadn't.
             PlayerLayerRepresentable(player: avPlayer.player, isFillScreen: isFillScreen)
+                .allowsHitTesting(false)
             #else
             PlayerLayerRepresentable(player: avPlayer.player, pip: pip, isFillScreen: isFillScreen)
             #endif

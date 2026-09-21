@@ -340,6 +340,7 @@ extension PlayerView {
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
                     .tvFocusRing(cornerRadius: 22)
+                    .focused($tvInitialFocus)
                     #endif
                     Button { seek(by: skipForwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
