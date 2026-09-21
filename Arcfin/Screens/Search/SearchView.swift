@@ -200,6 +200,8 @@ private struct SearchResultCard: View {
             }
         }
         .animation(DT.Animation.fast, value: hovered)
+        #if !os(tvOS)
         .onHover { hovered = $0 }
+        #endif
     }
 }

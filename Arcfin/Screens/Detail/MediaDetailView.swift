@@ -1291,7 +1291,9 @@ private struct CastPersonCard<Placeholder: View>: View {
         }
         .frame(width: 70, alignment: .top)
         .animation(DT.Animation.fast, value: hovered)
+        #if !os(tvOS)
         .onHover { hovered = $0 }
+        #endif
     }
 }
 

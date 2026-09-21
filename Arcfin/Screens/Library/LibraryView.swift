@@ -336,7 +336,9 @@ private struct LibraryCard: View {
         .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
         .scaleEffect(hovered ? 1.02 : 1)
         .animation(DT.Animation.fast, value: hovered)
+        #if !os(tvOS)
         .onHover { hovered = $0 }
+        #endif
     }
 
     @ViewBuilder
@@ -412,7 +414,9 @@ private struct LibraryItemCard: View {
         .scaleEffect(hovered ? 1.03 : 1)
         .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
         .animation(DT.Animation.fast, value: hovered)
+        #if !os(tvOS)
         .onHover { hovered = $0 }
+        #endif
     }
 }
 
