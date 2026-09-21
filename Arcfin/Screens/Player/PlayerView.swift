@@ -171,6 +171,7 @@ struct PlayerView: View {
                 castingPlaceholder
                     .ignoresSafeArea()
             } else {
+            #endif
                 GeometryReader { proxy in
                     videoSurface
                         // GeometryReader only proposes its size to a child — it doesn't force
@@ -181,7 +182,7 @@ struct PlayerView: View {
                         // animation artifact.
                         .frame(width: proxy.size.width, height: proxy.size.height)
                         .contentShape(Rectangle())
-                        #if canImport(UIKit)
+                        #if canImport(UIKit) && !os(tvOS)
                         .gesture(tapGesture(width: proxy.size.width))
                         .simultaneousGesture(dragGesture(width: proxy.size.width))
                         .onChange(of: proxy.size) { _, newSize in
@@ -209,6 +210,7 @@ struct PlayerView: View {
                         #endif
                 }
                 .ignoresSafeArea()
+            #if !os(tvOS)
             }
             #endif
 
