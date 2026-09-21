@@ -174,7 +174,12 @@ let package = Package(
                 "JellyfinAPI",
                 "Telemetry",
                 .product(name: "SwiftVLC", package: "SwiftVLC"),
-                .product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
+                // Not actually imported anywhere in this target — YouTubeTrailerPlayerView.swift
+                // (the only real consumer) lives in the app target and already excludes tvOS
+                // itself. Without this condition, SPM still builds YouTubePlayerKit for tvOS as
+                // part of this target's own platform list, which fails: it depends on WebKit,
+                // a framework that doesn't exist on tvOS at all.
+                .product(name: "YouTubePlayerKit", package: "YouTubePlayerKit", condition: .when(platforms: [.iOS, .macOS])),
             ]
         ),
 
