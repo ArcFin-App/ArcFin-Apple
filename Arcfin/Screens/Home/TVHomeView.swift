@@ -4,6 +4,7 @@ import JellyfinAPI
 import SeerrAPI
 import AuthCore
 import ImageCache
+import Telemetry
 
 struct TVHomeView: View {
     @Environment(AuthManager.self) private var authManager
@@ -18,6 +19,10 @@ struct TVHomeView: View {
     @State private var seerrRequestItem: SeerrItem? = nil
     @State private var seerrRequestPending = false
     @State private var playbackRequest: PlaybackRequest?
+    @State private var heroVideoBackdropItemID: String?
+    @State private var heroVideoBackdropURL: URL?
+    @State private var heroVideoBackdropTask: Task<Void, Never>?
+    @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
 
     private var focusedItem: MediaItem? {
         guard let id = focusedItemID else { return nil }
@@ -65,6 +70,8 @@ struct TVHomeView: View {
                 focusedItemID = items.first?.id
             }
         }
+        .onChange(of: focusedItemID) { _, _ in loadHeroVideoBackdrop() }
+        .onAppear { loadHeroVideoBackdrop() }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
@@ -175,8 +182,15 @@ struct TVHomeView: View {
         let url = heroDisplayItem.flatMap {
             mediaRepo.imageURL(for: $0, type: .backdrop, fillWidth: 1920)
         }
-        LazyHeroImage(url: url) { heroFallbackGradient }
-            .clipped()
+        ZStack {
+            LazyHeroImage(url: url) { heroFallbackGradient }
+                .clipped()
+
+            if let videoURL = heroVideoBackdropURL, heroVideoBackdropItemID == heroDisplayItem?.id {
+                HeroVideoBackdropView(url: videoURL)
+                    .transition(.opacity)
+            }
+        }
     }
 
     private var heroFallbackGradient: some View {
@@ -278,6 +292,63 @@ struct TVHomeView: View {
         }
         .frame(maxWidth: 280)
         .frame(height: 4)
+    }
+
+    // MARK: - Hero video backdrop
+
+    /// Fetches (after a short pause, so quickly moving focus across several Continue
+    /// Watching cards doesn't fire a burst of these) whether the currently-focused hero
+    /// item has a local trailer indexed on the server, and if so resolves it to a real
+    /// playable stream URL the same way the main player does. Unlike iOS's hero, tvOS's
+    /// hero doesn't auto-rotate on a timer — focus only changes via explicit remote
+    /// navigation — so there's no rotation timer to skip past a playing trailer, and no
+    /// slide to auto-advance to once the trailer's 15s preview ends.
+    private func loadHeroVideoBackdrop() {
+        let log = Telemetry.logger(category: "HeroVideoBackdrop")
+        heroVideoBackdropTask?.cancel()
+        heroVideoBackdropURL = nil
+        heroVideoBackdropItemID = nil
+        guard heroVideoBackdropsEnabled, let item = heroDisplayItem,
+              case .authenticated(let credential) = authManager.state
+        else { return }
+        let itemID = item.id
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        heroVideoBackdropTask = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            let client = JellyfinMediaClient()
+            let trailer: MediaItem?
+            do {
+                trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1).first
+            } catch {
+                log.error("getTrailers failed for \(item.id, privacy: .public): \(error, privacy: .public)")
+                return
+            }
+            guard let trailer, !Task.isCancelled else {
+                log.debug("no local trailer indexed for \(item.id, privacy: .public)")
+                return
+            }
+            let info: JellyfinPlaybackInfo
+            do {
+                info = try await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: trailer.id)
+            } catch {
+                log.error("getPlaybackInfo failed for trailer \(trailer.id, privacy: .public): \(error, privacy: .public)")
+                return
+            }
+            guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
+            withAnimation(.easeIn(duration: 0.6)) {
+                heroVideoBackdropURL = info.playURL
+                heroVideoBackdropItemID = itemID
+            }
+            // Loops indefinitely otherwise — auto-reverts to the still backdrop after a
+            // short preview instead, same idea as tvOS's own featured-app hero rotators.
+            try? await Task.sleep(for: .seconds(15))
+            guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
+            withAnimation(.easeOut(duration: 0.6)) {
+                heroVideoBackdropURL = nil
+                heroVideoBackdropItemID = nil
+            }
+        }
     }
 
     // MARK: - Continue Watching shelf (inside hero)
