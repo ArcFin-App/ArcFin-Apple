@@ -981,6 +981,7 @@ struct LibraryDetailView: View {
                 }
             }
         }
+#if !os(macOS)
         .sheet(isPresented: $showFilterSheet) {
             LibraryFilterSheet(
                 availableGenres: availableGenres, availableYears: availableYears,
@@ -990,6 +991,41 @@ struct LibraryDetailView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
+#else
+        // .sheet doesn't reliably render its content on macOS here (same class of issue as
+        // PlayerView's track/chapter menus) — rendered as a plain in-place overlay instead.
+        .overlay {
+            if showFilterSheet {
+                ZStack {
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture { showFilterSheet = false }
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text("Filter & Sort").font(.system(size: 15, weight: .semibold))
+                            Spacer()
+                            Button("Done") { showFilterSheet = false }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        Divider()
+                        LibraryFilterList(
+                            availableGenres: availableGenres, availableYears: availableYears,
+                            selectedGenres: $selectedGenres, selectedYears: $selectedYears,
+                            watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                        )
+                    }
+                    .frame(width: 380, height: 480)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.1), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.3), radius: 30)
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: showFilterSheet)
+#endif
         .onChange(of: selectedGenres) { _, _ in Task { await reload() } }
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
@@ -1126,7 +1162,11 @@ struct LibraryDetailView: View {
 // MARK: - Library filter sheet
 
 #if !os(tvOS)
-struct LibraryFilterSheet: View {
+/// Shared list content between the iOS/iPadOS sheet and the macOS in-place overlay panel
+/// below — .sheet(isPresented:) has now failed to render reliably on macOS twice in this
+/// app (the other case was PlayerView's track/chapter menus), so rather than keep chasing
+/// why, macOS gets its own chrome around this same content instead of relying on .sheet.
+struct LibraryFilterList: View {
     let availableGenres: [String]
     let availableYears: [Int]
     @Binding var selectedGenres: Set<String>
@@ -1135,73 +1175,60 @@ struct LibraryFilterSheet: View {
     @Binding var favoritesOnly: Bool
     @Binding var sortOption: LibrarySortOption
 
-    @Environment(\.dismiss) private var dismiss
-
     var body: some View {
-        NavigationStack {
-            List {
-                // A Picker with .pickerStyle(.inline) here rendered as an empty section on
-                // macOS — a known-unreliable style inside a List on that platform. Plain
-                // tappable rows, same pattern as the Genre/Year sections below, work
-                // identically everywhere since nothing depends on a platform picker style.
-                Section("Sort By") {
-                    ForEach(LibrarySortOption.allCases) { option in
-                        filterRow(option.rawValue, isSelected: sortOption == option) {
-                            sortOption = option
-                        }
+        List {
+            // A Picker with .pickerStyle(.inline) here rendered as an empty section on
+            // macOS — a known-unreliable style inside a List on that platform. Plain
+            // tappable rows, same pattern as the Genre/Year sections below, work
+            // identically everywhere since nothing depends on a platform picker style.
+            Section("Sort By") {
+                ForEach(LibrarySortOption.allCases) { option in
+                    filterRow(option.rawValue, isSelected: sortOption == option) {
+                        sortOption = option
                     }
                 }
+            }
 
-                Section("Status") {
-                    Picker("Status", selection: $watchedFilter) {
-                        ForEach(LibraryWatchedFilter.allCases) { filter in
-                            Text(filter.rawValue).tag(filter)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    Toggle("Favourites Only", isOn: $favoritesOnly)
-                }
-
-                if !availableGenres.isEmpty {
-                    Section("Genre") {
-                        ForEach(availableGenres, id: \.self) { genre in
-                            filterRow(genre, isSelected: selectedGenres.contains(genre)) {
-                                toggle(genre, in: &selectedGenres)
-                            }
-                        }
+            Section("Status") {
+                Picker("Status", selection: $watchedFilter) {
+                    ForEach(LibraryWatchedFilter.allCases) { filter in
+                        Text(filter.rawValue).tag(filter)
                     }
                 }
+                .pickerStyle(.segmented)
+                Toggle("Favourites Only", isOn: $favoritesOnly)
+            }
 
-                if !availableYears.isEmpty {
-                    Section("Year") {
-                        ForEach(availableYears, id: \.self) { year in
-                            filterRow(String(year), isSelected: selectedYears.contains(year)) {
-                                toggle(year, in: &selectedYears)
-                            }
-                        }
-                    }
-                }
-
-                if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly {
-                    Section {
-                        Button(role: .destructive) {
-                            selectedGenres.removeAll()
-                            selectedYears.removeAll()
-                            watchedFilter = .all
-                            favoritesOnly = false
-                        } label: {
-                            Text("Clear All Filters").frame(maxWidth: .infinity, alignment: .center)
+            if !availableGenres.isEmpty {
+                Section("Genre") {
+                    ForEach(availableGenres, id: \.self) { genre in
+                        filterRow(genre, isSelected: selectedGenres.contains(genre)) {
+                            toggle(genre, in: &selectedGenres)
                         }
                     }
                 }
             }
-            .navigationTitle("Filter & Sort")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+
+            if !availableYears.isEmpty {
+                Section("Year") {
+                    ForEach(availableYears, id: \.self) { year in
+                        filterRow(String(year), isSelected: selectedYears.contains(year)) {
+                            toggle(year, in: &selectedYears)
+                        }
+                    }
+                }
+            }
+
+            if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly {
+                Section {
+                    Button(role: .destructive) {
+                        selectedGenres.removeAll()
+                        selectedYears.removeAll()
+                        watchedFilter = .all
+                        favoritesOnly = false
+                    } label: {
+                        Text("Clear All Filters").frame(maxWidth: .infinity, alignment: .center)
+                    }
                 }
             }
         }
@@ -1223,6 +1250,37 @@ struct LibraryFilterSheet: View {
         if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
 }
+
+#if !os(macOS)
+struct LibraryFilterSheet: View {
+    let availableGenres: [String]
+    let availableYears: [Int]
+    @Binding var selectedGenres: Set<String>
+    @Binding var selectedYears: Set<Int>
+    @Binding var watchedFilter: LibraryWatchedFilter
+    @Binding var favoritesOnly: Bool
+    @Binding var sortOption: LibrarySortOption
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            LibraryFilterList(
+                availableGenres: availableGenres, availableYears: availableYears,
+                selectedGenres: $selectedGenres, selectedYears: $selectedYears,
+                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+            )
+            .navigationTitle("Filter & Sort")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+#endif
 #endif
 
 // MARK: - Document picker (UIKit bridge)
