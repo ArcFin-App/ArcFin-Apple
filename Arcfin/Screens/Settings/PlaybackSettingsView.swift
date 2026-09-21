@@ -90,15 +90,27 @@ struct PlaybackSettingsView: View {
 
             Section {
                 Toggle("Trailers", isOn: $trailersEnabled)
+                #if !os(tvOS)
+                // YouTubeTrailerPlayerView (YouTubePlayerKit, needs WebKit) isn't available
+                // on tvOS at all — only a local trailer indexed on the server plays there.
                 if trailersEnabled {
                     Toggle("YouTube Fallback", isOn: $youtubeTrailersEnabled)
                 }
+                #endif
             } footer: {
+                #if os(tvOS)
+                Text(trailersEnabled
+                     ? "Shows a Play Trailer button when the server has a local trailer indexed."
+                     : "Turns off trailer playback entirely.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+                #else
                 Text(trailersEnabled
                      ? "Shows a Play Trailer button when the server has a local trailer indexed. YouTube Fallback plays a YouTube trailer in-app when no local one is available."
                      : "Turns off trailer playback entirely, including the YouTube fallback.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
+                #endif
             }
 
             Section {

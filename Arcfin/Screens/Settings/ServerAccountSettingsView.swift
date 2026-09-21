@@ -18,10 +18,12 @@ struct ServerAccountSettingsView: View {
         List {
             Section {
                 serverRow
+                #if !os(tvOS)
                 Button { showSwitchServerSheet = true } label: {
                     Text("Switch Server")
                 }
                 .disabled(distinctServerCount <= 1)
+                #endif
                 NavigationLink {
                     AddServerFlowView()
                 } label: {
@@ -75,12 +77,14 @@ struct ServerAccountSettingsView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .arcfinNavTitleLarge("Server")
+        #if !os(tvOS)
         .sheet(isPresented: $showSwitchServerSheet) {
             NavigationStack { SwitchServerView() }
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .preferredColorScheme(.dark)
         }
+        #endif
     }
 
     @ViewBuilder
