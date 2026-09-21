@@ -1,6 +1,12 @@
 import Foundation
 import Observation
 import SeerrAPI
+import Telemetry
+// Needed for the privacy-annotated string interpolation in the error logs below — Telemetry
+// wraps os.Logger, but that doesn't re-export the OSLogMessage interpolation machinery to
+// callers (see MediaRepository.swift/JellyfinAuthClient.swift, which hit the identical
+// "missing import of defining module 'os'" error for the same reason).
+import os
 
 @Observable
 @MainActor
@@ -68,7 +74,19 @@ final class SeerrRepository {
             authFailed = false
         } catch SeerrError.authFailed {
             authFailed = true
-        } catch {}
+        } catch {
+            // isConfigured only means a client exists (valid URL/credentials entered) — it
+            // says nothing about whether the fetch itself actually succeeds. This used to
+            // swallow any other failure (network, timeout, decode) completely silently,
+            // leaving trending/popularMovies/popularTV empty with zero trace — "Seerr is
+            // configured but the discover shelves don't show" was undiagnosable from this
+            // alone, the same silently-swallowed-error shape already found and fixed for
+            // MediaRepository/LibraryView/JellyfinAuthClient elsewhere this session.
+            let nsError = error as NSError
+            Telemetry.logger(category: "SeerrRepository").error(
+                "loadDiscover failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+            )
+        }
         if firstLoad { isLoadingDiscover = false }
         isFetchingDiscover = false
     }
@@ -89,7 +107,12 @@ final class SeerrRepository {
             authFailed = false
         } catch SeerrError.authFailed {
             authFailed = true
-        } catch {}
+        } catch {
+            let nsError = error as NSError
+            Telemetry.logger(category: "SeerrRepository").error(
+                "loadRequests failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+            )
+        }
         if firstLoad { isLoadingRequests = false }
         isFetchingRequests = false
     }
