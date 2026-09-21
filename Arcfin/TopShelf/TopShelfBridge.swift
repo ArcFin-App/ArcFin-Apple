@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import Foundation
 
 // Shared between the main app target and ArcfinTopShelf extension target.

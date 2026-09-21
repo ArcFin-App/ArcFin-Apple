@@ -1,8 +1,24 @@
 # Contributing
 
-Arcfin is a private project maintained by a single developer. External contributions are not accepted at this time.
+Arcfin is currently maintained by a single developer and the codebase is
+still moving fast — external contributions aren't accepted yet. This file
+is here so the process is ready once that changes.
 
-This file is here for maintainability as the project matures.
+## License and the DCO
+
+Arcfin is licensed under [AGPL-3.0-or-later](LICENSE). When contributions do
+open up, every commit will need a **Developer Certificate of Origin (DCO)**
+sign-off — a `Signed-off-by:` trailer certifying you wrote the change (or
+otherwise have the right to submit it under the project's license). Add it
+automatically with:
+
+```
+git commit -s
+```
+
+No CLA, no copyright assignment — you keep copyright on your own
+contributions. Signing off just licenses your contribution to the project
+under the same AGPL-3.0-or-later terms as the rest of the codebase.
 
 ---
 

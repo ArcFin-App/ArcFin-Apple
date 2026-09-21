@@ -36,3 +36,6 @@ fastlane/test_output
 # Env / secrets
 .env
 *.env.local
+
+# AI assistant context — local only, not tracked in history
+CLAUDE.md

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import Foundation
 
 enum HomeShelf: String, CaseIterable, Identifiable {

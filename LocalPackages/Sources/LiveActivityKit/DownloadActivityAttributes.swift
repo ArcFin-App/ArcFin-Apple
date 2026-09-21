@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import Foundation
 
 // canImport(ActivityKit) alone isn't enough to gate this — the module itself is importable

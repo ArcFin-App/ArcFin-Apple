@@ -7,7 +7,7 @@
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS-lightgrey?logo=apple&logoColor=white)
 ![Minimum OS](https://img.shields.io/badge/iOS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
-![License](https://img.shields.io/badge/license-Proprietary-red)
+![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
 Version 0.1.0 — [uploaded to App Store Connect](https://apps.apple.com/us/app/arcfin/id6813273961), currently processing/pending review. [Join the TestFlight beta](https://testflight.apple.com/join/kkC58n2w).
 
@@ -129,7 +129,10 @@ Feature-complete for an initial release — playback, library, downloads, castin
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). External contributions are not open at this time.
+See [CONTRIBUTING.md](CONTRIBUTING.md). External contributions aren't open yet — the
+codebase is still moving too fast day-to-day to onboard outside contributors
+well. The plan is to open this up once things settle; this repo is licensed
+and structured for that now so it's ready when it happens.
 
 ## Code of Conduct
 
@@ -143,4 +146,8 @@ See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
 ## License
 
-Private — not open source.
+Licensed under the [GNU Affero General Public License v3.0 or later](LICENSE)
+(AGPL-3.0-or-later).
+
+The "Arcfin" name and logo are **not** covered by this license — see
+[TRADEMARK.md](TRADEMARK.md).
