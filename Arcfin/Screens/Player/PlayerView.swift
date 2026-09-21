@@ -171,47 +171,10 @@ struct PlayerView: View {
                 castingPlaceholder
                     .ignoresSafeArea()
             } else {
-            #endif
-                GeometryReader { proxy in
-                    videoSurface
-                        // GeometryReader only proposes its size to a child — it doesn't force
-                        // it. Without pinning explicitly to proxy.size, the UIViewRepresentable
-                        // -hosted AVPlayerLayer view is free to size itself off its own content
-                        // instead of the screen, which is what the "zoom" actually was: the
-                        // surface's bounds genuinely growing wider than the window, not an
-                        // animation artifact.
-                        .frame(width: proxy.size.width, height: proxy.size.height)
-                        .contentShape(Rectangle())
-                        #if canImport(UIKit) && !os(tvOS)
-                        .gesture(tapGesture(width: proxy.size.width))
-                        .simultaneousGesture(dragGesture(width: proxy.size.width))
-                        .onChange(of: proxy.size) { _, newSize in
-                            isLandscape = newSize.width > newSize.height
-                        }
-                        .onAppear { isLandscape = proxy.size.width > proxy.size.height }
-                        #elseif os(macOS)
-                        // Mouse/keyboard equivalents of the touch gestures above — click
-                        // toggles controls the same as a tap, double-click seeks ±10s, and
-                        // moving the mouse re-reveals controls the way a touch tap does
-                        // (there's no "tap" on a pointer-driven surface, so hover is the
-                        // signal instead).
-                        .gesture(macTapGesture(width: proxy.size.width))
-                        // onContinuousHover fires on more than just genuine pointer movement
-                        // (real mouse hardware reports sub-pixel jitter even "at rest," and
-                        // the video surface fills the whole window) — reacting to every call
-                        // kept resetting the auto-hide timer nonstop, so controls (and the
-                        // window toolbar, which follows them) never actually hid. Only actual
-                        // position changes count as activity now.
-                        .onContinuousHover { phase in
-                            guard case .active(let location) = phase, location != lastMacHoverLocation else { return }
-                            lastMacHoverLocation = location
-                            handleMacMouseActivity()
-                        }
-                        #endif
-                }
-                .ignoresSafeArea()
-            #if !os(tvOS)
+                videoSurfaceLayer
             }
+            #else
+            videoSurfaceLayer
             #endif
 
             if let seekFeedback {
@@ -409,6 +372,53 @@ struct PlayerView: View {
             }
         }
         #endif
+    }
+
+    // Extracted out of body so the #if !os(tvOS)/#else branches there can each reference it
+    // once instead of splitting a single if/else statement's opening and closing braces
+    // across two separate #if regions — that had equal open/close brace and #if/#endif
+    // counts overall but still didn't compile: each #if region has to be independently
+    // well-formed on its own, and an incomplete if-statement inside one region isn't, even
+    // when a later, separate #if with the identical condition supplies the rest of it.
+    var videoSurfaceLayer: some View {
+        GeometryReader { proxy in
+            videoSurface
+                // GeometryReader only proposes its size to a child — it doesn't force
+                // it. Without pinning explicitly to proxy.size, the UIViewRepresentable
+                // -hosted AVPlayerLayer view is free to size itself off its own content
+                // instead of the screen, which is what the "zoom" actually was: the
+                // surface's bounds genuinely growing wider than the window, not an
+                // animation artifact.
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .contentShape(Rectangle())
+                #if canImport(UIKit) && !os(tvOS)
+                .gesture(tapGesture(width: proxy.size.width))
+                .simultaneousGesture(dragGesture(width: proxy.size.width))
+                .onChange(of: proxy.size) { _, newSize in
+                    isLandscape = newSize.width > newSize.height
+                }
+                .onAppear { isLandscape = proxy.size.width > proxy.size.height }
+                #elseif os(macOS)
+                // Mouse/keyboard equivalents of the touch gestures above — click
+                // toggles controls the same as a tap, double-click seeks ±10s, and
+                // moving the mouse re-reveals controls the way a touch tap does
+                // (there's no "tap" on a pointer-driven surface, so hover is the
+                // signal instead).
+                .gesture(macTapGesture(width: proxy.size.width))
+                // onContinuousHover fires on more than just genuine pointer movement
+                // (real mouse hardware reports sub-pixel jitter even "at rest," and
+                // the video surface fills the whole window) — reacting to every call
+                // kept resetting the auto-hide timer nonstop, so controls (and the
+                // window toolbar, which follows them) never actually hid. Only actual
+                // position changes count as activity now.
+                .onContinuousHover { phase in
+                    guard case .active(let location) = phase, location != lastMacHoverLocation else { return }
+                    lastMacHoverLocation = location
+                    handleMacMouseActivity()
+                }
+                #endif
+        }
+        .ignoresSafeArea()
     }
 
     // Was entirely #if !os(tvOS) before — tvOS never got a real video rendering surface
