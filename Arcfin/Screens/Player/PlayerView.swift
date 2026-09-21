@@ -540,7 +540,7 @@ struct PlayerView: View {
                 }
             )
             .navigationTitle("Subtitles & Audio")
-            #if !os(macOS)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {

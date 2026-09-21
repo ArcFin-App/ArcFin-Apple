@@ -52,7 +52,7 @@ struct SwitchServerView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .navigationTitle("Switch Server")
-    #if !os(macOS)
+    #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
     #endif
         .navigationDestination(for: ServerGroup.self) { group in
@@ -67,7 +67,7 @@ struct SwitchServerView: View {
             .arcfinListStyle()
             .background(DT.Color.backgroundPrimary)
             .navigationTitle(group.host)
-#if !os(macOS)
+#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
         }

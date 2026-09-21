@@ -470,7 +470,7 @@ extension PlayerView {
                 }
             }
             .navigationTitle("Chapters")
-            #if !os(macOS)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
@@ -555,7 +555,7 @@ extension PlayerView {
         #endif
         .background(DT.Color.backgroundPrimary)
         .navigationTitle("Media Info")
-        #if !os(macOS)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
@@ -649,7 +649,7 @@ extension PlayerView {
                 }
             }
             .navigationTitle("SyncPlay")
-#if !os(macOS)
+#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
             .toolbar {
