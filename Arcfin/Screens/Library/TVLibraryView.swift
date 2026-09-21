@@ -68,6 +68,23 @@ struct TVCollectionDetailView: View {
     @State private var selectedItem: MediaItem?
     @State private var playbackRequest: PlaybackRequest?
 
+    @State private var availableGenres: [String] = []
+    @State private var availableYears: [Int] = []
+    @State private var selectedGenres: Set<String> = []
+    @State private var selectedYears: Set<Int> = []
+    @State private var watchedFilter: LibraryWatchedFilter = .all
+    @State private var favoritesOnly = false
+    @State private var sortOption: LibrarySortOption = .nameAsc
+    @State private var showFilterSheet = false
+    /// Mirrors LibraryDetailView.fetchFirstPage()'s guard (commit 708b3fc) — every filter/sort
+    /// change spawns its own uncancelled fetch, so an older, slower response could otherwise
+    /// overwrite a newer one's results.
+    @State private var fetchGeneration = 0
+
+    private var filtersActive: Bool {
+        !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
+    }
+
     private let client = JellyfinMediaClient()
     private var credential: ServerCredential? { authManager.state.credential }
     private var authHeader: String? {
@@ -100,7 +117,28 @@ struct TVCollectionDetailView: View {
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
         }
+        .sheet(isPresented: $showFilterSheet) {
+            NavigationStack {
+                TVLibraryFilterList(
+                    availableGenres: availableGenres, availableYears: availableYears,
+                    selectedGenres: $selectedGenres, selectedYears: $selectedYears,
+                    watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                )
+                .navigationTitle("Filter & Sort")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { showFilterSheet = false }
+                    }
+                }
+            }
+        }
+        .onChange(of: selectedGenres) { _, _ in Task { await load() } }
+        .onChange(of: selectedYears) { _, _ in Task { await load() } }
+        .onChange(of: watchedFilter) { _, _ in Task { await load() } }
+        .onChange(of: favoritesOnly) { _, _ in Task { await load() } }
+        .onChange(of: sortOption) { _, _ in Task { await load() } }
         .task { await load() }
+        .task { await loadFilterOptions() }
     }
 
     // MARK: - Showcase
@@ -169,6 +207,17 @@ struct TVCollectionDetailView: View {
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+
+                    Button {
+                        showFilterSheet = true
+                    } label: {
+                        TVDetailButtonLabel(
+                            icon: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle",
+                            text: "Filter & Sort"
+                        )
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
                 }
             }
             .padding(.horizontal, 80)
@@ -223,14 +272,114 @@ struct TVCollectionDetailView: View {
 
     private func load() async {
         guard let cred = credential, let header = authHeader else { return }
+        fetchGeneration += 1
+        let generation = fetchGeneration
         let fetched = try? await client.getLibraryItems(
             credential: cred, authHeader: header,
             libraryId: item.id, startIndex: 0, limit: 500,
-            recursive: true, includeItemTypes: "Movie,Series"
+            recursive: true, includeItemTypes: "Movie,Series",
+            genres: Array(selectedGenres), years: Array(selectedYears),
+            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
+            isFavorite: favoritesOnly ? true : nil,
+            sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
         )
-        items = (fetched?.items ?? []).sorted {
-            ($0.productionYear ?? 0) < ($1.productionYear ?? 0)
+        guard generation == fetchGeneration else { return }
+        items = fetched?.items ?? []
+    }
+
+    private func loadFilterOptions() async {
+        guard let cred = credential, let header = authHeader else { return }
+        let options = try? await client.getLibraryFilterOptions(
+            credential: cred, authHeader: header, libraryId: item.id, includeItemTypes: "Movie,Series"
+        )
+        availableGenres = options?.genres ?? []
+        availableYears = options?.years ?? []
+    }
+}
+
+// MARK: - Filter & sort list (tvOS)
+
+/// LibraryFilterList in LibraryView.swift is gated behind `#if !os(tvOS)`, so it isn't
+/// available to this target — this mirrors its content/mechanism instead of duplicating
+/// that conditional (out of scope for this file), reusing the shared LibraryWatchedFilter/
+/// LibrarySortOption enums as instructed.
+private struct TVLibraryFilterList: View {
+    let availableGenres: [String]
+    let availableYears: [Int]
+    @Binding var selectedGenres: Set<String>
+    @Binding var selectedYears: Set<Int>
+    @Binding var watchedFilter: LibraryWatchedFilter
+    @Binding var favoritesOnly: Bool
+    @Binding var sortOption: LibrarySortOption
+
+    var body: some View {
+        List {
+            Section("Sort By") {
+                ForEach(LibrarySortOption.allCases) { option in
+                    filterRow(option.rawValue, isSelected: sortOption == option) {
+                        sortOption = option
+                    }
+                }
+            }
+
+            Section("Status") {
+                Picker("Status", selection: $watchedFilter) {
+                    ForEach(LibraryWatchedFilter.allCases) { filter in
+                        Text(filter.rawValue).tag(filter)
+                    }
+                }
+                Toggle("Favourites Only", isOn: $favoritesOnly)
+            }
+
+            if !availableGenres.isEmpty {
+                Section("Genre") {
+                    ForEach(availableGenres, id: \.self) { genre in
+                        filterRow(genre, isSelected: selectedGenres.contains(genre)) {
+                            toggle(genre, in: &selectedGenres)
+                        }
+                    }
+                }
+            }
+
+            if !availableYears.isEmpty {
+                Section("Year") {
+                    ForEach(availableYears, id: \.self) { year in
+                        filterRow(String(year), isSelected: selectedYears.contains(year)) {
+                            toggle(year, in: &selectedYears)
+                        }
+                    }
+                }
+            }
+
+            if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly {
+                Section {
+                    Button(role: .destructive) {
+                        selectedGenres.removeAll()
+                        selectedYears.removeAll()
+                        watchedFilter = .all
+                        favoritesOnly = false
+                    } label: {
+                        Text("Clear All Filters").frame(maxWidth: .infinity, alignment: .center)
+                    }
+                }
+            }
         }
+    }
+
+    private func filterRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(label).foregroundStyle(DT.Color.textPrimary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
+                }
+            }
+        }
+    }
+
+    private func toggle<T: Hashable>(_ value: T, in set: inout Set<T>) {
+        if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
 }
 
