@@ -53,15 +53,18 @@ extension PlayerView {
     private var topBar: some View {
         HStack(spacing: 16) {
             Button { closePlayer() } label: {
+                #if os(tvOS)
+                TVPlayerControlLabel(systemImage: "chevron.down", size: 18, diameter: 44)
+                #else
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 18 * DT.Scale.font, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36 * DT.Scale.font, height: 36 * DT.Scale.font)
+                    .frame(width: 36, height: 36)
+                #endif
             }
             #if os(tvOS)
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 18 * DT.Scale.font, prominent: true)
             #endif
 
             VStack(alignment: .leading, spacing: 2) {
@@ -102,8 +105,9 @@ extension PlayerView {
             #endif
 
             // Everything moreMenu ever held on tvOS (Subtitles & Audio, Speed, Quality,
-            // Chapters, Info) now lives as its own reachable button in secondaryActionsRow
-            // instead — a remote shouldn't need to open a menu just to find them.
+            // Chapters, Info) now lives as its own reachable button in bottomBar's
+            // leftSecondaryActions/rightSecondaryActions instead — a remote shouldn't need
+            // to open a menu just to find them.
             #if !os(tvOS)
             moreMenu
             #endif
@@ -308,58 +312,63 @@ extension PlayerView {
             scrubber
 
             HStack {
+                #if os(tvOS)
+                leftSecondaryActions
+                #else
                 Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)))
-                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
+                #endif
 
                 Spacer()
 
                 HStack(spacing: 28) {
                     Button { seek(by: -skipBackwardSeconds) } label: {
+                        #if os(tvOS)
+                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 20, diameter: 50)
+                        #else
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                            .font(.system(size: 20 * DT.Scale.font)).foregroundStyle(.white)
+                            .font(.system(size: 20)).foregroundStyle(.white)
+                        #endif
                     }
-                    #if os(tvOS)
-                    .buttonStyle(TVCardButtonStyle())
-                    .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
-                    #endif
                     Button { togglePlayPause() } label: {
+                        #if os(tvOS)
+                        TVPlayerControlLabel(systemImage: playPauseIconIsPlaying ? "pause.fill" : "play.fill", size: 30, diameter: 64)
+                        #else
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30 * DT.Scale.font))
+                            .font(.system(size: 30))
                             .foregroundStyle(.white)
-                            .frame(width: 44 * DT.Scale.font, height: 44 * DT.Scale.font)
+                            .frame(width: 44, height: 44)
+                        #endif
                     }
                     #if os(tvOS)
-                    .buttonStyle(TVCardButtonStyle())
-                    .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: 22 * DT.Scale.font, prominent: true)
                     .focused($tvInitialFocus)
                     #endif
                     Button { seek(by: skipForwardSeconds) } label: {
+                        #if os(tvOS)
+                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 20, diameter: 50)
+                        #else
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                            .font(.system(size: 20 * DT.Scale.font)).foregroundStyle(.white)
+                            .font(.system(size: 20)).foregroundStyle(.white)
+                        #endif
                     }
-                    #if os(tvOS)
-                    .buttonStyle(TVCardButtonStyle())
-                    .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
-                    #endif
                 }
                 #if os(tvOS)
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
                 .focusSection()
                 #endif
 
                 Spacer()
 
+                #if os(tvOS)
+                rightSecondaryActions
+                #else
                 Text(remainingLabel)
-                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
+                #endif
             }
-
-            #if os(tvOS)
-            secondaryActionsRow
-            #endif
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, 24)
@@ -367,58 +376,39 @@ extension PlayerView {
 
     #if os(tvOS)
     // Everything that used to live inside moreMenu on tvOS, promoted to its own reachable
-    // button — a remote shouldn't need to open a menu just to find Subtitles or Speed.
-    private var secondaryActionsRow: some View {
-        HStack(spacing: 20) {
+    // button, split across both sides of the transport controls in the same row rather than
+    // a separate row of its own — a remote shouldn't need to open a menu to find Subtitles.
+    private var leftSecondaryActions: some View {
+        HStack(spacing: 16) {
             Button { showTrackMenu = true } label: {
-                secondaryActionLabel(icon: "captions.bubble", text: "Subtitles")
+                TVPlayerActionLabel(icon: "captions.bubble", text: "Subtitles")
             }
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
-
             Button { showRateMenu = true } label: {
-                secondaryActionLabel(icon: "gauge.with.dots.needle.67percent", text: "Speed")
+                TVPlayerActionLabel(icon: "gauge.with.dots.needle.67percent", text: "Speed")
             }
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
-
-            Button { showQualityMenu = true } label: {
-                secondaryActionLabel(icon: "slider.horizontal.3", text: "Quality")
-            }
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
-
-            if chapterListEnabled, !chapters.isEmpty {
-                Button { showChapterMenu = true } label: {
-                    secondaryActionLabel(icon: "list.bullet", text: "Chapters")
-                }
-                .buttonStyle(TVCardButtonStyle())
-                .focusEffectDisabled()
-                .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
-            }
-
-            Button { showInfoSheet = true } label: {
-                secondaryActionLabel(icon: "info.circle", text: "Info")
-            }
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
         }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
         .focusSection()
-        .padding(.top, 20)
     }
 
-    private func secondaryActionLabel(icon: String, text: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 18 * DT.Scale.font))
-            Text(text).font(.system(size: 16 * DT.Scale.font, weight: .medium))
+    private var rightSecondaryActions: some View {
+        HStack(spacing: 16) {
+            Button { showQualityMenu = true } label: {
+                TVPlayerActionLabel(icon: "slider.horizontal.3", text: "Quality")
+            }
+            if chapterListEnabled, !chapters.isEmpty {
+                Button { showChapterMenu = true } label: {
+                    TVPlayerActionLabel(icon: "list.bullet", text: "Chapters")
+                }
+            }
+            Button { showInfoSheet = true } label: {
+                TVPlayerActionLabel(icon: "info.circle", text: "Info")
+            }
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 16 * DT.Scale.font)
-        .padding(.vertical, 10 * DT.Scale.font)
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .focusSection()
     }
     #endif
 
