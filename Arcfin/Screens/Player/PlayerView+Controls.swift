@@ -1135,7 +1135,7 @@ extension PlayerView {
     private func toggleControlsVisibilityOnAction() {
         if !isControlsVisible { withAnimation(DT.Animation.fast) { isControlsVisible = true } }
         #if os(tvOS)
-        if tvControlsDimmed { withAnimation(DT.Animation.fast) { tvControlsDimmed = false } }
+        if tvControlsHidden { withAnimation(DT.Animation.fast) { tvControlsHidden = false } }
         #endif
         scheduleAutoHide()
     }

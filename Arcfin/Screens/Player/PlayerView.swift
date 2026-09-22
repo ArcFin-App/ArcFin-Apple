@@ -43,10 +43,11 @@ struct PlayerView: View {
     @State var errorMessage: String?
     @State var isControlsVisible = true
     #if os(tvOS)
-    // A separate flag, not reusing isControlsVisible — tvOS never actually hides controls
-    // (see scheduleAutoHide), only dims them, so hit-testing/focusability never turns off
-    // and there's never a moment with nothing reachable for the remote to bring back.
-    @State var tvControlsDimmed = false
+    // A separate flag, not reusing isControlsVisible — the latter also drives
+    // allowsHitTesting below, which must stay true always on tvOS. This only ever changes
+    // opacity, so hit-testing/focusability never turns off and there's never a moment with
+    // nothing reachable for the remote to bring back, even while fully invisible.
+    @State var tvControlsHidden = false
     #endif
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false
@@ -239,7 +240,7 @@ struct PlayerView: View {
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
                 #if os(tvOS)
-                .opacity(tvControlsDimmed ? 0.35 : 1)
+                .opacity(tvControlsHidden ? 0 : 1)
                 #else
                 .opacity(isControlsVisible ? 1 : 0)
                 #endif
@@ -1216,20 +1217,19 @@ struct PlayerView: View {
     func scheduleAutoHide() {
         hideControlsTask?.cancel()
         #if os(tvOS)
-        // A genuine hide (isControlsVisible = false, allowsHitTesting = false, same as the
-        // other platforms below) was tried here before and reverted — it relied on the
-        // remote's directional pad landing on a fallback focusable view once every control
-        // dropped out of the focus chain, but tvOS's focus engine doesn't reliably migrate
-        // focus to a "last one standing" fallback; it can just as easily leave nothing
-        // focused at all, and unlike iOS there's no tap gesture on the video surface to
-        // bring hidden controls back. Dimming instead of hiding sidesteps that failure mode
-        // entirely: opacity is the only thing that changes, hit-testing/focusability stays
-        // on the whole time, so the remote never actually stops working, it just looks
-        // fainter until the next interaction (see toggleControlsVisibilityOnAction).
+        // A genuine hide via isControlsVisible/allowsHitTesting (same mechanism the other
+        // platforms use below) was tried here before and reverted — allowsHitTesting=false
+        // made every control genuinely unfocusable, and tvOS's focus engine doesn't reliably
+        // migrate focus to a fallback once that happens; unlike iOS there's also no tap
+        // gesture on the video surface to bring a hidden overlay back. tvControlsHidden only
+        // ever drives opacity, never allowsHitTesting (see body's controlsOverlay modifiers
+        // and toggleControlsVisibilityOnAction) — every control stays genuinely focusable the
+        // whole time even at opacity 0, so the remote can never end up with nothing reachable,
+        // even though visually nothing is on screen until the next interaction.
         hideControlsTask = Task {
             try? await Task.sleep(for: .seconds(3.5))
             guard !Task.isCancelled, player.status == .playing else { return }
-            withAnimation(DT.Animation.fast) { tvControlsDimmed = true }
+            withAnimation(DT.Animation.fast) { tvControlsHidden = true }
         }
         #else
         hideControlsTask = Task {
