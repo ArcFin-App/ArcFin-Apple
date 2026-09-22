@@ -311,6 +311,21 @@ extension PlayerView {
         VStack(spacing: 10) {
             scrubber
 
+            // Time labels moved off the buttons row when that row's left/right slots became
+            // leftSecondaryActions/rightSecondaryActions — they belong at the scrubber's own
+            // two ends regardless of what's in the row below it.
+            #if os(tvOS)
+            HStack {
+                Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)))
+                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.8))
+                Spacer()
+                Text(remainingLabel)
+                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            #endif
+
             HStack {
                 #if os(tvOS)
                 leftSecondaryActions
@@ -1119,6 +1134,9 @@ extension PlayerView {
 
     private func toggleControlsVisibilityOnAction() {
         if !isControlsVisible { withAnimation(DT.Animation.fast) { isControlsVisible = true } }
+        #if os(tvOS)
+        if tvControlsDimmed { withAnimation(DT.Animation.fast) { tvControlsDimmed = false } }
+        #endif
         scheduleAutoHide()
     }
 
