@@ -54,20 +54,20 @@ extension PlayerView {
         HStack(spacing: 16) {
             Button { closePlayer() } label: {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18 * DT.Scale.font, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 36 * DT.Scale.font, height: 36 * DT.Scale.font)
             }
             #if os(tvOS)
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 18)
+            .tvFocusRing(cornerRadius: 18 * DT.Scale.font, prominent: true)
             #endif
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(item.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15 * DT.Scale.font, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
                     if let hdrLabel {
@@ -87,7 +87,7 @@ extension PlayerView {
                 }
                 if let subtitle = episodeSubtitle {
                     Text(subtitle)
-                        .font(.system(size: 12))
+                        .font(.system(size: 12 * DT.Scale.font))
                         .foregroundStyle(.white.opacity(0.7))
                         .lineLimit(1)
                 }
@@ -101,7 +101,12 @@ extension PlayerView {
             macQuickActionIcons
             #endif
 
+            // Everything moreMenu ever held on tvOS (Subtitles & Audio, Speed, Quality,
+            // Chapters, Info) now lives as its own reachable button in secondaryActionsRow
+            // instead — a remote shouldn't need to open a menu just to find them.
+            #if !os(tvOS)
             moreMenu
+            #endif
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 8)
@@ -242,17 +247,6 @@ extension PlayerView {
             }
             #endif
 
-            // Rotate/Fill Screen/Chapters live as quick-access icons in the top bar on
-            // iOS/iPadOS instead (see quickActionIcons) — tvOS has no equivalent row, so
-            // Chapters stays reachable here for that platform only.
-            #if os(tvOS)
-            if chapterListEnabled, !chapters.isEmpty {
-                Button { showChapterMenu = true } label: {
-                    Label("Chapters", systemImage: "list.bullet")
-                }
-            }
-            #endif
-
             #if !os(tvOS)
             if syncPlayEnabled {
                 Button { showSyncPlayMenu = true } label: {
@@ -315,7 +309,7 @@ extension PlayerView {
 
             HStack {
                 Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)))
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
 
                 Spacer()
@@ -323,33 +317,33 @@ extension PlayerView {
                 HStack(spacing: 28) {
                     Button { seek(by: -skipBackwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(size: 20 * DT.Scale.font)).foregroundStyle(.white)
                     }
                     #if os(tvOS)
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: 14)
+                    .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
                     #endif
                     Button { togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30))
+                            .font(.system(size: 30 * DT.Scale.font))
                             .foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 44 * DT.Scale.font, height: 44 * DT.Scale.font)
                     }
                     #if os(tvOS)
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: 22)
+                    .tvFocusRing(cornerRadius: 22 * DT.Scale.font, prominent: true)
                     .focused($tvInitialFocus)
                     #endif
                     Button { seek(by: skipForwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(size: 20 * DT.Scale.font)).foregroundStyle(.white)
                     }
                     #if os(tvOS)
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: 14)
+                    .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
                     #endif
                 }
                 #if os(tvOS)
@@ -359,13 +353,74 @@ extension PlayerView {
                 Spacer()
 
                 Text(remainingLabel)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
             }
+
+            #if os(tvOS)
+            secondaryActionsRow
+            #endif
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, 24)
     }
+
+    #if os(tvOS)
+    // Everything that used to live inside moreMenu on tvOS, promoted to its own reachable
+    // button — a remote shouldn't need to open a menu just to find Subtitles or Speed.
+    private var secondaryActionsRow: some View {
+        HStack(spacing: 20) {
+            Button { showTrackMenu = true } label: {
+                secondaryActionLabel(icon: "captions.bubble", text: "Subtitles")
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
+
+            Button { showRateMenu = true } label: {
+                secondaryActionLabel(icon: "gauge.with.dots.needle.67percent", text: "Speed")
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
+
+            Button { showQualityMenu = true } label: {
+                secondaryActionLabel(icon: "slider.horizontal.3", text: "Quality")
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
+
+            if chapterListEnabled, !chapters.isEmpty {
+                Button { showChapterMenu = true } label: {
+                    secondaryActionLabel(icon: "list.bullet", text: "Chapters")
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
+            }
+
+            Button { showInfoSheet = true } label: {
+                secondaryActionLabel(icon: "info.circle", text: "Info")
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: 14 * DT.Scale.font, prominent: true)
+        }
+        .focusSection()
+        .padding(.top, 20)
+    }
+
+    private func secondaryActionLabel(icon: String, text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 18 * DT.Scale.font))
+            Text(text).font(.system(size: 16 * DT.Scale.font, weight: .medium))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16 * DT.Scale.font)
+        .padding(.vertical, 10 * DT.Scale.font)
+    }
+    #endif
 
     private var scrubber: some View {
         GeometryReader { proxy in

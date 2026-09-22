@@ -49,10 +49,13 @@ extension View {
 #endif
     }
 
-    // Accent ring + glow on focus. No scale — cards manage their own scale.
-    func tvFocusRing(cornerRadius: CGFloat = DT.Radius.md) -> some View {
+    // Accent ring + glow on focus. No scale by default — cards manage their own scale.
+    // `prominent` adds its own scale bump plus a thicker/brighter ring, for small controls
+    // (player buttons) that have no other focus feedback of their own and sit over a busy,
+    // low-contrast video background where the plain ring alone is easy to miss.
+    func tvFocusRing(cornerRadius: CGFloat = DT.Radius.md, prominent: Bool = false) -> some View {
 #if os(tvOS)
-        self.modifier(TVFocusRingModifier(cornerRadius: cornerRadius))
+        self.modifier(TVFocusRingModifier(cornerRadius: cornerRadius, prominent: prominent))
 #else
         self
 #endif
@@ -73,16 +76,18 @@ extension View {
 // Accent ring + glow only. No scaleEffect — avoids "out padding" on full-width buttons.
 private struct TVFocusRingModifier: ViewModifier {
     let cornerRadius: CGFloat
+    var prominent: Bool = false
     @Environment(\.isFocused) private var isFocused
 
     func body(content: Content) -> some View {
         content
             .focusEffectDisabled()
+            .scaleEffect(prominent && isFocused ? 1.12 : 1.0)
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: 2)
+                    .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: prominent ? 4 : 2)
             )
-            .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 10)
+            .shadow(color: isFocused ? DT.Color.accent.opacity(prominent ? 0.6 : 0.45) : .clear, radius: prominent ? 16 : 10)
             .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
     }
 }
