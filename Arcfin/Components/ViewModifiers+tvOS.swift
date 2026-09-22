@@ -120,27 +120,6 @@ struct TVPlayerControlLabel: View {
     }
 }
 
-// For player secondary actions (Subtitles, Speed, Quality, Chapters, Info) — same fill-flip
-// treatment as TVPlayerControlLabel, with a text label alongside the icon.
-struct TVPlayerActionLabel: View {
-    let icon: String
-    let text: String
-    @Environment(\.isFocused) private var isFocused
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 18 * DT.Scale.font))
-            Text(text).font(.system(size: 16 * DT.Scale.font, weight: .medium))
-        }
-        .foregroundStyle(isFocused ? DT.Color.backgroundPrimary : .white)
-        .padding(.horizontal, 16 * DT.Scale.font)
-        .padding(.vertical, 10 * DT.Scale.font)
-        .background(Capsule().fill(isFocused ? DT.Color.accent : Color.white.opacity(0.12)))
-        .scaleEffect(isFocused ? 1.08 : 1.0)
-        .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
-    }
-}
-
 // For inline text buttons (See All, etc.).
 // Shows accent fill only on focus; completely invisible at rest.
 struct TVFocusButtonLabel: View {

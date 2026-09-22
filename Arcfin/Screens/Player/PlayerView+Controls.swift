@@ -54,7 +54,7 @@ extension PlayerView {
         HStack(spacing: 16) {
             Button { closePlayer() } label: {
                 #if os(tvOS)
-                TVPlayerControlLabel(systemImage: "chevron.down", size: 18, diameter: 44)
+                TVPlayerControlLabel(systemImage: "chevron.down", size: 15, diameter: 34)
                 #else
                 Image(systemName: "chevron.down")
                     .font(.system(size: 18, weight: .semibold))
@@ -314,18 +314,19 @@ extension PlayerView {
             HStack {
                 #if os(tvOS)
                 leftSecondaryActions
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 #else
                 Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)))
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
-                #endif
 
                 Spacer()
+                #endif
 
-                HStack(spacing: 28) {
+                HStack(spacing: 20) {
                     Button { seek(by: -skipBackwardSeconds) } label: {
                         #if os(tvOS)
-                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 20, diameter: 50)
+                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
                         #else
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                             .font(.system(size: 20)).foregroundStyle(.white)
@@ -333,7 +334,7 @@ extension PlayerView {
                     }
                     Button { togglePlayPause() } label: {
                         #if os(tvOS)
-                        TVPlayerControlLabel(systemImage: playPauseIconIsPlaying ? "pause.fill" : "play.fill", size: 30, diameter: 64)
+                        TVPlayerControlLabel(systemImage: playPauseIconIsPlaying ? "pause.fill" : "play.fill", size: 22, diameter: 48)
                         #else
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 30))
@@ -346,7 +347,7 @@ extension PlayerView {
                     #endif
                     Button { seek(by: skipForwardSeconds) } label: {
                         #if os(tvOS)
-                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 20, diameter: 50)
+                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 16, diameter: 38)
                         #else
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.system(size: 20)).foregroundStyle(.white)
@@ -359,11 +360,12 @@ extension PlayerView {
                 .focusSection()
                 #endif
 
-                Spacer()
-
                 #if os(tvOS)
                 rightSecondaryActions
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 #else
+                Spacer()
+
                 Text(remainingLabel)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
@@ -377,14 +379,18 @@ extension PlayerView {
     #if os(tvOS)
     // Everything that used to live inside moreMenu on tvOS, promoted to its own reachable
     // button, split across both sides of the transport controls in the same row rather than
-    // a separate row of its own — a remote shouldn't need to open a menu to find Subtitles.
+    // a separate row of its own. Both side groups are pinned to an equal-width .infinity
+    // frame (leading/trailing aligned) rather than plain Spacers, so the transport controls
+    // in the middle land at the true center regardless of the two sides holding a different
+    // number of buttons (left has 2, right has 3) — a Spacer-only layout would have skewed
+    // the transport group off-center toward whichever side was narrower.
     private var leftSecondaryActions: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             Button { showTrackMenu = true } label: {
-                TVPlayerActionLabel(icon: "captions.bubble", text: "Subtitles")
+                TVPlayerControlLabel(systemImage: "captions.bubble", size: 14, diameter: 32)
             }
             Button { showRateMenu = true } label: {
-                TVPlayerActionLabel(icon: "gauge.with.dots.needle.67percent", text: "Speed")
+                TVPlayerControlLabel(systemImage: "gauge.with.dots.needle.67percent", size: 14, diameter: 32)
             }
         }
         .buttonStyle(TVCardButtonStyle())
@@ -393,17 +399,17 @@ extension PlayerView {
     }
 
     private var rightSecondaryActions: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             Button { showQualityMenu = true } label: {
-                TVPlayerActionLabel(icon: "slider.horizontal.3", text: "Quality")
+                TVPlayerControlLabel(systemImage: "slider.horizontal.3", size: 14, diameter: 32)
             }
             if chapterListEnabled, !chapters.isEmpty {
                 Button { showChapterMenu = true } label: {
-                    TVPlayerActionLabel(icon: "list.bullet", text: "Chapters")
+                    TVPlayerControlLabel(systemImage: "list.bullet", size: 14, diameter: 32)
                 }
             }
             Button { showInfoSheet = true } label: {
-                TVPlayerActionLabel(icon: "info.circle", text: "Info")
+                TVPlayerControlLabel(systemImage: "info.circle", size: 14, diameter: 32)
             }
         }
         .buttonStyle(TVCardButtonStyle())
@@ -413,15 +419,23 @@ extension PlayerView {
     #endif
 
     private var scrubber: some View {
-        GeometryReader { proxy in
+        // tvOS has no drag-to-scrub (see the DragGesture platform split below) so the bar
+        // itself is the only feedback a remote-driven seek gets — thicker here than the
+        // touch/mouse platforms, where the gesture itself is the primary feedback.
+        #if os(tvOS)
+        let trackHeight: CGFloat = 8
+        #else
+        let trackHeight: CGFloat = 4
+        #endif
+        return GeometryReader { proxy in
             let duration = max(player.durationTicks, 1)
             let fraction = Double(isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)) / Double(duration)
             let thumbX = proxy.size.width * min(max(fraction, 0), 1)
 
             ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.25)).frame(height: 4)
+                Capsule().fill(.white.opacity(0.25)).frame(height: trackHeight)
                 Capsule().fill(DT.Color.accent)
-                    .frame(width: thumbX, height: 4)
+                    .frame(width: thumbX, height: trackHeight)
 
                 // Some sources report duplicate chapter start times — id'd by array offset
                 // rather than startPositionTicks so SwiftUI never sees a colliding identity.
@@ -429,7 +443,7 @@ extension PlayerView {
                     let x = proxy.size.width * min(max(Double(chapter.startPositionTicks) / Double(duration), 0), 1)
                     Rectangle()
                         .fill(.black.opacity(0.5))
-                        .frame(width: 2, height: 4)
+                        .frame(width: 2, height: trackHeight)
                         .offset(x: x - 1)
                 }
 
