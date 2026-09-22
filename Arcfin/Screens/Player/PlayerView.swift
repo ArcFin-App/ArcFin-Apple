@@ -42,6 +42,13 @@ struct PlayerView: View {
     @State var playbackInfo: JellyfinPlaybackInfo?
     @State var errorMessage: String?
     @State var isControlsVisible = true
+    #if os(tvOS)
+    // A separate flag, not reusing isControlsVisible — the latter also drives
+    // allowsHitTesting below, which must stay true always on tvOS. This only ever changes
+    // opacity, so hit-testing/focusability never turns off and there's never a moment with
+    // nothing reachable for the remote to bring back, even while fully invisible.
+    @State var tvControlsHidden = false
+    #endif
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false
     @State var scrubTicks: Double = 0
@@ -131,6 +138,15 @@ struct PlayerView: View {
     @State var macVolumeHUDTask: Task<Void, Never>?
     @FocusState var isPlayerFocused: Bool
     @State var lastMacHoverLocation: CGPoint?
+    #endif
+    #if os(tvOS)
+    // tvOS's focus engine doesn't reliably move focus into a newly-presented
+    // .fullScreenCover on its own — a @FocusState still bound in the presenting screen
+    // (e.g. TVHomeView's shelf-row focus) can keep holding the remote's actual focus target
+    // even though it's now hidden behind the player, so directional/select presses land on
+    // the invisible screen underneath instead of anything here. Explicitly claiming focus
+    // onto a real player control once this view has appeared is what actually pulls it over.
+    @FocusState var tvInitialFocus: Bool
     #endif
 
     let client = JellyfinMediaClient()
@@ -223,7 +239,11 @@ struct PlayerView: View {
             // screen on every tap. Keeping the view always mounted means there's nothing to
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
+                #if os(tvOS)
+                .opacity(tvControlsHidden ? 0 : 1)
+                #else
                 .opacity(isControlsVisible ? 1 : 0)
+                #endif
                 .allowsHitTesting(isControlsVisible)
 
             skipButton
@@ -258,6 +278,15 @@ struct PlayerView: View {
         .persistentSystemOverlays(.hidden)
         #endif
         .task { await setup() }
+        #if os(tvOS)
+        .task {
+            // A short delay, not .onAppear directly — claiming focus before this view's own
+            // hierarchy has actually finished installing is a known-flaky pattern on tvOS
+            // (the @FocusState binding can silently no-op if the target isn't laid out yet).
+            try? await Task.sleep(for: .milliseconds(300))
+            tvInitialFocus = true
+        }
+        #endif
         .onDisappear {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)
@@ -417,7 +446,15 @@ struct PlayerView: View {
     var videoSurface: some View {
         if let avPlayer = player as? AVFoundationPlayer {
             #if os(tvOS)
+            // "Inert to touch" (see the PiPVideoView comment below) doesn't mean invisible to
+            // tvOS's focus engine — unlike touch hit-testing, which SwiftUI resolves to
+            // whichever ZStack sibling is topmost at a point, tvOS's spatial focus resolution
+            // can still treat a plain, screen-filling UIViewRepresentable-hosted view as a
+            // focusable candidate in its own right, competing with (and, being enormous,
+            // often winning against) the small buttons actually drawn on top of it. VLC's
+            // branch already excluded itself from hit-testing on tvOS; this one hadn't.
             PlayerLayerRepresentable(player: avPlayer.player, isFillScreen: isFillScreen)
+                .allowsHitTesting(false)
             #else
             PlayerLayerRepresentable(player: avPlayer.player, pip: pip, isFillScreen: isFillScreen)
             #endif
@@ -1180,15 +1217,20 @@ struct PlayerView: View {
     func scheduleAutoHide() {
         hideControlsTask?.cancel()
         #if os(tvOS)
-        // Auto-hiding relied on the remote's directional pad landing on a fallback
-        // focusable root view once every control dropped out of the focus chain — but
-        // tvOS's focus engine doesn't reliably migrate focus to a "last one standing"
-        // fallback just because it's still technically focusable; it can just as easily
-        // leave nothing focused at all, which is indistinguishable from "the remote does
-        // nothing and nothing is visibly selectable" — exactly what was reported. Simplest
-        // correct fix: controls just don't auto-hide on tvOS at all, so there's never a
-        // hidden state to need recovering from in the first place.
-        return
+        // A genuine hide via isControlsVisible/allowsHitTesting (same mechanism the other
+        // platforms use below) was tried here before and reverted — allowsHitTesting=false
+        // made every control genuinely unfocusable, and tvOS's focus engine doesn't reliably
+        // migrate focus to a fallback once that happens; unlike iOS there's also no tap
+        // gesture on the video surface to bring a hidden overlay back. tvControlsHidden only
+        // ever drives opacity, never allowsHitTesting (see body's controlsOverlay modifiers
+        // and toggleControlsVisibilityOnAction) — every control stays genuinely focusable the
+        // whole time even at opacity 0, so the remote can never end up with nothing reachable,
+        // even though visually nothing is on screen until the next interaction.
+        hideControlsTask = Task {
+            try? await Task.sleep(for: .seconds(3.5))
+            guard !Task.isCancelled, player.status == .playing else { return }
+            withAnimation(DT.Animation.fast) { tvControlsHidden = true }
+        }
         #else
         hideControlsTask = Task {
             try? await Task.sleep(for: .seconds(3.5))

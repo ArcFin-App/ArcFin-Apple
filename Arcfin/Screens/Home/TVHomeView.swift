@@ -245,6 +245,11 @@ struct TVHomeView: View {
 
                 HStack(spacing: 20) {
                     Button {
+                        // Releases this screen's own focus claim before the player appears —
+                        // see PlayerView's tvInitialFocus comment for why a lingering
+                        // @FocusState here can otherwise keep the remote's actual focus
+                        // target stuck on this (now-hidden) screen instead of the player.
+                        focusedItemID = nil
                         playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
