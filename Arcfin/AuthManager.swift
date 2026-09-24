@@ -4,6 +4,7 @@ import Foundation
 import Observation
 import AuthCore
 import JellyfinAPI
+import SyncEngine
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
@@ -42,7 +43,15 @@ final class AuthManager {
     /// Gates the Active Sessions settings screen.
     var isAdmin: Bool = false
 
+    /// nil until the first check completes, or if the server has no Arcfin Sync plugin /
+    /// isn't reachable — both look identical on purpose, see ArcfinSyncClient.fetchStatus.
+    var arcfinSyncStatus: ArcfinSyncStatus?
+    /// Keys the admin has locked server-side. Empty whenever arcfinSyncStatus is nil, which is
+    /// what keeps every Settings screen fully local-editable when the plugin isn't present.
+    var arcfinSyncLockedKeys: Set<String> = []
+
     let authClient = JellyfinAuthClient()
+    private let syncClient = ArcfinSyncClient()
     private let keychain = KeychainStore()
 
     // MARK: - Startup
@@ -85,6 +94,7 @@ final class AuthManager {
             self.state = .authenticated(updated)
         }
         refreshIsAdmin(for: cred)
+        refreshArcfinSync(for: cred)
     }
 
     // MARK: - Live Wi-Fi switching
@@ -232,6 +242,7 @@ final class AuthManager {
         persist(active: credential)
         state = .authenticated(credential)
         refreshIsAdmin(for: credential)
+        refreshArcfinSync(for: credential)
     }
 
     // MARK: - Multi-profile management
@@ -241,12 +252,14 @@ final class AuthManager {
         persist(active: credential)
         state = .authenticated(credential)
         refreshIsAdmin(for: credential)
+        refreshArcfinSync(for: credential)
     }
 
     func switchTo(_ credential: ServerCredential) {
         persist(active: credential)
         state = .authenticated(credential)
         refreshIsAdmin(for: credential)
+        refreshArcfinSync(for: credential)
     }
 
     /// isAdmin isn't persisted per profile — every place that makes a credential the
@@ -257,6 +270,24 @@ final class AuthManager {
         Task { [weak self] in
             guard let self else { return }
             self.isAdmin = await self.authClient.fetchIsAdministrator(credential: credential)
+        }
+    }
+
+    /// Checks for the Arcfin Sync plugin and, if present, syncs settings — called at every
+    /// place a credential becomes the active one, same as refreshIsAdmin. A missing/unreachable
+    /// plugin resets both fields to their "not present" defaults rather than leaving a stale
+    /// status from a previously active profile.
+    private func refreshArcfinSync(for credential: ServerCredential) {
+        arcfinSyncStatus = nil
+        arcfinSyncLockedKeys = []
+        Task { [weak self] in
+            guard let self else { return }
+            guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed else {
+                return
+            }
+            self.arcfinSyncStatus = status
+            let header = self.authClient.authHeader(token: credential.accessToken)
+            self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
         }
     }
 
