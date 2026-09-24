@@ -51,6 +51,10 @@ final class AuthManager {
     /// Keys the admin has locked server-side. Empty whenever arcfinSyncStatus is nil, which is
     /// what keeps every Settings screen fully local-editable when the plugin isn't present.
     var arcfinSyncLockedKeys: Set<String> = []
+    /// nil until a sync actually completes. Distinct from arcfinSyncStatus being non-nil,
+    /// which only means the plugin was detected — this is what a "Last synced" label reads.
+    var arcfinSyncLastSyncedAt: Date?
+    var isSyncingArcfin: Bool = false
 
     let authClient = JellyfinAuthClient()
     private let syncClient = ArcfinSyncClient()
@@ -284,8 +288,11 @@ final class AuthManager {
     private func refreshArcfinSync(for credential: ServerCredential) {
         arcfinSyncStatus = nil
         arcfinSyncLockedKeys = []
+        arcfinSyncLastSyncedAt = nil
+        isSyncingArcfin = true
         Task { [weak self] in
             guard let self else { return }
+            defer { self.isSyncingArcfin = false }
             guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed else {
                 Self.syncLog.info("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
                 return
@@ -294,8 +301,16 @@ final class AuthManager {
             self.arcfinSyncStatus = status
             let header = self.authClient.authHeader(token: credential.accessToken)
             self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
+            self.arcfinSyncLastSyncedAt = .now
             Self.syncLog.info("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
         }
+    }
+
+    /// Manual re-sync for a "Sync Now" button — re-runs the exact same check/sync as every
+    /// automatic call site, just triggered on demand against whichever profile is active.
+    func syncArcfinNow() {
+        guard case .authenticated(let credential) = state else { return }
+        refreshArcfinSync(for: credential)
     }
 
     func removeProfile(id: UUID) {
