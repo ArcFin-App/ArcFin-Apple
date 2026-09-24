@@ -5,6 +5,7 @@ import SeerrAPI
 
 struct IntegrationsSettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("seerrURL")            private var seerrURL             = ""
@@ -14,6 +15,7 @@ struct IntegrationsSettingsView: View {
         List {
             Section {
                 Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
+                    .syncLocked("seerrDiscoverEnabled", authManager)
                 NavigationLink {
                     SeerrPluginView()
                         #if os(iOS)
@@ -63,4 +65,5 @@ struct IntegrationsSettingsView: View {
 
 #Preview {
     NavigationStack { IntegrationsSettingsView() }
+        .environment(AuthManager())
 }

@@ -490,6 +490,7 @@ enum VideoQuality: String, CaseIterable, Identifiable {
 
 struct SeerrPluginView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
 
     @AppStorage("seerrURL")         private var seerrURL        = ""
     @AppStorage("seerrUsername")    private var seerrUsername   = ""
@@ -510,6 +511,12 @@ struct SeerrPluginView: View {
 
     private var isConfigured: Bool { !seerrURL.isEmpty }
 
+    /// The connection is edited as one form (Edit → Save), not per-field toggles, so a lock on
+    /// any one of its three synced keys locks editing the whole thing rather than just that field.
+    private var isLocked: Bool {
+        ["seerrURL", "seerrUsername", "seerrAuthMethod"].contains { authManager.arcfinSyncLockedKeys.contains($0) }
+    }
+
     var body: some View {
         List {
             if isEditing {
@@ -528,6 +535,7 @@ struct SeerrPluginView: View {
                         .disabled(draftURL.isEmpty || draftUsername.isEmpty || draftPassword.isEmpty)
                 } else {
                     Button("Edit") { beginEditing() }
+                        .disabled(isLocked)
                 }
             }
             if isEditing {
@@ -717,6 +725,7 @@ struct SeerrPluginView: View {
 // MARK: - Streamystats plugin view
 
 struct StreamystatsPluginView: View {
+    @Environment(AuthManager.self) private var authManager
     @AppStorage("streamystatsURL") private var streamystatsURL = ""
     @State private var testResult: String? = nil
     @State private var isTesting = false
@@ -731,6 +740,7 @@ struct StreamystatsPluginView: View {
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
                     #endif
+                    .syncLocked("streamystatsURL", authManager)
             } header: {
                 Label("Server URL", systemImage: "server.rack")
                     .font(.system(size: 12, weight: .semibold))

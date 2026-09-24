@@ -5,6 +5,7 @@ import SwiftUI
 /// Subtitle appearance shared by both players — read back via the same @AppStorage keys from
 /// PlayerView+Controls.swift and OfflinePlayerView.swift.
 struct SubtitleStyleSettingsView: View {
+    @Environment(AuthManager.self) private var authManager
     @AppStorage("subtitleTextSize") private var size = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") private var color = SubtitleTextColorOption.white
     @AppStorage("subtitleBackgroundStyle") private var background = SubtitleBackgroundStyle.outline
@@ -29,18 +30,21 @@ struct SubtitleStyleSettingsView: View {
                     }
                 }
                 .tvListRow()
+                .syncLocked("subtitleTextSize", authManager)
                 Picker("Colour", selection: $color) {
                     ForEach(SubtitleTextColorOption.allCases) { option in
                         Text(option.label).tag(option)
                     }
                 }
                 .tvListRow()
+                .syncLocked("subtitleTextColor", authManager)
                 Picker("Background", selection: $background) {
                     ForEach(SubtitleBackgroundStyle.allCases) { option in
                         Text(option.label).tag(option)
                     }
                 }
                 .tvListRow()
+                .syncLocked("subtitleBackgroundStyle", authManager)
             }
         }
         .arcfinListStyle()
@@ -51,4 +55,5 @@ struct SubtitleStyleSettingsView: View {
 
 #Preview {
     NavigationStack { SubtitleStyleSettingsView() }
+        .environment(AuthManager())
 }
