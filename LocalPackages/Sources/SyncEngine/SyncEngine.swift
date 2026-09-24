@@ -92,3 +92,192 @@ public enum ConflictResolution: Sendable {
     case serverWins
     case clientWins
 }
+
+// MARK: - Arcfin Sync plugin client
+
+/// Wraps ArcfinSyncClient (JellyfinAPI) behind SyncClientProtocol. Conflict resolution is
+/// last-write-wins at the payload level — this plugin doesn't track a per-key timestamp, so a
+/// full sync is pull-then-push: apply whatever the server has, then push this device's current
+/// values for any key the server doesn't have yet. Good enough for the common case (one device
+/// active at a time); a genuine simultaneous edit on two devices between syncs isn't reconciled
+/// field-by-field.
+public struct ArcfinPluginSyncClient: SyncClientProtocol {
+    private let credential: ServerCredential
+    private let authHeader: String
+    private let client = ArcfinSyncClient()
+
+    public init(credential: ServerCredential, authHeader: String) {
+        self.credential = credential
+        self.authHeader = authHeader
+    }
+
+    public func push(_ payload: SyncPayload) async throws {
+        _ = try await client.updateSettings(credential: credential, authHeader: authHeader, values: payload.settings)
+    }
+
+    public func pull() async throws -> SyncPayload {
+        let settings = try await client.fetchSettings(credential: credential, authHeader: authHeader)
+        var values: [String: String] = [:]
+        for setting in settings {
+            if let value = setting.value {
+                values[setting.key] = value
+            }
+        }
+        return SyncPayload(settings: values)
+    }
+
+    public func resolveConflict(local: SyncPayload, remote: SyncPayload) -> SyncPayload {
+        remote.lastModified >= local.lastModified ? remote : local
+    }
+}
+
+// MARK: - Settings sync registry
+
+/// The UserDefaults / @AppStorage keys eligible for cross-device sync via the Arcfin Sync
+/// plugin, and how to read/write each one. Deliberately excludes two keys that exist in the app
+/// but shouldn't sync: `seerrPassword` (a secret, never belongs in a generic settings payload)
+/// and `appLockUseFaceID` (biometric availability is per-device, not something to carry across).
+public enum SettingsSyncValueType: Sendable {
+    case bool
+    case int
+    case string
+}
+
+public struct SettingsSyncEntry: Sendable {
+    public let key: String
+    public let type: SettingsSyncValueType
+
+    public init(_ key: String, _ type: SettingsSyncValueType) {
+        self.key = key
+        self.type = type
+    }
+}
+
+public enum SettingsSyncRegistry {
+    public static let entries: [SettingsSyncEntry] = [
+        // Playback
+        .init("videoQuality", .string),
+        .init("playbackEngine", .string),
+        .init("autoPlayNext", .bool),
+        .init("skipIntro", .bool),
+        .init("skipCredits", .bool),
+        .init("skipRecap", .bool),
+        .init("subtitleDefault", .bool),
+        .init("trailersEnabled", .bool),
+        .init("youtubeTrailersEnabled", .bool),
+        .init("preferredAudioLanguage", .string),
+        .init("preferredSubtitleLanguage", .string),
+        .init("skipForwardSeconds", .int),
+        .init("skipBackwardSeconds", .int),
+        // Downloads
+        .init("wifiOnly", .bool),
+        .init("downloadQuality", .string),
+        .init("offlineModeEnabled", .bool),
+        .init("smartDownloadsEnabled", .bool),
+        .init("smartDownloadsEpisodeCount", .int),
+        .init("smartDownloadsStorageBudgetGB", .int),
+        // Appearance
+        .init("reduceMotion", .bool),
+        .init("hapticsEnabled", .bool),
+        .init("mergeContinueWatchingAndUpNext", .bool),
+        .init("heroVideoBackdropsEnabled", .bool),
+        // Notifications
+        .init("notifyNewContent", .bool),
+        .init("notifyDownload", .bool),
+        // Player features
+        .init("chapterListEnabled", .bool),
+        .init("syncPlayEnabled", .bool),
+        .init("castEnabled", .bool),
+        .init("stillWatchingPromptEnabled", .bool),
+        .init("matchContentFrameRate", .bool),
+        // Subtitle style
+        .init("subtitleTextSize", .string),
+        .init("subtitleTextColor", .string),
+        .init("subtitleBackgroundStyle", .string),
+        // Codec profile keys (codecAllowHEVCDirectPlay, codecAllowSurroundAudioDirectPlay) are
+        // deliberately excluded — CodecProfileSettingsView's own doc comment explains why:
+        // they describe this device's decode/output hardware, not a preference. Syncing them
+        // would carry a receiver-connected Apple TV's surround setting onto a phone with no
+        // receiver and produce silent audio, exactly what that screen's footer text warns about.
+        // Integrations
+        .init("seerrDiscoverEnabled", .bool),
+        .init("seerrURL", .string),
+        .init("seerrUsername", .string),
+        .init("seerrAuthMethod", .string),
+        .init("streamystatsURL", .string)
+    ]
+
+    public static let allKeys: Set<String> = Set(entries.map { $0.key })
+}
+
+// MARK: - Settings sync engine
+
+public enum SettingsSyncEngine {
+    /// Reads every registered key out of UserDefaults into a wire-format [String: String]
+    /// payload. Bool/Int are stringified; the app's RawRepresentable-String @AppStorage enums
+    /// (VideoQuality, PlaybackEngineKind, etc.) already store their rawValue as a plain string,
+    /// so `.string` covers those too.
+    public static func collectLocalPayload(defaults: UserDefaults = .standard) -> SyncPayload {
+        var values: [String: String] = [:]
+        for entry in SettingsSyncRegistry.entries {
+            switch entry.type {
+            case .bool:
+                if defaults.object(forKey: entry.key) != nil {
+                    values[entry.key] = defaults.bool(forKey: entry.key) ? "true" : "false"
+                }
+            case .int:
+                if defaults.object(forKey: entry.key) != nil {
+                    values[entry.key] = String(defaults.integer(forKey: entry.key))
+                }
+            case .string:
+                if let value = defaults.string(forKey: entry.key) {
+                    values[entry.key] = value
+                }
+            }
+        }
+        return SyncPayload(settings: values)
+    }
+
+    /// Writes a payload's values back into UserDefaults, respecting each key's declared type.
+    public static func apply(_ payload: SyncPayload, defaults: UserDefaults = .standard) {
+        let byKey = Dictionary(uniqueKeysWithValues: SettingsSyncRegistry.entries.map { ($0.key, $0.type) })
+        for (key, value) in payload.settings {
+            guard let type = byKey[key] else { continue }
+            switch type {
+            case .bool:
+                defaults.set(value == "true", forKey: key)
+            case .int:
+                if let intValue = Int(value) {
+                    defaults.set(intValue, forKey: key)
+                }
+            case .string:
+                defaults.set(value, forKey: key)
+            }
+        }
+    }
+
+    /// Pull-then-push: applies the server's current values locally, then pushes back this
+    /// device's values for any registered key the server doesn't have yet (first sync from a
+    /// fresh install/profile populates the server). Returns the set of admin-locked keys, so the
+    /// caller can disable those controls in Settings — an empty set (including on any failure)
+    /// means nothing is locked, which is also the correct fallback when the plugin isn't
+    /// reachable: settings stay fully local-editable rather than erroring.
+    @discardableResult
+    public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard) async -> Set<String> {
+        let pluginClient = ArcfinPluginSyncClient(credential: credential, authHeader: authHeader)
+
+        guard let remote = try? await pluginClient.pull() else { return [] }
+        apply(remote, defaults: defaults)
+
+        let local = collectLocalPayload(defaults: defaults)
+        let missingOnServer = local.settings.filter { remote.settings[$0.key] == nil }
+        if !missingOnServer.isEmpty {
+            try? await pluginClient.push(SyncPayload(settings: missingOnServer))
+        }
+
+        guard let fullSettings = try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader) else {
+            return []
+        }
+        return Set(fullSettings.filter { $0.isLocked }.map { $0.key })
+    }
+}
