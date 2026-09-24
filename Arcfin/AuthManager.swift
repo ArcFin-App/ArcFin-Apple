@@ -5,6 +5,8 @@ import Observation
 import AuthCore
 import JellyfinAPI
 import SyncEngine
+import Telemetry
+import os
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
@@ -277,17 +279,22 @@ final class AuthManager {
     /// place a credential becomes the active one, same as refreshIsAdmin. A missing/unreachable
     /// plugin resets both fields to their "not present" defaults rather than leaving a stale
     /// status from a previously active profile.
+    private static let syncLog = Telemetry.logger(category: "ArcfinSync")
+
     private func refreshArcfinSync(for credential: ServerCredential) {
         arcfinSyncStatus = nil
         arcfinSyncLockedKeys = []
         Task { [weak self] in
             guard let self else { return }
             guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed else {
+                Self.syncLog.info("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
                 return
             }
+            Self.syncLog.info("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
             self.arcfinSyncStatus = status
             let header = self.authClient.authHeader(token: credential.accessToken)
             self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
+            Self.syncLog.info("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
         }
     }
 
