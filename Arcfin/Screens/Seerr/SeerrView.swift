@@ -46,8 +46,12 @@ struct SeerrView: View {
             // Refetches live every time this appears, but loadDiscover()/loadRequests()
             // only flip the loading flags (and so only show a skeleton) when there's truly
             // nothing cached yet — otherwise this updates the already-visible list in place.
-            await seerrRepo.loadDiscover()
-            await seerrRepo.loadRequests()
+            // Concurrent, not sequential — these are fully independent fetches, awaiting them
+            // one after another was delaying the requests skeleton until discover finished,
+            // instead of both sections' skeletons appearing together from the first frame.
+            async let discover: Void = seerrRepo.loadDiscover()
+            async let requestsLoad: Void = seerrRepo.loadRequests()
+            _ = await (discover, requestsLoad)
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)
@@ -103,8 +107,9 @@ struct SeerrView: View {
             }
         }
         .refreshable {
-            await seerrRepo.loadDiscover()
-            await seerrRepo.loadRequests()
+            async let discover: Void = seerrRepo.loadDiscover()
+            async let requestsLoad: Void = seerrRepo.loadRequests()
+            _ = await (discover, requestsLoad)
         }
     }
 
@@ -552,6 +557,9 @@ struct SeerrView: View {
                         .font(DT.Font.caption2)
                         .foregroundStyle(DT.Color.textSecondary)
                     requestStatusPill(req.status)
+                    if let mediaStatus = req.mediaStatus {
+                        mediaStatusPill(mediaStatus)
+                    }
                 }
             }
 
@@ -574,11 +582,18 @@ struct SeerrView: View {
     private func requestStatusPill(_ status: RequestStatus) -> some View {
         let (label, hex): (String, String) = switch status {
         case .approved:  ("Approved", "10b981")
-        case .available: ("Available", "10b981")
         case .declined:  ("Declined", "EF4444")
         case .pending:   ("Pending", "f59e0b")
         }
-        return Text(label)
+        return statusPillView(label: label, hex: hex)
+    }
+
+    private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
+        statusPillView(label: status.label, hex: status.colorHex)
+    }
+
+    private func statusPillView(label: String, hex: String) -> some View {
+        Text(label)
             .font(.system(size: 7, weight: .bold))
             .foregroundStyle(Color(hex: hex))
             .padding(.horizontal, 5).padding(.vertical, 2)

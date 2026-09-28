@@ -310,6 +310,9 @@ private struct TVRequestRow: View {
                         .foregroundStyle(DT.Color.textSecondary)
 
                     statusPill(req.status)
+                    if let mediaStatus = req.mediaStatus {
+                        mediaStatusPill(mediaStatus)
+                    }
                 }
             }
 
@@ -330,11 +333,18 @@ private struct TVRequestRow: View {
     private func statusPill(_ status: RequestStatus) -> some View {
         let (label, hex): (String, String) = switch status {
         case .approved:  ("Approved",  "10b981")
-        case .available: ("Available", "10b981")
         case .declined:  ("Declined",  "EF4444")
         case .pending:   ("Pending",   "f59e0b")
         }
-        return Text(label)
+        return pillView(label: label, hex: hex)
+    }
+
+    private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
+        pillView(label: status.label, hex: status.colorHex)
+    }
+
+    private func pillView(label: String, hex: String) -> some View {
+        Text(label)
             .font(.system(size: 16, weight: .bold))
             .foregroundStyle(Color(hex: hex))
             .padding(.horizontal, 12).padding(.vertical, 4)

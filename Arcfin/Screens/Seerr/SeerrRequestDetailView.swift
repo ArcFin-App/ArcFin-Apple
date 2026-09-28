@@ -223,26 +223,44 @@ struct SeerrRequestDetailView: View {
     }
 
     private var statusRow: some View {
-        HStack {
-            Text("Status")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(DT.Color.textPrimary)
-            Spacer()
-            statusPill
+        VStack(spacing: 8) {
+            HStack {
+                Text("Request Status")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                Spacer()
+                requestStatusPill
+            }
+            if let mediaStatus = request.mediaStatus {
+                HStack {
+                    Text("Media Status")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                    Spacer()
+                    mediaStatusPill(mediaStatus)
+                }
+            }
         }
         .padding(12)
         .background(.white.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
     }
 
-    private var statusPill: some View {
+    private var requestStatusPill: some View {
         let (label, hex): (String, String) = switch request.status {
         case .approved:  ("Approved", "10b981")
-        case .available: ("Available", "10b981")
         case .declined:  ("Declined", "EF4444")
         case .pending:   ("Pending", "f59e0b")
         }
-        return Text(label)
+        return statusPillView(label: label, hex: hex)
+    }
+
+    private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
+        statusPillView(label: status.label, hex: status.colorHex)
+    }
+
+    private func statusPillView(label: String, hex: String) -> some View {
+        Text(label)
             .font(.system(size: 11, weight: .bold))
             .foregroundStyle(Color(hex: hex))
             .padding(.horizontal, 10).padding(.vertical, 4)

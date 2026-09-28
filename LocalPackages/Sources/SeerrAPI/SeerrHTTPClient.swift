@@ -457,15 +457,17 @@ private struct SeerrRequestResponse: Decodable {
     struct SeerrRequestMedia: Decodable {
         let tmdbId: Int?
         let mediaType: String?
+        let status: Int?
     }
 
     func toItem(detail: SeerrItem?) -> SeerrRequestItem {
         let reqStatus = RequestStatus(rawValue: status) ?? .pending
+        let mediaStatus = media.status.flatMap { SeerrAvailabilityStatus(rawValue: $0) }
         let mType: RequestMediaType = media.mediaType == "tv" ? .tv : .movie
         let title = detail?.title ?? "Unknown"
         let date = createdAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         return SeerrRequestItem(id: id, mediaTitle: title, mediaType: mType,
-                                status: reqStatus, requestedAt: date,
+                                status: reqStatus, mediaStatus: mediaStatus, requestedAt: date,
                                 posterPath: detail?.posterPath, backdropPath: detail?.backdropPath,
                                 tmdbId: media.tmdbId)
     }
