@@ -2,6 +2,12 @@
 
 import Foundation
 import Network
+import Telemetry
+// Needed for the privacy-annotated string interpolation in the error log below — Telemetry
+// wraps os.Logger, but that doesn't re-export the OSLogMessage interpolation machinery to
+// callers (see MediaRepository.swift/JellyfinAuthClient.swift/SeerrRepository.swift, which hit
+// the identical "missing import of defining module 'os'" error for the same reason).
+import os
 
 // MARK: - Auth method
 
@@ -266,12 +272,23 @@ public actor SeerrHTTPClient {
         let raw = try JSONDecoder().decode(Page.self, from: data).results
 
         // The request list only carries tmdbId/mediaType — title and artwork
-        // live on TMDB, so fetch each item's detail to fill them in.
+        // live on TMDB, so fetch each item's detail to fill them in. A failure here used to
+        // be completely silent (bare try?), leaving the row showing "Unknown" with zero trace
+        // of why — same silently-swallowed-error shape already found and fixed for
+        // SeerrRepository.loadDiscover and others elsewhere in this codebase.
         var items = [SeerrRequestItem?](repeating: nil, count: raw.count)
         await withTaskGroup(of: (Int, SeerrRequestItem).self) { group in
             for (index, r) in raw.enumerated() {
                 group.addTask {
-                    let detail = try? await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
+                    var detail: SeerrItem?
+                    do {
+                        detail = try await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
+                    } catch {
+                        let nsError = error as NSError
+                        Telemetry.logger(category: "SeerrHTTPClient").error(
+                            "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                    }
                     return (index, r.toItem(detail: detail))
                 }
             }
