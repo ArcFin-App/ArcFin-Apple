@@ -16,6 +16,10 @@ final class SeerrRepository {
     var trending: [SeerrItem] = []
     var popularMovies: [SeerrItem] = []
     var popularTV: [SeerrItem] = []
+    var upcomingMovies: [SeerrItem] = []
+    var upcomingTV: [SeerrItem] = []
+    var movieGenres: [SeerrGenre] = []
+    var tvGenres: [SeerrGenre] = []
     var requests: [SeerrRequestItem] = []
     var watchlist: [SeerrItem] = []
     var isLoadingDiscover = false
@@ -58,6 +62,7 @@ final class SeerrRepository {
                                       authMethod: authMethod)
         authFailed = false
         trending = []; popularMovies = []; popularTV = []; requests = []
+        upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
     }
 
     func loadDiscover() async {
@@ -122,6 +127,34 @@ final class SeerrRepository {
     func search(query: String) async -> [SeerrItem] {
         guard let client, !query.isEmpty else { return [] }
         return (try? await client.search(query: query)) ?? []
+    }
+
+    /// Genre picker data for browse-by-genre — fetched once per session, cheap and rarely
+    /// changes, no reason to refetch every time the Discover screen appears.
+    func loadGenres() async {
+        guard let client, movieGenres.isEmpty, tvGenres.isEmpty else { return }
+        async let m = (try? await client.genreSlider(mediaType: .movie)) ?? []
+        async let t = (try? await client.genreSlider(mediaType: .tv)) ?? []
+        let (movie, tv) = await (m, t)
+        movieGenres = movie
+        tvGenres = tv
+    }
+
+    func loadUpcoming() async {
+        guard let client else { return }
+        async let m = (try? await client.upcomingMovies()) ?? []
+        async let t = (try? await client.upcomingTV()) ?? []
+        let (movies, tv) = await (m, t)
+        upcomingMovies = movies
+        upcomingTV = tv
+    }
+
+    func discoverByGenre(_ genreId: Int, mediaType: RequestMediaType) async -> [SeerrItem] {
+        guard let client else { return [] }
+        if mediaType == .tv {
+            return (try? await client.discoverTV(genreId: genreId)) ?? []
+        }
+        return (try? await client.discoverMovies(genreId: genreId)) ?? []
     }
 
     func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {

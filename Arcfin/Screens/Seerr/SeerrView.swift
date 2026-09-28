@@ -6,23 +6,25 @@ import SeerrAPI
 struct SeerrView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
-    @State private var selectedCategory = "All"
+    @State private var mediaType: RequestMediaType = .movie
+    @State private var selectedGenre: SeerrGenre? = nil
+    @State private var genreResults: [SeerrItem] = []
+    @State private var isLoadingGenre = false
     @State private var searchText = ""
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
     @State private var requestingItem: SeerrItem? = nil
-    @State private var selectedRequest: SeerrRequestItem? = nil
 
-    private let categories = ["All", "Movies", "Series"]
+    private var genresForType: [SeerrGenre] {
+        mediaType == .tv ? seerrRepo.tvGenres : seerrRepo.movieGenres
+    }
 
-    private var displayItems: [SeerrItem] {
-        let all = seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV
-        let deduped = Array(Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }).values)
-        switch selectedCategory {
-        case "Movies": return deduped.filter { $0.mediaType == .movie }
-        case "Series": return deduped.filter { $0.mediaType == .tv }
-        default:       return deduped
-        }
+    private var trendingForType: [SeerrItem] {
+        seerrRepo.trending.filter { $0.mediaType == mediaType }
+    }
+
+    private var upcomingForType: [SeerrItem] {
+        mediaType == .tv ? seerrRepo.upcomingTV : seerrRepo.upcomingMovies
     }
 
     var body: some View {
@@ -35,26 +37,28 @@ struct SeerrView: View {
                 }
             }
             .background(DT.Color.backgroundPrimary)
-            .navigationTitle("Requests")
-            .arcfinNavTitleLarge("Requests")
-            .navigationDestination(item: $selectedRequest) { req in
-                SeerrRequestDetailView(request: req)
-            }
+            .navigationTitle("Discover")
+            .arcfinNavTitleLarge("Discover")
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
-            // Refetches live every time this appears, but loadDiscover()/loadRequests()
-            // only flip the loading flags (and so only show a skeleton) when there's truly
-            // nothing cached yet — otherwise this updates the already-visible list in place.
-            // Concurrent, not sequential — these are fully independent fetches, awaiting them
-            // one after another was delaying the requests skeleton until discover finished,
-            // instead of both sections' skeletons appearing together from the first frame.
+            // Refetches live every time this appears, but loadDiscover() only flips the
+            // loading flag (and so only shows a skeleton) when there's truly nothing cached
+            // yet — otherwise this updates the already-visible list in place.
             async let discover: Void = seerrRepo.loadDiscover()
-            async let requestsLoad: Void = seerrRepo.loadRequests()
-            _ = await (discover, requestsLoad)
+            async let genres: Void = seerrRepo.loadGenres()
+            async let upcoming: Void = seerrRepo.loadUpcoming()
+            _ = await (discover, genres, upcoming)
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)
+        }
+        .onChange(of: selectedGenre) { _, genre in
+            loadGenreResults(genre)
+        }
+        .onChange(of: mediaType) { _, _ in
+            selectedGenre = nil
+            genreResults = []
         }
         .sheet(item: $requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
@@ -91,16 +95,16 @@ struct SeerrView: View {
                 header
                 if !searchText.isEmpty {
                     searchResultsSection
+                } else if let selectedGenre {
+                    genreResultsSection(selectedGenre)
                 } else {
-                    if seerrRepo.isLoadingDiscover && displayItems.isEmpty {
+                    if seerrRepo.isLoadingDiscover && trendingForType.isEmpty {
                         loadingGrid
                     } else {
-                        discoverGrid
+                        trendingSection
                     }
-                    if seerrRepo.isLoadingRequests && seerrRepo.requests.isEmpty {
-                        requestsLoadingList
-                    } else {
-                        requestsList
+                    if !upcomingForType.isEmpty {
+                        upcomingSection
                     }
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
@@ -108,42 +112,9 @@ struct SeerrView: View {
         }
         .refreshable {
             async let discover: Void = seerrRepo.loadDiscover()
-            async let requestsLoad: Void = seerrRepo.loadRequests()
-            _ = await (discover, requestsLoad)
+            async let upcoming: Void = seerrRepo.loadUpcoming()
+            _ = await (discover, upcoming)
         }
-    }
-
-    private var requestsLoadingList: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("My Requests")
-                    .font(DT.Font.cardTitle)
-                    .foregroundStyle(DT.Color.textPrimary)
-                Spacer()
-            }
-            ForEach(0..<4, id: \.self) { _ in
-                HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white.opacity(0.08))
-                        .frame(width: 32, height: 44)
-                    VStack(alignment: .leading, spacing: 6) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.white.opacity(0.08))
-                            .frame(width: 140, height: 12)
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.white.opacity(0.06))
-                            .frame(width: 90, height: 9)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 12).padding(.vertical, 11)
-                .frame(height: 66)
-                .background(.white.opacity(0.03))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
-            }
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
     }
 
     // MARK: - Header
@@ -155,7 +126,7 @@ struct SeerrView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 13))
                     .foregroundStyle(DT.Color.textSecondary)
-                TextField("Search movies, series…", text: $searchText)
+                TextField("Search movies, series, people…", text: $searchText)
                     .font(DT.Font.caption)
                     .foregroundStyle(DT.Color.textPrimary)
                     .autocorrectionDisabled()
@@ -176,84 +147,128 @@ struct SeerrView: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.1), lineWidth: 1))
             .padding(.bottom, DT.Spacing.sm)
 
-            // Category chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(categories, id: \.self) { cat in
-                        Button {
-                            withAnimation(DT.Animation.fast) { selectedCategory = cat }
-                        } label: {
-                            Text(cat)
-                                .font(.system(size: 11, weight: selectedCategory == cat ? .bold : .regular))
-                                .foregroundStyle(selectedCategory == cat ? DT.Color.accent : DT.Color.textSecondary)
-                                .padding(.horizontal, 14).padding(.vertical, 5)
-                                .background(selectedCategory == cat ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
-                                .background(.ultraThinMaterial)
-                                .clipShape(Capsule())
-                                .overlay(Capsule().stroke(
-                                    selectedCategory == cat ? DT.Color.accent.opacity(0.45) : Color.white.opacity(0.08),
-                                    lineWidth: 1))
+            if searchText.isEmpty {
+                // Movies / TV Shows
+                Picker("Media Type", selection: $mediaType) {
+                    Text("Movies").tag(RequestMediaType.movie)
+                    Text("TV Shows").tag(RequestMediaType.tv)
+                }
+                .pickerStyle(.segmented)
+                .padding(.bottom, DT.Spacing.sm)
+
+                // Genre chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        genreChip(label: "All", isSelected: selectedGenre == nil) {
+                            withAnimation(DT.Animation.fast) { selectedGenre = nil }
                         }
-                        .buttonStyle(.plain)
+                        ForEach(genresForType) { genre in
+                            genreChip(label: genre.name, isSelected: selectedGenre == genre) {
+                                withAnimation(DT.Animation.fast) { selectedGenre = genre }
+                            }
+                        }
                     }
                 }
+                .padding(.bottom, DT.Spacing.md)
             }
-            .padding(.bottom, DT.Spacing.md)
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 12)
     }
 
-    // MARK: - Discover grid
+    private func genreChip(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                .foregroundStyle(isSelected ? DT.Color.accent : DT.Color.textSecondary)
+                .padding(.horizontal, 14).padding(.vertical, 5)
+                .background(isSelected ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(
+                    isSelected ? DT.Color.accent.opacity(0.45) : Color.white.opacity(0.08),
+                    lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
 
-    private var discoverGrid: some View {
+    // MARK: - Trending / Upcoming / Genre sections
+
+    private var trendingSection: some View {
+        itemGrid(title: "Trending Now", items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
+    }
+
+    private var upcomingSection: some View {
+        itemGrid(title: "Upcoming", items: upcomingForType, isLoading: false)
+    }
+
+    private func genreResultsSection(_ genre: SeerrGenre) -> some View {
+        itemGrid(title: genre.name, items: genreResults, isLoading: isLoadingGenre)
+    }
+
+    private func itemGrid(title: String, items: [SeerrItem], isLoading: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(selectedCategory == "All" ? "Trending Now" : selectedCategory)
+                Text(title)
                     .font(DT.Font.cardTitle)
                     .foregroundStyle(DT.Color.textPrimary)
                 Spacer()
-                if seerrRepo.isLoadingDiscover {
+                if isLoading {
                     ProgressView().scaleEffect(0.7)
                 }
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 
+            if items.isEmpty && !isLoading {
+                ContentUnavailableView("Nothing Here", systemImage: "film")
+                    .frame(height: 160)
+            } else {
 #if os(tvOS)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DT.Spacing.shelfGap) {
-                    ForEach(displayItems) { item in
-                        Button { requestingItem = item } label: {
-                            PosterCard(
-                                title: item.title,
-                                subtitle: item.year,
-                                imageURL: item.backdropURL ?? item.posterURL
-                            )
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: DT.Spacing.shelfGap) {
+                        ForEach(items) { item in
+                            Button { requestingItem = item } label: {
+                                PosterCard(
+                                    title: item.title,
+                                    subtitle: item.year,
+                                    imageURL: item.backdropURL ?? item.posterURL
+                                )
+                            }
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
                         }
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
+                    }
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .focusSection()
+                }
+#elseif os(macOS)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
+                    ForEach(items) { item in
+                        discoverCard(item)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
-                .focusSection()
-            }
-#elseif os(macOS)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
-                ForEach(displayItems) { item in
-                    discoverCard(item)
-                }
-            }
-            .padding(.horizontal, DT.Spacing.pagePad)
 #else
-            LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
-                ForEach(displayItems) { item in
-                    discoverCard(item)
+                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
+                    ForEach(items) { item in
+                        discoverCard(item)
+                    }
                 }
-            }
-            .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.horizontal, DT.Spacing.pagePad)
 #endif
+            }
         }
         .padding(.bottom, DT.Spacing.md)
+    }
+
+    private func loadGenreResults(_ genre: SeerrGenre?) {
+        guard let genre else { genreResults = []; return }
+        isLoadingGenre = true
+        genreResults = []
+        Task {
+            genreResults = await seerrRepo.discoverByGenre(genre.id, mediaType: mediaType)
+            isLoadingGenre = false
+        }
     }
 
     private func toggleWatchlist(_ item: SeerrItem) {
@@ -407,7 +422,16 @@ struct SeerrView: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
-    // MARK: - Search results
+    // MARK: - Search
+
+    private func performSearch(query: String) {
+        guard !query.isEmpty else { searchResults = []; isSearching = false; return }
+        isSearching = true
+        Task {
+            searchResults = await seerrRepo.search(query: query)
+            isSearching = false
+        }
+    }
 
     private var searchResultsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -461,163 +485,4 @@ struct SeerrView: View {
         }
         .padding(.bottom, DT.Spacing.md)
     }
-
-    // MARK: - My Requests
-
-    private var requestsList: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("My Requests")
-                    .font(DT.Font.cardTitle)
-                    .foregroundStyle(DT.Color.textPrimary)
-                Spacer()
-                if seerrRepo.isLoadingRequests {
-                    ProgressView().scaleEffect(0.7)
-                } else {
-                    Text("\(seerrRepo.requests.count) total")
-                        .font(DT.Font.caption2)
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
-            }
-
-            if seerrRepo.requests.isEmpty && !seerrRepo.isLoadingRequests {
-                ContentUnavailableView(
-                    "No Requests",
-                    systemImage: "clock",
-                    description: Text("Your media requests will appear here.")
-                )
-                .frame(height: 160)
-            } else {
-                ForEach(seerrRepo.requests) { req in
-                    Button { selectedRequest = req } label: {
-                        requestRow(req)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button {
-                            selectedRequest = req
-                        } label: {
-                            Label("View Details", systemImage: "info.circle")
-                        }
-                        Button(role: .destructive) {
-                            Task { try? await seerrRepo.cancelRequest(id: req.id) }
-                        } label: {
-                            Label("Remove Request", systemImage: "trash")
-                        }
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-    }
-
-    private func requestRow(_ req: SeerrRequestItem) -> some View {
-#if os(tvOS)
-        let thumbW: CGFloat = 96
-        let thumbH: CGFloat = 54
-        let thumbRadius: CGFloat = 6
-        let thumbURL: URL? = req.backdropURL ?? req.posterURL
-#else
-        let thumbW: CGFloat = 32
-        let thumbH: CGFloat = 44
-        let thumbRadius: CGFloat = 6
-        let thumbURL: URL? = req.posterURL
-#endif
-        return HStack(spacing: 10) {
-            // Thumbnail
-            if let url = thumbURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: posterMiniFallback
-                    }
-                }
-                .frame(width: thumbW, height: thumbH)
-                .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
-            } else {
-                posterMiniFallback
-                    .clipShape(RoundedRectangle(cornerRadius: thumbRadius))
-                    .frame(width: thumbW, height: thumbH)
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(req.mediaTitle)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .lineLimit(1)
-
-                HStack(spacing: 6) {
-                    Text(req.mediaType == .tv ? "Series" : "Movie")
-                        .font(DT.Font.caption2)
-                        .foregroundStyle(DT.Color.textSecondary)
-                    Text("·")
-                        .font(DT.Font.caption2)
-                        .foregroundStyle(.white.opacity(0.2))
-                    Text(req.requestedAt, style: .date)
-                        .font(DT.Font.caption2)
-                        .foregroundStyle(DT.Color.textSecondary)
-                    requestStatusPill(req.status)
-                    if let mediaStatus = req.mediaStatus {
-                        mediaStatusPill(mediaStatus)
-                    }
-                }
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal, 12).padding(.vertical, 11)
-        .background(.white.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
-    }
-
-    private var posterMiniFallback: some View {
-        RoundedRectangle(cornerRadius: 6)
-            .fill(LinearGradient(
-                colors: [DT.Color.accent.opacity(0.08), Color(hex: "0a0a14")],
-                startPoint: .top, endPoint: .bottom))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.06), lineWidth: 1))
-    }
-
-    private func requestStatusPill(_ status: RequestStatus) -> some View {
-        let (label, hex): (String, String) = switch status {
-        case .approved:  ("Approved", "10b981")
-        case .declined:  ("Declined", "EF4444")
-        case .pending:   ("Pending", "f59e0b")
-        }
-        return statusPillView(label: label, hex: hex)
-    }
-
-    private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
-        statusPillView(label: status.label, hex: status.colorHex)
-    }
-
-    private func statusPillView(label: String, hex: String) -> some View {
-        Text(label)
-            .font(.system(size: 7, weight: .bold))
-            .foregroundStyle(Color(hex: hex))
-            .padding(.horizontal, 5).padding(.vertical, 2)
-            .background(Color(hex: hex).opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
-    }
-
-    // MARK: - Confirm sheet
-
-
-    // MARK: - Search
-
-    private func performSearch(query: String) {
-        guard !query.isEmpty else { searchResults = []; return }
-        isSearching = true
-        Task {
-            searchResults = await seerrRepo.search(query: query)
-            isSearching = false
-        }
-    }
-}
-
-#Preview {
-    SeerrView()
-        .environment(SeerrRepository())
 }

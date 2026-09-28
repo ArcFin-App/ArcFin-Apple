@@ -3,6 +3,9 @@
 import Foundation
 
 enum BottomNavItem: String, CaseIterable, Identifiable {
+    // Case name stays "requests" even though it now displays as "Discover" — the rawValue is
+    // persisted in bottomNavOrder/bottomNavActive UserDefaults strings, renaming it would drop
+    // the tab from every existing saved layout instead of just relabeling it.
     case home, browse, stats, requests, watchlist
 
     var id: String { rawValue }
@@ -12,7 +15,7 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
         case .home:      "Home"
         case .browse:    "Browse"
         case .stats:     "Stats"
-        case .requests:  "Requests"
+        case .requests:  "Discover"
         case .watchlist: "Watchlist"
         }
     }
@@ -22,7 +25,7 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
         case .home:      "house"
         case .browse:    "square.grid.2x2"
         case .stats:     "chart.xyaxis.line"
-        case .requests:  "clock"
+        case .requests:  "sparkle.magnifyingglass"
         case .watchlist: "bookmark"
         }
     }

@@ -3,6 +3,7 @@
 import SwiftUI
 import AVKit
 import JellyfinAPI
+import SeerrAPI
 import AuthCore
 import MediaEngine
 import Persistence
@@ -14,10 +15,47 @@ import os
 import UIKit
 #endif
 
+// MARK: - Requests browse filter
+
+/// The Movies/Shows/Collections entries under Browse > Your Requests — routes to
+/// SeerrRequestsListView filtered by media type. "Collections" shows everything; Seerr
+/// requests are always for a specific movie or TV show, never a collection as such, so there's
+/// no narrower "collections-only" request filter to apply here.
+enum RequestsBrowseFilter: String, CaseIterable, Identifiable, Hashable {
+    case movies, shows, collections
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .movies:      "Movies"
+        case .shows:       "Shows"
+        case .collections: "Collections"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .movies:      "film"
+        case .shows:       "tv"
+        case .collections: "square.stack"
+        }
+    }
+
+    var mediaType: RequestMediaType? {
+        switch self {
+        case .movies:      .movie
+        case .shows:       .tv
+        case .collections: nil
+        }
+    }
+}
+
 // MARK: - Library screen
 
 struct LibraryView: View {
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var showDocPicker = false
     @State private var pickedURL: URL?
@@ -56,6 +94,9 @@ struct LibraryView: View {
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 LibraryDetailView(library: library)
+            }
+            .navigationDestination(for: RequestsBrowseFilter.self) { filter in
+                SeerrRequestsListView(filter: filter.mediaType, title: filter.title)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
                 switch target {
@@ -109,6 +150,11 @@ struct LibraryView: View {
                     librariesSection
                 }
 
+                // ── Your Requests ───────────────────────────────────────
+                if seerrRepo.isConfigured {
+                    requestsSection
+                }
+
                 // ── Downloads ───────────────────────────────────────────
                 #if os(iOS)
                 jellyfinDownloadsSection
@@ -160,6 +206,38 @@ struct LibraryView: View {
                 }
             }
 #endif
+        }
+    }
+
+    // MARK: - Your Requests section
+
+    private var requestsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("Your Requests")
+            ForEach(RequestsBrowseFilter.allCases) { filter in
+                NavigationLink(value: filter) {
+                    HStack(spacing: 12) {
+                        Image(systemName: filter.icon)
+                            .font(.system(size: 18))
+                            .foregroundStyle(DT.Color.accent)
+                        Text(filter.title)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: DT.Radius.card)
+                            .fill(DT.Color.backgroundSecondary)
+                            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(Color.white.opacity(0.06), lineWidth: 1))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 

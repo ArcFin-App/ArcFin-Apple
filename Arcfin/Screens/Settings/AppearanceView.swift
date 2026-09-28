@@ -67,7 +67,7 @@ struct AppearanceView: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Choose which tabs show and in what order. Requests and Watchlist only appear when Seerr is connected, even if active here.")
+                Text("Choose which tabs show and in what order. Discover and Watchlist only appear when Seerr is connected, even if active here.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
