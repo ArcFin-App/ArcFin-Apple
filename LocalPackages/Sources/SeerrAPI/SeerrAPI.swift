@@ -90,7 +90,7 @@ public struct SearchResult: Sendable, Identifiable, Equatable {
 
 // MARK: - Discover models
 
-public struct SeerrItem: Sendable, Identifiable, Equatable {
+public struct SeerrItem: Sendable, Identifiable, Equatable, Hashable {
     public let id: Int
     public var title: String
     public var mediaType: RequestMediaType

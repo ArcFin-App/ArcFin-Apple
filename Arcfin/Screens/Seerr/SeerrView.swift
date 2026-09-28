@@ -39,6 +39,9 @@ struct SeerrView: View {
             .background(DT.Color.backgroundPrimary)
             .navigationTitle("Discover")
             .arcfinNavTitleLarge("Discover")
+            .navigationDestination(for: SeerrItem.self) { item in
+                SeerrItemDetailView(item: item)
+            }
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
@@ -283,6 +286,32 @@ struct SeerrView: View {
     }
 
     private func discoverCard(_ item: SeerrItem) -> some View {
+        NavigationLink(value: item) {
+            discoverCardContent(item)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            let alreadyRequested = seerrRepo.requests.contains { $0.mediaTitle == item.title }
+            let isAvailable = item.availabilityStatus == .available
+            Button {
+                toggleWatchlist(item)
+            } label: {
+                Label(
+                    seerrRepo.isInWatchlist(item) ? "Remove from Watchlist" : "Add to Watchlist",
+                    systemImage: seerrRepo.isInWatchlist(item) ? "bookmark.slash" : "bookmark"
+                )
+            }
+            if !isAvailable && !alreadyRequested {
+                Button {
+                    requestingItem = item
+                } label: {
+                    Label("Request", systemImage: "plus.circle")
+                }
+            }
+        }
+    }
+
+    private func discoverCardContent(_ item: SeerrItem) -> some View {
         let alreadyRequested = seerrRepo.requests.contains { $0.mediaTitle == item.title }
         let isAvailable = item.availabilityStatus == .available
 
@@ -372,23 +401,6 @@ struct SeerrView: View {
         .aspectRatio(2/3, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
-        .contextMenu {
-            Button {
-                toggleWatchlist(item)
-            } label: {
-                Label(
-                    seerrRepo.isInWatchlist(item) ? "Remove from Watchlist" : "Add to Watchlist",
-                    systemImage: seerrRepo.isInWatchlist(item) ? "bookmark.slash" : "bookmark"
-                )
-            }
-            if !isAvailable && !alreadyRequested {
-                Button {
-                    requestingItem = item
-                } label: {
-                    Label("Request", systemImage: "plus.circle")
-                }
-            }
-        }
     }
 
     private func posterPlaceholder(item: SeerrItem) -> some View {

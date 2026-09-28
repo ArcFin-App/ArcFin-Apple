@@ -15,42 +15,6 @@ import os
 import UIKit
 #endif
 
-// MARK: - Requests browse filter
-
-/// The Movies/Shows/Collections entries under Browse > Your Requests — routes to
-/// SeerrRequestsListView filtered by media type. "Collections" shows everything; Seerr
-/// requests are always for a specific movie or TV show, never a collection as such, so there's
-/// no narrower "collections-only" request filter to apply here.
-enum RequestsBrowseFilter: String, CaseIterable, Identifiable, Hashable {
-    case movies, shows, collections
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .movies:      "Movies"
-        case .shows:       "Shows"
-        case .collections: "Collections"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .movies:      "film"
-        case .shows:       "tv"
-        case .collections: "square.stack"
-        }
-    }
-
-    var mediaType: RequestMediaType? {
-        switch self {
-        case .movies:      .movie
-        case .shows:       .tv
-        case .collections: nil
-        }
-    }
-}
-
 // MARK: - Library screen
 
 struct LibraryView: View {
@@ -94,9 +58,6 @@ struct LibraryView: View {
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 LibraryDetailView(library: library)
-            }
-            .navigationDestination(for: RequestsBrowseFilter.self) { filter in
-                SeerrRequestsListView(filter: filter.mediaType, title: filter.title)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
                 switch target {
@@ -214,30 +175,13 @@ struct LibraryView: View {
     private var requestsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader("Your Requests")
-            ForEach(RequestsBrowseFilter.allCases) { filter in
-                NavigationLink(value: filter) {
-                    HStack(spacing: 12) {
-                        Image(systemName: filter.icon)
-                            .font(.system(size: 18))
-                            .foregroundStyle(DT.Color.accent)
-                        Text(filter.title)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(DT.Color.textPrimary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: DT.Radius.card)
-                            .fill(DT.Color.backgroundSecondary)
-                            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(Color.white.opacity(0.06), lineWidth: 1))
-                    )
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                SeerrRequestsListView(filter: nil, title: "Requests")
+            } label: {
+                RequestsCard()
             }
+            .buttonStyle(.plain)
+            .frame(maxWidth: 220)
         }
     }
 
@@ -446,6 +390,49 @@ private struct LibraryCard: View {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+}
+
+/// Same tile treatment as LibraryCard (icon + centered label, gradient background, height
+/// 110) so "Your Requests" reads as one more tile alongside the library ones, not a
+/// differently-styled row.
+private struct RequestsCard: View {
+    @State private var hovered = false
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [DT.Color.accent.opacity(0.25), DT.Color.backgroundSecondary],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+
+            VStack(spacing: 10) {
+                Image(systemName: "text.badge.checkmark")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.6), radius: 6)
+
+                Text("Requests")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .shadow(color: .black.opacity(0.6), radius: 6)
+            }
+            .padding(16)
+        }
+        .frame(height: 110)
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: DT.Radius.card)
+                .stroke(hovered ? DT.Color.accent.opacity(0.5) : DT.Color.accent.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+        .scaleEffect(hovered ? 1.02 : 1)
+        .animation(DT.Animation.fast, value: hovered)
+        #if !os(tvOS)
+        .onHover { hovered = $0 }
+        #endif
     }
 }
 
