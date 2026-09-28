@@ -160,8 +160,12 @@ public actor SeerrHTTPClient {
 
     // MARK: - Discover
 
-    public func trending() async throws -> [SeerrItem] {
-        try await fetchPage("api/v1/trending", query: [])
+    public func trending(mediaType: RequestMediaType? = nil) async throws -> [SeerrItem] {
+        // Was "api/v1/trending" — not a real Seerr path (verified against seerr-api.yml,
+        // the only trending endpoint is under /discover).
+        var query: [(String, String)] = []
+        if let mediaType { query.append(("mediaType", mediaType.rawValue)) }
+        return try await fetchPage("api/v1/discover/trending", query: query)
     }
 
     public func discoverMovies(page: Int = 1) async throws -> [SeerrItem] {
@@ -170,6 +174,34 @@ public actor SeerrHTTPClient {
 
     public func discoverTV(page: Int = 1) async throws -> [SeerrItem] {
         try await fetchPage("api/v1/discover/tv", query: [("page", "\(page)")])
+    }
+
+    public func discoverMovies(genreId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/movies/genre/\(genreId)", query: [("page", "\(page)")],
+                            defaultMediaType: .movie)
+    }
+
+    public func discoverTV(genreId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/tv/genre/\(genreId)", query: [("page", "\(page)")],
+                            defaultMediaType: .tv)
+    }
+
+    public func upcomingMovies(page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/movies/upcoming", query: [("page", "\(page)")],
+                            defaultMediaType: .movie)
+    }
+
+    public func upcomingTV(page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/tv/upcoming", query: [("page", "\(page)")],
+                            defaultMediaType: .tv)
+    }
+
+    /// Genres with a representative backdrop attached — the picker data for browsing by genre.
+    public func genreSlider(mediaType: RequestMediaType) async throws -> [SeerrGenre] {
+        try await ensureAuthenticated()
+        let path = mediaType == .tv ? "api/v1/discover/genreslider/tv" : "api/v1/discover/genreslider/movie"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        return try JSONDecoder().decode([SeerrGenreResponse].self, from: data).map { $0.toGenre() }
     }
 
     // MARK: - Search
@@ -406,6 +438,16 @@ public enum SeerrError: Error, LocalizedError {
 }
 
 // MARK: - Private response decoders
+
+private struct SeerrGenreResponse: Decodable {
+    let id: Int
+    let name: String
+    let backdrops: [String]?
+
+    func toGenre() -> SeerrGenre {
+        SeerrGenre(id: id, name: name, backdropPath: backdrops?.first)
+    }
+}
 
 private struct SeerrItemResponse: Decodable {
     let id: Int

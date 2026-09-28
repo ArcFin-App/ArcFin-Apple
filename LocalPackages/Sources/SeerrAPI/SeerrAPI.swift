@@ -116,6 +116,22 @@ public struct SeerrItem: Sendable, Identifiable, Equatable {
     }
 }
 
+/// A genre with a representative backdrop image — the picker data for /discover/genreslider,
+/// used to browse movies/TV by genre.
+public struct SeerrGenre: Sendable, Identifiable, Equatable, Hashable {
+    public let id: Int
+    public var name: String
+    public var backdropPath: String?
+
+    public init(id: Int, name: String, backdropPath: String? = nil) {
+        self.id = id; self.name = name; self.backdropPath = backdropPath
+    }
+
+    public var backdropURL: URL? {
+        backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w780\($0)") }
+    }
+}
+
 public enum SeerrAvailabilityStatus: Int, Sendable, Equatable {
     case unknown = 1, pending, processing, partiallyAvailable, available
 
