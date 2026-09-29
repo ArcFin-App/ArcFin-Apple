@@ -527,10 +527,10 @@ struct SeerrPluginView: View {
 
     var body: some View {
         List {
-            if isEditing {
-                editingForm
-            } else {
+            if isConfigured && !isEditing {
                 connectedSummary
+            } else {
+                editingForm
             }
         }
         .arcfinListStyle()
@@ -538,7 +538,7 @@ struct SeerrPluginView: View {
         .arcfinNavTitleLarge("Seerr")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if isEditing {
+                if isEditing || !isConfigured {
                     Button("Save") { save() }
                         .disabled(draftURL.isEmpty || draftUsername.isEmpty || draftPassword.isEmpty)
                 } else {
@@ -546,7 +546,10 @@ struct SeerrPluginView: View {
                         .disabled(isLocked)
                 }
             }
-            if isEditing {
+            // Canceling only makes sense once there's an existing connection to cancel back
+            // to — with nothing configured yet, Cancel had no real "before" state to return
+            // to, and just hid the form behind a blank summary instead.
+            if isEditing && isConfigured {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { isEditing = false; testResult = nil }
                 }

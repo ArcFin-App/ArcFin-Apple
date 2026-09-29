@@ -589,9 +589,15 @@ extension PlayerView {
         }
         // Landscape sheets in .medium can render narrow enough that the drag indicator is
         // the only way to dismiss and hard to grab — an explicit Done button always works.
+        // presentationDetents is an iPhone/iPad card-sheet concept sized for a portrait
+        // screen — tvOS has no drag-to-dismiss and forcing .medium/.large onto its
+        // differently shaped modal container clipped the content at both edges. Letting
+        // tvOS use its own default sheet presentation instead.
+        #if !os(tvOS)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
+        #endif
     }
 
     private var currentChapterIndex: Int? {
@@ -672,9 +678,12 @@ extension PlayerView {
             }
         }
         }
+        // See chapterListSheet above — presentationDetents doesn't fit tvOS's sheet shape.
+        #if !os(tvOS)
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
+        #endif
     }
 
     private var currentAudioStream: JellyfinMediaStream? {
