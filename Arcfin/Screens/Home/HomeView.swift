@@ -63,6 +63,15 @@ struct MainTabView: View {
                 Tab("Requests", systemImage: "clock") {
                     TVSeerrView()
                 }
+                Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
+                    NavigationStack { SettingsView() }
+                }
+                // role: .search always renders as its own pinned element at the far end of
+                // the tab bar regardless of where it sits here, so declaring it anywhere but
+                // last leaves the code order out of sync with the actual visual order. tvOS's
+                // directional focus geometry is built from render position, not declaration
+                // order — that mismatch is a plausible cause of Requests (the tab declared
+                // right before Search) being unreachable by remote navigation.
                 Tab("Search", systemImage: "magnifyingglass", role: .search) {
                     NavigationStack {
                         SearchView(query: $searchQuery)
@@ -73,9 +82,6 @@ struct MainTabView: View {
                                 TVMediaDetailView(item: item)
                             }
                     }
-                }
-                Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
-                    NavigationStack { SettingsView() }
                 }
             }
             // Suppress the system white focus halo across all screens.

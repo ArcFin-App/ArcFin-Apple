@@ -22,7 +22,7 @@ public struct TopShelfMediaItem: Codable {
 }
 
 public enum TopShelfBridge {
-    private static let suiteName = "group.com.psmattas.arcfin"
+    private static let suiteName = "group.com.psmattas.Arcfin.shared"
     private static let continueWatchingKey = "topShelf.continueWatching"
     private static let recentlyAddedKey    = "topShelf.recentlyAdded"
 
