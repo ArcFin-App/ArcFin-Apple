@@ -88,6 +88,14 @@ struct SettingsView: View {
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow
+                if let activeID = authManager.state.credential?.id {
+                    NavigationLink {
+                        ServerSettingsView(profileID: activeID)
+                    } label: {
+                        Text("Server Settings")
+                    }
+                    .listRowBackground(Color.clear)
+                }
                 Button { showUsersSheet = true } label: {
                     Text("Switch Server")
                 }
