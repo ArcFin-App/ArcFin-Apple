@@ -36,6 +36,7 @@ struct ContentView: View {
     @State private var syncPlayManager = SyncPlayManager()
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
+    @State private var arcfinSyncTask: Task<Void, Never>?
     #if !os(tvOS)
     @State private var isAppLocked = false
     @State private var activeProfileHasPIN = false
@@ -176,7 +177,14 @@ struct ContentView: View {
         .task { authManager.startNetworkMonitoring() }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active { startHeartbeat() } else { heartbeatTask?.cancel() }
+            if newPhase == .active {
+                startHeartbeat()
+                startArcfinSyncLoop()
+                authManager.syncArcfinNow()
+            } else {
+                heartbeatTask?.cancel()
+                arcfinSyncTask?.cancel()
+            }
             // Deliberately no re-lock here. scenePhase drops to .background not just when
             // the app is actually left, but also pulling down Notification/Control Center
             // over it and entering Picture in Picture (the app's own UI is off-screen, so
@@ -256,11 +264,28 @@ struct ContentView: View {
         }
     }
 
+    /// Cold launch and every sign-in/profile-switch already trigger a sync (see
+    /// AuthManager.refreshArcfinSync's call sites). This covers the gap: an admin changing a
+    /// lock or prefill while a user's app is already open shouldn't need a restart to take
+    /// effect. 15 minutes, not 60 seconds like the heartbeat — this hits a real endpoint that
+    /// reads/writes a file per user, no need for it to be as cheap/frequent as a token check.
+    private func startArcfinSyncLoop() {
+        arcfinSyncTask?.cancel()
+        arcfinSyncTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(900))
+                guard !Task.isCancelled else { return }
+                authManager.syncArcfinNow()
+            }
+        }
+    }
+
     private func configureSeerr() {
         seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
                             password: seerrPassword, authMethod: seerrAuthMethod)
-        // Warms the Requests tab in the background as soon as Seerr is reachable, so it's
-        // already populated (no skeleton) the first time the user actually taps that tab.
+        // Warms Discover and the Browse > Your Requests sections in the background as soon
+        // as Seerr is reachable, so they're already populated (no skeleton) the first time
+        // the user actually taps into either.
         guard seerrRepo.isConfigured else { return }
         Task {
             await seerrRepo.loadDiscover()

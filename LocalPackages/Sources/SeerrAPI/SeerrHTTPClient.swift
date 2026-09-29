@@ -2,6 +2,12 @@
 
 import Foundation
 import Network
+import Telemetry
+// Needed for the privacy-annotated string interpolation in the error log below — Telemetry
+// wraps os.Logger, but that doesn't re-export the OSLogMessage interpolation machinery to
+// callers (see MediaRepository.swift/JellyfinAuthClient.swift/SeerrRepository.swift, which hit
+// the identical "missing import of defining module 'os'" error for the same reason).
+import os
 
 // MARK: - Auth method
 
@@ -160,8 +166,12 @@ public actor SeerrHTTPClient {
 
     // MARK: - Discover
 
-    public func trending() async throws -> [SeerrItem] {
-        try await fetchPage("api/v1/trending", query: [])
+    public func trending(mediaType: RequestMediaType? = nil) async throws -> [SeerrItem] {
+        // Was "api/v1/trending" — not a real Seerr path (verified against seerr-api.yml,
+        // the only trending endpoint is under /discover).
+        var query: [(String, String)] = []
+        if let mediaType { query.append(("mediaType", mediaType.rawValue)) }
+        return try await fetchPage("api/v1/discover/trending", query: query)
     }
 
     public func discoverMovies(page: Int = 1) async throws -> [SeerrItem] {
@@ -170,6 +180,34 @@ public actor SeerrHTTPClient {
 
     public func discoverTV(page: Int = 1) async throws -> [SeerrItem] {
         try await fetchPage("api/v1/discover/tv", query: [("page", "\(page)")])
+    }
+
+    public func discoverMovies(genreId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/movies/genre/\(genreId)", query: [("page", "\(page)")],
+                            defaultMediaType: .movie)
+    }
+
+    public func discoverTV(genreId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/tv/genre/\(genreId)", query: [("page", "\(page)")],
+                            defaultMediaType: .tv)
+    }
+
+    public func upcomingMovies(page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/movies/upcoming", query: [("page", "\(page)")],
+                            defaultMediaType: .movie)
+    }
+
+    public func upcomingTV(page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/tv/upcoming", query: [("page", "\(page)")],
+                            defaultMediaType: .tv)
+    }
+
+    /// Genres with a representative backdrop attached — the picker data for browsing by genre.
+    public func genreSlider(mediaType: RequestMediaType) async throws -> [SeerrGenre] {
+        try await ensureAuthenticated()
+        let path = mediaType == .tv ? "api/v1/discover/genreslider/tv" : "api/v1/discover/genreslider/movie"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        return try JSONDecoder().decode([SeerrGenreResponse].self, from: data).map { $0.toGenre() }
     }
 
     // MARK: - Search
@@ -234,12 +272,23 @@ public actor SeerrHTTPClient {
         let raw = try JSONDecoder().decode(Page.self, from: data).results
 
         // The request list only carries tmdbId/mediaType — title and artwork
-        // live on TMDB, so fetch each item's detail to fill them in.
+        // live on TMDB, so fetch each item's detail to fill them in. A failure here used to
+        // be completely silent (bare try?), leaving the row showing "Unknown" with zero trace
+        // of why — same silently-swallowed-error shape already found and fixed for
+        // SeerrRepository.loadDiscover and others elsewhere in this codebase.
         var items = [SeerrRequestItem?](repeating: nil, count: raw.count)
         await withTaskGroup(of: (Int, SeerrRequestItem).self) { group in
             for (index, r) in raw.enumerated() {
                 group.addTask {
-                    let detail = try? await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
+                    var detail: SeerrItem?
+                    do {
+                        detail = try await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
+                    } catch {
+                        let nsError = error as NSError
+                        Telemetry.logger(category: "SeerrHTTPClient").error(
+                            "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                    }
                     return (index, r.toItem(detail: detail))
                 }
             }
@@ -407,6 +456,16 @@ public enum SeerrError: Error, LocalizedError {
 
 // MARK: - Private response decoders
 
+private struct SeerrGenreResponse: Decodable {
+    let id: Int
+    let name: String
+    let backdrops: [String]?
+
+    func toGenre() -> SeerrGenre {
+        SeerrGenre(id: id, name: name, backdropPath: backdrops?.first)
+    }
+}
+
 private struct SeerrItemResponse: Decodable {
     let id: Int
     let title: String?
@@ -457,15 +516,17 @@ private struct SeerrRequestResponse: Decodable {
     struct SeerrRequestMedia: Decodable {
         let tmdbId: Int?
         let mediaType: String?
+        let status: Int?
     }
 
     func toItem(detail: SeerrItem?) -> SeerrRequestItem {
         let reqStatus = RequestStatus(rawValue: status) ?? .pending
+        let mediaStatus = media.status.flatMap { SeerrAvailabilityStatus(rawValue: $0) }
         let mType: RequestMediaType = media.mediaType == "tv" ? .tv : .movie
         let title = detail?.title ?? "Unknown"
         let date = createdAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         return SeerrRequestItem(id: id, mediaTitle: title, mediaType: mType,
-                                status: reqStatus, requestedAt: date,
+                                status: reqStatus, mediaStatus: mediaStatus, requestedAt: date,
                                 posterPath: detail?.posterPath, backdropPath: detail?.backdropPath,
                                 tmdbId: media.tmdbId)
     }

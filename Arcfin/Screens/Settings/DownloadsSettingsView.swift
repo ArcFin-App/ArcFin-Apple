@@ -11,16 +11,19 @@ struct DownloadsSettingsView: View {
     @AppStorage("smartDownloadsEnabled")       private var smartDownloadsEnabled       = false
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
     @AppStorage("smartDownloadsStorageBudgetGB") private var smartDownloadsStorageBudgetGB = 10
+    @Environment(AuthManager.self) private var authManager
 
     var body: some View {
         List {
             Section {
                 Toggle("Wi-Fi Only", isOn: $wifiOnly)
+                    .syncLocked("wifiOnly", authManager)
                 Picker("Download Quality", selection: $downloadQuality) {
                     ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
                         Text(q.label).tag(q)
                     }
                 }
+                .syncLocked("downloadQuality", authManager)
             }
 
             Section {
@@ -31,17 +34,20 @@ struct DownloadsSettingsView: View {
 
             Section {
                 Toggle("Smart Downloads", isOn: $smartDownloadsEnabled)
+                    .syncLocked("smartDownloadsEnabled", authManager)
                 if smartDownloadsEnabled {
                     Picker("Episodes to Keep", selection: $smartDownloadsEpisodeCount) {
                         ForEach(1...5, id: \.self) { count in
                             Text("\(count)").tag(count)
                         }
                     }
+                    .syncLocked("smartDownloadsEpisodeCount", authManager)
                     Picker("Storage Budget", selection: $smartDownloadsStorageBudgetGB) {
                         ForEach([5, 10, 25, 50], id: \.self) { gb in
                             Text("\(gb) GB").tag(gb)
                         }
                     }
+                    .syncLocked("smartDownloadsStorageBudgetGB", authManager)
                 }
             } footer: {
                 Text("Smart Downloads keeps the next unwatched episodes of your shows downloaded automatically, removing watched ones to stay under your storage budget.")
@@ -52,6 +58,7 @@ struct DownloadsSettingsView: View {
             #if os(iOS)
             Section {
                 Toggle("Offline Mode", isOn: $offlineModeEnabled)
+                    .syncLocked("offlineModeEnabled", authManager)
             } footer: {
                 Text("Offline Mode shows only your downloaded content — no connection to your server is used or needed.")
                     .font(.caption)
@@ -67,4 +74,5 @@ struct DownloadsSettingsView: View {
 
 #Preview {
     NavigationStack { DownloadsSettingsView() }
+        .environment(AuthManager())
 }

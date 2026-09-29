@@ -7,6 +7,7 @@ struct AppearanceView: View {
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    @Environment(AuthManager.self) private var authManager
     #if canImport(UIKit) && !os(tvOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
@@ -32,8 +33,10 @@ struct AppearanceView: View {
             Section {
                 Toggle("Merge Continue Watching & Up Next", isOn: $mergeContinueWatchingAndUpNext)
                     .tvListRow()
+                    .syncLocked("mergeContinueWatchingAndUpNext", authManager)
                 Toggle("Hero Video Backdrops", isOn: $heroVideoBackdropsEnabled)
                     .tvListRow()
+                    .syncLocked("heroVideoBackdropsEnabled", authManager)
                 NavigationLink {
                     HomeShelfSettingsView()
                 } label: {
@@ -64,7 +67,7 @@ struct AppearanceView: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Choose which tabs show and in what order. Requests and Watchlist only appear when Seerr is connected, even if active here.")
+                Text("Choose which tabs show and in what order. Discover and Watchlist only appear when Seerr is connected, even if active here.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -72,6 +75,7 @@ struct AppearanceView: View {
             Section {
                 Toggle("Reduce Motion", isOn: $reduceMotion)
                     .tvListRow()
+                    .syncLocked("reduceMotion", authManager)
             } header: {
                 Label("Motion", systemImage: "sparkles")
                     .font(.system(size: 12, weight: .semibold))
@@ -88,6 +92,7 @@ struct AppearanceView: View {
             Section {
                 Toggle("Haptic Feedback", isOn: $hapticsEnabled)
                     .tvListRow()
+                    .syncLocked("hapticsEnabled", authManager)
             } header: {
                 Label("Feedback", systemImage: "iphone.radiowaves.left.and.right")
                     .font(.system(size: 12, weight: .semibold))
@@ -108,4 +113,5 @@ struct AppearanceView: View {
 
 #Preview {
     NavigationStack { AppearanceView() }
+        .environment(AuthManager())
 }

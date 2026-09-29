@@ -544,6 +544,17 @@ struct HomeView: View {
             withAnimation(DT.Animation.slow) { heroIndex = (heroIndex + 1) % heroItems.count }
         }
         .onChange(of: heroIndex) { _, _ in loadHeroVideoBackdrop() }
+        // heroItems is computed live from continueWatching/nextUp/recentlyAdded — a data
+        // refresh can shrink it while heroIndex (persistent @State) still points past the new
+        // end. TabView(selection:) doesn't clamp that itself, so it asked its internal
+        // UICollectionView to scroll to an index that no longer existed — a hard crash
+        // (_validateScrollingTargetIndexPath), confirmed from a real TestFlight crash log.
+        .onChange(of: heroItems.count) { _, newCount in
+            guard heroIndex >= newCount else { return }
+            // max(0, ...) covers shrinking all the way to zero too, not just "smaller but
+            // still non-empty" — 0 is an inert, always-valid value to sit at either way.
+            heroIndex = max(0, newCount - 1)
+        }
         .onAppear { loadHeroVideoBackdrop() }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {

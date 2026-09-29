@@ -63,6 +63,39 @@ struct ServerSettingsView: View {
             }
 
             Section {
+                if authManager.isSyncingArcfin {
+                    HStack { Spacer(); ProgressView(); Spacer() }
+                } else if let status = authManager.arcfinSyncStatus {
+                    LabeledContent("Status", value: "Connected")
+                    LabeledContent("Version", value: status.version)
+                    LabeledContent("Locked Settings", value: "\(authManager.arcfinSyncLockedKeys.count)")
+                    if let lastSynced = authManager.arcfinSyncLastSyncedAt {
+                        LabeledContent("Last Synced") {
+                            Text(lastSynced, style: .relative)
+                        }
+                    }
+                } else {
+                    LabeledContent("Status", value: "Not Installed")
+                }
+                Button {
+                    authManager.syncArcfinNow()
+                } label: {
+                    Text(authManager.isSyncingArcfin ? "Syncing…" : "Sync Now")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .disabled(authManager.isSyncingArcfin)
+            } header: {
+                Label("Arcfin Sync", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Syncs supported app settings with the Arcfin Sync Jellyfin plugin, when your server has it installed. Locked settings are controlled by your admin and can't be changed here.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
                 TextField("https://your-server.example.com", text: $remoteURL)
                     .textContentType(.URL)
                     .autocorrectionDisabled()

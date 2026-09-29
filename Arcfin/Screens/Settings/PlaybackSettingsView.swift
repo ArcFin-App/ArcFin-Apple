@@ -4,6 +4,7 @@ import SwiftUI
 import MediaEngine
 
 struct PlaybackSettingsView: View {
+    @Environment(AuthManager.self) private var authManager
     @AppStorage("videoQuality")    private var videoQuality    = VideoQuality.max
     @AppStorage("playbackEngine")  private var playbackEngine  = PlaybackEngineKind.auto
     @AppStorage("autoPlayNext")    private var autoPlayNext    = true
@@ -54,6 +55,7 @@ struct PlaybackSettingsView: View {
                     }
                 }
                 .tvListRow()
+                .syncLocked("videoQuality", authManager)
                 VStack(alignment: .leading, spacing: 4) {
                     Picker("Playback Engine", selection: $playbackEngine) {
                         ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
@@ -65,6 +67,7 @@ struct PlaybackSettingsView: View {
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 .tvListRow()
+                .syncLocked("playbackEngine", authManager)
             }
 
             Section {
@@ -74,12 +77,14 @@ struct PlaybackSettingsView: View {
                     }
                 }
                 .tvListRow()
+                .syncLocked("skipForwardSeconds", authManager)
                 Picker("Skip Backward", selection: $skipBackwardSeconds) {
                     ForEach(skipIntervalOptions, id: \.self) { seconds in
                         Text("\(seconds)s").tag(seconds)
                     }
                 }
                 .tvListRow()
+                .syncLocked("skipBackwardSeconds", authManager)
             } footer: {
                 Text("Used by the on-screen skip buttons, double-tap to seek, and the left/right arrow keys.")
                     .font(.caption)
@@ -89,24 +94,31 @@ struct PlaybackSettingsView: View {
             Section {
                 Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
                     .tvListRow()
+                    .syncLocked("autoPlayNext", authManager)
                 Toggle("Skip Recap Automatically", isOn: $skipRecap)
                     .tvListRow()
+                    .syncLocked("skipRecap", authManager)
                 Toggle("Skip Intro Automatically", isOn: $skipIntro)
                     .tvListRow()
+                    .syncLocked("skipIntro", authManager)
                 Toggle("Skip Credits Automatically", isOn: $skipCredits)
                     .tvListRow()
+                    .syncLocked("skipCredits", authManager)
                 Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
                     .tvListRow()
+                    .syncLocked("subtitleDefault", authManager)
             }
 
             Section {
                 Toggle("Trailers", isOn: $trailersEnabled)
                     .tvListRow()
+                    .syncLocked("trailersEnabled", authManager)
                 #if !os(tvOS)
                 // YouTubeTrailerPlayerView (YouTubePlayerKit, needs WebKit) isn't available
                 // on tvOS at all — only a local trailer indexed on the server plays there.
                 if trailersEnabled {
                     Toggle("YouTube Fallback", isOn: $youtubeTrailersEnabled)
+                        .syncLocked("youtubeTrailersEnabled", authManager)
                 }
                 #endif
             } footer: {
@@ -132,12 +144,14 @@ struct PlaybackSettingsView: View {
                     }
                 }
                 .tvListRow()
+                .syncLocked("preferredAudioLanguage", authManager)
                 Picker("Preferred Subtitle Language", selection: $preferredSubtitleLanguage) {
                     ForEach(Self.subtitleLanguageOptions, id: \.code) { option in
                         Text(option.name).tag(option.code)
                     }
                 }
                 .tvListRow()
+                .syncLocked("preferredSubtitleLanguage", authManager)
             } footer: {
                 Text("Used to pick a starting audio/subtitle track when a title has a matching language available — otherwise falls back to the server's default.")
                     .font(.caption)
@@ -173,4 +187,5 @@ struct PlaybackSettingsView: View {
 
 #Preview {
     NavigationStack { PlaybackSettingsView() }
+        .environment(AuthManager())
 }

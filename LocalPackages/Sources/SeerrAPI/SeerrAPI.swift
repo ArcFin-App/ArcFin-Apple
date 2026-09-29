@@ -27,8 +27,11 @@ public enum RequestMediaType: String, Sendable {
     case movie, tv
 }
 
+/// Seerr's request.status — the approval state of the request itself, distinct from
+/// media.status (SeerrAvailabilityStatus), which tracks whether the requested title has
+/// actually shown up on the server yet. The API only ever sends 1/2/3 for this field.
 public enum RequestStatus: Int, Sendable, Equatable {
-    case pending = 1, approved, declined, available
+    case pending = 1, approved, declined
 }
 
 public struct MediaRequest: Sendable, Identifiable, Equatable {
@@ -87,7 +90,7 @@ public struct SearchResult: Sendable, Identifiable, Equatable {
 
 // MARK: - Discover models
 
-public struct SeerrItem: Sendable, Identifiable, Equatable {
+public struct SeerrItem: Sendable, Identifiable, Equatable, Hashable {
     public let id: Int
     public var title: String
     public var mediaType: RequestMediaType
@@ -110,6 +113,22 @@ public struct SeerrItem: Sendable, Identifiable, Equatable {
     }
     public var backdropURL: URL? {
         backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w1280\($0)") }
+    }
+}
+
+/// A genre with a representative backdrop image — the picker data for /discover/genreslider,
+/// used to browse movies/TV by genre.
+public struct SeerrGenre: Sendable, Identifiable, Equatable, Hashable {
+    public let id: Int
+    public var name: String
+    public var backdropPath: String?
+
+    public init(id: Int, name: String, backdropPath: String? = nil) {
+        self.id = id; self.name = name; self.backdropPath = backdropPath
+    }
+
+    public var backdropURL: URL? {
+        backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w780\($0)") }
     }
 }
 
@@ -141,6 +160,11 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
     public var mediaTitle: String
     public var mediaType: RequestMediaType
     public var status: RequestStatus
+    /// Availability of the underlying media — separate from `status` (the request's own
+    /// approval state). A request can be `.approved` while its media is still `.processing`,
+    /// or even `.pending` approval while an earlier request already made the media
+    /// `.partiallyAvailable`. nil only if Seerr didn't send a media status at all.
+    public var mediaStatus: SeerrAvailabilityStatus?
     public var requestedAt: Date
     public var posterPath: String?
     public var backdropPath: String?
@@ -149,9 +173,10 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
     public var tmdbId: Int?
 
     public init(id: Int, mediaTitle: String, mediaType: RequestMediaType, status: RequestStatus,
-                requestedAt: Date, posterPath: String? = nil, backdropPath: String? = nil, tmdbId: Int? = nil) {
+                mediaStatus: SeerrAvailabilityStatus? = nil, requestedAt: Date,
+                posterPath: String? = nil, backdropPath: String? = nil, tmdbId: Int? = nil) {
         self.id = id; self.mediaTitle = mediaTitle; self.mediaType = mediaType
-        self.status = status; self.requestedAt = requestedAt
+        self.status = status; self.mediaStatus = mediaStatus; self.requestedAt = requestedAt
         self.posterPath = posterPath; self.backdropPath = backdropPath
         self.tmdbId = tmdbId
     }

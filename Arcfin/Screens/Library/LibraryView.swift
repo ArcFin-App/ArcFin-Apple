@@ -3,6 +3,7 @@
 import SwiftUI
 import AVKit
 import JellyfinAPI
+import SeerrAPI
 import AuthCore
 import MediaEngine
 import Persistence
@@ -18,6 +19,7 @@ import UIKit
 
 struct LibraryView: View {
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var showDocPicker = false
     @State private var pickedURL: URL?
@@ -109,6 +111,11 @@ struct LibraryView: View {
                     librariesSection
                 }
 
+                // ── Your Requests ───────────────────────────────────────
+                if seerrRepo.isConfigured {
+                    requestsSection
+                }
+
                 // ── Downloads ───────────────────────────────────────────
                 #if os(iOS)
                 jellyfinDownloadsSection
@@ -160,6 +167,21 @@ struct LibraryView: View {
                 }
             }
 #endif
+        }
+    }
+
+    // MARK: - Your Requests section
+
+    private var requestsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("Your Requests")
+            NavigationLink {
+                SeerrRequestsListView(filter: nil, title: "Requests")
+            } label: {
+                RequestsCard()
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: 220)
         }
     }
 
@@ -368,6 +390,49 @@ private struct LibraryCard: View {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+}
+
+/// Same tile treatment as LibraryCard (icon + centered label, gradient background, height
+/// 110) so "Your Requests" reads as one more tile alongside the library ones, not a
+/// differently-styled row.
+private struct RequestsCard: View {
+    @State private var hovered = false
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [DT.Color.accent.opacity(0.25), DT.Color.backgroundSecondary],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+
+            VStack(spacing: 10) {
+                Image(systemName: "text.badge.checkmark")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.6), radius: 6)
+
+                Text("Requests")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .shadow(color: .black.opacity(0.6), radius: 6)
+            }
+            .padding(16)
+        }
+        .frame(height: 110)
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: DT.Radius.card)
+                .stroke(hovered ? DT.Color.accent.opacity(0.5) : DT.Color.accent.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+        .scaleEffect(hovered ? 1.02 : 1)
+        .animation(DT.Animation.fast, value: hovered)
+        #if !os(tvOS)
+        .onHover { hovered = $0 }
+        #endif
     }
 }
 

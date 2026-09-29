@@ -4,6 +4,9 @@ import Foundation
 import Observation
 import AuthCore
 import JellyfinAPI
+import SyncEngine
+import Telemetry
+import os
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
@@ -42,7 +45,19 @@ final class AuthManager {
     /// Gates the Active Sessions settings screen.
     var isAdmin: Bool = false
 
+    /// nil until the first check completes, or if the server has no Arcfin Sync plugin /
+    /// isn't reachable — both look identical on purpose, see ArcfinSyncClient.fetchStatus.
+    var arcfinSyncStatus: ArcfinSyncStatus?
+    /// Keys the admin has locked server-side. Empty whenever arcfinSyncStatus is nil, which is
+    /// what keeps every Settings screen fully local-editable when the plugin isn't present.
+    var arcfinSyncLockedKeys: Set<String> = []
+    /// nil until a sync actually completes. Distinct from arcfinSyncStatus being non-nil,
+    /// which only means the plugin was detected — this is what a "Last synced" label reads.
+    var arcfinSyncLastSyncedAt: Date?
+    var isSyncingArcfin: Bool = false
+
     let authClient = JellyfinAuthClient()
+    private let syncClient = ArcfinSyncClient()
     private let keychain = KeychainStore()
 
     // MARK: - Startup
@@ -85,6 +100,7 @@ final class AuthManager {
             self.state = .authenticated(updated)
         }
         refreshIsAdmin(for: cred)
+        refreshArcfinSync(for: cred)
     }
 
     // MARK: - Live Wi-Fi switching
@@ -232,6 +248,7 @@ final class AuthManager {
         persist(active: credential)
         state = .authenticated(credential)
         refreshIsAdmin(for: credential)
+        refreshArcfinSync(for: credential)
     }
 
     // MARK: - Multi-profile management
@@ -241,12 +258,14 @@ final class AuthManager {
         persist(active: credential)
         state = .authenticated(credential)
         refreshIsAdmin(for: credential)
+        refreshArcfinSync(for: credential)
     }
 
     func switchTo(_ credential: ServerCredential) {
         persist(active: credential)
         state = .authenticated(credential)
         refreshIsAdmin(for: credential)
+        refreshArcfinSync(for: credential)
     }
 
     /// isAdmin isn't persisted per profile — every place that makes a credential the
@@ -258,6 +277,40 @@ final class AuthManager {
             guard let self else { return }
             self.isAdmin = await self.authClient.fetchIsAdministrator(credential: credential)
         }
+    }
+
+    /// Checks for the Arcfin Sync plugin and, if present, syncs settings — called at every
+    /// place a credential becomes the active one, same as refreshIsAdmin. A missing/unreachable
+    /// plugin resets both fields to their "not present" defaults rather than leaving a stale
+    /// status from a previously active profile.
+    private static let syncLog = Telemetry.logger(category: "ArcfinSync")
+
+    private func refreshArcfinSync(for credential: ServerCredential) {
+        arcfinSyncStatus = nil
+        arcfinSyncLockedKeys = []
+        arcfinSyncLastSyncedAt = nil
+        isSyncingArcfin = true
+        Task { [weak self] in
+            guard let self else { return }
+            defer { self.isSyncingArcfin = false }
+            guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed else {
+                Self.syncLog.info("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
+                return
+            }
+            Self.syncLog.info("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
+            self.arcfinSyncStatus = status
+            let header = self.authClient.authHeader(token: credential.accessToken)
+            self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
+            self.arcfinSyncLastSyncedAt = .now
+            Self.syncLog.info("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
+        }
+    }
+
+    /// Manual re-sync for a "Sync Now" button — re-runs the exact same check/sync as every
+    /// automatic call site, just triggered on demand against whichever profile is active.
+    func syncArcfinNow() {
+        guard case .authenticated(let credential) = state else { return }
+        refreshArcfinSync(for: credential)
     }
 
     func removeProfile(id: UUID) {
