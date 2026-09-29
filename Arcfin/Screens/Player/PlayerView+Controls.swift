@@ -494,6 +494,31 @@ extension PlayerView {
                         scheduleAutoHide()
                     }
             )
+            #else
+            // No drag surface on tvOS — focus the bar and swipe the remote's touch surface
+            // left/right to nudge the pending position (with the same trickplay preview),
+            // then click to commit. Matches how Apple's own tvOS video player scrubber works.
+            .focusable(true)
+            .onMoveCommand { direction in
+                guard direction == .left || direction == .right else { return }
+                if !isScrubbing {
+                    isScrubbing = true
+                    scrubTicks = Double(pendingSeekTargetTicks ?? player.positionTicks)
+                    hideControlsTask?.cancel()
+                }
+                let stepTicks: Double = 10 * 10_000_000
+                scrubTicks = direction == .right
+                    ? min(scrubTicks + stepTicks, Double(player.durationTicks))
+                    : max(scrubTicks - stepTicks, 0)
+                updateScrubThumbnail()
+            }
+            .onTapGesture {
+                guard isScrubbing else { return }
+                performSeek(to: Int64(scrubTicks))
+                isScrubbing = false
+                scrubThumbnail = nil
+                scheduleAutoHide()
+            }
             #endif
         }
         .frame(height: 20)
