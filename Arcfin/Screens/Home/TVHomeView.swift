@@ -413,31 +413,53 @@ struct TVHomeView: View {
     // MARK: - Below fold
 
     private var belowFoldSection: some View {
+        // Matches the shelf set HomeView (iOS/iPadOS/macOS) shows beyond Continue Watching —
+        // tvOS previously only had one combined Recently Added row plus the three Seerr ones.
         VStack(spacing: 0) {
-            if !mediaRepo.recentlyAdded.isEmpty {
-                tvShelfRow(title: "Recently Added", badge: "NEW") {
-                    ForEach(mediaRepo.recentlyAdded) { item in
-                        NavigationLink(value: item) {
-                            PosterCard(
-                                title: item.name,
-                                subtitle: item.productionYear.map { String($0) },
-                                imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
-                            )
-                        }
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-                        .focused($focusedItemID, equals: item.id)
-                        .contextMenu { cwContextMenu(item) }
-                    }
-                }
+            if !mediaRepo.nextUp.isEmpty {
+                mediaShelf(title: "Next Up", items: mediaRepo.nextUp)
+            }
+            if !mediaRepo.recentlyAddedMovies.isEmpty {
+                mediaShelf(title: "Recently Added Movies", badge: "NEW", items: mediaRepo.recentlyAddedMovies)
+            }
+            if !mediaRepo.recentlyAddedShows.isEmpty {
+                mediaShelf(title: "Recently Added Shows", badge: "NEW", items: mediaRepo.recentlyAddedShows)
+            }
+            if !mediaRepo.recentlyReleasedMovies.isEmpty {
+                mediaShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
+            }
+            if !mediaRepo.recentlyAiredEpisodes.isEmpty {
+                mediaShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
+            }
+            if !mediaRepo.watchAgain.isEmpty {
+                mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
             }
             if seerrRepo.isConfigured && seerrDiscoverEnabled {
+                if !seerrRepo.watchlist.isEmpty { seerrShelf(title: "Watchlist", items: seerrRepo.watchlist) }
                 if !seerrRepo.trending.isEmpty { seerrShelf(title: "Trending", items: seerrRepo.trending) }
                 if !seerrRepo.popularMovies.isEmpty { seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies) }
                 if !seerrRepo.popularTV.isEmpty { seerrShelf(title: "Popular Series", items: seerrRepo.popularTV) }
             }
         }
         .focusSection()
+    }
+
+    private func mediaShelf(title: String, badge: String? = nil, items: [MediaItem]) -> some View {
+        tvShelfRow(title: title, badge: badge) {
+            ForEach(items) { item in
+                NavigationLink(value: item) {
+                    PosterCard(
+                        title: item.name,
+                        subtitle: item.productionYear.map { String($0) },
+                        imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                    )
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .focused($focusedItemID, equals: item.id)
+                .contextMenu { cwContextMenu(item) }
+            }
+        }
     }
 
     private func tvShelfRow<Content: View>(

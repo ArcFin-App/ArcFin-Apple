@@ -63,7 +63,7 @@ struct MainTabView: View {
                 Tab("Requests", systemImage: "clock") {
                     TVSeerrView()
                 }
-                Tab(authManager.state.credential?.displayName ?? "Profile", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
+                Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                     NavigationStack { SettingsView() }
                 }
                 // role: .search always renders as its own pinned element at the far end of
