@@ -79,7 +79,7 @@ final class LoopingPlayerUIView: UIView {
             }
         }
         stallObserver = NotificationCenter.default.addObserver(
-            forName: AVPlayerItem.didFailToPlayToEndTimeNotification, object: item, queue: .main
+            forName: AVPlayerItem.failedToPlayToEndTimeNotification, object: item, queue: .main
         ) { note in
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
@@ -191,7 +191,7 @@ final class LoopingPlayerNSView: NSView {
             }
         }
         stallObserver = NotificationCenter.default.addObserver(
-            forName: AVPlayerItem.didFailToPlayToEndTimeNotification, object: item, queue: .main
+            forName: AVPlayerItem.failedToPlayToEndTimeNotification, object: item, queue: .main
         ) { note in
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
