@@ -22,7 +22,6 @@ struct TVSeerrView: View {
                 }
             }
             .background(DT.Color.backgroundPrimary)
-            .navigationTitle("Requests")
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }

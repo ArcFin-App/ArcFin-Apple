@@ -231,7 +231,6 @@ struct SettingsView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
 #if os(tvOS)
-        .navigationTitle(authManager.state.credential?.displayName ?? "Profile")
         .id(listID)
         .onAppear { listID = UUID() }
         .sheet(isPresented: $showUsersSheet) {
