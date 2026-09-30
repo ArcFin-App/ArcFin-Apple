@@ -60,18 +60,9 @@ struct MainTabView: View {
                 Tab("Library", systemImage: "square.grid.2x2") {
                     TVLibraryView()
                 }
-                Tab("Requests", systemImage: "clock") {
-                    TVSeerrView()
-                }
-                Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
-                    NavigationStack { SettingsView() }
-                }
-                // role: .search always renders as its own pinned element at the far end of
-                // the tab bar regardless of where it sits here, so declaring it anywhere but
-                // last leaves the code order out of sync with the actual visual order. tvOS's
-                // directional focus geometry is built from render position, not declaration
-                // order — that mismatch is a plausible cause of Requests (the tab declared
-                // right before Search) being unreachable by remote navigation.
+                // Declared right after Library so it renders right after Library — on-device
+                // testing showed role: .search does NOT always pin to the far end of the bar
+                // regardless of declaration order the way it was previously assumed to.
                 Tab("Search", systemImage: "magnifyingglass", role: .search) {
                     NavigationStack {
                         SearchView(query: $searchQuery)
@@ -82,6 +73,12 @@ struct MainTabView: View {
                                 TVMediaDetailView(item: item)
                             }
                     }
+                }
+                Tab("Requests", systemImage: "clock") {
+                    TVSeerrView()
+                }
+                Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
+                    NavigationStack { SettingsView() }
                 }
             }
             // Suppress the system white focus halo across all screens.
