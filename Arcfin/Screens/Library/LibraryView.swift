@@ -967,14 +967,6 @@ struct LibraryDetailView: View {
                 .background(DT.Color.backgroundPrimary)
             } else {
                 ScrollView(showsIndicators: false) {
-#if !os(macOS) && !os(tvOS)
-                    Text(library.name)
-                        .font(.largeTitle.bold())
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, DT.Spacing.pagePad)
-                        .padding(.top, DT.Spacing.pagePad)
-#endif
                     LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                         ForEach(items) { item in
                             NavigationLink(value: navTarget(for: item)) {
@@ -1022,15 +1014,15 @@ struct LibraryDetailView: View {
             }
         }
 #if os(macOS)
-        // The inline "library.name" heading above only renders on iOS — macOS relies on
-        // the window/sidebar title instead, so an empty string here left the screen with
-        // no visible name anywhere.
         .navigationTitle(library.name)
-#else
+#elseif os(tvOS)
         .navigationTitle("")
-#endif
-#if !os(macOS) && !os(tvOS)
-        .navigationBarTitleDisplayMode(.inline)
+#else
+        // Large + pinned-on-scroll, matching Browse (the parent screen) — this used to fake
+        // its own title with a plain Text inside the ScrollView content instead, which just
+        // scrolled away with nothing left pinned once you scrolled past it.
+        .navigationTitle(library.name)
+        .navigationBarTitleDisplayMode(.large)
         .toolbar(.hidden, for: .tabBar)
 #endif
 #if !os(tvOS)
