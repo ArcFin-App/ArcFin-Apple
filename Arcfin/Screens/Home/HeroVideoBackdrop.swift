@@ -31,7 +31,8 @@ final class LoopingPlayerUIView: UIView {
 
     init(url: URL) {
         super.init(frame: .zero)
-        let item = AVPlayerItem(url: url)
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
         let player = AVQueuePlayer()
         player.isMuted = true
         player.actionAtItemEnd = .none
@@ -41,6 +42,17 @@ final class LoopingPlayerUIView: UIView {
         looper = AVPlayerLooper(player: player, templateItem: item)
         queuePlayer = player
         player.play()
+
+        // isMuted only zeroes the output — AVQueuePlayer still opens a CoreAudio HAL slot
+        // for the audio track and drives its clock off that render thread. When HAL IO
+        // fails to start (device contention, no route available), that clock never starts
+        // and playback stalls on the first decoded video frame. Deselecting the audio
+        // track entirely means there's no audio render pipeline to fail in the first
+        // place, since this backdrop is always silent anyway.
+        Task { @MainActor in
+            guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
+            item.select(nil, in: group)
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -98,7 +110,8 @@ final class LoopingPlayerNSView: NSView {
     init(url: URL) {
         super.init(frame: .zero)
         wantsLayer = true
-        let item = AVPlayerItem(url: url)
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
         let player = AVQueuePlayer()
         player.isMuted = true
         player.actionAtItemEnd = .none
@@ -107,6 +120,15 @@ final class LoopingPlayerNSView: NSView {
         looper = AVPlayerLooper(player: player, templateItem: item)
         queuePlayer = player
         player.play()
+
+        // See LoopingPlayerUIView's matching note above — isMuted alone doesn't stop
+        // AVQueuePlayer from opening a CoreAudio HAL slot and clocking playback off it.
+        // Deselect the audio track outright so a HAL IO start failure can't stall video
+        // on the first frame.
+        Task { @MainActor in
+            guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
+            item.select(nil, in: group)
+        }
     }
 
     @available(*, unavailable)
