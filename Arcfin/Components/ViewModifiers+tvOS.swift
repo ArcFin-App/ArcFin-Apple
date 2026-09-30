@@ -65,7 +65,6 @@ extension View {
 #if os(tvOS)
         self
             .listRowBackground(Color.clear)
-            .focusEffectDisabled()
 #else
         self
 #endif
