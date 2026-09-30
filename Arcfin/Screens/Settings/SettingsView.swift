@@ -264,8 +264,9 @@ struct SettingsView: View {
         .id(listID)
         .onAppear { listID = UUID() }
         .sheet(isPresented: $showUsersSheet) {
+            // frame(minWidth: 900) used to force content wider than tvOS's own sheet
+            // container, clipping the text on both edges — letting it size naturally fits.
             NavigationStack { TVUsersView() }
-                .frame(minWidth: 900)
                 .preferredColorScheme(.dark)
         }
 #else
