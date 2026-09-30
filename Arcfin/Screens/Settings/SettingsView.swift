@@ -12,9 +12,6 @@ struct SettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var showUsersSheet = false
-    @State private var quickConnectCode = ""
-    @State private var isAuthorizingQC = false
-    @State private var quickConnectResult: String?
     #if !os(tvOS)
     @State private var usersDetent: PresentationDetent = .medium
     #endif
@@ -35,32 +32,6 @@ struct SettingsView: View {
             profileSection
 
 #if os(tvOS)
-            // ── Quick Connect ────────────────────────────────────────────
-            Section {
-                HStack(spacing: 10) {
-                    TextField("Code", text: $quickConnectCode)
-                        .autocorrectionDisabled()
-                    Button {
-                        authorizeQuickConnect()
-                    } label: {
-                        if isAuthorizingQC { ProgressView().scaleEffect(0.8) }
-                        else { Text("Authorize") }
-                    }
-                    .disabled(quickConnectCode.isEmpty || isAuthorizingQC)
-                }
-                if let quickConnectResult {
-                    Text(quickConnectResult)
-                        .font(.caption)
-                        .foregroundStyle(quickConnectResult.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
-                }
-            } header: {
-                sectionHeader("Quick Connect", icon: "qrcode")
-            } footer: {
-                Text("Enter the code shown on another device to sign it in instantly using this account.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-
             // ── Preferences ──────────────────────────────────────────────
             Section {
                 NavigationLink {
@@ -88,6 +59,14 @@ struct SettingsView: View {
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow
+                if let activeID = authManager.state.credential?.id {
+                    NavigationLink {
+                        ServerSettingsView(profileID: activeID)
+                    } label: {
+                        Text("Server Settings")
+                    }
+                    .listRowBackground(Color.clear)
+                }
                 Button { showUsersSheet = true } label: {
                     Text("Switch Server")
                 }
@@ -256,8 +235,9 @@ struct SettingsView: View {
         .id(listID)
         .onAppear { listID = UUID() }
         .sheet(isPresented: $showUsersSheet) {
+            // frame(minWidth: 900) used to force content wider than tvOS's own sheet
+            // container, clipping the text on both edges — letting it size naturally fits.
             NavigationStack { TVUsersView() }
-                .frame(minWidth: 900)
                 .preferredColorScheme(.dark)
         }
 #else
@@ -423,28 +403,6 @@ struct SettingsView: View {
 #if os(iOS)
         .toolbar(.hidden, for: .tabBar)
 #endif
-    }
-
-    // MARK: - Quick Connect
-
-    private func authorizeQuickConnect() {
-        guard case .authenticated(let cred) = authManager.state else { return }
-        isAuthorizingQC = true
-        quickConnectResult = nil
-        let code = quickConnectCode
-        Task {
-            let header = authManager.authClient.authHeader(token: cred.accessToken)
-            do {
-                let ok = try await authManager.authClient.authorizeQuickConnect(
-                    baseURL: cred.baseURL, authHeader: header, code: code
-                )
-                quickConnectResult = ok ? "✓ Device authorized" : "✗ Invalid or expired code"
-                if ok { quickConnectCode = "" }
-            } catch {
-                quickConnectResult = "✗ \(error.localizedDescription)"
-            }
-            isAuthorizingQC = false
-        }
     }
 
     // MARK: - Helpers

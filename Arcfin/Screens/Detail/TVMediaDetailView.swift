@@ -491,11 +491,12 @@ struct TVMediaDetailView: View {
             similarItems = (try? await client.getSimilarItems(credential: cred, authHeader: header, itemId: item.id)) ?? []
         }
 
-        Task {
-            let fetched = (try? await client.getTrailers(
-                credential: cred, authHeader: header, itemId: item.id, limit: 6)) ?? []
-            await MainActor.run { trailers = fetched }
-        }
+        // Awaited like every other section's fetch above — a detached Task here let the
+        // page finish loading and render (isLoading already false) before trailers arrived,
+        // so trailersSection popped in late and shoved Cast/Recommended down into an
+        // already-settled, already-focused layout, reading as an unexplained gap.
+        trailers = (try? await client.getTrailers(
+            credential: cred, authHeader: header, itemId: item.id, limit: 6)) ?? []
 
         if let seriesId = seasonSeriesId {
             seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
