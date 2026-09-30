@@ -154,6 +154,10 @@ struct PosterCard: View {
         )
         .animation(DT.Animation.fast, value: hovered)
         .onHover { hovered = $0 }
+        // tvBody (above) already has this — without it, a NavigationLink wrapping this
+        // ZStack has no explicit click target, which AppKit's hit-testing is stricter
+        // about than UIKit's.
+        .contentShape(Rectangle())
     }
     #endif
 

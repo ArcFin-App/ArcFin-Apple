@@ -26,7 +26,6 @@ struct AppearanceView: View {
     }
 
     private var navSectionTitle: String { usesBottomBar ? "Bottom Navigation" : "Navigation" }
-    private var navSectionIcon: String { usesBottomBar ? "rectangle.bottomthird.inset.filled" : "sidebar.left" }
 
     var body: some View {
         List {
@@ -44,7 +43,7 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
             } header: {
-                Label("Home", systemImage: "house")
+                Text("Home")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
@@ -62,7 +61,7 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
             } header: {
-                Label(navSectionTitle, systemImage: navSectionIcon)
+                Text(navSectionTitle)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
@@ -77,7 +76,7 @@ struct AppearanceView: View {
                     .tvListRow()
                     .syncLocked("reduceMotion", authManager)
             } header: {
-                Label("Motion", systemImage: "sparkles")
+                Text("Motion")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
@@ -94,7 +93,7 @@ struct AppearanceView: View {
                     .tvListRow()
                     .syncLocked("hapticsEnabled", authManager)
             } header: {
-                Label("Feedback", systemImage: "iphone.radiowaves.left.and.right")
+                Text("Feedback")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
