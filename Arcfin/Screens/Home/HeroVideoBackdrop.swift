@@ -47,6 +47,15 @@ final class LoopingPlayerUIView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // Letting ARC deallocate queuePlayer/looper without an explicit stop first is a known
+    // source of CoreAudio HAL teardown races — pause and break the reference chain
+    // ourselves so AVFoundation tears the audio render chain down cleanly.
+    deinit {
+        queuePlayer?.pause()
+        looper = nil
+        queuePlayer = nil
+    }
+
     // See PlayerSurfaceView's own note in PlayerSupportViews.swift — this view's own backing
     // layer IS the AVPlayerLayer (layerClass above), so suppressing implicit animation has to
     // happen at the layer-delegate hook, not by wrapping a redundant frame reassignment in
@@ -102,6 +111,17 @@ final class LoopingPlayerNSView: NSView {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
+
+    // Letting ARC deallocate queuePlayer/looper without an explicit stop first is a known
+    // source of CoreAudio HAL teardown races — pause and break the reference chain
+    // ourselves so AVFoundation tears the audio render chain down cleanly. macOS's HAL is
+    // stricter about clean teardown sequencing than iOS, matching the reported crash signature
+    // (HALC_ProxyIOContext start failures right after a hero slide/video backdrop changes).
+    deinit {
+        queuePlayer?.pause()
+        looper = nil
+        queuePlayer = nil
+    }
 
     override func makeBackingLayer() -> CALayer { playerLayer }
 
