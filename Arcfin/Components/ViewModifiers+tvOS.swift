@@ -65,6 +65,7 @@ extension View {
 #if os(tvOS)
         self
             .listRowBackground(Color.clear)
+            .modifier(TVListRowFocusTextModifier())
 #else
         self
 #endif
@@ -72,6 +73,20 @@ extension View {
 }
 
 #if os(tvOS)
+// Native Toggle/Picker labels don't automatically invert to a readable color against the
+// system's own focus platter the way a NavigationLink/Button row's custom styling does —
+// they kept rendering in the app's plain white/primary text color even while focused,
+// unreadable against the light platter. Every tvListRow() row gets this for free.
+private struct TVListRowFocusTextModifier: ViewModifier {
+    @Environment(\.isFocused) private var isFocused
+
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
+            .animation(DT.Animation.fast, value: isFocused)
+    }
+}
+
 // Accent ring + glow only. No scaleEffect — avoids "out padding" on full-width buttons.
 private struct TVFocusRingModifier: ViewModifier {
     let cornerRadius: CGFloat

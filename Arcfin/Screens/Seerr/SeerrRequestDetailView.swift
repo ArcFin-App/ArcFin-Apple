@@ -16,6 +16,10 @@ struct SeerrRequestDetailView: View {
     @State private var isLoadingDetail = false
 
     var body: some View {
+        // Same fix as SeerrItemDetailView — no minimum height tying this to the actual
+        // window/screen left a large empty gap below the content on a short request or a
+        // tall macOS window.
+        GeometryReader { proxy in
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 backdrop
@@ -112,6 +116,8 @@ struct SeerrRequestDetailView: View {
                 }
                 .padding(DT.Spacing.pagePad)
             }
+            .frame(minHeight: proxy.size.height)
+        }
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
