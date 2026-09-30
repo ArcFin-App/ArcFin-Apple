@@ -130,6 +130,7 @@ struct TVSeerrView: View {
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
+        .tvFocusRing(cornerRadius: DT.Radius.pill)
     }
 
     // MARK: - Discover shelf
