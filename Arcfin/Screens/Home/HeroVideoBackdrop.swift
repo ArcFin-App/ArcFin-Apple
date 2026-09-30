@@ -2,6 +2,8 @@
 
 import SwiftUI
 import AVFoundation
+import Telemetry
+import os
 
 /// Muted, seamlessly-looping video behind the Home hero — the "video backdrop" idea some
 /// Jellyfin hero-enhancement plugins offer, built here on stock Jellyfin local-trailer data
@@ -37,6 +39,8 @@ final class LoopingPlayerUIView: UIView {
     // continue — both held here, not just handed to the layer.
     private var queuePlayer: AVQueuePlayer?
     private var looper: AVPlayerLooper?
+    private var statusObservation: NSKeyValueObservation?
+    private var stallObserver: NSObjectProtocol?
 
     init(url: URL) {
         super.init(frame: .zero)
@@ -62,6 +66,24 @@ final class LoopingPlayerUIView: UIView {
             guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
             item.select(nil, in: group)
         }
+
+        // The reported "freezes on first frame" symptom has survived two prior fix
+        // attempts with no AVFoundation error visible in the console — none of those
+        // logs actually captured the AVPlayerItem's own status/error. Surface it
+        // directly so the real failure (codec/container unsupported, stalled
+        // buffering, etc.) shows up next time instead of guessing again.
+        let log = Telemetry.logger(category: "HeroVideoBackdrop")
+        statusObservation = item.observe(\.status, options: [.new]) { item, _ in
+            if item.status == .failed {
+                log.error("player item failed: \(item.error?.localizedDescription ?? "unknown", privacy: .public)")
+            }
+        }
+        stallObserver = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didFailToPlayToEndTimeNotification, object: item, queue: .main
+        ) { note in
+            let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+            log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -77,6 +99,10 @@ final class LoopingPlayerUIView: UIView {
         queuePlayer?.pause()
         looper = nil
         queuePlayer = nil
+        statusObservation?.invalidate()
+        statusObservation = nil
+        if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
+        stallObserver = nil
     }
 
     deinit {
@@ -130,6 +156,8 @@ final class LoopingPlayerNSView: NSView {
     private let playerLayer = AVPlayerLayer()
     private var queuePlayer: AVQueuePlayer?
     private var looper: AVPlayerLooper?
+    private var statusObservation: NSKeyValueObservation?
+    private var stallObserver: NSObjectProtocol?
 
     init(url: URL) {
         super.init(frame: .zero)
@@ -153,6 +181,21 @@ final class LoopingPlayerNSView: NSView {
             guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
             item.select(nil, in: group)
         }
+
+        // See LoopingPlayerUIView's matching note above — surface the item's real
+        // status/error instead of guessing at the freeze's cause blind again.
+        let log = Telemetry.logger(category: "HeroVideoBackdrop")
+        statusObservation = item.observe(\.status, options: [.new]) { item, _ in
+            if item.status == .failed {
+                log.error("player item failed: \(item.error?.localizedDescription ?? "unknown", privacy: .public)")
+            }
+        }
+        stallObserver = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didFailToPlayToEndTimeNotification, object: item, queue: .main
+        ) { note in
+            let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+            log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
+        }
     }
 
     @available(*, unavailable)
@@ -167,6 +210,10 @@ final class LoopingPlayerNSView: NSView {
         queuePlayer?.pause()
         looper = nil
         queuePlayer = nil
+        statusObservation?.invalidate()
+        statusObservation = nil
+        if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
+        stallObserver = nil
     }
 
     deinit {
