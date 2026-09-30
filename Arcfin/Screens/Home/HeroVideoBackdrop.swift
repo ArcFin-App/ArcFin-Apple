@@ -211,6 +211,27 @@ final class LoopingPlayerNSView: NSView {
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
         }
+
+        // iOS/iPadOS/tvOS play this same HLS URL fine with this same manual-loop setup —
+        // only macOS still freezes on frame 1, so whatever's wrong now is specific to
+        // this NSView/AVPlayerLayer path, not the AVPlayerLooper/HLS issue already fixed.
+        // Snapshot the real state again since neither observer above fires.
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            let videoTracks = (try? await asset.loadTracks(withMediaType: .video)) ?? []
+            log.debug("""
+                macOS hero video diag — url: \(url.absoluteString, privacy: .public) \
+                videoTracks: \(videoTracks.count, privacy: .public) \
+                status: \(item.status.rawValue, privacy: .public) \
+                bufferEmpty: \(item.isPlaybackBufferEmpty, privacy: .public) \
+                likelyToKeepUp: \(item.isPlaybackLikelyToKeepUp, privacy: .public) \
+                loadedRanges: \(item.loadedTimeRanges, privacy: .public) \
+                rate: \(player.rate, privacy: .public) \
+                timeControlStatus: \(player.timeControlStatus.rawValue, privacy: .public) \
+                waitingReason: \(player.reasonForWaitingToPlay?.rawValue ?? "nil", privacy: .public) \
+                isReadyForDisplay: \(self.playerLayer.isReadyForDisplay, privacy: .public)
+                """)
+        }
     }
 
     @available(*, unavailable)
