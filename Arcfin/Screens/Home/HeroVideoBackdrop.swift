@@ -23,8 +23,8 @@ struct HeroVideoBackdropView: UIViewRepresentable {
     func updateUIView(_ uiView: LoopingPlayerUIView, context: Context) {}
     // A .transition(.opacity) crossfade can keep the outgoing view (and this one's ARC
     // lifetime) alive well past when SwiftUI actually removes it from the hierarchy, during
-    // which the incoming hero slide's own player is already starting — two AVQueuePlayers
-    // briefly competing for the same audio render chain, independent of deinit timing.
+    // which the incoming hero slide's own player is already starting — two players briefly
+    // competing for the same audio render chain, independent of deinit timing.
     // dismantleUIView runs synchronously at removal time, not whenever ARC gets around to
     // it, so stop the player here instead of relying on deinit alone.
     static func dismantleUIView(_ uiView: LoopingPlayerUIView, coordinator: ()) {
@@ -35,10 +35,8 @@ struct HeroVideoBackdropView: UIViewRepresentable {
 final class LoopingPlayerUIView: UIView {
     override class var layerClass: AnyClass { AVPlayerLayer.self }
     private var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
-    // AVPlayerLooper needs its player/item kept alive for as long as looping should
-    // continue — both held here, not just handed to the layer.
-    private var queuePlayer: AVQueuePlayer?
-    private var looper: AVPlayerLooper?
+    private var player: AVPlayer?
+    private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
     private var stallObserver: NSObjectProtocol?
 
@@ -46,40 +44,40 @@ final class LoopingPlayerUIView: UIView {
         super.init(frame: .zero)
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
-        let player = AVQueuePlayer()
+        let player = AVPlayer(playerItem: item)
         player.isMuted = true
         player.actionAtItemEnd = .none
-        // AVFoundation's default buffering heuristic can decide it never has "enough"
-        // to start and park the player at rate 0 indefinitely after the first decoded
-        // frame — no error, no failed status, no didFailToPlayToEndTime, just a
-        // permanent stall. That silence (confirmed via the status/notification
-        // observers below firing nothing) is the actual signature of this bug, not a
-        // real failure. Forcing play() to proceed as soon as any data is available
-        // avoids the heuristic altogether.
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
         backgroundColor = .clear
-        looper = AVPlayerLooper(player: player, templateItem: item)
-        queuePlayer = player
+        self.player = player
         player.play()
 
-        // isMuted only zeroes the output — AVQueuePlayer still opens a CoreAudio HAL slot
-        // for the audio track and drives its clock off that render thread. When HAL IO
-        // fails to start (device contention, no route available), that clock never starts
-        // and playback stalls on the first decoded video frame. Deselecting the audio
-        // track entirely means there's no audio render pipeline to fail in the first
-        // place, since this backdrop is always silent anyway.
+        // AVPlayerLooper doesn't support HLS player items at all (an explicitly
+        // documented AVFoundation limitation) — and Jellyfin serves this backdrop as an
+        // HLS transcode whenever the trailer file's own codec/container isn't natively
+        // playable, which is most of the time for trailers. With AVPlayerLooper in the
+        // pipeline the asset never even finished loading (0 video tracks, status stuck
+        // at .unknown, empty loadedTimeRanges, confirmed via direct instrumentation) —
+        // that's the actual cause of the reported freeze on frame 1, not audio or a
+        // buffering heuristic. Loop manually by seeking back to zero on end instead — a
+        // small hitch at the loop point beats a silent decorative video never playing.
+        loopObserver = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main
+        ) { [weak player] _ in
+            player?.seek(to: .zero)
+            player?.play()
+        }
+
+        // isMuted only zeroes the output — the player still opens a CoreAudio HAL slot
+        // for the audio track. Deselecting it outright means there's no audio render
+        // pipeline at all, since this backdrop is always silent anyway.
         Task { @MainActor in
             guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
             item.select(nil, in: group)
         }
 
-        // The reported "freezes on first frame" symptom has survived two prior fix
-        // attempts with no AVFoundation error visible in the console — none of those
-        // logs actually captured the AVPlayerItem's own status/error. Surface it
-        // directly so the real failure (codec/container unsupported, stalled
-        // buffering, etc.) shows up next time instead of guessing again.
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
         statusObservation = item.observe(\.status, options: [.new]) { item, _ in
             if item.status == .failed {
@@ -92,42 +90,22 @@ final class LoopingPlayerUIView: UIView {
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
         }
-
-        // Neither observer above has ever fired across multiple retests, even while the
-        // reported freeze still happens — so this isn't a hard failure. Snapshot the
-        // actual playback state a few seconds in to see whether it's a genuine buffer
-        // stall (loadedTimeRanges stuck near zero) or something else (buffer's fine but
-        // nothing's rendering).
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(3))
-            let videoTracks = (try? await asset.loadTracks(withMediaType: .video)) ?? []
-            log.debug("""
-                hero video diag — url: \(url.absoluteString, privacy: .public) \
-                videoTracks: \(videoTracks.count, privacy: .public) \
-                status: \(item.status.rawValue, privacy: .public) \
-                bufferEmpty: \(item.isPlaybackBufferEmpty, privacy: .public) \
-                likelyToKeepUp: \(item.isPlaybackLikelyToKeepUp, privacy: .public) \
-                loadedRanges: \(item.loadedTimeRanges, privacy: .public) \
-                rate: \(player.rate, privacy: .public) \
-                timeControlStatus: \(player.timeControlStatus.rawValue, privacy: .public) \
-                waitingReason: \(player.reasonForWaitingToPlay?.rawValue ?? "nil", privacy: .public)
-                """)
-        }
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // Letting ARC deallocate queuePlayer/looper without an explicit stop first is a known
-    // source of CoreAudio HAL teardown races — pause and break the reference chain
-    // ourselves so AVFoundation tears the audio render chain down cleanly. Also called
-    // explicitly from dismantleUIView, which runs at the actual moment SwiftUI removes this
-    // view, since a crossfade transition can delay this deinit well past that point.
+    // Letting ARC deallocate the player without an explicit stop first is a known source
+    // of CoreAudio HAL teardown races — pause and break the reference chain ourselves so
+    // AVFoundation tears the audio render chain down cleanly. Also called explicitly from
+    // dismantleUIView, which runs at the actual moment SwiftUI removes this view, since a
+    // crossfade transition can delay this deinit well past that point.
     func stop() {
-        queuePlayer?.pause()
-        looper = nil
-        queuePlayer = nil
+        player?.pause()
+        player = nil
+        if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }
+        loopObserver = nil
         statusObservation?.invalidate()
         statusObservation = nil
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
@@ -174,8 +152,7 @@ struct HeroVideoBackdropView: NSViewRepresentable {
     // .transition(.opacity) crossfade can keep this view (and its ARC lifetime) alive past
     // when SwiftUI actually removes it, while the next hero slide's own player is already
     // starting. dismantleNSView runs synchronously at removal time, so stop the player here
-    // rather than relying on deinit timing — matches the reported crash signature of a
-    // second player's audio engine failing to start while an old one is still active.
+    // rather than relying on deinit timing.
     static func dismantleNSView(_ nsView: LoopingPlayerNSView, coordinator: ()) {
         nsView.stop()
     }
@@ -183,8 +160,8 @@ struct HeroVideoBackdropView: NSViewRepresentable {
 
 final class LoopingPlayerNSView: NSView {
     private let playerLayer = AVPlayerLayer()
-    private var queuePlayer: AVQueuePlayer?
-    private var looper: AVPlayerLooper?
+    private var player: AVPlayer?
+    private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
     private var stallObserver: NSObjectProtocol?
 
@@ -193,29 +170,35 @@ final class LoopingPlayerNSView: NSView {
         wantsLayer = true
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
-        let player = AVQueuePlayer()
+        let player = AVPlayer(playerItem: item)
         player.isMuted = true
         player.actionAtItemEnd = .none
-        // See LoopingPlayerUIView's matching note above — avoid AVFoundation's stalling
-        // heuristic parking the player at rate 0 forever with no error at all.
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
-        looper = AVPlayerLooper(player: player, templateItem: item)
-        queuePlayer = player
+        self.player = player
         player.play()
 
-        // See LoopingPlayerUIView's matching note above — isMuted alone doesn't stop
-        // AVQueuePlayer from opening a CoreAudio HAL slot and clocking playback off it.
-        // Deselect the audio track outright so a HAL IO start failure can't stall video
-        // on the first frame.
+        // See LoopingPlayerUIView's matching note above — AVPlayerLooper doesn't support
+        // HLS player items, and this backdrop is served as an HLS transcode whenever the
+        // trailer's own codec/container isn't natively playable. That's the confirmed
+        // cause of the freeze on frame 1 (0 video tracks, status stuck at .unknown).
+        // Loop manually via seek-to-zero instead.
+        loopObserver = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main
+        ) { [weak player] _ in
+            player?.seek(to: .zero)
+            player?.play()
+        }
+
+        // See LoopingPlayerUIView's matching note above — isMuted alone doesn't stop the
+        // player from opening a CoreAudio HAL slot for the audio track. Deselect it
+        // outright since this backdrop is always silent anyway.
         Task { @MainActor in
             guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
             item.select(nil, in: group)
         }
 
-        // See LoopingPlayerUIView's matching note above — surface the item's real
-        // status/error instead of guessing at the freeze's cause blind again.
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
         statusObservation = item.observe(\.status, options: [.new]) { item, _ in
             if item.status == .failed {
@@ -228,39 +211,21 @@ final class LoopingPlayerNSView: NSView {
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
         }
-
-        // See LoopingPlayerUIView's matching note above — snapshot the real playback
-        // state since neither failure observer has ever fired despite the freeze still
-        // reproducing.
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(3))
-            let videoTracks = (try? await asset.loadTracks(withMediaType: .video)) ?? []
-            log.debug("""
-                hero video diag — url: \(url.absoluteString, privacy: .public) \
-                videoTracks: \(videoTracks.count, privacy: .public) \
-                status: \(item.status.rawValue, privacy: .public) \
-                bufferEmpty: \(item.isPlaybackBufferEmpty, privacy: .public) \
-                likelyToKeepUp: \(item.isPlaybackLikelyToKeepUp, privacy: .public) \
-                loadedRanges: \(item.loadedTimeRanges, privacy: .public) \
-                rate: \(player.rate, privacy: .public) \
-                timeControlStatus: \(player.timeControlStatus.rawValue, privacy: .public) \
-                waitingReason: \(player.reasonForWaitingToPlay?.rawValue ?? "nil", privacy: .public)
-                """)
-        }
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    // Letting ARC deallocate queuePlayer/looper without an explicit stop first is a known
-    // source of CoreAudio HAL teardown races — pause and break the reference chain
-    // ourselves so AVFoundation tears the audio render chain down cleanly. Also called
-    // explicitly from dismantleNSView, which runs at the actual moment SwiftUI removes this
-    // view, since a crossfade transition can delay this deinit well past that point.
+    // Letting ARC deallocate the player without an explicit stop first is a known source
+    // of CoreAudio HAL teardown races — pause and break the reference chain ourselves so
+    // AVFoundation tears the audio render chain down cleanly. Also called explicitly from
+    // dismantleNSView, which runs at the actual moment SwiftUI removes this view, since a
+    // crossfade transition can delay this deinit well past that point.
     func stop() {
-        queuePlayer?.pause()
-        looper = nil
-        queuePlayer = nil
+        player?.pause()
+        player = nil
+        if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }
+        loopObserver = nil
         statusObservation?.invalidate()
         statusObservation = nil
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
