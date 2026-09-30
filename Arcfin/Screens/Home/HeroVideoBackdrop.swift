@@ -49,6 +49,14 @@ final class LoopingPlayerUIView: UIView {
         let player = AVQueuePlayer()
         player.isMuted = true
         player.actionAtItemEnd = .none
+        // AVFoundation's default buffering heuristic can decide it never has "enough"
+        // to start and park the player at rate 0 indefinitely after the first decoded
+        // frame — no error, no failed status, no didFailToPlayToEndTime, just a
+        // permanent stall. That silence (confirmed via the status/notification
+        // observers below firing nothing) is the actual signature of this bug, not a
+        // real failure. Forcing play() to proceed as soon as any data is available
+        // avoids the heuristic altogether.
+        player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
         backgroundColor = .clear
@@ -167,6 +175,9 @@ final class LoopingPlayerNSView: NSView {
         let player = AVQueuePlayer()
         player.isMuted = true
         player.actionAtItemEnd = .none
+        // See LoopingPlayerUIView's matching note above — avoid AVFoundation's stalling
+        // heuristic parking the player at rate 0 forever with no error at all.
+        player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
         looper = AVPlayerLooper(player: player, templateItem: item)
