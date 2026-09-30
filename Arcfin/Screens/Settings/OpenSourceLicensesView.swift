@@ -47,7 +47,7 @@ struct LicensesView: View {
         List {
             Section {
                 ForEach(licenses) { entry in
-                    VStack(alignment: .leading, spacing: 4) {
+                    let row = VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(entry.name)
                                 .font(.system(size: 14, weight: .semibold))
@@ -64,7 +64,13 @@ struct LicensesView: View {
                     }
                     .padding(.vertical, 4)
                     #if os(tvOS)
-                    .focusable()
+                    // A bare .focusable() VStack was the only place in the app not using a
+                    // real interactive control for a tvOS list row — focus-driven scrolling
+                    // didn't reliably reach it, especially toward the end of the list.
+                    Button {} label: { row.frame(maxWidth: .infinity, alignment: .leading) }
+                        .buttonStyle(.plain)
+                    #else
+                    row
                     #endif
                 }
             } footer: {
