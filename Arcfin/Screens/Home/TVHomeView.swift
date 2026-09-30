@@ -19,6 +19,7 @@ struct TVHomeView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
+    @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
 
     @FocusState private var focusedItemID: String?
     // @FocusState clears to nil the instant focus moves to anything not bound to it (e.g.
@@ -41,6 +42,13 @@ struct TVHomeView: View {
         guard let id = lastFocusedItemID else { return nil }
         return mediaRepo.continueWatching.first { $0.id == id }
             ?? mediaRepo.recentlyAdded.first { $0.id == id }
+    }
+
+    // Matches HomeView's own mergedContinueAndNextItems (iOS/iPadOS/macOS) — same dedup,
+    // same ordering (Continue Watching first).
+    private var mergedContinueAndNextItems: [MediaItem] {
+        var seen = Set<String>()
+        return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
     }
 
     private var heroDisplayItem: MediaItem? {
@@ -377,7 +385,8 @@ struct TVHomeView: View {
 
     @ViewBuilder
     private var cwShelf: some View {
-        if !mediaRepo.continueWatching.isEmpty {
+        let items = mergeContinueWatchingAndUpNext ? mergedContinueAndNextItems : mediaRepo.continueWatching
+        if !items.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Continue Watching")
                     .font(.system(size: 22, weight: .bold))
@@ -386,7 +395,7 @@ struct TVHomeView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(mediaRepo.continueWatching) { item in
+                        ForEach(items) { item in
                             NavigationLink(value: item) {
                                 PosterCard(
                                     title: itemTitle(item),
@@ -416,7 +425,7 @@ struct TVHomeView: View {
         // Matches the shelf set HomeView (iOS/iPadOS/macOS) shows beyond Continue Watching —
         // tvOS previously only had one combined Recently Added row plus the three Seerr ones.
         VStack(spacing: 0) {
-            if !mediaRepo.nextUp.isEmpty {
+            if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
                 mediaShelf(title: "Next Up", items: mediaRepo.nextUp)
             }
             if !mediaRepo.recentlyAddedMovies.isEmpty {
