@@ -40,7 +40,13 @@ struct TVHomeView: View {
 
     private var focusedItem: MediaItem? {
         guard let id = lastFocusedItemID else { return nil }
+        // When Merge Continue Watching & Up Next is on, cwShelf renders items sourced from
+        // both arrays (mergedContinueAndNextItems) — this lookup only checked
+        // continueWatching, so focusing a nextUp-sourced card in that merged row found no
+        // match here, fell through to the fallback below, and left the hero stuck on the
+        // first item instead of following focus along the row.
         return mediaRepo.continueWatching.first { $0.id == id }
+            ?? mediaRepo.nextUp.first { $0.id == id }
             ?? mediaRepo.recentlyAdded.first { $0.id == id }
     }
 
