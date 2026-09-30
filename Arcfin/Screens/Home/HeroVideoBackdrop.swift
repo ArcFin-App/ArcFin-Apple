@@ -19,6 +19,15 @@ struct HeroVideoBackdropView: UIViewRepresentable {
         LoopingPlayerUIView(url: url)
     }
     func updateUIView(_ uiView: LoopingPlayerUIView, context: Context) {}
+    // A .transition(.opacity) crossfade can keep the outgoing view (and this one's ARC
+    // lifetime) alive well past when SwiftUI actually removes it from the hierarchy, during
+    // which the incoming hero slide's own player is already starting — two AVQueuePlayers
+    // briefly competing for the same audio render chain, independent of deinit timing.
+    // dismantleUIView runs synchronously at removal time, not whenever ARC gets around to
+    // it, so stop the player here instead of relying on deinit alone.
+    static func dismantleUIView(_ uiView: LoopingPlayerUIView, coordinator: ()) {
+        uiView.stop()
+    }
 }
 
 final class LoopingPlayerUIView: UIView {
@@ -49,11 +58,17 @@ final class LoopingPlayerUIView: UIView {
 
     // Letting ARC deallocate queuePlayer/looper without an explicit stop first is a known
     // source of CoreAudio HAL teardown races — pause and break the reference chain
-    // ourselves so AVFoundation tears the audio render chain down cleanly.
-    deinit {
+    // ourselves so AVFoundation tears the audio render chain down cleanly. Also called
+    // explicitly from dismantleUIView, which runs at the actual moment SwiftUI removes this
+    // view, since a crossfade transition can delay this deinit well past that point.
+    func stop() {
         queuePlayer?.pause()
         looper = nil
         queuePlayer = nil
+    }
+
+    deinit {
+        stop()
     }
 
     // See PlayerSurfaceView's own note in PlayerSupportViews.swift — this view's own backing
@@ -88,6 +103,15 @@ struct HeroVideoBackdropView: NSViewRepresentable {
         LoopingPlayerNSView(url: url)
     }
     func updateNSView(_ nsView: LoopingPlayerNSView, context: Context) {}
+    // See the matching note on HeroVideoBackdropView's UIKit dismantleUIView above — a
+    // .transition(.opacity) crossfade can keep this view (and its ARC lifetime) alive past
+    // when SwiftUI actually removes it, while the next hero slide's own player is already
+    // starting. dismantleNSView runs synchronously at removal time, so stop the player here
+    // rather than relying on deinit timing — matches the reported crash signature of a
+    // second player's audio engine failing to start while an old one is still active.
+    static func dismantleNSView(_ nsView: LoopingPlayerNSView, coordinator: ()) {
+        nsView.stop()
+    }
 }
 
 final class LoopingPlayerNSView: NSView {
@@ -114,13 +138,17 @@ final class LoopingPlayerNSView: NSView {
 
     // Letting ARC deallocate queuePlayer/looper without an explicit stop first is a known
     // source of CoreAudio HAL teardown races — pause and break the reference chain
-    // ourselves so AVFoundation tears the audio render chain down cleanly. macOS's HAL is
-    // stricter about clean teardown sequencing than iOS, matching the reported crash signature
-    // (HALC_ProxyIOContext start failures right after a hero slide/video backdrop changes).
-    deinit {
+    // ourselves so AVFoundation tears the audio render chain down cleanly. Also called
+    // explicitly from dismantleNSView, which runs at the actual moment SwiftUI removes this
+    // view, since a crossfade transition can delay this deinit well past that point.
+    func stop() {
         queuePlayer?.pause()
         looper = nil
         queuePlayer = nil
+    }
+
+    deinit {
+        stop()
     }
 
     override func makeBackingLayer() -> CALayer { playerLayer }
