@@ -33,6 +33,7 @@ struct WatchlistView: View {
                     systemImage: "bookmark",
                     description: Text("Titles you add to your watchlist will appear here.")
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: 16) {
@@ -63,9 +64,13 @@ struct WatchlistView: View {
         .refreshable { await seerrRepo.loadWatchlist() }
         .sheet(item: $requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
+                // presentationDetents is an iPhone/iPad card-sheet concept — see the same fix
+                // on the player and Search sheets.
+                #if !os(tvOS)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
+                #endif
         }
     }
 
@@ -84,6 +89,11 @@ struct WatchlistView: View {
                     DT.Color.backgroundSecondary
                 }
 
+                // A Button nested inside this card's own outer Button is undefined on touch
+                // platforms and genuinely broken on tvOS, where interaction is focus-based —
+                // two independently-focusable targets in the same region confuses the focus
+                // engine. tvOS relies on the contextMenu below instead, already present.
+                #if !os(tvOS)
                 Button { remove(item) } label: {
                     Image(systemName: "bookmark.fill")
                         .font(.system(size: 10, weight: .semibold))
@@ -95,10 +105,12 @@ struct WatchlistView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(6)
+                #endif
             }
             .aspectRatio(2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
+            .tvFocusRing(cornerRadius: DT.Radius.card)
             .contextMenu {
                 Button(role: .destructive) {
                     remove(item)

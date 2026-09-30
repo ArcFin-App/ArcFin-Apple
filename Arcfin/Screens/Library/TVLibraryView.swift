@@ -40,7 +40,6 @@ struct TVLibraryView: View {
                 }
             }
             .background(DT.Color.backgroundPrimary)
-            .navigationTitle("Library")
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 LibraryDetailView(library: library)
             }
