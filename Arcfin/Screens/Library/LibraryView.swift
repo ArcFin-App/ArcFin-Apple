@@ -484,6 +484,9 @@ private struct LibraryItemCard: View {
         #if !os(tvOS)
         .onHover { hovered = $0 }
         #endif
+        // Without this, a NavigationLink wrapping this ZStack has no explicit click
+        // target, which AppKit's hit-testing is stricter about than UIKit's.
+        .contentShape(Rectangle())
     }
 }
 
