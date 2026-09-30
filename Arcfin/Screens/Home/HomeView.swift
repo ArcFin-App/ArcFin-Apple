@@ -67,7 +67,6 @@ struct MainTabView: View {
                     NavigationStack {
                         SearchView(query: $searchQuery)
                             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
-                            .arcfinNavTitleLarge("Search")
                             .background(DT.Color.backgroundPrimary)
                             .navigationDestination(for: MediaItem.self) { item in
                                 TVMediaDetailView(item: item)
