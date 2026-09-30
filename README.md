@@ -7,8 +7,8 @@
 > **Not yet on the App Store.** Arcfin is currently available via [TestFlight](https://testflight.apple.com/join/kkC58n2w) only — v0.1.0 is uploaded to App Store Connect and pending Apple's review.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
-![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS-lightgrey?logo=apple&logoColor=white)
-![Minimum OS](https://img.shields.io/badge/iOS-26%2B-black?logo=apple&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS-lightgrey?logo=apple&logoColor=white)
+![Minimum OS](https://img.shields.io/badge/OS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
@@ -18,7 +18,7 @@ A premium native Jellyfin media client for the Apple ecosystem.
 
 ## What is Arcfin?
 
-A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming (AVFoundation, with a VLC fallback for containers AVFoundation can't open), downloads for offline playback, AirPlay/Chromecast/Picture in Picture, a Netflix-style profile picker with per-profile Face ID/PIN lock, and optional Seerr (content requests) and Streamystats (watch stats) integrations. Built around iOS 26/iPadOS 26's Liquid Glass design on iPhone/iPad, and a native AppKit sidebar UI with full feature parity on Mac. tvOS support is in active development.
+A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming (AVFoundation, with a VLC fallback for containers AVFoundation can't open), downloads for offline playback, AirPlay/Chromecast/Picture in Picture, a Netflix-style profile picker with per-profile Face ID/PIN lock, and optional Seerr (content requests) and Streamystats (watch stats) integrations. Built around iOS 26/iPadOS 26's Liquid Glass design on iPhone/iPad, a native AppKit sidebar UI with full feature parity on Mac, and a native focus/remote-driven UI with full feature parity on Apple TV.
 
 ### Features
 
@@ -38,7 +38,7 @@ A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming
 |---|---|
 | iOS 26 + iPadOS 26 | Primary — v0.1.0 uploaded to App Store Connect, processing |
 | macOS | Full feature parity with iOS — native AppKit video surface, sidebar navigation, mouse/keyboard controls, Touch ID, AirPlay/PiP. A few gaps documented inline: judder-free frame matching (no public API on macOS), AirPlay from the offline/VLC-engine player (needs a real AVPlayer to route, which VLC playback doesn't have) |
-| tvOS 26 | In development |
+| tvOS 26 | Full feature parity — playback, focus/remote navigation, library filters, Settings, Seerr, casting links all wired up. Newest of the four platforms |
 
 ---
 
