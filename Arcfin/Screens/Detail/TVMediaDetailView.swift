@@ -52,6 +52,12 @@ struct TVMediaDetailView: View {
                 }
                 .focusSection()
             }
+            // Without a custom scroll-target behavior, tvOS's default focus-driven scrolling
+            // recenters on whatever section just gained focus — since each below-fold section
+            // is much shorter than the screen, that reads as a big empty gap above/below it.
+            // TVHomeView solved the same problem for its own hero/shelf transition; reusing
+            // the same behavior here.
+            .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh * 0.88))
             .ignoresSafeArea()
         }
         .background(DT.Color.backgroundPrimary)
