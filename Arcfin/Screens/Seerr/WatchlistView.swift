@@ -33,6 +33,7 @@ struct WatchlistView: View {
                     systemImage: "bookmark",
                     description: Text("Titles you add to your watchlist will appear here.")
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: 16) {
