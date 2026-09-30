@@ -92,6 +92,27 @@ final class LoopingPlayerUIView: UIView {
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
         }
+
+        // Neither observer above has ever fired across multiple retests, even while the
+        // reported freeze still happens — so this isn't a hard failure. Snapshot the
+        // actual playback state a few seconds in to see whether it's a genuine buffer
+        // stall (loadedTimeRanges stuck near zero) or something else (buffer's fine but
+        // nothing's rendering).
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            let videoTracks = (try? await asset.loadTracks(withMediaType: .video)) ?? []
+            log.debug("""
+                hero video diag — url: \(url.absoluteString, privacy: .public) \
+                videoTracks: \(videoTracks.count, privacy: .public) \
+                status: \(item.status.rawValue, privacy: .public) \
+                bufferEmpty: \(item.isPlaybackBufferEmpty, privacy: .public) \
+                likelyToKeepUp: \(item.isPlaybackLikelyToKeepUp, privacy: .public) \
+                loadedRanges: \(item.loadedTimeRanges, privacy: .public) \
+                rate: \(player.rate, privacy: .public) \
+                timeControlStatus: \(player.timeControlStatus.rawValue, privacy: .public) \
+                waitingReason: \(player.reasonForWaitingToPlay?.rawValue ?? "nil", privacy: .public)
+                """)
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -206,6 +227,25 @@ final class LoopingPlayerNSView: NSView {
         ) { note in
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
+        }
+
+        // See LoopingPlayerUIView's matching note above — snapshot the real playback
+        // state since neither failure observer has ever fired despite the freeze still
+        // reproducing.
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            let videoTracks = (try? await asset.loadTracks(withMediaType: .video)) ?? []
+            log.debug("""
+                hero video diag — url: \(url.absoluteString, privacy: .public) \
+                videoTracks: \(videoTracks.count, privacy: .public) \
+                status: \(item.status.rawValue, privacy: .public) \
+                bufferEmpty: \(item.isPlaybackBufferEmpty, privacy: .public) \
+                likelyToKeepUp: \(item.isPlaybackLikelyToKeepUp, privacy: .public) \
+                loadedRanges: \(item.loadedTimeRanges, privacy: .public) \
+                rate: \(player.rate, privacy: .public) \
+                timeControlStatus: \(player.timeControlStatus.rawValue, privacy: .public) \
+                waitingReason: \(player.reasonForWaitingToPlay?.rawValue ?? "nil", privacy: .public)
+                """)
         }
     }
 
