@@ -66,9 +66,15 @@ struct SearchView: View {
         }
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
+                // presentationDetents is a portrait card-sheet concept sized for iPhone/iPad —
+                // forcing it onto tvOS's differently shaped modal container clips the content
+                // at both edges (see the same fix on the player's sheets). tvOS falls back to
+                // its own default sheet presentation here.
+                #if !os(tvOS)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
+                #endif
         }
     }
 
