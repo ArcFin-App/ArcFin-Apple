@@ -38,7 +38,9 @@ final class LoopingPlayerUIView: UIView {
     private var player: AVPlayer?
     private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
+    private var timeControlObservation: NSKeyValueObservation?
     private var stallObserver: NSObjectProtocol?
+    private var hasFadedIn = false
 
     init(url: URL) {
         super.init(frame: .zero)
@@ -51,6 +53,11 @@ final class LoopingPlayerUIView: UIView {
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
         backgroundColor = .clear
+        // Stay invisible until playback is actually running — showing this view as soon
+        // as the URL resolves means a frozen first frame sits over the hero for however
+        // long the HLS transcode takes to start, which looks broken. Fade in only once
+        // timeControlStatus below confirms real playback.
+        alpha = 0
         self.player = player
         player.play()
 
@@ -79,10 +86,24 @@ final class LoopingPlayerUIView: UIView {
         }
 
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
-        statusObservation = item.observe(\.status, options: [.new]) { item, _ in
-            if item.status == .failed {
+        // readyToPlay only means the asset is minimally parsed, not that enough has
+        // buffered to run smoothly — re-issuing play() here (on top of the init-time
+        // call) is what actually got every rotated hero item playing reliably, instead
+        // of just the one that happened to be ready by the time play() was first called.
+        statusObservation = item.observe(\.status, options: [.new]) { [weak player] item, _ in
+            switch item.status {
+            case .readyToPlay:
+                player?.play()
+            case .failed:
                 log.error("player item failed: \(item.error?.localizedDescription ?? "unknown", privacy: .public)")
+            default:
+                break
             }
+        }
+        timeControlObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
+            guard player.timeControlStatus == .playing, let self, !self.hasFadedIn else { return }
+            self.hasFadedIn = true
+            UIView.animate(withDuration: 0.3) { self.alpha = 1 }
         }
         stallObserver = NotificationCenter.default.addObserver(
             forName: AVPlayerItem.failedToPlayToEndTimeNotification, object: item, queue: .main
@@ -108,6 +129,8 @@ final class LoopingPlayerUIView: UIView {
         loopObserver = nil
         statusObservation?.invalidate()
         statusObservation = nil
+        timeControlObservation?.invalidate()
+        timeControlObservation = nil
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         stallObserver = nil
     }
@@ -163,7 +186,9 @@ final class LoopingPlayerNSView: NSView {
     private var player: AVPlayer?
     private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
+    private var timeControlObservation: NSKeyValueObservation?
     private var stallObserver: NSObjectProtocol?
+    private var hasFadedIn = false
 
     init(url: URL) {
         super.init(frame: .zero)
@@ -176,6 +201,10 @@ final class LoopingPlayerNSView: NSView {
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
+        // See LoopingPlayerUIView's matching note above — stay invisible until
+        // timeControlStatus confirms real playback, instead of showing a frozen first
+        // frame while the HLS transcode spins up.
+        alphaValue = 0
         self.player = player
         // Calling play() here can be a no-op on macOS — the diagnostic snapshot showed a
         // fully healthy player (status .readyToPlay, buffer non-empty, isReadyForDisplay
@@ -208,9 +237,27 @@ final class LoopingPlayerNSView: NSView {
         }
 
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
-        statusObservation = item.observe(\.status, options: [.new]) { item, _ in
-            if item.status == .failed {
+        // readyToPlay only means the asset is minimally parsed, not that enough has
+        // buffered to run smoothly — re-issuing play() here (on top of the init-time
+        // call and the viewDidMoveToWindow retry below) is what actually got every
+        // rotated hero item playing reliably, instead of just whichever one happened to
+        // already be ready by the time an earlier play() call landed.
+        statusObservation = item.observe(\.status, options: [.new]) { [weak player] item, _ in
+            switch item.status {
+            case .readyToPlay:
+                player?.play()
+            case .failed:
                 log.error("player item failed: \(item.error?.localizedDescription ?? "unknown", privacy: .public)")
+            default:
+                break
+            }
+        }
+        timeControlObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
+            guard player.timeControlStatus == .playing, let self, !self.hasFadedIn else { return }
+            self.hasFadedIn = true
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.3
+                self.animator().alphaValue = 1
             }
         }
         stallObserver = NotificationCenter.default.addObserver(
@@ -218,27 +265,6 @@ final class LoopingPlayerNSView: NSView {
         ) { note in
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
-        }
-
-        // iOS/iPadOS/tvOS play this same HLS URL fine with this same manual-loop setup —
-        // only macOS still freezes on frame 1, so whatever's wrong now is specific to
-        // this NSView/AVPlayerLayer path, not the AVPlayerLooper/HLS issue already fixed.
-        // Snapshot the real state again since neither observer above fires.
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(3))
-            let videoTracks = (try? await asset.loadTracks(withMediaType: .video)) ?? []
-            log.debug("""
-                macOS hero video diag — url: \(url.absoluteString, privacy: .public) \
-                videoTracks: \(videoTracks.count, privacy: .public) \
-                status: \(item.status.rawValue, privacy: .public) \
-                bufferEmpty: \(item.isPlaybackBufferEmpty, privacy: .public) \
-                likelyToKeepUp: \(item.isPlaybackLikelyToKeepUp, privacy: .public) \
-                loadedRanges: \(item.loadedTimeRanges, privacy: .public) \
-                rate: \(player.rate, privacy: .public) \
-                timeControlStatus: \(player.timeControlStatus.rawValue, privacy: .public) \
-                waitingReason: \(player.reasonForWaitingToPlay?.rawValue ?? "nil", privacy: .public) \
-                isReadyForDisplay: \(self.playerLayer.isReadyForDisplay, privacy: .public)
-                """)
         }
     }
 
@@ -257,6 +283,8 @@ final class LoopingPlayerNSView: NSView {
         loopObserver = nil
         statusObservation?.invalidate()
         statusObservation = nil
+        timeControlObservation?.invalidate()
+        timeControlObservation = nil
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         stallObserver = nil
     }
