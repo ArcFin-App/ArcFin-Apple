@@ -177,6 +177,14 @@ final class LoopingPlayerNSView: NSView {
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
         self.player = player
+        // Calling play() here can be a no-op on macOS — the diagnostic snapshot showed a
+        // fully healthy player (status .readyToPlay, buffer non-empty, isReadyForDisplay
+        // true, tens of seconds already loaded) stuck at rate 0 regardless. This NSView
+        // isn't attached to a window yet at init time (SwiftUI calls makeNSView before
+        // inserting it into the hierarchy), and AVPlayerLayer's clock can fail to start
+        // when play() is requested before that attachment. viewDidMoveToWindow below
+        // retries once the view is actually on screen; this call stays as a fallback for
+        // cases where the window is already set.
         player.play()
 
         // See LoopingPlayerUIView's matching note above — AVPlayerLooper doesn't support
@@ -258,6 +266,18 @@ final class LoopingPlayerNSView: NSView {
     }
 
     override func makeBackingLayer() -> CALayer { playerLayer }
+
+    // play() requested back in init can land before this view is actually attached to a
+    // window (SwiftUI calls makeNSView off-hierarchy first) — retry once it's really on
+    // screen, since that's the one state transition the diagnostic snapshot couldn't
+    // rule out (everything else about the player was already healthy: ready, buffered,
+    // isReadyForDisplay true, just rate stuck at 0).
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil, let player, player.rate == 0 {
+            player.play()
+        }
+    }
 
     override func layout() {
         super.layout()
