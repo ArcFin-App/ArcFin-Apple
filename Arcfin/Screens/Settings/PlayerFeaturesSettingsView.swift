@@ -16,9 +16,11 @@ struct PlayerFeaturesSettingsView: View {
     var body: some View {
         List {
             Section {
-                Toggle("Chapter List", isOn: $chapterListEnabled)
-                    .tvListRow()
-                    .syncLocked("chapterListEnabled", authManager)
+                Toggle(isOn: $chapterListEnabled) {
+                    TVRowLabelText(title: "Chapter List")
+                }
+                .tvListRow()
+                .syncLocked("chapterListEnabled", authManager)
             } footer: {
                 Text("Shows a jump-to-chapter list button in the player when the item has chapter markers.")
                     .font(.caption)
@@ -26,9 +28,11 @@ struct PlayerFeaturesSettingsView: View {
             }
 
             Section {
-                Toggle("SyncPlay", isOn: $syncPlayEnabled)
-                    .tvListRow()
-                    .syncLocked("syncPlayEnabled", authManager)
+                Toggle(isOn: $syncPlayEnabled) {
+                    TVRowLabelText(title: "SyncPlay")
+                }
+                .tvListRow()
+                .syncLocked("syncPlayEnabled", authManager)
             } footer: {
                 Text("Lets you create or join a SyncPlay group to keep playback in sync with others watching the same title.")
                     .font(.caption)
@@ -36,9 +40,11 @@ struct PlayerFeaturesSettingsView: View {
             }
 
             Section {
-                Toggle("Chromecast", isOn: $castEnabled)
-                    .tvListRow()
-                    .syncLocked("castEnabled", authManager)
+                Toggle(isOn: $castEnabled) {
+                    TVRowLabelText(title: "Chromecast")
+                }
+                .tvListRow()
+                .syncLocked("castEnabled", authManager)
             } footer: {
                 Text("Shows the Cast button when a Chromecast device is available on your network.")
                     .font(.caption)
@@ -46,9 +52,11 @@ struct PlayerFeaturesSettingsView: View {
             }
 
             Section {
-                Toggle("\"Are You Still Watching?\" Prompt", isOn: $stillWatchingPromptEnabled)
-                    .tvListRow()
-                    .syncLocked("stillWatchingPromptEnabled", authManager)
+                Toggle(isOn: $stillWatchingPromptEnabled) {
+                    TVRowLabelText(title: "\"Are You Still Watching?\" Prompt")
+                }
+                .tvListRow()
+                .syncLocked("stillWatchingPromptEnabled", authManager)
             } footer: {
                 Text("Pauses and asks for confirmation after 3 episodes have auto-played in a row with no interaction.")
                     .font(.caption)
@@ -56,9 +64,11 @@ struct PlayerFeaturesSettingsView: View {
             }
 
             Section {
-                Toggle("Match Content Frame Rate", isOn: $matchContentFrameRate)
-                    .tvListRow()
-                    .syncLocked("matchContentFrameRate", authManager)
+                Toggle(isOn: $matchContentFrameRate) {
+                    TVRowLabelText(title: "Match Content Frame Rate")
+                }
+                .tvListRow()
+                .syncLocked("matchContentFrameRate", authManager)
             } footer: {
                 Text("Switches the display's refresh rate to match the video's frame rate (e.g. 24fps film) so panning motion doesn't judder. Only applies to AVFoundation playback — off by default since some TVs/displays show a brief black flash when the refresh rate switches.")
                     .font(.caption)

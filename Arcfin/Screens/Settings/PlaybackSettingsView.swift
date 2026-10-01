@@ -49,18 +49,22 @@ struct PlaybackSettingsView: View {
     var body: some View {
         List {
             Section {
-                Picker("Video Quality", selection: $videoQuality) {
+                Picker(selection: $videoQuality) {
                     ForEach(VideoQuality.allCases) { q in
                         Text(q.label).tag(q)
                     }
+                } label: {
+                    TVRowLabelText(title: "Video Quality")
                 }
                 .tvListRow()
                 .syncLocked("videoQuality", authManager)
                 VStack(alignment: .leading, spacing: 4) {
-                    Picker("Playback Engine", selection: $playbackEngine) {
+                    Picker(selection: $playbackEngine) {
                         ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
                             Text(engine.rawValue).tag(engine)
                         }
+                    } label: {
+                        TVRowLabelText(title: "Playback Engine")
                     }
                     Text("Auto is recommended. If a video won't play, switch to VLC — then back to Auto once it's fixed.")
                         .font(.caption)
@@ -71,17 +75,21 @@ struct PlaybackSettingsView: View {
             }
 
             Section {
-                Picker("Skip Forward", selection: $skipForwardSeconds) {
+                Picker(selection: $skipForwardSeconds) {
                     ForEach(skipIntervalOptions, id: \.self) { seconds in
                         Text("\(seconds)s").tag(seconds)
                     }
+                } label: {
+                    TVRowLabelText(title: "Skip Forward")
                 }
                 .tvListRow()
                 .syncLocked("skipForwardSeconds", authManager)
-                Picker("Skip Backward", selection: $skipBackwardSeconds) {
+                Picker(selection: $skipBackwardSeconds) {
                     ForEach(skipIntervalOptions, id: \.self) { seconds in
                         Text("\(seconds)s").tag(seconds)
                     }
+                } label: {
+                    TVRowLabelText(title: "Skip Backward")
                 }
                 .tvListRow()
                 .syncLocked("skipBackwardSeconds", authManager)
@@ -92,27 +100,39 @@ struct PlaybackSettingsView: View {
             }
 
             Section {
-                Toggle("Auto-play Next Episode", isOn: $autoPlayNext)
-                    .tvListRow()
-                    .syncLocked("autoPlayNext", authManager)
-                Toggle("Skip Recap Automatically", isOn: $skipRecap)
-                    .tvListRow()
-                    .syncLocked("skipRecap", authManager)
-                Toggle("Skip Intro Automatically", isOn: $skipIntro)
-                    .tvListRow()
-                    .syncLocked("skipIntro", authManager)
-                Toggle("Skip Credits Automatically", isOn: $skipCredits)
-                    .tvListRow()
-                    .syncLocked("skipCredits", authManager)
-                Toggle("Show Subtitles by Default", isOn: $subtitleDefault)
-                    .tvListRow()
-                    .syncLocked("subtitleDefault", authManager)
+                Toggle(isOn: $autoPlayNext) {
+                    TVRowLabelText(title: "Auto-play Next Episode")
+                }
+                .tvListRow()
+                .syncLocked("autoPlayNext", authManager)
+                Toggle(isOn: $skipRecap) {
+                    TVRowLabelText(title: "Skip Recap Automatically")
+                }
+                .tvListRow()
+                .syncLocked("skipRecap", authManager)
+                Toggle(isOn: $skipIntro) {
+                    TVRowLabelText(title: "Skip Intro Automatically")
+                }
+                .tvListRow()
+                .syncLocked("skipIntro", authManager)
+                Toggle(isOn: $skipCredits) {
+                    TVRowLabelText(title: "Skip Credits Automatically")
+                }
+                .tvListRow()
+                .syncLocked("skipCredits", authManager)
+                Toggle(isOn: $subtitleDefault) {
+                    TVRowLabelText(title: "Show Subtitles by Default")
+                }
+                .tvListRow()
+                .syncLocked("subtitleDefault", authManager)
             }
 
             Section {
-                Toggle("Trailers", isOn: $trailersEnabled)
-                    .tvListRow()
-                    .syncLocked("trailersEnabled", authManager)
+                Toggle(isOn: $trailersEnabled) {
+                    TVRowLabelText(title: "Trailers")
+                }
+                .tvListRow()
+                .syncLocked("trailersEnabled", authManager)
                 #if !os(tvOS)
                 // YouTubeTrailerPlayerView (YouTubePlayerKit, needs WebKit) isn't available
                 // on tvOS at all — only a local trailer indexed on the server plays there.
@@ -138,17 +158,21 @@ struct PlaybackSettingsView: View {
             }
 
             Section {
-                Picker("Preferred Audio Language", selection: $preferredAudioLanguage) {
+                Picker(selection: $preferredAudioLanguage) {
                     ForEach(Self.audioLanguageOptions, id: \.code) { option in
                         Text(option.name).tag(option.code)
                     }
+                } label: {
+                    TVRowLabelText(title: "Preferred Audio Language")
                 }
                 .tvListRow()
                 .syncLocked("preferredAudioLanguage", authManager)
-                Picker("Preferred Subtitle Language", selection: $preferredSubtitleLanguage) {
+                Picker(selection: $preferredSubtitleLanguage) {
                     ForEach(Self.subtitleLanguageOptions, id: \.code) { option in
                         Text(option.name).tag(option.code)
                     }
+                } label: {
+                    TVRowLabelText(title: "Preferred Subtitle Language")
                 }
                 .tvListRow()
                 .syncLocked("preferredSubtitleLanguage", authManager)
