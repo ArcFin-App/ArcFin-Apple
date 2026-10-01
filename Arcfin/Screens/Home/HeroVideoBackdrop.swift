@@ -2,8 +2,6 @@
 
 import SwiftUI
 import AVFoundation
-import Telemetry
-import os
 
 /// Muted, seamlessly-looping video behind the Home hero — the "video backdrop" idea some
 /// Jellyfin hero-enhancement plugins offer, built here on stock Jellyfin local-trailer data
@@ -39,7 +37,6 @@ final class LoopingPlayerUIView: UIView {
     private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
     private var timeControlObservation: NSKeyValueObservation?
-    private var stallObserver: NSObjectProtocol?
     private var hasFadedIn = false
 
     init(url: URL) {
@@ -85,31 +82,19 @@ final class LoopingPlayerUIView: UIView {
             item.select(nil, in: group)
         }
 
-        let log = Telemetry.logger(category: "HeroVideoBackdrop")
         // readyToPlay only means the asset is minimally parsed, not that enough has
         // buffered to run smoothly — re-issuing play() here (on top of the init-time
         // call) is what actually got every rotated hero item playing reliably, instead
         // of just the one that happened to be ready by the time play() was first called.
         statusObservation = item.observe(\.status, options: [.new]) { [weak player] item, _ in
-            switch item.status {
-            case .readyToPlay:
+            if item.status == .readyToPlay {
                 player?.play()
-            case .failed:
-                log.error("player item failed: \(item.error?.localizedDescription ?? "unknown", privacy: .public)")
-            default:
-                break
             }
         }
         timeControlObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
             guard player.timeControlStatus == .playing, let self, !self.hasFadedIn else { return }
             self.hasFadedIn = true
             UIView.animate(withDuration: 0.3) { self.alpha = 1 }
-        }
-        stallObserver = NotificationCenter.default.addObserver(
-            forName: AVPlayerItem.failedToPlayToEndTimeNotification, object: item, queue: .main
-        ) { note in
-            let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
-            log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
         }
     }
 
@@ -131,8 +116,6 @@ final class LoopingPlayerUIView: UIView {
         statusObservation = nil
         timeControlObservation?.invalidate()
         timeControlObservation = nil
-        if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
-        stallObserver = nil
     }
 
     deinit {
@@ -187,7 +170,6 @@ final class LoopingPlayerNSView: NSView {
     private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
     private var timeControlObservation: NSKeyValueObservation?
-    private var stallObserver: NSObjectProtocol?
     private var hasFadedIn = false
 
     init(url: URL) {
@@ -236,20 +218,14 @@ final class LoopingPlayerNSView: NSView {
             item.select(nil, in: group)
         }
 
-        let log = Telemetry.logger(category: "HeroVideoBackdrop")
         // readyToPlay only means the asset is minimally parsed, not that enough has
         // buffered to run smoothly — re-issuing play() here (on top of the init-time
         // call and the viewDidMoveToWindow retry below) is what actually got every
         // rotated hero item playing reliably, instead of just whichever one happened to
         // already be ready by the time an earlier play() call landed.
         statusObservation = item.observe(\.status, options: [.new]) { [weak player] item, _ in
-            switch item.status {
-            case .readyToPlay:
+            if item.status == .readyToPlay {
                 player?.play()
-            case .failed:
-                log.error("player item failed: \(item.error?.localizedDescription ?? "unknown", privacy: .public)")
-            default:
-                break
             }
         }
         timeControlObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
@@ -259,12 +235,6 @@ final class LoopingPlayerNSView: NSView {
                 context.duration = 0.3
                 self.animator().alphaValue = 1
             }
-        }
-        stallObserver = NotificationCenter.default.addObserver(
-            forName: AVPlayerItem.failedToPlayToEndTimeNotification, object: item, queue: .main
-        ) { note in
-            let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
-            log.error("didFailToPlayToEndTime: \(err?.localizedDescription ?? "unknown", privacy: .public)")
         }
     }
 
@@ -285,8 +255,6 @@ final class LoopingPlayerNSView: NSView {
         statusObservation = nil
         timeControlObservation?.invalidate()
         timeControlObservation = nil
-        if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
-        stallObserver = nil
     }
 
     deinit {
