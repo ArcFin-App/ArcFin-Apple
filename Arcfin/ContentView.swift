@@ -78,56 +78,65 @@ struct ContentView: View {
         }
     }
 
+    // Extracted out of body — one giant ZStack combining this switch, the overlay ifs
+    // below, and body's own long modifier chain made the whole expression too much for
+    // the type checker to resolve in reasonable time. Splitting it into its own
+    // @ViewBuilder gives the compiler a much smaller expression to solve on its own.
+    @ViewBuilder
+    private var phaseContent: some View {
+        switch phase {
+        case .splash:
+            SplashView(isLoading: authManager.isChecking) { splashDone = true }
+                .transition(.opacity)
+        case .login:
+            LoginRootView()
+                .transition(.opacity)
+        #if os(iOS)
+        case .checkingSession:
+            SessionCheckingView(
+                onSignInManually: { bypassSessionCheck = true },
+                onRetry: { Task { await authManager.checkStoredAuth() } }
+            )
+            .transition(.opacity)
+        #endif
+        case .main:
+            MainTabView()
+                .transition(.opacity)
+        case .offline:
+            NavigationStack {
+                DownloadsView(goBackOnline: { offlineModeEnabled = false })
+                    #if os(iOS)
+                    // Offline mode replaces the whole app with DownloadsView, which
+                    // previously had no way to reach "On This Device" — the only local
+                    // playback option left offline was Jellyfin downloads themselves.
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button { showOfflineDocPicker = true } label: {
+                                Image(systemName: "folder")
+                            }
+                        }
+                    }
+                    .sheet(isPresented: $showOfflineDocPicker) {
+                        DocumentPickerView { url in
+                            offlinePickedURL = url
+                            navigateToOfflineLocalPlayer = true
+                        }
+                    }
+                    .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
+                        if let url = offlinePickedURL {
+                            LocalPlayerView(url: url)
+                                .toolbar(.hidden, for: .tabBar)
+                        }
+                    }
+                    #endif
+            }
+            .transition(.opacity)
+        }
+    }
+
     var body: some View {
         ZStack {
-            switch phase {
-            case .splash:
-                SplashView(isLoading: authManager.isChecking) { splashDone = true }
-                    .transition(.opacity)
-            case .login:
-                LoginRootView()
-                    .transition(.opacity)
-            #if os(iOS)
-            case .checkingSession:
-                SessionCheckingView(
-                    onSignInManually: { bypassSessionCheck = true },
-                    onRetry: { Task { await authManager.checkStoredAuth() } }
-                )
-                .transition(.opacity)
-            #endif
-            case .main:
-                MainTabView()
-                    .transition(.opacity)
-            case .offline:
-                NavigationStack {
-                    DownloadsView(goBackOnline: { offlineModeEnabled = false })
-                        #if os(iOS)
-                        // Offline mode replaces the whole app with DownloadsView, which
-                        // previously had no way to reach "On This Device" — the only local
-                        // playback option left offline was Jellyfin downloads themselves.
-                        .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button { showOfflineDocPicker = true } label: {
-                                    Image(systemName: "folder")
-                                }
-                            }
-                        }
-                        .sheet(isPresented: $showOfflineDocPicker) {
-                            DocumentPickerView { url in
-                                offlinePickedURL = url
-                                navigateToOfflineLocalPlayer = true
-                            }
-                        }
-                        .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
-                            if let url = offlinePickedURL {
-                                LocalPlayerView(url: url)
-                                    .toolbar(.hidden, for: .tabBar)
-                            }
-                        }
-                        #endif
-                }
-                .transition(.opacity)
-            }
+            phaseContent
 
             #if !os(tvOS)
             if isAppLocked {
