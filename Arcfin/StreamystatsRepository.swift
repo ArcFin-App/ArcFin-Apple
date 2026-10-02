@@ -13,7 +13,11 @@ final class StreamystatsRepository {
     var isLoading = false
     var loadError: String?
 
-    @ObservationIgnored private var client: StreamystatsHTTPClient?
+    // Not @ObservationIgnored — isConfigured reads this, and every view gating on it
+    // (HomeView, LibraryView, TVLibraryView, TVMediaDetailView, StatsView) needs to react
+    // the moment configure() sets a fresh client, same reactivity gap found and fixed in
+    // SeerrRepository.
+    private var client: StreamystatsHTTPClient?
 
     var isConfigured: Bool { client != nil }
 
