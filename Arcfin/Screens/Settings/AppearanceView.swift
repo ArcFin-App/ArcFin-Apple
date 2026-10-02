@@ -26,17 +26,20 @@ struct AppearanceView: View {
     }
 
     private var navSectionTitle: String { usesBottomBar ? "Bottom Navigation" : "Navigation" }
-    private var navSectionIcon: String { usesBottomBar ? "rectangle.bottomthird.inset.filled" : "sidebar.left" }
 
     var body: some View {
         List {
             Section {
-                Toggle("Merge Continue Watching & Up Next", isOn: $mergeContinueWatchingAndUpNext)
-                    .tvListRow()
-                    .syncLocked("mergeContinueWatchingAndUpNext", authManager)
-                Toggle("Hero Video Backdrops", isOn: $heroVideoBackdropsEnabled)
-                    .tvListRow()
-                    .syncLocked("heroVideoBackdropsEnabled", authManager)
+                Toggle(isOn: $mergeContinueWatchingAndUpNext) {
+                    TVRowLabelText(title: "Merge Continue Watching & Up Next")
+                }
+                .tvListRow()
+                .syncLocked("mergeContinueWatchingAndUpNext", authManager)
+                Toggle(isOn: $heroVideoBackdropsEnabled) {
+                    TVRowLabelText(title: "Hero Video Backdrops")
+                }
+                .tvListRow()
+                .syncLocked("heroVideoBackdropsEnabled", authManager)
                 NavigationLink {
                     HomeShelfSettingsView()
                 } label: {
@@ -44,7 +47,7 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
             } header: {
-                Label("Home", systemImage: "house")
+                Text("Home")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
@@ -62,7 +65,7 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
             } header: {
-                Label(navSectionTitle, systemImage: navSectionIcon)
+                Text(navSectionTitle)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
@@ -73,11 +76,13 @@ struct AppearanceView: View {
             }
 
             Section {
-                Toggle("Reduce Motion", isOn: $reduceMotion)
-                    .tvListRow()
-                    .syncLocked("reduceMotion", authManager)
+                Toggle(isOn: $reduceMotion) {
+                    TVRowLabelText(title: "Reduce Motion")
+                }
+                .tvListRow()
+                .syncLocked("reduceMotion", authManager)
             } header: {
-                Label("Motion", systemImage: "sparkles")
+                Text("Motion")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
@@ -90,11 +95,13 @@ struct AppearanceView: View {
 
             #if !os(macOS)
             Section {
-                Toggle("Haptic Feedback", isOn: $hapticsEnabled)
-                    .tvListRow()
-                    .syncLocked("hapticsEnabled", authManager)
+                Toggle(isOn: $hapticsEnabled) {
+                    TVRowLabelText(title: "Haptic Feedback")
+                }
+                .tvListRow()
+                .syncLocked("hapticsEnabled", authManager)
             } header: {
-                Label("Feedback", systemImage: "iphone.radiowaves.left.and.right")
+                Text("Feedback")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)

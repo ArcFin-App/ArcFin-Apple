@@ -23,6 +23,12 @@ struct SeerrItemDetailView: View {
     private var isAvailable: Bool { item.availabilityStatus == .available }
 
     var body: some View {
+        // This view had no adaptive/macOS-specific layout at all — a single fixed-height
+        // backdrop plus whatever content the item has, with no minimum height tying it to
+        // the actual window/screen. On a short item (sparse metadata) or a tall macOS
+        // window, that left a large empty gap below the content instead of the layout
+        // filling the space it actually has.
+        GeometryReader { proxy in
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 backdrop
@@ -95,6 +101,8 @@ struct SeerrItemDetailView: View {
                 }
                 .padding(DT.Spacing.pagePad)
             }
+            .frame(minHeight: proxy.size.height)
+        }
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
