@@ -54,6 +54,7 @@ struct ContentView: View {
     @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = SeerrAuthMethod.jellyfin
     @AppStorage("streamystatsURL")   private var statsURL         = ""
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
+    @State private var showSeerrSetupPrompt = false
 
     private var phase: AppPhase {
         guard splashDone else { return .splash }
@@ -224,6 +225,46 @@ struct ContentView: View {
         .onChange(of: offlineModeEnabled) { _, isOffline in
             if !isOffline { syncOfflineProgress() }
         }
+        // Quick Connect sign-in has no password to auto-fill Seerr with (see AuthView's
+        // attemptSeerrAutoLogin, which only runs on the password-based path) — once a sync
+        // confirms Seerr is locked to a Jellyfin account server-side but this profile still
+        // has no Seerr credential, offer to connect it interactively instead of leaving it
+        // silently broken with no way to fix it (Settings hides the fields while locked).
+        .onChange(of: authManager.isSyncingArcfin) { _, isSyncing in
+            if !isSyncing { checkSeerrSetupPrompt() }
+        }
+        .sheet(isPresented: $showSeerrSetupPrompt) {
+            if case .authenticated(let cred) = authManager.state {
+                SeerrSetupPromptView(
+                    seerrURL: seerrURL,
+                    jellyfinUsername: cred.displayName,
+                    onConnected: { username, password in
+                        seerrUsername = username
+                        seerrPassword = password
+                        markSeerrSetupPromptHandled(for: cred.id)
+                    },
+                    onDismiss: { markSeerrSetupPromptHandled(for: cred.id) }
+                )
+            }
+        }
+    }
+
+    private func seerrSetupPromptHandledKey(for credentialID: UUID) -> String {
+        "arcfin.seerrSetupPromptHandled.\(credentialID.uuidString)"
+    }
+
+    private func markSeerrSetupPromptHandled(for credentialID: UUID) {
+        UserDefaults.standard.set(true, forKey: seerrSetupPromptHandledKey(for: credentialID))
+    }
+
+    private func checkSeerrSetupPrompt() {
+        guard case .authenticated(let cred) = authManager.state,
+              authManager.arcfinSyncLockedKeys.contains("seerrAuthMethod"),
+              seerrAuthMethod == .jellyfin, !seerrURL.isEmpty,
+              seerrUsername.isEmpty || seerrPassword.isEmpty,
+              !UserDefaults.standard.bool(forKey: seerrSetupPromptHandledKey(for: cred.id))
+        else { return }
+        showSeerrSetupPrompt = true
     }
 
     #if !os(tvOS)
