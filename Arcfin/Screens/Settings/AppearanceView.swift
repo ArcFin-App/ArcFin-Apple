@@ -30,12 +30,16 @@ struct AppearanceView: View {
     var body: some View {
         List {
             Section {
-                Toggle("Merge Continue Watching & Up Next", isOn: $mergeContinueWatchingAndUpNext)
-                    .tvListRow()
-                    .syncLocked("mergeContinueWatchingAndUpNext", authManager)
-                Toggle("Hero Video Backdrops", isOn: $heroVideoBackdropsEnabled)
-                    .tvListRow()
-                    .syncLocked("heroVideoBackdropsEnabled", authManager)
+                Toggle(isOn: $mergeContinueWatchingAndUpNext) {
+                    TVRowLabelText(title: "Merge Continue Watching & Up Next")
+                }
+                .tvListRow()
+                .syncLocked("mergeContinueWatchingAndUpNext", authManager)
+                Toggle(isOn: $heroVideoBackdropsEnabled) {
+                    TVRowLabelText(title: "Hero Video Backdrops")
+                }
+                .tvListRow()
+                .syncLocked("heroVideoBackdropsEnabled", authManager)
                 NavigationLink {
                     HomeShelfSettingsView()
                 } label: {
@@ -72,9 +76,11 @@ struct AppearanceView: View {
             }
 
             Section {
-                Toggle("Reduce Motion", isOn: $reduceMotion)
-                    .tvListRow()
-                    .syncLocked("reduceMotion", authManager)
+                Toggle(isOn: $reduceMotion) {
+                    TVRowLabelText(title: "Reduce Motion")
+                }
+                .tvListRow()
+                .syncLocked("reduceMotion", authManager)
             } header: {
                 Text("Motion")
                     .font(.system(size: 12, weight: .semibold))
@@ -89,9 +95,11 @@ struct AppearanceView: View {
 
             #if !os(macOS)
             Section {
-                Toggle("Haptic Feedback", isOn: $hapticsEnabled)
-                    .tvListRow()
-                    .syncLocked("hapticsEnabled", authManager)
+                Toggle(isOn: $hapticsEnabled) {
+                    TVRowLabelText(title: "Haptic Feedback")
+                }
+                .tvListRow()
+                .syncLocked("hapticsEnabled", authManager)
             } header: {
                 Text("Feedback")
                     .font(.system(size: 12, weight: .semibold))

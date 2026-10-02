@@ -2,6 +2,30 @@
 
 import SwiftUI
 
+// Toggle(_:isOn:) and Picker(_:selection:) render their string label through their own
+// internal Text, which on tvOS keeps the system's default color regardless of
+// foregroundStyle applied from outside the control — unreadable once the row's focus
+// platter goes light. Use this as the label content (Toggle(isOn:label:) /
+// Picker(selection:label:)) instead of the string convenience initializer wherever a tvOS
+// row needs its text to read in the app's text color while focused. A plain, unstyled Text
+// on every other platform, so call sites don't need their own platform guard.
+struct TVRowLabelText: View {
+    let title: String
+#if os(tvOS)
+    @Environment(\.isFocused) private var isFocused
+#endif
+
+    var body: some View {
+#if os(tvOS)
+        Text(title)
+            .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
+            .animation(DT.Animation.fast, value: isFocused)
+#else
+        Text(title)
+#endif
+    }
+}
+
 extension View {
     @ViewBuilder
     func arcfinListStyle() -> some View {

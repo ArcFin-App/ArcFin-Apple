@@ -7,6 +7,8 @@ import SeerrAPI
 import AuthCore
 
 struct TVMediaDetailView: View {
+    static let scrollSpace = "tvDetailScroll"
+
     let item: MediaItem
 
     @Environment(MediaRepository.self) private var mediaRepo
@@ -29,6 +31,7 @@ struct TVMediaDetailView: View {
     @State private var nextEpisode: MediaItem?
     @State private var playbackRequest: PlaybackRequest?
     @State private var requestingSeerrItem: SeerrItem?
+    @State private var sectionOffsets: [CGFloat] = []
 
     private let client = JellyfinMediaClient()
 
@@ -52,12 +55,20 @@ struct TVMediaDetailView: View {
                 }
                 .focusSection()
             }
-            // Without a custom scroll-target behavior, tvOS's default focus-driven scrolling
-            // recenters on whatever section just gained focus — since each below-fold section
-            // is much shorter than the screen, that reads as a big empty gap above/below it.
-            // TVHomeView solved the same problem for its own hero/shelf transition; reusing
-            // the same behavior here.
-            .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh * 0.88))
+            .coordinateSpace(name: Self.scrollSpace)
+            // TVFoldSnappingBehavior (shared with TVHomeView) only dampens the single
+            // hero/shelf fold boundary — it intentionally leaves every target further down
+            // untouched, since forcing it to always snap to just two points broke scrolling
+            // past the first shelf there. That guard means it does nothing for transitions
+            // between below-fold sections here (Episodes/Trailers/Cast/Recommended), which
+            // is exactly where tvOS's default focus-driven centering still recenters on
+            // whatever short section just gained focus, reading as a big gap above/below
+            // it — confirmed happening regardless of whether a trailer is present at all.
+            // Extend the same idea across every section boundary instead of just the fold.
+            .scrollTargetBehavior(TVSectionSnappingBehavior(
+                showcaseHeight: sh * 0.88, sectionOffsets: sectionOffsets
+            ))
+            .onPreferenceChange(TVSectionOffsetKey.self) { sectionOffsets = $0.sorted() }
             .ignoresSafeArea()
         }
         .background(DT.Color.backgroundPrimary)
@@ -281,13 +292,13 @@ struct TVMediaDetailView: View {
 
     @ViewBuilder
     private var belowFoldSection: some View {
-        if !seasons.isEmpty { seriesSection.focusSection() }
-        if !trailers.isEmpty { trailersSection.focusSection() }
-        if let d = detail, !d.cast.isEmpty { castSection(d).focusSection() }
+        if !seasons.isEmpty { seriesSection.trackSectionOffset().focusSection() }
+        if !trailers.isEmpty { trailersSection.trackSectionOffset().focusSection() }
+        if let d = detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
         if !seerrRelatedItems.isEmpty {
-            seerrRelatedSection.focusSection()
+            seerrRelatedSection.trackSectionOffset().focusSection()
         } else if !similarItems.isEmpty {
-            similarSection.focusSection()
+            similarSection.trackSectionOffset().focusSection()
         }
     }
 
@@ -698,6 +709,54 @@ private struct CastPersonCard<Placeholder: View>: View {
         }
         .frame(width: 70, alignment: .top)
         .animation(DT.Animation.fast, value: hovered)
+    }
+}
+
+private struct TVSectionOffsetKey: PreferenceKey {
+    static let defaultValue: [CGFloat] = []
+    static func reduce(value: inout [CGFloat], nextValue: () -> [CGFloat]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
+private extension View {
+    // Reports this section's own top edge, in the scroll view's content coordinate space,
+    // so TVSectionSnappingBehavior below knows every section boundary on the page, not
+    // just the single hero/shelf fold TVFoldSnappingBehavior already handles.
+    func trackSectionOffset() -> some View {
+        background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: TVSectionOffsetKey.self,
+                    value: [geo.frame(in: .named(TVMediaDetailView.scrollSpace)).minY]
+                )
+            }
+        )
+    }
+}
+
+// Generalizes TVFoldSnappingBehavior's hero-fold dampening to every below-fold section
+// boundary on this screen. tvOS's default focus-driven scrolling centers whatever just
+// gained focus in the viewport — fine for a tall section, but each below-fold section here
+// (Episodes, Trailers, Cast, Recommended) is much shorter than the screen, so centering on
+// a card inside one reads as a big empty gap above and below it. Snapping to the nearest
+// known section start instead keeps the top of whichever section just gained focus flush
+// with the viewport, matching how the hero/shelf fold already behaves.
+private struct TVSectionSnappingBehavior: ScrollTargetBehavior {
+    let showcaseHeight: CGFloat
+    let sectionOffsets: [CGFloat]
+
+    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+        let candidates = [0, showcaseHeight] + sectionOffsets
+        guard let nearest = candidates.min(by: {
+            abs($0 - target.rect.minY) < abs($1 - target.rect.minY)
+        }) else { return }
+        // Only pull toward a snap point that's actually close — an unconditional snap
+        // fights normal scrolling through a section's own tall content (e.g. a long
+        // overview) the same way an earlier unconditional version of the fold behavior
+        // broke scrolling past the first shelf on Home.
+        guard abs(nearest - target.rect.minY) < showcaseHeight * 0.3 else { return }
+        target.rect.origin.y = nearest
     }
 }
 

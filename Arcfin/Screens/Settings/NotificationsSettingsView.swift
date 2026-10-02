@@ -10,9 +10,11 @@ struct NotificationsSettingsView: View {
     var body: some View {
         List {
             Section {
-                Toggle("New Content Added", isOn: $notifyNewContent)
-                    .tvListRow()
-                    .syncLocked("notifyNewContent", authManager)
+                Toggle(isOn: $notifyNewContent) {
+                    TVRowLabelText(title: "New Content Added")
+                }
+                .tvListRow()
+                .syncLocked("notifyNewContent", authManager)
                 // No downloads on macOS — nothing would ever trigger this notification there.
                 #if os(iOS)
                 Toggle("Download Complete", isOn: $notifyDownload)
