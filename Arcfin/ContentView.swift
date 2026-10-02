@@ -10,6 +10,13 @@ import SyncEngine
 
 private enum AppPhase: Equatable {
     case splash, login, main, offline
+    #if os(iOS)
+    // SplashView always exits after its own fixed minimum presentation time regardless of
+    // whether checkStoredAuth() has concluded, so a slow network previously meant the app
+    // dropped straight to the Login screen while an already-valid session was still being
+    // confirmed in the background.
+    case checkingSession
+    #endif
 }
 
 // Posted by onOpenURL when the Top Shelf launches a play deep link.
@@ -46,6 +53,7 @@ struct ContentView: View {
     @State private var showOfflineDocPicker = false
     @State private var offlinePickedURL: URL?
     @State private var navigateToOfflineLocalPlayer = false
+    @State private var bypassSessionCheck = false
     #endif
 
     @AppStorage("seerrURL")          private var seerrURL         = ""
@@ -58,6 +66,11 @@ struct ContentView: View {
     private var phase: AppPhase {
         guard splashDone else { return .splash }
         if offlineModeEnabled { return .offline }
+        #if os(iOS)
+        if !bypassSessionCheck, authManager.isChecking, authManager.state == .unauthenticated {
+            return .checkingSession
+        }
+        #endif
         switch authManager.state {
         case .authenticated:   return .main
         case .unauthenticated: return .login
@@ -73,6 +86,14 @@ struct ContentView: View {
             case .login:
                 LoginRootView()
                     .transition(.opacity)
+            #if os(iOS)
+            case .checkingSession:
+                SessionCheckingView(
+                    onSignInManually: { bypassSessionCheck = true },
+                    onRetry: { Task { await authManager.checkStoredAuth() } }
+                )
+                .transition(.opacity)
+            #endif
             case .main:
                 MainTabView()
                     .transition(.opacity)
