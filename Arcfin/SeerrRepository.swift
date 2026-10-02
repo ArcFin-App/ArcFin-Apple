@@ -26,7 +26,12 @@ final class SeerrRepository {
     var isLoadingRequests = false
     var authFailed = false
 
-    @ObservationIgnored private var client: SeerrHTTPClient?
+    // Not @ObservationIgnored, unlike the bookkeeping vars below — isConfigured reads this,
+    // and every tab-visibility check (HomeView's Discover/Watchlist tabs) reads isConfigured.
+    // Ignoring it meant configure() setting a fresh client never invalidated those views, so
+    // connecting Seerr (e.g. via the Quick Connect setup prompt) silently needed a full app
+    // relaunch before Discover/Watchlist actually appeared.
+    private var client: SeerrHTTPClient?
     @ObservationIgnored private var isFetchingDiscover = false
     @ObservationIgnored private var isFetchingRequests = false
     @ObservationIgnored private var configuredURL: String = ""
