@@ -72,6 +72,10 @@ struct PlayerView: View {
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
     @State var currentSubtitleText: String?
+    /// Only ever non-nil on AetherEnginePlayer — a native embedded PGS/DVB bitmap track has
+    /// no Jellyfin delivery URL for SubtitleLoader to fetch, so this is genuinely new
+    /// capability, not a duplicate of the text-cue path above.
+    @State var currentBitmapCue: NativeBitmapCue?
     @AppStorage("subtitleTextSize") var subtitleTextSize = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") var subtitleTextColor = SubtitleTextColorOption.white
     @AppStorage("subtitleBackgroundStyle") var subtitleBackgroundStyle = SubtitleBackgroundStyle.outline
@@ -226,6 +230,9 @@ struct PlayerView: View {
 
             if let currentSubtitleText {
                 subtitleOverlay(currentSubtitleText)
+            }
+            if let currentBitmapCue {
+                bitmapSubtitleOverlay(currentBitmapCue)
             }
 
             // Always mounted, visibility driven purely by opacity — this used to be `if
@@ -1227,11 +1234,19 @@ struct PlayerView: View {
     }
 
     func updateSubtitleText(forTicks ticks: Int64) {
-        guard !subtitleCues.isEmpty else {
+        let seconds = Double(ticks) / 10_000_000
+        if subtitleCues.isEmpty {
             currentSubtitleText = nil
-            return
+        } else {
+            currentSubtitleText = SubtitleLoader.cue(at: seconds, in: subtitleCues)
         }
-        currentSubtitleText = SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
+        if let aetherPlayer = player as? AetherEnginePlayer, !aetherPlayer.nativeBitmapCues.isEmpty {
+            currentBitmapCue = aetherPlayer.nativeBitmapCues.first {
+                seconds >= $0.startTime && seconds < $0.endTime
+            }
+        } else {
+            currentBitmapCue = nil
+        }
     }
 
     private func reload(errorContext: String) {

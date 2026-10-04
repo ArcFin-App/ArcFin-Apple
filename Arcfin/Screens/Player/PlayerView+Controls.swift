@@ -1212,6 +1212,29 @@ extension PlayerView {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+    }
+
+    /// AetherEngine's native PGS/DVB bitmap cue path — a track Jellyfin has no delivery URL
+    /// for, so this is additive to subtitleOverlay above, not a replacement. `cue.position`
+    /// is already normalized [0, 1] against the source canvas, so it maps directly onto the
+    /// on-screen video rect without needing the exact video frame math a cropped-canvas rip
+    /// would technically call for (a simplification, not attempting canvas-to-video-rect
+    /// letterbox alignment for v1).
+    func bitmapSubtitleOverlay(_ cue: NativeBitmapCue) -> some View {
+        GeometryReader { proxy in
+            Image(decorative: cue.cgImage, scale: 1)
+                .resizable()
+                .frame(
+                    width: cue.position.width * proxy.size.width,
+                    height: cue.position.height * proxy.size.height
+                )
+                .position(
+                    x: cue.position.midX * proxy.size.width,
+                    y: cue.position.midY * proxy.size.height
+                )
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
         .animation(DT.Animation.fast, value: isControlsVisible)
     }
 
