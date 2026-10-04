@@ -178,14 +178,16 @@ public enum PlaybackEngineSelector {
                 $0.trimmingCharacters(in: .whitespaces)
             }
             let isCompatible = aliases.contains { JellyfinMediaClient.avFoundationCompatibleContainers.contains($0) }
-            // Direct-played Dolby Vision has been reported to fail on AVPlayerLayer
-            // (remoteXPCPlayer_clearVideoLayer / FigUseVideoReceiverForCALayer "Not
-            // supported") — routed to VLC as a precaution. That same failure has ALSO now
-            // been seen on a plain SDR HEVC/mp4 file, so Dolby Vision isn't the whole
-            // picture — profile/bitDepth/level are logged below but not yet used to
-            // decide, since which exact property breaks AVPlayerLayer isn't confirmed.
-            let isDolbyVision = (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby")
-            let chosen: PlaybackEngineKind = (isCompatible && !isDolbyVision) ? .avFoundation : .vlc
+            // Confirmed via the diagnostic log below: a file tagged videoRange "SDR" (no
+            // HDR/Dolby Vision metadata at all) with profile "Main 10"/bitDepth 10 hit the
+            // exact same remoteXPCPlayer_clearVideoLayer / FigUseVideoReceiverForCALayer
+            // "Not supported" failure as actual Dolby Vision — audio with no video. The
+            // videoRange tag was never the real signal; bit depth is. This player
+            // surface's AVPlayerLayer can't render 10-bit (or higher) video regardless of
+            // HDR tagging, while VLC's own output path handles it fine with the same
+            // VideoToolbox hardware decoder.
+            let needsVLCForBitDepth = (videoStream?.bitDepth ?? 8) > 8
+            let chosen: PlaybackEngineKind = (isCompatible && !needsVLCForBitDepth) ? .avFoundation : .vlc
             log.debug("""
                 Auto chose \(chosen.rawValue, privacy: .public) — container: \(container ?? "nil", privacy: .public), \
                 videoCodec: \(videoStream?.codec ?? "nil", privacy: .public), \
