@@ -747,6 +747,13 @@ struct PlayerView: View {
                 if !(player is VLCEnginePlayer) { player = VLCEnginePlayer() }
             case .avFoundation:
                 if !(player is AVFoundationPlayer) { player = AVFoundationPlayer() }
+            case .auto:
+                // .choose() never actually returns .auto (it always resolves Auto down to a
+                // concrete engine above) — only reachable if that invariant breaks later.
+                if !(player is AetherEnginePlayer) {
+                    player = (try? AetherEnginePlayer())
+                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                }
             }
             selectedAudioIndex = info.defaultAudioStreamIndex
             // The server only marks a subtitle default when one's flagged default/forced
