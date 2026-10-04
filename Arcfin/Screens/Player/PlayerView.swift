@@ -150,7 +150,12 @@ struct PlayerView: View {
     // even though it's now hidden behind the player, so directional/select presses land on
     // the invisible screen underneath instead of anything here. Explicitly claiming focus
     // onto a real player control once this view has appeared is what actually pulls it over.
-    @FocusState var tvInitialFocus: Bool
+    // Namespace for .prefersDefaultFocus below — the documented, system-driven mechanism for
+    // claiming initial focus into a freshly-presented scope. A manual @FocusState + delayed
+    // Task retry was tried here before (twice) and wasn't reliable; this is what Apple's own
+    // tvOS focus APIs are actually built for, so the system handles the landing itself instead
+    // of this code guessing at timing.
+    @Namespace var tvFocusNamespace
     #endif
 
     let client = JellyfinMediaClient()
@@ -284,26 +289,25 @@ struct PlayerView: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         #endif
-        .task { await setup() }
         #if os(tvOS)
-        .task {
-            // A single delayed attempt raced here before — tvOS's focus engine not reliably
-            // claiming focus into a freshly-presented .fullScreenCover is a known-flaky
-            // pattern, and when that one attempt lost the race, NOTHING was ever focused
-            // afterward: with no currently-focused control, the remote's D-pad and touchpad
-            // both have nothing to move away from, so they silently do nothing either. Retrying
-            // a few times (checking the @FocusState binding actually landed before giving up)
-            // catches that instead of leaving it to one race.
-            for _ in 0..<5 {
-                try? await Task.sleep(for: .milliseconds(300))
-                guard !Task.isCancelled else { return }
-                tvInitialFocus = true
-                try? await Task.sleep(for: .milliseconds(50))
-                if tvInitialFocus { return }
+        .focusScope(tvFocusNamespace)
+        .onPlayPauseCommand { togglePlayPause() }
+        // A fallback for when the currently-focused control has no further focusable
+        // neighbor in that direction (e.g. focus sitting on the leftmost/rightmost transport
+        // button, or on nothing in particular right after .prefersDefaultFocus lands) — the
+        // system only calls this once its own spatial focus search comes up empty, so it
+        // never fires while there's a real button to move to instead. seek(by:) already
+        // reveals controls via toggleControlsVisibilityOnAction(), same as every other seek
+        // entry point.
+        .onMoveCommand { direction in
+            switch direction {
+            case .left: seek(by: -skipBackwardSeconds)
+            case .right: seek(by: skipForwardSeconds)
+            default: break
             }
         }
-        .onPlayPauseCommand { togglePlayPause() }
         #endif
+        .task { await setup() }
         .onDisappear {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)

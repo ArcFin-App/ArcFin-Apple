@@ -358,7 +358,7 @@ extension PlayerView {
                         #endif
                     }
                     #if os(tvOS)
-                    .focused($tvInitialFocus)
+                    .prefersDefaultFocus(true, in: tvFocusNamespace)
                     #endif
                     Button { seek(by: skipForwardSeconds) } label: {
                         #if os(tvOS)
