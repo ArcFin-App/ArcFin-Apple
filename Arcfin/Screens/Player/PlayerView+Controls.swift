@@ -580,6 +580,32 @@ extension PlayerView {
 
     // MARK: - Chapters
 
+    /// Reuses the scrubber's own TrickplayLoader so the chapter list doesn't need a separate
+    /// image source — Jellyfin's dedicated per-chapter image endpoint isn't wired into
+    /// MediaChapter at all today, and every title with trickplay already has frames at every
+    /// chapter's start time anyway.
+    private struct ChapterThumbnailView: View {
+        let loader: TrickplayLoader?
+        let positionTicks: Int64
+        @State private var image: PlatformImage?
+
+        var body: some View {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6).fill(DT.Color.backgroundTertiary)
+                if let image {
+                    Image(platformImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                }
+            }
+            .frame(width: 80, height: 45)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .task(id: positionTicks) {
+                image = await loader?.thumbnail(forPositionTicks: positionTicks)
+            }
+        }
+    }
+
     var chapterListSheet: some View {
         NavigationStack {
             List {
@@ -589,7 +615,8 @@ extension PlayerView {
                         showChapterMenu = false
                         jumpToChapter(chapter)
                     } label: {
-                        HStack {
+                        HStack(spacing: 12) {
+                            ChapterThumbnailView(loader: trickplayLoader, positionTicks: chapter.startPositionTicks)
                             Text(chapter.name ?? "Chapter \(index + 1)")
                                 .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
                                 .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
@@ -1383,7 +1410,8 @@ extension PlayerView {
                             showChapterMenu = false
                             jumpToChapter(chapter)
                         } label: {
-                            HStack {
+                            HStack(spacing: 12) {
+                                ChapterThumbnailView(loader: trickplayLoader, positionTicks: chapter.startPositionTicks)
                                 Text(chapter.name ?? "Chapter \(index + 1)")
                                     .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
                                     .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
