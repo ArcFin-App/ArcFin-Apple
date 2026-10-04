@@ -11,6 +11,7 @@ import AVKit
 import AuthCore
 import JellyfinAPI
 import MediaEngine
+import AetherEngine
 import SwiftVLC
 import CastKit
 
@@ -471,6 +472,11 @@ struct PlayerView: View {
             PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
                 .allowsHitTesting(false)
             #endif
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            // AetherPlayerSurface binds the engine directly (engine.bind(view:) internally) —
+            // no layer/controller to hand it, unlike the AVFoundation/VLC branches above.
+            AetherPlayerSurface(engine: aetherEngine.engine)
+                .allowsHitTesting(false)
         }
     }
 
@@ -663,6 +669,15 @@ struct PlayerView: View {
 
     // MARK: - Setup / teardown
 
+    /// The AVFoundation/VLC split Auto used before Aether existed — now only reached when
+    /// Aether itself fails to construct or load a source (see setup()'s runtime fallback).
+    private func legacyEnginePlayer(container: String?, videoStream: JellyfinMediaStream?) -> any MediaPlayerProtocol {
+        switch PlaybackEngineSelector.legacyFallback(container: container, videoStream: videoStream) {
+        case .vlc: return VLCEnginePlayer()
+        default: return AVFoundationPlayer()
+        }
+    }
+
     private func setup() async {
         #if canImport(UIKit) && !os(tvOS)
         volumeController = SystemVolumeController()
@@ -708,14 +723,23 @@ struct PlayerView: View {
                 credential: credential, authHeader: authHeader, itemId: item.id,
                 quality: qualityCap(for: quality)
             )
-            // .choose always resolves Auto down to a concrete engine — only two outcomes here.
+            // .choose always resolves Auto down to a concrete engine — three outcomes here.
             let engine = PlaybackEngineSelector.choose(
                 preference: playbackEnginePreference, container: info.container, videoStream: info.videoStream
             )
-            if engine == .vlc, !(player is VLCEnginePlayer) {
-                player = VLCEnginePlayer()
-            } else if engine == .avFoundation, !(player is AVFoundationPlayer) {
-                player = AVFoundationPlayer()
+            switch engine {
+            case .aether:
+                if !(player is AetherEnginePlayer) {
+                    // init() throws — a construction failure is just another "Aether can't
+                    // serve this session" case, handled by the exact same fallback path a
+                    // load() failure goes through below.
+                    player = (try? AetherEnginePlayer())
+                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                }
+            case .vlc:
+                if !(player is VLCEnginePlayer) { player = VLCEnginePlayer() }
+            case .avFoundation:
+                if !(player is AVFoundationPlayer) { player = AVFoundationPlayer() }
             }
             selectedAudioIndex = info.defaultAudioStreamIndex
             // The server only marks a subtitle default when one's flagged default/forced
@@ -767,7 +791,17 @@ struct PlayerView: View {
             chapters = detail?.chapters ?? []
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
-            try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+            // Auto's pre-flight pick can't catch everything — a runtime load failure on
+            // Aether (the exact class of bug we spent real time on this session, where a
+            // source's own structure breaks one engine but not another) falls back once to
+            // the same AVFoundation/VLC split Auto used before Aether existed, rather than
+            // surfacing a hard error over an engine that can't serve this specific source.
+            do {
+                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+            } catch where player is AetherEnginePlayer {
+                player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+            }
             await player.play()
             #if !os(tvOS)
             // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's

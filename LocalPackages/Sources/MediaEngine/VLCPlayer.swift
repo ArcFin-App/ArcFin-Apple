@@ -149,6 +149,7 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
 
 public enum PlaybackEngineKind: String, CaseIterable, Sendable {
     case auto = "Auto"
+    case aether = "Aether"
     case avFoundation = "AVFoundation"
     case vlc = "VLC"
 }
@@ -156,48 +157,58 @@ public enum PlaybackEngineKind: String, CaseIterable, Sendable {
 public enum PlaybackEngineSelector {
     private static let log = Telemetry.logger(category: "PlaybackEngineSelector")
 
-    /// A container AVFoundation can't open — picks VLC instead of AVFoundation for Auto.
-    /// AVFoundation stays preferred otherwise, including HEVC (natively hardware-decoded on
-    /// every iOS 26 device): less battery, native PiP/AirPlay/Now-Playing/HDR tone-mapping,
-    /// the better fit for HLS transcode output, and — unlike VLC's PiPVideoView — its surface
-    /// has a working implicit-animation fix for the player's tap-to-toggle-controls zoom glitch.
+    /// Auto's pre-flight pick. Aether (FFmpeg demux + VideoToolbox decode, with a real
+    /// VTCapabilityProbe-backed software fallback inside the engine itself for whatever
+    /// VideoToolbox genuinely can't hardware-decode) covers what the legacyFallback split below
+    /// exists to route around in the first place — including the exact 10-bit-over-AVPlayerLayer
+    /// failure this file's own history found. AVFoundation/VLC only re-enter the picture via
+    /// PlayerView's runtime fallback (see setup()) if Aether itself fails to open a source —
+    /// legacyFallback(container:videoStream:) is what that fallback calls.
     public static func choose(
         preference: PlaybackEngineKind, container: String?, videoStream: JellyfinMediaStream?
     ) -> PlaybackEngineKind {
         switch preference {
-        case .avFoundation, .vlc:
+        case .aether, .avFoundation, .vlc:
             return preference
         case .auto:
-            // Jellyfin's Container field comes straight from ffprobe, which for the
-            // ISO-base-media family reports a comma-joined alias list — "mov,mp4,m4a,
-            // 3gp,3g2,mj2" for a plain .mp4, not a clean "mp4" token. An exact Set match
-            // against that whole string always failed, silently routing a completely
-            // AVFoundation-compatible file to VLC on Auto. Split on "," and check whether
-            // any alias is actually compatible instead of matching the raw string.
-            let aliases = (container ?? "").lowercased().split(separator: ",").map {
-                $0.trimmingCharacters(in: .whitespaces)
-            }
-            let isCompatible = aliases.contains { JellyfinMediaClient.avFoundationCompatibleContainers.contains($0) }
-            // Confirmed via the diagnostic log below: a file tagged videoRange "SDR" (no
-            // HDR/Dolby Vision metadata at all) with profile "Main 10"/bitDepth 10 hit the
-            // exact same remoteXPCPlayer_clearVideoLayer / FigUseVideoReceiverForCALayer
-            // "Not supported" failure as actual Dolby Vision — audio with no video. The
-            // videoRange tag was never the real signal; bit depth is. This player
-            // surface's AVPlayerLayer can't render 10-bit (or higher) video regardless of
-            // HDR tagging, while VLC's own output path handles it fine with the same
-            // VideoToolbox hardware decoder.
-            let needsVLCForBitDepth = (videoStream?.bitDepth ?? 8) > 8
-            let chosen: PlaybackEngineKind = (isCompatible && !needsVLCForBitDepth) ? .avFoundation : .vlc
-            log.debug("""
-                Auto chose \(chosen.rawValue, privacy: .public) — container: \(container ?? "nil", privacy: .public), \
-                videoCodec: \(videoStream?.codec ?? "nil", privacy: .public), \
-                videoRange: \(videoStream?.videoRange ?? "nil", privacy: .public), \
-                profile: \(videoStream?.profile ?? "nil", privacy: .public), \
-                bitDepth: \(videoStream?.bitDepth.map { "\($0)" } ?? "nil", privacy: .public), \
-                level: \(videoStream?.level.map { "\($0)" } ?? "nil", privacy: .public), \
-                resolution: \(videoStream?.width ?? 0)x\(videoStream?.height ?? 0)
-                """)
-            return chosen
+            return .aether
         }
+    }
+
+    /// The engine-selection logic Auto used before Aether — now only reachable as the runtime
+    /// fallback when Aether itself fails to open a source (PlayerView.setup()), not as Auto's
+    /// first answer.
+    public static func legacyFallback(
+        container: String?, videoStream: JellyfinMediaStream?
+    ) -> PlaybackEngineKind {
+        // Jellyfin's Container field comes straight from ffprobe, which for the
+        // ISO-base-media family reports a comma-joined alias list — "mov,mp4,m4a,
+        // 3gp,3g2,mj2" for a plain .mp4, not a clean "mp4" token. An exact Set match
+        // against that whole string always failed, silently routing a completely
+        // AVFoundation-compatible file to VLC. Split on "," and check whether any alias
+        // is actually compatible instead of matching the raw string.
+        let aliases = (container ?? "").lowercased().split(separator: ",").map {
+            $0.trimmingCharacters(in: .whitespaces)
+        }
+        let isCompatible = aliases.contains { JellyfinMediaClient.avFoundationCompatibleContainers.contains($0) }
+        // A file tagged videoRange "SDR" (no HDR/Dolby Vision metadata at all) with profile
+        // "Main 10"/bitDepth 10 hit the exact same remoteXPCPlayer_clearVideoLayer /
+        // FigUseVideoReceiverForCALayer "Not supported" failure as actual Dolby Vision —
+        // audio with no video. The videoRange tag was never the real signal; bit depth is.
+        // This player surface's AVPlayerLayer can't render 10-bit (or higher) video
+        // regardless of HDR tagging, while VLC's own output path handles it fine with the
+        // same VideoToolbox hardware decoder.
+        let needsVLCForBitDepth = (videoStream?.bitDepth ?? 8) > 8
+        let chosen: PlaybackEngineKind = (isCompatible && !needsVLCForBitDepth) ? .avFoundation : .vlc
+        log.debug("""
+            Fallback chose \(chosen.rawValue, privacy: .public) — container: \(container ?? "nil", privacy: .public), \
+            videoCodec: \(videoStream?.codec ?? "nil", privacy: .public), \
+            videoRange: \(videoStream?.videoRange ?? "nil", privacy: .public), \
+            profile: \(videoStream?.profile ?? "nil", privacy: .public), \
+            bitDepth: \(videoStream?.bitDepth.map { "\($0)" } ?? "nil", privacy: .public), \
+            level: \(videoStream?.level.map { "\($0)" } ?? "nil", privacy: .public), \
+            resolution: \(videoStream?.width ?? 0)x\(videoStream?.height ?? 0)
+            """)
+        return chosen
     }
 }
