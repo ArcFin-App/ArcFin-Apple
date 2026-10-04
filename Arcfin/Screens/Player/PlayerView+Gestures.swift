@@ -5,8 +5,6 @@ import SwiftUI
 import UIKit
 #elseif os(macOS)
 import AppKit
-#elseif os(tvOS)
-import MediaPlayer
 #endif
 
 #if canImport(UIKit) && !os(tvOS)
@@ -146,42 +144,6 @@ extension PlayerView {
             try? await Task.sleep(for: .seconds(1.2))
             guard !Task.isCancelled else { return }
             macVolumeHUD = nil
-        }
-    }
-}
-#elseif os(tvOS)
-extension PlayerView {
-
-    /// tvOS has no volume-drag gesture (no touchscreen) and no hardware volume keys routed
-    /// to the app by default — the Siri Remote's volume up/down only reaches this app at all
-    /// via MPRemoteCommandCenter's dedicated volume commands, the platform's documented
-    /// mechanism for apps that want in-app volume instead of deferring to HDMI-CEC TV/soundbar
-    /// control. There's no equivalent mute command anywhere in MediaPlayer — where a Remote has
-    /// a physical mute button it's routed via HDMI-CEC straight to the TV/soundbar and never
-    /// reaches the foreground app, so it can't be intercepted here.
-    func configureTVRemoteVolumeCommands() {
-        let center = MPRemoteCommandCenter.shared()
-        center.volumeUpCommand.isEnabled = true
-        center.volumeUpCommand.addTarget { _ in self.adjustTVVolume(by: 0.05); return .success }
-        center.volumeDownCommand.isEnabled = true
-        center.volumeDownCommand.addTarget { _ in self.adjustTVVolume(by: -0.05); return .success }
-    }
-
-    func clearTVRemoteVolumeCommands() {
-        let center = MPRemoteCommandCenter.shared()
-        center.volumeUpCommand.removeTarget(nil)
-        center.volumeDownCommand.removeTarget(nil)
-    }
-
-    func adjustTVVolume(by delta: Double) {
-        tvVolume = min(max(tvVolume + delta, 0), 1)
-        setEngineVolume(Float(tvVolume))
-        tvVolumeHUD = tvVolume
-        tvVolumeHUDTask?.cancel()
-        tvVolumeHUDTask = Task {
-            try? await Task.sleep(for: .seconds(1.2))
-            guard !Task.isCancelled else { return }
-            tvVolumeHUD = nil
         }
     }
 }

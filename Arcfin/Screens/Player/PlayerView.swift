@@ -151,13 +151,6 @@ struct PlayerView: View {
     // the invisible screen underneath instead of anything here. Explicitly claiming focus
     // onto a real player control once this view has appeared is what actually pulls it over.
     @FocusState var tvInitialFocus: Bool
-    // Software volume applied to whichever engine is active — tvOS has no hardware volume
-    // keys routed to the app and no touch-drag gesture, so the Siri Remote's volume up/down
-    // only reaches here via MPRemoteCommandCenter (see configureTVRemoteVolumeCommands in
-    // PlayerView+Gestures.swift).
-    @State var tvVolume: Double = 1.0
-    @State var tvVolumeHUD: Double?
-    @State var tvVolumeHUDTask: Task<Void, Never>?
     #endif
 
     let client = JellyfinMediaClient()
@@ -215,10 +208,6 @@ struct PlayerView: View {
             #elseif os(macOS)
             if let macVolumeHUD {
                 macVolumeIndicator(macVolumeHUD)
-            }
-            #elseif os(tvOS)
-            if let tvVolumeHUD {
-                tvVolumeIndicator(tvVolumeHUD)
             }
             #endif
 
@@ -754,9 +743,6 @@ struct PlayerView: View {
             }
         }
         #endif
-        #if os(tvOS)
-        configureTVRemoteVolumeCommands()
-        #endif
         guard let credential, let authHeader else {
             errorMessage = "Not signed in."
             return
@@ -1001,9 +987,6 @@ struct PlayerView: View {
         #endif
         #if !os(tvOS)
         nowPlayingManager.clear()
-        #else
-        clearTVRemoteVolumeCommands()
-        tvVolumeHUDTask?.cancel()
         #endif
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {

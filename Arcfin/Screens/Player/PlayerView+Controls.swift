@@ -1403,34 +1403,6 @@ extension PlayerView {
     }
     #endif
 
-    #if os(tvOS)
-    /// Same visual language as macVolumeIndicator above, triggered by the Siri Remote's
-    /// volume up/down commands instead of a keyboard shortcut (see adjustTVVolume,
-    /// PlayerView+Gestures.swift).
-    func tvVolumeIndicator(_ volume: Double) -> some View {
-        HStack {
-            Spacer()
-            VStack(spacing: 10) {
-                Image(systemName: volume < 0.01 ? "speaker.slash.fill" : volume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(.white)
-                ZStack(alignment: .bottom) {
-                    Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
-                    Capsule().fill(.white).frame(width: 6, height: 90 * volume)
-                }
-                Text("\(Int(volume * 100))%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white)
-            }
-            .padding(14)
-            .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
-        }
-        .padding(.horizontal, 32)
-        .transition(.opacity)
-        .allowsHitTesting(false)
-    }
-    #endif
-
     func seekFeedbackView(_ feedback: SeekFeedback) -> some View {
         // Positioned by onRight (where the tap actually landed), not forward (which side now
         // seeks which direction) — the indicator shows up under your finger, just with
