@@ -164,9 +164,17 @@ public enum PlaybackEngineSelector {
         case .avFoundation, .vlc:
             return preference
         case .auto:
-            let container = (container ?? "").lowercased()
-            let needsVLC = !JellyfinMediaClient.avFoundationCompatibleContainers.contains(container)
-            return needsVLC ? .vlc : .avFoundation
+            // Jellyfin's Container field comes straight from ffprobe, which for the
+            // ISO-base-media family reports a comma-joined alias list — "mov,mp4,m4a,
+            // 3gp,3g2,mj2" for a plain .mp4, not a clean "mp4" token. An exact Set match
+            // against that whole string always failed, silently routing a completely
+            // AVFoundation-compatible file to VLC on Auto. Split on "," and check whether
+            // any alias is actually compatible instead of matching the raw string.
+            let aliases = (container ?? "").lowercased().split(separator: ",").map {
+                $0.trimmingCharacters(in: .whitespaces)
+            }
+            let isCompatible = aliases.contains { JellyfinMediaClient.avFoundationCompatibleContainers.contains($0) }
+            return isCompatible ? .avFoundation : .vlc
         }
     }
 }
