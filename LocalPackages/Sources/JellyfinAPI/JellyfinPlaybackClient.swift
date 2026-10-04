@@ -27,6 +27,15 @@ public struct JellyfinMediaStream: Sendable, Equatable {
     /// often leaves the MediaSource-level aggregate Bitrate null while still reporting
     /// this per-stream one.
     public let bitRate: Int?
+    /// Video-only — e.g. "Main", "High", "Main 10". Diagnostic only for now (see
+    /// PlaybackEngineSelector.choose's log line) — not yet used to pick an engine, since
+    /// which specific profile/bitDepth combination actually breaks AVPlayerLayer rendering
+    /// isn't confirmed yet.
+    public let profile: String?
+    /// Video-only — 8, 10, or 12.
+    public let bitDepth: Int?
+    /// Video-only — e.g. 150 means Level 15.0.
+    public let level: Double?
 }
 
 /// Trickplay scrub-thumbnail sprite sheet info (Jellyfin 10.9+ "Trickplay" plugin/core
@@ -524,6 +533,9 @@ private struct MediaStreamStreamResponse: Decodable {
     let height: Int?
     let videoRange: String?
     let bitRate: Int?
+    let profile: String?
+    let bitDepth: Int?
+    let level: Double?
 
     enum CodingKeys: String, CodingKey {
         case index = "Index", type = "Type", codec = "Codec", language = "Language"
@@ -532,6 +544,7 @@ private struct MediaStreamStreamResponse: Decodable {
         case deliveryUrl = "DeliveryUrl"
         case width = "Width", height = "Height", videoRange = "VideoRange"
         case bitRate = "BitRate"
+        case profile = "Profile", bitDepth = "BitDepth", level = "Level"
     }
 
     func toStream() -> JellyfinMediaStream {
@@ -540,7 +553,7 @@ private struct MediaStreamStreamResponse: Decodable {
             displayTitle: displayTitle, isDefault: isDefault ?? false,
             isForced: isForced ?? false, isExternal: isExternal ?? false,
             deliveryUrl: deliveryUrl, width: width, height: height, videoRange: videoRange,
-            bitRate: bitRate
+            bitRate: bitRate, profile: profile, bitDepth: bitDepth, level: level
         )
     }
 }
