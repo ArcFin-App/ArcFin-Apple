@@ -112,12 +112,14 @@ struct SeerrSetupPromptView: View {
                 .multilineTextAlignment(.center)
 
             SecureField("Password", text: $password)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 280)
                 #if !os(tvOS)
+                // .roundedBorder is unavailable on tvOS — its SecureField already renders
+                // with the system's own default appearance there, no style needed.
+                .textFieldStyle(.roundedBorder)
                 .submitLabel(.go)
                 .onSubmit(testPassword)
                 #endif
+                .frame(maxWidth: 280)
 
             if let errorMessage {
                 Text(errorMessage)
