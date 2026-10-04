@@ -191,8 +191,8 @@ public enum PlaybackEngineSelector {
                 videoCodec: \(videoStream?.codec ?? "nil", privacy: .public), \
                 videoRange: \(videoStream?.videoRange ?? "nil", privacy: .public), \
                 profile: \(videoStream?.profile ?? "nil", privacy: .public), \
-                bitDepth: \(videoStream?.bitDepth.map(String.init) ?? "nil", privacy: .public), \
-                level: \(videoStream?.level.map(String.init) ?? "nil", privacy: .public), \
+                bitDepth: \(videoStream?.bitDepth.map { "\($0)" } ?? "nil", privacy: .public), \
+                level: \(videoStream?.level.map { "\($0)" } ?? "nil", privacy: .public), \
                 resolution: \(videoStream?.width ?? 0)x\(videoStream?.height ?? 0)
                 """)
             return chosen
