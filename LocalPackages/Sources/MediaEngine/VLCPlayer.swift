@@ -162,7 +162,7 @@ public enum PlaybackEngineSelector {
     /// the better fit for HLS transcode output, and — unlike VLC's PiPVideoView — its surface
     /// has a working implicit-animation fix for the player's tap-to-toggle-controls zoom glitch.
     public static func choose(
-        preference: PlaybackEngineKind, container: String?, videoCodec: String?, videoRange: String?
+        preference: PlaybackEngineKind, container: String?, videoStream: JellyfinMediaStream?
     ) -> PlaybackEngineKind {
         switch preference {
         case .avFoundation, .vlc:
@@ -178,15 +178,23 @@ public enum PlaybackEngineSelector {
                 $0.trimmingCharacters(in: .whitespaces)
             }
             let isCompatible = aliases.contains { JellyfinMediaClient.avFoundationCompatibleContainers.contains($0) }
-            // Direct-played Dolby Vision over AVPlayerLayer has been confirmed to produce
-            // audio with no video (remoteXPCPlayer_clearVideoLayer / FigUseVideoReceiverFor
-            // CALayer "Not supported" in the console) even though AVFoundation nominally
-            // supports HEVC — Dolby Vision needs an EDR-aware rendering pipeline this
-            // surface isn't configured for, unlike VLC's own video output path. HDR10/HLG
-            // aren't known to hit this and stay on AVFoundation.
-            let isDolbyVision = (videoRange ?? "").localizedCaseInsensitiveContains("dolby")
+            // Direct-played Dolby Vision has been reported to fail on AVPlayerLayer
+            // (remoteXPCPlayer_clearVideoLayer / FigUseVideoReceiverForCALayer "Not
+            // supported") — routed to VLC as a precaution. That same failure has ALSO now
+            // been seen on a plain SDR HEVC/mp4 file, so Dolby Vision isn't the whole
+            // picture — profile/bitDepth/level are logged below but not yet used to
+            // decide, since which exact property breaks AVPlayerLayer isn't confirmed.
+            let isDolbyVision = (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby")
             let chosen: PlaybackEngineKind = (isCompatible && !isDolbyVision) ? .avFoundation : .vlc
-            log.debug("Auto chose \(chosen.rawValue, privacy: .public) — container: \(container ?? "nil", privacy: .public), videoCodec: \(videoCodec ?? "nil", privacy: .public), videoRange: \(videoRange ?? "nil", privacy: .public)")
+            log.debug("""
+                Auto chose \(chosen.rawValue, privacy: .public) — container: \(container ?? "nil", privacy: .public), \
+                videoCodec: \(videoStream?.codec ?? "nil", privacy: .public), \
+                videoRange: \(videoStream?.videoRange ?? "nil", privacy: .public), \
+                profile: \(videoStream?.profile ?? "nil", privacy: .public), \
+                bitDepth: \(videoStream?.bitDepth.map(String.init) ?? "nil", privacy: .public), \
+                level: \(videoStream?.level.map(String.init) ?? "nil", privacy: .public), \
+                resolution: \(videoStream?.width ?? 0)x\(videoStream?.height ?? 0)
+                """)
             return chosen
         }
     }

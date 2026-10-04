@@ -710,8 +710,7 @@ struct PlayerView: View {
             )
             // .choose always resolves Auto down to a concrete engine — only two outcomes here.
             let engine = PlaybackEngineSelector.choose(
-                preference: playbackEnginePreference, container: info.container,
-                videoCodec: info.videoStream?.codec, videoRange: info.videoStream?.videoRange
+                preference: playbackEnginePreference, container: info.container, videoStream: info.videoStream
             )
             if engine == .vlc, !(player is VLCEnginePlayer) {
                 player = VLCEnginePlayer()
