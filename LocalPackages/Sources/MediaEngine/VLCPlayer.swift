@@ -154,12 +154,16 @@ public enum PlaybackEngineKind: String, CaseIterable, Sendable {
 }
 
 public enum PlaybackEngineSelector {
+    private static let log = Telemetry.logger(category: "PlaybackEngineSelector")
+
     /// A container AVFoundation can't open — picks VLC instead of AVFoundation for Auto.
     /// AVFoundation stays preferred otherwise, including HEVC (natively hardware-decoded on
     /// every iOS 26 device): less battery, native PiP/AirPlay/Now-Playing/HDR tone-mapping,
     /// the better fit for HLS transcode output, and — unlike VLC's PiPVideoView — its surface
     /// has a working implicit-animation fix for the player's tap-to-toggle-controls zoom glitch.
-    public static func choose(preference: PlaybackEngineKind, container: String?, videoCodec: String?) -> PlaybackEngineKind {
+    public static func choose(
+        preference: PlaybackEngineKind, container: String?, videoCodec: String?, videoRange: String?
+    ) -> PlaybackEngineKind {
         switch preference {
         case .avFoundation, .vlc:
             return preference
@@ -174,7 +178,16 @@ public enum PlaybackEngineSelector {
                 $0.trimmingCharacters(in: .whitespaces)
             }
             let isCompatible = aliases.contains { JellyfinMediaClient.avFoundationCompatibleContainers.contains($0) }
-            return isCompatible ? .avFoundation : .vlc
+            // Direct-played Dolby Vision over AVPlayerLayer has been confirmed to produce
+            // audio with no video (remoteXPCPlayer_clearVideoLayer / FigUseVideoReceiverFor
+            // CALayer "Not supported" in the console) even though AVFoundation nominally
+            // supports HEVC — Dolby Vision needs an EDR-aware rendering pipeline this
+            // surface isn't configured for, unlike VLC's own video output path. HDR10/HLG
+            // aren't known to hit this and stay on AVFoundation.
+            let isDolbyVision = (videoRange ?? "").localizedCaseInsensitiveContains("dolby")
+            let chosen: PlaybackEngineKind = (isCompatible && !isDolbyVision) ? .avFoundation : .vlc
+            log.debug("Auto chose \(chosen.rawValue, privacy: .public) — container: \(container ?? "nil", privacy: .public), videoCodec: \(videoCodec ?? "nil", privacy: .public), videoRange: \(videoRange ?? "nil", privacy: .public)")
+            return chosen
         }
     }
 }
