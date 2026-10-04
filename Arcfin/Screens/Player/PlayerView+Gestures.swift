@@ -145,6 +145,8 @@ extension PlayerView {
             avPlayer.player.volume = Float(macVolume)
         } else if let vlcEngine = player as? VLCEnginePlayer {
             try? vlcEngine.vlcPlayer.setAudioVolume(Volume(Float(macVolume)))
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            aetherEngine.volume = Float(macVolume)
         }
         macVolumeHUD = macVolume
         macVolumeHUDTask?.cancel()

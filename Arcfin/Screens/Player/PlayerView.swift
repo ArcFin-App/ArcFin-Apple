@@ -11,7 +11,6 @@ import AVKit
 import AuthCore
 import JellyfinAPI
 import MediaEngine
-import AetherEngine
 import SwiftVLC
 import CastKit
 
@@ -473,9 +472,10 @@ struct PlayerView: View {
                 .allowsHitTesting(false)
             #endif
         } else if let aetherEngine = player as? AetherEnginePlayer {
-            // AetherPlayerSurface binds the engine directly (engine.bind(view:) internally) —
-            // no layer/controller to hand it, unlike the AVFoundation/VLC branches above.
-            AetherPlayerSurface(engine: aetherEngine.engine)
+            // AetherEngineVideoSurface binds the engine directly (engine.bind(view:)
+            // internally) — no layer/controller to hand it, unlike the AVFoundation/VLC
+            // branches above.
+            AetherEngineVideoSurface(player: aetherEngine)
                 .allowsHitTesting(false)
         }
     }
@@ -825,6 +825,18 @@ struct PlayerView: View {
                 // mirroring already covers this.
                 avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
                 #endif
+            } else if let aetherPlayer = player as? AetherEnginePlayer {
+                // nativePlayerLayer only exists on Aether's .remoteBypass/.loopback routes
+                // (both still ultimately AVPlayer/AVPlayerLayer under the hood) — the same
+                // PiPCoordinator AVFoundationPlayer uses works unmodified against it. The
+                // .software route's own softwarePiPSource (sample-buffer based, not an
+                // AVPlayerLayer at all) needs a materially different AVPictureInPicture
+                // ContentSource-based coordinator — deliberately not implemented here yet;
+                // PiP is simply unavailable for a session that routes to software.
+                if let layer = aetherPlayer.nativePlayerLayer {
+                    pip.stashLayer(layer)
+                    pip.activateIfNeeded()
+                }
             }
             setUpNowPlayingCommandsIfNeeded()
             updateNowPlayingInfo()

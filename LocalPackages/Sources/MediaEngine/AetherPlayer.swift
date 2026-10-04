@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
+import SwiftUI
 import AVFoundation
 import Combine
 import Observation
@@ -11,6 +12,20 @@ import AetherEngine
 // leg for Dolby Vision display-criteria switching and Atmos passthrough; see
 // PlaybackEngineSelector for when Auto picks this over AVFoundation/VLC, and PlayerView's setup()
 // for the runtime fallback to one of those two if this engine itself fails to open a source)
+
+/// A decoded PGS/DVB bitmap subtitle cue, bridged out of AetherEngine.SubtitleCue/SubtitleImage
+/// into a type the app target can use without importing AetherEngine's own subtitle types
+/// (see the name-collision note on AetherEnginePlayer.nativeBitmapCues below).
+public struct NativeBitmapCue: Identifiable, Sendable {
+    public let id: Int
+    public let startTime: Double
+    public let endTime: Double
+    public let cgImage: CGImage
+    /// Normalized [0, 1] position against `canvasSize` — multiply by the on-screen video
+    /// rect to place it (same contract as AetherEngine.SubtitleImage.position).
+    public let position: CGRect
+    public let canvasSize: CGSize
+}
 
 @MainActor
 @Observable
@@ -39,19 +54,32 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     public private(set) var selectedSubtitleTrackIndex: Int? = nil
     public private(set) var playbackRate: Float = 1.0
 
-    /// Native PGS/DVB bitmap + text cues the engine decodes itself — additive to the app's own
-    /// Jellyfin-delivery-URL text-cue path (SubtitleLoader), which stays the renderer for every
-    /// external subtitle on every engine. Only populated for an embedded track selected on this
-    /// engine. `PlayerView+Controls.subtitleOverlay` renders a `.image` cue here as a bitmap
-    /// overlay alongside the existing text overlay.
-    public private(set) var subtitleCues: [SubtitleCue] = []
-
-    /// Where the active session is actually rendering — drives which PiP mechanism applies
-    /// (native `AVPictureInPictureController` on `.remoteBypass`/`.loopback`, the engine's own
-    /// `softwarePiPSource` on `.software`).
-    public private(set) var videoRoute: VideoRoute = .none
+    /// Native PGS/DVB bitmap cues the engine decodes itself — additive to the app's own
+    /// Jellyfin-delivery-URL text-cue path (SubtitleLoader.SubtitleCue), which stays the
+    /// renderer for every external subtitle on every engine. Only populated for an embedded
+    /// bitmap track selected on this engine; text/rich-text cues already have a home via the
+    /// existing path and aren't duplicated here.
+    ///
+    /// Deliberately a local, minimal type rather than exposing AetherEngine.SubtitleCue
+    /// directly — Arcfin already has its own `SubtitleCue` (SubtitleLoader.swift, same app
+    /// module as PlayerView.swift); the app target never needs to import AetherEngine's own
+    /// subtitle types at all this way, so there's no name collision to manage at every call site.
+    public private(set) var nativeBitmapCues: [NativeBitmapCue] = []
 
     @ObservationIgnored private var cancellables: [AnyCancellable] = []
+
+    /// Playback volume — passthrough so a caller (PlayerView+Gestures' macOS volume
+    /// handling) never needs `import AetherEngine` itself just to reach `engine.volume`.
+    public var volume: Float {
+        get { engine.volume }
+        set { engine.volume = newValue }
+    }
+
+    /// Non-nil only on the `.remoteBypass`/`.loopback` routes (both still ultimately
+    /// AVPlayer/AVPlayerLayer under the hood) — nil on `.software`, where PiP would need a
+    /// materially different sample-buffer-based coordinator this wrapper doesn't implement
+    /// yet. Same passthrough rationale as `volume` above.
+    public var nativePlayerLayer: AVPlayerLayer? { engine.nativePlayerLayer }
 
     public init() throws {
         engine = try AetherEngine.AetherEngine()
@@ -91,8 +119,15 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         engine.$activeAudioTrackIndex.sink { [weak self] index in
             self?.selectedAudioTrackIndex = index ?? 0
         }.store(in: &cancellables)
-        engine.$subtitleCues.sink { [weak self] in self?.subtitleCues = $0 }.store(in: &cancellables)
-        engine.$videoRoute.sink { [weak self] in self?.videoRoute = $0 }.store(in: &cancellables)
+        engine.$subtitleCues.sink { [weak self] cues in
+            self?.nativeBitmapCues = cues.compactMap { cue in
+                guard case .image(let image) = cue.body else { return nil }
+                return NativeBitmapCue(
+                    id: cue.id, startTime: cue.startTime, endTime: cue.endTime,
+                    cgImage: image.cgImage, position: image.position, canvasSize: image.canvasSize
+                )
+            }
+        }.store(in: &cancellables)
     }
 
     private static func status(for phase: PlaybackPhase) -> PlaybackStatus {
@@ -153,5 +188,20 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         } else {
             engine.clearSubtitle()
         }
+    }
+}
+
+/// Thin SwiftUI wrapper over AetherPlayerSurface, taking an AetherEnginePlayer directly —
+/// same rationale as the passthroughs above: the app target's video-surface switch
+/// (PlayerView.videoSurface) never needs `import AetherEngine` just for this one view.
+public struct AetherEngineVideoSurface: View {
+    private let player: AetherEnginePlayer
+
+    public init(player: AetherEnginePlayer) {
+        self.player = player
+    }
+
+    public var body: some View {
+        AetherPlayerSurface(engine: player.engine)
     }
 }
