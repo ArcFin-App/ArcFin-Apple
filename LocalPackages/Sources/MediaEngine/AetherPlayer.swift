@@ -32,9 +32,11 @@ public struct NativeBitmapCue: Identifiable, Sendable {
 public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
 
     private let log = Telemetry.logger(category: "AetherEnginePlayer")
-    // AetherEngine.AetherEngine, fully qualified — the module and its main class share the exact
-    // same name, which Swift needs disambiguated here rather than left to infer.
-    public let engine: AetherEngine.AetherEngine
+    // The module and its main class share the exact same name ("AetherEngine") — unqualified
+    // use here resolves to the class, not the module, so no further qualification is needed
+    // (AetherEngine.AetherEngine was tried first and fails: Swift resolves the first
+    // "AetherEngine" to the class type, then looks for a nested type of that name on it).
+    public let engine: AetherEngine
 
     public var state: PlayerState {
         PlayerState(status: status, positionTicks: positionTicks, durationTicks: durationTicks,
@@ -82,7 +84,7 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     public var nativePlayerLayer: AVPlayerLayer? { engine.nativePlayerLayer }
 
     public init() throws {
-        engine = try AetherEngine.AetherEngine()
+        engine = try AetherEngine()
         // Arcfin already owns audio-session activation generically (PlayerView.
         // activateAudioSession()) for both existing engines — let this one release the session
         // cleanly on a genuine final stop() instead of leaving it dangling.
