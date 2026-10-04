@@ -151,6 +151,13 @@ struct PlayerView: View {
     // the invisible screen underneath instead of anything here. Explicitly claiming focus
     // onto a real player control once this view has appeared is what actually pulls it over.
     @FocusState var tvInitialFocus: Bool
+    // Software volume applied to whichever engine is active — tvOS has no hardware volume
+    // keys routed to the app and no touch-drag gesture, so the Siri Remote's volume up/down
+    // only reaches here via MPRemoteCommandCenter (see configureTVRemoteVolumeCommands in
+    // PlayerView+Gestures.swift).
+    @State var tvVolume: Double = 1.0
+    @State var tvVolumeHUD: Double?
+    @State var tvVolumeHUDTask: Task<Void, Never>?
     #endif
 
     let client = JellyfinMediaClient()
@@ -208,6 +215,10 @@ struct PlayerView: View {
             #elseif os(macOS)
             if let macVolumeHUD {
                 macVolumeIndicator(macVolumeHUD)
+            }
+            #elseif os(tvOS)
+            if let tvVolumeHUD {
+                tvVolumeIndicator(tvVolumeHUD)
             }
             #endif
 
@@ -287,12 +298,22 @@ struct PlayerView: View {
         .task { await setup() }
         #if os(tvOS)
         .task {
-            // A short delay, not .onAppear directly — claiming focus before this view's own
-            // hierarchy has actually finished installing is a known-flaky pattern on tvOS
-            // (the @FocusState binding can silently no-op if the target isn't laid out yet).
-            try? await Task.sleep(for: .milliseconds(300))
-            tvInitialFocus = true
+            // A single delayed attempt raced here before — tvOS's focus engine not reliably
+            // claiming focus into a freshly-presented .fullScreenCover is a known-flaky
+            // pattern, and when that one attempt lost the race, NOTHING was ever focused
+            // afterward: with no currently-focused control, the remote's D-pad and touchpad
+            // both have nothing to move away from, so they silently do nothing either. Retrying
+            // a few times (checking the @FocusState binding actually landed before giving up)
+            // catches that instead of leaving it to one race.
+            for _ in 0..<5 {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+                tvInitialFocus = true
+                try? await Task.sleep(for: .milliseconds(50))
+                if tvInitialFocus { return }
+            }
         }
+        .onPlayPauseCommand { togglePlayPause() }
         #endif
         .onDisappear {
             Task { await teardown() }
@@ -484,6 +505,21 @@ struct PlayerView: View {
             // branches above.
             AetherEngineVideoSurface(player: aetherEngine)
                 .allowsHitTesting(false)
+        }
+    }
+
+    /// Shared by macOS's Up/Down-arrow volume shortcuts and tvOS's remote volume commands
+    /// (PlayerView+Gestures.swift) — both platforms drive the active engine's own volume
+    /// directly rather than through a system volume surface, since neither has one reachable
+    /// from here (macOS has no "hidden MPVolumeView" trick the way iOS does; tvOS's physical
+    /// volume buttons don't reach the app at all unless wired up this way).
+    func setEngineVolume(_ volume: Float) {
+        if let avPlayer = player as? AVFoundationPlayer {
+            avPlayer.player.volume = volume
+        } else if let vlcEngine = player as? VLCEnginePlayer {
+            try? vlcEngine.vlcPlayer.setAudioVolume(Volume(volume))
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            aetherEngine.volume = volume
         }
     }
 
@@ -717,6 +753,9 @@ struct PlayerView: View {
                 if dragAxis == .volume { dragAxis = nil }
             }
         }
+        #endif
+        #if os(tvOS)
+        configureTVRemoteVolumeCommands()
         #endif
         guard let credential, let authHeader else {
             errorMessage = "Not signed in."
@@ -962,6 +1001,9 @@ struct PlayerView: View {
         #endif
         #if !os(tvOS)
         nowPlayingManager.clear()
+        #else
+        clearTVRemoteVolumeCommands()
+        tvVolumeHUDTask?.cancel()
         #endif
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
