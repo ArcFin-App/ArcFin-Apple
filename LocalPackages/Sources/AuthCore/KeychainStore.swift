@@ -12,6 +12,8 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
 
     private let service    = "com.psmattas.arcfin"
     private let pinService = "com.psmattas.arcfin.pin"
+    private let seerrService = "com.psmattas.arcfin.seerr"
+    private let seerrAccount = "password"
 
     public init() {}
 
@@ -133,6 +135,56 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecClass:       kSecClassGenericPassword,
             kSecAttrService: pinService,
             kSecAttrAccount: credentialID.uuidString,
+            kSecUseDataProtectionKeychain: true,
+        ]
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
+    // MARK: - Seerr password (separate service — was previously plain UserDefaults)
+
+    public func saveSeerrPassword(_ password: String) throws {
+        guard let data = password.data(using: .utf8) else { return }
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: seerrService,
+            kSecAttrAccount: seerrAccount,
+            kSecUseDataProtectionKeychain: true,
+        ]
+        var status = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
+        if status == errSecItemNotFound {
+            var item = query
+            item[kSecValueData] = data
+            status = SecItemAdd(item as CFDictionary, nil)
+        }
+        guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
+    }
+
+    public func loadSeerrPassword() throws -> String? {
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: seerrService,
+            kSecAttrAccount: seerrAccount,
+            kSecReturnData:  true,
+            kSecMatchLimit:  kSecMatchLimitOne,
+            kSecUseDataProtectionKeychain: true,
+        ]
+        var ref: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &ref)
+        if status == errSecItemNotFound { return nil }
+        guard status == errSecSuccess, let data = ref as? Data else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    public func deleteSeerrPassword() throws {
+        let query: [CFString: Any] = [
+            kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: seerrService,
+            kSecAttrAccount: seerrAccount,
             kSecUseDataProtectionKeychain: true,
         ]
         let status = SecItemDelete(query as CFDictionary)

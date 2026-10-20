@@ -50,10 +50,10 @@ struct LicensesView: View {
                     let row = VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(entry.name)
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(.footnote, design: .default, weight: .semibold))
                             Spacer()
                             Text(entry.license)
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(.caption, design: .default, weight: .medium))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                         if let note = entry.note {

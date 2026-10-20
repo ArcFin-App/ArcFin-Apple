@@ -56,6 +56,12 @@ final class AuthManager {
     var arcfinSyncLastSyncedAt: Date?
     var isSyncingArcfin: Bool = false
 
+    /// Keychain-backed (not UserDefaults/@AppStorage like the rest of the Seerr fields —
+    /// this one is a secret). Loaded once in checkStoredAuth(); every read/write site in the
+    /// app goes through this observable property instead of its own Keychain round-trip, so
+    /// all of them stay in sync the same way @AppStorage used to keep them in sync for free.
+    var seerrPassword: String = ""
+
     let authClient = JellyfinAuthClient()
     private let syncClient = ArcfinSyncClient()
     private let keychain = KeychainStore()
@@ -64,6 +70,10 @@ final class AuthManager {
 
     func checkStoredAuth() async {
         defer { isChecking = false }
+        let k = keychain
+        seerrPassword = await Task.detached(priority: .userInitiated) {
+            (try? k.loadSeerrPassword()) ?? ""
+        }.value
         let all = await Self.withTimeout(seconds: 5, fallback: [ServerCredential]()) {
             await self.backgroundKeychainRead()
         }
@@ -361,6 +371,20 @@ final class AuthManager {
     func removePin(for credentialID: UUID) {
         let k = keychain
         Task.detached { try? k.deletePin(for: credentialID) }
+    }
+
+    // MARK: - Seerr password (Keychain — see seerrPassword's own doc comment)
+
+    func saveSeerrPassword(_ password: String) {
+        seerrPassword = password
+        let k = keychain
+        Task.detached { try? k.saveSeerrPassword(password) }
+    }
+
+    func removeSeerrPassword() {
+        seerrPassword = ""
+        let k = keychain
+        Task.detached { try? k.deleteSeerrPassword() }
     }
 
     // MARK: - Stored servers (async — always off main thread)

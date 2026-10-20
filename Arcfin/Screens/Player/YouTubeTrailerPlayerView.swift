@@ -47,7 +47,7 @@ struct YouTubeTrailerPlayerView: View {
                             .font(.system(size: 28))
                             .foregroundStyle(.white.opacity(0.7))
                         Text("This trailer can't be played")
-                            .font(.system(size: 14))
+                            .font(.system(.footnote, design: .default))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                 }

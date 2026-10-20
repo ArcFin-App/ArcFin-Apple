@@ -62,10 +62,10 @@ struct SeerrSetupPromptView: View {
     private var askContent: some View {
         VStack(spacing: 16) {
             Text("Connect Seerr")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(.title2, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
             Text("This server uses Seerr to handle media requests and more. Would you like to connect it now?")
-                .font(.system(size: 15))
+                .font(.system(.subheadline))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
 
@@ -74,7 +74,7 @@ struct SeerrSetupPromptView: View {
                     step = .password
                 } label: {
                     Text("Yes, Connect Now")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.callout, design: .default, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
@@ -86,7 +86,7 @@ struct SeerrSetupPromptView: View {
                     dismiss()
                 } label: {
                     Text("Not Right Now")
-                        .font(.system(size: 15))
+                        .font(.system(.subheadline))
                 }
                 .foregroundStyle(DT.Color.textSecondary)
             }
@@ -94,7 +94,7 @@ struct SeerrSetupPromptView: View {
             .padding(.top, 8)
 
             Text("You can also ask your admin to connect this for you — initial sign-in is the only time it can be set up here, since this setting is locked.")
-                .font(.system(size: 12))
+                .font(.system(.caption))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.top, 12)
@@ -104,10 +104,10 @@ struct SeerrSetupPromptView: View {
     private var passwordContent: some View {
         VStack(spacing: 16) {
             Text("Enter Your Password")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(.title2, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
             Text("Seerr uses the same Jellyfin account (\(jellyfinUsername)) — this is only used to connect Seerr and isn't stored anywhere else.")
-                .font(.system(size: 14))
+                .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
 
@@ -123,7 +123,7 @@ struct SeerrSetupPromptView: View {
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.system(size: 13))
+                    .font(.system(.footnote))
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
             }
@@ -135,7 +135,7 @@ struct SeerrSetupPromptView: View {
                             .frame(maxWidth: .infinity)
                     } else {
                         Text("Connect")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(.callout, design: .default, weight: .semibold))
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -149,7 +149,7 @@ struct SeerrSetupPromptView: View {
                     dismiss()
                 } label: {
                     Text("Not Right Now")
-                        .font(.system(size: 15))
+                        .font(.system(.subheadline))
                 }
                 .foregroundStyle(DT.Color.textSecondary)
                 .disabled(step == .testing)

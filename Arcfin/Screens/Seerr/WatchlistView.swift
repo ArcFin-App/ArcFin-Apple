@@ -122,12 +122,12 @@ struct WatchlistView: View {
             })
 
             Text(item.title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             if let year = item.year {
                 Text(year)
-                    .font(.system(size: 10))
+                    .font(.system(.caption2, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
@@ -151,7 +151,7 @@ struct WatchlistView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(item.title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)
