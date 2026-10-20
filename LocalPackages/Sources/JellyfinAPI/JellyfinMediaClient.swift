@@ -538,6 +538,24 @@ public struct JellyfinMediaClient: Sendable {
         _ = try await URLSession.arcfin.data(for: req)
     }
 
+    /// Jellyfin has no dedicated "remove from Continue Watching" call — zeroing the saved
+    /// position is what its own web client does, and it drops the item from the shelf
+    /// without marking it watched.
+    public func clearResumePosition(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String
+    ) async throws {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)/UserData")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["PlaybackPositionTicks": 0])
+        req.timeoutInterval = 15
+        _ = try await URLSession.arcfin.data(for: req)
+    }
+
     public func markFavorite(
         credential: ServerCredential,
         authHeader: String,

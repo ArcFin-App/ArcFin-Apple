@@ -16,6 +16,13 @@ struct PosterCard: View {
     @Environment(\.isFocused) private var isFocused
 #endif
 
+    private var cardAccessibilityValue: Text {
+        var parts: [String] = []
+        if let subtitle { parts.append(subtitle) }
+        if let progress { parts.append("\(Int((progress * 100).rounded())) percent watched") }
+        return Text(parts.joined(separator: ", "))
+    }
+
     var body: some View {
 #if os(tvOS)
         tvBody
@@ -139,6 +146,9 @@ struct PosterCard: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(cardAccessibilityValue)
         .frame(width: width, height: height)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
