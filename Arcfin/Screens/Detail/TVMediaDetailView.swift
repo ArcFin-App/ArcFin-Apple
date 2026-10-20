@@ -179,7 +179,7 @@ struct TVMediaDetailView: View {
                 Text(String(year)).font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").foregroundStyle(.white.opacity(0.3))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text(rating)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.7))
@@ -187,11 +187,11 @@ struct TVMediaDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.3), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").foregroundStyle(.white.opacity(0.3))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text("\(mins)m").font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = item.communityRating {
-                Text("·").foregroundStyle(.white.opacity(0.3))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
@@ -201,7 +201,7 @@ struct TVMediaDetailView: View {
             if detail?.is4K == true { qualityBadge("4K", color: DT.Color.accent) }
             if detail?.isHDR == true { qualityBadge("HDR", color: Color(hex: "F59E0B")) }
             if !awards.isEmpty {
-                Text("·").foregroundStyle(.white.opacity(0.3))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "trophy.fill").font(.system(size: 16))
                     Text(awardsLabel).font(.system(size: 18, weight: .semibold)).lineLimit(1)
