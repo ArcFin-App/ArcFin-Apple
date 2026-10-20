@@ -29,7 +29,7 @@ struct SeerrSetupPromptView: View {
             VStack(spacing: 24) {
                 Spacer()
                 Image(systemName: "sparkles.tv")
-                    .font(.system(size: 44))
+                    .scaledFont(size: 44)
                     .foregroundStyle(DT.Color.accent)
 
                 switch step {

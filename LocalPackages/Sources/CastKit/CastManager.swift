@@ -25,6 +25,7 @@ public final class CastManager: NSObject {
     public private(set) var isConnected = false
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
+    public private(set) var volume: Float = 1
     public private(set) var deviceName: String?
     /// Updated on every GCKRemoteMediaClient status tick (at least once/second while
     /// playing) rather than read on demand — by the time a session actually ends,
@@ -113,6 +114,15 @@ public final class CastManager: NSObject {
         #if canImport(GoogleCast)
         GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?
             .setActiveTrackIDs(id.map { [NSNumber(value: $0)] } ?? [])
+        #endif
+    }
+
+    public func setVolume(_ volume: Float) {
+        let clamped = min(max(volume, 0), 1)
+        self.volume = clamped
+        #if canImport(GoogleCast)
+        GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?
+            .setStreamVolume(clamped)
         #endif
     }
 
@@ -216,8 +226,10 @@ extension CastManager: GCKRemoteMediaClientListener {
     public nonisolated func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
         let paused = mediaStatus?.playerState == .paused
         let position = mediaStatus?.streamPosition
+        let receiverVolume = mediaStatus?.volume
         MainActor.assumeIsolated {
             isPaused = paused
+            if let receiverVolume { volume = receiverVolume }
             if let position { lastKnownPositionSeconds = position }
         }
     }

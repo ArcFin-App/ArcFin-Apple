@@ -121,7 +121,7 @@ struct SeerrItemDetailView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 14))
+                            .font(.system(.subheadline))
                             .symbolEffect(.bounce, value: requestBounceTrigger)
                         Text("Request")
                             .font(.system(.callout, design: .default, weight: .bold))
@@ -165,7 +165,7 @@ struct SeerrItemDetailView: View {
                 showTrailer = true
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "film").font(.system(size: 14))
+                    Image(systemName: "film").font(.system(.subheadline))
                     Text("Play Trailer").font(.system(.subheadline, design: .default, weight: .semibold))
                 }
                 .foregroundStyle(DT.Color.textPrimary)
@@ -329,21 +329,21 @@ struct SeerrItemDetailView: View {
                         .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                     if let year = item.year {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         Text(year)
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let runtime = detail?.runtimeMinutes {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         Text("\(runtime) min")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let rating = detail?.voteAverage, rating > 0 {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         HStack(spacing: 2) {
-                            Image(systemName: "star.fill").font(.system(size: 9))
+                            Image(systemName: "star.fill").font(.system(.caption2))
                             Text(String(format: "%.1f", rating))
                         }
                         .font(.system(.caption2))

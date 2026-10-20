@@ -55,7 +55,7 @@ final class TrickplayLoader {
                 // The api_key query param alone 401s on this endpoint — unlike Items/Images,
                 // Videos/.../Trickplay actually checks the Authorization header.
                 req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-                let (data, response) = try await URLSession.shared.data(for: req)
+                let (data, response) = try await URLSession.arcfin.data(for: req)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? -1
                 guard status == 200, let image = PlatformImage(data: data) else {
                     print("[Trickplay] tile \(tileIndex) fetch failed — status \(status), bytes \(data.count), url \(url)")

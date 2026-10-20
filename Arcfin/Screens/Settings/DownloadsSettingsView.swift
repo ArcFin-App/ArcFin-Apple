@@ -8,6 +8,7 @@ struct DownloadsSettingsView: View {
     #if os(iOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     #endif
+    @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
     @AppStorage("smartDownloadsEnabled")       private var smartDownloadsEnabled       = false
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
     @AppStorage("smartDownloadsStorageBudgetGB") private var smartDownloadsStorageBudgetGB = 10
@@ -24,6 +25,15 @@ struct DownloadsSettingsView: View {
                     }
                 }
                 .syncLocked("downloadQuality", authManager)
+            }
+
+            Section {
+                Toggle("Delete After Watching", isOn: $deleteAfterWatching)
+                    .syncLocked("deleteDownloadsAfterWatching", authManager)
+            } footer: {
+                Text("Removes a downloaded movie or episode from this device once you finish it, freeing the space.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
