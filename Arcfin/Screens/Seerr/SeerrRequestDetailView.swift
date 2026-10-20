@@ -20,10 +20,6 @@ struct SeerrRequestDetailView: View {
     #endif
 
     var body: some View {
-        // Same fix as SeerrItemDetailView — no minimum height tying this to the actual
-        // window/screen left a large empty gap below the content on a short request or a
-        // tall macOS window.
-        GeometryReader { proxy in
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
@@ -94,9 +90,9 @@ struct SeerrRequestDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.md)
+
+                Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
-            .frame(minHeight: proxy.size.height)
-        }
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
@@ -212,12 +208,6 @@ struct SeerrRequestDetailView: View {
         }
         .frame(height: 260)
         .clipped()
-        // Belt-and-suspenders: the screen-level .ignoresSafeArea(edges: .top) below should
-        // already cover this, but this view sits inside a GeometryReader (for the minHeight
-        // fix above) whose own safe-area propagation to a fixed-height child has been
-        // unreliable in practice — applying it directly here guarantees the backdrop
-        // actually bleeds under the status bar regardless.
-        .ignoresSafeArea(edges: .top)
     }
 
     private var fallbackHero: some View {
