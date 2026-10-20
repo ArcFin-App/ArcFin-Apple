@@ -1052,7 +1052,7 @@ extension PlayerView {
             Color.black.opacity(0.85).ignoresSafeArea()
             VStack(spacing: 20) {
                 Image(systemName: "eye.slash")
-                    .font(.system(size: 40, weight: .medium))
+                    .scaledFont(size: 40, weight: .medium)
                     .foregroundStyle(DT.Color.accent)
                 VStack(spacing: 6) {
                     Text("Are you still watching?")

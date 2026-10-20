@@ -29,7 +29,7 @@ struct NoConnectionView: View {
                     Spacer().frame(height: 40)
 
                     Image(systemName: "wifi.slash")
-                        .font(.system(size: 44, weight: .medium))
+                        .scaledFont(size: 44, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
 
                     VStack(spacing: 8) {
