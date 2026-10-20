@@ -22,37 +22,10 @@ struct SeerrRequestDetailView: View {
         GeometryReader { proxy in
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                backdrop
+                heroSection
+                titleBlock
 
                 VStack(alignment: .leading, spacing: DT.Spacing.md) {
-                    HStack(spacing: 8) {
-                        Text(request.mediaType == .tv ? "Series" : "Movie")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(DT.Color.textSecondary)
-                        Text("·")
-                            .foregroundStyle(.white.opacity(0.2))
-                        Text(request.requestedAt, style: .date)
-                            .font(.system(size: 11))
-                            .foregroundStyle(DT.Color.textSecondary)
-                        if let runtime = detail?.runtimeMinutes {
-                            Text("·")
-                                .foregroundStyle(.white.opacity(0.2))
-                            Text("\(runtime) min")
-                                .font(.system(size: 11))
-                                .foregroundStyle(DT.Color.textSecondary)
-                        }
-                        if let rating = detail?.voteAverage, rating > 0 {
-                            Text("·")
-                                .foregroundStyle(.white.opacity(0.2))
-                            HStack(spacing: 2) {
-                                Image(systemName: "star.fill").font(.system(size: 9))
-                                Text(String(format: "%.1f", rating))
-                            }
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color(hex: "f59e0b"))
-                        }
-                    }
-
                     if let genres = detail?.genres, !genres.isEmpty {
                         Text(genres.joined(separator: " · "))
                             .font(.system(size: 12))
@@ -114,7 +87,8 @@ struct SeerrRequestDetailView: View {
                     .disabled(isCancelling)
                     .padding(.top, DT.Spacing.sm)
                 }
-                .padding(DT.Spacing.pagePad)
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.md)
             }
             .frame(minHeight: proxy.size.height)
         }
@@ -205,27 +179,114 @@ struct SeerrRequestDetailView: View {
         }
     }
 
-    private var backdrop: some View {
-        ZStack(alignment: .bottomLeading) {
+    // MARK: - Hero
+
+    private var heroSection: some View {
+        ZStack(alignment: .bottom) {
             if let url = request.backdropURL ?? request.posterURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: DT.Color.backgroundSecondary
+                    case .success(let img):
+                        img
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    default: fallbackHero
                     }
                 }
-                .clipped()
-            } else {
-                DT.Color.backgroundSecondary
-            }
-            LinearGradient(colors: [.black.opacity(0.85), .clear], startPoint: .bottom, endPoint: .center)
-            Text(request.mediaTitle)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(DT.Spacing.pagePad)
-                .shadow(color: .black.opacity(0.6), radius: 6)
+            } else { fallbackHero }
+
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
+                    .init(color: DT.Color.backgroundPrimary, location: 1),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
         }
-        .frame(height: 220)
+        .frame(height: 260)
+        .clipped()
+        // Belt-and-suspenders: the screen-level .ignoresSafeArea(edges: .top) below should
+        // already cover this, but this view sits inside a GeometryReader (for the minHeight
+        // fix above) whose own safe-area propagation to a fixed-height child has been
+        // unreliable in practice — applying it directly here guarantees the backdrop
+        // actually bleeds under the status bar regardless.
+        .ignoresSafeArea(edges: .top)
+    }
+
+    private var fallbackHero: some View {
+        LinearGradient(
+            colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    }
+
+    // MARK: - Title block
+
+    private var titleBlock: some View {
+        HStack(alignment: .top, spacing: 14) {
+            if let url = request.posterURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
+                    }
+                }
+                .frame(width: 90, height: 132)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+                .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
+            } else {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(DT.Color.backgroundSecondary)
+                    .frame(width: 90, height: 132)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(request.mediaTitle)
+                    .font(.system(.title3, design: .default, weight: .heavy))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .tracking(-0.5)
+                    .lineLimit(3)
+
+                HStack(spacing: 8) {
+                    Text(request.mediaType == .tv ? "Series" : "Movie")
+                        .font(.system(.caption2, design: .default, weight: .semibold))
+                        .foregroundStyle(DT.Color.textSecondary)
+                    Text("·")
+                        .foregroundStyle(.white.opacity(0.2))
+                    Text(request.requestedAt, style: .date)
+                        .font(.system(.caption2))
+                        .foregroundStyle(DT.Color.textSecondary)
+                    if let runtime = detail?.runtimeMinutes {
+                        Text("·")
+                            .foregroundStyle(.white.opacity(0.2))
+                        Text("\(runtime) min")
+                            .font(.system(.caption2))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    if let rating = detail?.voteAverage, rating > 0 {
+                        Text("·")
+                            .foregroundStyle(.white.opacity(0.2))
+                        HStack(spacing: 2) {
+                            Image(systemName: "star.fill").font(.system(size: 9))
+                            Text(String(format: "%.1f", rating))
+                        }
+                        .font(.system(.caption2))
+                        .foregroundStyle(Color(hex: "f59e0b"))
+                    }
+                }
+                // Lets HStack compress/truncate these Text children when every optional
+                // field is present at once, instead of overflowing past the screen edge —
+                // same fix as MediaDetailView.metaRow.
+                .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, -50)
+        .padding(.bottom, DT.Spacing.md)
     }
 
     private var statusRow: some View {
