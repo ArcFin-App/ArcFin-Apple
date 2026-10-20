@@ -125,7 +125,7 @@ struct SeerrItemDetailView: View {
     }
 
     private func loadLibraryItem() async {
-        guard case .authenticated(let cred) = authManager.state else { return }
+        guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         libraryItem = try? await JellyfinMediaClient().findItem(
             credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv)
