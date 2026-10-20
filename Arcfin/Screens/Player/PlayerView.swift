@@ -607,7 +607,7 @@ struct PlayerView: View {
     private func fetchAndApplyNowPlayingArtwork() async {
         guard nowPlayingArtwork == nil,
               let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600),
-              let (data, _) = try? await URLSession.shared.data(from: url),
+              let (data, _) = try? await URLSession.arcfin.data(from: url),
               let image = PlatformImage(data: data)
         else { return }
         Self.artworkCache[item.id] = image
