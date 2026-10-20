@@ -210,13 +210,17 @@ struct TVSeerrView: View {
 
 private struct TVSeerrCard: View {
     let item: SeerrItem
+    @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.isFocused) private var isFocused
 
-    private var statusColor: Color? {
-        switch item.availabilityStatus {
-        case .available: Color(hex: "10b981")
-        default: nil
-        }
+    // Matched by tmdbId, not title — see SeerrRepository.matchingRequest.
+    private var matchingRequest: SeerrRequestItem? {
+        item.availabilityStatus == .available ? nil : seerrRepo.matchingRequest(for: item)
+    }
+
+    private var badge: (label: String, colorHex: String)? {
+        if item.availabilityStatus == .available { return ("Available", "10b981") }
+        return matchingRequest?.displayStatus
     }
 
     var body: some View {
@@ -243,8 +247,9 @@ private struct TVSeerrCard: View {
                 .scaleEffect(isFocused ? 1.05 : 1.0)
                 .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
 
-                if let color = statusColor {
-                    Text(item.availabilityStatus == .available ? "Available" : "")
+                if let badge {
+                    let color = Color(hex: badge.colorHex)
+                    Text(badge.label)
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(color)
                         .padding(.horizontal, 10).padding(.vertical, 4)
