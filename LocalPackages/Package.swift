@@ -55,9 +55,18 @@ let package = Package(
             url: "https://github.com/apple/swift-openapi-generator",
             from: "1.3.0"
         ),
-        // Secondary player engine — libVLC (LGPLv2.1) via a Swift 6/@Observable wrapper.
-        // AVFoundation stays primary/default; VLC exists for containers/codecs AVFoundation
-        // can't open (mkv, mistagged HEVC, etc.) and is selectable in Settings.
+        // Primary player engine — FFmpeg demux + VideoToolbox hardware decode + a real
+        // AVPlayer leg for Dolby Vision display-criteria switching and Atmos passthrough.
+        // Auto mode prefers this; AVFoundation/VLC are the runtime fallback when it fails to
+        // open a source. LGPL-3.0 with an App Store/DRM exception (same shape as SwiftVLC's
+        // own LGPLv2.1 terms below).
+        .package(
+            url: "https://github.com/superuser404notfound/AetherEngine",
+            from: "7.26.3"
+        ),
+        // Fallback player engine — libVLC (LGPLv2.1) via a Swift 6/@Observable wrapper, used
+        // when AetherEngine itself fails to open a source. Still directly selectable in
+        // Settings too.
         .package(
             url: "https://github.com/harflabs/SwiftVLC.git",
             from: "1.0.0"
@@ -175,6 +184,7 @@ let package = Package(
                 "AppState",
                 "JellyfinAPI",
                 "Telemetry",
+                .product(name: "AetherEngine", package: "AetherEngine"),
                 .product(name: "SwiftVLC", package: "SwiftVLC"),
                 // Not actually imported anywhere in this target — YouTubeTrailerPlayerView.swift
                 // (the only real consumer) lives in the app target and already excludes tvOS

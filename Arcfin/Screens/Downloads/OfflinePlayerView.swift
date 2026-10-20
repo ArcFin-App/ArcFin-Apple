@@ -25,12 +25,12 @@ struct OfflinePlayerView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    // Always VLC, not AVFoundation — a downloaded file's container/codec can be anything the
-    // server has, and VLC plays that natively without AVFoundation's mkv/HEVC-tag limitations.
-    // PiPVideoView (SwiftVLC) is itself an NSViewRepresentable on macOS and a
-    // UIViewRepresentable on iOS with the same public init, so the video surface below needs
-    // no per-platform branch of its own the way PlayerView's AVFoundation surface does.
-    @State private var player = VLCEnginePlayer()
+    // Aether first, same as the online PlayerView — handles whatever container/codec the
+    // server has, including what used to force VLC here (AVFoundation's mkv/HEVC-tag
+    // limitations). Falls back to VLC if Aether itself can't construct or open this file
+    // (see setup()); VLC stays the fallback rather than AVFoundation for the same reason the
+    // comment this replaced gave — a downloaded file's container/codec can be anything.
+    @State private var player: any MediaPlayerProtocol = (try? AetherEnginePlayer()) ?? VLCEnginePlayer()
     @State private var isControlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
     @State private var isScrubbing = false
@@ -72,8 +72,13 @@ struct OfflinePlayerView: View {
                 // The gesture lives on this separate wrapping ZStack, not on PiPVideoView
                 // itself, so disabling hit-testing on the surface can't also disable it.
                 ZStack {
-                    PiPVideoView(player.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
-                        .allowsHitTesting(false)
+                    if let vlcEngine = player as? VLCEnginePlayer {
+                        PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+                            .allowsHitTesting(false)
+                    } else if let aetherEngine = player as? AetherEnginePlayer {
+                        AetherEngineVideoSurface(player: aetherEngine)
+                            .allowsHitTesting(false)
+                    }
                 }
                 // See PlayerView's own note — GeometryReader only proposes its size, it
                 // doesn't force it, so the video surface needs pinning to proxy.size explicitly
@@ -164,7 +169,11 @@ struct OfflinePlayerView: View {
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
-            player.vlcPlayer.aspectRatio = newValue ? .fill : .default
+            // AetherPlayerSurface has no fill-screen/aspect param of its own yet — a known
+            // v1 gap, same spirit as PiP being unavailable on its .software route.
+            if let vlcEngine = player as? VLCEnginePlayer {
+                vlcEngine.vlcPlayer.aspectRatio = newValue ? .fill : .default
+            }
         }
         #endif
         .sheet(isPresented: $showTrackMenu) {
@@ -209,13 +218,20 @@ struct OfflinePlayerView: View {
         await activateAudioSession()
         #endif
         let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
+        let startTicks = startPositionOverride ?? downloadedItem.playbackPositionTicks
         do {
-            try await player.load(url: videoURL, startPositionTicks: startPositionOverride ?? downloadedItem.playbackPositionTicks)
-            await player.play()
+            try await player.load(url: videoURL, startPositionTicks: startTicks)
+        } catch where player is AetherEnginePlayer {
+            // Same runtime fallback as the online PlayerView — DownloadedItem has no stored
+            // container/codec metadata to run a real pre-flight check against offline, so
+            // this only ever triggers reactively, on an actual Aether load failure.
+            player = VLCEnginePlayer()
+            try? await player.load(url: videoURL, startPositionTicks: startTicks)
         } catch {
             // Nothing more to fall back to offline — surfaced via the stalled/failed state
             // the controls overlay already reflects through player.status.
         }
+        await player.play()
         startProgressSaving()
     }
 
@@ -605,7 +621,11 @@ struct OfflinePlayerView: View {
 
     private func adjustMacVolume(by delta: Double) {
         macVolume = min(max(macVolume + delta, 0), 1)
-        try? player.vlcPlayer.setAudioVolume(Volume(Float(macVolume)))
+        if let vlcEngine = player as? VLCEnginePlayer {
+            try? vlcEngine.vlcPlayer.setAudioVolume(Volume(Float(macVolume)))
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            aetherEngine.volume = Float(macVolume)
+        }
         macVolumeHUD = macVolume
         macVolumeHUDTask?.cancel()
         macVolumeHUDTask = Task {
