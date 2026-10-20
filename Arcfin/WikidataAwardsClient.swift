@@ -3,7 +3,10 @@
 import Foundation
 
 /// One Wikidata "award received" (P166) statement for a title.
-public struct WikidataAward: Sendable, Equatable, Hashable {
+/// `nonisolated` opts out of the app target's `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` —
+/// without it, the synthesized Equatable/Hashable conformance is MainActor-isolated and can't
+/// be used from inside WikidataAwardsClient's own (non-main) actor isolation domain.
+public nonisolated struct WikidataAward: Sendable, Equatable, Hashable {
     public let name: String
     public let year: Int?
 }
@@ -12,7 +15,7 @@ public struct WikidataAward: Sendable, Equatable, Hashable {
 /// SeerrAPI.RequestMediaType — this client is called from both a Jellyfin MediaItem's detail
 /// screen and a Seerr-sourced item's detail screen, and shouldn't need to import (or reconcile)
 /// either package's own movie/tv enum just to pick a Wikidata property.
-public enum WikidataMediaKind: Sendable {
+public nonisolated enum WikidataMediaKind: Sendable {
     case movie, tv
 }
 
