@@ -89,6 +89,18 @@ struct MediaDetailView: View {
 
     private var credential: ServerCredential? { authManager.state.credential }
 
+    /// Jellyfin web client's details page for this item — the same link the web UI's own
+    /// "copy link" produces, so anyone with access to the server can open it.
+    private var shareURL: URL? {
+        guard let base = credential?.baseURL,
+              var comps = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        else { return nil }
+        let basePath = comps.path.hasSuffix("/") ? String(comps.path.dropLast()) : comps.path
+        comps.path = basePath + "/web/"
+        comps.fragment = "/details?id=\(item.id)"
+        return comps.url
+    }
+
     private var authHeader: String? {
         credential.map { authManager.authClient.authHeader(token: $0.accessToken) }
     }
@@ -122,6 +134,15 @@ struct MediaDetailView: View {
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .topBarTrailing) {
                     DownloadButton(item: item)
+                }
+            }
+            if let shareURL {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundStyle(.white)
+                    }
+                    .accessibilityLabel("Share")
                 }
             }
         }
@@ -494,7 +515,7 @@ struct MediaDetailView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text(rating)
                     .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
@@ -502,13 +523,13 @@ struct MediaDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text("\(mins)m")
                     .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
                         .font(.system(.caption2))

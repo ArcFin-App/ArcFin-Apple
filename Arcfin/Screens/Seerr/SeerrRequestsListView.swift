@@ -126,7 +126,7 @@ struct SeerrRequestsListView: View {
                     Text(req.mediaType == .tv ? "Series" : "Movie")
                         .font(DT.Font.caption2)
                         .foregroundStyle(DT.Color.textSecondary)
-                    Text("·")
+                    Text("·").accessibilityHidden(true)
                         .font(DT.Font.caption2)
                         .foregroundStyle(.white.opacity(0.2))
                     Text(req.requestedAt, style: .date)

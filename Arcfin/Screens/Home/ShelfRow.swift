@@ -15,6 +15,7 @@ struct ShelfRow<Content: View>: View {
                     .font(DT.Font.cardTitle)
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.2)
+                    .accessibilityAddTraits(.isHeader)
 
                 if let badge {
                     Text(badge)

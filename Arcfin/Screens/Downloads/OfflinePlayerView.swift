@@ -322,7 +322,7 @@ struct OfflinePlayerView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(downloadedItem.name)
@@ -340,14 +340,14 @@ struct OfflinePlayerView: View {
             // AVPlayer to hand it. Not something VLC's macOS backend bridges either — a
             // genuine gap, not an oversight.
             #if canImport(UIKit) && !os(tvOS)
-            AirPlayButton().frame(width: 30, height: 30)
+            AirPlayButton().frame(width: 44, height: 44)
             #endif
             if !downloadedItem.subtitleFileNames.isEmpty {
                 Button { showTrackMenu = true } label: {
                     Image(systemName: "captions.bubble")
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
             }
             #if canImport(UIKit) && !os(tvOS)
@@ -368,7 +368,7 @@ struct OfflinePlayerView: View {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .accessibilityLabel("More options")
             #elseif os(macOS)
@@ -526,6 +526,12 @@ struct OfflinePlayerView: View {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+        }
     }
 
     private var trickplayPreview: some View {
