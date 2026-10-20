@@ -24,6 +24,7 @@ struct SeerrRequestDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
                 titleBlock
+                removeRequestButton
                 trailerButton
 
                 VStack(alignment: .leading, spacing: DT.Spacing.md) {
@@ -66,27 +67,6 @@ struct SeerrRequestDetailView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(Color(hex: "EF4444"))
                     }
-
-                    Button(role: .destructive) {
-                        showCancelConfirm = true
-                    } label: {
-                        HStack {
-                            if isCancelling {
-                                ProgressView().tint(.white)
-                            } else {
-                                Image(systemName: "trash")
-                            }
-                            Text("Remove Request")
-                        }
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(hex: "EF4444").opacity(0.85))
-                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                    }
-                    .disabled(isCancelling)
-                    .padding(.top, DT.Spacing.sm)
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.md)
@@ -215,6 +195,33 @@ struct SeerrRequestDetailView: View {
             colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
             startPoint: .topLeading, endPoint: .bottomTrailing
         )
+    }
+
+    // MARK: - Actions (positioned like MediaDetailView's playButton/trailerButton — see
+    // SeerrItemDetailView's actionButtons for the same pattern applied to Request)
+
+    private var removeRequestButton: some View {
+        Button(role: .destructive) {
+            showCancelConfirm = true
+        } label: {
+            HStack {
+                if isCancelling {
+                    ProgressView().tint(.white)
+                } else {
+                    Image(systemName: "trash")
+                }
+                Text("Remove Request")
+            }
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(Color(hex: "EF4444").opacity(0.85))
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+        }
+        .disabled(isCancelling)
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.bottom, DT.Spacing.md)
     }
 
     @ViewBuilder
