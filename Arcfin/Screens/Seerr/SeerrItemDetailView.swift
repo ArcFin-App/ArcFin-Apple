@@ -17,7 +17,7 @@ struct SeerrItemDetailView: View {
     @State private var requestingItem: SeerrItem? = nil
 
     private var alreadyRequested: Bool {
-        seerrRepo.requests.contains { $0.mediaTitle == item.title }
+        seerrRepo.matchingRequest(for: item) != nil
     }
 
     private var isAvailable: Bool { item.availabilityStatus == .available }
@@ -68,7 +68,9 @@ struct SeerrItemDetailView: View {
                     }
 
                     if let availabilityStatus = item.availabilityStatus {
-                        availabilityRow(availabilityStatus)
+                        availabilityRow(label: "Availability", status: (availabilityStatus.label, availabilityStatus.colorHex))
+                    } else if let request = seerrRepo.matchingRequest(for: item) {
+                        availabilityRow(label: "Request", status: request.displayStatus)
                     }
 
                     if isLoadingDetail {
@@ -255,9 +257,9 @@ struct SeerrItemDetailView: View {
         .frame(height: 220)
     }
 
-    private func availabilityRow(_ status: SeerrAvailabilityStatus) -> some View {
+    private func availabilityRow(label: String, status: (label: String, colorHex: String)) -> some View {
         HStack {
-            Text("Availability")
+            Text(label)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
             Spacer()

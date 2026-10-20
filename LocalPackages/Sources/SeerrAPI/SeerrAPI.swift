@@ -188,6 +188,18 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
     public var backdropURL: URL? {
         backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w1280\($0)") }
     }
+
+    /// A single status label+color to show where only one badge fits (a Discover grid card,
+    /// a TV card) — prefers the underlying media's own availability over the request's bare
+    /// approval state, since "Processing"/"Partial" says more than "Approved" alone.
+    public var displayStatus: (label: String, colorHex: String) {
+        if let mediaStatus { return (mediaStatus.label, mediaStatus.colorHex) }
+        switch status {
+        case .pending:  return ("Pending", "f59e0b")
+        case .approved: return ("Approved", "10b981")
+        case .declined: return ("Declined", "EF4444")
+        }
+    }
 }
 
 // MARK: - Full media detail (for the request confirmation sheet)

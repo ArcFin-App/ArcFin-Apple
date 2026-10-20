@@ -178,6 +178,14 @@ final class SeerrRepository {
         watchlist.contains { $0.id == item.id && $0.mediaType == item.mediaType }
     }
 
+    /// Matched by tmdbId, not title — a title match silently fails whenever the request's own
+    /// detail fetch failed (title falls back to "Unknown", see getRequests) or just formats
+    /// the title differently than this item's own source does. tmdbId comes straight off the
+    /// request's media object and doesn't depend on that detail fetch succeeding at all.
+    func matchingRequest(for item: SeerrItem) -> SeerrRequestItem? {
+        requests.first { $0.mediaType == item.mediaType && ($0.tmdbId.map { $0 == item.id } ?? ($0.mediaTitle == item.title)) }
+    }
+
     func addToWatchlist(_ item: SeerrItem) async throws {
         guard let client else { throw URLError(.badURL) }
         try await client.addToWatchlist(tmdbId: item.id, mediaType: item.mediaType, title: item.title)

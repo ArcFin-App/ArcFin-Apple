@@ -291,7 +291,7 @@ struct SeerrView: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            let alreadyRequested = seerrRepo.requests.contains { $0.mediaTitle == item.title }
+            let alreadyRequested = seerrRepo.matchingRequest(for: item) != nil
             let isAvailable = item.availabilityStatus == .available
             Button {
                 toggleWatchlist(item)
@@ -312,7 +312,8 @@ struct SeerrView: View {
     }
 
     private func discoverCardContent(_ item: SeerrItem) -> some View {
-        let alreadyRequested = seerrRepo.requests.contains { $0.mediaTitle == item.title }
+        let matchingRequest = seerrRepo.matchingRequest(for: item)
+        let alreadyRequested = matchingRequest != nil
         let isAvailable = item.availabilityStatus == .available
 
         return ZStack(alignment: .bottomLeading) {
@@ -360,8 +361,9 @@ struct SeerrView: View {
             VStack(alignment: .leading, spacing: 4) {
                 if isAvailable {
                     availabilityPill(label: "Available", hex: "10b981")
-                } else if alreadyRequested {
-                    availabilityPill(label: "Requested", hex: "f59e0b")
+                } else if let matchingRequest {
+                    let status = matchingRequest.displayStatus
+                    availabilityPill(label: status.label, hex: status.colorHex)
                 }
 
                 Text(item.title)
