@@ -228,12 +228,17 @@ public struct SeerrMediaDetail: Sendable, Equatable {
     public let status: String?
     public let cast: [SeerrCastMember]
     public let seasons: [SeerrSeasonInfo]
+    /// Per-season request/library status — nil for a movie, or for a server where this
+    /// couldn't be computed. Drives the season picker in the request sheet; `seasons` above
+    /// stays a plain list for the simpler season-chips row on the detail screen.
+    public let seasonRows: [SeerrSeasonRow]?
 
     public init(tagline: String?, overview: String?, genres: [String], runtimeMinutes: Int?,
                 voteAverage: Double?, status: String?, cast: [SeerrCastMember],
-                seasons: [SeerrSeasonInfo] = []) {
+                seasons: [SeerrSeasonInfo] = [], seasonRows: [SeerrSeasonRow]? = nil) {
         self.tagline = tagline; self.overview = overview; self.genres = genres
         self.runtimeMinutes = runtimeMinutes; self.voteAverage = voteAverage
         self.status = status; self.cast = cast; self.seasons = seasons
+        self.seasonRows = seasonRows
     }
 }

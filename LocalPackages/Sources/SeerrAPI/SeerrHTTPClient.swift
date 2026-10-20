@@ -322,12 +322,63 @@ public actor SeerrHTTPClient {
         return try JSONDecoder().decode(SeerrItemResponse.self, from: data).toItem(defaultMediaType: defaultType)
     }
 
-    /// Full movie/tv detail (genres, runtime, rating, cast) for the request confirmation sheet.
-    public func fullDetail(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrMediaDetail {
+    /// Full movie/tv detail (genres, runtime, rating, cast, per-season request/library status)
+    /// for the request confirmation sheet. `includeSpecials` should come from
+    /// `publicSettings().enableSpecialEpisodes` — whether season 0 is offered at all is a
+    /// server setting, not something this client decides on its own.
+    public func fullDetail(mediaType: RequestMediaType, tmdbId: Int, includeSpecials: Bool = false) async throws -> SeerrMediaDetail {
         try await ensureAuthenticated()
         let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
         let data = try await fetch(baseURL.appendingPathComponent(path))
-        return try JSONDecoder().decode(SeerrDetailResponse.self, from: data).toDetail()
+        return try JSONDecoder().decode(SeerrDetailResponse.self, from: data).toDetail(includeSpecials: includeSpecials)
+    }
+
+    /// Server-wide request settings — whether a partial (per-season) request is even offered,
+    /// and whether specials (season 0) are included in the season picker at all. Unauthenticated;
+    /// Seerr serves this publicly.
+    public func publicSettings() async throws -> SeerrPublicSettings {
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/settings/public"))
+        struct Response: Decodable {
+            let partialRequestsEnabled: Bool?
+            let enableSpecialEpisodes: Bool?
+        }
+        let r = try JSONDecoder().decode(Response.self, from: data)
+        return SeerrPublicSettings(
+            partialRequestsEnabled: r.partialRequestsEnabled ?? true,
+            enableSpecialEpisodes: r.enableSpecialEpisodes ?? false
+        )
+    }
+
+    /// The signed-in Seerr user's id and permission bitmask — needed to read their own
+    /// request quota and to tell whether their requests auto-approve.
+    public func currentUser() async throws -> SeerrCurrentUser {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/auth/me"))
+        struct Response: Decodable {
+            let id: Int
+            let permissions: Int?
+        }
+        let r = try JSONDecoder().decode(Response.self, from: data)
+        return SeerrCurrentUser(id: r.id, permissions: r.permissions ?? 0)
+    }
+
+    /// A user's series request quota — nil if the server sent no `tv` quota at all (no limit
+    /// configured), distinct from a limit of 0.
+    public func seasonQuota(userId: Int) async throws -> SeerrSeasonQuota? {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/user/\(userId)/quota"))
+        struct Response: Decodable {
+            struct Quota: Decodable {
+                let days: Int?
+                let limit: Int?
+                let remaining: Int?
+                let restricted: Bool?
+            }
+            let tv: Quota?
+        }
+        let r = try JSONDecoder().decode(Response.self, from: data)
+        guard let tv = r.tv else { return nil }
+        return SeerrSeasonQuota(limit: tv.limit, remaining: tv.remaining, days: tv.days, restricted: tv.restricted ?? false)
     }
 
     public func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
@@ -559,6 +610,7 @@ private struct SeerrDetailResponse: Decodable {
     let status: String?
     let credits: SeerrCredits?
     let seasons: [SeerrSeason]?     // tv only
+    let mediaInfo: SeerrMediaInfo?
 
     struct SeerrGenre: Decodable { let name: String }
     struct SeerrCredits: Decodable { let cast: [SeerrCast]? }
@@ -573,7 +625,78 @@ private struct SeerrDetailResponse: Decodable {
         let episodeCount: Int?
     }
 
-    func toDetail() -> SeerrMediaDetail {
+    /// What the library/request pipeline knows about this title, beyond its TMDB record —
+    /// absent entirely when nobody has ever requested or added it.
+    struct SeerrMediaInfo: Decodable {
+        let seasons: [SeasonStatus]?
+        let requests: [RequestInfo]?
+
+        /// MediaStatus as Seerr numbers it: 1 unknown, 2 pending, 3 processing,
+        /// 4 partially available, 5 available, 6 blocklisted, 7 deleted.
+        struct SeasonStatus: Decodable {
+            let seasonNumber: Int
+            let status: Int
+        }
+
+        /// A standing (or past) request. `seasons` carries each season's own status,
+        /// numbered as a request status (MediaRequestStatus), not the library's.
+        struct RequestInfo: Decodable {
+            let status: Int
+            let is4k: Bool?
+            let seasons: [RequestSeason]?
+
+            struct RequestSeason: Decodable {
+                let seasonNumber: Int
+                let status: Int
+            }
+        }
+    }
+
+    /// Per-season request/library status, read the same way Seerr's own request table reads
+    /// it (TvRequestModal/seasonRows): the library first, unless it lost the season, then a
+    /// request that still stands. MediaRequestStatus: 1 pending, 2 approved, 3 declined,
+    /// 4 failed, 5 completed. MediaStatus: 1 unknown, 5 available, 4 partially available,
+    /// 3 processing, 7 deleted.
+    private func seasonRows(includeSpecials: Bool) -> [SeerrSeasonRow] {
+        let standingRequests = (mediaInfo?.requests ?? []).filter {
+            $0.is4k != true && $0.status != 3 && $0.status != 5
+        }
+        let standingSeasonRequests = standingRequests.flatMap { $0.seasons ?? [] }
+
+        return (seasons ?? [])
+            .filter { ($0.episodeCount ?? 0) != 0 && (includeSpecials || $0.seasonNumber > 0) }
+            .map { season in
+                let seasonRequest = standingSeasonRequests.first {
+                    $0.seasonNumber == season.seasonNumber && $0.status != 5
+                }
+                let mediaSeason = mediaInfo?.seasons?.first {
+                    $0.seasonNumber == season.seasonNumber && $0.status != 1 && $0.status != 7
+                }
+
+                var badge: SeerrSeasonBadge?
+                if mediaSeason?.status == 5 {
+                    badge = .available
+                } else if mediaSeason?.status == 4 {
+                    badge = .partiallyAvailable
+                } else if mediaSeason?.status == 3 || (mediaSeason == nil && seasonRequest?.status == 2) {
+                    badge = .requested
+                } else if mediaSeason == nil && seasonRequest?.status == 1 {
+                    badge = .pending
+                } else if mediaSeason == nil && seasonRequest == nil {
+                    badge = .notRequested
+                }
+
+                return SeerrSeasonRow(
+                    seasonNumber: season.seasonNumber,
+                    episodeCount: season.episodeCount ?? 0,
+                    badge: badge,
+                    locked: mediaSeason != nil || seasonRequest != nil
+                )
+            }
+            .sorted { $0.seasonNumber < $1.seasonNumber }
+    }
+
+    func toDetail(includeSpecials: Bool = false) -> SeerrMediaDetail {
         let cast = (credits?.cast ?? []).prefix(10).map {
             SeerrCastMember(id: $0.id, name: $0.name, character: $0.character, profilePath: $0.profilePath)
         }
@@ -589,7 +712,8 @@ private struct SeerrDetailResponse: Decodable {
             voteAverage: voteAverage,
             status: status,
             cast: Array(cast),
-            seasons: seasonList
+            seasons: seasonList,
+            seasonRows: seasonList.isEmpty ? nil : seasonRows(includeSpecials: includeSpecials)
         )
     }
 }
