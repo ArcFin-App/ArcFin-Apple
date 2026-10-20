@@ -519,6 +519,8 @@ struct PlayerView: View {
     func applyFillScreen() {
         if let vlcEngine = player as? VLCEnginePlayer {
             vlcEngine.vlcPlayer.aspectRatio = isFillScreen ? .fill : .default
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            aetherEngine.isFillScreen = isFillScreen
         }
         // AVFoundation's videoGravity is driven declaratively via videoSurface's
         // isFillScreen param above — no imperative call needed for that branch.
