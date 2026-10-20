@@ -3,6 +3,7 @@
 import SwiftUI
 import SeerrAPI
 import JellyfinAPI
+import AuthCore
 
 /// Full detail for a Discover item — tapping a poster used to do nothing at all (only the
 /// small in-card Request button had any action). This is that missing destination: overview,
