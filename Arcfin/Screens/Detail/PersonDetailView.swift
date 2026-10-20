@@ -138,12 +138,13 @@ struct PersonDetailView: View {
             Group {
                 if let tag = person.primaryImageTag,
                    let url = mediaRepo.personImageURL(personId: person.id, tag: tag, fillWidth: 300) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: personPlaceholder
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: url,
+                        logCategory: "PersonDetailView",
+                        logContext: "header name=\(person.name)",
+                        content: { img in img.resizable().scaledToFill() },
+                        placeholder: { personPlaceholder }
+                    )
                 } else {
                     personPlaceholder
                 }
@@ -189,12 +190,13 @@ struct PersonDetailView: View {
                 ZStack(alignment: .bottomTrailing) {
                     Group {
                         if let url = credit.posterURL {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let img): img.resizable().scaledToFill()
-                                default: DT.Color.backgroundSecondary
-                                }
-                            }
+                            RetryingAsyncImage(
+                                url: url,
+                                logCategory: "PersonDetailView",
+                                logContext: "credit title=\(credit.title)",
+                                content: { img in img.resizable().scaledToFill() },
+                                placeholder: { DT.Color.backgroundSecondary }
+                            )
                         } else {
                             DT.Color.backgroundSecondary
                         }
