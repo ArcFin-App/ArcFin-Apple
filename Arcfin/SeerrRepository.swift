@@ -215,6 +215,23 @@ final class SeerrRepository {
         if let c = client { Task { await c.clearAuthFailure() } }
     }
 
+    /// Call whenever the active Jellyfin profile changes — mirrors configureStats()'s own
+    /// profile-switch hook in ContentView (a profile switch keeps the same Seerr URL/username/
+    /// password today, so configure() short-circuits as "nothing changed" and never gets a
+    /// chance to retry). An auth failure here sets a 1-hour cooldown (see SeerrHTTPClient) that
+    /// previously only ever cleared by the user blanking out and retyping the Seerr fields in
+    /// Settings — if the failure was actually transient (e.g. the Jellyfin server was briefly
+    /// unreachable during the switch, same shape as the cold-launch network race elsewhere in
+    /// this app), a profile switch is a reasonable moment to give it a fresh try instead of
+    /// staying latched out for the rest of the cooldown.
+    func retryAfterProfileSwitch() async {
+        guard let client else { return }
+        await client.clearAuthFailure()
+        authFailed = false
+        await loadDiscover()
+        await loadRequests()
+    }
+
     func mediaDetail(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrMediaDetail? {
         guard let client else { return nil }
         let settings = await ensurePublicSettings()
