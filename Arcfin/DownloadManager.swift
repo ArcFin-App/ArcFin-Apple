@@ -217,7 +217,7 @@ final class DownloadManager: NSObject {
             return
         }
           let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: imageID, tag: tag, type: imageType, fillWidth: 120, token: credential.accessToken)
-          guard let (data, response) = try? await URLSession.shared.data(from: url),
+          guard let (data, response) = try? await URLSession.arcfin.data(from: url),
               (response as? HTTPURLResponse)?.statusCode == 200 else { return }
         guard var existing = liveActivityItemMeta[item.id] else { return }
         existing.posterData = Self.liveActivityThumbnail(from: data)
@@ -308,7 +308,7 @@ final class DownloadManager: NSObject {
         headReq.setValue(authHeader, forHTTPHeaderField: "Authorization")
         headReq.timeoutInterval = 10
         var estimatedSize: Int64?
-        if let (_, response) = try? await URLSession.shared.data(for: headReq),
+        if let (_, response) = try? await URLSession.arcfin.data(for: headReq),
            let http = response as? HTTPURLResponse, http.expectedContentLength > 0 {
             estimatedSize = http.expectedContentLength
         }
@@ -444,7 +444,7 @@ final class DownloadManager: NSObject {
                     let tileURL = client.trickplayTileURL(credential: credential, itemId: item.id, width: trickplay.width, tileIndex: tileIndex)
                     var req = URLRequest(url: tileURL)
                     req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-                    guard let (data, resp) = try? await URLSession.shared.data(for: req),
+                    guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
                           (resp as? HTTPURLResponse)?.statusCode == 200
                     else {
                         trickplayFileNames.append("")
@@ -460,7 +460,7 @@ final class DownloadManager: NSObject {
             var posterFileName: String?
             if let tag = detail.item.primaryImageTag {
                 let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.shared.data(from: url) {
+                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                     posterFileName = "poster.jpg"
                     try? data.write(to: dir.appendingPathComponent("poster.jpg"))
                 }
@@ -468,7 +468,7 @@ final class DownloadManager: NSObject {
             var backdropFileName: String?
             if let tag = detail.item.backdropImageTags.first {
                 let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.shared.data(from: url) {
+                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                     backdropFileName = "backdrop.jpg"
                     try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
                 }
@@ -552,7 +552,7 @@ final class DownloadManager: NSObject {
         var posterFileName: String?
         if let tag = detail.item.primaryImageTag {
             let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
-            if let (data, _) = try? await URLSession.shared.data(from: url) {
+            if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                 posterFileName = "poster.jpg"
                 try? data.write(to: dir.appendingPathComponent("poster.jpg"))
             }
@@ -560,7 +560,7 @@ final class DownloadManager: NSObject {
         var backdropFileName: String?
         if let tag = detail.item.backdropImageTags.first {
             let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
-            if let (data, _) = try? await URLSession.shared.data(from: url) {
+            if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                 backdropFileName = "backdrop.jpg"
                 try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
             }
