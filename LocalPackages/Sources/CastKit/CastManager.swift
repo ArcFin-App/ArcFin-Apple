@@ -55,9 +55,24 @@ public final class CastManager: NSObject {
 
     // MARK: - Media control
 
+    public struct SubtitleTrack: Sendable {
+        public let id: Int
+        public let url: URL
+        public let languageCode: String?
+        public let name: String?
+
+        public init(id: Int, url: URL, languageCode: String?, name: String?) {
+            self.id = id
+            self.url = url
+            self.languageCode = languageCode
+            self.name = name
+        }
+    }
+
     public func loadMedia(
         streamURL: URL, title: String, subtitle: String?, posterImageURL: URL?,
-        contentType: String, startPositionSeconds: TimeInterval
+        contentType: String, startPositionSeconds: TimeInterval,
+        subtitleTracks: [SubtitleTrack] = [], activeSubtitleTrackID: Int? = nil
     ) {
         #if canImport(GoogleCast)
         guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
@@ -71,11 +86,18 @@ public final class CastManager: NSObject {
         infoBuilder.contentType = contentType
         infoBuilder.streamType = .buffered
         infoBuilder.metadata = metadata
+        infoBuilder.mediaTracks = subtitleTracks.map {
+            GCKMediaTrack(
+                identifier: $0.id, contentIdentifier: $0.url.absoluteString, contentType: "text/vtt",
+                type: .text, textSubtype: .subtitles, name: $0.name, languageCode: $0.languageCode,
+                customData: nil)
+        }
 
         let requestBuilder = GCKMediaLoadRequestDataBuilder()
         requestBuilder.mediaInformation = infoBuilder.build()
         requestBuilder.startTime = startPositionSeconds
         requestBuilder.autoplay = true
+        if let activeSubtitleTrackID { requestBuilder.activeTrackIDs = [NSNumber(value: activeSubtitleTrackID)] }
         client.loadMedia(with: requestBuilder.build())
         #endif
     }

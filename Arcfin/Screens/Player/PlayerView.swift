@@ -956,10 +956,21 @@ struct PlayerView: View {
                 forCast: true
             )
             guard let url = info?.playURL ?? playbackInfo?.playURL else { return }
+            // Text subtitles go to the receiver as sidecar WebVTT tracks; image-based ones
+            // have no deliveryUrl and are burned into the transcode by the server instead.
+            let tracks = (info ?? playbackInfo)?.subtitleStreams.compactMap { stream -> CastManager.SubtitleTrack? in
+                guard let delivery = stream.deliveryUrl,
+                      let trackURL = SubtitleLoader.absoluteURL(deliveryUrl: delivery, credential: credential)
+                else { return nil }
+                return CastManager.SubtitleTrack(
+                    id: stream.index, url: trackURL, languageCode: stream.language, name: stream.displayTitle)
+            } ?? []
             CastManager.shared.loadMedia(
                 streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
                 contentType: castContentType(for: url),
-                startPositionSeconds: startSeconds
+                startPositionSeconds: startSeconds,
+                subtitleTracks: tracks,
+                activeSubtitleTrackID: tracks.contains { $0.id == selectedSubtitleIndex } ? selectedSubtitleIndex : nil
             )
         }
     }

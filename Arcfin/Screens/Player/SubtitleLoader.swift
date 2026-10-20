@@ -23,7 +23,7 @@ enum SubtitleLoader {
 
     /// Raw VTT bytes, for saving to disk for offline playback — same URL construction as
     /// loadCues, just without parsing.
-    static func fetchRawVTTData(deliveryUrl: String, credential: ServerCredential) async -> Data? {
+    static func absoluteURL(deliveryUrl: String, credential: ServerCredential) -> URL? {
         guard let relative = URLComponents(string: deliveryUrl),
               var combined = URLComponents(url: credential.baseURL, resolvingAgainstBaseURL: false)
         else { return nil }
@@ -33,7 +33,11 @@ enum SubtitleLoader {
         var query = relative.queryItems ?? []
         query.append(.init(name: "api_key", value: credential.accessToken))
         combined.queryItems = query
-        guard let url = combined.url,
+        return combined.url
+    }
+
+    static func fetchRawVTTData(deliveryUrl: String, credential: ServerCredential) async -> Data? {
+        guard let url = absoluteURL(deliveryUrl: deliveryUrl, credential: credential),
               let (data, _) = try? await URLSession.shared.data(from: url)
         else { return nil }
         return data
