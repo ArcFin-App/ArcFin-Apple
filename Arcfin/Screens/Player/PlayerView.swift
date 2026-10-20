@@ -419,6 +419,14 @@ struct PlayerView: View {
         }
         #endif
         #if canImport(GoogleCast)
+        .onChange(of: CastManager.shared.playbackFinishedCount) { _, _ in
+            // Local playback is paused for the whole cast, so the Up Next countdown (which
+            // follows the local position) never fires — the receiver's end-of-item is the
+            // signal instead.
+            guard CastManager.shared.isConnected, nextEpisode != nil,
+                  UserDefaults.standard.bool(forKey: "autoPlayNext") else { return }
+            playNextEpisode(isAutomatic: true)
+        }
         .onChange(of: CastManager.shared.isConnected) { wasConnected, isConnected in
             if isConnected {
                 startCasting()
@@ -866,6 +874,9 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             }
             await player.play()
+            // A cast that was already running when this screen opened (autoplay moved on to
+            // the next episode) never produces an isConnected change to trigger this.
+            if CastManager.shared.isConnected { startCasting() }
             #if !os(tvOS)
             // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's
             // custom PiPCoordinator needs this explicit activation step.
