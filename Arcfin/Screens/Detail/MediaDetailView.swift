@@ -89,6 +89,18 @@ struct MediaDetailView: View {
 
     private var credential: ServerCredential? { authManager.state.credential }
 
+    /// Jellyfin web client's details page for this item — the same link the web UI's own
+    /// "copy link" produces, so anyone with access to the server can open it.
+    private var shareURL: URL? {
+        guard let base = credential?.baseURL,
+              var comps = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        else { return nil }
+        let basePath = comps.path.hasSuffix("/") ? String(comps.path.dropLast()) : comps.path
+        comps.path = basePath + "/web/"
+        comps.fragment = "/details?id=\(item.id)"
+        return comps.url
+    }
+
     private var authHeader: String? {
         credential.map { authManager.authClient.authHeader(token: $0.accessToken) }
     }
@@ -122,6 +134,15 @@ struct MediaDetailView: View {
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .topBarTrailing) {
                     DownloadButton(item: item)
+                }
+            }
+            if let shareURL {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundStyle(.white)
+                    }
+                    .accessibilityLabel("Share")
                 }
             }
         }
