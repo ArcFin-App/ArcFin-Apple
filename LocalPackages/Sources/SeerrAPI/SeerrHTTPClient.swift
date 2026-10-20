@@ -276,23 +276,40 @@ public actor SeerrHTTPClient {
         // be completely silent (bare try?), leaving the row showing "Unknown" with zero trace
         // of why — same silently-swallowed-error shape already found and fixed for
         // SeerrRepository.loadDiscover and others elsewhere in this codebase.
+        // Bounded to a small window: URLSession's ephemeral config allows only ~6 connections
+        // per host, and the 15s per-request timeout keeps ticking while a request waits for a
+        // free connection — firing all 40 at once made the tail of the burst time out and
+        // every one of those rows came back as "Unknown".
+        let maxConcurrentDetailFetches = 4
         var items = [SeerrRequestItem?](repeating: nil, count: raw.count)
         await withTaskGroup(of: (Int, SeerrRequestItem).self) { group in
-            for (index, r) in raw.enumerated() {
-                group.addTask {
-                    var detail: SeerrItem?
-                    do {
-                        detail = try await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
-                    } catch {
-                        let nsError = error as NSError
-                        Telemetry.logger(category: "SeerrHTTPClient").error(
-                            "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
-                        )
-                    }
-                    return (index, r.toItem(detail: detail))
+            func fetchItem(_ index: Int) async -> (Int, SeerrRequestItem) {
+                let r = raw[index]
+                var detail: SeerrItem?
+                do {
+                    detail = try await mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
+                } catch {
+                    let nsError = error as NSError
+                    Telemetry.logger(category: "SeerrHTTPClient").error(
+                        "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                    )
+                }
+                return (index, r.toItem(detail: detail))
+            }
+            var nextIndex = 0
+            while nextIndex < min(maxConcurrentDetailFetches, raw.count) {
+                let index = nextIndex
+                group.addTask { await fetchItem(index) }
+                nextIndex += 1
+            }
+            for await (index, item) in group {
+                items[index] = item
+                if nextIndex < raw.count {
+                    let next = nextIndex
+                    group.addTask { await fetchItem(next) }
+                    nextIndex += 1
                 }
             }
-            for await (index, item) in group { items[index] = item }
         }
         return items.compactMap { $0 }
     }

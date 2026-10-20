@@ -121,7 +121,21 @@ final class SeerrRepository {
         if firstLoad { isLoadingRequests = true }
         do {
             let fetched = try await client.getRequests()
-            requests = fetched
+            // A per-item TMDB detail fetch can fail transiently, leaving that row titled
+            // "Unknown" — keep the title/artwork we already had for it rather than letting a
+            // flaky refetch blank out a row that was fine a moment ago. Status is still taken
+            // from the fresh response.
+            let known = Dictionary(requests.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            requests = fetched.map { item in
+                guard item.mediaTitle == "Unknown", let previous = known[item.id], previous.mediaTitle != "Unknown" else {
+                    return item
+                }
+                var merged = item
+                merged.mediaTitle = previous.mediaTitle
+                merged.posterPath = previous.posterPath
+                merged.backdropPath = previous.backdropPath
+                return merged
+            }
             authFailed = false
         } catch SeerrError.authFailed {
             authFailed = true
