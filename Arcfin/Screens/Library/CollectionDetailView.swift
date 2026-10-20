@@ -67,6 +67,7 @@ struct CollectionDetailView: View {
                         sectionTitle("\(items.count) Title\(items.count == 1 ? "" : "s")")
                             .padding(.horizontal, DT.Spacing.pagePad)
                             .padding(.top, DT.Spacing.md)
+                            .padding(.bottom, DT.Spacing.sm)
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(items) { item in
                                 Button { selectedItem = item } label: {
