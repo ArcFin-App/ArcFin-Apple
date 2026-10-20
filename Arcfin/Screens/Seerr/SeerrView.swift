@@ -13,6 +13,7 @@ struct SeerrView: View {
     @State private var searchText = ""
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
+    @FocusState private var searchFieldFocused: Bool
     @State private var requestingItem: SeerrItem? = nil
 
     private var genresForType: [SeerrGenre] {
@@ -124,30 +125,48 @@ struct SeerrView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search bar
+            // Search bar — the inline xmark only clears the text, same as before. Browse's
+            // native .searchable() also shows a "Cancel" button beside the field while
+            // active, which clears AND dismisses the keyboard/search state in one tap; this
+            // adds the same affordance here since this field is a custom TextField, not
+            // .searchable(), so it doesn't get that for free.
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 13))
-                    .foregroundStyle(DT.Color.textSecondary)
-                TextField("Search movies, series, people…", text: $searchText)
-                    .font(DT.Font.caption)
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .autocorrectionDisabled()
-                if !searchText.isEmpty {
-                    Button { searchText = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(DT.Color.textSecondary)
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13))
+                        .foregroundStyle(DT.Color.textSecondary)
+                    TextField("Search movies, series, people…", text: $searchText)
+                        .font(DT.Font.caption)
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .autocorrectionDisabled()
+                        .focused($searchFieldFocused)
+                    if !searchText.isEmpty {
+                        Button { searchText = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(.white.opacity(0.06))
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.1), lineWidth: 1))
+
+                if searchFieldFocused || !searchText.isEmpty {
+                    Button("Cancel") {
+                        searchText = ""
+                        searchFieldFocused = false
+                    }
+                    .font(DT.Font.caption)
+                    .foregroundStyle(DT.Color.accent)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(.white.opacity(0.06))
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.1), lineWidth: 1))
+            .animation(DT.Animation.fast, value: searchFieldFocused)
             .padding(.bottom, DT.Spacing.sm)
 
             if searchText.isEmpty {
