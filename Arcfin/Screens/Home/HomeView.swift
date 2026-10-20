@@ -574,6 +574,13 @@ struct HomeView: View {
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
         }
         #endif
+        #if os(iOS)
+        .onContinueUserActivity(ArcfinActivity.viewTitle) { activity in
+            if let id = activity.userInfo?["itemID"] as? String {
+                ArcfinRouting.openItem(id: id)
+            }
+        }
+        #endif
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
@@ -596,6 +603,10 @@ struct HomeView: View {
         guard case .authenticated(let cred) = authManager.state else { return }
         await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: force)
         mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
+        #if os(iOS)
+        let indexable = mediaRepo.continueWatching + mediaRepo.recentlyAdded
+        Task { await SpotlightIndexer.index(indexable) }
+        #endif
         TopShelfBridge.save(
             continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
                 TopShelfMediaItem(
