@@ -296,7 +296,7 @@ final class MediaRepository {
         Task.detached(priority: .utility) {
             for url in uniqueURLs {
                 let req = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 12)
-                _ = try? await URLSession.shared.data(for: req)
+                _ = try? await URLSession.arcfin.data(for: req)
             }
         }
     }

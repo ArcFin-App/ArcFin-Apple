@@ -140,10 +140,17 @@ public enum DT {
     // MARK: - Animation
 
     public enum Animation {
-        /// When the Appearance → Reduce Motion setting is on, every DT.Animation
+        /// When the Appearance → Reduce Motion setting or the system Reduce Motion is on, every DT.Animation
         /// collapses to a near-instant linear fade instead of its spring/duration.
         private static var reduceMotion: Bool {
-            UserDefaults.standard.bool(forKey: "reduceMotion")
+            if UserDefaults.standard.bool(forKey: "reduceMotion") { return true }
+            #if canImport(UIKit)
+            return UIAccessibility.isReduceMotionEnabled
+            #elseif canImport(AppKit)
+            return NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            #else
+            return false
+            #endif
         }
         private static let reducedFallback = SwiftUI.Animation.linear(duration: 0.01)
 
