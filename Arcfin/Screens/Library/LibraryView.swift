@@ -822,6 +822,15 @@ enum LibraryWatchedFilter: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// Filters beyond genre/year/watched/favorites: content rating and a minimum community
+/// score, kept as one value so it travels through the filter sheet as a single binding.
+struct LibraryExtraFilters: Equatable {
+    var officialRatings: Set<String> = []
+    var minRating: Double?
+
+    var isActive: Bool { !officialRatings.isEmpty || minRating != nil }
+}
+
 enum LibrarySortOption: String, CaseIterable, Identifiable {
     case nameAsc = "Name (A–Z)"
     case nameDesc = "Name (Z–A)"
@@ -918,6 +927,8 @@ struct LibraryDetailView: View {
     // Filters
     @State private var availableGenres: [String] = []
     @State private var availableYears: [Int] = []
+    @State private var availableRatings: [String] = []
+    @State private var extraFilters = LibraryExtraFilters()
     @State private var selectedGenres: Set<String> = []
     @State private var selectedYears: Set<Int> = []
     @State private var watchedFilter: LibraryWatchedFilter = .all
@@ -933,6 +944,7 @@ struct LibraryDetailView: View {
 
     private var filtersActive: Bool {
         !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
+            || extraFilters.isActive
     }
 
     private var hasMore: Bool { items.count < totalItems }
@@ -1079,9 +1091,10 @@ struct LibraryDetailView: View {
 #if !os(macOS)
         .sheet(isPresented: $showFilterSheet) {
             LibraryFilterSheet(
-                availableGenres: availableGenres, availableYears: availableYears,
+                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
-                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
+                extraFilters: $extraFilters
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -1107,9 +1120,10 @@ struct LibraryDetailView: View {
                         .padding(.vertical, 12)
                         Divider()
                         LibraryFilterList(
-                            availableGenres: availableGenres, availableYears: availableYears,
+                            availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings,
                             selectedGenres: $selectedGenres, selectedYears: $selectedYears,
-                            watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                            watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
+                extraFilters: $extraFilters
                         )
                     }
                     .frame(width: 380, height: 480)
@@ -1124,6 +1138,7 @@ struct LibraryDetailView: View {
 #endif
         .onChange(of: selectedGenres) { _, _ in Task { await reload() } }
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }
+        .onChange(of: extraFilters) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
         .navigationDestination(item: $randomPick) { MediaDetailView(item: $0) }
@@ -1231,6 +1246,7 @@ struct LibraryDetailView: View {
                 recursive: true,
                 includeItemTypes: includeTypes,
                 genres: Array(selectedGenres), years: Array(selectedYears),
+                officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
                 isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
                 isFavorite: favoritesOnly ? true : nil,
                 sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
@@ -1262,6 +1278,7 @@ struct LibraryDetailView: View {
             recursive: true,
             includeItemTypes: includeTypes,
             genres: Array(selectedGenres), years: Array(selectedYears),
+            officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
             isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
             isFavorite: favoritesOnly ? true : nil,
             sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
@@ -1283,6 +1300,7 @@ struct LibraryDetailView: View {
             libraryId: library.id, startIndex: 0, limit: 1, recursive: true,
             includeItemTypes: includeTypes,
             genres: Array(selectedGenres), years: Array(selectedYears),
+            officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
             isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
             isFavorite: favoritesOnly ? true : nil,
             sortBy: "Random", sortOrder: "Ascending"
@@ -1302,6 +1320,7 @@ struct LibraryDetailView: View {
         )
         availableGenres = options?.genres ?? []
         availableYears = options?.years ?? []
+        availableRatings = options?.officialRatings ?? []
     }
     #else
     private func loadFilterOptions() async {}
@@ -1318,11 +1337,13 @@ struct LibraryDetailView: View {
 struct LibraryFilterList: View {
     let availableGenres: [String]
     let availableYears: [Int]
+    let availableRatings: [String]
     @Binding var selectedGenres: Set<String>
     @Binding var selectedYears: Set<Int>
     @Binding var watchedFilter: LibraryWatchedFilter
     @Binding var favoritesOnly: Bool
     @Binding var sortOption: LibrarySortOption
+    @Binding var extraFilters: LibraryExtraFilters
 
     var body: some View {
         List {
@@ -1368,11 +1389,31 @@ struct LibraryFilterList: View {
                 }
             }
 
-            if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly {
+            Section("Minimum Score") {
+                ForEach([nil, 6.0, 7.0, 8.0, 9.0] as [Double?], id: \.self) { score in
+                    filterRow(score.map { "\(Int($0))+" } ?? "Any", isSelected: extraFilters.minRating == score) {
+                        extraFilters.minRating = score
+                    }
+                }
+            }
+
+            if !availableRatings.isEmpty {
+                Section("Content Rating") {
+                    ForEach(availableRatings, id: \.self) { rating in
+                        filterRow(rating, isSelected: extraFilters.officialRatings.contains(rating)) {
+                            toggle(rating, in: &extraFilters.officialRatings)
+                        }
+                    }
+                }
+            }
+
+            if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
+                || extraFilters.isActive {
                 Section {
                     Button(role: .destructive) {
                         selectedGenres.removeAll()
                         selectedYears.removeAll()
+                        extraFilters = LibraryExtraFilters()
                         watchedFilter = .all
                         favoritesOnly = false
                     } label: {
@@ -1404,20 +1445,23 @@ struct LibraryFilterList: View {
 struct LibraryFilterSheet: View {
     let availableGenres: [String]
     let availableYears: [Int]
+    let availableRatings: [String]
     @Binding var selectedGenres: Set<String>
     @Binding var selectedYears: Set<Int>
     @Binding var watchedFilter: LibraryWatchedFilter
     @Binding var favoritesOnly: Bool
     @Binding var sortOption: LibrarySortOption
+    @Binding var extraFilters: LibraryExtraFilters
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             LibraryFilterList(
-                availableGenres: availableGenres, availableYears: availableYears,
+                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
-                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
+                extraFilters: $extraFilters
             )
             .navigationTitle("Filter & Sort")
             .navigationBarTitleDisplayMode(.inline)

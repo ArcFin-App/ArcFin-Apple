@@ -663,6 +663,8 @@ public struct JellyfinMediaClient: Sendable {
         includeItemTypes: String? = nil,
         genres: [String] = [],
         years: [Int] = [],
+        officialRatings: [String] = [],
+        minCommunityRating: Double? = nil,
         isPlayed: Bool? = nil,
         isFavorite: Bool? = nil,
         sortBy: String = "SortName",
@@ -691,6 +693,12 @@ public struct JellyfinMediaClient: Sendable {
         if !years.isEmpty {
             queryItems.append(.init(name: "Years", value: years.map(String.init).joined(separator: ",")))
         }
+        if !officialRatings.isEmpty {
+            queryItems.append(.init(name: "OfficialRatings", value: officialRatings.joined(separator: "|")))
+        }
+        if let minCommunityRating {
+            queryItems.append(.init(name: "MinCommunityRating", value: String(minCommunityRating)))
+        }
         if let isPlayed {
             queryItems.append(.init(name: "IsPlayed", value: isPlayed ? "true" : "false"))
         }
@@ -713,7 +721,7 @@ public struct JellyfinMediaClient: Sendable {
         authHeader: String,
         libraryId: String,
         includeItemTypes: String? = nil
-    ) async throws -> (genres: [String], years: [Int]) {
+    ) async throws -> (genres: [String], years: [Int], officialRatings: [String]) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/Filters2"),
             resolvingAgainstBaseURL: false)!
@@ -727,7 +735,8 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
         let response = try JSONDecoder().decode(LibraryFiltersResponse.self, from: data)
-        return (genres: response.genres.map(\.name).sorted(), years: response.years.sorted(by: >))
+        return (genres: response.genres.map(\.name).sorted(), years: response.years.sorted(by: >),
+                officialRatings: (response.officialRatings ?? []).sorted())
     }
 
     /// Uses /Search/Hints rather than a plain /Items SearchTerm filter — Hints also
@@ -829,9 +838,11 @@ private struct LibraryFiltersResponse: Decodable {
     }
     let genres: [NamedFacet]
     let years: [Int]
+    let officialRatings: [String]?
     enum CodingKeys: String, CodingKey {
         case genres = "Genres"
         case years = "Years"
+        case officialRatings = "OfficialRatings"
     }
 }
 
