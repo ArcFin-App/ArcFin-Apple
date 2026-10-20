@@ -59,7 +59,7 @@ extension PlayerView {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                 #endif
             }
             #if os(tvOS)
@@ -169,7 +169,7 @@ extension PlayerView {
                     Image(systemName: action.icon)
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel(action.label)
             }
@@ -299,7 +299,7 @@ extension PlayerView {
             Image(systemName: "ellipsis.circle")
                 .font(.system(.title3, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
         }
         .accessibilityLabel("More options")
         #if os(tvOS)
@@ -555,6 +555,12 @@ extension PlayerView {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: elapsedTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+        }
     }
 
     private var trickplayPreview: some View {
@@ -1052,7 +1058,7 @@ extension PlayerView {
             Color.black.opacity(0.85).ignoresSafeArea()
             VStack(spacing: 20) {
                 Image(systemName: "eye.slash")
-                    .font(.system(size: 40, weight: .medium))
+                    .scaledFont(size: 40, weight: .medium)
                     .foregroundStyle(DT.Color.accent)
                 VStack(spacing: 6) {
                     Text("Are you still watching?")
@@ -1592,6 +1598,7 @@ extension PlayerView {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { dismiss() }
+            .accessibilityHidden(true)
             .transition(.opacity)
     }
 

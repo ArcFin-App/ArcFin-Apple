@@ -386,6 +386,7 @@ struct SettingsView: View {
             .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
+            .accessibilityAddTraits(.isHeader)
     }
 
     @ViewBuilder
