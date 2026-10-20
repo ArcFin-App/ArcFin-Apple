@@ -507,6 +507,12 @@ struct MediaDetailView: View {
                     .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
+            if let endsAt = endTime {
+                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                    .font(.system(.caption, design: .default))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
             if let rating = item.communityRating {
                 Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
@@ -520,6 +526,17 @@ struct MediaDetailView: View {
             }
         }
         .lineLimit(1)
+    }
+
+    /// When playback started right now would finish, counting from the resume point if there
+    /// is one — only meaningful for a single playable item, not a series or season.
+    private var endTime: Date? {
+        guard item.type == .movie || item.type == .episode,
+              let total = detail?.runTimeTicks, total > 0
+        else { return nil }
+        let watched = isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
+        let remainingSeconds = Double(max(total - watched, 0)) / 10_000_000
+        return Date().addingTimeInterval(remainingSeconds)
     }
 
     private var qualityRow: some View {
