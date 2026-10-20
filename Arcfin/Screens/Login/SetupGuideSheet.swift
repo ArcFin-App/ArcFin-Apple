@@ -60,6 +60,7 @@ struct SetupGuideSheet: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(DT.Spacing.lg)
             }
+            .accessibilityLabel("Close")
             .buttonStyle(.plain)
             .tvFocusRing(cornerRadius: DT.Radius.pill)
         }

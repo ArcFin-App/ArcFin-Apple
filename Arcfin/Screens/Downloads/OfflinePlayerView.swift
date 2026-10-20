@@ -370,6 +370,7 @@ struct OfflinePlayerView: View {
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
             }
+            .accessibilityLabel("More options")
             #elseif os(macOS)
             HStack(spacing: 14) {
                 Button { isFillScreen.toggle() } label: {
@@ -378,6 +379,7 @@ struct OfflinePlayerView: View {
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel(isFillScreen ? "Fit to screen" : "Fill screen")
                 .buttonStyle(.plain)
                 Button { toggleMacWindowFullScreen(macWindow) } label: {
                     Image(systemName: isMacFullScreen ? "arrow.down.right.and.arrow.up.left.circle" : "arrow.up.left.and.arrow.down.right.circle")
@@ -385,6 +387,7 @@ struct OfflinePlayerView: View {
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel("Toggle full screen")
                 .buttonStyle(.plain)
                 if AVPictureInPictureController.isPictureInPictureSupported() {
                     Button { vlcPipController?.toggle() } label: {
@@ -393,6 +396,7 @@ struct OfflinePlayerView: View {
                             .foregroundStyle(.white)
                             .frame(width: 28, height: 28)
                     }
+                    .accessibilityLabel("Picture in Picture")
                     .buttonStyle(.plain)
                 }
             }
@@ -456,16 +460,19 @@ struct OfflinePlayerView: View {
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                             .font(.system(size: 20)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     Button { togglePlayPause() } label: {
                         Image(systemName: player.status == .playing ? "pause.fill" : "play.fill")
                             .font(.system(size: 30))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                     }
+                    .accessibilityLabel(player.status == .playing ? "Pause" : "Play")
                     Button { seek(by: skipForwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.system(size: 20)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                 }
                 Spacer()
                 Text(remainingLabel)

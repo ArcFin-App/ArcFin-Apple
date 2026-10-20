@@ -491,6 +491,7 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
+                    .accessibilityLabel("Refresh")
                     .help("Refresh")
                 }
                 ToolbarItem(placement: .primaryAction) {
@@ -498,6 +499,7 @@ struct HomeView: View {
                         avatarView
                             .frame(width: 22, height: 22)
                     }
+                    .accessibilityLabel("Settings")
                     .help("Settings")
                 }
             }

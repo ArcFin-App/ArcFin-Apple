@@ -65,6 +65,7 @@ struct YouTubeTrailerPlayerView: View {
                     .background(.black.opacity(0.85), in: Circle())
                     .overlay(Circle().stroke(.white.opacity(0.25), lineWidth: 1))
             }
+            .accessibilityLabel("Close trailer")
             .padding(.top, 16)
             .padding(.trailing, 16)
         }

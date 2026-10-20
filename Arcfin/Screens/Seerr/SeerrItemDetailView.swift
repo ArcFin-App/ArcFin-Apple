@@ -171,6 +171,7 @@ struct SeerrItemDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                     .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
             }
+            .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
         }
         .padding(.top, DT.Spacing.sm)
     }

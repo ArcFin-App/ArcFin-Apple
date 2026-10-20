@@ -204,6 +204,7 @@ struct AuthView: View {
                             .font(.system(size: 13))
                             .foregroundStyle(.white.opacity(0.5))
                     }
+                    .accessibilityLabel(passwordVisible ? "Hide password" : "Show password")
                     .buttonStyle(.plain)
                     .padding(.trailing, 14)
                 }

@@ -129,6 +129,17 @@ extension PlayerView {
         let id: String
         let icon: String
         let perform: () -> Void
+
+        var label: LocalizedStringKey {
+            switch id {
+            case "rotate": "Rotate"
+            case "fill": "Fill screen"
+            case "fullscreen": "Toggle full screen"
+            case "chapters": "Chapters"
+            case "tracks": "Subtitles and audio"
+            default: "Playback speed"
+            }
+        }
     }
 
     /// Rotate/Fill/Chapters used to live in the overflow menu — moved out here since
@@ -160,6 +171,7 @@ extension PlayerView {
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel(action.label)
             }
         }
     }
@@ -185,6 +197,17 @@ extension PlayerView {
         let id: String
         let icon: String
         let perform: () -> Void
+
+        var label: LocalizedStringKey {
+            switch id {
+            case "rotate": "Rotate"
+            case "fill": "Fill screen"
+            case "fullscreen": "Toggle full screen"
+            case "chapters": "Chapters"
+            case "tracks": "Subtitles and audio"
+            default: "Playback speed"
+            }
+        }
     }
 
     /// No rotate button (nothing to rotate on a windowed player) — Fill Screen and window
@@ -220,6 +243,7 @@ extension PlayerView {
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel(action.label)
                 .buttonStyle(.plain)
             }
             AirPlayButton(player: (player as? AVFoundationPlayer)?.player)
@@ -277,6 +301,7 @@ extension PlayerView {
                 .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
         }
+        .accessibilityLabel("More options")
         #if os(tvOS)
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -986,6 +1011,7 @@ extension PlayerView {
                                 .frame(width: 30, height: 30)
                                 .background(.white, in: Circle())
                         }
+                        .accessibilityLabel("Play next episode")
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
@@ -996,6 +1022,7 @@ extension PlayerView {
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.white.opacity(0.7))
                         }
+                        .accessibilityLabel("Dismiss")
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()

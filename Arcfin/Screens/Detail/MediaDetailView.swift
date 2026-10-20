@@ -117,6 +117,7 @@ struct MediaDetailView: View {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
                 }
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -133,6 +134,7 @@ struct MediaDetailView: View {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
                 }
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
         }
         #endif
@@ -657,6 +659,7 @@ struct MediaDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                         .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
                 }
+                .accessibilityLabel("Start over")
                 .buttonStyle(.plain)
                 .accessibilityLabel("Start Over")
             }
@@ -914,6 +917,7 @@ struct MediaDetailView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
+                .accessibilityLabel("Mark watched options")
 #if os(tvOS)
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()

@@ -21,6 +21,12 @@ struct DownloadButton: View {
     private var progress: Double? { downloadManager.progress[item.id] }
     private var isQueued: Bool { downloadManager.activeItemTitles[item.id] != nil }
 
+    private var downloadAccessibilityLabel: LocalizedStringKey {
+        if isDownloaded { return "Downloaded, tap to delete" }
+        if progress != nil || isQueued { return "Cancel download" }
+        return isLoadingPreview ? "Preparing download" : "Download"
+    }
+
     var body: some View {
         Button {
             if isDownloaded {
@@ -54,6 +60,7 @@ struct DownloadButton: View {
             }
             .frame(width: 30, height: 30)
         }
+        .accessibilityLabel(downloadAccessibilityLabel)
         .buttonStyle(.plain)
         // Visual size stays 30x30 (buttons.md's 28pt minimum); the tappable area grows to
         // the 44pt default. This button is the trailing-most element in its row with

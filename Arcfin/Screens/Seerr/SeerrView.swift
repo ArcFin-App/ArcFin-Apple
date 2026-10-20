@@ -139,6 +139,7 @@ struct SeerrView: View {
                             .font(.system(size: 14))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
+                    .accessibilityLabel("Clear search")
                     .buttonStyle(.plain)
                 }
             }
@@ -379,6 +380,7 @@ struct SeerrView: View {
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
                     .buttonStyle(.plain)
                 }
                 Spacer()

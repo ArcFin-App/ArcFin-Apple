@@ -372,6 +372,7 @@ struct DownloadsView: View {
                         // pulse is inherently scoped to that — no extra on/off plumbing needed.
                         .symbolEffect(.pulse)
                 }
+                .accessibilityLabel("Cancel download")
                 .buttonStyle(.plain)
             }
             if let stats, stats.totalBytes > 0 {

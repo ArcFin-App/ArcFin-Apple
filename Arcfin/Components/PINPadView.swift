@@ -97,6 +97,7 @@ struct PINPadView: View {
                                 .foregroundStyle(digits.isEmpty ? DT.Color.textSecondary.opacity(0.3) : DT.Color.textPrimary)
                                 .frame(width: 76, height: 76)
                         }
+                        .accessibilityLabel("Delete")
                         .buttonStyle(.plain)
                         .disabled(digits.isEmpty)
                     }

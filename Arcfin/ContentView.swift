@@ -114,6 +114,7 @@ struct ContentView: View {
                             Button { showOfflineDocPicker = true } label: {
                                 Image(systemName: "folder")
                             }
+                            .accessibilityLabel("Open local file")
                         }
                     }
                     .sheet(isPresented: $showOfflineDocPicker) {
