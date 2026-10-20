@@ -23,6 +23,15 @@ struct ItemQuickActions: View {
         } label: {
             Label(played ? "Mark Unwatched" : "Mark Watched", systemImage: played ? "eye.slash" : "eye")
         }
+        if (item.userData?.playbackPositionTicks ?? 0) > 0, !played {
+            Button {
+                perform { client, cred, header in
+                    _ = try? await client.clearResumePosition(credential: cred, authHeader: header, itemId: item.id)
+                }
+            } label: {
+                Label("Remove from Continue Watching", systemImage: "xmark.circle")
+            }
+        }
         Button {
             perform { client, cred, header in
                 _ = try? await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: !favorite)
