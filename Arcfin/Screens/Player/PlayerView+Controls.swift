@@ -1089,9 +1089,18 @@ extension PlayerView {
     #if !os(tvOS)
     /// Replaces the live video surface entirely while a Cast session is active (see
     /// PlayerView.body) — a frozen last frame behind a small banner read as "stuck paused"
-    /// rather than "playing somewhere else", the actual complaint this fixes.
+    /// rather than "playing somewhere else". Position and seek math read CastManager's live
+    /// position directly, never player.positionTicks / seek(by:): the local player is only
+    /// paused during a cast, so its position is frozen and would make skips relative to a
+    /// stale base.
     var castingPlaceholder: some View {
-        ZStack {
+        let cast = CastManager.shared
+        let durationSeconds = Double(player.durationTicks) / 10_000_000
+        let liveSeconds = cast.lastKnownPositionSeconds ?? 0
+        let shownSeconds = isCastScrubbing ? castScrubTicks / 10_000_000 : liveSeconds
+        let fraction = durationSeconds > 0 ? min(max(shownSeconds / durationSeconds, 0), 1) : 0
+
+        return ZStack {
             Color.black
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
                 AsyncImage(url: url) { phase in
@@ -1103,31 +1112,137 @@ extension PlayerView {
                 .overlay(.black.opacity(0.75))
                 .blur(radius: 40)
             }
-            VStack(spacing: 18) {
-                Image(systemName: "tv")
-                    .font(.system(size: 46, weight: .medium))
-                    .foregroundStyle(DT.Color.accent)
-                VStack(spacing: 6) {
-                    Text("Casting to \(CastManager.shared.deviceName ?? "TV")")
-                        .font(.system(.body, design: .default, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(item.name)
-                        .font(.system(.footnote))
+            VStack(spacing: 0) {
+                HStack {
+                    Button { closePlayer() } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Close player")
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
+
+                Spacer(minLength: 0)
+
+                VStack(spacing: 18) {
+                    Image(systemName: "tv")
+                        .font(.largeTitle.weight(.medium))
+                        .foregroundStyle(DT.Color.accent)
+                        .accessibilityHidden(true)
+                    VStack(spacing: 6) {
+                        Text("Casting to \(cast.deviceName ?? "TV")")
+                            .font(.system(.body, design: .default, weight: .semibold))
+                            .foregroundStyle(.white)
+                        Text(item.name)
+                            .font(.system(.footnote))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                    .multilineTextAlignment(.center)
+                }
+
+                Spacer(minLength: 0)
+
+                VStack(spacing: 20) {
+                    VStack(spacing: 6) {
+                        GeometryReader { proxy in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(.white.opacity(0.25)).frame(height: 4)
+                                Capsule().fill(DT.Color.accent)
+                                    .frame(width: proxy.size.width * fraction, height: 4)
+                                Circle().fill(.white)
+                                    .frame(width: isCastScrubbing ? 18 : 12, height: isCastScrubbing ? 18 : 12)
+                                    .offset(x: proxy.size.width * fraction - (isCastScrubbing ? 9 : 6))
+                            }
+                            .frame(maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let f = min(max(value.location.x / max(proxy.size.width, 1), 0), 1)
+                                        isCastScrubbing = true
+                                        castScrubTicks = Double(player.durationTicks) * f
+                                    }
+                                    .onEnded { _ in
+                                        cast.seek(toSeconds: castScrubTicks / 10_000_000)
+                                        isCastScrubbing = false
+                                    }
+                            )
+                        }
+                        .frame(height: 28)
+                        .accessibilityElement()
+                        .accessibilityLabel("Playback position")
+                        .accessibilityValue("\(timeLabel(ticks: Int64(shownSeconds * 10_000_000))) of \(timeLabel(ticks: player.durationTicks))")
+                        .accessibilityAdjustableAction { direction in
+                            let step = Double(direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+                            cast.seek(toSeconds: min(max(liveSeconds + step, 0), durationSeconds))
+                        }
+
+                        HStack {
+                            Text(timeLabel(ticks: Int64(shownSeconds * 10_000_000)))
+                            Spacer()
+                            Text("-" + timeLabel(ticks: Int64(max(durationSeconds - shownSeconds, 0) * 10_000_000)))
+                        }
+                        .font(.caption.monospacedDigit())
                         .foregroundStyle(.white.opacity(0.7))
-                        .lineLimit(1)
+                        .accessibilityHidden(true)
+                    }
+
+                    HStack(spacing: 40) {
+                        Button {
+                            cast.seek(toSeconds: max(liveSeconds - Double(skipBackwardSeconds), 0))
+                        } label: {
+                            Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                                .font(.title)
+                                .foregroundStyle(.white)
+                                .frame(width: 56, height: 56)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
+
+                        Button { cast.togglePlayPause() } label: {
+                            Image(systemName: cast.isPaused ? "play.fill" : "pause.fill")
+                                .font(.largeTitle)
+                                .foregroundStyle(.white)
+                                .frame(width: 72, height: 72)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel(cast.isPaused ? "Play" : "Pause")
+
+                        Button {
+                            cast.seek(toSeconds: min(liveSeconds + Double(skipForwardSeconds), durationSeconds))
+                        } label: {
+                            Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                                .font(.title)
+                                .foregroundStyle(.white)
+                                .frame(width: 56, height: 56)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        cast.endSession()
+                    } label: {
+                        Text("Stop Casting")
+                            .font(.system(.footnote, design: .default, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .padding(.horizontal, 18).padding(.vertical, 9)
+                            .background(.white.opacity(0.15), in: Capsule())
+                            .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
                 }
-                Button {
-                    CastManager.shared.endSession()
-                } label: {
-                    Text("Stop Casting")
-                        .font(.system(.footnote, design: .default, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(.horizontal, 18).padding(.vertical, 9)
-                        .background(.white.opacity(0.15), in: Capsule())
-                        .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
             }
+            .safeAreaPadding(.vertical, 8)
         }
         .transition(.opacity)
     }

@@ -52,6 +52,10 @@ struct PlayerView: View {
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false
     @State var scrubTicks: Double = 0
+    // Separate from isScrubbing/scrubTicks: those track the local player, which is frozen
+    // while casting (see castingPlaceholder).
+    @State var isCastScrubbing = false
+    @State var castScrubTicks: Double = 0
     @State var showTrackMenu = false
     @State var showQualityMenu = false
     @State var showRateMenu = false
@@ -254,9 +258,9 @@ struct PlayerView: View {
                 #if os(tvOS)
                 .opacity(tvControlsHidden ? 0 : 1)
                 #else
-                .opacity(isControlsVisible ? 1 : 0)
+                .opacity(isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
                 #endif
-                .allowsHitTesting(isControlsVisible)
+                .allowsHitTesting(isControlsVisible && !CastManager.shared.isConnected)
 
             skipButton
 
