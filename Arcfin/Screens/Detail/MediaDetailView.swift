@@ -11,6 +11,13 @@ import Persistence
 
 struct MediaDetailView: View {
     let item: MediaItem
+    #if !os(tvOS)
+    /// Passed down from whichever screen pushed this view (Home/Library/PersonDetail each
+    /// own their own @Namespace) so the Similar/Recommended rows below can zoom into a
+    /// further MediaDetailView the same way the original poster tap did. nil when reached
+    /// from a source that doesn't do the zoom transition (e.g. the Home hero banner).
+    var zoomNamespace: Namespace.ID? = nil
+    #endif
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -130,7 +137,11 @@ struct MediaDetailView: View {
         }
         #endif
         .navigationDestination(item: $selectedEpisode) { ep in
+#if os(tvOS)
             MediaDetailView(item: ep)
+#else
+            MediaDetailView(item: ep, zoomNamespace: zoomNamespace)
+#endif
         }
         .navigationDestination(item: $selectedPerson) { person in
             PersonDetailView(person: person)
@@ -1191,6 +1202,7 @@ struct MediaDetailView: View {
                         .focusEffectDisabled()
 #else
                         .buttonStyle(.plain)
+                        .zoomTransitionSource(id: sim.id, in: zoomNamespace)
 #endif
                     }
                 }
@@ -1221,6 +1233,7 @@ struct MediaDetailView: View {
                         .focusEffectDisabled()
 #else
                         .buttonStyle(.plain)
+                        .zoomTransitionSource(id: rec.id, in: zoomNamespace)
 #endif
                     }
                 }

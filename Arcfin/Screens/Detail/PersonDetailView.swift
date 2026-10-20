@@ -15,6 +15,9 @@ struct PersonDetailView: View {
     @State private var items: [MediaItem] = []
     @State private var isLoading = true
     @State private var selectedItem: MediaItem?
+    #if !os(tvOS)
+    @Namespace private var zoomNamespace
+    #endif
     @State private var detail: MediaPersonDetail?
     @State private var seerrCredits: [SeerrPersonCredit] = []
     @State private var requestingCredit: SeerrItem?
@@ -86,6 +89,7 @@ struct PersonDetailView: View {
                                 .focusEffectDisabled()
 #else
                                 .buttonStyle(PressableButtonStyle())
+                                .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
                             }
                         }
@@ -119,7 +123,12 @@ struct PersonDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .navigationDestination(item: $selectedItem) { item in
+#if os(tvOS)
             MediaDetailView(item: item)
+#else
+            MediaDetailView(item: item, zoomNamespace: zoomNamespace)
+                .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+#endif
         }
         .task { await load() }
     }
