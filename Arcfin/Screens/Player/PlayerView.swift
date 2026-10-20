@@ -937,14 +937,24 @@ struct PlayerView: View {
     /// A Cast session took over — the receiver plays the stream itself, so the local
     /// player pauses rather than playing the same thing twice.
     private func startCasting() {
-        guard let url = playbackInfo?.playURL else { return }
+        guard let credential, let authHeader else { return }
         Task { await player.pause() }
         let posterURL = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
-        CastManager.shared.loadMedia(
-            streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
-            contentType: castContentType(for: playbackInfo?.container),
-            startPositionSeconds: Double(player.positionTicks) / 10_000_000
-        )
+        let startSeconds = Double(player.positionTicks) / 10_000_000
+        Task {
+            let info = try? await client.getPlaybackInfo(
+                credential: credential, authHeader: authHeader, itemId: item.id,
+                quality: qualityCap(for: quality),
+                audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                forCast: true
+            )
+            guard let url = info?.playURL ?? playbackInfo?.playURL else { return }
+            CastManager.shared.loadMedia(
+                streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
+                contentType: castContentType(for: url),
+                startPositionSeconds: startSeconds
+            )
+        }
     }
 
     /// The session ended — pick local playback back up from wherever the receiver had
@@ -962,8 +972,10 @@ struct PlayerView: View {
         }
     }
 
-    private func castContentType(for container: String?) -> String {
-        switch (container ?? "").lowercased() {
+    /// Keyed off the URL, not the source container — an mkv source is served as an HLS
+    /// transcode, and labelling that playlist video/mp4 leaves the receiver mis-demuxing it.
+    private func castContentType(for url: URL) -> String {
+        switch url.pathExtension.lowercased() {
         case "m3u8": return "application/x-mpegurl"
         case "mov":  return "video/quicktime"
         default:     return "video/mp4"
