@@ -12,7 +12,7 @@ extension URLSession {
     /// counting down once connectivity is actually available, rather than firing while still
     /// waiting for it — so the existing 8-20s per-request timeouts stay meaningful instead of
     /// racing the same startup window they're meant to bound.
-    static let arcfin: URLSession = {
+    public static let arcfin: URLSession = {
         let config = URLSessionConfiguration.default
         config.waitsForConnectivity = true
         config.timeoutIntervalForResource = 30
