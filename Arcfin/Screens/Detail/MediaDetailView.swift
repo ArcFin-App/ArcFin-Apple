@@ -632,14 +632,16 @@ struct MediaDetailView: View {
         return "\(remainingMinutes)m left"
     }
 
-    /// Second line under Play/Resume: "19m left · Ends 9:42 PM" when resuming, just
-    /// "Ends 9:42 PM" otherwise. One Text in one style so the pieces read as a unit; only
-    /// the separator is heavier so it doesn't wash out against the gradient.
+    /// Resume only: "19m left • Ends 9:42 PM" on its own line (too long to share the title
+    /// line). A fresh Play shows its end time inline on the title line instead. The bullet
+    /// is a heavier, larger glyph than a middle dot so it reads as a separator against the
+    /// gradient.
     private var playDetailLine: Text? {
+        guard isResumable else { return nil }
         let ends = endTime.map { Text("Ends \($0.formatted(date: .omitted, time: .shortened))") }
         let left = resumeTimeLabel.map { Text($0) }
         switch (left, ends) {
-        case let (left?, ends?): return left + Text("  ·  ").fontWeight(.heavy) + ends
+        case let (left?, ends?): return left + Text("  •  ").font(.system(.footnote, weight: .heavy)) + ends
         case let (left?, nil): return left
         case let (nil, ends?): return ends
         case (nil, nil): return nil
@@ -676,7 +678,17 @@ struct MediaDetailView: View {
                                     .font(.system(.caption2, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
+                            if !isResumable, let endsAt = endTime {
+                                Text("•")
+                                    .font(.system(.footnote, design: .default, weight: .heavy))
+                                    .opacity(0.9)
+                                Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .opacity(0.85)
+                            }
                         }
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                         if let playDetailLine {
                             playDetailLine
                                 .font(.system(.caption2, design: .default, weight: .semibold))
