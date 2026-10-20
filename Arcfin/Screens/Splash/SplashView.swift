@@ -8,6 +8,8 @@ struct SplashView: View {
     var isLoading: Bool
     var onComplete: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var logoScale: CGFloat = 0.55
     @State private var logoOpacity: Double = 0
     @State private var logoBlur: CGFloat = 14
@@ -95,7 +97,7 @@ struct SplashView: View {
 
         // 2. Logo springs in and sharpens
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.7)) {
+            withAnimation(reduceMotion ? .easeOut(duration: 0.3) : .spring(response: 0.55, dampingFraction: 0.7)) {
                 logoOpacity = 1
                 logoScale = 1
             }
@@ -113,6 +115,7 @@ struct SplashView: View {
 
         // 4. Glow pulse loop
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
                 glowPulse = 1.18
             }
@@ -142,7 +145,7 @@ struct SplashView: View {
         guard minimumTimeElapsed, force || !isLoading else { return }
         withAnimation(.easeInOut(duration: 0.48)) {
             sceneOpacity = 0
-            sceneScale = 0.94
+            sceneScale = reduceMotion ? 1 : 0.94
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
             onComplete()
