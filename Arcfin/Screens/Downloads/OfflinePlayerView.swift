@@ -169,10 +169,10 @@ struct OfflinePlayerView: View {
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
-            // AetherPlayerSurface has no fill-screen/aspect param of its own yet — a known
-            // v1 gap, same spirit as PiP being unavailable on its .software route.
             if let vlcEngine = player as? VLCEnginePlayer {
                 vlcEngine.vlcPlayer.aspectRatio = newValue ? .fill : .default
+            } else if let aetherEngine = player as? AetherEnginePlayer {
+                aetherEngine.isFillScreen = newValue
             }
         }
         #endif
