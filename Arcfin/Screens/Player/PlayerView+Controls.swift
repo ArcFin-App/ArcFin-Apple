@@ -59,7 +59,7 @@ extension PlayerView {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                 #endif
             }
             #if os(tvOS)
@@ -169,7 +169,7 @@ extension PlayerView {
                     Image(systemName: action.icon)
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel(action.label)
             }
@@ -299,7 +299,7 @@ extension PlayerView {
             Image(systemName: "ellipsis.circle")
                 .font(.system(.title3, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
         }
         .accessibilityLabel("More options")
         #if os(tvOS)
