@@ -2,6 +2,8 @@
 
 import SwiftUI
 import SeerrAPI
+import JellyfinAPI
+import AuthCore
 
 /// Full detail for a Discover item — tapping a poster used to do nothing at all (only the
 /// small in-card Request button had any action). This is that missing destination: overview,
@@ -11,7 +13,12 @@ struct SeerrItemDetailView: View {
     let item: SeerrItem
 
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
 
+    /// The server's own copy of this title, when it has one — drives the "View in Library"
+    /// action that takes the place of Request once there's nothing left to request.
+    @State private var libraryItem: MediaItem?
+    @State private var openLibraryItem: MediaItem?
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = false
     @State private var requestingItem: SeerrItem? = nil
@@ -103,18 +110,42 @@ struct SeerrItemDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { toggleWatchlist() } label: {
+                    Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
+                }
+                .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
+            }
+        }
+        .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
         .task {
             isLoadingDetail = true
             detail = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
             isLoadingDetail = false
         }
+        .task { await loadLibraryItem() }
+    }
+
+    private func loadLibraryItem() async {
+        guard let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        libraryItem = try? await JellyfinMediaClient().findItem(
+            credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
+            title: item.title, year: item.year.flatMap { Int($0.prefix(4)) })
     }
 
     // MARK: - Actions (positioned and styled like MediaDetailView's playButton/trailerButton)
 
+    /// Only the primary action lives here — the watchlist bookmark is in the toolbar (like
+    /// MediaDetailView's favorite), so when there's nothing to request and no library copy
+    /// to open, the row simply doesn't exist instead of leaving a lone button.
+    @ViewBuilder
     private var actionButtons: some View {
-        HStack(spacing: 10) {
-            if !isAvailable && hasRequestableContent {
+        if !isAvailable && hasRequestableContent {
+            Group {
                 Button {
                     requestBounceTrigger += 1
                     requestingItem = item
@@ -137,24 +168,33 @@ struct SeerrItemDetailView: View {
                 }
                 .buttonStyle(PressableButtonStyle())
             }
-
-            Button {
-                toggleWatchlist()
-            } label: {
-                Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                    .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .frame(width: 48, height: 48)
-                    .background(DT.Color.backgroundSecondary)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
+        } else if let libraryItem {
+            Group {
+                Button {
+                    openLibraryItem = libraryItem
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(.subheadline))
+                        Text("View in Library")
+                            .font(.system(.callout, design: .default, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(LinearGradient(
+                        colors: [DT.Color.accentDeep, DT.Color.accent],
+                        startPoint: .topLeading, endPoint: .bottomTrailing))
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
-                    .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
+                    .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
+                }
+                .buttonStyle(PressableButtonStyle())
             }
-            .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
-            .buttonStyle(.plain)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.md)
     }
 
     @ViewBuilder
