@@ -125,11 +125,9 @@ struct SeerrView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search bar — the inline xmark only clears the text, same as before. Browse's
-            // native .searchable() also shows a "Cancel" button beside the field while
-            // active, which clears AND dismisses the keyboard/search state in one tap; this
-            // adds the same affordance here since this field is a custom TextField, not
-            // .searchable(), so it doesn't get that for free.
+            // Search bar — a single close affordance outside the field (clears text AND
+            // dismisses the keyboard/search state) instead of a separate inline clear-text x
+            // inside it plus a second button outside.
             HStack(spacing: 8) {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
@@ -140,14 +138,6 @@ struct SeerrView: View {
                         .foregroundStyle(DT.Color.textPrimary)
                         .autocorrectionDisabled()
                         .focused($searchFieldFocused)
-                    if !searchText.isEmpty {
-                        Button { searchText = "" } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 14))
-                                .foregroundStyle(DT.Color.textSecondary)
-                        }
-                        .buttonStyle(.plain)
-                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
@@ -157,12 +147,15 @@ struct SeerrView: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.1), lineWidth: 1))
 
                 if searchFieldFocused || !searchText.isEmpty {
-                    Button("Cancel") {
+                    Button {
                         searchText = ""
                         searchFieldFocused = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(DT.Color.textSecondary)
                     }
-                    .font(DT.Font.caption)
-                    .foregroundStyle(DT.Color.accent)
+                    .buttonStyle(.plain)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
