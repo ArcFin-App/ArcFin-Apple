@@ -112,10 +112,10 @@ struct SwitchServerView: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.host)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(.subheadline, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             Spacer()

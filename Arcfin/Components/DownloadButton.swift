@@ -55,6 +55,12 @@ struct DownloadButton: View {
             .frame(width: 30, height: 30)
         }
         .buttonStyle(.plain)
+        // Visual size stays 30x30 (buttons.md's 28pt minimum); the tappable area grows to
+        // the 44pt default. This button is the trailing-most element in its row with
+        // nothing else to its right, so the extra hit area only reclaims mis-taps at this
+        // one edge rather than overlapping a neighboring control.
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
         .alert("Delete this download?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 // The button only needs the itemId to remove files + the SwiftData row, but

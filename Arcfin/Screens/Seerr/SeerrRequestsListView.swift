@@ -118,7 +118,7 @@ struct SeerrRequestsListView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(req.mediaTitle)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
 
@@ -165,7 +165,7 @@ struct SeerrRequestsListView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(req.mediaTitle)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)
@@ -195,12 +195,6 @@ struct SeerrRequestsListView: View {
     }
 
     private func statusPillView(label: String, hex: String) -> some View {
-        Text(label)
-            .font(.system(size: 7, weight: .bold))
-            .foregroundStyle(Color(hex: hex))
-            .padding(.horizontal, 5).padding(.vertical, 2)
-            .background(Color(hex: hex).opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+        StatusPill(label: label, color: Color(hex: hex))
     }
 }

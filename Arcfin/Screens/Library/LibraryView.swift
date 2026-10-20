@@ -199,10 +199,10 @@ struct LibraryView: View {
                     .foregroundStyle(DT.Color.accent)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Downloads")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(.subheadline, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("Movies and episodes saved for offline playback")
-                        .font(.system(size: 12))
+                        .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
@@ -238,10 +238,10 @@ struct LibraryView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Browse Files")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(.subheadline, design: .default, weight: .semibold))
                             .foregroundStyle(DT.Color.textPrimary)
                         Text("Pick a video file from Files app")
-                            .font(.system(size: 12))
+                            .font(.system(.caption))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
 
@@ -343,7 +343,7 @@ private struct LibraryCard: View {
                     .shadow(color: .black.opacity(0.6), radius: 6)
 
                 Text(library.name)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -413,7 +413,7 @@ private struct RequestsCard: View {
                     .shadow(color: .black.opacity(0.6), radius: 6)
 
                 Text("Requests")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -461,12 +461,12 @@ private struct LibraryItemCard: View {
             LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .top)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(2)
                 if let year {
                     Text(year)
-                        .font(.system(size: 9))
+                        .font(.system(.caption2))
                         .foregroundStyle(.white.opacity(0.6))
                 }
             }
@@ -608,7 +608,7 @@ struct LocalPlayerView: View {
                     .frame(width: 36, height: 36)
             }
             Text(url.deletingPathExtension().lastPathComponent)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(.subheadline, design: .default, weight: .semibold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
             Spacer()
@@ -655,7 +655,7 @@ struct LocalPlayerView: View {
             scrubber
             HStack {
                 Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks))
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
                 Spacer()
                 HStack(spacing: 28) {
@@ -674,7 +674,7 @@ struct LocalPlayerView: View {
                 }
                 Spacer()
                 Text(remainingLabel)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
             }
         }
@@ -1069,7 +1069,7 @@ struct LibraryDetailView: View {
                         .onTapGesture { showFilterSheet = false }
                     VStack(spacing: 0) {
                         HStack {
-                            Text("Filter & Sort").font(.system(size: 15, weight: .semibold))
+                            Text("Filter & Sort").font(.system(.subheadline, design: .default, weight: .semibold))
                             Spacer()
                             Button("Done") { showFilterSheet = false }
                         }
@@ -1134,7 +1134,7 @@ struct LibraryDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(item.name)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)

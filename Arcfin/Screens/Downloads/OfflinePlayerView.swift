@@ -326,11 +326,11 @@ struct OfflinePlayerView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(downloadedItem.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(.subheadline, design: .default, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text("Downloaded")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
             }
             Spacer()
@@ -409,7 +409,7 @@ struct OfflinePlayerView: View {
                 Spacer()
                 Button { skipToSegmentEnd() } label: {
                     HStack(spacing: 6) {
-                        Text(label).font(.system(size: 14, weight: .semibold))
+                        Text(label).font(.system(.footnote, design: .default, weight: .semibold))
                         Image(systemName: "forward.fill").font(.system(size: 12))
                     }
                     .foregroundStyle(.white)
@@ -448,7 +448,7 @@ struct OfflinePlayerView: View {
             scrubber
             HStack {
                 Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks))
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
                 Spacer()
                 HStack(spacing: 28) {
@@ -469,7 +469,7 @@ struct OfflinePlayerView: View {
                 }
                 Spacer()
                 Text(remainingLabel)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
             }
         }
@@ -647,7 +647,7 @@ struct OfflinePlayerView: View {
                     Capsule().fill(.white).frame(width: 6, height: 90 * volume)
                 }
                 Text("\(Int(volume * 100))%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(.caption2, design: .monospaced, weight: .semibold))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
                     .animation(.default, value: volume)

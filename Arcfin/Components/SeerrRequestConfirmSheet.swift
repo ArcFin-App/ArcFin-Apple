@@ -62,6 +62,11 @@ struct SeerrRequestConfirmSheet: View {
     }
 
     var body: some View {
+        // Wrapped in a NavigationStack so Cancel can live in the toolbar's leading edge
+        // (sheets.md's platform convention) instead of only as a link below the primary
+        // CTA. tvOS keeps the bottom link — its remote-navigation convention doesn't use a
+        // leading-corner Cancel button the same way, and Menu already serves that role.
+        NavigationStack {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 header
@@ -110,7 +115,7 @@ struct SeerrRequestConfirmSheet: View {
 
                 if let submitError {
                     Text(submitError)
-                        .font(.system(size: 12))
+                        .font(.system(.caption))
                         .foregroundStyle(Color(hex: "EF4444"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, DT.Spacing.pagePad)
@@ -118,7 +123,9 @@ struct SeerrRequestConfirmSheet: View {
                 }
 
                 submitButton
+                #if os(tvOS)
                 cancelButton
+                #endif
             }
         }
         .task {
@@ -134,6 +141,18 @@ struct SeerrRequestConfirmSheet: View {
                 quota = await seerrRepo.seasonQuota()
             }
             isLoadingDetail = false
+        }
+        .navigationTitle("")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if !os(tvOS)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { requestingItem = nil }
+            }
+        }
+        #endif
         }
     }
 
@@ -153,21 +172,21 @@ struct SeerrRequestConfirmSheet: View {
             }
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.title)
-                    .font(.system(size: 17, weight: .heavy))
+                    .font(.system(.body, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(2)
                 HStack(spacing: 6) {
                     Text(item.mediaType == .tv ? "Series" : "Movie")
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                     if let year = item.year {
                         Text("· \(year)")
-                            .font(.system(size: 11))
+                            .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let runtime = detail?.runtimeMinutes {
                         Text("· \(runtime) min")
-                            .font(.system(size: 11))
+                            .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
@@ -177,13 +196,13 @@ struct SeerrRequestConfirmSheet: View {
                             .font(.system(size: 10))
                             .foregroundStyle(Color(hex: "f59e0b"))
                         Text(String(format: "%.1f", rating))
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(.caption, design: .default, weight: .semibold))
                             .foregroundStyle(DT.Color.textPrimary)
                     }
                 }
                 if let tagline = detail?.tagline {
                     Text(tagline)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(.caption2, design: .default, weight: .medium))
                         .italic()
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(2)
@@ -201,7 +220,7 @@ struct SeerrRequestConfirmSheet: View {
             HStack(spacing: 6) {
                 ForEach(genres, id: \.self) { genre in
                     Text(genre)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(.caption2, design: .default, weight: .medium))
                         .foregroundStyle(DT.Color.textSecondary)
                         .padding(.horizontal, 10).padding(.vertical, 4)
                         .background(Color.white.opacity(0.06))
@@ -227,7 +246,7 @@ struct SeerrRequestConfirmSheet: View {
                         .frame(width: 48, height: 48)
                         .clipShape(Circle())
                         Text(member.name)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(.caption2, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textPrimary)
                             .lineLimit(1)
                     }
@@ -245,7 +264,7 @@ struct SeerrRequestConfirmSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Seasons")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Spacer()
                 if partialRequestsEnabled, !unrequested.isEmpty {
@@ -253,7 +272,7 @@ struct SeerrRequestConfirmSheet: View {
                         selectedSeasons = SeerrSeasonSelection.toggleAll(selectedSeasons, unrequested: unrequested, quota: quota)
                     }
                     .disabled(!canToggleAll)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(.caption, design: .default, weight: .medium))
                     .foregroundStyle(canToggleAll ? DT.Color.accent : DT.Color.textSecondary)
                 }
             }
@@ -269,7 +288,7 @@ struct SeerrRequestConfirmSheet: View {
 
             if !partialRequestsEnabled {
                 Text("This server only requests whole series at a time.")
-                    .font(.system(size: 11))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(.horizontal, DT.Spacing.pagePad)
             }
@@ -308,16 +327,16 @@ struct SeerrRequestConfirmSheet: View {
                 seasonStatusCircle(row: row, chosen: chosen)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(row.label)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(.footnote, design: .default, weight: .medium))
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("\(row.episodeCount) episode\(row.episodeCount == 1 ? "" : "s")")
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
                 if row.locked, let badge = row.badge {
                     Text(seasonBadgeLabel(badge))
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(Color(hex: seasonBadgeColorHex(badge)))
                 }
             }
@@ -396,7 +415,7 @@ struct SeerrRequestConfirmSheet: View {
         }()
         let isWarning = overLimit || overQuota || remaining <= 0
         return Text(text)
-            .font(.system(size: 11, weight: .medium))
+            .font(.system(.caption2, design: .default, weight: .medium))
             .foregroundStyle(isWarning ? Color(hex: "EF4444") : DT.Color.textSecondary)
             .padding(.horizontal, DT.Spacing.pagePad)
             .contentTransition(.numericText())
@@ -405,7 +424,7 @@ struct SeerrRequestConfirmSheet: View {
 
     private var autoApproveBanner: some View {
         Text("This request will be approved automatically.")
-            .font(.system(size: 11, weight: .medium))
+            .font(.system(.caption2, design: .default, weight: .medium))
             .foregroundStyle(DT.Color.accent)
             .padding(.horizontal, DT.Spacing.pagePad)
     }
@@ -433,7 +452,7 @@ struct SeerrRequestConfirmSheet: View {
                 if isSubmitting { ProgressView().tint(.white) }
                 Text(requestLabel)
             }
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(.subheadline, design: .default, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -449,10 +468,11 @@ struct SeerrRequestConfirmSheet: View {
         .padding(.horizontal, DT.Spacing.pagePad)
     }
 
+    #if os(tvOS)
     private var cancelButton: some View {
         Button { requestingItem = nil } label: {
             Text("Cancel")
-                .font(.system(size: 13))
+                .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -461,4 +481,5 @@ struct SeerrRequestConfirmSheet: View {
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.lg)
     }
+    #endif
 }

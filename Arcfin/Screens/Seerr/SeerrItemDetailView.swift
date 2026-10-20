@@ -47,18 +47,18 @@ struct SeerrItemDetailView: View {
                 VStack(alignment: .leading, spacing: DT.Spacing.md) {
                     HStack(spacing: 8) {
                         Text(item.mediaType == .tv ? "Series" : "Movie")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(.caption2, design: .default, weight: .semibold))
                             .foregroundStyle(DT.Color.textSecondary)
                         if let year = item.year {
                             Text("·").foregroundStyle(.white.opacity(0.2))
                             Text(year)
-                                .font(.system(size: 11))
+                                .font(.system(.caption2))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                         if let runtime = detail?.runtimeMinutes {
                             Text("·").foregroundStyle(.white.opacity(0.2))
                             Text("\(runtime) min")
-                                .font(.system(size: 11))
+                                .font(.system(.caption2))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                         if let rating = detail?.voteAverage, rating > 0 {
@@ -67,14 +67,14 @@ struct SeerrItemDetailView: View {
                                 Image(systemName: "star.fill").font(.system(size: 9))
                                 Text(String(format: "%.1f", rating))
                             }
-                            .font(.system(size: 11))
+                            .font(.system(.caption2))
                             .foregroundStyle(Color(hex: "f59e0b"))
                         }
                     }
 
                     if let genres = detail?.genres, !genres.isEmpty {
                         Text(genres.joined(separator: " · "))
-                            .font(.system(size: 12))
+                            .font(.system(.caption))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
 
@@ -90,14 +90,14 @@ struct SeerrItemDetailView: View {
 
                     if let tagline = detail?.tagline, !tagline.isEmpty {
                         Text(tagline)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(.caption, design: .default, weight: .medium))
                             .italic()
                             .foregroundStyle(DT.Color.accent)
                     }
 
                     if let overview = detail?.overview, !overview.isEmpty {
                         Text(overview)
-                            .font(.system(size: 13))
+                            .font(.system(.footnote))
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
                     }
@@ -149,7 +149,7 @@ struct SeerrItemDetailView: View {
                             .symbolEffect(.bounce, value: requestBounceTrigger)
                         Text("Request")
                     }
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.backgroundPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
@@ -189,18 +189,18 @@ struct SeerrItemDetailView: View {
     private func seasonsRow(_ seasons: [SeerrSeasonInfo]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Seasons")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(seasons) { season in
                         VStack(spacing: 2) {
                             Text(season.label)
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
                             if let count = season.episodeCount {
                                 Text("\(count) episodes")
-                                    .font(.system(size: 9))
+                                    .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
                         }
@@ -216,7 +216,7 @@ struct SeerrItemDetailView: View {
     private func castRow(_ cast: [SeerrCastMember]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Cast")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -232,12 +232,12 @@ struct SeerrItemDetailView: View {
                             .clipShape(Circle())
 
                             Text(member.name)
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
                                 .lineLimit(1)
                             if let character = member.character {
                                 Text(character)
-                                    .font(.system(size: 9))
+                                    .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.textSecondary)
                                     .lineLimit(1)
                             }
@@ -264,7 +264,7 @@ struct SeerrItemDetailView: View {
             }
             LinearGradient(colors: [.black.opacity(0.85), .clear], startPoint: .bottom, endPoint: .center)
             Text(item.title)
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(.title2, design: .default, weight: .bold))
                 .foregroundStyle(.white)
                 .padding(DT.Spacing.pagePad)
                 .shadow(color: .black.opacity(0.6), radius: 6)
@@ -275,11 +275,11 @@ struct SeerrItemDetailView: View {
     private func availabilityRow(label: String, status: (label: String, colorHex: String)) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
             Spacer()
             Text(status.label)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(.caption2, design: .default, weight: .bold))
                 .foregroundStyle(Color(hex: status.colorHex))
                 .padding(.horizontal, 10).padding(.vertical, 4)
                 .background(Color(hex: status.colorHex).opacity(0.15))

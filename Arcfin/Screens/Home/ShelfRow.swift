@@ -18,7 +18,7 @@ struct ShelfRow<Content: View>: View {
 
                 if let badge {
                     Text(badge)
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(.caption2, design: .default, weight: .bold))
                         .tracking(0.5)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 7)
@@ -42,7 +42,7 @@ struct ShelfRow<Content: View>: View {
                     .focusEffectDisabled()
 #else
                     Button("See All", action: onSeeAll)
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)

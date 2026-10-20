@@ -204,7 +204,7 @@ struct UsersView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(.caption, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
     }
@@ -237,18 +237,18 @@ struct ProfileRowContent: View {
                     .frame(width: 48, height: 48)
                     .shadow(color: isActive ? DT.Color.accent.opacity(0.35) : .clear, radius: 8)
                 Text(initials)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(.body, design: .rounded, weight: .bold))
                     .foregroundStyle(.white)
             }
 
             // Info
             VStack(alignment: .leading, spacing: 3) {
                 Text(profile.displayName)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(.callout, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
 
                 Text(profile.baseURL.host ?? profile.baseURL.absoluteString)
-                    .font(.system(size: 12))
+                    .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
 
@@ -257,7 +257,7 @@ struct ProfileRowContent: View {
                         .font(.system(size: 10))
                         .foregroundStyle(hasPIN ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                     Text(hasPIN ? "PIN enabled" : "No PIN")
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(hasPIN ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                 }
             }
@@ -350,7 +350,7 @@ struct ProfileDetailView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(.caption, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
     }

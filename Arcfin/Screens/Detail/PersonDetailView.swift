@@ -66,7 +66,7 @@ struct PersonDetailView: View {
                 } else {
                     if let overview = detail?.overview, !overview.isEmpty {
                         Text(overview)
-                            .font(.system(size: 13))
+                            .font(.system(.footnote, design: .default))
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -155,13 +155,13 @@ struct PersonDetailView: View {
             .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
 
             Text(person.name)
-                .font(.system(size: 20, weight: .heavy))
+                .font(.system(.title3, design: .default, weight: .heavy))
                 .foregroundStyle(DT.Color.textPrimary)
                 .multilineTextAlignment(.center)
 
             if let role = person.role, !role.isEmpty {
                 Text(role)
-                    .font(.system(size: 13))
+                    .font(.system(.footnote, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
@@ -178,7 +178,7 @@ struct PersonDetailView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(.footnote, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -211,12 +211,12 @@ struct PersonDetailView: View {
                         .padding(6)
                 }
                 Text(credit.title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(2)
                 if let role = credit.role, !role.isEmpty {
                     Text(role)
-                        .font(.system(size: 10))
+                        .font(.system(.caption2, design: .default))
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
