@@ -2,6 +2,7 @@
 
 import SwiftUI
 import JellyfinAPI
+import AuthCore
 
 /// Watched and Favorite toggles for a poster's long-press menu. The shelves are driven by
 /// MediaRepository, so a successful change forces a reload to keep their badges and rows
