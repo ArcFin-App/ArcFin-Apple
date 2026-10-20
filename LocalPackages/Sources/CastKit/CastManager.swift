@@ -26,6 +26,9 @@ public final class CastManager: NSObject {
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
     public private(set) var volume: Float = 1
+    /// Title of whatever this app last loaded onto the receiver, for UI that outlives the
+    /// player screen (the mini controller). Cleared when the session ends.
+    public private(set) var nowPlayingTitle: String?
     /// Bumps each time the receiver reports the loaded item played to its end — observers
     /// use the change as an event (e.g. to cast the next episode); the value itself is
     /// meaningless.
@@ -83,6 +86,7 @@ public final class CastManager: NSObject {
     ) {
         #if canImport(GoogleCast)
         guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
+        nowPlayingTitle = title
 
         let metadata = GCKMediaMetadata(metadataType: .movie)
         metadata.setString(title, forKey: kGCKMetadataKeyTitle)
@@ -216,6 +220,7 @@ extension CastManager: GCKSessionManagerListener {
             isConnected = false
             isPaused = false
             deviceName = nil
+            nowPlayingTitle = nil
         }
     }
 
