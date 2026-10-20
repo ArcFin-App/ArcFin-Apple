@@ -1298,6 +1298,24 @@ extension PlayerView {
             .buttonStyle(.plain)
             .dynamicTypeSize(...DynamicTypeSize.accessibility1)
 
+            HStack(spacing: 10) {
+                Image(systemName: "speaker.fill")
+                    .font(.system(.footnote))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .accessibilityHidden(true)
+                Slider(
+                    value: Binding(get: { Double(cast.volume) }, set: { cast.setVolume(Float($0)) }),
+                    in: 0...1
+                )
+                .tint(DT.Color.accent)
+                .accessibilityLabel("TV volume")
+                Image(systemName: "speaker.wave.3.fill")
+                    .font(.system(.footnote))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .accessibilityHidden(true)
+            }
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+
             HStack(spacing: 12) {
                 if let audio = playbackInfo?.audioStreams, audio.count > 1 {
                     Menu {
