@@ -269,6 +269,7 @@ struct LibraryView: View {
             .font(DT.Font.cardTitle)
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.2)
+            .accessibilityAddTraits(.isHeader)
     }
 
 }
@@ -602,7 +603,7 @@ struct LocalPlayerView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
             }
             Text(url.deletingPathExtension().lastPathComponent)
                 .font(.system(.subheadline, design: .default, weight: .semibold))
@@ -610,13 +611,13 @@ struct LocalPlayerView: View {
                 .lineLimit(1)
             Spacer()
             #if canImport(UIKit) && !os(tvOS)
-            AirPlayButton().frame(width: 30, height: 30)
+            AirPlayButton().frame(width: 44, height: 44)
             if AVPictureInPictureController.isPictureInPictureSupported() {
                 Button { vlcPipController?.toggle() } label: {
                     Image(systemName: "pip.enter")
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("Picture in Picture")
             }
@@ -624,7 +625,7 @@ struct LocalPlayerView: View {
                 Image(systemName: "rotate.right")
                     .font(.system(.body, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .accessibilityLabel("Rotate")
             #endif
@@ -633,7 +634,7 @@ struct LocalPlayerView: View {
                 Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                     .font(.system(.body, weight: .semibold))
                     .foregroundStyle(isFillScreen ? DT.Color.accent : .white)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .accessibilityLabel(isFillScreen ? "Fit to screen" : "Fill screen")
             #endif
@@ -642,7 +643,7 @@ struct LocalPlayerView: View {
                     Image(systemName: "captions.bubble")
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("Subtitles and audio")
             }
@@ -723,6 +724,12 @@ struct LocalPlayerView: View {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? 10 : -10)
+        }
     }
 
     private var trackSheet: some View {
@@ -1072,6 +1079,7 @@ struct LibraryDetailView: View {
                         .ignoresSafeArea()
                         .contentShape(Rectangle())
                         .onTapGesture { showFilterSheet = false }
+                        .accessibilityHidden(true)
                     VStack(spacing: 0) {
                         HStack {
                             Text("Filter & Sort").font(.system(.subheadline, design: .default, weight: .semibold))
@@ -1149,6 +1157,7 @@ struct LibraryDetailView: View {
 
     @ViewBuilder
     private func quickLookMenu(_ item: MediaItem) -> some View {
+        ItemQuickActions(item: item)
         if statsRepo.isConfigured {
             Button {
                 Task { try? await statsRepo.addToWatchlist(itemId: item.id) }

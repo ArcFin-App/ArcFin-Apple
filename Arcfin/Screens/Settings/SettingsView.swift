@@ -386,6 +386,7 @@ struct SettingsView: View {
             .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
+            .accessibilityAddTraits(.isHeader)
     }
 
     @ViewBuilder
@@ -665,7 +666,7 @@ struct SeerrPluginView: View {
             req.httpBody = body
             req.timeoutInterval = 10
             do {
-                let (_, resp) = try await URLSession.shared.data(for: req)
+                let (_, resp) = try await URLSession.arcfin.data(for: req)
                 if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
                     testResult = "✓ Connected as \(draftAuthMethod.label)"
                     seerrRepo.clearAuthFailure()
@@ -750,7 +751,7 @@ struct StreamystatsPluginView: View {
             // Public health endpoint — no auth needed
             let req = URLRequest(url: url.appendingPathComponent("api/health"))
             do {
-                let (_, resp) = try await URLSession.shared.data(for: req)
+                let (_, resp) = try await URLSession.arcfin.data(for: req)
                 if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
                     testResult = "✓ Server reachable"
                 } else {
