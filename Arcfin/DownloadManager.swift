@@ -357,8 +357,42 @@ final class DownloadManager: NSObject {
 
     // MARK: - Start download
 
-    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?)] = []
+    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?)] = [] {
+        // pendingQueue itself isn't observed (a tuple array), so the UI reads this mirror.
+        didSet { queuedItemIds = pendingQueue.map(\.item.id) }
+    }
     @ObservationIgnored private var isProcessingQueue = false
+
+    /// Items waiting for their turn, in the order they'll run.
+    private(set) var queuedItemIds: [String] = []
+    /// When set, the item currently transferring finishes normally but nothing new starts —
+    /// a true mid-transfer pause isn't possible with the background session's task model.
+    private(set) var isQueuePaused = false
+
+    /// Active transfer first, then the waiting items in queue order.
+    var orderedInProgressIds: [String] {
+        let queued = Set(queuedItemIds)
+        let active = activeItemTitles.keys.filter { !queued.contains($0) }.sorted()
+        return active + queuedItemIds
+    }
+
+    func pauseQueue() { isQueuePaused = true }
+
+    func resumeQueue() {
+        isQueuePaused = false
+        Task { await processQueue() }
+    }
+
+    func moveToFront(itemId: String) {
+        guard let index = pendingQueue.firstIndex(where: { $0.item.id == itemId }), index > 0 else { return }
+        let entry = pendingQueue.remove(at: index)
+        pendingQueue.insert(entry, at: 0)
+    }
+
+    func cancelAllDownloads() {
+        for id in Array(activeItemTitles.keys) { cancelDownload(itemId: id) }
+        isQueuePaused = false
+    }
 
     /// Queues the download — a season's worth of episodes all calling this at once
     /// shouldn't fire a dozen simultaneous video downloads, so only one actually runs at a
@@ -388,7 +422,7 @@ final class DownloadManager: NSObject {
     private func processQueue() async {
         guard !isProcessingQueue else { return }
         isProcessingQueue = true
-        while !pendingQueue.isEmpty {
+        while !pendingQueue.isEmpty, !isQueuePaused {
             let next = pendingQueue.removeFirst()
             guard !isDownloaded(next.item.id) else { continue }
             await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
