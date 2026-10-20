@@ -187,13 +187,13 @@ struct CollectionDetailView: View {
                         .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                     if !items.isEmpty {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         Text("\(items.count) Title\(items.count == 1 ? "" : "s")")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let rating = collection.communityRating {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(size: 9))
                             Text(String(format: "%.1f", rating))

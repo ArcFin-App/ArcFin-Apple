@@ -182,6 +182,7 @@ struct PersonDetailView: View {
             .foregroundStyle(DT.Color.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DT.Spacing.pagePad)
+            .accessibilityAddTraits(.isHeader)
     }
 
     private func creditCard(_ credit: SeerrPersonCredit) -> some View {
