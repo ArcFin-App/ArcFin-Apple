@@ -2,6 +2,7 @@
 
 import SwiftUI
 import JellyfinAPI
+import SeerrAPI
 import AuthCore
 
 struct PersonDetailView: View {
@@ -9,12 +10,30 @@ struct PersonDetailView: View {
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(AuthManager.self) private var authManager
+    @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var items: [MediaItem] = []
     @State private var isLoading = true
     @State private var selectedItem: MediaItem?
+    @State private var detail: MediaPersonDetail?
+    @State private var seerrCredits: [SeerrPersonCredit] = []
+    @State private var requestingCredit: SeerrItem?
 
     private let client = JellyfinMediaClient()
+
+    /// Titles Seerr knows this person appears in that aren't already in the Jellyfin library,
+    /// already available/processing there, or already requested — tmdbId-matched throughout
+    /// (see SeerrRepository.matchingRequest), never by title string.
+    private var missingCredits: [SeerrPersonCredit] {
+        let libraryTmdbIds = Set(items.compactMap(\.tmdbId))
+        return seerrCredits.filter { credit in
+            !libraryTmdbIds.contains(credit.id)
+                && credit.mediaStatus != .available
+                && credit.mediaStatus != .processing
+                && credit.mediaStatus != .partiallyAvailable
+                && seerrRepo.matchingRequest(for: credit.asSeerrItem) == nil
+        }
+    }
 
     private var credential: ServerCredential? { authManager.state.credential }
 
@@ -41,31 +60,61 @@ struct PersonDetailView: View {
                     ProgressView()
                         .tint(DT.Color.accent)
                         .padding(.top, 40)
-                } else if !items.isEmpty {
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(items) { item in
-                            Button { selectedItem = item } label: {
-                                PosterCard(
-                                    title: item.name,
-                                    subtitle: item.productionYear.map { String($0) },
-                                    imageURL: mediaRepo.imageURL(for: item)
-                                )
-                            }
+                } else {
+                    if let overview = detail?.overview, !overview.isEmpty {
+                        Text(overview)
+                            .font(.system(size: 13))
+                            .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
+                            .lineSpacing(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, DT.Spacing.pagePad)
+                    }
+
+                    if !items.isEmpty {
+                        sectionHeader("In Your Library")
+                        LazyVGrid(columns: columns, spacing: 16) {
+                            ForEach(items) { item in
+                                Button { selectedItem = item } label: {
+                                    PosterCard(
+                                        title: item.name,
+                                        subtitle: item.productionYear.map { String($0) },
+                                        imageURL: mediaRepo.imageURL(for: item)
+                                    )
+                                }
 #if os(tvOS)
-                            .buttonStyle(TVCardButtonStyle())
-                            .focusEffectDisabled()
+                                .buttonStyle(TVCardButtonStyle())
+                                .focusEffectDisabled()
 #else
-                            .buttonStyle(.plain)
+                                .buttonStyle(.plain)
 #endif
+                            }
+                        }
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                    }
+
+                    if !missingCredits.isEmpty {
+                        sectionHeader("Also Appears In")
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(missingCredits) { credit in
+                                    creditCard(credit)
+                                }
+                            }
+                            .padding(.horizontal, DT.Spacing.pagePad)
                         }
                     }
-                    .padding(.horizontal, DT.Spacing.pagePad)
                 }
             }
             .padding(.bottom, DT.Spacing.md)
         }
         .background(DT.Color.backgroundPrimary)
         .navigationTitle(person.name)
+        .sheet(item: $requestingCredit) { item in
+            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingCredit)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
+        }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -117,11 +166,66 @@ struct PersonDetailView: View {
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
     }
 
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(DT.Color.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DT.Spacing.pagePad)
+    }
+
+    private func creditCard(_ credit: SeerrPersonCredit) -> some View {
+        Button { requestingCredit = credit.asSeerrItem } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                ZStack(alignment: .bottomTrailing) {
+                    Group {
+                        if let url = credit.posterURL {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let img): img.resizable().scaledToFill()
+                                default: DT.Color.backgroundSecondary
+                                }
+                            }
+                        } else {
+                            DT.Color.backgroundSecondary
+                        }
+                    }
+                    .frame(width: 110, height: 165)
+                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(.white, DT.Color.accent)
+                        .background(Circle().fill(.black.opacity(0.3)))
+                        .padding(6)
+                }
+                Text(credit.title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(2)
+                if let role = credit.role, !role.isEmpty {
+                    Text(role)
+                        .font(.system(size: 10))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: 110)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func load() async {
         isLoading = true
         defer { isLoading = false }
         guard let cred = credential, let header = authHeader else { return }
-        items = (try? await client.getPersonItems(credential: cred, authHeader: header, personId: person.id)) ?? []
+        async let fetchedItems = client.getPersonItems(credential: cred, authHeader: header, personId: person.id)
+        async let fetchedDetail = client.getPersonDetail(credential: cred, authHeader: header, personId: person.id)
+        items = (try? await fetchedItems) ?? []
+        detail = try? await fetchedDetail
+        if let tmdbId = detail?.tmdbId, seerrRepo.isConfigured {
+            seerrCredits = await seerrRepo.personCredits(tmdbId: tmdbId) ?? []
+        }
     }
 }
 
@@ -130,5 +234,6 @@ struct PersonDetailView: View {
         PersonDetailView(person: MediaPerson(id: "1", name: "Timothée Chalamet", role: "Paul Atreides"))
             .environment(MediaRepository())
             .environment(AuthManager())
+            .environment(SeerrRepository())
     }
 }

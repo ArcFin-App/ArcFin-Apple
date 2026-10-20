@@ -230,6 +230,28 @@ public actor SeerrHTTPClient {
         return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
     }
 
+    /// A person's full filmography (cast + crew merged, deduplicated by title+mediaType —
+    /// a credit can appear in both, e.g. an actor who also directed). tmdbPersonId comes from
+    /// a Jellyfin Person's own ProviderIds.Tmdb (see JellyfinMediaClient.getPersonDetail) —
+    /// Seerr proxies TMDB directly, so there's no separate Seerr-side person id to resolve.
+    public func personCredits(tmdbPersonId: Int) async throws -> [SeerrPersonCredit] {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/person/\(tmdbPersonId)/combined_credits"))
+        struct Response: Decodable {
+            let cast: [SeerrItemResponse]?
+            let crew: [SeerrItemResponse]?
+        }
+        let decoded = try JSONDecoder().decode(Response.self, from: data)
+        var seen = Set<String>()
+        var credits: [SeerrPersonCredit] = []
+        for row in (decoded.cast ?? []) + (decoded.crew ?? []) {
+            guard let credit = row.toCredit() else { continue }
+            let key = "\(credit.mediaType.rawValue):\(credit.id)"
+            if seen.insert(key).inserted { credits.append(credit) }
+        }
+        return credits
+    }
+
     // MARK: - Watchlist
 
     /// The user's Seerr watchlist. Only carries tmdbId/mediaType, so each entry is
@@ -545,22 +567,33 @@ private struct SeerrItemResponse: Decodable {
     let firstAirDate: String?
     let overview: String?
     let mediaInfo: SeerrMediaInfoResponse?
+    // Only present on a person's combined_credits entries — a plain discover/search/
+    // recommendations row never has these, so they're harmlessly nil everywhere else.
+    let character: String?
+    let job: String?
+
+    private var resolvedMediaType: RequestMediaType? {
+        mediaType.map { $0 == "tv" ? .tv : .movie }
+    }
 
     func toItem(defaultMediaType: RequestMediaType? = nil) -> SeerrItem? {
         guard let displayTitle = title ?? name else { return nil }
-        let type: RequestMediaType
-        if let mediaType {
-            type = mediaType == "tv" ? .tv : .movie
-        } else if let defaultMediaType {
-            type = defaultMediaType
-        } else {
-            type = .movie
-        }
+        let type = resolvedMediaType ?? defaultMediaType ?? .movie
         let year = (releaseDate ?? firstAirDate).flatMap { $0.count >= 4 ? String($0.prefix(4)) : nil }
         let status = mediaInfo.flatMap { SeerrAvailabilityStatus(rawValue: $0.status) }
         return SeerrItem(id: id, title: displayTitle, mediaType: type,
                          posterPath: posterPath, backdropPath: backdropPath,
                          year: year, overview: overview, availabilityStatus: status)
+    }
+
+    /// For a person's combined_credits row — needs the TMDB-assigned mediaType (unlike
+    /// toItem(defaultMediaType:) above, there's no sensible single default across a whole
+    /// filmography) and keeps character/job instead of discarding them.
+    func toCredit() -> SeerrPersonCredit? {
+        guard let displayTitle = title ?? name, let type = resolvedMediaType else { return nil }
+        let status = mediaInfo.flatMap { SeerrAvailabilityStatus(rawValue: $0.status) }
+        return SeerrPersonCredit(id: id, title: displayTitle, mediaType: type, posterPath: posterPath,
+                                 role: character ?? job, mediaStatus: status)
     }
 }
 

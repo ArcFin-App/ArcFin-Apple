@@ -136,6 +136,18 @@ final class SeerrRepository {
                 merged.backdropPath = previous.backdropPath
                 return merged
             }
+            // Only on a refresh, never the first load — otherwise every request already
+            // sitting at approved/available on first launch would fire a notification.
+            if !firstLoad {
+                for item in requests {
+                    guard let previous = known[item.id] else { continue }
+                    if previous.status != .approved, item.status == .approved {
+                        Task { await NotificationManager.notifyRequestApproved(title: item.mediaTitle) }
+                    } else if previous.mediaStatus != .available, item.mediaStatus == .available {
+                        Task { await NotificationManager.notifyRequestAvailable(title: item.mediaTitle) }
+                    }
+                }
+            }
             authFailed = false
         } catch SeerrError.authFailed {
             authFailed = true
@@ -282,6 +294,14 @@ final class SeerrRepository {
     func autoApprovesTVRequests() -> Bool {
         guard let currentUser else { return false }
         return SeerrPermission.hasAny(of: [.manageRequests, .autoApprove, .autoApproveTV], in: currentUser.permissions)
+    }
+
+    /// A person's filmography via Seerr/TMDB — used by PersonDetailView to offer titles that
+    /// aren't in the Jellyfin library yet. nil (not empty) when Seerr isn't configured, so a
+    /// caller can tell "no Seerr" from "fetched, nothing found."
+    func personCredits(tmdbId: Int) async -> [SeerrPersonCredit]? {
+        guard let client else { return nil }
+        return try? await client.personCredits(tmdbPersonId: tmdbId)
     }
 
     func relatedMedia(mediaType: RequestMediaType, mediaId: Int) async -> [SeerrItem] {
