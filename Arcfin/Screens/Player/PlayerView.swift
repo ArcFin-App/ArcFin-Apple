@@ -236,10 +236,10 @@ struct PlayerView: View {
                 networkToastView(networkToast)
             }
 
-            if let currentSubtitleText {
+            if let currentSubtitleText, !CastManager.shared.isConnected {
                 subtitleOverlay(currentSubtitleText)
             }
-            if let currentBitmapCue {
+            if let currentBitmapCue, !CastManager.shared.isConnected {
                 bitmapSubtitleOverlay(currentBitmapCue)
             }
 
@@ -327,6 +327,11 @@ struct PlayerView: View {
             #endif
         }
         .onChange(of: player.status) { _, newStatus in
+            // The receiver is the one playing — any local resume (a load finishing, a seek
+            // completing, an interruption ending) would play the same audio twice.
+            if newStatus == .playing, CastManager.shared.isConnected {
+                Task { await player.pause() }
+            }
             handleStatusChange(newStatus)
             #if !os(tvOS)
             updateNowPlayingInfo()
@@ -938,6 +943,8 @@ struct PlayerView: View {
     /// player pauses rather than playing the same thing twice.
     private func startCasting() {
         guard let credential, let authHeader else { return }
+        currentSubtitleText = nil
+        currentBitmapCue = nil
         Task { await player.pause() }
         let posterURL = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
         let startSeconds = Double(player.positionTicks) / 10_000_000
@@ -1287,6 +1294,11 @@ struct PlayerView: View {
     }
 
     func updateSubtitleText(forTicks ticks: Int64) {
+        guard !CastManager.shared.isConnected else {
+            currentSubtitleText = nil
+            currentBitmapCue = nil
+            return
+        }
         let seconds = Double(ticks) / 10_000_000
         if subtitleCues.isEmpty {
             currentSubtitleText = nil
