@@ -39,3 +39,4 @@ fastlane/test_output
 
 # AI assistant context — local only, not tracked in history
 CLAUDE.md
+HANDOFF.md
