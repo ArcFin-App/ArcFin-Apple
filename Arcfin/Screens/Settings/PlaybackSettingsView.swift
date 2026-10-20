@@ -16,6 +16,7 @@ struct PlaybackSettingsView: View {
     @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
     @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
     @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
+    @AppStorage("rememberPlaybackSpeed") private var rememberPlaybackSpeed = false
     @AppStorage("skipForwardSeconds")  private var skipForwardSeconds  = 10
     @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
 
@@ -125,6 +126,15 @@ struct PlaybackSettingsView: View {
                 }
                 .tvListRow()
                 .syncLocked("subtitleDefault", authManager)
+                Toggle(isOn: $rememberPlaybackSpeed) {
+                    TVRowLabelText(title: "Remember Playback Speed")
+                }
+                .tvListRow()
+                .syncLocked("rememberPlaybackSpeed", authManager)
+            } footer: {
+                Text("Starts new videos at the speed you last picked instead of 1×.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
