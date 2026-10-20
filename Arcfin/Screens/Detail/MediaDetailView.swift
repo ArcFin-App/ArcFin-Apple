@@ -808,7 +808,12 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Cast").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 12) {
+                // Lazy: a plain HStack fired every cast member's AsyncImage request the
+                // instant this section appeared — a large cast (20+ for some titles) could
+                // saturate AsyncImage's shared URLSession all at once and fail the whole
+                // burst together under any network degradation. See ShelfRow.swift for the
+                // same fix applied to Home's shelves.
+                LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(d.cast) { person in
                         Button { selectedPerson = person } label: {
                             CastPersonCard(
@@ -1202,7 +1207,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("More Like This").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(similarItems) { sim in
                         NavigationLink(value: sim) {
                             PosterCard(
@@ -1233,7 +1238,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle(category.title).padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(category.items) { rec in
                         NavigationLink(value: rec) {
                             PosterCard(
@@ -1264,7 +1269,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Recommended").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(seerrRelatedItems) { sim in
                         Button { requestingSeerrItem = sim } label: {
                             PosterCard(
