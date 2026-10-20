@@ -555,6 +555,12 @@ extension PlayerView {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: elapsedTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+        }
     }
 
     private var trickplayPreview: some View {
@@ -1574,6 +1580,7 @@ extension PlayerView {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { dismiss() }
+            .accessibilityHidden(true)
             .transition(.opacity)
     }
 

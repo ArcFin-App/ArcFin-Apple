@@ -526,6 +526,12 @@ struct OfflinePlayerView: View {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+        }
     }
 
     private var trickplayPreview: some View {
