@@ -81,6 +81,9 @@ struct PlayerView: View {
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
+    /// Seconds subtitles are shifted later (+) or earlier (-) — for sources whose subtitle
+    /// timing doesn't match the cut being played. Not persisted: it's per-viewing.
+    @State var subtitleDelay: Double = 0
     @State var currentSubtitleText: String?
     /// Only ever non-nil on AetherEnginePlayer — a native embedded PGS/DVB bitmap track has
     /// no Jellyfin delivery URL for SubtitleLoader to fetch, so this is genuinely new
@@ -325,6 +328,7 @@ struct PlayerView: View {
             macVolumeHUDTask?.cancel()
             #endif
         }
+        .onChange(of: subtitleDelay) { _, _ in updateSubtitleText(forTicks: player.positionTicks) }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
@@ -415,6 +419,14 @@ struct PlayerView: View {
         }
         #endif
         #if canImport(GoogleCast)
+        .onChange(of: CastManager.shared.playbackFinishedCount) { _, _ in
+            // Local playback is paused for the whole cast, so the Up Next countdown (which
+            // follows the local position) never fires — the receiver's end-of-item is the
+            // signal instead.
+            guard CastManager.shared.isConnected, nextEpisode != nil,
+                  UserDefaults.standard.bool(forKey: "autoPlayNext") else { return }
+            playNextEpisode(isAutomatic: true)
+        }
         .onChange(of: CastManager.shared.isConnected) { wasConnected, isConnected in
             if isConnected {
                 startCasting()
@@ -611,7 +623,7 @@ struct PlayerView: View {
     private func fetchAndApplyNowPlayingArtwork() async {
         guard nowPlayingArtwork == nil,
               let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600),
-              let (data, _) = try? await URLSession.shared.data(from: url),
+              let (data, _) = try? await URLSession.arcfin.data(from: url),
               let image = PlatformImage(data: data)
         else { return }
         Self.artworkCache[item.id] = image
@@ -862,6 +874,9 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             }
             await player.play()
+            // A cast that was already running when this screen opened (autoplay moved on to
+            // the next episode) never produces an isConnected change to trigger this.
+            if CastManager.shared.isConnected { startCasting() }
             #if !os(tvOS)
             // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's
             // custom PiPCoordinator needs this explicit activation step.
@@ -1390,7 +1405,7 @@ struct PlayerView: View {
             currentBitmapCue = nil
             return
         }
-        let seconds = Double(ticks) / 10_000_000
+        let seconds = Double(ticks) / 10_000_000 - subtitleDelay
         if subtitleCues.isEmpty {
             currentSubtitleText = nil
         } else {

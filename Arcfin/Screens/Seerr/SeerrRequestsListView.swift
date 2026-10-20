@@ -13,10 +13,21 @@ struct SeerrRequestsListView: View {
     let title: String
 
     @State private var selectedRequest: SeerrRequestItem? = nil
+    @State private var statusFilter: RequestStatus? = nil
 
     private var filteredRequests: [SeerrRequestItem] {
-        guard let filter else { return seerrRepo.requests }
-        return seerrRepo.requests.filter { $0.mediaType == filter }
+        seerrRepo.requests.filter { request in
+            (filter == nil || request.mediaType == filter) && (statusFilter == nil || request.status == statusFilter)
+        }
+    }
+
+    private var statusFilterLabel: String {
+        switch statusFilter {
+        case nil: "All"
+        case .pending: "Pending"
+        case .approved: "Approved"
+        case .declined: "Declined"
+        }
     }
 
     var body: some View {
@@ -26,9 +37,11 @@ struct SeerrRequestsListView: View {
                     loadingList
                 } else if filteredRequests.isEmpty {
                     ContentUnavailableView(
-                        "No Requests",
+                        statusFilter == nil ? "No Requests" : "No \(statusFilterLabel) Requests",
                         systemImage: "clock",
-                        description: Text("Your media requests will appear here.")
+                        description: Text(statusFilter == nil
+                                          ? "Your media requests will appear here."
+                                          : "Try a different status filter.")
                     )
                     .frame(height: 220)
                 } else {
@@ -40,6 +53,24 @@ struct SeerrRequestsListView: View {
         .background(DT.Color.backgroundPrimary)
         .navigationTitle(title)
         .arcfinNavTitleLarge(title)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("Status", selection: $statusFilter) {
+                        Text("All").tag(RequestStatus?.none)
+                        Text("Pending").tag(RequestStatus?.some(.pending))
+                        Text("Approved").tag(RequestStatus?.some(.approved))
+                        Text("Declined").tag(RequestStatus?.some(.declined))
+                    }
+                } label: {
+                    Image(systemName: statusFilter == nil
+                          ? "line.3.horizontal.decrease.circle"
+                          : "line.3.horizontal.decrease.circle.fill")
+                }
+                .accessibilityLabel("Filter requests")
+                .accessibilityValue(statusFilterLabel)
+            }
+        }
         .navigationDestination(item: $selectedRequest) { req in
             SeerrRequestDetailView(request: req)
         }
