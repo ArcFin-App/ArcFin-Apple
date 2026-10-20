@@ -528,12 +528,6 @@ struct MediaDetailView: View {
                     .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
-            if let endsAt = endTime {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
-                Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
-                    .font(.system(.caption, design: .default))
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
             if let rating = item.communityRating {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
@@ -668,7 +662,14 @@ struct MediaDetailView: View {
                                     .font(.system(.caption2, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
+                            if let endsAt = endTime {
+                                Text("· Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .opacity(0.85)
+                            }
                         }
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         if let resumeTimeLabel {
                             Text(resumeTimeLabel)
                                 .font(.system(.caption2, design: .default, weight: .medium))
