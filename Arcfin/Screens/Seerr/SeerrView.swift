@@ -13,7 +13,6 @@ struct SeerrView: View {
     @State private var searchText = ""
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
-    @FocusState private var searchFieldFocused: Bool
     @State private var requestingItem: SeerrItem? = nil
 
     private var genresForType: [SeerrGenre] {
@@ -40,6 +39,7 @@ struct SeerrView: View {
             .background(DT.Color.backgroundPrimary)
             .navigationTitle("Discover")
             .arcfinNavTitleLarge("Discover")
+            .searchable(text: $searchText, prompt: "Movies, series, people…")
             .navigationDestination(for: SeerrItem.self) { item in
                 SeerrItemDetailView(item: item)
             }
@@ -125,43 +125,6 @@ struct SeerrView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search bar — a single close affordance outside the field (clears text AND
-            // dismisses the keyboard/search state) instead of a separate inline clear-text x
-            // inside it plus a second button outside.
-            HStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 13))
-                        .foregroundStyle(DT.Color.textSecondary)
-                    TextField("Search movies, series, people…", text: $searchText)
-                        .font(DT.Font.caption)
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .autocorrectionDisabled()
-                        .focused($searchFieldFocused)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(.white.opacity(0.06))
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.1), lineWidth: 1))
-
-                if searchFieldFocused || !searchText.isEmpty {
-                    Button {
-                        searchText = ""
-                        searchFieldFocused = false
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    .buttonStyle(.plain)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                }
-            }
-            .animation(DT.Animation.fast, value: searchFieldFocused)
-            .padding(.bottom, DT.Spacing.sm)
-
             if searchText.isEmpty {
                 // Movies / TV Shows
                 Picker("Media Type", selection: $mediaType) {
