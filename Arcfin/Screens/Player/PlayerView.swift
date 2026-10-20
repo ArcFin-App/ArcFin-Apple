@@ -59,6 +59,7 @@ struct PlayerView: View {
     @State var sleepTimerTask: Task<Void, Never>?
     @State var sleepTimerEndsAt: Date?
     @State var sleepAtEndOfItem = false
+    @State var tracksAtCastStart: (audio: Int?, subtitle: Int?)?
     @State var castSubtitleTrackIDs: Set<Int> = []
     @State var castScrubTicks: Double = 0
     @State var showTrackMenu = false
@@ -946,6 +947,7 @@ struct PlayerView: View {
     /// A Cast session took over — the receiver plays the stream itself, so the local
     /// player pauses rather than playing the same thing twice.
     func startCasting() {
+        tracksAtCastStart = (selectedAudioIndex, selectedSubtitleIndex)
         currentSubtitleText = nil
         currentBitmapCue = nil
         Task { await player.pause() }
@@ -1013,6 +1015,16 @@ struct PlayerView: View {
     /// continuously-updated `lastKnownPositionSeconds` instead — see its doc comment.
     func resumeLocalPlaybackAfterCast() {
         castLoadTask?.cancel()
+        defer { tracksAtCastStart = nil }
+        // Tracks picked on the cast dashboard change selectedAudioIndex/selectedSubtitleIndex,
+        // but the local player is still on the old stream — reload so it matches what the
+        // viewer was just watching.
+        if let before = tracksAtCastStart,
+           before.audio != selectedAudioIndex || before.subtitle != selectedSubtitleIndex {
+            let seconds = CastManager.shared.lastKnownPositionSeconds ?? Double(player.positionTicks) / 10_000_000
+            reload(errorContext: "resume after casting", resumeTicks: Int64(seconds * 10_000_000))
+            return
+        }
         if let seconds = CastManager.shared.lastKnownPositionSeconds {
             Task {
                 await player.seek(to: Int64(seconds * 10_000_000))
@@ -1393,9 +1405,9 @@ struct PlayerView: View {
         }
     }
 
-    private func reload(errorContext: String) {
+    private func reload(errorContext: String, resumeTicks overrideTicks: Int64? = nil) {
         guard let credential, let authHeader else { return }
-        let resumeTicks = player.positionTicks
+        let resumeTicks = overrideTicks ?? player.positionTicks
         Task {
             do {
                 let info = try await client.getPlaybackInfo(
