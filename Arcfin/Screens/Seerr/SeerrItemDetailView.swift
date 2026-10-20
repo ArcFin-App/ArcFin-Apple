@@ -20,6 +20,16 @@ struct SeerrItemDetailView: View {
         seerrRepo.matchingRequest(for: item) != nil
     }
 
+    /// A blunt title match above is all the detail screen's basic SeerrItem gives us for a
+    /// movie, but a series' full detail (once loaded) carries real per-season status — this
+    /// used to hide the Request button entirely the moment ANY request existed for the title,
+    /// even if only one of several seasons had been asked for. Falls back to the title match
+    /// before the detail fetch resolves, same as before this existed.
+    private var hasRequestableContent: Bool {
+        guard item.mediaType == .tv, let rows = detail?.seasonRows else { return !alreadyRequested }
+        return !SeerrSeasonSelection.unrequested(rows).isEmpty
+    }
+
     private var isAvailable: Bool { item.availabilityStatus == .available }
 
     var body: some View {
@@ -128,7 +138,7 @@ struct SeerrItemDetailView: View {
 
     private var actionButtons: some View {
         HStack(spacing: 10) {
-            if !isAvailable && !alreadyRequested {
+            if !isAvailable && hasRequestableContent {
                 Button {
                     requestingItem = item
                 } label: {

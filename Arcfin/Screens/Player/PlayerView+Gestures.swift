@@ -5,9 +5,6 @@ import SwiftUI
 import UIKit
 #elseif os(macOS)
 import AppKit
-import AVFoundation
-import MediaEngine
-import SwiftVLC
 #endif
 
 #if canImport(UIKit) && !os(tvOS)
@@ -135,17 +132,12 @@ extension PlayerView {
         scheduleAutoHide()
     }
 
-    /// Sets output volume directly through the active engine rather than through a hidden
-    /// system slider — macOS has no per-app "hidden MPVolumeView" trick to reach for (unlike
-    /// iOS, where that's the only public way to move the system volume), and both engines
-    /// already expose a plain settable volume of their own.
+    /// Sets output volume directly through the active engine (setEngineVolume, PlayerView.swift)
+    /// rather than through a hidden system slider — macOS has no per-app "hidden MPVolumeView"
+    /// trick to reach for the way iOS does.
     func adjustMacVolume(by delta: Double) {
         macVolume = min(max(macVolume + delta, 0), 1)
-        if let avPlayer = player as? AVFoundationPlayer {
-            avPlayer.player.volume = Float(macVolume)
-        } else if let vlcEngine = player as? VLCEnginePlayer {
-            try? vlcEngine.vlcPlayer.setAudioVolume(Volume(Float(macVolume)))
-        }
+        setEngineVolume(Float(macVolume))
         macVolumeHUD = macVolume
         macVolumeHUDTask?.cancel()
         macVolumeHUDTask = Task {

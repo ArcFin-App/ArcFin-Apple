@@ -25,6 +25,12 @@ final class SeerrRepository {
     var isLoadingDiscover = false
     var isLoadingRequests = false
     var authFailed = false
+    /// The signed-in Seerr user's id/permission bitmask and the server's request settings —
+    /// both fetched once per session and cached, same lifetime as `movieGenres`/`tvGenres`
+    /// above. Used by the season picker (quota, auto-approve banner, whether specials/partial
+    /// requests are even offered).
+    @ObservationIgnored private(set) var currentUser: SeerrCurrentUser?
+    @ObservationIgnored private(set) var publicSettings: SeerrPublicSettings?
 
     // Not @ObservationIgnored, unlike the bookkeeping vars below — isConfigured reads this,
     // and every tab-visibility check (HomeView's Discover/Watchlist tabs) reads isConfigured.
@@ -115,7 +121,21 @@ final class SeerrRepository {
         if firstLoad { isLoadingRequests = true }
         do {
             let fetched = try await client.getRequests()
-            requests = fetched
+            // A per-item TMDB detail fetch can fail transiently, leaving that row titled
+            // "Unknown" — keep the title/artwork we already had for it rather than letting a
+            // flaky refetch blank out a row that was fine a moment ago. Status is still taken
+            // from the fresh response.
+            let known = Dictionary(requests.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            requests = fetched.map { item in
+                guard item.mediaTitle == "Unknown", let previous = known[item.id], previous.mediaTitle != "Unknown" else {
+                    return item
+                }
+                var merged = item
+                merged.mediaTitle = previous.mediaTitle
+                merged.posterPath = previous.posterPath
+                merged.backdropPath = previous.backdropPath
+                return merged
+            }
             authFailed = false
         } catch SeerrError.authFailed {
             authFailed = true
@@ -203,9 +223,65 @@ final class SeerrRepository {
         if let c = client { Task { await c.clearAuthFailure() } }
     }
 
+    /// Call whenever the active Jellyfin profile changes — mirrors configureStats()'s own
+    /// profile-switch hook in ContentView (a profile switch keeps the same Seerr URL/username/
+    /// password today, so configure() short-circuits as "nothing changed" and never gets a
+    /// chance to retry). An auth failure here sets a 1-hour cooldown (see SeerrHTTPClient) that
+    /// previously only ever cleared by the user blanking out and retyping the Seerr fields in
+    /// Settings — if the failure was actually transient (e.g. the Jellyfin server was briefly
+    /// unreachable during the switch, same shape as the cold-launch network race elsewhere in
+    /// this app), a profile switch is a reasonable moment to give it a fresh try instead of
+    /// staying latched out for the rest of the cooldown.
+    func retryAfterProfileSwitch() async {
+        guard let client else { return }
+        await client.clearAuthFailure()
+        authFailed = false
+        await loadDiscover()
+        await loadRequests()
+    }
+
     func mediaDetail(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrMediaDetail? {
         guard let client else { return nil }
-        return try? await client.fullDetail(mediaType: mediaType, tmdbId: tmdbId)
+        let settings = await ensurePublicSettings()
+        return try? await client.fullDetail(mediaType: mediaType, tmdbId: tmdbId,
+                                             includeSpecials: settings?.enableSpecialEpisodes ?? false)
+    }
+
+    /// Fetched once per session and cached — same lazy pattern as `loadGenres()` above.
+    func ensurePublicSettings() async -> SeerrPublicSettings? {
+        if let publicSettings { return publicSettings }
+        guard let client else { return nil }
+        let fetched = try? await client.publicSettings()
+        publicSettings = fetched
+        return fetched
+    }
+
+    /// Fetched once per session and cached. nil if the client can't reach `/auth/me` (not
+    /// signed in yet, or the server's down) — callers treat that as "quota/auto-approve
+    /// unknown" rather than failing the whole request sheet over it.
+    func ensureCurrentUser() async -> SeerrCurrentUser? {
+        if let currentUser { return currentUser }
+        guard let client else { return nil }
+        let fetched = try? await client.currentUser()
+        currentUser = fetched
+        return fetched
+    }
+
+    /// Always fetched fresh (not cached like the two above) — a quota is spent by other
+    /// requests during the session, so a stale value would wrongly let a request through or
+    /// wrongly block one.
+    func seasonQuota() async -> SeerrSeasonQuota? {
+        guard let client, let user = await ensureCurrentUser() else { return nil }
+        return try? await client.seasonQuota(userId: user.id)
+    }
+
+    /// Whether a request for `item` would be approved automatically, going by the signed-in
+    /// user's own permissions — Seerr auto-approves for MANAGE_REQUESTS/AUTO_APPROVE/
+    /// AUTO_APPROVE_TV (movies substitute AUTO_APPROVE_MOVIE, not read here since this app
+    /// doesn't yet request movies through this picker).
+    func autoApprovesTVRequests() -> Bool {
+        guard let currentUser else { return false }
+        return SeerrPermission.hasAny(of: [.manageRequests, .autoApprove, .autoApproveTV], in: currentUser.permissions)
     }
 
     func relatedMedia(mediaType: RequestMediaType, mediaId: Int) async -> [SeerrItem] {
