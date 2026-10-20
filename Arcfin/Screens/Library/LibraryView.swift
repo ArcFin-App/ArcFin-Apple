@@ -923,6 +923,8 @@ struct LibraryDetailView: View {
     @State private var watchedFilter: LibraryWatchedFilter = .all
     @State private var favoritesOnly = false
     @State private var sortOption: LibrarySortOption = .nameAsc
+    @State private var randomPick: MediaItem?
+    @State private var isPickingRandom = false
     /// Set while load() restores the saved sort, so the resulting onChange doesn't fire a
     /// second fetch on top of the initial one.
     @State private var restoringSort = false
@@ -1046,6 +1048,16 @@ struct LibraryDetailView: View {
 #endif
 #if !os(tvOS)
         .toolbar {
+            if !isCollections {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { Task { await pickRandom() } } label: {
+                        Image(systemName: "dice")
+                    }
+                    .disabled(isPickingRandom)
+                    .accessibilityLabel("Surprise me")
+                    .accessibilityHint("Opens a random title from this library using the current filters")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button { showFilterSheet = true } label: {
                     Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
@@ -1114,6 +1126,7 @@ struct LibraryDetailView: View {
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
+        .navigationDestination(item: $randomPick) { MediaDetailView(item: $0) }
         .onChange(of: sortOption) { _, newValue in
             UserDefaults.standard.set(newValue.rawValue, forKey: sortDefaultsKey)
             if restoringSort { restoringSort = false; return }
@@ -1256,6 +1269,28 @@ struct LibraryDetailView: View {
         items.append(contentsOf: fetched?.items ?? [])
         if let total = fetched?.total { totalItems = total }
         isLoadingMore = false
+    }
+
+    /// Honors the active filters, so "Surprise me" on an unwatched-only view picks something
+    /// unwatched.
+    private func pickRandom() async {
+        guard let cred = authManager.state.credential else { return }
+        isPickingRandom = true
+        defer { isPickingRandom = false }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let result = try? await client.getLibraryItems(
+            credential: cred, authHeader: header,
+            libraryId: library.id, startIndex: 0, limit: 1, recursive: true,
+            includeItemTypes: includeTypes,
+            genres: Array(selectedGenres), years: Array(selectedYears),
+            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
+            isFavorite: favoritesOnly ? true : nil,
+            sortBy: "Random", sortOrder: "Ascending"
+        )
+        if let pick = result?.items.first {
+            HapticManager.impact(.light)
+            randomPick = pick
+        }
     }
 
     #if !os(tvOS)
