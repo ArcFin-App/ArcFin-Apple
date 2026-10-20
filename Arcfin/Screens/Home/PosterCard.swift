@@ -102,13 +102,13 @@ struct PosterCard: View {
                 Spacer()
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(.caption, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                     if let subtitle {
                         Text(subtitle)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(.caption2, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -234,7 +234,7 @@ struct RequestCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 RequestStatusPill(status: status)
                 Text(title)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
             }
             .padding(8)
@@ -272,7 +272,7 @@ struct StatusPill: View {
 
     var body: some View {
         Text(label)
-            .font(.system(size: 11, weight: .bold))
+            .font(.system(.caption2, design: .default, weight: .bold))
             .tracking(0.5)
             .textCase(uppercase ? .uppercase : nil)
             .foregroundStyle(color)
