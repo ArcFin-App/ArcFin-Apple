@@ -19,9 +19,24 @@ struct RetryingAsyncImage<I: View, P: View>: View {
 
     @State private var retryCount = 0
 
+    // A retry that re-requests the exact same URL hits URLCache's existing entry for it —
+    // if that entry is itself stale/corrupt (as it reproducibly was here), every "retry"
+    // just re-reads the same bad cached response instead of ever reaching the network
+    // again. Appending a cache-busting query item on retry > 0 forces a genuinely new
+    // cache key, and therefore a real fresh fetch.
+    private func requestURL(_ url: URL) -> URL {
+        guard retryCount > 0,
+              var comps = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else { return url }
+        var items = comps.queryItems ?? []
+        items.append(URLQueryItem(name: "_retry", value: "\(retryCount)"))
+        comps.queryItems = items
+        return comps.url ?? url
+    }
+
     var body: some View {
         if let url {
-            AsyncImage(url: url) { phase in
+            AsyncImage(url: requestURL(url)) { phase in
                 switch phase {
                 case .success(let img):
                     content(img)
