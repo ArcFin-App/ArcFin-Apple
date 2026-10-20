@@ -153,6 +153,7 @@ struct SeerrItemDetailView: View {
                     .background(DT.Color.accent)
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 }
+                .buttonStyle(PressableButtonStyle())
             }
 
             Button {

@@ -625,7 +625,7 @@ struct MediaDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableButtonStyle())
 
             if isResumable {
                 Button {

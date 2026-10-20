@@ -437,7 +437,7 @@ struct SeerrRequestConfirmSheet: View {
                 .shadow(color: DT.Color.accent.opacity(0.35), radius: 16)
                 .opacity(requestDisabled ? 0.5 : 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
         .disabled(requestDisabled)
         .padding(.horizontal, DT.Spacing.pagePad)
     }
