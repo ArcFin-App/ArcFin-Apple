@@ -457,12 +457,10 @@ struct HomeView: View {
 #if os(iOS)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button {} label: {
-                        Image(systemName: "bell")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.white)
-                    }
-
+                    // Was a decorative placeholder (empty action) for a notification center
+                    // this app doesn't have — only local, in-the-moment alerts (download
+                    // complete, Seerr request status) exist, with no server-side feed and
+                    // nothing to show a history of. A bell implying one would be misleading.
                     Button { showSettings = true } label: {
                         avatarView
                             .frame(width: 34, height: 34)
