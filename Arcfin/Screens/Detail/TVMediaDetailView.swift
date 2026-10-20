@@ -17,6 +17,7 @@ struct TVMediaDetailView: View {
     @Environment(StreamystatsRepository.self) private var statsRepo
 
     @State private var detail: MediaItemDetail?
+    @State private var awards: [WikidataAward] = []
     @State private var seasons: [MediaItem] = []
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
@@ -73,6 +74,12 @@ struct TVMediaDetailView: View {
         }
         .background(DT.Color.backgroundPrimary)
         .task { await load() }
+        .task(id: item.tmdbId) {
+            guard let tmdbId = item.tmdbId else { return }
+            awards = await WikidataAwardsClient.shared.awards(
+                tmdbId: tmdbId, mediaType: item.type == .series ? .tv : .movie
+            )
+        }
         .onChange(of: selectedSeason) { _, season in
             guard let season, let seriesId = seasonSeriesId,
                   let cred = credential, let header = authHeader else { return }
@@ -193,7 +200,23 @@ struct TVMediaDetailView: View {
             }
             if detail?.is4K == true { qualityBadge("4K", color: DT.Color.accent) }
             if detail?.isHDR == true { qualityBadge("HDR", color: Color(hex: "F59E0B")) }
+            if !awards.isEmpty {
+                Text("·").foregroundStyle(.white.opacity(0.3))
+                HStack(spacing: 5) {
+                    Image(systemName: "trophy.fill").font(.system(size: 16))
+                    Text(awardsLabel).font(.system(size: 18, weight: .semibold)).lineLimit(1)
+                }
+                .foregroundStyle(Color(hex: "f59e0b"))
+            }
         }
+    }
+
+    /// One entry → that award's own name; a few → joined; many → just the count.
+    private var awardsLabel: String {
+        let names = Array(Set(awards.map(\.name))).sorted()
+        if names.count == 1 { return "Won \(names[0])" }
+        if names.count <= 3 { return "Won \(names.joined(separator: ", "))" }
+        return "Won \(names.count) Awards"
     }
 
     private var threeColumnLayout: some View {
