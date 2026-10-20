@@ -56,7 +56,7 @@ struct SetupGuideSheet: View {
 
             Button { dismiss() } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 36))
+                    .scaledFont(size: 36)
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(DT.Spacing.lg)
             }
