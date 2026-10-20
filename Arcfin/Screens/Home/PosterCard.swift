@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import Telemetry
+import os
 
 struct PosterCard: View {
     var title: String
@@ -167,6 +169,12 @@ struct PosterCard: View {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
+                    case .failure(let error):
+                        let nsError = error as NSError
+                        let _ = Telemetry.logger(category: "PosterCard").error(
+                            "image load failed: title=\(title, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                        placeholderGradient
                     default: placeholderGradient
                     }
                 }
