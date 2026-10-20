@@ -62,6 +62,11 @@ struct SeerrRequestConfirmSheet: View {
     }
 
     var body: some View {
+        // Wrapped in a NavigationStack so Cancel can live in the toolbar's leading edge
+        // (sheets.md's platform convention) instead of only as a link below the primary
+        // CTA. tvOS keeps the bottom link — its remote-navigation convention doesn't use a
+        // leading-corner Cancel button the same way, and Menu already serves that role.
+        NavigationStack {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 header
@@ -118,7 +123,9 @@ struct SeerrRequestConfirmSheet: View {
                 }
 
                 submitButton
+                #if os(tvOS)
                 cancelButton
+                #endif
             }
         }
         .task {
@@ -134,6 +141,18 @@ struct SeerrRequestConfirmSheet: View {
                 quota = await seerrRepo.seasonQuota()
             }
             isLoadingDetail = false
+        }
+        .navigationTitle("")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if !os(tvOS)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { requestingItem = nil }
+            }
+        }
+        #endif
         }
     }
 
@@ -449,6 +468,7 @@ struct SeerrRequestConfirmSheet: View {
         .padding(.horizontal, DT.Spacing.pagePad)
     }
 
+    #if os(tvOS)
     private var cancelButton: some View {
         Button { requestingItem = nil } label: {
             Text("Cancel")
@@ -461,4 +481,5 @@ struct SeerrRequestConfirmSheet: View {
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.lg)
     }
+    #endif
 }
