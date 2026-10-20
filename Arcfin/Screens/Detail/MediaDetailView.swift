@@ -641,7 +641,9 @@ struct MediaDetailView: View {
         let ends = endTime.map { Text("Ends \($0.formatted(date: .omitted, time: .shortened))") }
         let left = resumeTimeLabel.map { Text($0) }
         switch (left, ends) {
-        case let (left?, ends?): return left + Text("  •  ").font(.system(.footnote, weight: .heavy)) + ends
+        case let (left?, ends?):
+            let separator = Text("  •  ").font(.system(.footnote, weight: .heavy))
+            return Text("\(left)\(separator)\(ends)")
         case let (left?, nil): return left
         case let (nil, ends?): return ends
         case (nil, nil): return nil
