@@ -14,5 +14,10 @@
 		<string>fetch</string>
 		<string>processing</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.psmattas.arcfin.sync-settings</string>
+		<string>com.psmattas.arcfin.prefetch-content</string>
+	</array>
 </dict>
 </plist>
