@@ -292,6 +292,19 @@ extension PlayerView {
             Button { showQualityMenu = true } label: {
                 Label("Quality", systemImage: "slider.horizontal.3")
             }
+            Menu {
+                Button("Off") { setSleepTimer(minutes: nil) }
+                ForEach([15, 30, 45, 60], id: \.self) { minutes in
+                    Button("\(minutes) minutes") { setSleepTimer(minutes: minutes) }
+                }
+                if item.type == .episode {
+                    Button("End of episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
+                }
+            } label: {
+                Label(
+                    sleepTimerEndsAt != nil || sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
+                    systemImage: "moon.zzz")
+            }
             Button { showInfoSheet = true } label: {
                 Label("Media Info", systemImage: "info.circle")
             }
