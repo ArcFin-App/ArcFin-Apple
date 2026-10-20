@@ -77,7 +77,7 @@ struct SeerrView: View {
     private var notConfiguredView: some View {
         VStack(spacing: 16) {
             Image(systemName: "clock.fill")
-                .font(.system(size: 48))
+                .scaledFont(size: 48)
                 .foregroundStyle(DT.Color.accent)
             Text("Seerr Not Connected")
                 .font(.system(.title3, design: .default, weight: .bold))
