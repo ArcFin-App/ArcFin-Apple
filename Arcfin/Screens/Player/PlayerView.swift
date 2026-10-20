@@ -56,6 +56,10 @@ struct PlayerView: View {
     // while casting (see castingPlaceholder).
     @State var isCastScrubbing = false
     @State var castLoadTask: Task<Void, Never>?
+    @State var sleepTimerTask: Task<Void, Never>?
+    @State var sleepTimerEndsAt: Date?
+    @State var sleepAtEndOfItem = false
+    @State var tracksAtCastStart: (audio: Int?, subtitle: Int?)?
     @State var castSubtitleTrackIDs: Set<Int> = []
     @State var castScrubTicks: Double = 0
     @State var showTrackMenu = false
@@ -77,6 +81,9 @@ struct PlayerView: View {
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
+    /// Seconds subtitles are shifted later (+) or earlier (-) — for sources whose subtitle
+    /// timing doesn't match the cut being played. Not persisted: it's per-viewing.
+    @State var subtitleDelay: Double = 0
     @State var currentSubtitleText: String?
     /// Only ever non-nil on AetherEnginePlayer — a native embedded PGS/DVB bitmap track has
     /// no Jellyfin delivery URL for SubtitleLoader to fetch, so this is genuinely new
@@ -321,6 +328,7 @@ struct PlayerView: View {
             macVolumeHUDTask?.cancel()
             #endif
         }
+        .onChange(of: subtitleDelay) { _, _ in updateSubtitleText(forTicks: player.positionTicks) }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
@@ -411,6 +419,14 @@ struct PlayerView: View {
         }
         #endif
         #if canImport(GoogleCast)
+        .onChange(of: CastManager.shared.playbackFinishedCount) { _, _ in
+            // Local playback is paused for the whole cast, so the Up Next countdown (which
+            // follows the local position) never fires — the receiver's end-of-item is the
+            // signal instead.
+            guard CastManager.shared.isConnected, nextEpisode != nil,
+                  UserDefaults.standard.bool(forKey: "autoPlayNext") else { return }
+            playNextEpisode(isAutomatic: true)
+        }
         .onChange(of: CastManager.shared.isConnected) { wasConnected, isConnected in
             if isConnected {
                 startCasting()
@@ -607,7 +623,7 @@ struct PlayerView: View {
     private func fetchAndApplyNowPlayingArtwork() async {
         guard nowPlayingArtwork == nil,
               let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600),
-              let (data, _) = try? await URLSession.shared.data(from: url),
+              let (data, _) = try? await URLSession.arcfin.data(from: url),
               let image = PlatformImage(data: data)
         else { return }
         Self.artworkCache[item.id] = image
@@ -858,6 +874,9 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             }
             await player.play()
+            // A cast that was already running when this screen opened (autoplay moved on to
+            // the next episode) never produces an isConnected change to trigger this.
+            if CastManager.shared.isConnected { startCasting() }
             #if !os(tvOS)
             // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's
             // custom PiPCoordinator needs this explicit activation step.
@@ -943,6 +962,7 @@ struct PlayerView: View {
     /// A Cast session took over — the receiver plays the stream itself, so the local
     /// player pauses rather than playing the same thing twice.
     func startCasting() {
+        tracksAtCastStart = (selectedAudioIndex, selectedSubtitleIndex)
         currentSubtitleText = nil
         currentBitmapCue = nil
         Task { await player.pause() }
@@ -1010,6 +1030,16 @@ struct PlayerView: View {
     /// continuously-updated `lastKnownPositionSeconds` instead — see its doc comment.
     func resumeLocalPlaybackAfterCast() {
         castLoadTask?.cancel()
+        defer { tracksAtCastStart = nil }
+        // Tracks picked on the cast dashboard change selectedAudioIndex/selectedSubtitleIndex,
+        // but the local player is still on the old stream — reload so it matches what the
+        // viewer was just watching.
+        if let before = tracksAtCastStart,
+           before.audio != selectedAudioIndex || before.subtitle != selectedSubtitleIndex {
+            let seconds = CastManager.shared.lastKnownPositionSeconds ?? Double(player.positionTicks) / 10_000_000
+            reload(errorContext: "resume after casting", resumeTicks: Int64(seconds * 10_000_000))
+            return
+        }
         if let seconds = CastManager.shared.lastKnownPositionSeconds {
             Task {
                 await player.seek(to: Int64(seconds * 10_000_000))
@@ -1032,6 +1062,7 @@ struct PlayerView: View {
 
     private func teardown() async {
         progressReportTask?.cancel()
+        sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
         #if os(macOS)
@@ -1253,6 +1284,12 @@ struct PlayerView: View {
     func playNextEpisode(isAutomatic: Bool = false) {
         guard let nextEpisode else { return }
         upNextCountdown?.cancel()
+        if isAutomatic, sleepAtEndOfItem {
+            sleepAtEndOfItem = false
+            showUpNext = false
+            pauseForSleepTimer()
+            return
+        }
         if isAutomatic, stillWatchingPromptEnabled {
             let streak = UserDefaults.standard.integer(forKey: Self.autoplayStreakKey) + 1
             UserDefaults.standard.set(streak, forKey: Self.autoplayStreakKey)
@@ -1267,6 +1304,35 @@ struct PlayerView: View {
             UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
         }
         onPlayNext(nextEpisode)
+    }
+
+    // MARK: - Sleep timer
+
+    /// nil minutes = "end of this video": nothing is scheduled, playNextEpisode just
+    /// declines to auto-advance once. Picking again replaces whatever was set before.
+    func setSleepTimer(minutes: Int?, atEndOfItem: Bool = false) {
+        sleepTimerTask?.cancel()
+        sleepTimerTask = nil
+        sleepTimerEndsAt = nil
+        sleepAtEndOfItem = atEndOfItem
+        guard let minutes else { return }
+        sleepTimerEndsAt = Date().addingTimeInterval(Double(minutes) * 60)
+        sleepTimerTask = Task {
+            try? await Task.sleep(for: .seconds(minutes * 60))
+            guard !Task.isCancelled else { return }
+            sleepTimerEndsAt = nil
+            pauseForSleepTimer()
+        }
+    }
+
+    private func pauseForSleepTimer() {
+        if CastManager.shared.isConnected { CastManager.shared.pause() }
+        Task { await player.pause() }
+        networkToast = "Sleep timer — playback paused"
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            networkToast = nil
+        }
     }
 
     // MARK: - Are you still watching
@@ -1339,7 +1405,7 @@ struct PlayerView: View {
             currentBitmapCue = nil
             return
         }
-        let seconds = Double(ticks) / 10_000_000
+        let seconds = Double(ticks) / 10_000_000 - subtitleDelay
         if subtitleCues.isEmpty {
             currentSubtitleText = nil
         } else {
@@ -1354,9 +1420,9 @@ struct PlayerView: View {
         }
     }
 
-    private func reload(errorContext: String) {
+    private func reload(errorContext: String, resumeTicks overrideTicks: Int64? = nil) {
         guard let credential, let authHeader else { return }
-        let resumeTicks = player.positionTicks
+        let resumeTicks = overrideTicks ?? player.positionTicks
         Task {
             do {
                 let info = try await client.getPlaybackInfo(

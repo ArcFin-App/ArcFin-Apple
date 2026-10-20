@@ -3,20 +3,64 @@
 import SwiftUI
 import JellyfinAPI
 import StreamystatsAPI
+import AuthCore
 
 struct StatsView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(StreamystatsRepository.self) private var statsRepo
 
+    @Environment(AuthManager.self) private var authManager
+
     @State private var selectedPeriod: String = "All"
     private let periods = ["7D", "30D", "All"]
 
-    private var totalWatched: Int { mediaRepo.playedMovieCount + mediaRepo.playedEpisodeCount }
+    /// Stats for the 7D/30D ranges, fetched on demand; nil for "All", which is what the
+    /// repository already loaded for Home.
+    private struct PeriodStats {
+        var movies: Int
+        var episodes: Int
+        var topMovies: [MediaItem]
+        var topShows: [MediaItem]
+    }
+    @State private var periodStats: PeriodStats?
+
+    private var displayedMovieCount: Int { periodStats?.movies ?? mediaRepo.playedMovieCount }
+    private var displayedEpisodeCount: Int { periodStats?.episodes ?? mediaRepo.playedEpisodeCount }
+    private var displayedTopMovies: [MediaItem] { periodStats?.topMovies ?? mediaRepo.topMovies }
+    private var displayedTopShows: [MediaItem] { periodStats?.topShows ?? mediaRepo.topShows }
+
+    private var periodStart: Date? {
+        switch selectedPeriod {
+        case "7D": Calendar.current.date(byAdding: .day, value: -7, to: Date())
+        case "30D": Calendar.current.date(byAdding: .day, value: -30, to: Date())
+        default: nil
+        }
+    }
+
+    private func loadPeriodStats() async {
+        guard let since = periodStart, case .authenticated(let cred) = authManager.state else {
+            periodStats = nil
+            return
+        }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let client = JellyfinMediaClient()
+        async let movies = client.getPlayedCount(credential: cred, authHeader: header, itemType: "Movie", since: since)
+        async let episodes = client.getPlayedCount(credential: cred, authHeader: header, itemType: "Episode", since: since)
+        async let topMovies = client.getTopPlayed(credential: cred, authHeader: header, itemType: "Movie", since: since)
+        async let topShows = client.getTopPlayed(credential: cred, authHeader: header, itemType: "Series", since: since)
+        let result = PeriodStats(
+            movies: (try? await movies) ?? 0, episodes: (try? await episodes) ?? 0,
+            topMovies: (try? await topMovies) ?? [], topShows: (try? await topShows) ?? [])
+        guard !Task.isCancelled else { return }
+        periodStats = result
+    }
+
+    private var totalWatched: Int { displayedMovieCount + displayedEpisodeCount }
     private var movieFraction: Double {
-        totalWatched > 0 ? Double(mediaRepo.playedMovieCount) / Double(totalWatched) : 0
+        totalWatched > 0 ? Double(displayedMovieCount) / Double(totalWatched) : 0
     }
     private var episodeFraction: Double {
-        totalWatched > 0 ? Double(mediaRepo.playedEpisodeCount) / Double(totalWatched) : 0
+        totalWatched > 0 ? Double(displayedEpisodeCount) / Double(totalWatched) : 0
     }
 
     var body: some View {
@@ -25,8 +69,8 @@ struct StatsView: View {
                 header
                 heroSection
                 activityRings
-                if !mediaRepo.topShows.isEmpty { showsSection }
-                if !mediaRepo.topMovies.isEmpty { moviesSection }
+                if !displayedTopShows.isEmpty { showsSection }
+                if !displayedTopMovies.isEmpty { moviesSection }
                 if statsRepo.isConfigured && !statsRepo.recommendations.isEmpty {
                     recommendationsSection
                 }
@@ -36,6 +80,7 @@ struct StatsView: View {
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
         .task { if statsRepo.isConfigured { await statsRepo.load() } }
+        .task(id: selectedPeriod) { await loadPeriodStats() }
     }
 
     // MARK: - Header
@@ -109,8 +154,8 @@ struct StatsView: View {
                 }
 
                 HStack(spacing: 16) {
-                    statChip("\(mediaRepo.playedMovieCount)", label: "Movies", hex: "8b5cf6")
-                    statChip("\(mediaRepo.playedEpisodeCount)", label: "Episodes", hex: "06b6d4")
+                    statChip("\(displayedMovieCount)", label: "Movies", hex: "8b5cf6")
+                    statChip("\(displayedEpisodeCount)", label: "Episodes", hex: "06b6d4")
                     statChip("\(mediaRepo.libraries.count)", label: "Libraries", hex: "10b981")
                 }
                 .padding(.top, 4)
@@ -141,14 +186,14 @@ struct StatsView: View {
     private var activityRings: some View {
         HStack(spacing: 16) {
             ringCard(
-                value: mediaRepo.playedMovieCount,
+                value: displayedMovieCount,
                 label: "Movies",
                 sublabel: "watched",
                 fraction: movieFraction,
                 hex: "8b5cf6"
             )
             ringCard(
-                value: mediaRepo.playedEpisodeCount,
+                value: displayedEpisodeCount,
                 label: "Episodes",
                 sublabel: "watched",
                 fraction: episodeFraction,
@@ -212,7 +257,7 @@ struct StatsView: View {
             .padding(.bottom, 12)
 
             VStack(spacing: 8) {
-                ForEach(Array(mediaRepo.topShows.enumerated()), id: \.element.id) { i, show in
+                ForEach(Array(displayedTopShows.enumerated()), id: \.element.id) { i, show in
                     showRow(rank: i + 1, item: show)
                 }
             }
@@ -288,7 +333,7 @@ struct StatsView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    ForEach(Array(mediaRepo.topMovies.enumerated()), id: \.element.id) { i, movie in
+                    ForEach(Array(displayedTopMovies.enumerated()), id: \.element.id) { i, movie in
                         movieCard(rank: i + 1, movie: movie)
                     }
                 }

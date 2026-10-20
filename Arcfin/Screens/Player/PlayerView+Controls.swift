@@ -59,7 +59,7 @@ extension PlayerView {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                 #endif
             }
             #if os(tvOS)
@@ -169,7 +169,7 @@ extension PlayerView {
                     Image(systemName: action.icon)
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel(action.label)
             }
@@ -289,8 +289,35 @@ extension PlayerView {
             Button { showRateMenu = true } label: {
                 Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
             }
+            if !subtitleCues.isEmpty {
+                Menu {
+                    Button("Later by 0.5 s") { subtitleDelay += 0.5 }
+                    Button("Earlier by 0.5 s") { subtitleDelay -= 0.5 }
+                    Button("Later by 0.1 s") { subtitleDelay += 0.1 }
+                    Button("Earlier by 0.1 s") { subtitleDelay -= 0.1 }
+                    Button("Reset", role: .destructive) { subtitleDelay = 0 }
+                        .disabled(subtitleDelay == 0)
+                } label: {
+                    Label(
+                        subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", subtitleDelay)) s)",
+                        systemImage: "clock.arrow.2.circlepath")
+                }
+            }
             Button { showQualityMenu = true } label: {
                 Label("Quality", systemImage: "slider.horizontal.3")
+            }
+            Menu {
+                Button("Off") { setSleepTimer(minutes: nil) }
+                ForEach([15, 30, 45, 60], id: \.self) { minutes in
+                    Button("\(minutes) minutes") { setSleepTimer(minutes: minutes) }
+                }
+                if item.type == .episode {
+                    Button("End of episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
+                }
+            } label: {
+                Label(
+                    sleepTimerEndsAt != nil || sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
+                    systemImage: "moon.zzz")
             }
             Button { showInfoSheet = true } label: {
                 Label("Media Info", systemImage: "info.circle")
@@ -299,7 +326,7 @@ extension PlayerView {
             Image(systemName: "ellipsis.circle")
                 .font(.system(.title3, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
         }
         .accessibilityLabel("More options")
         #if os(tvOS)
@@ -555,6 +582,12 @@ extension PlayerView {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: elapsedTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+        }
     }
 
     private var trickplayPreview: some View {
@@ -1052,7 +1085,7 @@ extension PlayerView {
             Color.black.opacity(0.85).ignoresSafeArea()
             VStack(spacing: 20) {
                 Image(systemName: "eye.slash")
-                    .font(.system(size: 40, weight: .medium))
+                    .scaledFont(size: 40, weight: .medium)
                     .foregroundStyle(DT.Color.accent)
                 VStack(spacing: 6) {
                     Text("Are you still watching?")
@@ -1290,6 +1323,24 @@ extension PlayerView {
                 .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
             }
             .buttonStyle(.plain)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+
+            HStack(spacing: 10) {
+                Image(systemName: "speaker.fill")
+                    .font(.system(.footnote))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .accessibilityHidden(true)
+                Slider(
+                    value: Binding(get: { Double(cast.volume) }, set: { cast.setVolume(Float($0)) }),
+                    in: 0...1
+                )
+                .tint(DT.Color.accent)
+                .accessibilityLabel("TV volume")
+                Image(systemName: "speaker.wave.3.fill")
+                    .font(.system(.footnote))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .accessibilityHidden(true)
+            }
             .dynamicTypeSize(...DynamicTypeSize.accessibility1)
 
             HStack(spacing: 12) {
@@ -1574,6 +1625,7 @@ extension PlayerView {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { dismiss() }
+            .accessibilityHidden(true)
             .transition(.opacity)
     }
 

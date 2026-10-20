@@ -109,6 +109,28 @@ final class DownloadManager: NSObject {
         reconcileStaleActivitiesOnLaunch()
         #endif
         runSmartDownloadsOnLaunch()
+        purgeWatchedDownloads()
+    }
+
+    private static let pendingWatchedDeleteKey = "pendingWatchedDeleteIDs"
+
+    /// Queues a finished download for removal instead of deleting it on the spot: the player
+    /// is usually still on screen above a detail view bound to that SwiftData row, and
+    /// reading a deleted model from there is unsafe. See purgeWatchedDownloads.
+    func markForDeletionAfterWatching(itemId: String) {
+        var ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
+        guard !ids.contains(itemId) else { return }
+        ids.append(itemId)
+        UserDefaults.standard.set(ids, forKey: Self.pendingWatchedDeleteKey)
+    }
+
+    /// Run at launch and whenever the Downloads list appears — points where no detail view
+    /// can be holding one of the queued rows.
+    func purgeWatchedDownloads() {
+        let ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
+        guard !ids.isEmpty else { return }
+        UserDefaults.standard.removeObject(forKey: Self.pendingWatchedDeleteKey)
+        for id in ids { deleteDownload(itemId: id) }
     }
 
     private func startWiFiMonitoringIfNeeded() {
@@ -217,7 +239,7 @@ final class DownloadManager: NSObject {
             return
         }
           let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: imageID, tag: tag, type: imageType, fillWidth: 120, token: credential.accessToken)
-          guard let (data, response) = try? await URLSession.shared.data(from: url),
+          guard let (data, response) = try? await URLSession.arcfin.data(from: url),
               (response as? HTTPURLResponse)?.statusCode == 200 else { return }
         guard var existing = liveActivityItemMeta[item.id] else { return }
         existing.posterData = Self.liveActivityThumbnail(from: data)
@@ -308,7 +330,7 @@ final class DownloadManager: NSObject {
         headReq.setValue(authHeader, forHTTPHeaderField: "Authorization")
         headReq.timeoutInterval = 10
         var estimatedSize: Int64?
-        if let (_, response) = try? await URLSession.shared.data(for: headReq),
+        if let (_, response) = try? await URLSession.arcfin.data(for: headReq),
            let http = response as? HTTPURLResponse, http.expectedContentLength > 0 {
             estimatedSize = http.expectedContentLength
         }
@@ -444,7 +466,7 @@ final class DownloadManager: NSObject {
                     let tileURL = client.trickplayTileURL(credential: credential, itemId: item.id, width: trickplay.width, tileIndex: tileIndex)
                     var req = URLRequest(url: tileURL)
                     req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-                    guard let (data, resp) = try? await URLSession.shared.data(for: req),
+                    guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
                           (resp as? HTTPURLResponse)?.statusCode == 200
                     else {
                         trickplayFileNames.append("")
@@ -460,7 +482,7 @@ final class DownloadManager: NSObject {
             var posterFileName: String?
             if let tag = detail.item.primaryImageTag {
                 let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.shared.data(from: url) {
+                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                     posterFileName = "poster.jpg"
                     try? data.write(to: dir.appendingPathComponent("poster.jpg"))
                 }
@@ -468,7 +490,7 @@ final class DownloadManager: NSObject {
             var backdropFileName: String?
             if let tag = detail.item.backdropImageTags.first {
                 let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.shared.data(from: url) {
+                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                     backdropFileName = "backdrop.jpg"
                     try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
                 }
@@ -552,7 +574,7 @@ final class DownloadManager: NSObject {
         var posterFileName: String?
         if let tag = detail.item.primaryImageTag {
             let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
-            if let (data, _) = try? await URLSession.shared.data(from: url) {
+            if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                 posterFileName = "poster.jpg"
                 try? data.write(to: dir.appendingPathComponent("poster.jpg"))
             }
@@ -560,7 +582,7 @@ final class DownloadManager: NSObject {
         var backdropFileName: String?
         if let tag = detail.item.backdropImageTags.first {
             let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
-            if let (data, _) = try? await URLSession.shared.data(from: url) {
+            if let (data, _) = try? await URLSession.arcfin.data(from: url) {
                 backdropFileName = "backdrop.jpg"
                 try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
             }

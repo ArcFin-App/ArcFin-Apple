@@ -38,7 +38,7 @@ enum SubtitleLoader {
 
     static func fetchRawVTTData(deliveryUrl: String, credential: ServerCredential) async -> Data? {
         guard let url = absoluteURL(deliveryUrl: deliveryUrl, credential: credential),
-              let (data, _) = try? await URLSession.shared.data(from: url)
+              let (data, _) = try? await URLSession.arcfin.data(from: url)
         else { return nil }
         return data
     }
