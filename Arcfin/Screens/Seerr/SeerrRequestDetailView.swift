@@ -14,6 +14,10 @@ struct SeerrRequestDetailView: View {
     @State private var showCancelConfirm = false
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = false
+    #if os(iOS)
+    // YouTubeTrailerPlayerView is UIKit-only — see MediaDetailView's own note on the same gap.
+    @State private var showTrailer = false
+    #endif
 
     var body: some View {
         // Same fix as SeerrItemDetailView — no minimum height tying this to the actual
@@ -24,6 +28,7 @@ struct SeerrRequestDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
                 titleBlock
+                trailerButton
 
                 VStack(alignment: .leading, spacing: DT.Spacing.md) {
                     if let genres = detail?.genres, !genres.isEmpty {
@@ -220,6 +225,34 @@ struct SeerrRequestDetailView: View {
             colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
             startPoint: .topLeading, endPoint: .bottomTrailing
         )
+    }
+
+    @ViewBuilder
+    private var trailerButton: some View {
+        #if os(iOS)
+        if let key = detail?.trailerYouTubeKey {
+            Button {
+                showTrailer = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "film").font(.system(size: 14))
+                    Text("Play Trailer").font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundStyle(DT.Color.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(DT.Color.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
+            .fullScreenCover(isPresented: $showTrailer) {
+                YouTubeTrailerPlayerView(videoID: key, title: request.mediaTitle)
+            }
+        }
+        #endif
     }
 
     // MARK: - Title block

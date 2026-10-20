@@ -16,6 +16,10 @@ struct SeerrItemDetailView: View {
     @State private var isLoadingDetail = false
     @State private var requestingItem: SeerrItem? = nil
     @State private var requestBounceTrigger = 0
+    #if os(iOS)
+    // YouTubeTrailerPlayerView is UIKit-only — see MediaDetailView's own note on the same gap.
+    @State private var showTrailer = false
+    #endif
 
     private var alreadyRequested: Bool {
         seerrRepo.matchingRequest(for: item) != nil
@@ -44,6 +48,8 @@ struct SeerrItemDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
                 titleBlock
+                actionButtons
+                trailerButton
 
                 VStack(alignment: .leading, spacing: DT.Spacing.md) {
                     if let genres = detail?.genres, !genres.isEmpty {
@@ -112,6 +118,8 @@ struct SeerrItemDetailView: View {
         }
     }
 
+    // MARK: - Actions (positioned and styled like MediaDetailView's playButton/trailerButton)
+
     private var actionButtons: some View {
         HStack(spacing: 10) {
             if !isAvailable && hasRequestableContent {
@@ -119,17 +127,21 @@ struct SeerrItemDetailView: View {
                     requestBounceTrigger += 1
                     requestingItem = item
                 } label: {
-                    HStack {
-                        Image(systemName: "plus.circle")
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
                             .symbolEffect(.bounce, value: requestBounceTrigger)
                         Text("Request")
+                            .font(.system(size: 16, weight: .bold))
                     }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DT.Color.backgroundPrimary)
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(DT.Color.accent)
+                    .padding(.vertical, 14)
+                    .background(LinearGradient(
+                        colors: [DT.Color.accentDeep, DT.Color.accent],
+                        startPoint: .topLeading, endPoint: .bottomTrailing))
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
                 }
                 .buttonStyle(PressableButtonStyle())
             }
@@ -138,16 +150,46 @@ struct SeerrItemDetailView: View {
                 toggleWatchlist()
             } label: {
                 Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
-                    .frame(width: 48)
-                    .padding(.vertical, 12)
-                    .background(.white.opacity(0.08))
+                    .frame(width: 48, height: 48)
+                    .background(DT.Color.backgroundSecondary)
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
                     .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
             }
+            .buttonStyle(.plain)
         }
-        .padding(.top, DT.Spacing.sm)
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.bottom, DT.Spacing.md)
+    }
+
+    @ViewBuilder
+    private var trailerButton: some View {
+        #if os(iOS)
+        if let key = detail?.trailerYouTubeKey {
+            Button {
+                showTrailer = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "film").font(.system(size: 14))
+                    Text("Play Trailer").font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundStyle(DT.Color.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(DT.Color.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
+            .fullScreenCover(isPresented: $showTrailer) {
+                YouTubeTrailerPlayerView(videoID: key, title: item.title)
+            }
+        }
+        #endif
     }
 
     private func toggleWatchlist() {

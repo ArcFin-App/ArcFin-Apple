@@ -644,6 +644,16 @@ private struct SeerrDetailResponse: Decodable {
     let credits: SeerrCredits?
     let seasons: [SeerrSeason]?     // tv only
     let mediaInfo: SeerrMediaInfo?
+    let relatedVideos: [SeerrVideo]?
+
+    /// TMDB-backed, included in Seerr's standard detail response. `site` is almost always
+    /// "YouTube" (Jellyseerr/Overseerr only ever source these from TMDB, which itself only
+    /// stores YouTube keys) but checked anyway rather than assumed.
+    struct SeerrVideo: Decodable {
+        let key: String
+        let site: String?
+        let type: String?
+    }
 
     struct SeerrGenre: Decodable { let name: String }
     struct SeerrCredits: Decodable { let cast: [SeerrCast]? }
@@ -729,6 +739,13 @@ private struct SeerrDetailResponse: Decodable {
             .sorted { $0.seasonNumber < $1.seasonNumber }
     }
 
+    /// Prefers an actual "Trailer" over a "Teaser"/other clip; either way, only a YouTube
+    /// video is playable through YouTubeTrailerPlayerView.
+    private var trailerYouTubeKey: String? {
+        let youTubeVideos = (relatedVideos ?? []).filter { $0.site == "YouTube" }
+        return (youTubeVideos.first { $0.type == "Trailer" } ?? youTubeVideos.first)?.key
+    }
+
     func toDetail(includeSpecials: Bool = false) -> SeerrMediaDetail {
         let cast = (credits?.cast ?? []).prefix(10).map {
             SeerrCastMember(id: $0.id, name: $0.name, character: $0.character, profilePath: $0.profilePath)
@@ -746,7 +763,8 @@ private struct SeerrDetailResponse: Decodable {
             status: status,
             cast: Array(cast),
             seasons: seasonList,
-            seasonRows: seasonList.isEmpty ? nil : seasonRows(includeSpecials: includeSpecials)
+            seasonRows: seasonList.isEmpty ? nil : seasonRows(includeSpecials: includeSpecials),
+            trailerYouTubeKey: trailerYouTubeKey
         )
     }
 }
