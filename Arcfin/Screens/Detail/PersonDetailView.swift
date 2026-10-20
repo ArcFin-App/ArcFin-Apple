@@ -172,7 +172,7 @@ struct PersonDetailView: View {
         Circle()
             .fill(DT.Color.backgroundSecondary)
             .overlay(Image(systemName: "person.fill")
-                .font(.system(size: 44))
+                .scaledFont(size: 44)
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
     }
 
