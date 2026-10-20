@@ -1047,6 +1047,7 @@ struct HomeView: View {
 
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {
+        ItemQuickActions(item: item)
         if statsRepo.isConfigured {
             Button {
                 Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
