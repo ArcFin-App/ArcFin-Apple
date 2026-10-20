@@ -677,15 +677,15 @@ struct MediaDetailView: View {
                                 .font(.system(.callout, design: .default, weight: .bold))
                             if let playEpisodeLabel {
                                 Text(playEpisodeLabel)
-                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .font(.system(.callout, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
                             if !isResumable, let endsAt = endTime {
                                 Text("•")
-                                    .font(.system(.footnote, design: .default, weight: .heavy))
+                                    .font(.system(.callout, design: .default, weight: .heavy))
                                     .opacity(0.9)
                                 Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
-                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .font(.system(.callout, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
                         }
