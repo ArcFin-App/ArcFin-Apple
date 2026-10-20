@@ -109,6 +109,28 @@ final class DownloadManager: NSObject {
         reconcileStaleActivitiesOnLaunch()
         #endif
         runSmartDownloadsOnLaunch()
+        purgeWatchedDownloads()
+    }
+
+    private static let pendingWatchedDeleteKey = "pendingWatchedDeleteIDs"
+
+    /// Queues a finished download for removal instead of deleting it on the spot: the player
+    /// is usually still on screen above a detail view bound to that SwiftData row, and
+    /// reading a deleted model from there is unsafe. See purgeWatchedDownloads.
+    func markForDeletionAfterWatching(itemId: String) {
+        var ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
+        guard !ids.contains(itemId) else { return }
+        ids.append(itemId)
+        UserDefaults.standard.set(ids, forKey: Self.pendingWatchedDeleteKey)
+    }
+
+    /// Run at launch and whenever the Downloads list appears — points where no detail view
+    /// can be holding one of the queued rows.
+    func purgeWatchedDownloads() {
+        let ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
+        guard !ids.isEmpty else { return }
+        UserDefaults.standard.removeObject(forKey: Self.pendingWatchedDeleteKey)
+        for id in ids { deleteDownload(itemId: id) }
     }
 
     private func startWiFiMonitoringIfNeeded() {

@@ -24,6 +24,8 @@ struct OfflinePlayerView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(DownloadManager.self) private var downloadManager
+    @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
 
     // Aether first, same as the online PlayerView — handles whatever container/codec the
     // server has, including what used to force VLC here (AVFoundation's mkv/HEVC-tag
@@ -165,7 +167,13 @@ struct OfflinePlayerView: View {
         }
         .onChange(of: player.status) { _, status in
             if status == .playing { scheduleAutoHide() }
-            if status == .ended { savePosition(final: true); dismiss() }
+            if status == .ended {
+                savePosition(final: true)
+                if deleteAfterWatching {
+                    downloadManager.markForDeletionAfterWatching(itemId: downloadedItem.itemId)
+                }
+                dismiss()
+            }
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
