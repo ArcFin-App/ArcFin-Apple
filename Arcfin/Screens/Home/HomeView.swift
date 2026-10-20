@@ -1074,11 +1074,9 @@ struct HomeView: View {
     private func mediaShelfContent(_ items: [MediaItem], placeholderCount: Int = 6) -> some View {
         if items.isEmpty {
             ForEach(0..<placeholderCount, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: DT.Radius.card)
-                    .fill(Color.white.opacity(0.05))
-                    .frame(width: DT.Size.posterCard.width, height: DT.Size.posterCard.height)
-                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.04), lineWidth: 1))
+                PosterCard(title: "Loading Title")
             }
+            .redacted(reason: .placeholder)
         } else {
             ForEach(items) { item in
                 NavigationLink(value: item) {
