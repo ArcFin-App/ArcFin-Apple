@@ -2,6 +2,11 @@
 
 import SwiftUI
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - Design token system for Arcfin
 // Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass.
@@ -27,10 +32,30 @@ public enum DT {
         public static let textPrimary         = SwiftUI.Color.white
         /// #06B6D4 — active/selected labels
         public static let textActive          = SwiftUI.Color(hex: "06B6D4")
-        /// #8E8E93 — secondary metadata (system grey)
-        public static let textSecondary       = SwiftUI.Color(hex: "8E8E93")
-        /// #3A3A4A — separator / divider lines
-        public static let separator           = SwiftUI.Color(hex: "3A3A4A")
+
+        /// Reads the system's real Increase Contrast accessibility setting directly —
+        /// same bare-global-read shape as DT.Animation.reduceMotion below, so textSecondary/
+        /// separator stay plain property accesses at every call site, no environment
+        /// plumbing needed. textPrimary/textActive/accent are already 8:1+ against every
+        /// background (computed from their actual hex values) and don't need a second tier.
+        private static var increaseContrast: Bool {
+#if os(macOS)
+            NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+#else
+            UIAccessibility.isDarkerSystemColorsEnabled
+#endif
+        }
+
+        /// #8E8E93 (5.2–6.1:1 on the three backgrounds) / Increase Contrast: #AEAEB4
+        /// (7.65–8.95:1) — secondary metadata (system grey)
+        public static var textSecondary: SwiftUI.Color {
+            increaseContrast ? SwiftUI.Color(hex: "AEAEB4") : SwiftUI.Color(hex: "8E8E93")
+        }
+        /// #3A3A4A (1.5–1.8:1, under the 3:1 UI-boundary floor) / Increase Contrast:
+        /// #6E6E82 (3.4–4.0:1) — separator / divider lines
+        public static var separator: SwiftUI.Color {
+            increaseContrast ? SwiftUI.Color(hex: "6E6E82") : SwiftUI.Color(hex: "3A3A4A")
+        }
         /// Progress bar fill
         public static let progressFill        = SwiftUI.Color(hex: "06B6D4")
         /// Progress bar track
