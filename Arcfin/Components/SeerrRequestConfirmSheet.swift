@@ -333,7 +333,7 @@ struct SeerrRequestConfirmSheet: View {
     private func seasonStatusCircle(row: SeerrSeasonRow, chosen: Bool) -> some View {
         let locked = row.locked
         let badgeColor = row.badge.map { Color(hex: seasonBadgeColorHex($0)) }
-        ZStack {
+        return ZStack {
             Circle()
                 .fill(locked ? (badgeColor?.opacity(0.18) ?? Color.white.opacity(0.08))
                               : (chosen ? DT.Color.accent : Color.clear))
