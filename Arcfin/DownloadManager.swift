@@ -504,6 +504,7 @@ final class DownloadManager: NSObject {
             )
             modelContext.insert(downloaded)
             try? modelContext.save()
+            Task { await NotificationManager.notifyDownloadComplete(title: detail.item.name) }
 
             if let seriesId = detail.item.seriesId {
                 await ensureSeriesMetadata(seriesId: seriesId, credential: credential, authHeader: authHeader)

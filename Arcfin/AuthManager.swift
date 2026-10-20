@@ -196,6 +196,13 @@ final class AuthManager {
 
     static func currentWiFiSSID() async -> String? {
         #if os(iOS)
+        #if targetEnvironment(simulator)
+        // NEHotspotNetwork.fetchCurrent always fails here ("invalid result code 1") — the
+        // Simulator has no real Wi-Fi radio to report on, regardless of entitlement or
+        // Location authorization. Skip straight to nil instead of requesting Location
+        // permission and spamming nehelper every time this runs on a dev build.
+        return nil
+        #else
         let authorizationStatus = CLLocationManager().authorizationStatus
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
             guard authorizationStatus == .notDetermined,
@@ -220,6 +227,7 @@ final class AuthManager {
                 }
             }
         }
+        #endif
         #else
         nil
         #endif

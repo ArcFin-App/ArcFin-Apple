@@ -415,7 +415,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "Recursive", value: "true"),
             .init(name: "IncludeItemTypes", value: "Movie,Series"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
         ]
         var req = URLRequest(url: comps.url!)
@@ -423,6 +423,28 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    /// A Person is a regular Jellyfin item under the hood, fetched the same way as a
+    /// movie/series — just a much smaller field set. Separate from getItemDetail/
+    /// MediaItemDetail (which decodes many movie/series-only fields a Person never has)
+    /// rather than overloading that type for a different kind of thing.
+    public func getPersonDetail(
+        credential: ServerCredential,
+        authHeader: String,
+        personId: String
+    ) async throws -> MediaPersonDetail {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(personId)"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Fields", value: "Overview,ProviderIds,PremiereDate"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(PersonDetailResponse.self, from: data).toDetail()
     }
 
     public func getSeasons(
@@ -718,6 +740,7 @@ private struct JellyfinItemResponse: Decodable {
     let seriesPrimaryImageTag: String?
     let parentBackdropItemId: String?
     let parentBackdropImageTags: [String]?
+    let providerIds: [String: String]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -736,6 +759,7 @@ private struct JellyfinItemResponse: Decodable {
         case seriesPrimaryImageTag = "SeriesPrimaryImageTag"
         case parentBackdropItemId = "ParentBackdropItemId"
         case parentBackdropImageTags = "ParentBackdropImageTags"
+        case providerIds = "ProviderIds"
     }
 
     func toMediaItem() -> MediaItem {
@@ -764,7 +788,8 @@ private struct JellyfinItemResponse: Decodable {
             seriesId: seriesId,
             seriesPrimaryImageTag: seriesPrimaryImageTag,
             parentBackdropItemId: parentBackdropItemId,
-            parentBackdropImageTags: parentBackdropImageTags ?? []
+            parentBackdropImageTags: parentBackdropImageTags ?? [],
+            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
         )
     }
 }
@@ -922,6 +947,32 @@ private struct PersonResponse: Decodable {
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", role = "Role"
         case primaryImageTag = "PrimaryImageTag", type = "Type"
+    }
+}
+
+private struct PersonDetailResponse: Decodable {
+    let id: String
+    let overview: String?
+    let providerIds: [String: String]?
+    let premiereDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id = "Id", overview = "Overview"
+        case providerIds = "ProviderIds", premiereDate = "PremiereDate"
+    }
+
+    func toDetail() -> MediaPersonDetail {
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plainFormatter = ISO8601DateFormatter()
+        return MediaPersonDetail(
+            id: id,
+            overview: (overview?.isEmpty ?? true) ? nil : overview,
+            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            birthDate: premiereDate.flatMap {
+                fractionalFormatter.date(from: $0) ?? plainFormatter.date(from: $0)
+            }
+        )
     }
 }
 

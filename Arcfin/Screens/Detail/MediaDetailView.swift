@@ -25,6 +25,7 @@ struct MediaDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: MediaItemDetail?
+    @State private var awards: [WikidataAward] = []
     @State private var isFavorite = false
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
@@ -213,6 +214,12 @@ struct MediaDetailView: View {
         }
 #endif
         .task { await load() }
+        .task(id: item.tmdbId) {
+            guard let tmdbId = item.tmdbId else { return }
+            awards = await WikidataAwardsClient.shared.awards(
+                tmdbId: tmdbId, mediaType: item.type == .series ? .tv : .movie
+            )
+        }
         .onChange(of: selectedSeason) { _, season in
             guard let season, season.id != loadedSeasonId,
                   let seriesId = seasonSeriesId,
@@ -449,6 +456,7 @@ struct MediaDetailView: View {
 
                 metaRow
                 qualityRow
+                if !awards.isEmpty { awardsRow }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -500,6 +508,28 @@ struct MediaDetailView: View {
                 qualityBadge(codec, color: Color(hex: "8B5CF6"))
             }
         }
+    }
+
+    /// One entry → that award's own name; a few → joined; many → just the count. Wikidata's
+    /// P166 ("award received") statements are wins, not nominations, so "Won" is accurate.
+    private var awardsRow: some View {
+        let names = Array(Set(awards.map(\.name))).sorted()
+        let label: String
+        if names.count == 1 {
+            label = "Won \(names[0])"
+        } else if names.count <= 3 {
+            label = "Won \(names.joined(separator: ", "))"
+        } else {
+            label = "Won \(names.count) Awards"
+        }
+        return HStack(spacing: 4) {
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 10))
+            Text(label)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+        }
+        .foregroundStyle(Color(hex: "f59e0b"))
     }
 
     private func qualityBadge(_ label: String, color: Color) -> some View {

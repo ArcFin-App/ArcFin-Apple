@@ -135,6 +135,20 @@ public struct MediaPerson: Sendable, Identifiable, Equatable, Hashable {
     }
 }
 
+/// Fetched separately from the bare MediaPerson Jellyfin hands back inline on an item's People
+/// list (name/role/image tag only) — a person's own biography and provider ids live on the
+/// Person as its own item, a second request (getPersonDetail).
+public struct MediaPersonDetail: Sendable, Equatable {
+    public let id: String
+    public let overview: String?
+    public let tmdbId: Int?
+    public let birthDate: Date?
+
+    public init(id: String, overview: String? = nil, tmdbId: Int? = nil, birthDate: Date? = nil) {
+        self.id = id; self.overview = overview; self.tmdbId = tmdbId; self.birthDate = birthDate
+    }
+}
+
 // MARK: - Media stream
 
 public struct MediaStream: Sendable, Equatable, Hashable {

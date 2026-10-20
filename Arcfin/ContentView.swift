@@ -44,6 +44,7 @@ struct ContentView: View {
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
     @State private var arcfinSyncTask: Task<Void, Never>?
+    @State private var seerrPollTask: Task<Void, Never>?
     #if !os(tvOS)
     @State private var isAppLocked = false
     @State private var activeProfileHasPIN = false
@@ -212,9 +213,11 @@ struct ContentView: View {
                 startHeartbeat()
                 startArcfinSyncLoop()
                 authManager.syncArcfinNow()
+                startSeerrPollLoop()
             } else {
                 heartbeatTask?.cancel()
                 arcfinSyncTask?.cancel()
+                seerrPollTask?.cancel()
             }
             // Deliberately no re-lock here. scenePhase drops to .background not just when
             // the app is actually left, but also pulling down Notification/Control Center
@@ -241,6 +244,11 @@ struct ContentView: View {
         .onChange(of: seerrUsername)   { configureSeerr() }
         .onChange(of: seerrPassword)   { configureSeerr() }
         .onChange(of: seerrAuthMethod) { configureSeerr() }
+        // A profile switch keeps the same Seerr URL/username/password today, so
+        // configureSeerr() above would just no-op as "nothing changed" — this instead clears
+        // any stuck auth-failure cooldown and retries directly (see
+        // SeerrRepository.retryAfterProfileSwitch).
+        .onChange(of: authManager.state) { Task { await seerrRepo.retryAfterProfileSwitch() } }
         // Streamystats is reconfigured after load() sets serverID + we have the token
         .onChange(of: mediaRepo.serverID) { configureStats() }
         .onChange(of: statsURL)           { configureStats() }
@@ -347,6 +355,24 @@ struct ContentView: View {
                 try? await Task.sleep(for: .seconds(900))
                 guard !Task.isCancelled else { return }
                 authManager.syncArcfinNow()
+            }
+        }
+    }
+
+    /// Polls Seerr requests while the app is active so a status change (approved, now
+    /// available) can fire a local notification — loadRequests() itself only runs this
+    /// diff on a refresh, never the first load, so an app that's never polled before doesn't
+    /// notify for everything already sitting at approved/available. 5 minutes: more time-
+    /// sensitive than the Arcfin Sync loop above (a user actually wants to know promptly),
+    /// but still a real per-user Seerr request, not worth a sub-minute cadence.
+    private func startSeerrPollLoop() {
+        seerrPollTask?.cancel()
+        guard seerrRepo.isConfigured else { return }
+        seerrPollTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(300))
+                guard !Task.isCancelled else { return }
+                await seerrRepo.loadRequests()
             }
         }
     }

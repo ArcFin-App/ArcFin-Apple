@@ -72,6 +72,10 @@ struct PlayerView: View {
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
     @State var currentSubtitleText: String?
+    /// Only ever non-nil on AetherEnginePlayer — a native embedded PGS/DVB bitmap track has
+    /// no Jellyfin delivery URL for SubtitleLoader to fetch, so this is genuinely new
+    /// capability, not a duplicate of the text-cue path above.
+    @State var currentBitmapCue: NativeBitmapCue?
     @AppStorage("subtitleTextSize") var subtitleTextSize = SubtitleTextSize.medium
     @AppStorage("subtitleTextColor") var subtitleTextColor = SubtitleTextColorOption.white
     @AppStorage("subtitleBackgroundStyle") var subtitleBackgroundStyle = SubtitleBackgroundStyle.outline
@@ -146,7 +150,12 @@ struct PlayerView: View {
     // even though it's now hidden behind the player, so directional/select presses land on
     // the invisible screen underneath instead of anything here. Explicitly claiming focus
     // onto a real player control once this view has appeared is what actually pulls it over.
-    @FocusState var tvInitialFocus: Bool
+    // Namespace for .prefersDefaultFocus below — the documented, system-driven mechanism for
+    // claiming initial focus into a freshly-presented scope. A manual @FocusState + delayed
+    // Task retry was tried here before (twice) and wasn't reliable; this is what Apple's own
+    // tvOS focus APIs are actually built for, so the system handles the landing itself instead
+    // of this code guessing at timing.
+    @Namespace var tvFocusNamespace
     #endif
 
     let client = JellyfinMediaClient()
@@ -227,6 +236,9 @@ struct PlayerView: View {
             if let currentSubtitleText {
                 subtitleOverlay(currentSubtitleText)
             }
+            if let currentBitmapCue {
+                bitmapSubtitleOverlay(currentBitmapCue)
+            }
 
             // Always mounted, visibility driven purely by opacity — this used to be `if
             // isControlsVisible { controlsOverlay }`, which mounts/unmounts a ZStack sibling
@@ -277,16 +289,25 @@ struct PlayerView: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         #endif
-        .task { await setup() }
         #if os(tvOS)
-        .task {
-            // A short delay, not .onAppear directly — claiming focus before this view's own
-            // hierarchy has actually finished installing is a known-flaky pattern on tvOS
-            // (the @FocusState binding can silently no-op if the target isn't laid out yet).
-            try? await Task.sleep(for: .milliseconds(300))
-            tvInitialFocus = true
+        .focusScope(tvFocusNamespace)
+        .onPlayPauseCommand { togglePlayPause() }
+        // A fallback for when the currently-focused control has no further focusable
+        // neighbor in that direction (e.g. focus sitting on the leftmost/rightmost transport
+        // button, or on nothing in particular right after .prefersDefaultFocus lands) — the
+        // system only calls this once its own spatial focus search comes up empty, so it
+        // never fires while there's a real button to move to instead. seek(by:) already
+        // reveals controls via toggleControlsVisibilityOnAction(), same as every other seek
+        // entry point.
+        .onMoveCommand { direction in
+            switch direction {
+            case .left: seek(by: -skipBackwardSeconds)
+            case .right: seek(by: skipForwardSeconds)
+            default: break
+            }
         }
         #endif
+        .task { await setup() }
         .onDisappear {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)
@@ -471,12 +492,35 @@ struct PlayerView: View {
             PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
                 .allowsHitTesting(false)
             #endif
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            // AetherEngineVideoSurface binds the engine directly (engine.bind(view:)
+            // internally) — no layer/controller to hand it, unlike the AVFoundation/VLC
+            // branches above.
+            AetherEngineVideoSurface(player: aetherEngine)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// Shared by macOS's Up/Down-arrow volume shortcuts and tvOS's remote volume commands
+    /// (PlayerView+Gestures.swift) — both platforms drive the active engine's own volume
+    /// directly rather than through a system volume surface, since neither has one reachable
+    /// from here (macOS has no "hidden MPVolumeView" trick the way iOS does; tvOS's physical
+    /// volume buttons don't reach the app at all unless wired up this way).
+    func setEngineVolume(_ volume: Float) {
+        if let avPlayer = player as? AVFoundationPlayer {
+            avPlayer.player.volume = volume
+        } else if let vlcEngine = player as? VLCEnginePlayer {
+            try? vlcEngine.vlcPlayer.setAudioVolume(Volume(volume))
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            aetherEngine.volume = volume
         }
     }
 
     func applyFillScreen() {
         if let vlcEngine = player as? VLCEnginePlayer {
             vlcEngine.vlcPlayer.aspectRatio = isFillScreen ? .fill : .default
+        } else if let aetherEngine = player as? AetherEnginePlayer {
+            aetherEngine.isFillScreen = isFillScreen
         }
         // AVFoundation's videoGravity is driven declaratively via videoSurface's
         // isFillScreen param above — no imperative call needed for that branch.
@@ -663,6 +707,15 @@ struct PlayerView: View {
 
     // MARK: - Setup / teardown
 
+    /// The AVFoundation/VLC split Auto used before Aether existed — now only reached when
+    /// Aether itself fails to construct or load a source (see setup()'s runtime fallback).
+    private func legacyEnginePlayer(container: String?, videoStream: JellyfinMediaStream?) -> any MediaPlayerProtocol {
+        switch PlaybackEngineSelector.legacyFallback(container: container, videoStream: videoStream) {
+        case .vlc: return VLCEnginePlayer()
+        default: return AVFoundationPlayer()
+        }
+    }
+
     private func setup() async {
         #if canImport(UIKit) && !os(tvOS)
         volumeController = SystemVolumeController()
@@ -708,14 +761,30 @@ struct PlayerView: View {
                 credential: credential, authHeader: authHeader, itemId: item.id,
                 quality: qualityCap(for: quality)
             )
-            // .choose always resolves Auto down to a concrete engine — only two outcomes here.
+            // .choose always resolves Auto down to a concrete engine — three outcomes here.
             let engine = PlaybackEngineSelector.choose(
-                preference: playbackEnginePreference, container: info.container, videoCodec: info.videoStream?.codec
+                preference: playbackEnginePreference, container: info.container, videoStream: info.videoStream
             )
-            if engine == .vlc, !(player is VLCEnginePlayer) {
-                player = VLCEnginePlayer()
-            } else if engine == .avFoundation, !(player is AVFoundationPlayer) {
-                player = AVFoundationPlayer()
+            switch engine {
+            case .aether:
+                if !(player is AetherEnginePlayer) {
+                    // init() throws — a construction failure is just another "Aether can't
+                    // serve this session" case, handled by the exact same fallback path a
+                    // load() failure goes through below.
+                    player = (try? AetherEnginePlayer())
+                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                }
+            case .vlc:
+                if !(player is VLCEnginePlayer) { player = VLCEnginePlayer() }
+            case .avFoundation:
+                if !(player is AVFoundationPlayer) { player = AVFoundationPlayer() }
+            case .auto:
+                // .choose() never actually returns .auto (it always resolves Auto down to a
+                // concrete engine above) — only reachable if that invariant breaks later.
+                if !(player is AetherEnginePlayer) {
+                    player = (try? AetherEnginePlayer())
+                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                }
             }
             selectedAudioIndex = info.defaultAudioStreamIndex
             // The server only marks a subtitle default when one's flagged default/forced
@@ -767,7 +836,17 @@ struct PlayerView: View {
             chapters = detail?.chapters ?? []
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
-            try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+            // Auto's pre-flight pick can't catch everything — a runtime load failure on
+            // Aether (the exact class of bug we spent real time on this session, where a
+            // source's own structure breaks one engine but not another) falls back once to
+            // the same AVFoundation/VLC split Auto used before Aether existed, rather than
+            // surfacing a hard error over an engine that can't serve this specific source.
+            do {
+                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+            } catch where player is AetherEnginePlayer {
+                player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+            }
             await player.play()
             #if !os(tvOS)
             // VLC's PiPVideoView wires PiP up itself (see videoSurface) — only AVFoundation's
@@ -791,6 +870,18 @@ struct PlayerView: View {
                 // mirroring already covers this.
                 avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
                 #endif
+            } else if let aetherPlayer = player as? AetherEnginePlayer {
+                // nativePlayerLayer only exists on Aether's .remoteBypass/.loopback routes
+                // (both still ultimately AVPlayer/AVPlayerLayer under the hood) — the same
+                // PiPCoordinator AVFoundationPlayer uses works unmodified against it. The
+                // .software route's own softwarePiPSource (sample-buffer based, not an
+                // AVPlayerLayer at all) needs a materially different AVPictureInPicture
+                // ContentSource-based coordinator — deliberately not implemented here yet;
+                // PiP is simply unavailable for a session that routes to software.
+                if let layer = aetherPlayer.nativePlayerLayer {
+                    pip.stashLayer(layer)
+                    pip.activateIfNeeded()
+                }
             }
             setUpNowPlayingCommandsIfNeeded()
             updateNowPlayingInfo()
@@ -1181,11 +1272,19 @@ struct PlayerView: View {
     }
 
     func updateSubtitleText(forTicks ticks: Int64) {
-        guard !subtitleCues.isEmpty else {
+        let seconds = Double(ticks) / 10_000_000
+        if subtitleCues.isEmpty {
             currentSubtitleText = nil
-            return
+        } else {
+            currentSubtitleText = SubtitleLoader.cue(at: seconds, in: subtitleCues)
         }
-        currentSubtitleText = SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
+        if let aetherPlayer = player as? AetherEnginePlayer, !aetherPlayer.nativeBitmapCues.isEmpty {
+            currentBitmapCue = aetherPlayer.nativeBitmapCues.first {
+                seconds >= $0.startTime && seconds < $0.endTime
+            }
+        } else {
+            currentBitmapCue = nil
+        }
     }
 
     private func reload(errorContext: String) {

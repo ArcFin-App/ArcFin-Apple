@@ -66,7 +66,7 @@ struct PlaybackSettingsView: View {
                     } label: {
                         TVRowLabelText(title: "Playback Engine")
                     }
-                    Text("Auto is recommended. If a video won't play, switch to VLC — then back to Auto once it's fixed.")
+                    Text("Auto is recommended and prefers Aether, which handles the widest range of formats, HDR, and surround/Atmos audio. If a video won't play, switch to AVFoundation or VLC directly — then back to Auto once it's fixed.")
                         .font(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }

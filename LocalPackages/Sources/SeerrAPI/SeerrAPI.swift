@@ -188,6 +188,49 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
     public var backdropURL: URL? {
         backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w1280\($0)") }
     }
+
+    /// A single status label+color to show where only one badge fits (a Discover grid card,
+    /// a TV card) — prefers the underlying media's own availability over the request's bare
+    /// approval state, since "Processing"/"Partial" says more than "Approved" alone.
+    public var displayStatus: (label: String, colorHex: String) {
+        if let mediaStatus { return (mediaStatus.label, mediaStatus.colorHex) }
+        switch status {
+        case .pending:  return ("Pending", "f59e0b")
+        case .approved: return ("Approved", "10b981")
+        case .declined: return ("Declined", "EF4444")
+        }
+    }
+}
+
+/// One title from a person's TMDB combined_credits (cast + crew merged, deduplicated) —
+/// everything the Person detail screen needs to show "also appears in" and let the user
+/// request it directly, without a second detail fetch per title.
+public struct SeerrPersonCredit: Sendable, Identifiable, Equatable, Hashable {
+    public let id: Int
+    public var title: String
+    public var mediaType: RequestMediaType
+    public var posterPath: String?
+    /// Character name (cast) or job (crew, e.g. "Director") — whichever this credit was.
+    public var role: String?
+    public var mediaStatus: SeerrAvailabilityStatus?
+
+    public init(id: Int, title: String, mediaType: RequestMediaType, posterPath: String? = nil,
+                role: String? = nil, mediaStatus: SeerrAvailabilityStatus? = nil) {
+        self.id = id; self.title = title; self.mediaType = mediaType
+        self.posterPath = posterPath; self.role = role; self.mediaStatus = mediaStatus
+    }
+
+    public var posterURL: URL? {
+        posterPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w342\($0)") }
+    }
+
+    /// Lets a credit feed straight into the existing request sheet (SeerrRequestConfirmSheet),
+    /// which only needs id/title/mediaType/posterPath — it fetches its own full detail
+    /// (including season rows) once opened.
+    public var asSeerrItem: SeerrItem {
+        SeerrItem(id: id, title: title, mediaType: mediaType, posterPath: posterPath,
+                  availabilityStatus: mediaStatus)
+    }
 }
 
 // MARK: - Full media detail (for the request confirmation sheet)
@@ -228,12 +271,17 @@ public struct SeerrMediaDetail: Sendable, Equatable {
     public let status: String?
     public let cast: [SeerrCastMember]
     public let seasons: [SeerrSeasonInfo]
+    /// Per-season request/library status — nil for a movie, or for a server where this
+    /// couldn't be computed. Drives the season picker in the request sheet; `seasons` above
+    /// stays a plain list for the simpler season-chips row on the detail screen.
+    public let seasonRows: [SeerrSeasonRow]?
 
     public init(tagline: String?, overview: String?, genres: [String], runtimeMinutes: Int?,
                 voteAverage: Double?, status: String?, cast: [SeerrCastMember],
-                seasons: [SeerrSeasonInfo] = []) {
+                seasons: [SeerrSeasonInfo] = [], seasonRows: [SeerrSeasonRow]? = nil) {
         self.tagline = tagline; self.overview = overview; self.genres = genres
         self.runtimeMinutes = runtimeMinutes; self.voteAverage = voteAverage
         self.status = status; self.cast = cast; self.seasons = seasons
+        self.seasonRows = seasonRows
     }
 }

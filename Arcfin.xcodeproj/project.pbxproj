@@ -561,8 +561,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				"CURRENT_PROJECT_VERSION[sdk=macosx*]" = 5;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -604,8 +603,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				"CURRENT_PROJECT_VERSION[sdk=macosx*]" = 5;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -769,9 +767,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				"CURRENT_PROJECT_VERSION[sdk=appletvos*]" = 2;
-				"CURRENT_PROJECT_VERSION[sdk=macosx*]" = 5;
+				CURRENT_PROJECT_VERSION = 10;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
@@ -796,7 +792,7 @@
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin looks for Jellyfin servers and Chromecast devices on your local network so you can connect and cast without typing in an address.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -842,9 +838,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				"CURRENT_PROJECT_VERSION[sdk=appletvos*]" = 2;
-				"CURRENT_PROJECT_VERSION[sdk=macosx*]" = 5;
+				CURRENT_PROJECT_VERSION = 10;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
@@ -871,7 +865,7 @@
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin looks for Jellyfin servers and Chromecast devices on your local network so you can connect and cast without typing in an address.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -1021,7 +1015,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
@@ -1054,7 +1048,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
