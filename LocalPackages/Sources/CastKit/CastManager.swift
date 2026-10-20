@@ -72,7 +72,8 @@ public final class CastManager: NSObject {
     public func loadMedia(
         streamURL: URL, title: String, subtitle: String?, posterImageURL: URL?,
         contentType: String, startPositionSeconds: TimeInterval,
-        subtitleTracks: [SubtitleTrack] = [], activeSubtitleTrackID: Int? = nil
+        subtitleTracks: [SubtitleTrack] = [], activeSubtitleTrackID: Int? = nil,
+        isTransportStreamHLS: Bool = false
     ) {
         #if canImport(GoogleCast)
         guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
@@ -86,6 +87,12 @@ public final class CastManager: NSObject {
         infoBuilder.contentType = contentType
         infoBuilder.streamType = .buffered
         infoBuilder.metadata = metadata
+        if isTransportStreamHLS {
+            // Left undefined the receiver guesses the segment layout, and the guess for
+            // Jellyfin's TS+AAC output is what produced doubled, offset audio.
+            infoBuilder.hlsSegmentFormat = .TS_AAC
+            infoBuilder.hlsVideoSegmentFormat = .MPEG2_TS
+        }
         infoBuilder.mediaTracks = subtitleTracks.compactMap {
             GCKMediaTrack(
                 identifier: $0.id, contentIdentifier: $0.url.absoluteString, contentType: "text/vtt",

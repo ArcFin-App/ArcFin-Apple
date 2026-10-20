@@ -978,7 +978,8 @@ struct PlayerView: View {
                 contentType: castContentType(for: url),
                 startPositionSeconds: startSeconds,
                 subtitleTracks: tracks,
-                activeSubtitleTrackID: tracks.contains { $0.id == selectedSubtitleIndex } ? selectedSubtitleIndex : nil
+                activeSubtitleTrackID: tracks.contains { $0.id == selectedSubtitleIndex } ? selectedSubtitleIndex : nil,
+                isTransportStreamHLS: url.pathExtension.lowercased() == "m3u8"
             )
         }
     }
