@@ -132,7 +132,8 @@ struct SeerrItemDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         libraryItem = try? await JellyfinMediaClient().findItem(
-            credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv)
+            credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
+            title: item.title, year: item.year.flatMap { Int($0.prefix(4)) })
     }
 
     // MARK: - Actions (positioned and styled like MediaDetailView's playButton/trailerButton)
