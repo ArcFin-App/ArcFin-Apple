@@ -241,6 +241,11 @@ struct ContentView: View {
         .onChange(of: seerrUsername)   { configureSeerr() }
         .onChange(of: seerrPassword)   { configureSeerr() }
         .onChange(of: seerrAuthMethod) { configureSeerr() }
+        // A profile switch keeps the same Seerr URL/username/password today, so
+        // configureSeerr() above would just no-op as "nothing changed" — this instead clears
+        // any stuck auth-failure cooldown and retries directly (see
+        // SeerrRepository.retryAfterProfileSwitch).
+        .onChange(of: authManager.state) { Task { await seerrRepo.retryAfterProfileSwitch() } }
         // Streamystats is reconfigured after load() sets serverID + we have the token
         .onChange(of: mediaRepo.serverID) { configureStats() }
         .onChange(of: statsURL)           { configureStats() }
