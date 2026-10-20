@@ -113,6 +113,7 @@ struct DownloadsView: View {
             }
         }
         .background(DT.Color.backgroundPrimary)
+        .onAppear { downloadManager.purgeWatchedDownloads() }
         .navigationTitle("Downloads")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)

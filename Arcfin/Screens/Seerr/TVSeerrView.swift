@@ -308,7 +308,7 @@ private struct TVRequestRow: View {
                         .font(.system(size: 18))
                         .foregroundStyle(DT.Color.textSecondary)
 
-                    Text("·").foregroundStyle(.white.opacity(0.2))
+                    Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
 
                     Text(req.requestedAt, style: .date)
                         .font(.system(size: 18))

@@ -173,6 +173,7 @@ public enum SettingsSyncRegistry {
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),
         .init("offlineModeEnabled", .bool),
+        .init("deleteDownloadsAfterWatching", .bool),
         .init("smartDownloadsEnabled", .bool),
         .init("smartDownloadsEpisodeCount", .int),
         .init("smartDownloadsStorageBudgetGB", .int),
