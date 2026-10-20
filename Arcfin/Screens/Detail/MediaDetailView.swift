@@ -625,7 +625,7 @@ struct MediaDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableButtonStyle())
 
             if isResumable {
                 Button {
@@ -697,15 +697,9 @@ struct MediaDetailView: View {
     // MARK: - Loading skeleton
 
     private var loadingContent: some View {
-        VStack(spacing: DT.Spacing.md) {
-            ForEach(0..<3, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.white.opacity(0.05))
-                    .frame(height: 14)
-                    .padding(.horizontal, DT.Spacing.pagePad)
-            }
-        }
-        .padding(.top, DT.Spacing.md)
+        overviewSection("Loading overview text that fills a few lines of placeholder content.")
+            .padding(.top, DT.Spacing.md)
+            .redacted(reason: .placeholder)
     }
 
     // MARK: - Detail content

@@ -92,7 +92,7 @@ struct SearchView: View {
                         SearchResultCard(title: item.name, subtitle: item.productionYear.map { String($0) },
                                           imageURL: posterImageURL(for: item))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableButtonStyle())
                 }
             }
         }
@@ -129,7 +129,7 @@ struct SearchView: View {
                     Button { requestingSeerrItem = item } label: {
                         SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableButtonStyle())
                 }
             }
         }
