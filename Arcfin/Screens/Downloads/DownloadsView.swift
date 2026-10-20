@@ -357,10 +357,20 @@ struct DownloadsView: View {
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 Spacer()
+                if let stats, stats.totalBytes > 0 {
+                    Text("\(Int(fraction * 100))%")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .contentTransition(.numericText())
+                        .animation(.default, value: fraction)
+                }
                 Button { downloadManager.cancelDownload(itemId: itemId) } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
                         .foregroundStyle(DT.Color.textSecondary)
+                        // This row only exists while the item is actively downloading, so the
+                        // pulse is inherently scoped to that — no extra on/off plumbing needed.
+                        .symbolEffect(.pulse)
                 }
                 .buttonStyle(.plain)
             }

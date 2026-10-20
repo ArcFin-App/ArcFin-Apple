@@ -454,14 +454,17 @@ struct SeerrView: View {
 
     private var loadingGrid: some View {
         LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
-            ForEach(0..<6, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.06))
-                    .aspectRatio(2/3, contentMode: .fit)
+            ForEach(Self.placeholderDiscoverItems) { item in
+                discoverCardContent(item)
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
+        .redacted(reason: .placeholder)
+    }
+
+    private static let placeholderDiscoverItems: [SeerrItem] = (0..<6).map { i in
+        SeerrItem(id: -(i + 1), title: "Loading Title", mediaType: .movie, year: "0000")
     }
 
     // MARK: - Search

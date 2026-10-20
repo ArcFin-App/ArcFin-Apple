@@ -316,13 +316,17 @@ extension PlayerView {
             // two ends regardless of what's in the row below it.
             #if os(tvOS)
             HStack {
-                Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)))
+                Text(timeLabel(ticks: elapsedTicks))
                     .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
+                    .contentTransition(.numericText())
+                    .animation(isScrubbing ? nil : .default, value: elapsedTicks)
                 Spacer()
                 Text(remainingLabel)
                     .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
+                    .contentTransition(.numericText())
+                    .animation(.default, value: remainingTicks)
             }
             #endif
 
@@ -331,9 +335,11 @@ extension PlayerView {
                 leftSecondaryActions
                     .frame(maxWidth: .infinity, alignment: .leading)
                 #else
-                Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)))
+                Text(timeLabel(ticks: elapsedTicks))
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
+                    .contentTransition(.numericText())
+                    .animation(isScrubbing ? nil : .default, value: elapsedTicks)
 
                 Spacer()
                 #endif
@@ -384,6 +390,8 @@ extension PlayerView {
                 Text(remainingLabel)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.8))
+                    .contentTransition(.numericText())
+                    .animation(.default, value: remainingTicks)
                 #endif
             }
         }
@@ -565,9 +573,16 @@ extension PlayerView {
         #endif
     }
 
+    private var elapsedTicks: Int64 {
+        isScrubbing ? Int64(scrubTicks) : (pendingSeekTargetTicks ?? player.positionTicks)
+    }
+
+    private var remainingTicks: Int64 {
+        max(player.durationTicks - (pendingSeekTargetTicks ?? player.positionTicks), 0)
+    }
+
     private var remainingLabel: String {
-        let remaining = max(player.durationTicks - (pendingSeekTargetTicks ?? player.positionTicks), 0)
-        return "-" + timeLabel(ticks: remaining)
+        "-" + timeLabel(ticks: remainingTicks)
     }
 
     private func timeLabel(ticks: Int64) -> String {
@@ -1335,6 +1350,8 @@ extension PlayerView {
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+                    .animation(.default, value: volume)
             }
             .padding(14)
             .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: DT.Radius.lg))

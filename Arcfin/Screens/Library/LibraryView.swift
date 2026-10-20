@@ -990,7 +990,7 @@ struct LibraryDetailView: View {
                             .focusEffectDisabled()
                             .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
 #else
-                            .buttonStyle(.plain)
+                            .buttonStyle(PressableButtonStyle())
                             .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
 #endif
                             .onAppear {
