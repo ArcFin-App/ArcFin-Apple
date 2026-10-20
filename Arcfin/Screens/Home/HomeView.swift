@@ -323,7 +323,7 @@ struct HomeView: View {
         .focusEffectDisabled()
         .contextMenu { quickLookMenu(item) }
 #else
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
         // No custom preview: — a preview whose size doesn't match the tiny source card
         // confuses UIKit's context-menu interaction proxy about which cell was actually
         // touched in a tightly-packed horizontal shelf, causing taps to land on the
@@ -681,7 +681,7 @@ struct HomeView: View {
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
 #else
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
                 .contextMenu { seerrQuickLookMenu(item) }
 #endif
             }
@@ -1091,7 +1091,7 @@ struct HomeView: View {
                 .focusEffectDisabled()
                 .contextMenu { quickLookMenu(item) }
 #else
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
                 .contextMenu { quickLookMenu(item) }
 #endif
             }
