@@ -4,8 +4,6 @@ import SwiftUI
 import JellyfinAPI
 import SeerrAPI
 import AuthCore
-import Telemetry
-import os
 #if os(iOS)
 import SwiftData
 import Persistence
@@ -406,22 +404,18 @@ struct MediaDetailView: View {
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
+                RetryingAsyncImage(
+                    url: url,
+                    logCategory: "MediaDetailView",
+                    logContext: "backdrop item=\(item.name)",
+                    content: { img in
                         img
                             .resizable()
                             .scaledToFill()
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    case .failure(let error):
-                        let nsError = error as NSError
-                        let _ = Telemetry.logger(category: "MediaDetailView").error(
-                            "backdrop load failed: item=\(item.name, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
-                        )
-                        fallbackHero
-                    default: fallbackHero
-                    }
-                }
+                    },
+                    placeholder: { fallbackHero }
+                )
             } else { fallbackHero }
 
             LinearGradient(
@@ -450,18 +444,13 @@ struct MediaDetailView: View {
         HStack(alignment: .top, spacing: 14) {
             // Portrait poster
             if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 200) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    case .failure(let error):
-                        let nsError = error as NSError
-                        let _ = Telemetry.logger(category: "MediaDetailView").error(
-                            "poster load failed: item=\(item.name, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
-                        )
-                        RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
-                    default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
-                    }
-                }
+                RetryingAsyncImage(
+                    url: url,
+                    logCategory: "MediaDetailView",
+                    logContext: "poster item=\(item.name)",
+                    content: { img in img.resizable().scaledToFill() },
+                    placeholder: { RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary) }
+                )
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
@@ -1347,18 +1336,13 @@ private struct CastPersonCard<Placeholder: View>: View {
         VStack(spacing: 6) {
             Group {
                 if let imageURL {
-                    AsyncImage(url: imageURL) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        case .failure(let error):
-                            let nsError = error as NSError
-                            let _ = Telemetry.logger(category: "CastPersonCard").error(
-                                "cast image load failed: name=\(name, privacy: .public) url=\(imageURL.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
-                            )
-                            placeholder()
-                        default: placeholder()
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: imageURL,
+                        logCategory: "CastPersonCard",
+                        logContext: "name=\(name)",
+                        content: { img in img.resizable().scaledToFill() },
+                        placeholder: { placeholder() }
+                    )
                 } else {
                     placeholder()
                 }
