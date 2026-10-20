@@ -632,6 +632,20 @@ struct MediaDetailView: View {
         return "\(remainingMinutes)m left"
     }
 
+    /// Second line under Play/Resume: "19m left · Ends 9:42 PM" when resuming, just
+    /// "Ends 9:42 PM" otherwise. One Text in one style so the pieces read as a unit; only
+    /// the separator is heavier so it doesn't wash out against the gradient.
+    private var playDetailLine: Text? {
+        let ends = endTime.map { Text("Ends \($0.formatted(date: .omitted, time: .shortened))") }
+        let left = resumeTimeLabel.map { Text($0) }
+        switch (left, ends) {
+        case let (left?, ends?): return left + Text("  ·  ").fontWeight(.heavy) + ends
+        case let (left?, nil): return left
+        case let (nil, ends?): return ends
+        case (nil, nil): return nil
+        }
+    }
+
     private var playButton: some View {
 #if os(tvOS)
         Button {} label: { TVPlayButtonLabel() }
@@ -662,24 +676,19 @@ struct MediaDetailView: View {
                                     .font(.system(.caption2, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
-                            if let endsAt = endTime {
-                                Text("· Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
-                                    .font(.system(.caption2, design: .default, weight: .semibold))
-                                    .opacity(0.85)
-                            }
                         }
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        if let resumeTimeLabel {
-                            Text(resumeTimeLabel)
-                                .font(.system(.caption2, design: .default, weight: .medium))
+                        if let playDetailLine {
+                            playDetailLine
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .opacity(0.85)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
                     }
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, isResumable ? 10 : 14)
+                .padding(.vertical, playDetailLine == nil ? 14 : 10)
                 .background(LinearGradient(
                     colors: [DT.Color.accentDeep, DT.Color.accent],
                     startPoint: .topLeading, endPoint: .bottomTrailing))
