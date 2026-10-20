@@ -89,6 +89,18 @@ struct MediaDetailView: View {
 
     private var credential: ServerCredential? { authManager.state.credential }
 
+    /// Jellyfin web client's details page for this item — the same link the web UI's own
+    /// "copy link" produces, so anyone with access to the server can open it.
+    private var shareURL: URL? {
+        guard let base = credential?.baseURL,
+              var comps = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        else { return nil }
+        let basePath = comps.path.hasSuffix("/") ? String(comps.path.dropLast()) : comps.path
+        comps.path = basePath + "/web/"
+        comps.fragment = "/details?id=\(item.id)"
+        return comps.url
+    }
+
     private var authHeader: String? {
         credential.map { authManager.authClient.authHeader(token: $0.accessToken) }
     }
@@ -122,6 +134,15 @@ struct MediaDetailView: View {
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .topBarTrailing) {
                     DownloadButton(item: item)
+                }
+            }
+            if let shareURL {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundStyle(.white)
+                    }
+                    .accessibilityLabel("Share")
                 }
             }
         }
@@ -494,7 +515,7 @@ struct MediaDetailView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text(rating)
                     .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
@@ -502,13 +523,13 @@ struct MediaDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text("\(mins)m")
                     .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
                         .font(.system(.caption2))
@@ -520,6 +541,17 @@ struct MediaDetailView: View {
             }
         }
         .lineLimit(1)
+    }
+
+    /// When playback started right now would finish, counting from the resume point if there
+    /// is one — only meaningful for a single playable item, not a series or season.
+    private var endTime: Date? {
+        guard item.type == .movie || item.type == .episode,
+              let total = detail?.runTimeTicks, total > 0
+        else { return nil }
+        let watched = isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
+        let remainingSeconds = Double(max(total - watched, 0)) / 10_000_000
+        return Date().addingTimeInterval(remainingSeconds)
     }
 
     private var qualityRow: some View {
@@ -600,6 +632,24 @@ struct MediaDetailView: View {
         return "\(remainingMinutes)m left"
     }
 
+    /// Resume only: "19m left • Ends 9:42 PM" on its own line (too long to share the title
+    /// line). A fresh Play shows its end time inline on the title line instead. The bullet
+    /// is a heavier, larger glyph than a middle dot so it reads as a separator against the
+    /// gradient.
+    private var playDetailLine: Text? {
+        guard isResumable else { return nil }
+        let ends = endTime.map { Text("Ends \($0.formatted(date: .omitted, time: .shortened))") }
+        let left = resumeTimeLabel.map { Text($0) }
+        switch (left, ends) {
+        case let (left?, ends?):
+            let separator = Text("  •  ").font(.system(.footnote, weight: .heavy))
+            return Text("\(left)\(separator)\(ends)")
+        case let (left?, nil): return left
+        case let (nil, ends?): return ends
+        case (nil, nil): return nil
+        }
+    }
+
     private var playButton: some View {
 #if os(tvOS)
         Button {} label: { TVPlayButtonLabel() }
@@ -627,20 +677,32 @@ struct MediaDetailView: View {
                                 .font(.system(.callout, design: .default, weight: .bold))
                             if let playEpisodeLabel {
                                 Text(playEpisodeLabel)
-                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .font(.system(.callout, design: .default, weight: .semibold))
+                                    .opacity(0.85)
+                            }
+                            if !isResumable, let endsAt = endTime {
+                                Text("•")
+                                    .font(.system(.callout, design: .default, weight: .heavy))
+                                    .opacity(0.9)
+                                Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                                    .font(.system(.callout, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
                         }
-                        if let resumeTimeLabel {
-                            Text(resumeTimeLabel)
-                                .font(.system(.caption2, design: .default, weight: .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        if let playDetailLine {
+                            playDetailLine
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .opacity(0.85)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
                     }
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, isResumable ? 10 : 14)
+                .padding(.vertical, playDetailLine == nil ? 14 : 10)
                 .background(LinearGradient(
                     colors: [DT.Color.accentDeep, DT.Color.accent],
                     startPoint: .topLeading, endPoint: .bottomTrailing))
