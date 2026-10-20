@@ -275,13 +275,18 @@ public struct SeerrMediaDetail: Sendable, Equatable {
     /// couldn't be computed. Drives the season picker in the request sheet; `seasons` above
     /// stays a plain list for the simpler season-chips row on the detail screen.
     public let seasonRows: [SeerrSeasonRow]?
+    /// YouTube video ID for the best available trailer, from Seerr's own relatedVideos
+    /// (TMDB-backed, included in its standard movie/tv detail response — no extra query
+    /// param needed). nil when TMDB has no trailer on file for this title.
+    public let trailerYouTubeKey: String?
 
     public init(tagline: String?, overview: String?, genres: [String], runtimeMinutes: Int?,
                 voteAverage: Double?, status: String?, cast: [SeerrCastMember],
-                seasons: [SeerrSeasonInfo] = [], seasonRows: [SeerrSeasonRow]? = nil) {
+                seasons: [SeerrSeasonInfo] = [], seasonRows: [SeerrSeasonRow]? = nil,
+                trailerYouTubeKey: String? = nil) {
         self.tagline = tagline; self.overview = overview; self.genres = genres
         self.runtimeMinutes = runtimeMinutes; self.voteAverage = voteAverage
         self.status = status; self.cast = cast; self.seasons = seasons
-        self.seasonRows = seasonRows
+        self.seasonRows = seasonRows; self.trailerYouTubeKey = trailerYouTubeKey
     }
 }

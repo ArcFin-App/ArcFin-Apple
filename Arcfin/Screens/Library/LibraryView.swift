@@ -63,10 +63,7 @@ struct LibraryView: View {
                 switch target {
                 case .media(let item):   MediaDetailView(item: item)
                 case .collection(let item):
-                    LibraryDetailView(library: JellyfinLibrary(
-                        id: item.id, name: item.name,
-                        collectionType: .unknown,
-                        primaryImageTag: item.primaryImageTag))
+                    CollectionDetailView(collection: item)
                 }
             }
             .navigationDestination(for: MediaItem.self) { item in
