@@ -30,7 +30,7 @@ struct SeerrRequestDetailView: View {
                 VStack(alignment: .leading, spacing: DT.Spacing.md) {
                     if let genres = detail?.genres, !genres.isEmpty {
                         Text(genres.joined(separator: " · "))
-                            .font(.system(size: 12))
+                            .font(.system(.caption))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
 
@@ -42,14 +42,14 @@ struct SeerrRequestDetailView: View {
 
                     if let tagline = detail?.tagline, !tagline.isEmpty {
                         Text(tagline)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(.caption, design: .default, weight: .medium))
                             .italic()
                             .foregroundStyle(DT.Color.accent)
                     }
 
                     if let overview = detail?.overview, !overview.isEmpty {
                         Text(overview)
-                            .font(.system(size: 13))
+                            .font(.system(.footnote))
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
                     }
@@ -64,7 +64,7 @@ struct SeerrRequestDetailView: View {
 
                     if let error = errorMessage {
                         Text(error)
-                            .font(.system(size: 12))
+                            .font(.system(.caption))
                             .foregroundStyle(Color(hex: "EF4444"))
                     }
                 }
@@ -100,18 +100,18 @@ struct SeerrRequestDetailView: View {
     private func seasonsRow(_ seasons: [SeerrSeasonInfo]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Seasons")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(seasons) { season in
                         VStack(spacing: 2) {
                             Text(season.label)
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
                             if let count = season.episodeCount {
                                 Text("\(count) episodes")
-                                    .font(.system(size: 9))
+                                    .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
                         }
@@ -127,7 +127,7 @@ struct SeerrRequestDetailView: View {
     private func castRow(_ cast: [SeerrCastMember]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Cast")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -143,12 +143,12 @@ struct SeerrRequestDetailView: View {
                             .clipShape(Circle())
 
                             Text(member.name)
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
                                 .lineLimit(1)
                             if let character = member.character {
                                 Text(character)
-                                    .font(.system(size: 9))
+                                    .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.textSecondary)
                                     .lineLimit(1)
                             }
@@ -212,7 +212,7 @@ struct SeerrRequestDetailView: View {
                 }
                 Text("Remove Request")
             }
-            .font(.system(size: 14, weight: .semibold))
+            .font(.system(.footnote, design: .default, weight: .semibold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
@@ -233,7 +233,7 @@ struct SeerrRequestDetailView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "film").font(.system(size: 14))
-                    Text("Play Trailer").font(.system(size: 15, weight: .semibold))
+                    Text("Play Trailer").font(.system(.subheadline, design: .default, weight: .semibold))
                 }
                 .foregroundStyle(DT.Color.textPrimary)
                 .frame(maxWidth: .infinity)
@@ -323,7 +323,7 @@ struct SeerrRequestDetailView: View {
         VStack(spacing: 8) {
             HStack {
                 Text("Request Status")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Spacer()
                 requestStatusPill
@@ -331,7 +331,7 @@ struct SeerrRequestDetailView: View {
             if let mediaStatus = request.mediaStatus {
                 HStack {
                     Text("Media Status")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                     Spacer()
                     mediaStatusPill(mediaStatus)
@@ -358,7 +358,7 @@ struct SeerrRequestDetailView: View {
 
     private func statusPillView(label: String, hex: String) -> some View {
         Text(label)
-            .font(.system(size: 11, weight: .bold))
+            .font(.system(.caption2, design: .default, weight: .bold))
             .foregroundStyle(Color(hex: hex))
             .padding(.horizontal, 10).padding(.vertical, 4)
             .background(Color(hex: hex).opacity(0.15))

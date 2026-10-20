@@ -215,7 +215,7 @@ struct CollectionDetailView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(.footnote, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -224,7 +224,7 @@ struct CollectionDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Overview")
             Text(text)
-                .font(.system(size: 14))
+                .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
