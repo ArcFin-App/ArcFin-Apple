@@ -482,6 +482,11 @@ struct MediaDetailView: View {
     }
 
     private var metaRow: some View {
+        // lineLimit(1) cascades to every Text child, giving HStack's layout room to
+        // compress/truncate them when every optional field (year, rating, runtime,
+        // community score) is present at once — without it, none of these Text views have
+        // a defined minimum width, so HStack can't shrink them and the row overflows past
+        // the screen edge instead.
         HStack(spacing: 6) {
             if let year = item.productionYear {
                 Text(String(year))
@@ -514,6 +519,7 @@ struct MediaDetailView: View {
                 }
             }
         }
+        .lineLimit(1)
     }
 
     private var qualityRow: some View {
@@ -1328,7 +1334,7 @@ struct MediaDetailView: View {
 
 // MARK: - Cast card
 
-private struct CastPersonCard<Placeholder: View>: View {
+struct CastPersonCard<Placeholder: View>: View {
     let imageURL: URL?
     let name: String
     let role: String?
