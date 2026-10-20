@@ -109,6 +109,16 @@ struct SeerrItemDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { toggleWatchlist() } label: {
+                    Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
+                }
+                .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
+            }
+        }
         .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
         .task {
             isLoadingDetail = true
@@ -116,12 +126,6 @@ struct SeerrItemDetailView: View {
             isLoadingDetail = false
         }
         .task { await loadLibraryItem() }
-    }
-
-    private var statusPillText: String {
-        if isAvailable { return "Available" }
-        let status = item.availabilityStatus?.label ?? seerrRepo.matchingRequest(for: item)?.displayStatus.label
-        return status.map { "Requested · \($0)" } ?? "Requested"
     }
 
     private func loadLibraryItem() async {
@@ -133,9 +137,13 @@ struct SeerrItemDetailView: View {
 
     // MARK: - Actions (positioned and styled like MediaDetailView's playButton/trailerButton)
 
+    /// Only the primary action lives here — the watchlist bookmark is in the toolbar (like
+    /// MediaDetailView's favorite), so when there's nothing to request and no library copy
+    /// to open, the row simply doesn't exist instead of leaving a lone button.
+    @ViewBuilder
     private var actionButtons: some View {
-        HStack(spacing: 10) {
-            if !isAvailable && hasRequestableContent {
+        if !isAvailable && hasRequestableContent {
+            Group {
                 Button {
                     requestBounceTrigger += 1
                     requestingItem = item
@@ -157,7 +165,11 @@ struct SeerrItemDetailView: View {
                     .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
                 }
                 .buttonStyle(PressableButtonStyle())
-            } else if let libraryItem {
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
+        } else if let libraryItem {
+            Group {
                 Button {
                     openLibraryItem = libraryItem
                 } label: {
@@ -177,41 +189,10 @@ struct SeerrItemDetailView: View {
                     .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
                 }
                 .buttonStyle(PressableButtonStyle())
-            } else {
-                // Requested but not in the library yet (or not matchable): keep the row's
-                // shape instead of leaving the bookmark button stranded on its own.
-                HStack(spacing: 8) {
-                    Image(systemName: isAvailable ? "checkmark.circle" : "clock")
-                        .font(.system(.subheadline))
-                    Text(statusPillText)
-                        .font(.system(.callout, design: .default, weight: .semibold))
-                }
-                .foregroundStyle(DT.Color.textSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(DT.Color.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
-                .accessibilityElement(children: .combine)
             }
-
-            Button {
-                toggleWatchlist()
-            } label: {
-                Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                    .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .frame(width: 48, height: 48)
-                    .background(DT.Color.backgroundSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
-                    .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
-            }
-            .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
-            .buttonStyle(.plain)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.md)
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.md)
     }
 
     @ViewBuilder
