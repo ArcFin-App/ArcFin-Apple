@@ -4,6 +4,8 @@ import SwiftUI
 import JellyfinAPI
 import SeerrAPI
 import AuthCore
+import Telemetry
+import os
 #if os(iOS)
 import SwiftData
 import Persistence
@@ -411,6 +413,12 @@ struct MediaDetailView: View {
                             .resizable()
                             .scaledToFill()
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    case .failure(let error):
+                        let nsError = error as NSError
+                        let _ = Telemetry.logger(category: "MediaDetailView").error(
+                            "backdrop load failed: item=\(item.name, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                        fallbackHero
                     default: fallbackHero
                     }
                 }
@@ -445,6 +453,12 @@ struct MediaDetailView: View {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
+                    case .failure(let error):
+                        let nsError = error as NSError
+                        let _ = Telemetry.logger(category: "MediaDetailView").error(
+                            "poster load failed: item=\(item.name, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                        RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
                     default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
                     }
                 }
@@ -794,7 +808,12 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Cast").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 12) {
+                // Lazy: a plain HStack fired every cast member's AsyncImage request the
+                // instant this section appeared — a large cast (20+ for some titles) could
+                // saturate AsyncImage's shared URLSession all at once and fail the whole
+                // burst together under any network degradation. See ShelfRow.swift for the
+                // same fix applied to Home's shelves.
+                LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(d.cast) { person in
                         Button { selectedPerson = person } label: {
                             CastPersonCard(
@@ -1188,7 +1207,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("More Like This").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(similarItems) { sim in
                         NavigationLink(value: sim) {
                             PosterCard(
@@ -1219,7 +1238,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle(category.title).padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(category.items) { rec in
                         NavigationLink(value: rec) {
                             PosterCard(
@@ -1250,7 +1269,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Recommended").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(seerrRelatedItems) { sim in
                         Button { requestingSeerrItem = sim } label: {
                             PosterCard(
@@ -1331,6 +1350,12 @@ private struct CastPersonCard<Placeholder: View>: View {
                     AsyncImage(url: imageURL) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
+                        case .failure(let error):
+                            let nsError = error as NSError
+                            let _ = Telemetry.logger(category: "CastPersonCard").error(
+                                "cast image load failed: name=\(name, privacy: .public) url=\(imageURL.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                            )
+                            placeholder()
                         default: placeholder()
                         }
                     }
