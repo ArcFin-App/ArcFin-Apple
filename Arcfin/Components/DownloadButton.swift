@@ -77,7 +77,8 @@ struct DownloadButton: View {
             Button("Cancel", role: .cancel) {}
         }
         .alert("Download Failed", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("OK") {}
+            Button("Retry") { loadPreview() }
+            Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
         }
