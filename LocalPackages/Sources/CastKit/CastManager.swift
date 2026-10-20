@@ -25,16 +25,12 @@ public final class CastManager: NSObject {
     public private(set) var isConnected = false
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
+    public private(set) var volume: Float = 1
     /// Bumps each time the receiver reports the loaded item played to its end — observers
     /// use the change as an event (e.g. to cast the next episode); the value itself is
     /// meaningless.
     public private(set) var playbackFinishedCount = 0
     @ObservationIgnored private var lastStatusWasFinished = false
-    /// Bumps each time the receiver reports the loaded item played to its end — observers
-    /// use the change as an event (e.g. to cast the next episode), the value itself is
-    /// meaningless.
-    public private(set) var playbackFinishedCount = 0
-    private var lastStatusWasFinished = false
     public private(set) var deviceName: String?
     /// Updated on every GCKRemoteMediaClient status tick (at least once/second while
     /// playing) rather than read on demand — by the time a session actually ends,
@@ -123,6 +119,15 @@ public final class CastManager: NSObject {
         #if canImport(GoogleCast)
         GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?
             .setActiveTrackIDs(id.map { [NSNumber(value: $0)] } ?? [])
+        #endif
+    }
+
+    public func setVolume(_ volume: Float) {
+        let clamped = min(max(volume, 0), 1)
+        self.volume = clamped
+        #if canImport(GoogleCast)
+        GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?
+            .setStreamVolume(clamped)
         #endif
     }
 
@@ -227,11 +232,13 @@ extension CastManager: GCKRemoteMediaClientListener {
         let paused = mediaStatus?.playerState == .paused
         let finished = mediaStatus?.playerState == .idle && mediaStatus?.idleReason == .finished
         let position = mediaStatus?.streamPosition
+        let receiverVolume = mediaStatus?.volume
         MainActor.assumeIsolated {
             // Idle statuses can repeat; only the transition into "finished" is an event.
             if finished, !lastStatusWasFinished { playbackFinishedCount += 1 }
             lastStatusWasFinished = finished
             isPaused = paused
+            if let receiverVolume { volume = receiverVolume }
             if let position { lastKnownPositionSeconds = position }
         }
     }
