@@ -390,10 +390,9 @@ struct AuthView: View {
     /// If the server's Arcfin Sync plugin has Seerr Account Type locked to "Jellyfin Account",
     /// every user's Seerr login is their Jellyfin login by definition — there's no separate
     /// Seerr credential to ask for. The password just typed is available here for exactly one
-    /// use (this one-shot check + prefill) and is never persisted anywhere beyond the same
-    /// UserDefaults keys SeerrPluginView already writes to when a user fills that form by hand
-    /// — this doesn't lower the bar, it automates what the user would otherwise type in
-    /// themselves. Quick Connect sign-in never has a password at all, so it can't reach this.
+    /// use (this one-shot check + prefill), persisted through AuthManager.saveSeerrPassword
+    /// (Keychain) the same way SeerrPluginView persists a password a user types in by hand.
+    /// Quick Connect sign-in never has a password at all, so it can't reach this.
     private func attemptSeerrAutoLogin(credential: ServerCredential, jellyfinPassword: String) async {
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         guard let settings = try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: header),
@@ -406,7 +405,7 @@ struct AuthView: View {
         UserDefaults.standard.set(seerrURLString, forKey: "seerrURL")
         UserDefaults.standard.set("jellyfin", forKey: "seerrAuthMethod")
         UserDefaults.standard.set(username, forKey: "seerrUsername")
-        UserDefaults.standard.set(jellyfinPassword, forKey: "seerrPassword")
+        authManager.saveSeerrPassword(jellyfinPassword)
     }
 
     private func initiateQC() async {

@@ -451,7 +451,6 @@ struct SeerrPluginView: View {
 
     @AppStorage("seerrURL")         private var seerrURL        = ""
     @AppStorage("seerrUsername")    private var seerrUsername   = ""
-    @AppStorage("seerrPassword")    private var seerrPassword   = ""
     @AppStorage("seerrAuthMethod")  private var seerrAuthMethod = SeerrAuthMethod.jellyfin
 
     // Draft copies — edits only commit to AppStorage (and re-trigger the live
@@ -627,7 +626,7 @@ struct SeerrPluginView: View {
     private func beginEditing() {
         draftURL = seerrURL
         draftUsername = seerrUsername
-        draftPassword = seerrPassword
+        draftPassword = authManager.seerrPassword
         draftAuthMethod = seerrAuthMethod
         testResult = nil
         isEditing = true
@@ -636,13 +635,14 @@ struct SeerrPluginView: View {
     private func save() {
         seerrURL = draftURL.trimmingCharacters(in: .whitespacesAndNewlines)
         seerrUsername = draftUsername
-        seerrPassword = draftPassword
+        authManager.saveSeerrPassword(draftPassword)
         seerrAuthMethod = draftAuthMethod
         isEditing = false
     }
 
     private func remove() {
-        seerrURL = ""; seerrUsername = ""; seerrPassword = ""
+        seerrURL = ""; seerrUsername = ""
+        authManager.removeSeerrPassword()
         seerrAuthMethod = .jellyfin
         seerrRepo.clearAuthFailure()
         beginEditing()
