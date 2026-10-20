@@ -988,10 +988,10 @@ struct LibraryDetailView: View {
 #if os(tvOS)
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
-                            .contextMenu { quickLookMenu(item) }
+                            .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
 #else
-                            .buttonStyle(.plain)
-                            .contextMenu { quickLookMenu(item) }
+                            .buttonStyle(PressableButtonStyle())
+                            .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
 #endif
                             .onAppear {
                                 if shouldLoadMore(after: item) {
@@ -1120,6 +1120,26 @@ struct LibraryDetailView: View {
             title: item.name,
             year: item.productionYear.map { String($0) }
         )
+    }
+
+    private func libraryItemPreview(_ item: MediaItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AsyncImage(url: mediaRepo.imageURL(for: item)) { phase in
+                switch phase {
+                case .success(let img): img.resizable().scaledToFill()
+                default: DT.Color.backgroundSecondary
+                }
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(item.name)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
+        }
+        .padding(DT.Spacing.sm)
     }
 
     @ViewBuilder

@@ -58,7 +58,7 @@ struct SeerrRequestsListView: View {
                     requestRow(req)
                 }
                 .buttonStyle(.plain)
-                .contextMenu {
+                .contextMenu(menuItems: {
                     Button {
                         selectedRequest = req
                     } label: {
@@ -69,7 +69,9 @@ struct SeerrRequestsListView: View {
                     } label: {
                         Label("Remove Request", systemImage: "trash")
                     }
-                }
+                }, preview: {
+                    requestRowPreview(req)
+                })
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
@@ -78,30 +80,23 @@ struct SeerrRequestsListView: View {
 
     private var loadingList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(0..<6, id: \.self) { _ in
-                HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white.opacity(0.08))
-                        .frame(width: 32, height: 44)
-                    VStack(alignment: .leading, spacing: 6) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.white.opacity(0.08))
-                            .frame(width: 140, height: 12)
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.white.opacity(0.06))
-                            .frame(width: 90, height: 9)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 12).padding(.vertical, 11)
-                .frame(height: 66)
-                .background(.white.opacity(0.03))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+            ForEach(Self.placeholderRequests) { req in
+                requestRow(req)
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 12)
+        .redacted(reason: .placeholder)
+    }
+
+    private static let placeholderRequests: [SeerrRequestItem] = (0..<6).map { i in
+        SeerrRequestItem(
+            id: -(i + 1),
+            mediaTitle: "Loading Title",
+            mediaType: .movie,
+            status: .pending,
+            requestedAt: .now
+        )
     }
 
     private func requestRow(_ req: SeerrRequestItem) -> some View {
@@ -150,6 +145,32 @@ struct SeerrRequestsListView: View {
         .background(.white.opacity(0.03))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+    }
+
+    private func requestRowPreview(_ req: SeerrRequestItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                if let url = req.posterURL {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: posterMiniFallback
+                        }
+                    }
+                } else {
+                    posterMiniFallback
+                }
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(req.mediaTitle)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
+        }
+        .padding(DT.Spacing.sm)
     }
 
     private var posterMiniFallback: some View {

@@ -54,7 +54,12 @@ struct ShelfRow<Content: View>: View {
             .padding(.bottom, DT.Spacing.sectionGap)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DT.Spacing.shelfGap) {
+                // Lazy: a plain HStack built every cell (and fired every cell's AsyncImage
+                // request) the instant the shelf appeared, regardless of scroll position —
+                // on a title/shelf with many items this saturated AsyncImage's shared
+                // URLSession all at once and caused the whole burst to fail together under
+                // any network degradation.
+                LazyHStack(spacing: DT.Spacing.shelfGap) {
                     content()
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)

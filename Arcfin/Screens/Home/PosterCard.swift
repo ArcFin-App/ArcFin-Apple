@@ -164,12 +164,13 @@ struct PosterCard: View {
     private var imageLayer: some View {
         Group {
             if let url = imageURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: placeholderGradient
-                    }
-                }
+                RetryingAsyncImage(
+                    url: url,
+                    logCategory: "PosterCard",
+                    logContext: "title=\(title)",
+                    content: { img in img.resizable().scaledToFill() },
+                    placeholder: { placeholderGradient }
+                )
                 .clipped()
             } else {
                 placeholderGradient
@@ -185,6 +186,25 @@ struct PosterCard: View {
         )
     }
 }
+
+// MARK: - Zoom transition wiring
+
+#if !os(tvOS)
+extension View {
+    /// Matches a poster tap's source geometry with its MediaDetailView destination for the
+    /// `.zoom` navigation transition. `namespace` is optional because MediaDetailView can be
+    /// reached from places that don't own a matching namespace (e.g. the Home hero banner) —
+    /// those fall back to a plain push instead of failing to compile.
+    @ViewBuilder
+    func zoomTransitionSource(id: String, in namespace: Namespace.ID?) -> some View {
+        if let namespace {
+            self.matchedTransitionSource(id: id, in: namespace)
+        } else {
+            self
+        }
+    }
+}
+#endif
 
 // MARK: - Request card
 

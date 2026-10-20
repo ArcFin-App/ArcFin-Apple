@@ -138,6 +138,9 @@ struct HomeView: View {
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
+    #if !os(tvOS)
+    @Namespace private var zoomNamespace
+    #endif
     @State private var heroPlaybackRequest: HeroPlaybackRequest?
     @State private var seeAllShelf: SeeAllShelf?
     @State private var showOfflinePrompt = false
@@ -323,12 +326,13 @@ struct HomeView: View {
         .focusEffectDisabled()
         .contextMenu { quickLookMenu(item) }
 #else
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
         // No custom preview: — a preview whose size doesn't match the tiny source card
         // confuses UIKit's context-menu interaction proxy about which cell was actually
         // touched in a tightly-packed horizontal shelf, causing taps to land on the
         // neighboring card instead of the one under your finger.
         .contextMenu { quickLookMenu(item) }
+        .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
     }
 
@@ -425,7 +429,12 @@ struct HomeView: View {
                 }
                 #endif
                 .navigationDestination(for: MediaItem.self) { item in
+#if os(tvOS)
                     MediaDetailView(item: item)
+#else
+                    MediaDetailView(item: item, zoomNamespace: zoomNamespace)
+                        .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+#endif
                 }
                 .navigationDestination(item: $heroDetailItem) { item in
                     MediaDetailView(item: item)
@@ -681,7 +690,7 @@ struct HomeView: View {
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
 #else
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
                 .contextMenu { seerrQuickLookMenu(item) }
 #endif
             }
@@ -1074,11 +1083,9 @@ struct HomeView: View {
     private func mediaShelfContent(_ items: [MediaItem], placeholderCount: Int = 6) -> some View {
         if items.isEmpty {
             ForEach(0..<placeholderCount, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: DT.Radius.card)
-                    .fill(Color.white.opacity(0.05))
-                    .frame(width: DT.Size.posterCard.width, height: DT.Size.posterCard.height)
-                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.04), lineWidth: 1))
+                PosterCard(title: "Loading Title")
             }
+            .redacted(reason: .placeholder)
         } else {
             ForEach(items) { item in
                 NavigationLink(value: item) {
@@ -1093,8 +1100,9 @@ struct HomeView: View {
                 .focusEffectDisabled()
                 .contextMenu { quickLookMenu(item) }
 #else
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
                 .contextMenu { quickLookMenu(item) }
+                .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
             }
         }

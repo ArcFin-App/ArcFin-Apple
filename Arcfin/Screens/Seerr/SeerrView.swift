@@ -290,7 +290,7 @@ struct SeerrView: View {
             discoverCardContent(item)
         }
         .buttonStyle(.plain)
-        .contextMenu {
+        .contextMenu(menuItems: {
             let alreadyRequested = seerrRepo.matchingRequest(for: item) != nil
             let isAvailable = item.availabilityStatus == .available
             Button {
@@ -308,7 +308,35 @@ struct SeerrView: View {
                     Label("Request", systemImage: "plus.circle")
                 }
             }
+        }, preview: {
+            discoverCardPreview(item)
+        })
+    }
+
+    private func discoverCardPreview(_ item: SeerrItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                if let url = item.posterURL {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: posterPlaceholder(item: item)
+                        }
+                    }
+                } else {
+                    posterPlaceholder(item: item)
+                }
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(item.title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
         }
+        .padding(DT.Spacing.sm)
     }
 
     private func discoverCardContent(_ item: SeerrItem) -> some View {
@@ -426,14 +454,17 @@ struct SeerrView: View {
 
     private var loadingGrid: some View {
         LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
-            ForEach(0..<6, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.06))
-                    .aspectRatio(2/3, contentMode: .fit)
+            ForEach(Self.placeholderDiscoverItems) { item in
+                discoverCardContent(item)
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
+        .redacted(reason: .placeholder)
+    }
+
+    private static let placeholderDiscoverItems: [SeerrItem] = (0..<6).map { i in
+        SeerrItem(id: -(i + 1), title: "Loading Title", mediaType: .movie, year: "0000")
     }
 
     // MARK: - Search

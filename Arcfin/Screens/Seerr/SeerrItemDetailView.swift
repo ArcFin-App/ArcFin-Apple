@@ -15,6 +15,7 @@ struct SeerrItemDetailView: View {
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = false
     @State private var requestingItem: SeerrItem? = nil
+    @State private var requestBounceTrigger = 0
 
     private var alreadyRequested: Bool {
         seerrRepo.matchingRequest(for: item) != nil
@@ -140,10 +141,12 @@ struct SeerrItemDetailView: View {
         HStack(spacing: 10) {
             if !isAvailable && hasRequestableContent {
                 Button {
+                    requestBounceTrigger += 1
                     requestingItem = item
                 } label: {
                     HStack {
                         Image(systemName: "plus.circle")
+                            .symbolEffect(.bounce, value: requestBounceTrigger)
                         Text("Request")
                     }
                     .font(.system(size: 14, weight: .semibold))
@@ -153,6 +156,7 @@ struct SeerrItemDetailView: View {
                     .background(DT.Color.accent)
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 }
+                .buttonStyle(PressableButtonStyle())
             }
 
             Button {
@@ -165,6 +169,7 @@ struct SeerrItemDetailView: View {
                     .padding(.vertical, 12)
                     .background(.white.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
             }
         }
         .padding(.top, DT.Spacing.sm)

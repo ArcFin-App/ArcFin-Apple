@@ -15,6 +15,9 @@ struct PersonDetailView: View {
     @State private var items: [MediaItem] = []
     @State private var isLoading = true
     @State private var selectedItem: MediaItem?
+    #if !os(tvOS)
+    @Namespace private var zoomNamespace
+    #endif
     @State private var detail: MediaPersonDetail?
     @State private var seerrCredits: [SeerrPersonCredit] = []
     @State private var requestingCredit: SeerrItem?
@@ -85,7 +88,8 @@ struct PersonDetailView: View {
                                 .buttonStyle(TVCardButtonStyle())
                                 .focusEffectDisabled()
 #else
-                                .buttonStyle(.plain)
+                                .buttonStyle(PressableButtonStyle())
+                                .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
                             }
                         }
@@ -119,7 +123,12 @@ struct PersonDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .navigationDestination(item: $selectedItem) { item in
+#if os(tvOS)
             MediaDetailView(item: item)
+#else
+            MediaDetailView(item: item, zoomNamespace: zoomNamespace)
+                .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+#endif
         }
         .task { await load() }
     }
@@ -129,12 +138,13 @@ struct PersonDetailView: View {
             Group {
                 if let tag = person.primaryImageTag,
                    let url = mediaRepo.personImageURL(personId: person.id, tag: tag, fillWidth: 300) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: personPlaceholder
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: url,
+                        logCategory: "PersonDetailView",
+                        logContext: "header name=\(person.name)",
+                        content: { img in img.resizable().scaledToFill() },
+                        placeholder: { personPlaceholder }
+                    )
                 } else {
                     personPlaceholder
                 }
@@ -180,12 +190,13 @@ struct PersonDetailView: View {
                 ZStack(alignment: .bottomTrailing) {
                     Group {
                         if let url = credit.posterURL {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let img): img.resizable().scaledToFill()
-                                default: DT.Color.backgroundSecondary
-                                }
-                            }
+                            RetryingAsyncImage(
+                                url: url,
+                                logCategory: "PersonDetailView",
+                                logContext: "credit title=\(credit.title)",
+                                content: { img in img.resizable().scaledToFill() },
+                                placeholder: { DT.Color.backgroundSecondary }
+                            )
                         } else {
                             DT.Color.backgroundSecondary
                         }
@@ -212,7 +223,7 @@ struct PersonDetailView: View {
             }
             .frame(width: 110)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 
     private func load() async {

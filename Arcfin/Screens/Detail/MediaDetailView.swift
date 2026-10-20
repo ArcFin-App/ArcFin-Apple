@@ -11,6 +11,13 @@ import Persistence
 
 struct MediaDetailView: View {
     let item: MediaItem
+    #if !os(tvOS)
+    /// Passed down from whichever screen pushed this view (Home/Library/PersonDetail each
+    /// own their own @Namespace) so the Similar/Recommended rows below can zoom into a
+    /// further MediaDetailView the same way the original poster tap did. nil when reached
+    /// from a source that doesn't do the zoom transition (e.g. the Home hero banner).
+    var zoomNamespace: Namespace.ID? = nil
+    #endif
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -130,7 +137,11 @@ struct MediaDetailView: View {
         }
         #endif
         .navigationDestination(item: $selectedEpisode) { ep in
+#if os(tvOS)
             MediaDetailView(item: ep)
+#else
+            MediaDetailView(item: ep, zoomNamespace: zoomNamespace)
+#endif
         }
         .navigationDestination(item: $selectedPerson) { person in
             PersonDetailView(person: person)
@@ -393,16 +404,18 @@ struct MediaDetailView: View {
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
+                RetryingAsyncImage(
+                    url: url,
+                    logCategory: "MediaDetailView",
+                    logContext: "backdrop item=\(item.name)",
+                    content: { img in
                         img
                             .resizable()
                             .scaledToFill()
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    default: fallbackHero
-                    }
-                }
+                    },
+                    placeholder: { fallbackHero }
+                )
             } else { fallbackHero }
 
             LinearGradient(
@@ -431,12 +444,13 @@ struct MediaDetailView: View {
         HStack(alignment: .top, spacing: 14) {
             // Portrait poster
             if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 200) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
-                    }
-                }
+                RetryingAsyncImage(
+                    url: url,
+                    logCategory: "MediaDetailView",
+                    logContext: "poster item=\(item.name)",
+                    content: { img in img.resizable().scaledToFill() },
+                    placeholder: { RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary) }
+                )
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
@@ -625,7 +639,7 @@ struct MediaDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableButtonStyle())
 
             if isResumable {
                 Button {
@@ -697,15 +711,9 @@ struct MediaDetailView: View {
     // MARK: - Loading skeleton
 
     private var loadingContent: some View {
-        VStack(spacing: DT.Spacing.md) {
-            ForEach(0..<3, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.white.opacity(0.05))
-                    .frame(height: 14)
-                    .padding(.horizontal, DT.Spacing.pagePad)
-            }
-        }
-        .padding(.top, DT.Spacing.md)
+        overviewSection("Loading overview text that fills a few lines of placeholder content.")
+            .padding(.top, DT.Spacing.md)
+            .redacted(reason: .placeholder)
     }
 
     // MARK: - Detail content
@@ -789,7 +797,12 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Cast").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 12) {
+                // Lazy: a plain HStack fired every cast member's AsyncImage request the
+                // instant this section appeared — a large cast (20+ for some titles) could
+                // saturate AsyncImage's shared URLSession all at once and fail the whole
+                // burst together under any network degradation. See ShelfRow.swift for the
+                // same fix applied to Home's shelves.
+                LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(d.cast) { person in
                         Button { selectedPerson = person } label: {
                             CastPersonCard(
@@ -1064,7 +1077,7 @@ struct MediaDetailView: View {
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .contextMenu {
+        .contextMenu(menuItems: {
             Button {
                 HapticManager.impact(.light)
                 markEpisodeWatched(ep, watched: !isWatched)
@@ -1072,7 +1085,35 @@ struct MediaDetailView: View {
                 Label(isWatched ? "Mark as Unwatched" : "Mark as Watched",
                       systemImage: isWatched ? "eye.slash" : "checkmark")
             }
+        }, preview: {
+            episodeRowPreview(ep)
+        })
+    }
+
+    private func episodeRowPreview(_ ep: MediaItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                if let url = mediaRepo.episodeThumbnailURL(for: ep) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: episodeThumbPlaceholder
+                        }
+                    }
+                } else {
+                    episodeThumbPlaceholder
+                }
+            }
+            .frame(width: 240, height: 135)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(ep.name)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 240, alignment: .leading)
         }
+        .padding(DT.Spacing.sm)
     }
 
     private var episodeThumbPlaceholder: some View {
@@ -1155,7 +1196,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("More Like This").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(similarItems) { sim in
                         NavigationLink(value: sim) {
                             PosterCard(
@@ -1169,6 +1210,7 @@ struct MediaDetailView: View {
                         .focusEffectDisabled()
 #else
                         .buttonStyle(.plain)
+                        .zoomTransitionSource(id: sim.id, in: zoomNamespace)
 #endif
                     }
                 }
@@ -1185,7 +1227,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle(category.title).padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(category.items) { rec in
                         NavigationLink(value: rec) {
                             PosterCard(
@@ -1199,6 +1241,7 @@ struct MediaDetailView: View {
                         .focusEffectDisabled()
 #else
                         .buttonStyle(.plain)
+                        .zoomTransitionSource(id: rec.id, in: zoomNamespace)
 #endif
                     }
                 }
@@ -1215,7 +1258,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Recommended").padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                LazyHStack(spacing: 10) {
                     ForEach(seerrRelatedItems) { sim in
                         Button { requestingSeerrItem = sim } label: {
                             PosterCard(
@@ -1293,12 +1336,13 @@ private struct CastPersonCard<Placeholder: View>: View {
         VStack(spacing: 6) {
             Group {
                 if let imageURL {
-                    AsyncImage(url: imageURL) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: placeholder()
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: imageURL,
+                        logCategory: "CastPersonCard",
+                        logContext: "name=\(name)",
+                        content: { img in img.resizable().scaledToFill() },
+                        placeholder: { placeholder() }
+                    )
                 } else {
                     placeholder()
                 }

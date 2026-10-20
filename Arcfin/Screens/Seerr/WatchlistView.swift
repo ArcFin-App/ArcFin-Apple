@@ -111,13 +111,15 @@ struct WatchlistView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
             .tvFocusRing(cornerRadius: DT.Radius.card)
-            .contextMenu {
+            .contextMenu(menuItems: {
                 Button(role: .destructive) {
                     remove(item)
                 } label: {
                     Label("Remove from Watchlist", systemImage: "bookmark.slash")
                 }
-            }
+            }, preview: {
+                watchlistPreview(item)
+            })
 
             Text(item.title)
                 .font(.system(size: 12, weight: .semibold))
@@ -129,6 +131,32 @@ struct WatchlistView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
+    }
+
+    private func watchlistPreview(_ item: SeerrItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                if let url = item.posterURL {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: DT.Color.backgroundSecondary
+                        }
+                    }
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(item.title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
+        }
+        .padding(DT.Spacing.sm)
     }
 
     private func remove(_ item: SeerrItem) {
