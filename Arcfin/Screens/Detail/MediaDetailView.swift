@@ -4,6 +4,8 @@ import SwiftUI
 import JellyfinAPI
 import SeerrAPI
 import AuthCore
+import Telemetry
+import os
 #if os(iOS)
 import SwiftData
 import Persistence
@@ -411,6 +413,12 @@ struct MediaDetailView: View {
                             .resizable()
                             .scaledToFill()
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    case .failure(let error):
+                        let nsError = error as NSError
+                        let _ = Telemetry.logger(category: "MediaDetailView").error(
+                            "backdrop load failed: item=\(item.name, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                        fallbackHero
                     default: fallbackHero
                     }
                 }
@@ -445,6 +453,12 @@ struct MediaDetailView: View {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
+                    case .failure(let error):
+                        let nsError = error as NSError
+                        let _ = Telemetry.logger(category: "MediaDetailView").error(
+                            "poster load failed: item=\(item.name, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                        RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
                     default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
                     }
                 }
@@ -1331,6 +1345,12 @@ private struct CastPersonCard<Placeholder: View>: View {
                     AsyncImage(url: imageURL) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
+                        case .failure(let error):
+                            let nsError = error as NSError
+                            let _ = Telemetry.logger(category: "CastPersonCard").error(
+                                "cast image load failed: name=\(name, privacy: .public) url=\(imageURL.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                            )
+                            placeholder()
                         default: placeholder()
                         }
                     }
