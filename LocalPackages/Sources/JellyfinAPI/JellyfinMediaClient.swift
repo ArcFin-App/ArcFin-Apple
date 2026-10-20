@@ -288,7 +288,8 @@ public struct JellyfinMediaClient: Sendable {
         credential: ServerCredential,
         authHeader: String,
         itemType: String,
-        limit: Int = 6
+        limit: Int = 6,
+        since: Date? = nil
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
@@ -302,6 +303,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "Limit", value: "\(limit)"),
             .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear"),
         ]
+        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
@@ -310,10 +312,18 @@ public struct JellyfinMediaClient: Sendable {
         return page.items.map { $0.toMediaItem() }
     }
 
+    /// "Played since" for Stats' 7D/30D ranges: Jellyfin has no last-played-date filter on
+    /// the items query, but minDateLastSavedForUser matches items whose per-user data (which
+    /// playback updates) changed since — a close stand-in, and it also catches favoriting.
+    private static func sinceQueryItem(_ date: Date) -> URLQueryItem {
+        .init(name: "MinDateLastSavedForUser", value: ISO8601DateFormatter().string(from: date))
+    }
+
     public func getPlayedCount(
         credential: ServerCredential,
         authHeader: String,
-        itemType: String
+        itemType: String,
+        since: Date? = nil
     ) async throws -> Int {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
@@ -324,6 +334,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "Recursive", value: "true"),
             .init(name: "Limit", value: "1"),
         ]
+        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
