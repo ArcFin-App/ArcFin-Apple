@@ -83,6 +83,15 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     /// yet. Same passthrough rationale as `volume` above.
     public var nativePlayerLayer: AVPlayerLayer? { engine.nativePlayerLayer }
 
+    /// Passthrough so PlayerView's fill-screen toggle can reach this engine's own
+    /// videoGravity — applies on every route (it re-applies to whichever of nativeHost's
+    /// playerLayer / softwareHost's displayLayer is actually live), unlike nativePlayerLayer
+    /// above which is nil on .software.
+    public var isFillScreen: Bool {
+        get { engine.videoGravity == .resizeAspectFill }
+        set { engine.videoGravity = newValue ? .resizeAspectFill : .resizeAspect }
+    }
+
     public init() throws {
         engine = try AetherEngine()
         // Arcfin already owns audio-session activation generically (PlayerView.
