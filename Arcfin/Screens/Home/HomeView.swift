@@ -341,6 +341,22 @@ struct HomeView: View {
                     mediaShelfContent(recommendation.items)
                 }
             }
+        case .favorites:
+            if !mediaRepo.favorites.isEmpty {
+                ShelfRow(title: "Favorites", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Favorites", items: mediaRepo.favorites)
+                }) {
+                    mediaShelfContent(mediaRepo.favorites)
+                }
+            }
+        case .topRatedUnwatched:
+            if !mediaRepo.topRatedUnwatched.isEmpty {
+                ShelfRow(title: "Top Rated, Unwatched", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
+                }) {
+                    mediaShelfContent(mediaRepo.topRatedUnwatched)
+                }
+            }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
                 seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
