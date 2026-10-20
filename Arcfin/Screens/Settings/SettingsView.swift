@@ -206,7 +206,7 @@ struct SettingsView: View {
                 // section's rounded-corner silhouette at the bottom edge (a List quirk: the
                 // last row's background normally supplies that corner).
                 Text("Made by PSMattas")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .tracking(1.5)
                     .textCase(.uppercase)
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.6))
@@ -280,7 +280,7 @@ struct SettingsView: View {
 
     private func initialsLabel(_ initials: String) -> some View {
         Text(initials)
-            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .font(.system(.body, design: .rounded, weight: .bold))
             .foregroundStyle(.white)
     }
 
@@ -327,14 +327,14 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(cred.displayName)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(.callout, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 HStack(spacing: 4) {
                     Image(systemName: "server.rack")
                         .font(.system(size: 10))
                         .foregroundStyle(DT.Color.textSecondary)
                     Text(cred.baseURL.host ?? cred.baseURL.absoluteString)
-                        .font(.system(size: 13))
+                        .font(.system(.footnote))
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
@@ -527,7 +527,7 @@ struct SeerrPluginView: View {
             LabeledContent("Username", value: seerrUsername)
         } header: {
             Label("Connection", systemImage: "server.rack")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
                 .textCase(nil)
         }
@@ -555,7 +555,7 @@ struct SeerrPluginView: View {
                 #endif
         } header: {
             Label("Server URL", systemImage: "server.rack")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
                 .textCase(nil)
         }
@@ -572,7 +572,7 @@ struct SeerrPluginView: View {
             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
         } header: {
             Label("Account Type", systemImage: "person.badge.key")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
                 .textCase(nil)
         } footer: {
@@ -595,7 +595,7 @@ struct SeerrPluginView: View {
                 #endif
         } header: {
             Label("Credentials", systemImage: "person.fill")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
                 .textCase(nil)
         }
@@ -703,7 +703,7 @@ struct StreamystatsPluginView: View {
                     .syncLocked("streamystatsURL", authManager)
             } header: {
                 Label("Server URL", systemImage: "server.rack")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
@@ -871,7 +871,7 @@ struct TVUsersView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(.caption, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
     }

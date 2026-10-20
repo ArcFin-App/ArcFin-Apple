@@ -353,7 +353,7 @@ struct HomeView: View {
 
     private var initialsView: some View {
         Text(authManager.state.displayInitials)
-            .font(.system(size: 11, weight: .bold))
+            .font(.system(.caption2, design: .default, weight: .bold))
             .foregroundStyle(.white)
     }
 
@@ -635,10 +635,10 @@ struct HomeView: View {
                     .foregroundStyle(Color(hex: "f59e0b"))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Can't reach your server")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("Check your connection or Server Settings, then retry.")
-                        .font(.system(size: 12))
+                        .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
@@ -646,7 +646,7 @@ struct HomeView: View {
                     guard case .authenticated(let cred) = authManager.state else { return }
                     Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
                 }
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.accent)
             }
             #if os(iOS)
@@ -658,7 +658,7 @@ struct HomeView: View {
                         Image(systemName: "arrow.down.circle.fill")
                         Text("Watch Downloads Instead")
                     }
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
                 }
             }

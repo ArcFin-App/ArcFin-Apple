@@ -348,7 +348,7 @@ struct AuthView: View {
                 }
                 VStack(spacing: 6) {
                     Text("Welcome, \(authManager.state.displayName)!")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(.body, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("Opening your library…")
                         .font(DT.Font.caption)

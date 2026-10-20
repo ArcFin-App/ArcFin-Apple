@@ -73,7 +73,7 @@ struct SplashView: View {
             VStack {
                 Spacer()
                 Text("by PSMattas")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(.caption2, design: .default, weight: .medium))
                     .tracking(2.5)
                     .textCase(.uppercase)
                     .foregroundStyle(.white.opacity(0.18))

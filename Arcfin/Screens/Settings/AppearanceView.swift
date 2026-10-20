@@ -48,7 +48,7 @@ struct AppearanceView: View {
                 .tvListRow()
             } header: {
                 Text("Home")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
@@ -66,7 +66,7 @@ struct AppearanceView: View {
                 .tvListRow()
             } header: {
                 Text(navSectionTitle)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
@@ -83,7 +83,7 @@ struct AppearanceView: View {
                 .syncLocked("reduceMotion", authManager)
             } header: {
                 Text("Motion")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
@@ -102,7 +102,7 @@ struct AppearanceView: View {
                 .syncLocked("hapticsEnabled", authManager)
             } header: {
                 Text("Feedback")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {

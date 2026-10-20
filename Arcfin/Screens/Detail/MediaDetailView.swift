@@ -463,7 +463,7 @@ struct MediaDetailView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.system(.title3, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.5)
                     .lineLimit(3)
@@ -483,31 +483,31 @@ struct MediaDetailView: View {
         HStack(spacing: 6) {
             if let year = item.productionYear {
                 Text(String(year))
-                    .font(.system(size: 12))
+                    .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(size: 12))
+                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text(rating)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(size: 12))
+                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text("\(mins)m")
-                    .font(.system(size: 12))
+                    .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(size: 12))
+                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
                         .font(.system(size: 9))
                         .foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(.caption2, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.accent)
                 }
             }
@@ -540,7 +540,7 @@ struct MediaDetailView: View {
             Image(systemName: "trophy.fill")
                 .font(.system(size: 10))
             Text(label)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(.caption2, design: .default, weight: .semibold))
                 .lineLimit(1)
         }
         .foregroundStyle(Color(hex: "f59e0b"))
@@ -548,7 +548,7 @@ struct MediaDetailView: View {
 
     private func qualityBadge(_ label: String, color: Color) -> some View {
         Text(label)
-            .font(.system(size: 9, weight: .bold))
+            .font(.system(.caption2, design: .default, weight: .bold))
             .tracking(0.5)
             .foregroundStyle(color)
             .padding(.horizontal, 6).padding(.vertical, 2)
@@ -616,16 +616,16 @@ struct MediaDetailView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 5) {
                             Text(isResumable ? "Resume" : "Play")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(.callout, design: .default, weight: .bold))
                             if let playEpisodeLabel {
                                 Text(playEpisodeLabel)
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(.system(.caption2, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
                         }
                         if let resumeTimeLabel {
                             Text(resumeTimeLabel)
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.system(.caption2, design: .default, weight: .medium))
                                 .opacity(0.85)
                         }
                     }
@@ -686,7 +686,7 @@ struct MediaDetailView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "film").font(.system(size: 14))
-                    Text("Play Trailer").font(.system(size: 15, weight: .semibold))
+                    Text("Play Trailer").font(.system(.subheadline, design: .default, weight: .semibold))
                 }
                 .foregroundStyle(DT.Color.textPrimary)
                 .frame(maxWidth: .infinity)
@@ -729,7 +729,7 @@ struct MediaDetailView: View {
                 HStack(spacing: 8) {
                     ForEach(d.genres, id: \.self) { genre in
                         Text(genre)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(.caption2, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                             .padding(.horizontal, 12).padding(.vertical, 5)
                             .background(.white.opacity(0.05))
@@ -782,7 +782,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Overview")
             Text(text)
-                .font(.system(size: 14))
+                .font(.system(.footnote, design: .default))
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -857,11 +857,11 @@ struct MediaDetailView: View {
     private func crewRow(label: String, people: [MediaPerson]) -> some View {
         HStack(spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(.caption2, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textSecondary)
                 .frame(width: 60, alignment: .leading)
             Text(people.map { $0.name }.joined(separator: ", "))
-                .font(.system(size: 12))
+                .font(.system(.caption, design: .default))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
         }
@@ -879,7 +879,7 @@ struct MediaDetailView: View {
                 } label: {
                     HStack(spacing: 5) {
                         Text(selectedSeason?.name ?? "Season")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(.callout, design: .default, weight: .bold))
                             .foregroundStyle(DT.Color.textPrimary)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 11, weight: .semibold))
@@ -937,7 +937,7 @@ struct MediaDetailView: View {
                         }
                         Text(isSeasonFullyDownloaded ? "Season Downloaded" : "Download Season")
                     }
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     // A hardcoded accent color didn't dim when disabled (episodes still
                     // loading, or the whole season already downloaded) — tapping it then
                     // did nothing with zero visual feedback, which read as "no confirm
@@ -949,7 +949,7 @@ struct MediaDetailView: View {
                 .disabled(episodes.isEmpty || isSeasonFullyDownloaded)
                 #else
                 Text("Episodes")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(.footnote, design: .default, weight: .medium))
                     .foregroundStyle(DT.Color.textSecondary)
                 #endif
             }
@@ -977,7 +977,7 @@ struct MediaDetailView: View {
                         .font(.system(size: 14))
                         .foregroundStyle(DT.Color.accent)
                     Text(series.name)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(1)
                     Spacer()
@@ -1048,11 +1048,11 @@ struct MediaDetailView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if let epNum = ep.indexNumber {
                             Text("E\(epNum)")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.accent)
                         }
                         Text(ep.name)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(.footnote, design: .default, weight: .semibold))
                             .foregroundStyle(DT.Color.textPrimary)
                             .lineLimit(2)
                     }
@@ -1065,7 +1065,7 @@ struct MediaDetailView: View {
 
                 if let overview = ep.overview, !overview.isEmpty {
                     Text(overview)
-                        .font(.system(size: 11))
+                        .font(.system(.caption2, design: .default))
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(3)
                         .padding(.top, 8)
@@ -1108,7 +1108,7 @@ struct MediaDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(ep.name)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 240, alignment: .leading)
@@ -1316,7 +1316,7 @@ struct MediaDetailView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 16, weight: .bold))
+            .font(.system(.callout, design: .default, weight: .bold))
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.3)
     }
@@ -1353,14 +1353,14 @@ private struct CastPersonCard<Placeholder: View>: View {
             .scaleEffect(hovered ? 1.06 : 1)
 
             Text(name)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(.caption2, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
             if let role, !role.isEmpty {
                 Text(role)
-                    .font(.system(size: 9))
+                    .font(.system(.caption2, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
             }

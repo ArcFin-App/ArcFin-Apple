@@ -121,7 +121,7 @@ struct SearchView: View {
                     .foregroundStyle(DT.Color.textPrimary)
             }
             Text("Not in your library — tap to request")
-                .font(.system(size: 11))
+                .font(.system(.caption2))
                 .foregroundStyle(DT.Color.textSecondary)
 
             LazyVGrid(columns: columns, spacing: 16) {
@@ -198,12 +198,12 @@ private struct SearchResultCard: View {
             .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
 
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 10))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }

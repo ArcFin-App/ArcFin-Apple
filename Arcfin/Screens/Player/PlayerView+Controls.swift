@@ -75,7 +75,7 @@ extension PlayerView {
                         .lineLimit(1)
                     if let hdrLabel {
                         Text(hdrLabel)
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(.caption2, design: .default, weight: .bold))
                             .tracking(0.5)
                             .foregroundStyle(hdrIsToneMapped ? .black : .white)
                             .padding(.horizontal, 6).padding(.vertical, 2)
@@ -336,7 +336,7 @@ extension PlayerView {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 #else
                 Text(timeLabel(ticks: elapsedTicks))
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
                     .contentTransition(.numericText())
                     .animation(isScrubbing ? nil : .default, value: elapsedTicks)
@@ -388,7 +388,7 @@ extension PlayerView {
                 Spacer()
 
                 Text(remainingLabel)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
                     .contentTransition(.numericText())
                     .animation(.default, value: remainingTicks)
@@ -633,11 +633,11 @@ extension PlayerView {
                         HStack(spacing: 12) {
                             ChapterThumbnailView(loader: trickplayLoader, positionTicks: chapter.startPositionTicks)
                             Text(chapter.name ?? "Chapter \(index + 1)")
-                                .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
+                                .font(.system(.footnote, design: .default, weight: isCurrent ? .semibold : .regular))
                                 .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
                             Spacer()
                             Text(timeLabel(ticks: chapter.startPositionTicks))
-                                .font(.system(size: 13, design: .monospaced))
+                                .font(.system(.footnote, design: .monospaced))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                     }
@@ -806,7 +806,7 @@ extension PlayerView {
                         Section {
                             if syncPlayManager.availableGroups.isEmpty {
                                 Text(syncPlayManager.isRefreshingGroups ? "Looking for groups…" : "No joinable groups right now.")
-                                    .font(.system(size: 13))
+                                    .font(.system(.footnote))
                                     .foregroundStyle(DT.Color.textSecondary)
                             } else {
                                 ForEach(syncPlayManager.availableGroups) { group in
@@ -816,7 +816,7 @@ extension PlayerView {
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(group.groupName).foregroundStyle(DT.Color.textPrimary)
                                             Text("\(group.participants.count) watching" + (group.playingItemName.map { " · \($0)" } ?? ""))
-                                                .font(.system(size: 11))
+                                                .font(.system(.caption2))
                                                 .foregroundStyle(DT.Color.textSecondary)
                                         }
                                     }
@@ -904,7 +904,7 @@ extension PlayerView {
                         Spacer()
                         Button { skipToSegmentEnd() } label: {
                             HStack(spacing: 6) {
-                                Text(label).font(.system(size: 14, weight: .semibold))
+                                Text(label).font(.system(.footnote, design: .default, weight: .semibold))
                                 Image(systemName: "forward.fill").font(.system(size: 12))
                             }
                             .foregroundStyle(.white)
@@ -965,16 +965,16 @@ extension PlayerView {
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Up Next")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(.caption2, design: .default, weight: .bold))
                             .tracking(0.5)
                             .foregroundStyle(DT.Color.accent)
                         Text(next.name)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(.footnote, design: .default, weight: .semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         if let s = next.parentIndexNumber, let e = next.indexNumber {
                             Text("S\(s) · E\(e)")
-                                .font(.system(size: 11))
+                                .font(.system(.caption2))
                                 .foregroundStyle(.white.opacity(0.6))
                         }
                     }
@@ -1029,11 +1029,11 @@ extension PlayerView {
                     .foregroundStyle(DT.Color.accent)
                 VStack(spacing: 6) {
                     Text("Are you still watching?")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(.title3, design: .default, weight: .bold))
                         .foregroundStyle(.white)
                     if let pendingAutoAdvanceEpisode = pendingAutoAdvanceEpisode {
                         Text("Playback paused before \(pendingAutoAdvanceEpisode.name)")
-                            .font(.system(size: 13))
+                            .font(.system(.footnote))
                             .foregroundStyle(.white.opacity(0.6))
                             .multilineTextAlignment(.center)
                     }
@@ -1041,7 +1041,7 @@ extension PlayerView {
                 VStack(spacing: 12) {
                     Button { continueAfterStillWatchingPrompt() } label: {
                         Text("Continue Watching")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(.subheadline, design: .default, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -1058,7 +1058,7 @@ extension PlayerView {
 
                     Button { stopAfterStillWatchingPrompt() } label: {
                         Text("Stop")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(.subheadline, design: .default, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.8))
                     }
                     #if os(tvOS)
@@ -1109,10 +1109,10 @@ extension PlayerView {
                     .foregroundStyle(DT.Color.accent)
                 VStack(spacing: 6) {
                     Text("Casting to \(CastManager.shared.deviceName ?? "TV")")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(.body, design: .default, weight: .semibold))
                         .foregroundStyle(.white)
                     Text(item.name)
-                        .font(.system(size: 14))
+                        .font(.system(.footnote))
                         .foregroundStyle(.white.opacity(0.7))
                         .lineLimit(1)
                 }
@@ -1120,7 +1120,7 @@ extension PlayerView {
                     CastManager.shared.endSession()
                 } label: {
                     Text("Stop Casting")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.9))
                         .padding(.horizontal, 18).padding(.vertical, 9)
                         .background(.white.opacity(0.15), in: Capsule())
@@ -1224,7 +1224,7 @@ extension PlayerView {
                 Image(systemName: "wifi.exclamationmark")
                     .font(.system(size: 13, weight: .semibold))
                 Text(text)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(.caption, design: .default, weight: .medium))
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 14).padding(.vertical, 8)
@@ -1286,11 +1286,11 @@ extension PlayerView {
                 .font(.system(size: 32))
                 .foregroundStyle(Color(hex: "EF4444"))
             Text(message)
-                .font(.system(size: 14))
+                .font(.system(.footnote))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
             Button("Close") { closePlayer() }
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.accent)
                 #if os(tvOS)
                 .buttonStyle(TVCardButtonStyle())
@@ -1320,7 +1320,7 @@ extension PlayerView {
                         Capsule().fill(.white).frame(width: 6, height: 90 * dragValue)
                     }
                     Text("\(Int(dragValue * 100))%")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .font(.system(.caption2, design: .monospaced, weight: .semibold))
                         .foregroundStyle(.white)
                 }
                 .padding(14)
@@ -1348,7 +1348,7 @@ extension PlayerView {
                     Capsule().fill(.white).frame(width: 6, height: 90 * volume)
                 }
                 Text("\(Int(volume * 100))%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(.caption2, design: .monospaced, weight: .semibold))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
                     .animation(.default, value: volume)
@@ -1378,7 +1378,7 @@ extension PlayerView {
         VStack(spacing: 0) {
             HStack {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(.subheadline, design: .default, weight: .semibold))
                     .foregroundStyle(.white)
                 Spacer()
                 Button("Done", action: onDone)
@@ -1430,11 +1430,11 @@ extension PlayerView {
                             HStack(spacing: 12) {
                                 ChapterThumbnailView(loader: trickplayLoader, positionTicks: chapter.startPositionTicks)
                                 Text(chapter.name ?? "Chapter \(index + 1)")
-                                    .font(.system(size: 14, weight: isCurrent ? .semibold : .regular))
+                                    .font(.system(.footnote, design: .default, weight: isCurrent ? .semibold : .regular))
                                     .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
                                 Spacer()
                                 Text(timeLabel(ticks: chapter.startPositionTicks))
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(.system(.footnote, design: .monospaced))
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
                             .padding(.horizontal, 16)
@@ -1460,7 +1460,7 @@ extension PlayerView {
                 Image(systemName: skipIconName(seconds: feedback.seconds, forward: feedback.forward))
                     .font(.system(size: 28))
                 Text("\(feedback.seconds)s")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
             }
             .foregroundStyle(.white)
             .padding(20)

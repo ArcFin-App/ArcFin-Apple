@@ -79,10 +79,10 @@ struct SeerrView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(DT.Color.accent)
             Text("Seerr Not Connected")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(.title3, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
             Text("Add your Seerr server URL and credentials in Settings → Plugins → Seerr.")
-                .font(.system(size: 14))
+                .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -182,7 +182,7 @@ struct SeerrView: View {
     private func genreChip(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                .font(.system(.caption2, design: .default, weight: isSelected ? .bold : .regular))
                 .foregroundStyle(isSelected ? DT.Color.accent : DT.Color.textSecondary)
                 .padding(.horizontal, 14).padding(.vertical, 5)
                 .background(isSelected ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
@@ -331,7 +331,7 @@ struct SeerrView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(item.title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)
@@ -362,7 +362,7 @@ struct SeerrView: View {
             VStack {
                 HStack {
                     Text(item.mediaType == .tv ? "SERIES" : "MOVIE")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(.caption2, design: .default, weight: .bold))
                         .tracking(0.5)
                         .foregroundStyle(.white.opacity(0.8))
                         .padding(.horizontal, 5).padding(.vertical, 2)
@@ -395,13 +395,13 @@ struct SeerrView: View {
                 }
 
                 Text(item.title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(.caption2, design: .default, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(2)
 
                 if let year = item.year {
                     Text(year)
-                        .font(.system(size: 9))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
 
@@ -409,7 +409,7 @@ struct SeerrView: View {
                     Button { requestingItem = item } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "plus.circle").font(.system(size: 9))
-                            Text("Request").font(.system(size: 9, weight: .bold))
+                            Text("Request").font(.system(.caption2, design: .default, weight: .bold))
                         }
                         .foregroundStyle(DT.Color.accent)
                         .frame(maxWidth: .infinity)

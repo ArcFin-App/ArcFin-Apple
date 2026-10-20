@@ -57,7 +57,7 @@ struct ServerSettingsView: View {
                 }
             } header: {
                 Label("Public Server Info", systemImage: "server.rack")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             }
@@ -86,7 +86,7 @@ struct ServerSettingsView: View {
                 .disabled(authManager.isSyncingArcfin)
             } header: {
                 Label("Arcfin Sync", systemImage: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
@@ -105,7 +105,7 @@ struct ServerSettingsView: View {
                     #endif
             } header: {
                 Label("Remote URL", systemImage: "globe")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
@@ -126,7 +126,7 @@ struct ServerSettingsView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Home Wi-Fi Network")
-                            .font(.system(size: 15))
+                            .font(.system(.subheadline, design: .default))
                         Text(homeSSID.isEmpty ? "Not set" : homeSSID)
                             .font(.caption)
                             .foregroundStyle(DT.Color.textSecondary)
@@ -146,7 +146,7 @@ struct ServerSettingsView: View {
                 }
             } header: {
                 Label("Local URL", systemImage: "wifi")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {

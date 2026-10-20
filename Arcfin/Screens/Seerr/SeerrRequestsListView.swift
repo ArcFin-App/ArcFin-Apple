@@ -118,7 +118,7 @@ struct SeerrRequestsListView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(req.mediaTitle)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
 
@@ -165,7 +165,7 @@ struct SeerrRequestsListView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(req.mediaTitle)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)

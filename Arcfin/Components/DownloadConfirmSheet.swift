@@ -84,12 +84,12 @@ struct DownloadConfirmSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: DT.Spacing.md) {
                         Text(item.name)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(.body, design: .default, weight: .bold))
                             .foregroundStyle(DT.Color.textPrimary)
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Quality")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(.caption, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textSecondary)
                             Picker("Quality", selection: $selectedOption) {
                                 ForEach(Self.options) { option in
@@ -132,7 +132,7 @@ struct DownloadConfirmSheet: View {
 
                         if preview.willRemux || selectedOption.bitrate != nil {
                             Text("This download will be converted on your server before downloading — this may take longer than the file size alone suggests.")
-                                .font(.system(size: 12))
+                                .font(.system(.caption))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                     }
@@ -144,7 +144,7 @@ struct DownloadConfirmSheet: View {
                     dismiss()
                 } label: {
                     Text("Download")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(.subheadline, design: .default, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -171,11 +171,11 @@ struct DownloadConfirmSheet: View {
     private func row(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary)
             Spacer()
             Text(value)
-                .font(.system(size: 13))
+                .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textPrimary)
                 .multilineTextAlignment(.trailing)
         }
