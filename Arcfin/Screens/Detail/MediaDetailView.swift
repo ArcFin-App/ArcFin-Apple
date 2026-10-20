@@ -1069,7 +1069,7 @@ struct MediaDetailView: View {
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .contextMenu {
+        .contextMenu(menuItems: {
             Button {
                 HapticManager.impact(.light)
                 markEpisodeWatched(ep, watched: !isWatched)
@@ -1077,7 +1077,35 @@ struct MediaDetailView: View {
                 Label(isWatched ? "Mark as Unwatched" : "Mark as Watched",
                       systemImage: isWatched ? "eye.slash" : "checkmark")
             }
+        }, preview: {
+            episodeRowPreview(ep)
+        })
+    }
+
+    private func episodeRowPreview(_ ep: MediaItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                if let url = mediaRepo.episodeThumbnailURL(for: ep) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: episodeThumbPlaceholder
+                        }
+                    }
+                } else {
+                    episodeThumbPlaceholder
+                }
+            }
+            .frame(width: 240, height: 135)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(ep.name)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 240, alignment: .leading)
         }
+        .padding(DT.Spacing.sm)
     }
 
     private var episodeThumbPlaceholder: some View {

@@ -58,7 +58,7 @@ struct SeerrRequestsListView: View {
                     requestRow(req)
                 }
                 .buttonStyle(.plain)
-                .contextMenu {
+                .contextMenu(menuItems: {
                     Button {
                         selectedRequest = req
                     } label: {
@@ -69,7 +69,9 @@ struct SeerrRequestsListView: View {
                     } label: {
                         Label("Remove Request", systemImage: "trash")
                     }
-                }
+                }, preview: {
+                    requestRowPreview(req)
+                })
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
@@ -143,6 +145,32 @@ struct SeerrRequestsListView: View {
         .background(.white.opacity(0.03))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+    }
+
+    private func requestRowPreview(_ req: SeerrRequestItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                if let url = req.posterURL {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: posterMiniFallback
+                        }
+                    }
+                } else {
+                    posterMiniFallback
+                }
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(req.mediaTitle)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
+        }
+        .padding(DT.Spacing.sm)
     }
 
     private var posterMiniFallback: some View {
