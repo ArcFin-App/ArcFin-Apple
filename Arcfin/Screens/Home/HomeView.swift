@@ -475,6 +475,7 @@ struct HomeView: View {
                             .frame(width: 34, height: 34)
                             .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
                     }
+                    .accessibilityLabel("Settings")
                 }
             }
             .toolbarBackground(.hidden, for: .navigationBar)

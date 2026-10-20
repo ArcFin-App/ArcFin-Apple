@@ -261,20 +261,38 @@ enum CardRequestStatus: String {
     var label: String { rawValue.capitalized }
 }
 
+/// Shared pill treatment for a request/availability status badge — was independently
+/// reimplemented at 4 call sites (here, SeerrRequestsListView, and twice in SeerrView),
+/// all at a 7pt font, below the 11pt iOS minimum for real text (typography.md). One
+/// component means one place to get both the sizing and the look right.
+struct StatusPill: View {
+    let label: String
+    let color: Color
+    var uppercase: Bool = false
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: 11, weight: .bold))
+            .tracking(0.5)
+            .textCase(uppercase ? .uppercase : nil)
+            .foregroundStyle(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            // .ultraThinMaterial underneath the tint guarantees a legible backing
+            // regardless of what's behind the pill — these sit directly over poster art,
+            // whose own color/brightness can't be predicted (color.md).
+            .background(.ultraThinMaterial)
+            .background(color.opacity(0.15))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(color.opacity(0.3), lineWidth: 1))
+    }
+}
+
 struct RequestStatusPill: View {
     let status: CardRequestStatus
 
     var body: some View {
-        Text(status.label)
-            .font(.system(size: 7, weight: .bold))
-            .tracking(0.5)
-            .textCase(.uppercase)
-            .foregroundStyle(status.color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(status.color.opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(status.color.opacity(0.3), lineWidth: 1))
+        StatusPill(label: status.label, color: status.color, uppercase: true)
     }
 }
 

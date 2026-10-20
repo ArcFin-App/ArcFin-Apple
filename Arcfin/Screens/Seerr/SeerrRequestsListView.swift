@@ -195,12 +195,6 @@ struct SeerrRequestsListView: View {
     }
 
     private func statusPillView(label: String, hex: String) -> some View {
-        Text(label)
-            .font(.system(size: 7, weight: .bold))
-            .foregroundStyle(Color(hex: hex))
-            .padding(.horizontal, 5).padding(.vertical, 2)
-            .background(Color(hex: hex).opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+        StatusPill(label: label, color: Color(hex: hex))
     }
 }

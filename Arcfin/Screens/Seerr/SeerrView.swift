@@ -362,7 +362,7 @@ struct SeerrView: View {
             VStack {
                 HStack {
                     Text(item.mediaType == .tv ? "SERIES" : "MOVIE")
-                        .font(.system(size: 7, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .tracking(0.5)
                         .foregroundStyle(.white.opacity(0.8))
                         .padding(.horizontal, 5).padding(.vertical, 2)
@@ -440,14 +440,7 @@ struct SeerrView: View {
     }
 
     private func availabilityPill(label: String, hex: String) -> some View {
-        Text(label)
-            .font(.system(size: 7, weight: .bold))
-            .tracking(0.5)
-            .foregroundStyle(Color(hex: hex))
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(Color(hex: hex).opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+        StatusPill(label: label, color: Color(hex: hex))
     }
 
     // MARK: - Loading skeleton
