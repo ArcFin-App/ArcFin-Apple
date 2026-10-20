@@ -88,7 +88,7 @@ struct PersonDetailView: View {
                                 .buttonStyle(TVCardButtonStyle())
                                 .focusEffectDisabled()
 #else
-                                .buttonStyle(.plain)
+                                .buttonStyle(PressableButtonStyle())
                                 .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
                             }
@@ -221,7 +221,7 @@ struct PersonDetailView: View {
             }
             .frame(width: 110)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 
     private func load() async {

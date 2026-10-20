@@ -649,6 +649,8 @@ struct OfflinePlayerView: View {
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+                    .animation(.default, value: volume)
             }
             .padding(14)
             .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
