@@ -283,7 +283,7 @@ struct DownloadedSeriesDetailView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .contextMenu {
+            .contextMenu(menuItems: {
                 if episode.playbackPositionTicks > 0 && !episode.played {
                     Button {
                         playStartOverride = 0
@@ -295,7 +295,9 @@ struct DownloadedSeriesDetailView: View {
                 Button(role: .destructive) { pendingDelete = episode } label: {
                     Label("Delete Download", systemImage: "trash")
                 }
-            }
+            }, preview: {
+                episodeRowPreview(episode)
+            })
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) { pendingDelete = episode } label: {
                     Label("Delete", systemImage: "trash")
@@ -333,6 +335,39 @@ struct DownloadedSeriesDetailView: View {
                 .font(.system(size: 20))
                 .foregroundStyle(episode.played ? Color(hex: "10b981") : DT.Color.textSecondary)
         }
+    }
+
+    private func episodeRowPreview(_ episode: DownloadedItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                #if canImport(UIKit)
+                if let fileName = episode.posterFileName,
+                   let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
+                    Image(uiImage: uiImage).resizable().scaledToFill()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+                #elseif os(macOS)
+                if let fileName = episode.posterFileName,
+                   let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
+                    Image(nsImage: nsImage).resizable().scaledToFill()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+                #else
+                DT.Color.backgroundSecondary
+                #endif
+            }
+            .frame(width: 240, height: 135)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(episode.name)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 240, alignment: .leading)
+        }
+        .padding(DT.Spacing.sm)
     }
 
     private func episodeThumbnail(_ episode: DownloadedItem) -> some View {

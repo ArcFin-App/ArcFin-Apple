@@ -290,7 +290,7 @@ struct SeerrView: View {
             discoverCardContent(item)
         }
         .buttonStyle(.plain)
-        .contextMenu {
+        .contextMenu(menuItems: {
             let alreadyRequested = seerrRepo.matchingRequest(for: item) != nil
             let isAvailable = item.availabilityStatus == .available
             Button {
@@ -308,7 +308,35 @@ struct SeerrView: View {
                     Label("Request", systemImage: "plus.circle")
                 }
             }
+        }, preview: {
+            discoverCardPreview(item)
+        })
+    }
+
+    private func discoverCardPreview(_ item: SeerrItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                if let url = item.posterURL {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: posterPlaceholder(item: item)
+                        }
+                    }
+                } else {
+                    posterPlaceholder(item: item)
+                }
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(item.title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
         }
+        .padding(DT.Spacing.sm)
     }
 
     private func discoverCardContent(_ item: SeerrItem) -> some View {

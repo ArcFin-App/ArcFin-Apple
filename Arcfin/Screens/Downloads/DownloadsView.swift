@@ -263,11 +263,13 @@ struct DownloadsView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .contextMenu {
+            .contextMenu(menuItems: {
                 Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
                     Label("Delete All Episodes", systemImage: "trash")
                 }
-            }
+            }, preview: {
+                seriesRowPreview(group)
+            })
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
                     Label("Delete", systemImage: "trash")
@@ -322,11 +324,13 @@ struct DownloadsView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .contextMenu {
+            .contextMenu(menuItems: {
                 Button(role: .destructive) { pendingDelete = item } label: {
                     Label("Delete Download", systemImage: "trash")
                 }
-            }
+            }, preview: {
+                movieRowPreview(item)
+            })
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) { pendingDelete = item } label: {
                     Label("Delete", systemImage: "trash")
@@ -411,6 +415,43 @@ struct DownloadsView: View {
         .padding(.vertical, 4)
     }
 
+    private func seriesRowPreview(_ group: (seriesId: String, seriesName: String, episodes: [DownloadedItem])) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                #if canImport(UIKit)
+                if let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: group.seriesId).appendingPathComponent("poster.jpg").path) {
+                    Image(uiImage: uiImage).resizable().scaledToFill()
+                } else if let fallbackItem = group.episodes.first, let fileName = fallbackItem.posterFileName,
+                          let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: fallbackItem.itemId).appendingPathComponent(fileName).path) {
+                    Image(uiImage: uiImage).resizable().scaledToFill()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+                #elseif os(macOS)
+                if let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: group.seriesId).appendingPathComponent("poster.jpg").path) {
+                    Image(nsImage: nsImage).resizable().scaledToFill()
+                } else if let fallbackItem = group.episodes.first, let fileName = fallbackItem.posterFileName,
+                          let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: fallbackItem.itemId).appendingPathComponent(fileName).path) {
+                    Image(nsImage: nsImage).resizable().scaledToFill()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+                #else
+                DT.Color.backgroundSecondary
+                #endif
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(group.seriesName)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
+        }
+        .padding(DT.Spacing.sm)
+    }
+
     private func seriesPosterThumbnail(_ seriesId: String, fallbackItem: DownloadedItem?) -> some View {
         Group {
             #if canImport(UIKit)
@@ -462,6 +503,39 @@ struct DownloadsView: View {
             Spacer()
         }
         .padding(.vertical, 4)
+    }
+
+    private func movieRowPreview(_ item: DownloadedItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Group {
+                #if canImport(UIKit)
+                if let fileName = item.posterFileName,
+                   let uiImage = UIImage(contentsOfFile: DownloadStore.directory(for: item.itemId).appendingPathComponent(fileName).path) {
+                    Image(uiImage: uiImage).resizable().scaledToFill()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+                #elseif os(macOS)
+                if let fileName = item.posterFileName,
+                   let nsImage = NSImage(contentsOfFile: DownloadStore.directory(for: item.itemId).appendingPathComponent(fileName).path) {
+                    Image(nsImage: nsImage).resizable().scaledToFill()
+                } else {
+                    DT.Color.backgroundSecondary
+                }
+                #else
+                DT.Color.backgroundSecondary
+                #endif
+            }
+            .frame(width: 200, height: 300)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
+
+            Text(item.name)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .frame(width: 200, alignment: .leading)
+        }
+        .padding(DT.Spacing.sm)
     }
 
     private func posterThumbnail(_ item: DownloadedItem) -> some View {
