@@ -2,6 +2,7 @@
 
 import SwiftUI
 import SeerrAPI
+import JellyfinAPI
 
 /// Full detail for a Discover item — tapping a poster used to do nothing at all (only the
 /// small in-card Request button had any action). This is that missing destination: overview,
@@ -11,7 +12,12 @@ struct SeerrItemDetailView: View {
     let item: SeerrItem
 
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
 
+    /// The server's own copy of this title, when it has one — drives the "View in Library"
+    /// action that takes the place of Request once there's nothing left to request.
+    @State private var libraryItem: MediaItem?
+    @State private var openLibraryItem: MediaItem?
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = false
     @State private var requestingItem: SeerrItem? = nil
@@ -103,11 +109,26 @@ struct SeerrItemDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
+        .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
         .task {
             isLoadingDetail = true
             detail = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
             isLoadingDetail = false
         }
+        .task { await loadLibraryItem() }
+    }
+
+    private var statusPillText: String {
+        if isAvailable { return "Available" }
+        let status = item.availabilityStatus?.label ?? seerrRepo.matchingRequest(for: item)?.displayStatus.label
+        return status.map { "Requested · \($0)" } ?? "Requested"
+    }
+
+    private func loadLibraryItem() async {
+        guard case .authenticated(let cred) = authManager.state else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        libraryItem = try? await JellyfinMediaClient().findItem(
+            credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv)
     }
 
     // MARK: - Actions (positioned and styled like MediaDetailView's playButton/trailerButton)
@@ -136,6 +157,42 @@ struct SeerrItemDetailView: View {
                     .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
                 }
                 .buttonStyle(PressableButtonStyle())
+            } else if let libraryItem {
+                Button {
+                    openLibraryItem = libraryItem
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(.subheadline))
+                        Text("View in Library")
+                            .font(.system(.callout, design: .default, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(LinearGradient(
+                        colors: [DT.Color.accentDeep, DT.Color.accent],
+                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
+                }
+                .buttonStyle(PressableButtonStyle())
+            } else {
+                // Requested but not in the library yet (or not matchable): keep the row's
+                // shape instead of leaving the bookmark button stranded on its own.
+                HStack(spacing: 8) {
+                    Image(systemName: isAvailable ? "checkmark.circle" : "clock")
+                        .font(.system(.subheadline))
+                    Text(statusPillText)
+                        .font(.system(.callout, design: .default, weight: .semibold))
+                }
+                .foregroundStyle(DT.Color.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(DT.Color.backgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                .accessibilityElement(children: .combine)
             }
 
             Button {

@@ -425,6 +425,33 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// The library's own copy of a TMDB title (Seerr identifies media by TMDB id), or nil when
+    /// the server doesn't have it. Matches on the item's ProviderIds, so it depends on the
+    /// library's metadata agent having stored a TMDB id.
+    public func findItem(
+        credential: ServerCredential,
+        authHeader: String,
+        tmdbId: Int,
+        isSeries: Bool
+    ) async throws -> MediaItem? {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "AnyProviderIdEquals", value: "tmdb.\(tmdbId)"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "IncludeItemTypes", value: isSeries ? "Series" : "Movie"),
+            .init(name: "Limit", value: "1"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,ProviderIds"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.first?.toMediaItem()
+    }
+
     /// A Person is a regular Jellyfin item under the hood, fetched the same way as a
     /// movie/series — just a much smaller field set. Separate from getItemDetail/
     /// MediaItemDetail (which decodes many movie/series-only fields a Person never has)
