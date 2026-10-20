@@ -127,8 +127,12 @@ struct SplashView: View {
         }
 
         // 6. Exit after the minimum presentation time; authentication continues in the
-        // background.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+        // background. 1.2s is enough for the entrance animation to read (credit line
+        // finishes fading in at 0.85 + 0.4 = 1.25s) without stalling an already-fast
+        // session check — launching.md: "Launch instantly... people don't want to wait
+        // more than a couple of seconds," which the previous 2.4s (+0.48s fade = ~2.9s
+        // total) was already pushing regardless of whether anything was still loading.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             minimumTimeElapsed = true
             attemptFinish(force: true)
         }
