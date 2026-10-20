@@ -342,10 +342,15 @@ struct SeerrRequestConfirmSheet: View {
                 Image(systemName: seasonBadgeIcon(row.badge))
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(badgeColor ?? DT.Color.textSecondary)
-            } else if chosen {
+            } else {
+                // Kept as one persistent view (visibility via opacity, not insertion) so
+                // SwiftUI sees the same node across a toggle and actually retriggers the
+                // bounce — a conditionally-inserted Image has no prior frame to animate from.
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.white)
+                    .opacity(chosen ? 1 : 0)
+                    .symbolEffect(.bounce, value: chosen)
             }
         }
         .frame(width: 24, height: 24)
@@ -394,6 +399,8 @@ struct SeerrRequestConfirmSheet: View {
             .font(.system(size: 11, weight: .medium))
             .foregroundStyle(isWarning ? Color(hex: "EF4444") : DT.Color.textSecondary)
             .padding(.horizontal, DT.Spacing.pagePad)
+            .contentTransition(.numericText())
+            .animation(.default, value: remaining)
     }
 
     private var autoApproveBanner: some View {
