@@ -568,6 +568,12 @@ struct HomeView: View {
             heroIndex = max(0, newCount - 1)
         }
         .onAppear { loadHeroVideoBackdrop() }
+        #if canImport(UIKit) && !os(tvOS)
+        .onChange(of: mediaRepo.continueWatching.first?.id, initial: true) { _, _ in
+            let first = mediaRepo.continueWatching.first
+            QuickActions.update(resumeItemID: first?.id, title: first?.name)
+        }
+        #endif
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
