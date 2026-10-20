@@ -284,20 +284,20 @@ struct SeerrRequestDetailView: View {
                     Text(request.mediaType == .tv ? "Series" : "Movie")
                         .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
-                    Text("·")
+                    Text("·").accessibilityHidden(true)
                         .foregroundStyle(.white.opacity(0.2))
                     Text(request.requestedAt, style: .date)
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                     if let runtime = detail?.runtimeMinutes {
-                        Text("·")
+                        Text("·").accessibilityHidden(true)
                             .foregroundStyle(.white.opacity(0.2))
                         Text("\(runtime) min")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let rating = detail?.voteAverage, rating > 0 {
-                        Text("·")
+                        Text("·").accessibilityHidden(true)
                             .foregroundStyle(.white.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(size: 9))

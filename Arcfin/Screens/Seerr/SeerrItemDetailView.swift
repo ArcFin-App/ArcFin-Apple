@@ -329,19 +329,19 @@ struct SeerrItemDetailView: View {
                         .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                     if let year = item.year {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         Text(year)
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let runtime = detail?.runtimeMinutes {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         Text("\(runtime) min")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let rating = detail?.voteAverage, rating > 0 {
-                        Text("·").foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(size: 9))
                             Text(String(format: "%.1f", rating))
