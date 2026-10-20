@@ -494,7 +494,7 @@ struct MediaDetailView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text(rating)
                     .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
@@ -502,13 +502,13 @@ struct MediaDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text("\(mins)m")
                     .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
                         .font(.system(.caption2))

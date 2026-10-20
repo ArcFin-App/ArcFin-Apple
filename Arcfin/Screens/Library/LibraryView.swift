@@ -269,6 +269,7 @@ struct LibraryView: View {
             .font(DT.Font.cardTitle)
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.2)
+            .accessibilityAddTraits(.isHeader)
     }
 
 }
@@ -723,6 +724,12 @@ struct LocalPlayerView: View {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? 10 : -10)
+        }
     }
 
     private var trackSheet: some View {
@@ -1072,6 +1079,7 @@ struct LibraryDetailView: View {
                         .ignoresSafeArea()
                         .contentShape(Rectangle())
                         .onTapGesture { showFilterSheet = false }
+                        .accessibilityHidden(true)
                     VStack(spacing: 0) {
                         HStack {
                             Text("Filter & Sort").font(.system(.subheadline, design: .default, weight: .semibold))
