@@ -60,6 +60,7 @@ struct SetupGuideSheet: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(DT.Spacing.lg)
             }
+            .accessibilityLabel("Close")
             .buttonStyle(.plain)
             .tvFocusRing(cornerRadius: DT.Radius.pill)
         }
@@ -73,7 +74,7 @@ struct SetupGuideSheet: View {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Jellyfin Setup Guide")
-                        .font(.system(size: 22 * DT.Scale.font, weight: .bold))
+                        .scaledFont(size: 22, weight: .bold)
                         .foregroundStyle(DT.Color.textPrimary)
 
                     Text("Get your server running in a few steps")
@@ -90,7 +91,7 @@ struct SetupGuideSheet: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Quick tips")
-                        .font(.system(size: 11 * DT.Scale.font, weight: .bold))
+                        .scaledFont(size: 11, weight: .bold)
                         .tracking(0.5)
                         .textCase(.uppercase)
                         .foregroundStyle(DT.Color.textSecondary)
@@ -120,7 +121,7 @@ struct SetupGuideSheet: View {
                         .overlay(Circle().stroke(DT.Color.accent.opacity(0.3), lineWidth: 1))
                         .frame(width: 36, height: 36)
                     Image(systemName: step.icon)
-                        .font(.system(size: 14))
+                        .font(.system(.subheadline))
                         .foregroundStyle(DT.Color.accent)
                 }
                 if step.id < steps.count {
@@ -136,10 +137,10 @@ struct SetupGuideSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Text("\(step.id).")
-                        .font(.system(size: 12 * DT.Scale.font, weight: .bold))
+                        .scaledFont(size: 12, weight: .bold)
                         .foregroundStyle(DT.Color.accent)
                     Text(step.title)
-                        .font(.system(size: 13 * DT.Scale.font, weight: .semibold))
+                        .scaledFont(size: 13, weight: .semibold)
                         .foregroundStyle(DT.Color.textPrimary)
                 }
                 Text(step.detail)
@@ -156,7 +157,7 @@ struct SetupGuideSheet: View {
     private func tipRow(icon: String, text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 11))
+                .font(.system(.caption2))
                 .foregroundStyle(icon.contains("check") ? Color(hex: "10b981") : Color.orange)
                 .frame(width: 16)
             Text(text)

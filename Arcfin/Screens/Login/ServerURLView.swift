@@ -31,7 +31,7 @@ struct ServerURLView: View {
                         Button(action: onBack) {
                             HStack(spacing: 4) {
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                                    .scaledFont(size: 12, weight: .semibold)
                                 Text("Back").font(DT.Font.caption)
                             }
                             .foregroundStyle(DT.Color.textSecondary)
@@ -206,7 +206,7 @@ struct ServerURLView: View {
 
     private func fieldLabel(_ label: String) -> some View {
         Text(label)
-            .font(.system(size: 10 * DT.Scale.font, weight: .bold))
+            .scaledFont(size: 10, weight: .bold)
             .tracking(0.5)
             .textCase(.uppercase)
             .foregroundStyle(DT.Color.textSecondary)
@@ -214,7 +214,7 @@ struct ServerURLView: View {
 
     private func glassTextField(text: Binding<String>, placeholder: String, leadingIcon: String, trailingCheckmark: Bool) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: leadingIcon).font(.system(size: 13)).foregroundStyle(DT.Color.textSecondary)
+            Image(systemName: leadingIcon).font(.system(.footnote)).foregroundStyle(DT.Color.textSecondary)
             TextField(placeholder, text: text)
                 .textFieldStyle(.plain)
                 .font(DT.Font.caption)
@@ -226,7 +226,7 @@ struct ServerURLView: View {
                 #endif
             if trailingCheckmark {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 14))
+                    .font(.system(.subheadline))
                     .foregroundStyle(Color(hex: "10b981"))
                     .transition(.scale.combined(with: .opacity))
             }
@@ -246,14 +246,14 @@ struct ServerURLView: View {
                         .fill(DT.Color.accent.opacity(0.08))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(DT.Color.accent.opacity(0.15), lineWidth: 1))
                         .frame(width: 28, height: 28)
-                    Image(systemName: icon).font(.system(size: 11)).foregroundStyle(DT.Color.accent)
+                    Image(systemName: icon).font(.system(.caption2)).foregroundStyle(DT.Color.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: 11 * DT.Scale.font, weight: .medium)).foregroundStyle(DT.Color.textPrimary).lineLimit(1)
+                    Text(title).scaledFont(size: 11, weight: .medium).foregroundStyle(DT.Color.textPrimary).lineLimit(1)
                     Text(subtitle).font(DT.Font.caption2).foregroundStyle(DT.Color.textSecondary).lineLimit(1)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(DT.Color.textSecondary)
+                Image(systemName: "chevron.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)

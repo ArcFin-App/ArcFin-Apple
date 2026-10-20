@@ -61,7 +61,7 @@ struct AdminSessionsView: View {
                 Spacer()
                 if session.nowPlayingItemName != nil {
                     Image(systemName: session.isPaused ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.system(.title3))
                         .foregroundStyle(session.isPaused ? DT.Color.textSecondary : DT.Color.accent)
                 }
             }

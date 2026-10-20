@@ -192,7 +192,7 @@ struct LibraryView: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "arrow.down.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.system(.title3))
                     .foregroundStyle(DT.Color.accent)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Downloads")
@@ -204,7 +204,7 @@ struct LibraryView: View {
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13))
+                    .font(.system(.footnote))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             .padding(.horizontal, 16)
@@ -230,7 +230,7 @@ struct LibraryView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "folder.fill")
-                        .font(.system(size: 18))
+                        .font(.system(.title3))
                         .foregroundStyle(DT.Color.accent)
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -245,7 +245,7 @@ struct LibraryView: View {
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13))
+                        .font(.system(.footnote))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 .padding(.horizontal, 16)
@@ -298,11 +298,11 @@ private struct TVLibraryCard: View {
 
             HStack(spacing: 20) {
                 Image(systemName: library.collectionType.systemIcon)
-                    .font(.system(size: 40 * DT.Scale.font, weight: .light))
+                    .scaledFont(size: 40, weight: .light)
                     .foregroundStyle(Color(hex: library.collectionType.accentHex))
 
                 Text(library.name)
-                    .font(.system(size: 14 * DT.Scale.font, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold)
                     .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                     .lineLimit(2)
                     .animation(DT.Animation.fast, value: isFocused)
@@ -335,7 +335,7 @@ private struct LibraryCard: View {
 
             VStack(spacing: 10) {
                 Image(systemName: library.collectionType.systemIcon)
-                    .font(.system(size: 28, weight: .light))
+                    .font(.system(.title, weight: .light))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.6), radius: 6)
 
@@ -405,7 +405,7 @@ private struct RequestsCard: View {
 
             VStack(spacing: 10) {
                 Image(systemName: "text.badge.checkmark")
-                    .font(.system(size: 28, weight: .light))
+                    .font(.system(.title, weight: .light))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.6), radius: 6)
 
@@ -600,7 +600,7 @@ struct LocalPlayerView: View {
         HStack(spacing: 16) {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
             }
@@ -614,33 +614,37 @@ struct LocalPlayerView: View {
             if AVPictureInPictureController.isPictureInPictureSupported() {
                 Button { vlcPipController?.toggle() } label: {
                     Image(systemName: "pip.enter")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 32, height: 32)
                 }
+                .accessibilityLabel("Picture in Picture")
             }
             Button { togglePlayerOrientation() } label: {
                 Image(systemName: "rotate.right")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(.body, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
             }
+            .accessibilityLabel("Rotate")
             #endif
             #if !os(tvOS)
             Button { isFillScreen.toggle() } label: {
                 Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(.body, weight: .semibold))
                     .foregroundStyle(isFillScreen ? DT.Color.accent : .white)
                     .frame(width: 32, height: 32)
             }
+            .accessibilityLabel(isFillScreen ? "Fit to screen" : "Fill screen")
             #endif
             if !player.availableSubtitleTracks.isEmpty {
                 Button { showTrackMenu = true } label: {
                     Image(systemName: "captions.bubble")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 32, height: 32)
                 }
+                .accessibilityLabel("Subtitles and audio")
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
@@ -657,17 +661,20 @@ struct LocalPlayerView: View {
                 Spacer()
                 HStack(spacing: 28) {
                     Button { seek(by: -10) } label: {
-                        Image(systemName: "gobackward.10").font(.system(size: 20)).foregroundStyle(.white)
+                        Image(systemName: "gobackward.10").font(.system(.title3)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip back 10 seconds")
                     Button { togglePlayPause() } label: {
                         Image(systemName: player.status == .playing ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30))
+                            .font(.system(.largeTitle))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                     }
+                    .accessibilityLabel(player.status == .playing ? "Pause" : "Play")
                     Button { seek(by: 10) } label: {
-                        Image(systemName: "goforward.10").font(.system(size: 20)).foregroundStyle(.white)
+                        Image(systemName: "goforward.10").font(.system(.title3)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip forward 10 seconds")
                 }
                 Spacer()
                 Text(remainingLabel)
@@ -1042,6 +1049,7 @@ struct LibraryDetailView: View {
                 } label: {
                     Image(systemName: gridDensity.systemIcon)
                 }
+                .accessibilityLabel("Grid density")
             }
         }
 #if !os(macOS)

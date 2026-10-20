@@ -254,7 +254,7 @@ struct ProfileRowContent: View {
 
                 HStack(spacing: 4) {
                     Image(systemName: hasPIN ? "lock.fill" : "lock.open")
-                        .font(.system(size: 10))
+                        .font(.system(.caption2))
                         .foregroundStyle(hasPIN ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                     Text(hasPIN ? "PIN enabled" : "No PIN")
                         .font(.system(.caption2))
@@ -266,7 +266,7 @@ struct ProfileRowContent: View {
 
             if isActive {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20))
+                    .font(.system(.title3))
                     .foregroundStyle(DT.Color.accent)
             }
         }

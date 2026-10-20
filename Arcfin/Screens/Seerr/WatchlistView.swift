@@ -96,13 +96,14 @@ struct WatchlistView: View {
                 #if !os(tvOS)
                 Button { remove(item) } label: {
                     Image(systemName: "bookmark.fill")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(.caption2, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(5)
                         .background(.black.opacity(0.5))
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
                 }
+                .accessibilityLabel("Remove from watchlist")
                 .buttonStyle(.plain)
                 .padding(6)
                 #endif

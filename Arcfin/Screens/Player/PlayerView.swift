@@ -52,6 +52,12 @@ struct PlayerView: View {
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false
     @State var scrubTicks: Double = 0
+    // Separate from isScrubbing/scrubTicks: those track the local player, which is frozen
+    // while casting (see castingPlaceholder).
+    @State var isCastScrubbing = false
+    @State var castLoadTask: Task<Void, Never>?
+    @State var castSubtitleTrackIDs: Set<Int> = []
+    @State var castScrubTicks: Double = 0
     @State var showTrackMenu = false
     @State var showQualityMenu = false
     @State var showRateMenu = false
@@ -196,7 +202,6 @@ struct PlayerView: View {
                 // than "actively casting elsewhere", so the surface is swapped for a
                 // dedicated placeholder instead.
                 castingPlaceholder
-                    .ignoresSafeArea()
             } else {
                 videoSurfaceLayer
             }
@@ -233,10 +238,10 @@ struct PlayerView: View {
                 networkToastView(networkToast)
             }
 
-            if let currentSubtitleText {
+            if let currentSubtitleText, !CastManager.shared.isConnected {
                 subtitleOverlay(currentSubtitleText)
             }
-            if let currentBitmapCue {
+            if let currentBitmapCue, !CastManager.shared.isConnected {
                 bitmapSubtitleOverlay(currentBitmapCue)
             }
 
@@ -254,9 +259,9 @@ struct PlayerView: View {
                 #if os(tvOS)
                 .opacity(tvControlsHidden ? 0 : 1)
                 #else
-                .opacity(isControlsVisible ? 1 : 0)
+                .opacity(isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
                 #endif
-                .allowsHitTesting(isControlsVisible)
+                .allowsHitTesting(isControlsVisible && !CastManager.shared.isConnected)
 
             skipButton
 
@@ -324,6 +329,11 @@ struct PlayerView: View {
             #endif
         }
         .onChange(of: player.status) { _, newStatus in
+            // The receiver is the one playing — any local resume (a load finishing, a seek
+            // completing, an interruption ending) would play the same audio twice.
+            if newStatus == .playing, CastManager.shared.isConnected {
+                Task { await player.pause() }
+            }
             handleStatusChange(newStatus)
             #if !os(tvOS)
             updateNowPlayingInfo()
@@ -930,25 +940,76 @@ struct PlayerView: View {
 
     // MARK: - Chromecast
 
-    #if canImport(GoogleCast)
     /// A Cast session took over — the receiver plays the stream itself, so the local
     /// player pauses rather than playing the same thing twice.
-    private func startCasting() {
-        guard let url = playbackInfo?.playURL else { return }
+    func startCasting() {
+        currentSubtitleText = nil
+        currentBitmapCue = nil
         Task { await player.pause() }
+        loadCast(startSeconds: Double(player.positionTicks) / 10_000_000)
+    }
+
+    /// (Re)loads the receiver. A newer call cancels an older in-flight one so two loads can
+    /// never both reach the receiver.
+    func loadCast(startSeconds: Double) {
+        guard let credential, let authHeader else { return }
+        castLoadTask?.cancel()
         let posterURL = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
-        CastManager.shared.loadMedia(
-            streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
-            contentType: castContentType(for: playbackInfo?.container),
-            startPositionSeconds: Double(player.positionTicks) / 10_000_000
-        )
+        castLoadTask = Task {
+            let info = try? await client.getPlaybackInfo(
+                credential: credential, authHeader: authHeader, itemId: item.id,
+                quality: qualityCap(for: quality),
+                audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                forCast: true
+            )
+            guard !Task.isCancelled, let url = info?.playURL ?? playbackInfo?.playURL else { return }
+            // Text subtitles go to the receiver as sidecar WebVTT tracks; image-based ones
+            // have no deliveryUrl and are burned into the transcode by the server instead.
+            let tracks = (info ?? playbackInfo)?.subtitleStreams.compactMap { stream -> CastManager.SubtitleTrack? in
+                guard let delivery = stream.deliveryUrl,
+                      let trackURL = SubtitleLoader.absoluteURL(deliveryUrl: delivery, credential: credential)
+                else { return nil }
+                return CastManager.SubtitleTrack(
+                    id: stream.index, url: trackURL, languageCode: stream.language, name: stream.displayTitle)
+            } ?? []
+            castSubtitleTrackIDs = Set(tracks.map(\.id))
+            CastManager.shared.loadMedia(
+                streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
+                contentType: castContentType(for: url),
+                startPositionSeconds: startSeconds,
+                subtitleTracks: tracks,
+                activeSubtitleTrackID: tracks.contains { $0.id == selectedSubtitleIndex } ? selectedSubtitleIndex : nil,
+                isTransportStreamHLS: url.pathExtension.lowercased() == "m3u8"
+            )
+        }
+    }
+
+    /// Audio is baked into the transcoded stream, so a different track needs a new stream
+    /// from the current live position rather than a receiver-side switch.
+    func selectCastAudio(index: Int) {
+        guard index != selectedAudioIndex else { return }
+        selectedAudioIndex = index
+        loadCast(startSeconds: CastManager.shared.lastKnownPositionSeconds ?? 0)
+    }
+
+    /// Sidecar text tracks switch instantly on the receiver; a track that isn't one (off
+    /// is, image-based isn't) needs a new stream with the subtitle burned in.
+    func selectCastSubtitle(index: Int?) {
+        guard index != selectedSubtitleIndex else { return }
+        selectedSubtitleIndex = index
+        if index == nil || castSubtitleTrackIDs.contains(index!) {
+            CastManager.shared.setActiveSubtitleTrack(id: index)
+        } else {
+            loadCast(startSeconds: CastManager.shared.lastKnownPositionSeconds ?? 0)
+        }
     }
 
     /// The session ended — pick local playback back up from wherever the receiver had
     /// gotten to. `currentPositionSeconds()` reads the live session and is already nil by
     /// the time this runs (the session is gone), so this uses CastManager's own
     /// continuously-updated `lastKnownPositionSeconds` instead — see its doc comment.
-    private func resumeLocalPlaybackAfterCast() {
+    func resumeLocalPlaybackAfterCast() {
+        castLoadTask?.cancel()
         if let seconds = CastManager.shared.lastKnownPositionSeconds {
             Task {
                 await player.seek(to: Int64(seconds * 10_000_000))
@@ -959,14 +1020,15 @@ struct PlayerView: View {
         }
     }
 
-    private func castContentType(for container: String?) -> String {
-        switch (container ?? "").lowercased() {
+    /// Keyed off the URL, not the source container — an mkv source is served as an HLS
+    /// transcode, and labelling that playlist video/mp4 leaves the receiver mis-demuxing it.
+    private func castContentType(for url: URL) -> String {
+        switch url.pathExtension.lowercased() {
         case "m3u8": return "application/x-mpegurl"
         case "mov":  return "video/quicktime"
         default:     return "video/mp4"
         }
     }
-    #endif
 
     private func teardown() async {
         progressReportTask?.cancel()
@@ -1272,6 +1334,11 @@ struct PlayerView: View {
     }
 
     func updateSubtitleText(forTicks ticks: Int64) {
+        guard !CastManager.shared.isConnected else {
+            currentSubtitleText = nil
+            currentBitmapCue = nil
+            return
+        }
         let seconds = Double(ticks) / 10_000_000
         if subtitleCues.isEmpty {
             currentSubtitleText = nil

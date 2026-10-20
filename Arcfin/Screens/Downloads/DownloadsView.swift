@@ -218,7 +218,7 @@ struct DownloadsView: View {
 
     private func selectionIndicator(_ id: String) -> some View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 20))
+            .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
     }
     #endif
@@ -366,12 +366,13 @@ struct DownloadsView: View {
                 }
                 Button { downloadManager.cancelDownload(itemId: itemId) } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
+                        .font(.system(.body))
                         .foregroundStyle(DT.Color.textSecondary)
                         // This row only exists while the item is actively downloading, so the
                         // pulse is inherently scoped to that — no extra on/off plumbing needed.
                         .symbolEffect(.pulse)
                 }
+                .accessibilityLabel("Cancel download")
                 .buttonStyle(.plain)
             }
             if let stats, stats.totalBytes > 0 {

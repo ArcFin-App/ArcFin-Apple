@@ -347,13 +347,14 @@ struct SeerrView: View {
                     Spacer()
                     Button { toggleWatchlist(item) } label: {
                         Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(.caption2, weight: .semibold))
                             .foregroundStyle(.white)
                             .padding(5)
                             .background(.black.opacity(0.5))
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
                     .buttonStyle(.plain)
                 }
                 Spacer()
@@ -383,7 +384,7 @@ struct SeerrView: View {
                 if !isAvailable && !alreadyRequested {
                     Button { requestingItem = item } label: {
                         HStack(spacing: 4) {
-                            Image(systemName: "plus.circle").font(.system(size: 9))
+                            Image(systemName: "plus.circle").font(.system(.caption2))
                             Text("Request").font(.system(.caption2, design: .default, weight: .bold))
                         }
                         .foregroundStyle(DT.Color.accent)

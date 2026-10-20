@@ -107,7 +107,7 @@ struct SwitchServerView: View {
                     .fill(LinearGradient(colors: [DT.Color.accent, DT.Color.accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: 42, height: 42)
                 Image(systemName: "server.rack")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(.body, weight: .semibold))
                     .foregroundStyle(.white)
             }
             VStack(alignment: .leading, spacing: 3) {
@@ -121,11 +121,11 @@ struct SwitchServerView: View {
             Spacer()
             if group.profiles.contains(where: { $0.id == activeID }) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.system(.title3))
                     .foregroundStyle(DT.Color.accent)
             } else if group.profiles.count > 1 {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
+                    .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }

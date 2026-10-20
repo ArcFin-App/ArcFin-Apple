@@ -181,21 +181,21 @@ struct SettingsView: View {
                     HStack {
                         Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
                         Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
                     }
                 }
                 Link(destination: URL(string: "https://arcfin.psmattas.com/terms")!) {
                     HStack {
                         Text("Terms of Use").foregroundStyle(DT.Color.textPrimary)
                         Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
                     }
                 }
                 Link(destination: URL(string: "https://arcfin.psmattas.com/data-protection")!) {
                     HStack {
                         Text("Data Protection").foregroundStyle(DT.Color.textPrimary)
                         Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(DT.Color.textSecondary)
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
                     }
                 }
 #endif
@@ -331,7 +331,7 @@ struct SettingsView: View {
                     .foregroundStyle(DT.Color.textPrimary)
                 HStack(spacing: 4) {
                     Image(systemName: "server.rack")
-                        .font(.system(size: 10))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                     Text(cred.baseURL.host ?? cred.baseURL.absoluteString)
                         .font(.system(.footnote))
@@ -343,7 +343,7 @@ struct SettingsView: View {
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.5))
         }
         .padding(.horizontal, 16)
@@ -383,7 +383,7 @@ struct SettingsView: View {
 
     private func sectionHeader(_ title: String, icon: String) -> some View {
         Label(title, systemImage: icon)
-            .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+            .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
     }
@@ -845,15 +845,15 @@ struct TVUsersView: View {
                     .frame(width: 52 * DT.Scale.font, height: 52 * DT.Scale.font)
                     .shadow(color: isActive ? DT.Color.accent.opacity(0.4) : .clear, radius: 8)
                 Text(initials)
-                    .font(.system(size: 18 * DT.Scale.font, weight: .bold, design: .rounded))
+                    .scaledFont(size: 18, weight: .bold, design: .rounded)
                     .foregroundStyle(.white)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(cred.displayName)
-                    .font(.system(size: 18 * DT.Scale.font, weight: .semibold))
+                    .scaledFont(size: 18, weight: .semibold)
                 Text(cred.baseURL.host ?? cred.baseURL.absoluteString)
-                    .font(.system(size: 14 * DT.Scale.font))
+                    .scaledFont(size: 14)
                     .opacity(0.6)
                     .lineLimit(1)
             }
@@ -862,7 +862,7 @@ struct TVUsersView: View {
 
             if isActive {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 26 * DT.Scale.font))
+                    .scaledFont(size: 26)
                     .foregroundStyle(DT.Color.accent)
             }
         }

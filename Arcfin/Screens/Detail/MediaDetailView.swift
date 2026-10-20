@@ -117,6 +117,7 @@ struct MediaDetailView: View {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
                 }
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -133,6 +134,7 @@ struct MediaDetailView: View {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
                 }
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
         }
         #endif
@@ -509,7 +511,7 @@ struct MediaDetailView: View {
                 Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 9))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
                         .font(.system(.caption2, design: .default, weight: .bold))
@@ -544,7 +546,7 @@ struct MediaDetailView: View {
         }
         return HStack(spacing: 4) {
             Image(systemName: "trophy.fill")
-                .font(.system(size: 10))
+                .font(.system(.caption2))
             Text(label)
                 .font(.system(.caption2, design: .default, weight: .semibold))
                 .lineLimit(1)
@@ -618,7 +620,7 @@ struct MediaDetailView: View {
                 #endif
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "play.fill").font(.system(size: 14))
+                    Image(systemName: "play.fill").font(.system(.subheadline))
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 5) {
                             Text(isResumable ? "Resume" : "Play")
@@ -656,13 +658,14 @@ struct MediaDetailView: View {
                     #endif
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .frame(width: 48, height: 48)
                         .background(DT.Color.backgroundSecondary)
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                         .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
                 }
+                .accessibilityLabel("Start over")
                 .buttonStyle(.plain)
                 .accessibilityLabel("Start Over")
             }
@@ -691,7 +694,7 @@ struct MediaDetailView: View {
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "film").font(.system(size: 14))
+                    Image(systemName: "film").font(.system(.subheadline))
                     Text("Play Trailer").font(.system(.subheadline, design: .default, weight: .semibold))
                 }
                 .foregroundStyle(DT.Color.textPrimary)
@@ -841,7 +844,7 @@ struct MediaDetailView: View {
         Circle()
             .fill(DT.Color.backgroundSecondary)
             .overlay(Image(systemName: "person.fill")
-                .font(.system(size: 22))
+                .font(.system(.title2))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
     }
 
@@ -888,7 +891,7 @@ struct MediaDetailView: View {
                             .font(.system(.callout, design: .default, weight: .bold))
                             .foregroundStyle(DT.Color.textPrimary)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(.caption2, weight: .semibold))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
@@ -917,9 +920,10 @@ struct MediaDetailView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
+                .accessibilityLabel("Mark watched options")
 #if os(tvOS)
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -980,7 +984,7 @@ struct MediaDetailView: View {
             NavigationLink(value: series) {
                 HStack(spacing: 10) {
                     Image(systemName: "tv")
-                        .font(.system(size: 14))
+                        .font(.system(.subheadline))
                         .foregroundStyle(DT.Color.accent)
                     Text(series.name)
                         .font(.system(.footnote, design: .default, weight: .semibold))
@@ -988,7 +992,7 @@ struct MediaDetailView: View {
                         .lineLimit(1)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 .padding(.horizontal, 12)
@@ -1031,7 +1035,7 @@ struct MediaDetailView: View {
                         if isWatched {
                             Color.black.opacity(0.45)
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 22))
+                                .font(.system(.title2))
                                 .foregroundStyle(Color(hex: "10b981"))
                         } else if pct > 0 {
                             VStack(spacing: 0) {
@@ -1127,7 +1131,7 @@ struct MediaDetailView: View {
             .fill(DT.Color.backgroundSecondary)
             .overlay(
                 Image(systemName: "play.rectangle")
-                    .font(.system(size: 20))
+                    .font(.system(.title3))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.3))
             )
     }
@@ -1391,9 +1395,9 @@ private struct TVPlayButtonLabel: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "play.fill")
-                .font(.system(size: 14 * DT.Scale.font))
+                .scaledFont(size: 14)
             Text("Play")
-                .font(.system(size: 16 * DT.Scale.font, weight: .bold))
+                .scaledFont(size: 16, weight: .bold)
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)

@@ -142,7 +142,7 @@ struct SeerrItemDetailView: View {
                 toggleWatchlist()
             } label: {
                 Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .frame(width: 48, height: 48)
                     .background(DT.Color.backgroundSecondary)
@@ -150,6 +150,7 @@ struct SeerrItemDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
                     .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
             }
+            .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
             .buttonStyle(.plain)
         }
         .padding(.horizontal, DT.Spacing.pagePad)

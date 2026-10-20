@@ -320,7 +320,7 @@ struct OfflinePlayerView: View {
         HStack(spacing: 16) {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
             }
@@ -345,7 +345,7 @@ struct OfflinePlayerView: View {
             if !downloadedItem.subtitleFileNames.isEmpty {
                 Button { showTrackMenu = true } label: {
                     Image(systemName: "captions.bubble")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 32, height: 32)
                 }
@@ -366,33 +366,37 @@ struct OfflinePlayerView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
             }
+            .accessibilityLabel("More options")
             #elseif os(macOS)
             HStack(spacing: 14) {
                 Button { isFillScreen.toggle() } label: {
                     Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel(isFillScreen ? "Fit to screen" : "Fill screen")
                 .buttonStyle(.plain)
                 Button { toggleMacWindowFullScreen(macWindow) } label: {
                     Image(systemName: isMacFullScreen ? "arrow.down.right.and.arrow.up.left.circle" : "arrow.up.left.and.arrow.down.right.circle")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel("Toggle full screen")
                 .buttonStyle(.plain)
                 if AVPictureInPictureController.isPictureInPictureSupported() {
                     Button { vlcPipController?.toggle() } label: {
                         Image(systemName: "pip.enter")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(.body, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 28, height: 28)
                     }
+                    .accessibilityLabel("Picture in Picture")
                     .buttonStyle(.plain)
                 }
             }
@@ -410,7 +414,7 @@ struct OfflinePlayerView: View {
                 Button { skipToSegmentEnd() } label: {
                     HStack(spacing: 6) {
                         Text(label).font(.system(.footnote, design: .default, weight: .semibold))
-                        Image(systemName: "forward.fill").font(.system(size: 12))
+                        Image(systemName: "forward.fill").font(.system(.caption))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 16).padding(.vertical, 10)
@@ -454,18 +458,21 @@ struct OfflinePlayerView: View {
                 HStack(spacing: 28) {
                     Button { seek(by: -skipBackwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(.title3)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     Button { togglePlayPause() } label: {
                         Image(systemName: player.status == .playing ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30))
+                            .font(.system(.largeTitle))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                     }
+                    .accessibilityLabel(player.status == .playing ? "Pause" : "Play")
                     Button { seek(by: skipForwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(.title3)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                 }
                 Spacer()
                 Text(remainingLabel)
@@ -640,7 +647,7 @@ struct OfflinePlayerView: View {
             Spacer()
             VStack(spacing: 10) {
                 Image(systemName: volume < 0.01 ? "speaker.slash.fill" : volume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill")
-                    .font(.system(size: 18))
+                    .font(.system(.title3))
                     .foregroundStyle(.white)
                 ZStack(alignment: .bottom) {
                     Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)

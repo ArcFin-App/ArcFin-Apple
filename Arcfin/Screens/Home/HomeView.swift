@@ -491,6 +491,7 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
+                    .accessibilityLabel("Refresh")
                     .help("Refresh")
                 }
                 ToolbarItem(placement: .primaryAction) {
@@ -498,6 +499,7 @@ struct HomeView: View {
                         avatarView
                             .frame(width: 22, height: 22)
                     }
+                    .accessibilityLabel("Settings")
                     .help("Settings")
                 }
             }
@@ -631,7 +633,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 Image(systemName: "wifi.slash")
-                    .font(.system(size: 18))
+                    .font(.system(.title3))
                     .foregroundStyle(Color(hex: "f59e0b"))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Can't reach your server")
@@ -856,7 +858,7 @@ struct HomeView: View {
                             .shadow(color: .black.opacity(0.7), radius: 12)
                     } else {
                         Text(item.name)
-                            .font(.system(size: 28 * DT.Scale.font, weight: .heavy))
+                            .scaledFont(size: 28, weight: .heavy)
                             .foregroundStyle(.white)
                             .tracking(-0.8)
                             .multilineTextAlignment(.center)
@@ -871,13 +873,13 @@ struct HomeView: View {
                 HStack(spacing: 8) {
                     if let rating = item.communityRating, rating > 0 {
                         HStack(spacing: 3) {
-                            Image(systemName: "star.fill").font(.system(size: 10 * DT.Scale.font))
-                            Text(String(format: "%.1f", rating)).font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                            Image(systemName: "star.fill").scaledFont(size: 10)
+                            Text(String(format: "%.1f", rating)).scaledFont(size: 12, weight: .semibold)
                         }
                         .foregroundStyle(Color(hex: "f59e0b"))
                     }
                     Text(heroMeta(item))
-                        .font(.system(size: 12 * DT.Scale.font))
+                        .scaledFont(size: 12)
                         .foregroundStyle(.white.opacity(0.6))
                 }
                 .padding(.top, 7)
@@ -925,11 +927,11 @@ struct HomeView: View {
                         )
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "play.fill").font(.system(size: 12 * DT.Scale.font))
-                            Text(heroIsResumable ? "Resume" : "Play").font(.system(size: 14 * DT.Scale.font, weight: .bold))
+                            Image(systemName: "play.fill").scaledFont(size: 12)
+                            Text(heroIsResumable ? "Resume" : "Play").scaledFont(size: 14, weight: .bold)
                             if let episodeLabel = heroEpisodeLabel {
                                 Text(episodeLabel)
-                                    .font(.system(size: 11 * DT.Scale.font, weight: .semibold))
+                                    .scaledFont(size: 11, weight: .semibold)
                                     .opacity(0.85)
                             }
                         }
@@ -942,8 +944,8 @@ struct HomeView: View {
                         if let item = heroItems[safe: heroIndex] { heroDetailItem = item }
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "info.circle").font(.system(size: 12 * DT.Scale.font))
-                            Text("More Info").font(.system(size: 13 * DT.Scale.font, weight: .semibold))
+                            Image(systemName: "info.circle").scaledFont(size: 12)
+                            Text("More Info").scaledFont(size: 13, weight: .semibold)
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 20).padding(.vertical, 11)

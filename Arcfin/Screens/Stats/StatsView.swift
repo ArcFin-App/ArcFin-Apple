@@ -265,7 +265,7 @@ struct StatsView: View {
 
             if rank == 1 {
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 14))
+                    .font(.system(.subheadline))
                     .foregroundStyle(DT.Color.accent)
             }
         }
@@ -322,7 +322,7 @@ struct StatsView: View {
                     Spacer()
                     if let rating = movie.communityRating, rating > 0 {
                         HStack(spacing: 2) {
-                            Image(systemName: "star.fill").font(.system(size: 8))
+                            Image(systemName: "star.fill").font(.system(.caption2))
                             Text(String(format: "%.1f", rating)).font(.system(.caption2, design: .default, weight: .bold))
                         }
                         .foregroundStyle(DT.Color.accent)

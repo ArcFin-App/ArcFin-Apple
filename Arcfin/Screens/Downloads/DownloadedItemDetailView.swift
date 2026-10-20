@@ -41,7 +41,7 @@ struct DownloadedItemDetailView: View {
                         }
                         if let rating = item.communityRating, rating > 0 {
                             HStack(spacing: 2) {
-                                Image(systemName: "star.fill").font(.system(size: 9))
+                                Image(systemName: "star.fill").font(.system(.caption2))
                                 Text(String(format: "%.1f", rating))
                             }
                             .font(.system(.caption2))
@@ -79,7 +79,7 @@ struct DownloadedItemDetailView: View {
                                 playingItem = item
                             } label: {
                                 Image(systemName: "arrow.counterclockwise")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.system(.body, weight: .semibold))
                                     .foregroundStyle(DT.Color.textPrimary)
                                     .frame(width: 48, height: 48)
                                     .background(DT.Color.backgroundSecondary)

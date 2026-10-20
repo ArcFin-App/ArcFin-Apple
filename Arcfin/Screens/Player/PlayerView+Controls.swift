@@ -57,7 +57,7 @@ extension PlayerView {
                 TVPlayerControlLabel(systemImage: "chevron.down", size: 15, diameter: 34)
                 #else
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
                 #endif
@@ -70,7 +70,7 @@ extension PlayerView {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(item.name)
-                        .font(.system(size: 15 * DT.Scale.font, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold)
                         .foregroundStyle(.white)
                         .lineLimit(1)
                     if let hdrLabel {
@@ -90,7 +90,7 @@ extension PlayerView {
                 }
                 if let subtitle = episodeSubtitle {
                     Text(subtitle)
-                        .font(.system(size: 12 * DT.Scale.font))
+                        .scaledFont(size: 12)
                         .foregroundStyle(.white.opacity(0.7))
                         .lineLimit(1)
                 }
@@ -129,6 +129,17 @@ extension PlayerView {
         let id: String
         let icon: String
         let perform: () -> Void
+
+        var label: LocalizedStringKey {
+            switch id {
+            case "rotate": "Rotate"
+            case "fill": "Fill screen"
+            case "fullscreen": "Toggle full screen"
+            case "chapters": "Chapters"
+            case "tracks": "Subtitles and audio"
+            default: "Playback speed"
+            }
+        }
     }
 
     /// Rotate/Fill/Chapters used to live in the overflow menu — moved out here since
@@ -156,10 +167,11 @@ extension PlayerView {
             ForEach(quickActionItems.prefix(isLandscape ? 5 : 3)) { action in
                 Button(action: action.perform) {
                     Image(systemName: action.icon)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel(action.label)
             }
         }
     }
@@ -185,6 +197,17 @@ extension PlayerView {
         let id: String
         let icon: String
         let perform: () -> Void
+
+        var label: LocalizedStringKey {
+            switch id {
+            case "rotate": "Rotate"
+            case "fill": "Fill screen"
+            case "fullscreen": "Toggle full screen"
+            case "chapters": "Chapters"
+            case "tracks": "Subtitles and audio"
+            default: "Playback speed"
+            }
+        }
     }
 
     /// No rotate button (nothing to rotate on a windowed player) — Fill Screen and window
@@ -216,10 +239,11 @@ extension PlayerView {
             ForEach(macQuickActionItems) { action in
                 Button(action: action.perform) {
                     Image(systemName: action.icon)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel(action.label)
                 .buttonStyle(.plain)
             }
             AirPlayButton(player: (player as? AVFoundationPlayer)?.player)
@@ -273,10 +297,11 @@ extension PlayerView {
             }
         } label: {
             Image(systemName: "ellipsis.circle")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(.title3, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
         }
+        .accessibilityLabel("More options")
         #if os(tvOS)
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -317,13 +342,13 @@ extension PlayerView {
             #if os(tvOS)
             HStack {
                 Text(timeLabel(ticks: elapsedTicks))
-                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 12, weight: .medium, design: .monospaced)
                     .foregroundStyle(.white.opacity(0.8))
                     .contentTransition(.numericText())
                     .animation(isScrubbing ? nil : .default, value: elapsedTicks)
                 Spacer()
                 Text(remainingLabel)
-                    .font(.system(size: 12 * DT.Scale.font, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 12, weight: .medium, design: .monospaced)
                     .foregroundStyle(.white.opacity(0.8))
                     .contentTransition(.numericText())
                     .animation(.default, value: remainingTicks)
@@ -350,7 +375,7 @@ extension PlayerView {
                         TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
                         #else
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(.title3)).foregroundStyle(.white)
                         #endif
                     }
                     Button { togglePlayPause() } label: {
@@ -358,7 +383,7 @@ extension PlayerView {
                         TVPlayerControlLabel(systemImage: playPauseIconIsPlaying ? "pause.fill" : "play.fill", size: 22, diameter: 48)
                         #else
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30))
+                            .font(.system(.largeTitle))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                         #endif
@@ -371,7 +396,7 @@ extension PlayerView {
                         TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 16, diameter: 38)
                         #else
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(.title3)).foregroundStyle(.white)
                         #endif
                     }
                 }
@@ -905,7 +930,7 @@ extension PlayerView {
                         Button { skipToSegmentEnd() } label: {
                             HStack(spacing: 6) {
                                 Text(label).font(.system(.footnote, design: .default, weight: .semibold))
-                                Image(systemName: "forward.fill").font(.system(size: 12))
+                                Image(systemName: "forward.fill").font(.system(.caption))
                             }
                             .foregroundStyle(.white)
                             .padding(.horizontal, 16).padding(.vertical, 10)
@@ -981,11 +1006,12 @@ extension PlayerView {
                     VStack(spacing: 10) {
                         Button { playNextEpisode() } label: {
                             Image(systemName: "play.fill")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(.subheadline, weight: .semibold))
                                 .foregroundStyle(.black)
                                 .frame(width: 30, height: 30)
                                 .background(.white, in: Circle())
                         }
+                        .accessibilityLabel("Play next episode")
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
@@ -993,9 +1019,10 @@ extension PlayerView {
                         #endif
                         Button { dismissUpNext() } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(.caption2, weight: .semibold))
                                 .foregroundStyle(.white.opacity(0.7))
                         }
+                        .accessibilityLabel("Dismiss")
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
@@ -1089,47 +1116,223 @@ extension PlayerView {
     #if !os(tvOS)
     /// Replaces the live video surface entirely while a Cast session is active (see
     /// PlayerView.body) — a frozen last frame behind a small banner read as "stuck paused"
-    /// rather than "playing somewhere else", the actual complaint this fixes.
+    /// rather than "playing somewhere else". Position and seek math read CastManager's live
+    /// position directly, never player.positionTicks / seek(by:): the local player is only
+    /// paused during a cast, so its position is frozen and would make skips relative to a
+    /// stale base.
     var castingPlaceholder: some View {
-        ZStack {
-            Color.black
-            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: Color.clear
+        GeometryReader { geo in
+            let landscape = geo.size.width > geo.size.height
+            ScrollView {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button { closePlayer() } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close player")
+                        Spacer()
+                    }
+
+                    if landscape {
+                        HStack(spacing: 32) {
+                            castInfo.frame(maxWidth: .infinity)
+                            castControls.frame(maxWidth: .infinity)
+                        }
+                        .frame(maxHeight: .infinity)
+                    } else {
+                        Spacer(minLength: 16)
+                        castInfo
+                        Spacer(minLength: 24)
+                        castControls
                     }
                 }
-                .overlay(.black.opacity(0.75))
-                .blur(radius: 40)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .frame(minHeight: geo.size.height)
             }
-            VStack(spacing: 18) {
-                Image(systemName: "tv")
-                    .font(.system(size: 46, weight: .medium))
-                    .foregroundStyle(DT.Color.accent)
-                VStack(spacing: 6) {
-                    Text("Casting to \(CastManager.shared.deviceName ?? "TV")")
-                        .font(.system(.body, design: .default, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(item.name)
-                        .font(.system(.footnote))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .lineLimit(1)
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .background {
+            ZStack {
+                Color.black
+                if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: Color.clear
+                        }
+                    }
+                    .overlay(.black.opacity(0.75))
+                    .blur(radius: 40)
                 }
-                Button {
-                    CastManager.shared.endSession()
-                } label: {
-                    Text("Stop Casting")
-                        .font(.system(.footnote, design: .default, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(.horizontal, 18).padding(.vertical, 9)
-                        .background(.white.opacity(0.15), in: Capsule())
-                        .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
             }
+            .ignoresSafeArea()
         }
         .transition(.opacity)
+    }
+
+    private func castTrackLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.system(.footnote, design: .default, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .background(.white.opacity(0.15), in: Capsule())
+            .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+    }
+
+    private var castInfo: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "tv")
+                .font(.largeTitle.weight(.medium))
+                .foregroundStyle(DT.Color.accent)
+                .accessibilityHidden(true)
+            VStack(spacing: 6) {
+                Text("Casting to \(CastManager.shared.deviceName ?? "TV")")
+                    .font(.system(.body, design: .default, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(item.name)
+                    .font(.system(.footnote))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(2)
+            }
+            .multilineTextAlignment(.center)
+        }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+    }
+
+    private var castControls: some View {
+        let cast = CastManager.shared
+        let durationSeconds = Double(player.durationTicks) / 10_000_000
+        let liveSeconds = cast.lastKnownPositionSeconds ?? 0
+        let shownSeconds = isCastScrubbing ? castScrubTicks / 10_000_000 : liveSeconds
+        let fraction = durationSeconds > 0 ? min(max(shownSeconds / durationSeconds, 0), 1) : 0
+
+        return VStack(spacing: 16) {
+            VStack(spacing: 4) {
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.25)).frame(height: 4)
+                        Capsule().fill(DT.Color.accent)
+                            .frame(width: proxy.size.width * fraction, height: 4)
+                        Circle().fill(.white)
+                            .frame(width: isCastScrubbing ? 18 : 12, height: isCastScrubbing ? 18 : 12)
+                            .offset(x: proxy.size.width * fraction - (isCastScrubbing ? 9 : 6))
+                    }
+                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let f = min(max(value.location.x / max(proxy.size.width, 1), 0), 1)
+                                isCastScrubbing = true
+                                castScrubTicks = Double(player.durationTicks) * f
+                            }
+                            .onEnded { _ in
+                                cast.seek(toSeconds: castScrubTicks / 10_000_000)
+                                isCastScrubbing = false
+                            }
+                    )
+                }
+                .frame(height: 28)
+                .accessibilityElement()
+                .accessibilityLabel("Playback position")
+                .accessibilityValue("\(timeLabel(ticks: Int64(shownSeconds * 10_000_000))) of \(timeLabel(ticks: player.durationTicks))")
+                .accessibilityAdjustableAction { direction in
+                    let step = Double(direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+                    cast.seek(toSeconds: min(max(liveSeconds + step, 0), durationSeconds))
+                }
+
+                HStack {
+                    Text(timeLabel(ticks: Int64(shownSeconds * 10_000_000)))
+                    Spacer()
+                    Text("-" + timeLabel(ticks: Int64(max(durationSeconds - shownSeconds, 0) * 10_000_000)))
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.white.opacity(0.7))
+                .accessibilityHidden(true)
+            }
+
+            HStack(spacing: 24) {
+                Button {
+                    cast.seek(toSeconds: max(liveSeconds - Double(skipBackwardSeconds), 0))
+                } label: {
+                    Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                        .font(.title)
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 52, minHeight: 52)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
+
+                Button { cast.togglePlayPause() } label: {
+                    Image(systemName: cast.isPaused ? "play.fill" : "pause.fill")
+                        .font(.largeTitle)
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 64, minHeight: 64)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(cast.isPaused ? "Play" : "Pause")
+
+                Button {
+                    cast.seek(toSeconds: min(liveSeconds + Double(skipForwardSeconds), durationSeconds))
+                } label: {
+                    Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                        .font(.title)
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 52, minHeight: 52)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
+            }
+            .buttonStyle(.plain)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+
+            HStack(spacing: 12) {
+                if let audio = playbackInfo?.audioStreams, audio.count > 1 {
+                    Menu {
+                        Picker("Audio", selection: Binding(
+                            get: { selectedAudioIndex ?? playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
+                            set: { selectCastAudio(index: $0) }
+                        )) {
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                        }
+                    } label: {
+                        castTrackLabel("Audio", systemImage: "speaker.wave.2")
+                    }
+                }
+                if let subs = playbackInfo?.subtitleStreams, !subs.isEmpty {
+                    Menu {
+                        Picker("Subtitles", selection: Binding(
+                            get: { selectedSubtitleIndex ?? -1 },
+                            set: { selectCastSubtitle(index: $0 < 0 ? nil : $0) }
+                        )) {
+                            Text("Off").tag(-1)
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                        }
+                    } label: {
+                        castTrackLabel("Subtitles", systemImage: "captions.bubble")
+                    }
+                }
+            }
+
+            Button {
+                cast.endSession()
+            } label: {
+                Text("Stop Casting")
+                    .font(.system(.footnote, design: .default, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 18).padding(.vertical, 9)
+                    .background(.white.opacity(0.15), in: Capsule())
+                    .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: 480)
     }
     #endif
 
@@ -1222,7 +1425,7 @@ extension PlayerView {
         VStack {
             HStack(spacing: 8) {
                 Image(systemName: "wifi.exclamationmark")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, weight: .semibold))
                 Text(text)
                     .font(.system(.caption, design: .default, weight: .medium))
             }
@@ -1283,7 +1486,7 @@ extension PlayerView {
     func errorView(_ message: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 32))
+                .font(.system(.largeTitle))
                 .foregroundStyle(Color(hex: "EF4444"))
             Text(message)
                 .font(.system(.footnote))
@@ -1313,7 +1516,7 @@ extension PlayerView {
                     Image(systemName: isBrightness
                         ? (dragValue < 0.5 ? "sun.min.fill" : "sun.max.fill")
                         : (dragValue < 0.01 ? "speaker.slash.fill" : dragValue < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill"))
-                        .font(.system(size: 18))
+                        .font(.system(.title3))
                         .foregroundStyle(.white)
                     ZStack(alignment: .bottom) {
                         Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
@@ -1341,7 +1544,7 @@ extension PlayerView {
             Spacer()
             VStack(spacing: 10) {
                 Image(systemName: volume < 0.01 ? "speaker.slash.fill" : volume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill")
-                    .font(.system(size: 18))
+                    .font(.system(.title3))
                     .foregroundStyle(.white)
                 ZStack(alignment: .bottom) {
                     Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
@@ -1458,7 +1661,7 @@ extension PlayerView {
             if feedback.onRight { Spacer() }
             VStack(spacing: 4) {
                 Image(systemName: skipIconName(seconds: feedback.seconds, forward: feedback.forward))
-                    .font(.system(size: 28))
+                    .font(.system(.title))
                 Text("\(feedback.seconds)s")
                     .font(.system(.caption2, design: .default, weight: .semibold))
             }

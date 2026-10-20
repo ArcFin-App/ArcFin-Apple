@@ -61,7 +61,7 @@ struct DownloadedSeriesDetailView: View {
                                 .foregroundStyle(DT.Color.textSecondary)
                             if let rating = series?.communityRating, rating > 0 {
                                 HStack(spacing: 2) {
-                                    Image(systemName: "star.fill").font(.system(size: 9))
+                                    Image(systemName: "star.fill").font(.system(.caption2))
                                     Text(String(format: "%.1f", rating))
                                 }
                                 .font(.system(.caption2))
@@ -231,7 +231,7 @@ struct DownloadedSeriesDetailView: View {
                     .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             .padding(.horizontal, 14)
@@ -248,7 +248,7 @@ struct DownloadedSeriesDetailView: View {
 
     private func selectionIndicator(_ id: String) -> some View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 20))
+            .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
     }
     #endif
@@ -332,7 +332,7 @@ struct DownloadedSeriesDetailView: View {
             }
             Spacer()
             Image(systemName: episode.played ? "checkmark.circle.fill" : "play.circle")
-                .font(.system(size: 20))
+                .font(.system(.title3))
                 .foregroundStyle(episode.played ? Color(hex: "10b981") : DT.Color.textSecondary)
         }
     }

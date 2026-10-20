@@ -42,13 +42,13 @@ struct PosterCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                     .lineLimit(2)
                     .animation(DT.Animation.fast, value: isFocused)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 10 * DT.Scale.font, weight: .medium))
+                        .scaledFont(size: 10, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
@@ -71,7 +71,7 @@ struct PosterCard: View {
             // already gets the scale/glow treatment below without needing an icon.
             if hovered {
                 Image(systemName: "play.fill")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(.callout, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(.black.opacity(0.45), in: Circle())
