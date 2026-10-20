@@ -25,6 +25,16 @@ public final class CastManager: NSObject {
     public private(set) var isConnected = false
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
+    /// Bumps each time the receiver reports the loaded item played to its end — observers
+    /// use the change as an event (e.g. to cast the next episode); the value itself is
+    /// meaningless.
+    public private(set) var playbackFinishedCount = 0
+    @ObservationIgnored private var lastStatusWasFinished = false
+    /// Bumps each time the receiver reports the loaded item played to its end — observers
+    /// use the change as an event (e.g. to cast the next episode), the value itself is
+    /// meaningless.
+    public private(set) var playbackFinishedCount = 0
+    private var lastStatusWasFinished = false
     public private(set) var deviceName: String?
     /// Updated on every GCKRemoteMediaClient status tick (at least once/second while
     /// playing) rather than read on demand — by the time a session actually ends,
@@ -215,8 +225,12 @@ extension CastManager: GCKSessionManagerListener {
 extension CastManager: GCKRemoteMediaClientListener {
     public nonisolated func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
         let paused = mediaStatus?.playerState == .paused
+        let finished = mediaStatus?.playerState == .idle && mediaStatus?.idleReason == .finished
         let position = mediaStatus?.streamPosition
         MainActor.assumeIsolated {
+            // Idle statuses can repeat; only the transition into "finished" is an event.
+            if finished, !lastStatusWasFinished { playbackFinishedCount += 1 }
+            lastStatusWasFinished = finished
             isPaused = paused
             if let position { lastKnownPositionSeconds = position }
         }
