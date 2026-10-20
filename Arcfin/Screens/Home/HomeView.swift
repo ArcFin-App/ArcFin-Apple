@@ -573,6 +573,10 @@ struct HomeView: View {
             let first = mediaRepo.continueWatching.first
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
         }
+        .onChange(of: mediaRepo.continueWatching.map(\.id), initial: true) { _, _ in
+            let items = mediaRepo.continueWatching
+            Task { await WidgetSnapshotUpdater.update(items: items) { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 300) } }
+        }
         #endif
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
