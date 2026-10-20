@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import ImageCache
 
 struct DownloadsSettingsView: View {
     @AppStorage("wifiOnly")        private var wifiOnly        = true
@@ -13,6 +14,7 @@ struct DownloadsSettingsView: View {
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
     @AppStorage("smartDownloadsStorageBudgetGB") private var smartDownloadsStorageBudgetGB = 10
     @Environment(AuthManager.self) private var authManager
+    @State private var imageCacheBytes = ImageCache.diskCacheSize
 
     var body: some View {
         List {
@@ -40,6 +42,16 @@ struct DownloadsSettingsView: View {
                 NavigationLink("Manage Storage") {
                     StorageManagementView()
                 }
+                LabeledContent("Image Cache", value: ByteCountFormatter.string(fromByteCount: Int64(imageCacheBytes), countStyle: .file))
+                Button("Clear Image Cache", role: .destructive) {
+                    ImageCache.clear()
+                    imageCacheBytes = ImageCache.diskCacheSize
+                }
+                .disabled(imageCacheBytes == 0)
+            } footer: {
+                Text("Posters and backdrops are cached to load faster. Clearing them never touches your downloads; they re-download as you browse.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
