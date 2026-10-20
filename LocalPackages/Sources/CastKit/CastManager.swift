@@ -86,7 +86,7 @@ public final class CastManager: NSObject {
         infoBuilder.contentType = contentType
         infoBuilder.streamType = .buffered
         infoBuilder.metadata = metadata
-        infoBuilder.mediaTracks = subtitleTracks.map {
+        infoBuilder.mediaTracks = subtitleTracks.compactMap {
             GCKMediaTrack(
                 identifier: $0.id, contentIdentifier: $0.url.absoluteString, contentType: "text/vtt",
                 type: .text, textSubtype: .subtitles, name: $0.name, languageCode: $0.languageCode,
