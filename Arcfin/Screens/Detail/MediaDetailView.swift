@@ -1330,7 +1330,7 @@ struct MediaDetailView: View {
 
 // MARK: - Cast card
 
-private struct CastPersonCard<Placeholder: View>: View {
+struct CastPersonCard<Placeholder: View>: View {
     let imageURL: URL?
     let name: String
     let role: String?
