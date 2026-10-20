@@ -916,6 +916,11 @@ struct LibraryDetailView: View {
     @State private var watchedFilter: LibraryWatchedFilter = .all
     @State private var favoritesOnly = false
     @State private var sortOption: LibrarySortOption = .nameAsc
+    /// Set while load() restores the saved sort, so the resulting onChange doesn't fire a
+    /// second fetch on top of the initial one.
+    @State private var restoringSort = false
+
+    private var sortDefaultsKey: String { "librarySort.\(library.id)" }
 
     private var filtersActive: Bool {
         !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
@@ -1101,7 +1106,11 @@ struct LibraryDetailView: View {
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
-        .onChange(of: sortOption) { _, _ in Task { await reload() } }
+        .onChange(of: sortOption) { _, newValue in
+            UserDefaults.standard.set(newValue.rawValue, forKey: sortDefaultsKey)
+            if restoringSort { restoringSort = false; return }
+            Task { await reload() }
+        }
 #endif
         .task { await load() }
         .task { await loadFilterOptions() }
@@ -1168,6 +1177,11 @@ struct LibraryDetailView: View {
     private func load() async {
         guard !hasLoaded else { return }
         hasLoaded = true
+        if let raw = UserDefaults.standard.string(forKey: sortDefaultsKey),
+           let saved = LibrarySortOption(rawValue: raw), saved != sortOption {
+            restoringSort = true
+            sortOption = saved
+        }
         await fetchFirstPage()
     }
 
