@@ -152,7 +152,7 @@ struct AppLockView: View {
 
                 if hasPIN {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(.footnote, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(7)
                         .background(Circle().fill(DT.Color.backgroundSecondary))

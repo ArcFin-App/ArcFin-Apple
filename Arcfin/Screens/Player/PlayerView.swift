@@ -200,7 +200,6 @@ struct PlayerView: View {
                 // than "actively casting elsewhere", so the surface is swapped for a
                 // dedicated placeholder instead.
                 castingPlaceholder
-                    .ignoresSafeArea()
             } else {
                 videoSurfaceLayer
             }

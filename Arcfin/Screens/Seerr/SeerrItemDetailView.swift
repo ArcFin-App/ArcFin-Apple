@@ -64,7 +64,7 @@ struct SeerrItemDetailView: View {
                         if let rating = detail?.voteAverage, rating > 0 {
                             Text("·").foregroundStyle(.white.opacity(0.2))
                             HStack(spacing: 2) {
-                                Image(systemName: "star.fill").font(.system(size: 9))
+                                Image(systemName: "star.fill").font(.system(.caption2))
                                 Text(String(format: "%.1f", rating))
                             }
                             .font(.system(.caption2))
@@ -163,7 +163,7 @@ struct SeerrItemDetailView: View {
                 toggleWatchlist()
             } label: {
                 Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .frame(width: 48)
                     .padding(.vertical, 12)

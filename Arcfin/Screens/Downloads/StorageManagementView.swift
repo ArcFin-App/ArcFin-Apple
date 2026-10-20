@@ -174,7 +174,7 @@ struct StorageManagementView: View {
 
     private func selectionIndicator(_ id: String) -> some View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 20))
+            .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
     }
     #endif

@@ -46,7 +46,7 @@ struct NoConnectionView: View {
                         ForEach(tips, id: \.self) { tip in
                             HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "circle.fill")
-                                    .font(.system(size: 4))
+                                    .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.accent)
                                     .padding(.top, 6)
                                 Text(tip)

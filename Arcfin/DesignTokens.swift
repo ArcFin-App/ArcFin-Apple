@@ -195,3 +195,39 @@ extension SwiftUI.Color {
         self.init(red: r, green: g, blue: b)
     }
 }
+
+private struct ScaledSystemFont: ViewModifier {
+    @ScaledMetric private var size: CGFloat
+    let weight: Font.Weight
+    let design: Font.Design
+
+    init(size: CGFloat, weight: Font.Weight, design: Font.Design) {
+        let style: Font.TextStyle = switch size {
+        case ..<11.5: .caption2
+        case ..<12.5: .caption
+        case ..<13.5: .footnote
+        case ..<14.5: .subheadline
+        case ..<15.5: .callout
+        case ..<17.5: .body
+        case ..<20.5: .title3
+        case ..<22.5: .title2
+        case ..<28.5: .title
+        default: .largeTitle
+        }
+        _size = ScaledMetric(wrappedValue: size * DT.Scale.font, relativeTo: style)
+        self.weight = weight
+        self.design = design
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: size, weight: weight, design: design))
+    }
+}
+
+extension View {
+    /// `DT.Scale.font` sizing that also tracks Dynamic Type — plain `.font(.system(size:))`
+    /// stays fixed regardless of the user's text-size setting.
+    func scaledFont(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {
+        modifier(ScaledSystemFont(size: size, weight: weight, design: design))
+    }
+}

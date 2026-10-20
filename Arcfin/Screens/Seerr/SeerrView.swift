@@ -127,7 +127,7 @@ struct SeerrView: View {
             // Search bar
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 13))
+                    .font(.system(.footnote))
                     .foregroundStyle(DT.Color.textSecondary)
                 TextField("Search movies, series, people…", text: $searchText)
                     .font(DT.Font.caption)
@@ -136,7 +136,7 @@ struct SeerrView: View {
                 if !searchText.isEmpty {
                     Button { searchText = "" } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
+                            .font(.system(.subheadline))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     .accessibilityLabel("Clear search")
@@ -373,7 +373,7 @@ struct SeerrView: View {
                     Spacer()
                     Button { toggleWatchlist(item) } label: {
                         Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(.caption2, weight: .semibold))
                             .foregroundStyle(.white)
                             .padding(5)
                             .background(.black.opacity(0.5))
@@ -410,7 +410,7 @@ struct SeerrView: View {
                 if !isAvailable && !alreadyRequested {
                     Button { requestingItem = item } label: {
                         HStack(spacing: 4) {
-                            Image(systemName: "plus.circle").font(.system(size: 9))
+                            Image(systemName: "plus.circle").font(.system(.caption2))
                             Text("Request").font(.system(.caption2, design: .default, weight: .bold))
                         }
                         .foregroundStyle(DT.Color.accent)

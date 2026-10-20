@@ -45,7 +45,7 @@ struct SeerrRequestDetailView: View {
                             Text("·")
                                 .foregroundStyle(.white.opacity(0.2))
                             HStack(spacing: 2) {
-                                Image(systemName: "star.fill").font(.system(size: 9))
+                                Image(systemName: "star.fill").font(.system(.caption2))
                                 Text(String(format: "%.1f", rating))
                             }
                             .font(.system(.caption2))

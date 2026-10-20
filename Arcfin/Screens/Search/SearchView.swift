@@ -114,7 +114,7 @@ struct SearchView: View {
         VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
                 Text("Discover")
                     .font(DT.Font.cardTitle)

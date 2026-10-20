@@ -193,7 +193,7 @@ struct SeerrRequestConfirmSheet: View {
                 if let rating = detail?.voteAverage, rating > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "star.fill")
-                            .font(.system(size: 10))
+                            .font(.system(.caption2))
                             .foregroundStyle(Color(hex: "f59e0b"))
                         Text(String(format: "%.1f", rating))
                             .font(.system(.caption, design: .default, weight: .semibold))
@@ -359,14 +359,14 @@ struct SeerrRequestConfirmSheet: View {
                 .overlay(Circle().stroke(locked ? Color.clear : Color.white.opacity(0.3), lineWidth: locked ? 0 : 1.5))
             if locked {
                 Image(systemName: seasonBadgeIcon(row.badge))
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(.caption2, weight: .bold))
                     .foregroundStyle(badgeColor ?? DT.Color.textSecondary)
             } else {
                 // Kept as one persistent view (visibility via opacity, not insertion) so
                 // SwiftUI sees the same node across a toggle and actually retriggers the
                 // bounce — a conditionally-inserted Image has no prior frame to animate from.
                 Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(.caption2, weight: .bold))
                     .foregroundStyle(.white)
                     .opacity(chosen ? 1 : 0)
                     .symbolEffect(.bounce, value: chosen)

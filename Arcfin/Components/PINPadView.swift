@@ -93,7 +93,7 @@ struct PINPadView: View {
                         padButton(label: "0") { append(0) }
                         Button { removeLast() } label: {
                             Image(systemName: "delete.left")
-                                .font(.system(size: 20, weight: .light))
+                                .font(.system(.title3, weight: .light))
                                 .foregroundStyle(digits.isEmpty ? DT.Color.textSecondary.opacity(0.3) : DT.Color.textPrimary)
                                 .frame(width: 76, height: 76)
                         }

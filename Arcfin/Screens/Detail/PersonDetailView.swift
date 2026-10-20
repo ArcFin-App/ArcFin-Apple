@@ -205,7 +205,7 @@ struct PersonDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
 
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.system(.title3))
                         .foregroundStyle(.white, DT.Color.accent)
                         .background(Circle().fill(.black.opacity(0.3)))
                         .padding(6)
