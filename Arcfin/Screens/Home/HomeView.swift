@@ -138,6 +138,9 @@ struct HomeView: View {
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
+    #if !os(tvOS)
+    @Namespace private var zoomNamespace
+    #endif
     @State private var heroPlaybackRequest: HeroPlaybackRequest?
     @State private var seeAllShelf: SeeAllShelf?
     @State private var showOfflinePrompt = false
@@ -329,6 +332,7 @@ struct HomeView: View {
         // touched in a tightly-packed horizontal shelf, causing taps to land on the
         // neighboring card instead of the one under your finger.
         .contextMenu { quickLookMenu(item) }
+        .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
     }
 
@@ -425,7 +429,12 @@ struct HomeView: View {
                 }
                 #endif
                 .navigationDestination(for: MediaItem.self) { item in
+#if os(tvOS)
                     MediaDetailView(item: item)
+#else
+                    MediaDetailView(item: item, zoomNamespace: zoomNamespace)
+                        .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+#endif
                 }
                 .navigationDestination(item: $heroDetailItem) { item in
                     MediaDetailView(item: item)
@@ -1093,6 +1102,7 @@ struct HomeView: View {
 #else
                 .buttonStyle(PressableButtonStyle())
                 .contextMenu { quickLookMenu(item) }
+                .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
             }
         }
