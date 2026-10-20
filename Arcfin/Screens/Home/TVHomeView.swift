@@ -305,14 +305,14 @@ struct TVHomeView: View {
                 Text(String(year)).font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = item.communityRating {
-                Text("·").foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
                         .font(.system(size: 22, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
-            Text("·").foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
+            Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
             Text(item.type == .series ? "Series" : "Movie")
                 .font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
         }

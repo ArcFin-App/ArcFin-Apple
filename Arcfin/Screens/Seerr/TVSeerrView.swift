@@ -262,12 +262,12 @@ private struct TVSeerrCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 if let year = item.year {
                     Text(year)
-                        .font(.system(size: 10 * DT.Scale.font, weight: .medium))
+                        .scaledFont(size: 10, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
                 Text(item.title)
-                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                     .lineLimit(2)
                     .animation(DT.Animation.fast, value: isFocused)
@@ -308,7 +308,7 @@ private struct TVRequestRow: View {
                         .font(.system(size: 18))
                         .foregroundStyle(DT.Color.textSecondary)
 
-                    Text("·").foregroundStyle(.white.opacity(0.2))
+                    Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
 
                     Text(req.requestedAt, style: .date)
                         .font(.system(size: 18))

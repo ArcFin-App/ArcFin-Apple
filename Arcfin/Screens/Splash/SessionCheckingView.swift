@@ -24,17 +24,17 @@ struct SessionCheckingView: View {
                 ProgressView()
                     .tint(.white)
                 Text("Connecting to your server…")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(.subheadline, design: .default, weight: .medium))
                     .foregroundStyle(DT.Color.textSecondary)
 
                 if showOptions {
                     VStack(spacing: 12) {
                         Text("This is taking longer than usual.")
-                            .font(.system(size: 13))
+                            .font(.system(.footnote, design: .default))
                             .foregroundStyle(DT.Color.textSecondary)
                         Button(action: onRetry) {
                             Text("Retry")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(.subheadline, design: .default, weight: .semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
                         }
@@ -42,7 +42,7 @@ struct SessionCheckingView: View {
                         .tint(DT.Color.accent)
                         Button(action: onSignInManually) {
                             Text("Sign In Instead")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.system(.subheadline, design: .default, weight: .medium))
                         }
                         .foregroundStyle(DT.Color.textSecondary)
                     }

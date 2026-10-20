@@ -35,6 +35,9 @@ public protocol KeychainClientProtocol: Sendable {
     func savePin(_ pin: String, for credentialID: UUID) throws
     func loadPin(for credentialID: UUID) throws -> String?
     func deletePin(for credentialID: UUID) throws
+    func saveSeerrPassword(_ password: String) throws
+    func loadSeerrPassword() throws -> String?
+    func deleteSeerrPassword() throws
 }
 
 // MARK: - Auth state

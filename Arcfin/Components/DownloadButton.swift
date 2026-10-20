@@ -21,6 +21,12 @@ struct DownloadButton: View {
     private var progress: Double? { downloadManager.progress[item.id] }
     private var isQueued: Bool { downloadManager.activeItemTitles[item.id] != nil }
 
+    private var downloadAccessibilityLabel: LocalizedStringKey {
+        if isDownloaded { return "Downloaded, tap to delete" }
+        if progress != nil || isQueued { return "Cancel download" }
+        return isLoadingPreview ? "Preparing download" : "Download"
+    }
+
     var body: some View {
         Button {
             if isDownloaded {
@@ -41,20 +47,27 @@ struct DownloadButton: View {
                         .stroke(DT.Color.accent, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(.caption2, weight: .bold))
                 } else if isQueued {
                     Image(systemName: "clock")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.7))
                 } else {
                     Image(systemName: isDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(.title3, weight: .semibold))
                         .foregroundStyle(isDownloaded ? Color(hex: "10b981") : .white)
                 }
             }
             .frame(width: 30, height: 30)
         }
+        .accessibilityLabel(downloadAccessibilityLabel)
         .buttonStyle(.plain)
+        // Visual size stays 30x30 (buttons.md's 28pt minimum); the tappable area grows to
+        // the 44pt default. This button is the trailing-most element in its row with
+        // nothing else to its right, so the extra hit area only reclaims mis-taps at this
+        // one edge rather than overlapping a neighboring control.
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
         .alert("Delete this download?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 // The button only needs the itemId to remove files + the SwiftData row, but
@@ -64,7 +77,8 @@ struct DownloadButton: View {
             Button("Cancel", role: .cancel) {}
         }
         .alert("Download Failed", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("OK") {}
+            Button("Retry") { loadPreview() }
+            Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
         }

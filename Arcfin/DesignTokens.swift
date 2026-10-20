@@ -2,6 +2,11 @@
 
 import SwiftUI
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - Design token system for Arcfin
 // Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass.
@@ -27,10 +32,30 @@ public enum DT {
         public static let textPrimary         = SwiftUI.Color.white
         /// #06B6D4 — active/selected labels
         public static let textActive          = SwiftUI.Color(hex: "06B6D4")
-        /// #8E8E93 — secondary metadata (system grey)
-        public static let textSecondary       = SwiftUI.Color(hex: "8E8E93")
-        /// #3A3A4A — separator / divider lines
-        public static let separator           = SwiftUI.Color(hex: "3A3A4A")
+
+        /// Reads the system's real Increase Contrast accessibility setting directly —
+        /// same bare-global-read shape as DT.Animation.reduceMotion below, so textSecondary/
+        /// separator stay plain property accesses at every call site, no environment
+        /// plumbing needed. textPrimary/textActive/accent are already 8:1+ against every
+        /// background (computed from their actual hex values) and don't need a second tier.
+        private static var increaseContrast: Bool {
+#if os(macOS)
+            NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+#else
+            UIAccessibility.isDarkerSystemColorsEnabled
+#endif
+        }
+
+        /// #8E8E93 (5.2–6.1:1 on the three backgrounds) / Increase Contrast: #AEAEB4
+        /// (7.65–8.95:1) — secondary metadata (system grey)
+        public static var textSecondary: SwiftUI.Color {
+            increaseContrast ? SwiftUI.Color(hex: "AEAEB4") : SwiftUI.Color(hex: "8E8E93")
+        }
+        /// #3A3A4A (1.5–1.8:1, under the 3:1 UI-boundary floor) / Increase Contrast:
+        /// #6E6E82 (3.4–4.0:1) — separator / divider lines
+        public static var separator: SwiftUI.Color {
+            increaseContrast ? SwiftUI.Color(hex: "6E6E82") : SwiftUI.Color(hex: "3A3A4A")
+        }
         /// Progress bar fill
         public static let progressFill        = SwiftUI.Color(hex: "06B6D4")
         /// Progress bar track
@@ -115,10 +140,17 @@ public enum DT {
     // MARK: - Animation
 
     public enum Animation {
-        /// When the Appearance → Reduce Motion setting is on, every DT.Animation
+        /// When the Appearance → Reduce Motion setting or the system Reduce Motion is on, every DT.Animation
         /// collapses to a near-instant linear fade instead of its spring/duration.
         private static var reduceMotion: Bool {
-            UserDefaults.standard.bool(forKey: "reduceMotion")
+            if UserDefaults.standard.bool(forKey: "reduceMotion") { return true }
+            #if canImport(UIKit)
+            return UIAccessibility.isReduceMotionEnabled
+            #elseif canImport(AppKit)
+            return NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            #else
+            return false
+            #endif
         }
         private static let reducedFallback = SwiftUI.Animation.linear(duration: 0.01)
 
@@ -168,5 +200,41 @@ extension SwiftUI.Color {
         let g = Double((value >>  8) & 0xFF) / 255
         let b = Double( value        & 0xFF) / 255
         self.init(red: r, green: g, blue: b)
+    }
+}
+
+private struct ScaledSystemFont: ViewModifier {
+    @ScaledMetric private var size: CGFloat
+    let weight: Font.Weight
+    let design: Font.Design
+
+    init(size: CGFloat, weight: Font.Weight, design: Font.Design) {
+        let style: Font.TextStyle = switch size {
+        case ..<11.5: .caption2
+        case ..<12.5: .caption
+        case ..<13.5: .footnote
+        case ..<14.5: .subheadline
+        case ..<15.5: .callout
+        case ..<17.5: .body
+        case ..<20.5: .title3
+        case ..<22.5: .title2
+        case ..<28.5: .title
+        default: .largeTitle
+        }
+        _size = ScaledMetric(wrappedValue: size * DT.Scale.font, relativeTo: style)
+        self.weight = weight
+        self.design = design
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: size, weight: weight, design: design))
+    }
+}
+
+extension View {
+    /// `DT.Scale.font` sizing that also tracks Dynamic Type — plain `.font(.system(size:))`
+    /// stays fixed regardless of the user's text-size setting.
+    func scaledFont(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {
+        modifier(ScaledSystemFont(size: size, weight: weight, design: design))
     }
 }

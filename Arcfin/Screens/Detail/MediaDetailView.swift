@@ -89,6 +89,18 @@ struct MediaDetailView: View {
 
     private var credential: ServerCredential? { authManager.state.credential }
 
+    /// Jellyfin web client's details page for this item — the same link the web UI's own
+    /// "copy link" produces, so anyone with access to the server can open it.
+    private var shareURL: URL? {
+        guard let base = credential?.baseURL,
+              var comps = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        else { return nil }
+        let basePath = comps.path.hasSuffix("/") ? String(comps.path.dropLast()) : comps.path
+        comps.path = basePath + "/web/"
+        comps.fragment = "/details?id=\(item.id)"
+        return comps.url
+    }
+
     private var authHeader: String? {
         credential.map { authManager.authClient.authHeader(token: $0.accessToken) }
     }
@@ -117,10 +129,20 @@ struct MediaDetailView: View {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
                 }
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .topBarTrailing) {
                     DownloadButton(item: item)
+                }
+            }
+            if let shareURL {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundStyle(.white)
+                    }
+                    .accessibilityLabel("Share")
                 }
             }
         }
@@ -133,6 +155,7 @@ struct MediaDetailView: View {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
                 }
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
         }
         #endif
@@ -463,7 +486,7 @@ struct MediaDetailView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.system(.title3, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.5)
                     .lineLimit(3)
@@ -480,38 +503,55 @@ struct MediaDetailView: View {
     }
 
     private var metaRow: some View {
+        // lineLimit(1) cascades to every Text child, giving HStack's layout room to
+        // compress/truncate them when every optional field (year, rating, runtime,
+        // community score) is present at once — without it, none of these Text views have
+        // a defined minimum width, so HStack can't shrink them and the row overflows past
+        // the screen edge instead.
         HStack(spacing: 6) {
             if let year = item.productionYear {
                 Text(String(year))
-                    .font(.system(size: 12))
+                    .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(size: 12))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text(rating)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(size: 12))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 Text("\(mins)m")
-                    .font(.system(size: 12))
+                    .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").foregroundStyle(.white.opacity(0.2)).font(.system(size: 12))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 9))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(.caption2, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.accent)
                 }
             }
         }
+        .lineLimit(1)
+    }
+
+    /// When playback started right now would finish, counting from the resume point if there
+    /// is one — only meaningful for a single playable item, not a series or season.
+    private var endTime: Date? {
+        guard item.type == .movie || item.type == .episode,
+              let total = detail?.runTimeTicks, total > 0
+        else { return nil }
+        let watched = isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
+        let remainingSeconds = Double(max(total - watched, 0)) / 10_000_000
+        return Date().addingTimeInterval(remainingSeconds)
     }
 
     private var qualityRow: some View {
@@ -538,9 +578,9 @@ struct MediaDetailView: View {
         }
         return HStack(spacing: 4) {
             Image(systemName: "trophy.fill")
-                .font(.system(size: 10))
+                .font(.system(.caption2))
             Text(label)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(.caption2, design: .default, weight: .semibold))
                 .lineLimit(1)
         }
         .foregroundStyle(Color(hex: "f59e0b"))
@@ -548,7 +588,7 @@ struct MediaDetailView: View {
 
     private func qualityBadge(_ label: String, color: Color) -> some View {
         Text(label)
-            .font(.system(size: 9, weight: .bold))
+            .font(.system(.caption2, design: .default, weight: .bold))
             .tracking(0.5)
             .foregroundStyle(color)
             .padding(.horizontal, 6).padding(.vertical, 2)
@@ -592,6 +632,24 @@ struct MediaDetailView: View {
         return "\(remainingMinutes)m left"
     }
 
+    /// Resume only: "19m left • Ends 9:42 PM" on its own line (too long to share the title
+    /// line). A fresh Play shows its end time inline on the title line instead. The bullet
+    /// is a heavier, larger glyph than a middle dot so it reads as a separator against the
+    /// gradient.
+    private var playDetailLine: Text? {
+        guard isResumable else { return nil }
+        let ends = endTime.map { Text("Ends \($0.formatted(date: .omitted, time: .shortened))") }
+        let left = resumeTimeLabel.map { Text($0) }
+        switch (left, ends) {
+        case let (left?, ends?):
+            let separator = Text("  •  ").font(.system(.footnote, weight: .heavy))
+            return Text("\(left)\(separator)\(ends)")
+        case let (left?, nil): return left
+        case let (nil, ends?): return ends
+        case (nil, nil): return nil
+        }
+    }
+
     private var playButton: some View {
 #if os(tvOS)
         Button {} label: { TVPlayButtonLabel() }
@@ -612,27 +670,39 @@ struct MediaDetailView: View {
                 #endif
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "play.fill").font(.system(size: 14))
+                    Image(systemName: "play.fill").font(.system(.subheadline))
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 5) {
                             Text(isResumable ? "Resume" : "Play")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(.callout, design: .default, weight: .bold))
                             if let playEpisodeLabel {
                                 Text(playEpisodeLabel)
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(.system(.callout, design: .default, weight: .semibold))
+                                    .opacity(0.85)
+                            }
+                            if !isResumable, let endsAt = endTime {
+                                Text("•")
+                                    .font(.system(.callout, design: .default, weight: .heavy))
+                                    .opacity(0.9)
+                                Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                                    .font(.system(.callout, design: .default, weight: .semibold))
                                     .opacity(0.85)
                             }
                         }
-                        if let resumeTimeLabel {
-                            Text(resumeTimeLabel)
-                                .font(.system(size: 10, weight: .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        if let playDetailLine {
+                            playDetailLine
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .opacity(0.85)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
                     }
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, isResumable ? 10 : 14)
+                .padding(.vertical, playDetailLine == nil ? 14 : 10)
                 .background(LinearGradient(
                     colors: [DT.Color.accentDeep, DT.Color.accent],
                     startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -650,13 +720,14 @@ struct MediaDetailView: View {
                     #endif
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .frame(width: 48, height: 48)
                         .background(DT.Color.backgroundSecondary)
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                         .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
                 }
+                .accessibilityLabel("Start over")
                 .buttonStyle(.plain)
                 .accessibilityLabel("Start Over")
             }
@@ -685,8 +756,8 @@ struct MediaDetailView: View {
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "film").font(.system(size: 14))
-                    Text("Play Trailer").font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "film").font(.system(.subheadline))
+                    Text("Play Trailer").font(.system(.subheadline, design: .default, weight: .semibold))
                 }
                 .foregroundStyle(DT.Color.textPrimary)
                 .frame(maxWidth: .infinity)
@@ -729,7 +800,7 @@ struct MediaDetailView: View {
                 HStack(spacing: 8) {
                     ForEach(d.genres, id: \.self) { genre in
                         Text(genre)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(.caption2, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                             .padding(.horizontal, 12).padding(.vertical, 5)
                             .background(.white.opacity(0.05))
@@ -782,7 +853,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Overview")
             Text(text)
-                .font(.system(size: 14))
+                .font(.system(.footnote, design: .default))
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -835,7 +906,7 @@ struct MediaDetailView: View {
         Circle()
             .fill(DT.Color.backgroundSecondary)
             .overlay(Image(systemName: "person.fill")
-                .font(.system(size: 22))
+                .font(.system(.title2))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
     }
 
@@ -857,11 +928,11 @@ struct MediaDetailView: View {
     private func crewRow(label: String, people: [MediaPerson]) -> some View {
         HStack(spacing: 8) {
             Text(label)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(.caption2, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textSecondary)
                 .frame(width: 60, alignment: .leading)
             Text(people.map { $0.name }.joined(separator: ", "))
-                .font(.system(size: 12))
+                .font(.system(.caption, design: .default))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
         }
@@ -879,10 +950,10 @@ struct MediaDetailView: View {
                 } label: {
                     HStack(spacing: 5) {
                         Text(selectedSeason?.name ?? "Season")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(.callout, design: .default, weight: .bold))
                             .foregroundStyle(DT.Color.textPrimary)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(.caption2, weight: .semibold))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
@@ -911,9 +982,10 @@ struct MediaDetailView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
+                .accessibilityLabel("Mark watched options")
 #if os(tvOS)
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -937,7 +1009,7 @@ struct MediaDetailView: View {
                         }
                         Text(isSeasonFullyDownloaded ? "Season Downloaded" : "Download Season")
                     }
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     // A hardcoded accent color didn't dim when disabled (episodes still
                     // loading, or the whole season already downloaded) — tapping it then
                     // did nothing with zero visual feedback, which read as "no confirm
@@ -949,7 +1021,7 @@ struct MediaDetailView: View {
                 .disabled(episodes.isEmpty || isSeasonFullyDownloaded)
                 #else
                 Text("Episodes")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(.footnote, design: .default, weight: .medium))
                     .foregroundStyle(DT.Color.textSecondary)
                 #endif
             }
@@ -974,15 +1046,15 @@ struct MediaDetailView: View {
             NavigationLink(value: series) {
                 HStack(spacing: 10) {
                     Image(systemName: "tv")
-                        .font(.system(size: 14))
+                        .font(.system(.subheadline))
                         .foregroundStyle(DT.Color.accent)
                     Text(series.name)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(1)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 .padding(.horizontal, 12)
@@ -1025,7 +1097,7 @@ struct MediaDetailView: View {
                         if isWatched {
                             Color.black.opacity(0.45)
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 22))
+                                .font(.system(.title2))
                                 .foregroundStyle(Color(hex: "10b981"))
                         } else if pct > 0 {
                             VStack(spacing: 0) {
@@ -1048,11 +1120,11 @@ struct MediaDetailView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if let epNum = ep.indexNumber {
                             Text("E\(epNum)")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.accent)
                         }
                         Text(ep.name)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(.footnote, design: .default, weight: .semibold))
                             .foregroundStyle(DT.Color.textPrimary)
                             .lineLimit(2)
                     }
@@ -1065,7 +1137,7 @@ struct MediaDetailView: View {
 
                 if let overview = ep.overview, !overview.isEmpty {
                     Text(overview)
-                        .font(.system(size: 11))
+                        .font(.system(.caption2, design: .default))
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(3)
                         .padding(.top, 8)
@@ -1108,7 +1180,7 @@ struct MediaDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(ep.name)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 240, alignment: .leading)
@@ -1121,7 +1193,7 @@ struct MediaDetailView: View {
             .fill(DT.Color.backgroundSecondary)
             .overlay(
                 Image(systemName: "play.rectangle")
-                    .font(.system(size: 20))
+                    .font(.system(.title3))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.3))
             )
     }
@@ -1316,7 +1388,7 @@ struct MediaDetailView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 16, weight: .bold))
+            .font(.system(.callout, design: .default, weight: .bold))
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.3)
     }
@@ -1324,7 +1396,7 @@ struct MediaDetailView: View {
 
 // MARK: - Cast card
 
-private struct CastPersonCard<Placeholder: View>: View {
+struct CastPersonCard<Placeholder: View>: View {
     let imageURL: URL?
     let name: String
     let role: String?
@@ -1353,14 +1425,14 @@ private struct CastPersonCard<Placeholder: View>: View {
             .scaleEffect(hovered ? 1.06 : 1)
 
             Text(name)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(.caption2, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
             if let role, !role.isEmpty {
                 Text(role)
-                    .font(.system(size: 9))
+                    .font(.system(.caption2, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
             }
@@ -1385,9 +1457,9 @@ private struct TVPlayButtonLabel: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "play.fill")
-                .font(.system(size: 14 * DT.Scale.font))
+                .scaledFont(size: 14)
             Text("Play")
-                .font(.system(size: 16 * DT.Scale.font, weight: .bold))
+                .scaledFont(size: 16, weight: .bold)
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)

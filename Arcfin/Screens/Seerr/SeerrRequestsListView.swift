@@ -13,10 +13,21 @@ struct SeerrRequestsListView: View {
     let title: String
 
     @State private var selectedRequest: SeerrRequestItem? = nil
+    @State private var statusFilter: RequestStatus? = nil
 
     private var filteredRequests: [SeerrRequestItem] {
-        guard let filter else { return seerrRepo.requests }
-        return seerrRepo.requests.filter { $0.mediaType == filter }
+        seerrRepo.requests.filter { request in
+            (filter == nil || request.mediaType == filter) && (statusFilter == nil || request.status == statusFilter)
+        }
+    }
+
+    private var statusFilterLabel: String {
+        switch statusFilter {
+        case nil: "All"
+        case .pending: "Pending"
+        case .approved: "Approved"
+        case .declined: "Declined"
+        }
     }
 
     var body: some View {
@@ -26,9 +37,11 @@ struct SeerrRequestsListView: View {
                     loadingList
                 } else if filteredRequests.isEmpty {
                     ContentUnavailableView(
-                        "No Requests",
+                        statusFilter == nil ? "No Requests" : "No \(statusFilterLabel) Requests",
                         systemImage: "clock",
-                        description: Text("Your media requests will appear here.")
+                        description: Text(statusFilter == nil
+                                          ? "Your media requests will appear here."
+                                          : "Try a different status filter.")
                     )
                     .frame(height: 220)
                 } else {
@@ -40,6 +53,24 @@ struct SeerrRequestsListView: View {
         .background(DT.Color.backgroundPrimary)
         .navigationTitle(title)
         .arcfinNavTitleLarge(title)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("Status", selection: $statusFilter) {
+                        Text("All").tag(RequestStatus?.none)
+                        Text("Pending").tag(RequestStatus?.some(.pending))
+                        Text("Approved").tag(RequestStatus?.some(.approved))
+                        Text("Declined").tag(RequestStatus?.some(.declined))
+                    }
+                } label: {
+                    Image(systemName: statusFilter == nil
+                          ? "line.3.horizontal.decrease.circle"
+                          : "line.3.horizontal.decrease.circle.fill")
+                }
+                .accessibilityLabel("Filter requests")
+                .accessibilityValue(statusFilterLabel)
+            }
+        }
         .navigationDestination(item: $selectedRequest) { req in
             SeerrRequestDetailView(request: req)
         }
@@ -118,7 +149,7 @@ struct SeerrRequestsListView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(req.mediaTitle)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
 
@@ -126,7 +157,7 @@ struct SeerrRequestsListView: View {
                     Text(req.mediaType == .tv ? "Series" : "Movie")
                         .font(DT.Font.caption2)
                         .foregroundStyle(DT.Color.textSecondary)
-                    Text("·")
+                    Text("·").accessibilityHidden(true)
                         .font(DT.Font.caption2)
                         .foregroundStyle(.white.opacity(0.2))
                     Text(req.requestedAt, style: .date)
@@ -165,7 +196,7 @@ struct SeerrRequestsListView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(req.mediaTitle)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)
@@ -195,12 +226,6 @@ struct SeerrRequestsListView: View {
     }
 
     private func statusPillView(label: String, hex: String) -> some View {
-        Text(label)
-            .font(.system(size: 7, weight: .bold))
-            .foregroundStyle(Color(hex: hex))
-            .padding(.horizontal, 5).padding(.vertical, 2)
-            .background(Color(hex: hex).opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+        StatusPill(label: label, color: Color(hex: hex))
     }
 }

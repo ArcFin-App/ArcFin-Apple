@@ -16,6 +16,13 @@ struct PosterCard: View {
     @Environment(\.isFocused) private var isFocused
 #endif
 
+    private var cardAccessibilityValue: Text {
+        var parts: [String] = []
+        if let subtitle { parts.append(subtitle) }
+        if let progress { parts.append("\(Int((progress * 100).rounded())) percent watched") }
+        return Text(parts.joined(separator: ", "))
+    }
+
     var body: some View {
 #if os(tvOS)
         tvBody
@@ -42,13 +49,13 @@ struct PosterCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                     .lineLimit(2)
                     .animation(DT.Animation.fast, value: isFocused)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 10 * DT.Scale.font, weight: .medium))
+                        .scaledFont(size: 10, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
@@ -71,7 +78,7 @@ struct PosterCard: View {
             // already gets the scale/glow treatment below without needing an icon.
             if hovered {
                 Image(systemName: "play.fill")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(.callout, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(.black.opacity(0.45), in: Circle())
@@ -102,13 +109,13 @@ struct PosterCard: View {
                 Spacer()
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(.caption, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                     if let subtitle {
                         Text(subtitle)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(.caption2, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -139,6 +146,9 @@ struct PosterCard: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(cardAccessibilityValue)
         .frame(width: width, height: height)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
@@ -234,7 +244,7 @@ struct RequestCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 RequestStatusPill(status: status)
                 Text(title)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
             }
             .padding(8)
@@ -261,20 +271,38 @@ enum CardRequestStatus: String {
     var label: String { rawValue.capitalized }
 }
 
+/// Shared pill treatment for a request/availability status badge — was independently
+/// reimplemented at 4 call sites (here, SeerrRequestsListView, and twice in SeerrView),
+/// all at a 7pt font, below the 11pt iOS minimum for real text (typography.md). One
+/// component means one place to get both the sizing and the look right.
+struct StatusPill: View {
+    let label: String
+    let color: Color
+    var uppercase: Bool = false
+
+    var body: some View {
+        Text(label)
+            .font(.system(.caption2, design: .default, weight: .bold))
+            .tracking(0.5)
+            .textCase(uppercase ? .uppercase : nil)
+            .foregroundStyle(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            // .ultraThinMaterial underneath the tint guarantees a legible backing
+            // regardless of what's behind the pill — these sit directly over poster art,
+            // whose own color/brightness can't be predicted (color.md).
+            .background(.ultraThinMaterial)
+            .background(color.opacity(0.15))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(color.opacity(0.3), lineWidth: 1))
+    }
+}
+
 struct RequestStatusPill: View {
     let status: CardRequestStatus
 
     var body: some View {
-        Text(status.label)
-            .font(.system(size: 7, weight: .bold))
-            .tracking(0.5)
-            .textCase(.uppercase)
-            .foregroundStyle(status.color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(status.color.opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(status.color.opacity(0.3), lineWidth: 1))
+        StatusPill(label: status.label, color: status.color, uppercase: true)
     }
 }
 

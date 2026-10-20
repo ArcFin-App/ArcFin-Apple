@@ -39,6 +39,7 @@ struct SeerrView: View {
             .background(DT.Color.backgroundPrimary)
             .navigationTitle("Discover")
             .arcfinNavTitleLarge("Discover")
+            .searchable(text: $searchText, prompt: "Movies, series, people…")
             .navigationDestination(for: SeerrItem.self) { item in
                 SeerrItemDetailView(item: item)
             }
@@ -76,13 +77,13 @@ struct SeerrView: View {
     private var notConfiguredView: some View {
         VStack(spacing: 16) {
             Image(systemName: "clock.fill")
-                .font(.system(size: 48))
+                .scaledFont(size: 48)
                 .foregroundStyle(DT.Color.accent)
             Text("Seerr Not Connected")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(.title3, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
             Text("Add your Seerr server URL and credentials in Settings → Plugins → Seerr.")
-                .font(.system(size: 14))
+                .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -124,32 +125,6 @@ struct SeerrView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Search bar
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 13))
-                    .foregroundStyle(DT.Color.textSecondary)
-                TextField("Search movies, series, people…", text: $searchText)
-                    .font(DT.Font.caption)
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .autocorrectionDisabled()
-                if !searchText.isEmpty {
-                    Button { searchText = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(.white.opacity(0.06))
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.1), lineWidth: 1))
-            .padding(.bottom, DT.Spacing.sm)
-
             if searchText.isEmpty {
                 // Movies / TV Shows
                 Picker("Media Type", selection: $mediaType) {
@@ -182,7 +157,7 @@ struct SeerrView: View {
     private func genreChip(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                .font(.system(.caption2, design: .default, weight: isSelected ? .bold : .regular))
                 .foregroundStyle(isSelected ? DT.Color.accent : DT.Color.textSecondary)
                 .padding(.horizontal, 14).padding(.vertical, 5)
                 .background(isSelected ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
@@ -331,7 +306,7 @@ struct SeerrView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(item.title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)
@@ -362,7 +337,7 @@ struct SeerrView: View {
             VStack {
                 HStack {
                     Text(item.mediaType == .tv ? "SERIES" : "MOVIE")
-                        .font(.system(size: 7, weight: .bold))
+                        .font(.system(.caption2, design: .default, weight: .bold))
                         .tracking(0.5)
                         .foregroundStyle(.white.opacity(0.8))
                         .padding(.horizontal, 5).padding(.vertical, 2)
@@ -372,13 +347,14 @@ struct SeerrView: View {
                     Spacer()
                     Button { toggleWatchlist(item) } label: {
                         Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(.caption2, weight: .semibold))
                             .foregroundStyle(.white)
                             .padding(5)
                             .background(.black.opacity(0.5))
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
                     .buttonStyle(.plain)
                 }
                 Spacer()
@@ -395,21 +371,21 @@ struct SeerrView: View {
                 }
 
                 Text(item.title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(.caption2, design: .default, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(2)
 
                 if let year = item.year {
                     Text(year)
-                        .font(.system(size: 9))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
 
                 if !isAvailable && !alreadyRequested {
                     Button { requestingItem = item } label: {
                         HStack(spacing: 4) {
-                            Image(systemName: "plus.circle").font(.system(size: 9))
-                            Text("Request").font(.system(size: 9, weight: .bold))
+                            Image(systemName: "plus.circle").font(.system(.caption2))
+                            Text("Request").font(.system(.caption2, design: .default, weight: .bold))
                         }
                         .foregroundStyle(DT.Color.accent)
                         .frame(maxWidth: .infinity)
@@ -440,14 +416,7 @@ struct SeerrView: View {
     }
 
     private func availabilityPill(label: String, hex: String) -> some View {
-        Text(label)
-            .font(.system(size: 7, weight: .bold))
-            .tracking(0.5)
-            .foregroundStyle(Color(hex: hex))
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(Color(hex: hex).opacity(0.15))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+        StatusPill(label: label, color: Color(hex: hex))
     }
 
     // MARK: - Loading skeleton

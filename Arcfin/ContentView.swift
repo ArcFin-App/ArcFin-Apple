@@ -59,7 +59,6 @@ struct ContentView: View {
 
     @AppStorage("seerrURL")          private var seerrURL         = ""
     @AppStorage("seerrUsername")     private var seerrUsername    = ""
-    @AppStorage("seerrPassword")     private var seerrPassword    = ""
     @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = SeerrAuthMethod.jellyfin
     @AppStorage("streamystatsURL")   private var statsURL         = ""
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
@@ -115,6 +114,7 @@ struct ContentView: View {
                             Button { showOfflineDocPicker = true } label: {
                                 Image(systemName: "folder")
                             }
+                            .accessibilityLabel("Open local file")
                         }
                     }
                     .sheet(isPresented: $showOfflineDocPicker) {
@@ -242,7 +242,7 @@ struct ContentView: View {
         .onAppear { configureSeerr() }
         .onChange(of: seerrURL)        { configureSeerr() }
         .onChange(of: seerrUsername)   { configureSeerr() }
-        .onChange(of: seerrPassword)   { configureSeerr() }
+        .onChange(of: authManager.seerrPassword) { configureSeerr() }
         .onChange(of: seerrAuthMethod) { configureSeerr() }
         // A profile switch keeps the same Seerr URL/username/password today, so
         // configureSeerr() above would just no-op as "nothing changed" — this instead clears
@@ -278,7 +278,7 @@ struct ContentView: View {
                     jellyfinUsername: cred.displayName,
                     onConnected: { username, password in
                         seerrUsername = username
-                        seerrPassword = password
+                        authManager.saveSeerrPassword(password)
                         markSeerrSetupPromptHandled(for: cred.id)
                     },
                     onDismiss: { markSeerrSetupPromptHandled(for: cred.id) }
@@ -299,7 +299,7 @@ struct ContentView: View {
         guard case .authenticated(let cred) = authManager.state,
               authManager.arcfinSyncLockedKeys.contains("seerrAuthMethod"),
               seerrAuthMethod == .jellyfin, !seerrURL.isEmpty,
-              seerrUsername.isEmpty || seerrPassword.isEmpty,
+              seerrUsername.isEmpty || authManager.seerrPassword.isEmpty,
               !UserDefaults.standard.bool(forKey: seerrSetupPromptHandledKey(for: cred.id))
         else { return }
         showSeerrSetupPrompt = true
@@ -379,7 +379,7 @@ struct ContentView: View {
 
     private func configureSeerr() {
         seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
-                            password: seerrPassword, authMethod: seerrAuthMethod)
+                            password: authManager.seerrPassword, authMethod: seerrAuthMethod)
         // Warms Discover and the Browse > Your Requests sections in the background as soon
         // as Seerr is reachable, so they're already populated (no skeleton) the first time
         // the user actually taps into either.

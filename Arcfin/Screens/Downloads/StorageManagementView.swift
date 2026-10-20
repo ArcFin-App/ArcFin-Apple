@@ -62,7 +62,7 @@ struct StorageManagementView: View {
                 List {
                     Section {
                         Text("\(ByteCountFormatter.string(fromByteCount: totalSizeBytes, countStyle: .file)) used by \(items.count) download\(items.count == 1 ? "" : "s")")
-                            .font(.system(size: 12))
+                            .font(.system(.caption))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     #if os(iOS)
@@ -174,7 +174,7 @@ struct StorageManagementView: View {
 
     private func selectionIndicator(_ id: String) -> some View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 20))
+            .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
     }
     #endif
@@ -236,16 +236,16 @@ struct StorageManagementView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(entry.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 Text(entry.subtitle)
-                    .font(.system(size: 11))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             Spacer()
             Text(ByteCountFormatter.string(fromByteCount: entry.sizeBytes, countStyle: .file))
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(.caption, design: .default, weight: .medium))
                 .foregroundStyle(DT.Color.textSecondary)
         }
         .padding(.vertical, 4)

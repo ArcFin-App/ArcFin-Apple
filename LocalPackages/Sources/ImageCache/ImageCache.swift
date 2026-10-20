@@ -17,6 +17,18 @@ public enum ImageCache: Sendable {
         return ImagePipeline(configuration: config)
     }()
 
+    /// Bytes the on-disk image cache currently holds.
+    public static var diskCacheSize: Int {
+        (shared.configuration.dataCache as? DataCache)?.totalSize ?? 0
+    }
+
+    /// Empties both the decoded in-memory cache and the on-disk one; images re-download on
+    /// demand afterwards.
+    public static func clear() {
+        shared.cache.removeAll()
+        (shared.configuration.dataCache as? DataCache)?.removeAll()
+    }
+
     /// Loads all URLs into the Nuke decoded cache concurrently so images render
     /// without a network round-trip or decode stall.
     public static func preheat(urls: [URL]) {

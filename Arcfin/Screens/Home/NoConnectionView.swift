@@ -29,15 +29,15 @@ struct NoConnectionView: View {
                     Spacer().frame(height: 40)
 
                     Image(systemName: "wifi.slash")
-                        .font(.system(size: 44, weight: .medium))
+                        .scaledFont(size: 44, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
 
                     VStack(spacing: 8) {
                         Text("Can't Reach Your Server")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(.title2, design: .default, weight: .bold))
                             .foregroundStyle(DT.Color.textPrimary)
                         Text("Arcfin couldn't load anything from your Jellyfin server.")
-                            .font(.system(size: 14))
+                            .font(.system(.footnote))
                             .foregroundStyle(DT.Color.textSecondary)
                             .multilineTextAlignment(.center)
                     }
@@ -46,11 +46,11 @@ struct NoConnectionView: View {
                         ForEach(tips, id: \.self) { tip in
                             HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "circle.fill")
-                                    .font(.system(size: 4))
+                                    .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.accent)
                                     .padding(.top, 6)
                                 Text(tip)
-                                    .font(.system(size: 13))
+                                    .font(.system(.footnote))
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
                         }
@@ -67,7 +67,7 @@ struct NoConnectionView: View {
                                 if mediaRepo.isLoading { ProgressView().tint(.white) }
                                 Text(mediaRepo.isLoading ? "Retrying…" : "Retry")
                             }
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(.subheadline, design: .default, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: 340)
                             .frame(height: 48)
@@ -82,7 +82,7 @@ struct NoConnectionView: View {
                             offlineModeEnabled = true
                         } label: {
                             Text("Turn On Offline Mode")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(.subheadline, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
                                 .frame(maxWidth: 340)
                                 .frame(height: 48)

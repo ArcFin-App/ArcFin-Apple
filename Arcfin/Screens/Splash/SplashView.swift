@@ -8,6 +8,8 @@ struct SplashView: View {
     var isLoading: Bool
     var onComplete: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var logoScale: CGFloat = 0.55
     @State private var logoOpacity: Double = 0
     @State private var logoBlur: CGFloat = 14
@@ -73,7 +75,7 @@ struct SplashView: View {
             VStack {
                 Spacer()
                 Text("by PSMattas")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(.caption2, design: .default, weight: .medium))
                     .tracking(2.5)
                     .textCase(.uppercase)
                     .foregroundStyle(.white.opacity(0.18))
@@ -95,7 +97,7 @@ struct SplashView: View {
 
         // 2. Logo springs in and sharpens
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.7)) {
+            withAnimation(reduceMotion ? .easeOut(duration: 0.3) : .spring(response: 0.55, dampingFraction: 0.7)) {
                 logoOpacity = 1
                 logoScale = 1
             }
@@ -113,6 +115,7 @@ struct SplashView: View {
 
         // 4. Glow pulse loop
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
                 glowPulse = 1.18
             }
@@ -127,8 +130,12 @@ struct SplashView: View {
         }
 
         // 6. Exit after the minimum presentation time; authentication continues in the
-        // background.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+        // background. 1.2s is enough for the entrance animation to read (credit line
+        // finishes fading in at 0.85 + 0.4 = 1.25s) without stalling an already-fast
+        // session check — launching.md: "Launch instantly... people don't want to wait
+        // more than a couple of seconds," which the previous 2.4s (+0.48s fade = ~2.9s
+        // total) was already pushing regardless of whether anything was still loading.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             minimumTimeElapsed = true
             attemptFinish(force: true)
         }
@@ -138,7 +145,7 @@ struct SplashView: View {
         guard minimumTimeElapsed, force || !isLoading else { return }
         withAnimation(.easeInOut(duration: 0.48)) {
             sceneOpacity = 0
-            sceneScale = 0.94
+            sceneScale = reduceMotion ? 1 : 0.94
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
             onComplete()

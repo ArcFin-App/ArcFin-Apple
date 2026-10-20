@@ -49,35 +49,35 @@ struct DownloadedSeriesDetailView: View {
                     VStack(alignment: .leading, spacing: DT.Spacing.md) {
                         HStack(spacing: 8) {
                             Text("Series")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(.caption2, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textSecondary)
                             if let year = series?.productionYear {
                                 Text("· \(String(year))")
-                                    .font(.system(size: 11))
+                                    .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
                             Text("· \(episodes.count) episode\(episodes.count == 1 ? "" : "s") downloaded")
-                                .font(.system(size: 11))
+                                .font(.system(.caption2))
                                 .foregroundStyle(DT.Color.textSecondary)
                             if let rating = series?.communityRating, rating > 0 {
                                 HStack(spacing: 2) {
-                                    Image(systemName: "star.fill").font(.system(size: 9))
+                                    Image(systemName: "star.fill").font(.system(.caption2))
                                     Text(String(format: "%.1f", rating))
                                 }
-                                .font(.system(size: 11))
+                                .font(.system(.caption2))
                                 .foregroundStyle(Color(hex: "f59e0b"))
                             }
                         }
 
                         if let genres = series?.genres, !genres.isEmpty {
                             Text(genres.joined(separator: " · "))
-                                .font(.system(size: 12))
+                                .font(.system(.caption))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
 
                         if let overview = series?.overview, !overview.isEmpty {
                             Text(overview)
-                                .font(.system(size: 13))
+                                .font(.system(.footnote))
                                 .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                                 .lineSpacing(3)
                         }
@@ -211,7 +211,7 @@ struct DownloadedSeriesDetailView: View {
             #endif
             LinearGradient(colors: [.black.opacity(0.85), .clear], startPoint: .bottom, endPoint: .center)
             Text(series?.name ?? episodes.first?.seriesName ?? "Show")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(.title2, design: .default, weight: .bold))
                 .foregroundStyle(.white)
                 .padding(DT.Spacing.pagePad)
                 .shadow(color: .black.opacity(0.6), radius: 6)
@@ -228,10 +228,10 @@ struct DownloadedSeriesDetailView: View {
         } label: {
             HStack(spacing: 5) {
                 Text(selectedSeason.map { "Season \(String($0))" } ?? "Season")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             .padding(.horizontal, 14)
@@ -248,7 +248,7 @@ struct DownloadedSeriesDetailView: View {
 
     private func selectionIndicator(_ id: String) -> some View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 20))
+            .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
     }
     #endif
@@ -320,19 +320,19 @@ struct DownloadedSeriesDetailView: View {
             episodeThumbnail(episode)
             VStack(alignment: .leading, spacing: 3) {
                 Text(episodeLabel(episode))
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
                 Text(episode.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 Text(ByteCountFormatter.string(fromByteCount: episode.fileSizeBytes, countStyle: .file))
-                    .font(.system(size: 10))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
             }
             Spacer()
             Image(systemName: episode.played ? "checkmark.circle.fill" : "play.circle")
-                .font(.system(size: 20))
+                .font(.system(.title3))
                 .foregroundStyle(episode.played ? Color(hex: "10b981") : DT.Color.textSecondary)
         }
     }
@@ -362,7 +362,7 @@ struct DownloadedSeriesDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(episode.name)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 240, alignment: .leading)

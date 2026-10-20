@@ -414,12 +414,12 @@ private struct TVCollectionItemCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 if let year = item.productionYear {
                     Text(String(year))
-                        .font(.system(size: 10 * DT.Scale.font, weight: .medium))
+                        .scaledFont(size: 10, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
                 Text(item.name)
-                    .font(.system(size: 13 * DT.Scale.font, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                     .lineLimit(2)
                     .animation(DT.Animation.fast, value: isFocused)

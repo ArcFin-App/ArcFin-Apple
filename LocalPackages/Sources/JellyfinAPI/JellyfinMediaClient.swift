@@ -288,7 +288,8 @@ public struct JellyfinMediaClient: Sendable {
         credential: ServerCredential,
         authHeader: String,
         itemType: String,
-        limit: Int = 6
+        limit: Int = 6,
+        since: Date? = nil
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
@@ -302,6 +303,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "Limit", value: "\(limit)"),
             .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear"),
         ]
+        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
@@ -310,10 +312,18 @@ public struct JellyfinMediaClient: Sendable {
         return page.items.map { $0.toMediaItem() }
     }
 
+    /// "Played since" for Stats' 7D/30D ranges: Jellyfin has no last-played-date filter on
+    /// the items query, but minDateLastSavedForUser matches items whose per-user data (which
+    /// playback updates) changed since — a close stand-in, and it also catches favoriting.
+    private static func sinceQueryItem(_ date: Date) -> URLQueryItem {
+        .init(name: "MinDateLastSavedForUser", value: ISO8601DateFormatter().string(from: date))
+    }
+
     public func getPlayedCount(
         credential: ServerCredential,
         authHeader: String,
-        itemType: String
+        itemType: String,
+        since: Date? = nil
     ) async throws -> Int {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
@@ -324,6 +334,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "Recursive", value: "true"),
             .init(name: "Limit", value: "1"),
         ]
+        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
@@ -425,6 +436,89 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// The library's own copy of a TMDB title (Seerr identifies media by TMDB id), or nil when
+    /// the server doesn't have it. Tries the item's ProviderIds first; when the library's
+    /// metadata never stored a TMDB id, falls back to an exact (normalized) title match
+    /// within a year of `year`, so a missing id doesn't hide a title that is really there.
+    /// Either lookup returns nil rather than guess when it finds more than one candidate.
+    public func findItem(
+        credential: ServerCredential,
+        authHeader: String,
+        tmdbId: Int,
+        isSeries: Bool,
+        title: String? = nil,
+        year: Int? = nil
+    ) async throws -> MediaItem? {
+        if let byId = try await findItemByProviderId(
+            credential: credential, authHeader: authHeader, tmdbId: tmdbId, isSeries: isSeries) {
+            return byId
+        }
+        guard let title, !title.isEmpty else { return nil }
+        return try await findItemByTitle(
+            credential: credential, authHeader: authHeader, title: title, year: year, isSeries: isSeries)
+    }
+
+    private func findItemByTitle(
+        credential: ServerCredential,
+        authHeader: String,
+        title: String,
+        year: Int?,
+        isSeries: Bool
+    ) async throws -> MediaItem? {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "SearchTerm", value: title),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "IncludeItemTypes", value: isSeries ? "Series" : "Movie"),
+            .init(name: "Limit", value: "10"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,ProviderIds"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let candidates = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        func normalized(_ s: String) -> String {
+            s.lowercased().filter { $0.isLetter || $0.isNumber }
+        }
+        let wanted = normalized(title)
+        let matches = candidates.filter { candidate in
+            guard normalized(candidate.name) == wanted else { return false }
+            guard let year, let candidateYear = candidate.productionYear else { return true }
+            return abs(candidateYear - year) <= 1
+        }
+        // More than one plausible match means a guess — better no button than the wrong title.
+        return matches.count == 1 ? matches.first : nil
+    }
+
+    private func findItemByProviderId(
+        credential: ServerCredential,
+        authHeader: String,
+        tmdbId: Int,
+        isSeries: Bool
+    ) async throws -> MediaItem? {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "AnyProviderIdEquals", value: "tmdb.\(tmdbId)"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "IncludeItemTypes", value: isSeries ? "Series" : "Movie"),
+            .init(name: "Limit", value: "2"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,ProviderIds"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let items = try JSONDecoder().decode(ItemsPage.self, from: data).items
+        return items.count == 1 ? items.first?.toMediaItem() : nil
+    }
+
     /// A Person is a regular Jellyfin item under the hood, fetched the same way as a
     /// movie/series — just a much smaller field set. Separate from getItemDetail/
     /// MediaItemDetail (which decodes many movie/series-only fields a Person never has)
@@ -523,6 +617,24 @@ public struct JellyfinMediaClient: Sendable {
         var req = URLRequest(url: url)
         req.httpMethod = watched ? "POST" : "DELETE"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        _ = try await URLSession.arcfin.data(for: req)
+    }
+
+    /// Jellyfin has no dedicated "remove from Continue Watching" call — zeroing the saved
+    /// position is what its own web client does, and it drops the item from the shelf
+    /// without marking it watched.
+    public func clearResumePosition(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String
+    ) async throws {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)/UserData")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["PlaybackPositionTicks": 0])
         req.timeoutInterval = 15
         _ = try await URLSession.arcfin.data(for: req)
     }

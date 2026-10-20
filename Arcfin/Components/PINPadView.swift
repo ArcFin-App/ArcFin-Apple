@@ -26,7 +26,7 @@ struct PINPadView: View {
                 if let onCancel {
                     HStack {
                         Button("Cancel", action: onCancel)
-                            .font(.system(size: 16))
+                            .font(.system(.callout, design: .default))
                             .foregroundStyle(DT.Color.accent)
                         Spacer()
                     }
@@ -39,13 +39,13 @@ struct PINPadView: View {
                 // Title + dots
                 VStack(spacing: 20) {
                     Text(title)
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(.title, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .multilineTextAlignment(.center)
 
                     if let sub = subtitle {
                         Text(sub)
-                            .font(.system(size: 14))
+                            .font(.system(.footnote, design: .default))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
 
@@ -70,7 +70,7 @@ struct PINPadView: View {
 
                     if let err = errorMessage {
                         Text(err)
-                            .font(.system(size: 13))
+                            .font(.system(.footnote, design: .default))
                             .foregroundStyle(.red)
                             .transition(.opacity.combined(with: .scale))
                     }
@@ -93,10 +93,11 @@ struct PINPadView: View {
                         padButton(label: "0") { append(0) }
                         Button { removeLast() } label: {
                             Image(systemName: "delete.left")
-                                .font(.system(size: 20, weight: .light))
+                                .font(.system(.title3, weight: .light))
                                 .foregroundStyle(digits.isEmpty ? DT.Color.textSecondary.opacity(0.3) : DT.Color.textPrimary)
                                 .frame(width: 76, height: 76)
                         }
+                        .accessibilityLabel("Delete")
                         .buttonStyle(.plain)
                         .disabled(digits.isEmpty)
                     }
@@ -113,7 +114,7 @@ struct PINPadView: View {
     private func padButton(label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 28, weight: .light, design: .rounded))
+                .font(.system(.title, design: .rounded, weight: .light))
                 .foregroundStyle(DT.Color.textPrimary)
                 .frame(width: 76, height: 76)
                 .background(Circle().fill(DT.Color.backgroundSecondary))

@@ -44,7 +44,7 @@ struct AuthView: View {
                         Button(action: onBack) {
                             HStack(spacing: 4) {
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 12 * DT.Scale.font, weight: .semibold))
+                                    .scaledFont(size: 12, weight: .semibold)
                                 Text(serverName).font(DT.Font.caption)
                             }
                             .foregroundStyle(DT.Color.textSecondary)
@@ -124,7 +124,7 @@ struct AuthView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("How to sign in")
-                    .font(.system(size: 11 * DT.Scale.font, weight: .bold))
+                    .scaledFont(size: 11, weight: .bold)
                     .foregroundStyle(DT.Color.accent)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("1. Open Jellyfin on your browser or another device")
@@ -145,7 +145,7 @@ struct AuthView: View {
 
             VStack(spacing: 12) {
                 Text("Your Quick Connect Code")
-                    .font(.system(size: 10 * DT.Scale.font, weight: .bold))
+                    .scaledFont(size: 10, weight: .bold)
                     .tracking(0.5)
                     .textCase(.uppercase)
                     .foregroundStyle(DT.Color.textSecondary)
@@ -154,7 +154,7 @@ struct AuthView: View {
                     ProgressView().tint(DT.Color.accent).padding(.vertical, 10)
                 } else if qcCode.isEmpty {
                     Text("—")
-                        .font(.system(size: 22 * DT.Scale.font, weight: .heavy, design: .monospaced))
+                        .scaledFont(size: 22, weight: .heavy, design: .monospaced)
                         .foregroundStyle(DT.Color.textSecondary)
                 } else {
                     codeDisplay(qcCode)
@@ -201,9 +201,10 @@ struct AuthView: View {
                     glassField(icon: "lock", placeholder: "••••••••", text: $password, isSecure: !passwordVisible, onSubmit: submitCredentials)
                     Button { passwordVisible.toggle() } label: {
                         Image(systemName: passwordVisible ? "eye.slash" : "eye")
-                            .font(.system(size: 13))
+                            .font(.system(.footnote))
                             .foregroundStyle(.white.opacity(0.5))
                     }
+                    .accessibilityLabel(passwordVisible ? "Hide password" : "Show password")
                     .buttonStyle(.plain)
                     .padding(.trailing, 14)
                 }
@@ -251,7 +252,7 @@ struct AuthView: View {
                             .frame(width: 36 * DT.Scale.font, height: 46 * DT.Scale.font)
                             .shadow(color: DT.Color.accent.opacity(0.08), radius: 8)
                         Text(String(ch))
-                            .font(.system(size: 22 * DT.Scale.font, weight: .heavy, design: .monospaced))
+                            .scaledFont(size: 22, weight: .heavy, design: .monospaced)
                             .foregroundStyle(DT.Color.accent)
                     }
                 }
@@ -295,7 +296,7 @@ struct AuthView: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 10 * DT.Scale.font, weight: .bold))
+            .scaledFont(size: 10, weight: .bold)
             .tracking(0.5)
             .textCase(.uppercase)
             .foregroundStyle(DT.Color.textSecondary)
@@ -303,7 +304,7 @@ struct AuthView: View {
 
     private func glassField(icon: String, placeholder: String, text: Binding<String>, isSecure: Bool, onSubmit: (() -> Void)? = nil) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 13)).foregroundStyle(DT.Color.textSecondary)
+            Image(systemName: icon).font(.system(.footnote)).foregroundStyle(DT.Color.textSecondary)
             if isSecure {
                 SecureField(placeholder, text: text)
                     .textFieldStyle(.plain)
@@ -343,12 +344,12 @@ struct AuthView: View {
                         .frame(width: 56, height: 56)
                         .shadow(color: DT.Color.accent.opacity(0.25), radius: 20)
                     Image(systemName: "checkmark")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(.title2, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
                 }
                 VStack(spacing: 6) {
                     Text("Welcome, \(authManager.state.displayName)!")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(.body, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("Opening your library…")
                         .font(DT.Font.caption)
@@ -390,10 +391,9 @@ struct AuthView: View {
     /// If the server's Arcfin Sync plugin has Seerr Account Type locked to "Jellyfin Account",
     /// every user's Seerr login is their Jellyfin login by definition — there's no separate
     /// Seerr credential to ask for. The password just typed is available here for exactly one
-    /// use (this one-shot check + prefill) and is never persisted anywhere beyond the same
-    /// UserDefaults keys SeerrPluginView already writes to when a user fills that form by hand
-    /// — this doesn't lower the bar, it automates what the user would otherwise type in
-    /// themselves. Quick Connect sign-in never has a password at all, so it can't reach this.
+    /// use (this one-shot check + prefill), persisted through AuthManager.saveSeerrPassword
+    /// (Keychain) the same way SeerrPluginView persists a password a user types in by hand.
+    /// Quick Connect sign-in never has a password at all, so it can't reach this.
     private func attemptSeerrAutoLogin(credential: ServerCredential, jellyfinPassword: String) async {
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         guard let settings = try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: header),
@@ -406,7 +406,7 @@ struct AuthView: View {
         UserDefaults.standard.set(seerrURLString, forKey: "seerrURL")
         UserDefaults.standard.set("jellyfin", forKey: "seerrAuthMethod")
         UserDefaults.standard.set(username, forKey: "seerrUsername")
-        UserDefaults.standard.set(jellyfinPassword, forKey: "seerrPassword")
+        authManager.saveSeerrPassword(jellyfinPassword)
     }
 
     private func initiateQC() async {

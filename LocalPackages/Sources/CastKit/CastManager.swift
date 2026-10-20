@@ -25,6 +25,12 @@ public final class CastManager: NSObject {
     public private(set) var isConnected = false
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
+    public private(set) var volume: Float = 1
+    /// Bumps each time the receiver reports the loaded item played to its end — observers
+    /// use the change as an event (e.g. to cast the next episode); the value itself is
+    /// meaningless.
+    public private(set) var playbackFinishedCount = 0
+    @ObservationIgnored private var lastStatusWasFinished = false
     public private(set) var deviceName: String?
     /// Updated on every GCKRemoteMediaClient status tick (at least once/second while
     /// playing) rather than read on demand — by the time a session actually ends,
@@ -55,9 +61,25 @@ public final class CastManager: NSObject {
 
     // MARK: - Media control
 
+    public struct SubtitleTrack: Sendable {
+        public let id: Int
+        public let url: URL
+        public let languageCode: String?
+        public let name: String?
+
+        public init(id: Int, url: URL, languageCode: String?, name: String?) {
+            self.id = id
+            self.url = url
+            self.languageCode = languageCode
+            self.name = name
+        }
+    }
+
     public func loadMedia(
         streamURL: URL, title: String, subtitle: String?, posterImageURL: URL?,
-        contentType: String, startPositionSeconds: TimeInterval
+        contentType: String, startPositionSeconds: TimeInterval,
+        subtitleTracks: [SubtitleTrack] = [], activeSubtitleTrackID: Int? = nil,
+        isTransportStreamHLS: Bool = false
     ) {
         #if canImport(GoogleCast)
         guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
@@ -71,12 +93,41 @@ public final class CastManager: NSObject {
         infoBuilder.contentType = contentType
         infoBuilder.streamType = .buffered
         infoBuilder.metadata = metadata
+        if isTransportStreamHLS {
+            // Left undefined the receiver guesses the segment layout, and the guess for
+            // Jellyfin's TS+AAC output is what produced doubled, offset audio.
+            infoBuilder.hlsSegmentFormat = .TS_AAC
+            infoBuilder.hlsVideoSegmentFormat = .MPEG2_TS
+        }
+        infoBuilder.mediaTracks = subtitleTracks.compactMap {
+            GCKMediaTrack(
+                identifier: $0.id, contentIdentifier: $0.url.absoluteString, contentType: "text/vtt",
+                type: .text, textSubtype: .subtitles, name: $0.name, languageCode: $0.languageCode,
+                customData: nil)
+        }
 
         let requestBuilder = GCKMediaLoadRequestDataBuilder()
         requestBuilder.mediaInformation = infoBuilder.build()
         requestBuilder.startTime = startPositionSeconds
         requestBuilder.autoplay = true
+        if let activeSubtitleTrackID { requestBuilder.activeTrackIDs = [NSNumber(value: activeSubtitleTrackID)] }
         client.loadMedia(with: requestBuilder.build())
+        #endif
+    }
+
+    public func setActiveSubtitleTrack(id: Int?) {
+        #if canImport(GoogleCast)
+        GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?
+            .setActiveTrackIDs(id.map { [NSNumber(value: $0)] } ?? [])
+        #endif
+    }
+
+    public func setVolume(_ volume: Float) {
+        let clamped = min(max(volume, 0), 1)
+        self.volume = clamped
+        #if canImport(GoogleCast)
+        GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?
+            .setStreamVolume(clamped)
         #endif
     }
 
@@ -179,9 +230,15 @@ extension CastManager: GCKSessionManagerListener {
 extension CastManager: GCKRemoteMediaClientListener {
     public nonisolated func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
         let paused = mediaStatus?.playerState == .paused
+        let finished = mediaStatus?.playerState == .idle && mediaStatus?.idleReason == .finished
         let position = mediaStatus?.streamPosition
+        let receiverVolume = mediaStatus?.volume
         MainActor.assumeIsolated {
+            // Idle statuses can repeat; only the transition into "finished" is an event.
+            if finished, !lastStatusWasFinished { playbackFinishedCount += 1 }
+            lastStatusWasFinished = finished
             isPaused = paused
+            if let receiverVolume { volume = receiverVolume }
             if let position { lastKnownPositionSeconds = position }
         }
     }

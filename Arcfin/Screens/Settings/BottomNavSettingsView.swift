@@ -32,7 +32,7 @@ struct BottomNavSettingsView: View {
                 ForEach(order) { tab in
                     HStack(spacing: 12) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 15))
+                            .font(.system(.callout))
                             .foregroundStyle(active.contains(tab) ? DT.Color.accent : DT.Color.textSecondary)
                             .frame(width: 24)
                         Text(tab.title)
@@ -42,7 +42,7 @@ struct BottomNavSettingsView: View {
                             toggle(tab)
                         } label: {
                             Image(systemName: active.contains(tab) ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 20))
+                                .font(.system(.title3))
                                 .foregroundStyle(active.contains(tab) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                         }
                         .buttonStyle(.plain)

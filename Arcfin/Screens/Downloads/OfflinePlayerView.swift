@@ -24,6 +24,8 @@ struct OfflinePlayerView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(DownloadManager.self) private var downloadManager
+    @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
 
     // Aether first, same as the online PlayerView — handles whatever container/codec the
     // server has, including what used to force VLC here (AVFoundation's mkv/HEVC-tag
@@ -165,7 +167,13 @@ struct OfflinePlayerView: View {
         }
         .onChange(of: player.status) { _, status in
             if status == .playing { scheduleAutoHide() }
-            if status == .ended { savePosition(final: true); dismiss() }
+            if status == .ended {
+                savePosition(final: true)
+                if deleteAfterWatching {
+                    downloadManager.markForDeletionAfterWatching(itemId: downloadedItem.itemId)
+                }
+                dismiss()
+            }
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
@@ -320,17 +328,17 @@ struct OfflinePlayerView: View {
         HStack(spacing: 16) {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(downloadedItem.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(.subheadline, design: .default, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text("Downloaded")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
             }
             Spacer()
@@ -340,14 +348,14 @@ struct OfflinePlayerView: View {
             // AVPlayer to hand it. Not something VLC's macOS backend bridges either — a
             // genuine gap, not an oversight.
             #if canImport(UIKit) && !os(tvOS)
-            AirPlayButton().frame(width: 30, height: 30)
+            AirPlayButton().frame(width: 44, height: 44)
             #endif
             if !downloadedItem.subtitleFileNames.isEmpty {
                 Button { showTrackMenu = true } label: {
                     Image(systemName: "captions.bubble")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
             }
             #if canImport(UIKit) && !os(tvOS)
@@ -366,33 +374,37 @@ struct OfflinePlayerView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("More options")
             #elseif os(macOS)
             HStack(spacing: 14) {
                 Button { isFillScreen.toggle() } label: {
                     Image(systemName: isFillScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel(isFillScreen ? "Fit to screen" : "Fill screen")
                 .buttonStyle(.plain)
                 Button { toggleMacWindowFullScreen(macWindow) } label: {
                     Image(systemName: isMacFullScreen ? "arrow.down.right.and.arrow.up.left.circle" : "arrow.up.left.and.arrow.down.right.circle")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
                 }
+                .accessibilityLabel("Toggle full screen")
                 .buttonStyle(.plain)
                 if AVPictureInPictureController.isPictureInPictureSupported() {
                     Button { vlcPipController?.toggle() } label: {
                         Image(systemName: "pip.enter")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(.body, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 28, height: 28)
                     }
+                    .accessibilityLabel("Picture in Picture")
                     .buttonStyle(.plain)
                 }
             }
@@ -409,8 +421,8 @@ struct OfflinePlayerView: View {
                 Spacer()
                 Button { skipToSegmentEnd() } label: {
                     HStack(spacing: 6) {
-                        Text(label).font(.system(size: 14, weight: .semibold))
-                        Image(systemName: "forward.fill").font(.system(size: 12))
+                        Text(label).font(.system(.footnote, design: .default, weight: .semibold))
+                        Image(systemName: "forward.fill").font(.system(.caption))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 16).padding(.vertical, 10)
@@ -448,28 +460,31 @@ struct OfflinePlayerView: View {
             scrubber
             HStack {
                 Text(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks))
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
                 Spacer()
                 HStack(spacing: 28) {
                     Button { seek(by: -skipBackwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(.title3)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     Button { togglePlayPause() } label: {
                         Image(systemName: player.status == .playing ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30))
+                            .font(.system(.largeTitle))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
                     }
+                    .accessibilityLabel(player.status == .playing ? "Pause" : "Play")
                     Button { seek(by: skipForwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                            .font(.system(size: 20)).foregroundStyle(.white)
+                            .font(.system(.title3)).foregroundStyle(.white)
                     }
+                    .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                 }
                 Spacer()
                 Text(remainingLabel)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
                     .foregroundStyle(.white.opacity(0.8))
             }
         }
@@ -519,6 +534,12 @@ struct OfflinePlayerView: View {
             #endif
         }
         .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(timeLabel(ticks: isScrubbing ? Int64(scrubTicks) : player.positionTicks)) of \(timeLabel(ticks: player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+        }
     }
 
     private var trickplayPreview: some View {
@@ -640,14 +661,14 @@ struct OfflinePlayerView: View {
             Spacer()
             VStack(spacing: 10) {
                 Image(systemName: volume < 0.01 ? "speaker.slash.fill" : volume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill")
-                    .font(.system(size: 18))
+                    .font(.system(.title3))
                     .foregroundStyle(.white)
                 ZStack(alignment: .bottom) {
                     Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
                     Capsule().fill(.white).frame(width: 6, height: 90 * volume)
                 }
                 Text("\(Int(volume * 100))%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(.caption2, design: .monospaced, weight: .semibold))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
                     .animation(.default, value: volume)

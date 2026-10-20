@@ -44,10 +44,10 @@ struct YouTubeTrailerPlayerView: View {
                 case .error:
                     VStack(spacing: 8) {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 28))
+                            .font(.system(.title))
                             .foregroundStyle(.white.opacity(0.7))
                         Text("This trailer can't be played")
-                            .font(.system(size: 14))
+                            .font(.system(.footnote, design: .default))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                 }
@@ -59,12 +59,13 @@ struct YouTubeTrailerPlayerView: View {
             // a border so it stays legible against any video frame.
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(.body, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
                     .background(.black.opacity(0.85), in: Circle())
                     .overlay(Circle().stroke(.white.opacity(0.25), lineWidth: 1))
             }
+            .accessibilityLabel("Close trailer")
             .padding(.top, 16)
             .padding(.trailing, 16)
         }

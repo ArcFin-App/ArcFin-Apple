@@ -3,20 +3,64 @@
 import SwiftUI
 import JellyfinAPI
 import StreamystatsAPI
+import AuthCore
 
 struct StatsView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(StreamystatsRepository.self) private var statsRepo
 
+    @Environment(AuthManager.self) private var authManager
+
     @State private var selectedPeriod: String = "All"
     private let periods = ["7D", "30D", "All"]
 
-    private var totalWatched: Int { mediaRepo.playedMovieCount + mediaRepo.playedEpisodeCount }
+    /// Stats for the 7D/30D ranges, fetched on demand; nil for "All", which is what the
+    /// repository already loaded for Home.
+    private struct PeriodStats {
+        var movies: Int
+        var episodes: Int
+        var topMovies: [MediaItem]
+        var topShows: [MediaItem]
+    }
+    @State private var periodStats: PeriodStats?
+
+    private var displayedMovieCount: Int { periodStats?.movies ?? mediaRepo.playedMovieCount }
+    private var displayedEpisodeCount: Int { periodStats?.episodes ?? mediaRepo.playedEpisodeCount }
+    private var displayedTopMovies: [MediaItem] { periodStats?.topMovies ?? mediaRepo.topMovies }
+    private var displayedTopShows: [MediaItem] { periodStats?.topShows ?? mediaRepo.topShows }
+
+    private var periodStart: Date? {
+        switch selectedPeriod {
+        case "7D": Calendar.current.date(byAdding: .day, value: -7, to: Date())
+        case "30D": Calendar.current.date(byAdding: .day, value: -30, to: Date())
+        default: nil
+        }
+    }
+
+    private func loadPeriodStats() async {
+        guard let since = periodStart, case .authenticated(let cred) = authManager.state else {
+            periodStats = nil
+            return
+        }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let client = JellyfinMediaClient()
+        async let movies = client.getPlayedCount(credential: cred, authHeader: header, itemType: "Movie", since: since)
+        async let episodes = client.getPlayedCount(credential: cred, authHeader: header, itemType: "Episode", since: since)
+        async let topMovies = client.getTopPlayed(credential: cred, authHeader: header, itemType: "Movie", since: since)
+        async let topShows = client.getTopPlayed(credential: cred, authHeader: header, itemType: "Series", since: since)
+        let result = PeriodStats(
+            movies: (try? await movies) ?? 0, episodes: (try? await episodes) ?? 0,
+            topMovies: (try? await topMovies) ?? [], topShows: (try? await topShows) ?? [])
+        guard !Task.isCancelled else { return }
+        periodStats = result
+    }
+
+    private var totalWatched: Int { displayedMovieCount + displayedEpisodeCount }
     private var movieFraction: Double {
-        totalWatched > 0 ? Double(mediaRepo.playedMovieCount) / Double(totalWatched) : 0
+        totalWatched > 0 ? Double(displayedMovieCount) / Double(totalWatched) : 0
     }
     private var episodeFraction: Double {
-        totalWatched > 0 ? Double(mediaRepo.playedEpisodeCount) / Double(totalWatched) : 0
+        totalWatched > 0 ? Double(displayedEpisodeCount) / Double(totalWatched) : 0
     }
 
     var body: some View {
@@ -25,8 +69,8 @@ struct StatsView: View {
                 header
                 heroSection
                 activityRings
-                if !mediaRepo.topShows.isEmpty { showsSection }
-                if !mediaRepo.topMovies.isEmpty { moviesSection }
+                if !displayedTopShows.isEmpty { showsSection }
+                if !displayedTopMovies.isEmpty { moviesSection }
                 if statsRepo.isConfigured && !statsRepo.recommendations.isEmpty {
                     recommendationsSection
                 }
@@ -36,6 +80,7 @@ struct StatsView: View {
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
         .task { if statsRepo.isConfigured { await statsRepo.load() } }
+        .task(id: selectedPeriod) { await loadPeriodStats() }
     }
 
     // MARK: - Header
@@ -44,12 +89,12 @@ struct StatsView: View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(statsRepo.isConfigured ? "Streamystats" : "Your Library")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(.caption2, design: .default, weight: .bold))
                     .tracking(0.8)
                     .textCase(.uppercase)
                     .foregroundStyle(DT.Color.accent)
                 Text("Watch History")
-                    .font(.system(size: 26, weight: .heavy))
+                    .font(.system(.title, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.8)
             }
@@ -60,7 +105,7 @@ struct StatsView: View {
                         withAnimation(DT.Animation.fast) { selectedPeriod = p }
                     } label: {
                         Text(p)
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(.caption2, design: .default, weight: .semibold))
                             .foregroundStyle(selectedPeriod == p ? DT.Color.accent : DT.Color.textSecondary)
                             .padding(.horizontal, 10).padding(.vertical, 4)
                             .background(selectedPeriod == p ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
@@ -93,24 +138,24 @@ struct StatsView: View {
 
             VStack(spacing: 4) {
                 Text("TOTAL WATCHED")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(.caption2, design: .default, weight: .bold))
                     .tracking(1.5)
                     .foregroundStyle(DT.Color.accent)
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(totalWatched)")
-                        .font(.system(size: 64, weight: .heavy))
+                        .font(.system(.largeTitle, design: .default, weight: .heavy))
                         .foregroundStyle(DT.Color.textPrimary)
                         .tracking(-3)
                     Text("items")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(.title2, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
                         .offset(y: -6)
                 }
 
                 HStack(spacing: 16) {
-                    statChip("\(mediaRepo.playedMovieCount)", label: "Movies", hex: "8b5cf6")
-                    statChip("\(mediaRepo.playedEpisodeCount)", label: "Episodes", hex: "06b6d4")
+                    statChip("\(displayedMovieCount)", label: "Movies", hex: "8b5cf6")
+                    statChip("\(displayedEpisodeCount)", label: "Episodes", hex: "06b6d4")
                     statChip("\(mediaRepo.libraries.count)", label: "Libraries", hex: "10b981")
                 }
                 .padding(.top, 4)
@@ -123,10 +168,10 @@ struct StatsView: View {
     private func statChip(_ value: String, label: String, hex: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 18, weight: .heavy))
+                .font(.system(.body, design: .default, weight: .heavy))
                 .foregroundStyle(Color(hex: hex))
             Text(label)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.system(.caption2, design: .default, weight: .semibold))
                 .tracking(0.3)
                 .foregroundStyle(DT.Color.textSecondary)
         }
@@ -141,14 +186,14 @@ struct StatsView: View {
     private var activityRings: some View {
         HStack(spacing: 16) {
             ringCard(
-                value: mediaRepo.playedMovieCount,
+                value: displayedMovieCount,
                 label: "Movies",
                 sublabel: "watched",
                 fraction: movieFraction,
                 hex: "8b5cf6"
             )
             ringCard(
-                value: mediaRepo.playedEpisodeCount,
+                value: displayedEpisodeCount,
                 label: "Episodes",
                 sublabel: "watched",
                 fraction: episodeFraction,
@@ -172,21 +217,21 @@ struct StatsView: View {
                     .animation(.easeOut(duration: 0.8), value: fraction)
 
                 Text("\(Int(fraction * 100))%")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(.caption2, design: .default, weight: .bold))
                     .foregroundStyle(color)
             }
             .frame(width: 54, height: 54)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(value)")
-                    .font(.system(size: 22, weight: .heavy))
+                    .font(.system(.title2, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.5)
                 Text(label)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(color)
                 Text(sublabel)
-                    .font(.system(size: 10))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
@@ -203,7 +248,7 @@ struct StatsView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Most Watched Shows")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(.callout, design: .default, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.2)
                 Spacer()
@@ -212,7 +257,7 @@ struct StatsView: View {
             .padding(.bottom, 12)
 
             VStack(spacing: 8) {
-                ForEach(Array(mediaRepo.topShows.enumerated()), id: \.element.id) { i, show in
+                ForEach(Array(displayedTopShows.enumerated()), id: \.element.id) { i, show in
                     showRow(rank: i + 1, item: show)
                 }
             }
@@ -226,10 +271,10 @@ struct StatsView: View {
             // Rank
             ZStack {
                 Text("\(rank)")
-                    .font(.system(size: 32, weight: .heavy))
+                    .font(.system(.largeTitle, design: .default, weight: .heavy))
                     .foregroundStyle(.white.opacity(0.06))
                 Text("\(rank)")
-                    .font(.system(size: 12, weight: .heavy))
+                    .font(.system(.caption, design: .default, weight: .heavy))
                     .foregroundStyle(rank == 1 ? DT.Color.accent : DT.Color.textSecondary)
             }
             .frame(width: 32)
@@ -247,16 +292,16 @@ struct StatsView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 if let plays = item.userData?.playCount, plays > 0 {
                     Text("\(plays) episode\(plays == 1 ? "" : "s") played")
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 } else if let year = item.productionYear {
                     Text(String(year))
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
             }
@@ -265,7 +310,7 @@ struct StatsView: View {
 
             if rank == 1 {
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 14))
+                    .font(.system(.subheadline))
                     .foregroundStyle(DT.Color.accent)
             }
         }
@@ -281,14 +326,14 @@ struct StatsView: View {
     private var moviesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Most Watched Movies")
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(.callout, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .tracking(-0.2)
                 .padding(.horizontal, DT.Spacing.pagePad)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    ForEach(Array(mediaRepo.topMovies.enumerated()), id: \.element.id) { i, movie in
+                    ForEach(Array(displayedTopMovies.enumerated()), id: \.element.id) { i, movie in
                         movieCard(rank: i + 1, movie: movie)
                     }
                 }
@@ -317,24 +362,24 @@ struct StatsView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
                     Text("#\(rank)")
-                        .font(.system(size: 9, weight: .heavy))
+                        .font(.system(.caption2, design: .default, weight: .heavy))
                         .foregroundStyle(DT.Color.accent)
                     Spacer()
                     if let rating = movie.communityRating, rating > 0 {
                         HStack(spacing: 2) {
-                            Image(systemName: "star.fill").font(.system(size: 8))
-                            Text(String(format: "%.1f", rating)).font(.system(size: 9, weight: .bold))
+                            Image(systemName: "star.fill").font(.system(.caption2))
+                            Text(String(format: "%.1f", rating)).font(.system(.caption2, design: .default, weight: .bold))
                         }
                         .foregroundStyle(DT.Color.accent)
                     }
                 }
                 Text(movie.name)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(2)
                 if let year = movie.productionYear {
                     Text(String(year))
-                        .font(.system(size: 9))
+                        .font(.system(.caption2))
                         .foregroundStyle(.white.opacity(0.6))
                 }
             }
@@ -353,12 +398,12 @@ struct StatsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Streamystats")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(.caption2, design: .default, weight: .bold))
                         .tracking(0.5)
                         .textCase(.uppercase)
                         .foregroundStyle(DT.Color.accent)
                     Text("Recommended For You")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(.callout, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.textPrimary)
                 }
                 Spacer()
@@ -381,14 +426,14 @@ struct StatsView: View {
                                 .clipped()
 
                                 Text(item.displayTitle)
-                                    .font(.system(size: 10, weight: .semibold))
+                                    .font(.system(.caption2, design: .default, weight: .semibold))
                                     .foregroundStyle(DT.Color.textPrimary)
                                     .lineLimit(2)
                                     .frame(width: 90, alignment: .leading)
 
                                 if let year = item.productionYear {
                                     Text(String(year))
-                                        .font(.system(size: 9))
+                                        .font(.system(.caption2))
                                         .foregroundStyle(DT.Color.textSecondary)
                                 }
                             }

@@ -70,7 +70,7 @@ struct DownloadsView: View {
                     if !items.isEmpty {
                         Section {
                             Text("\(items.count) downloaded — \(ByteCountFormatter.string(fromByteCount: totalSizeBytes, countStyle: .file)) used")
-                                .font(.system(size: 12))
+                                .font(.system(.caption))
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                         #if os(iOS)
@@ -113,6 +113,7 @@ struct DownloadsView: View {
             }
         }
         .background(DT.Color.backgroundPrimary)
+        .onAppear { downloadManager.purgeWatchedDownloads() }
         .navigationTitle("Downloads")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
@@ -218,7 +219,7 @@ struct DownloadsView: View {
 
     private func selectionIndicator(_ id: String) -> some View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 20))
+            .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
     }
     #endif
@@ -353,25 +354,26 @@ struct DownloadsView: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(downloadManager.activeItemTitles[itemId] ?? "Downloading…")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 Spacer()
                 if let stats, stats.totalBytes > 0 {
                     Text("\(Int(fraction * 100))%")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .font(.system(.caption2, design: .monospaced, weight: .medium))
                         .foregroundStyle(DT.Color.textSecondary)
                         .contentTransition(.numericText())
                         .animation(.default, value: fraction)
                 }
                 Button { downloadManager.cancelDownload(itemId: itemId) } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
+                        .font(.system(.body))
                         .foregroundStyle(DT.Color.textSecondary)
                         // This row only exists while the item is actively downloading, so the
                         // pulse is inherently scoped to that — no extra on/off plumbing needed.
                         .symbolEffect(.pulse)
                 }
+                .accessibilityLabel("Cancel download")
                 .buttonStyle(.plain)
             }
             if let stats, stats.totalBytes > 0 {
@@ -396,7 +398,7 @@ struct DownloadsView: View {
                     Text("\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s")
                 }
             }
-            .font(.system(size: 10))
+            .font(.system(.caption2))
             .foregroundStyle(DT.Color.textSecondary)
         }
         .padding(.vertical, 4)
@@ -410,14 +412,14 @@ struct DownloadsView: View {
             seriesPosterThumbnail(group.seriesId, fallbackItem: group.episodes.first)
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.seriesName)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 Text("\(group.episodes.count) episode\(group.episodes.count == 1 ? "" : "s") downloaded")
-                    .font(.system(size: 11))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary)
                 Text(ByteCountFormatter.string(fromByteCount: totalSize, countStyle: .file))
-                    .font(.system(size: 10))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
             }
             Spacer()
@@ -454,7 +456,7 @@ struct DownloadsView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(group.seriesName)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)
@@ -498,16 +500,16 @@ struct DownloadsView: View {
             posterThumbnail(item)
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 if let year = item.productionYear {
                     Text(String(year))
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Text(ByteCountFormatter.string(fromByteCount: item.fileSizeBytes, countStyle: .file))
-                    .font(.system(size: 10))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
             }
             Spacer()
@@ -540,7 +542,7 @@ struct DownloadsView: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(item.name)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)

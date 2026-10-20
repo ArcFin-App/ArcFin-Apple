@@ -15,7 +15,7 @@ struct HomeShelfSettingsView: View {
                 ForEach(order) { shelf in
                     HStack(spacing: 12) {
                         Image(systemName: shelf.icon)
-                            .font(.system(size: 15))
+                            .font(.system(.callout))
                             .foregroundStyle(active.contains(shelf) ? DT.Color.accent : DT.Color.textSecondary)
                             .frame(width: 24)
                         Text(shelf.title)
@@ -25,7 +25,7 @@ struct HomeShelfSettingsView: View {
                             toggle(shelf)
                         } label: {
                             Image(systemName: active.contains(shelf) ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 20))
+                                .font(.system(.title3))
                                 .foregroundStyle(active.contains(shelf) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                         }
                         .buttonStyle(.plain)

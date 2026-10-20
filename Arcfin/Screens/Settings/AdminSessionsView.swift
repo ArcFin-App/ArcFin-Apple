@@ -23,13 +23,13 @@ struct AdminSessionsView: View {
             if let errorMessage {
                 Section {
                     Text(errorMessage)
-                        .font(.system(size: 13))
+                        .font(.system(.footnote))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
             } else if sessions.isEmpty && !isLoading {
                 Section {
                     Text("No active sessions.")
-                        .font(.system(size: 13))
+                        .font(.system(.footnote))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
             } else {
@@ -52,16 +52,16 @@ struct AdminSessionsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(session.userName ?? "Unknown User")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("\(session.deviceName) · \(session.clientName)")
-                        .font(.system(size: 12))
+                        .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
                 if session.nowPlayingItemName != nil {
                     Image(systemName: session.isPaused ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.system(.title3))
                         .foregroundStyle(session.isPaused ? DT.Color.textSecondary : DT.Color.accent)
                 }
             }
@@ -69,7 +69,7 @@ struct AdminSessionsView: View {
             if let title = session.nowPlayingItemName {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(.footnote, design: .default, weight: .medium))
                         .foregroundStyle(DT.Color.textPrimary)
                     if let position = session.positionTicks, let duration = session.runTimeTicks, duration > 0 {
                         ProgressView(value: Double(position), total: Double(duration))
@@ -79,14 +79,14 @@ struct AdminSessionsView: View {
                             Spacer()
                             Text(timeLabel(duration))
                         }
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
                 .padding(.top, 2)
             } else if let lastActivity = session.lastActivityDate {
                 Text("Idle · last active \(lastActivity.formatted(.relative(presentation: .named)))")
-                    .font(.system(size: 11))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
             }
         }

@@ -123,7 +123,8 @@ extension JellyfinMediaClient {
         itemId: String,
         quality: StreamQualityCap = .auto,
         audioStreamIndex: Int? = nil,
-        subtitleStreamIndex: Int? = nil
+        subtitleStreamIndex: Int? = nil,
+        forCast: Bool = false
     ) async throws -> JellyfinPlaybackInfo {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/\(itemId)/PlaybackInfo"),
@@ -139,7 +140,7 @@ extension JellyfinMediaClient {
         var body: [String: Any] = [
             "UserId": credential.userID,
             "AutoOpenLiveStream": true,
-            "DeviceProfile": Self.deviceProfile,
+            "DeviceProfile": Self.deviceProfile(forCast: forCast),
         ]
         if let maxBitrate = quality.maxBitrate { body["MaxStreamingBitrate"] = maxBitrate }
         // MaxWidth forces a resolution-based transcode even when the source's bitrate
@@ -342,7 +343,7 @@ extension JellyfinMediaClient {
     /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
     /// hardcoded — a struct, not a View, so read straight from UserDefaults like the rest
     /// of the playback code's own settings reads (skipIntro/autoPlayNext etc.) already do.
-    private static var deviceProfile: [String: Any] {
+    private static func deviceProfile(forCast: Bool) -> [String: Any] {
         let allowHEVC = (UserDefaults.standard.object(forKey: "codecAllowHEVCDirectPlay") as? Bool) ?? true
         let allowSurroundAudio = UserDefaults.standard.bool(forKey: "codecAllowSurroundAudioDirectPlay")
         let videoCodecs = allowHEVC ? "h264,hevc" : "h264"
@@ -351,8 +352,15 @@ extension JellyfinMediaClient {
         // to a compatible receiver, which isn't guaranteed) — claiming them as direct-play
         // compatible produced video with silent audio. Anything else gets remuxed with
         // audio transcoded to AAC while video stays copied, via the profiles below.
-        let mp4AudioCodecs = "aac,mp3,alac,flac" + (allowSurroundAudio ? ",ac3,eac3,dts" : "")
-        let movAudioCodecs = "aac,mp3,alac" + (allowSurroundAudio ? ",ac3,eac3,dts" : "")
+        var mp4AudioCodecs = "aac,mp3,alac,flac" + (allowSurroundAudio ? ",ac3,eac3,dts" : "")
+        var movAudioCodecs = "aac,mp3,alac" + (allowSurroundAudio ? ",ac3,eac3,dts" : "")
+        if forCast {
+            // The Default Media Receiver decodes on the Chromecast itself, not through
+            // AVFoundation: it handles ac3/eac3 but not alac/flac-in-mp4 or dts, so those get
+            // transcoded to AAC regardless of the on-device surround toggle.
+            mp4AudioCodecs = "aac,mp3,ac3,eac3"
+            movAudioCodecs = mp4AudioCodecs
+        }
         return [
         "MaxStreamingBitrate": 120_000_000,
         // mkv is deliberately absent — AVFoundation's native Matroska support is

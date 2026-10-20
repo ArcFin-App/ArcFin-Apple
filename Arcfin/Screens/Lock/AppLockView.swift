@@ -78,10 +78,10 @@ struct AppLockView: View {
 
             VStack(spacing: 6) {
                 Text("Welcome to Arcfin")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(.title, design: .default, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Text("Please select your profile to continue")
-                    .font(.system(size: 15))
+                    .font(.system(.subheadline))
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
@@ -128,7 +128,7 @@ struct AppLockView: View {
 
     private func avatarInitials(_ profile: ServerCredential) -> some View {
         Text(initials(for: profile))
-            .font(.system(size: 32, weight: .bold, design: .rounded))
+            .font(.system(.largeTitle, design: .rounded, weight: .bold))
             .foregroundStyle(.white)
     }
 
@@ -152,7 +152,7 @@ struct AppLockView: View {
 
                 if hasPIN {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(.footnote, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(7)
                         .background(Circle().fill(DT.Color.backgroundSecondary))
@@ -160,11 +160,11 @@ struct AppLockView: View {
             }
 
             Text(profile.displayName)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(.subheadline, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             Text(profile.baseURL.host ?? "")
-                .font(.system(size: 12))
+                .font(.system(.caption))
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineLimit(1)
         }

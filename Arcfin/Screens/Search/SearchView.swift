@@ -16,6 +16,56 @@ struct SearchView: View {
     @State private var seerrResults: [SeerrItem] = []
     @State private var isSearching = false
     @State private var requestingSeerrItem: SeerrItem?
+    @AppStorage("recentSearches") private var recentSearchesData = Data()
+
+    private static let maxRecentSearches = 8
+
+    private var recentSearches: [String] {
+        (try? JSONDecoder().decode([String].self, from: recentSearchesData)) ?? []
+    }
+
+    private func saveRecentSearch(_ term: String) {
+        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { return }
+        var updated = recentSearches.filter { $0.caseInsensitiveCompare(trimmed) != .orderedSame }
+        updated.insert(trimmed, at: 0)
+        recentSearchesData = (try? JSONEncoder().encode(Array(updated.prefix(Self.maxRecentSearches)))) ?? Data()
+    }
+
+    private var recentSearchesList: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                HStack {
+                    Text("Recent")
+                        .font(DT.Font.cardTitle)
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    Button("Clear") { recentSearchesData = Data() }
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(DT.Color.accent)
+                }
+                ForEach(recentSearches, id: \.self) { term in
+                    Button { query = term } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .foregroundStyle(DT.Color.textSecondary)
+                                .accessibilityHidden(true)
+                            Text(term)
+                                .font(.system(.body))
+                                .foregroundStyle(DT.Color.textPrimary)
+                            Spacer()
+                        }
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, 12)
+        }
+    }
 
     private var columns: [GridItem] {
 #if os(macOS)
@@ -33,7 +83,9 @@ struct SearchView: View {
 
     var body: some View {
         Group {
-            if query.isEmpty {
+            if query.isEmpty, !recentSearches.isEmpty {
+                recentSearchesList
+            } else if query.isEmpty {
                 ContentUnavailableView(
                     "Search",
                     systemImage: "magnifyingglass",
@@ -93,6 +145,7 @@ struct SearchView: View {
                                           imageURL: posterImageURL(for: item))
                     }
                     .buttonStyle(PressableButtonStyle())
+                    .simultaneousGesture(TapGesture().onEnded { saveRecentSearch(query) })
                 }
             }
         }
@@ -114,19 +167,22 @@ struct SearchView: View {
         VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
                 Text("Discover")
                     .font(DT.Font.cardTitle)
                     .foregroundStyle(DT.Color.textPrimary)
             }
             Text("Not in your library — tap to request")
-                .font(.system(size: 11))
+                .font(.system(.caption2))
                 .foregroundStyle(DT.Color.textSecondary)
 
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(seerrResults) { item in
-                    Button { requestingSeerrItem = item } label: {
+                    Button {
+                        saveRecentSearch(query)
+                        requestingSeerrItem = item
+                    } label: {
                         SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
                     }
                     .buttonStyle(PressableButtonStyle())
@@ -198,12 +254,12 @@ private struct SearchResultCard: View {
             .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
 
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 10))
+                    .font(.system(.caption2))
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }

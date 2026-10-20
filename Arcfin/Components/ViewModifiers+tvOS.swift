@@ -166,7 +166,7 @@ struct TVFocusButtonLabel: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 10 * DT.Scale.font, weight: .semibold))
+            .scaledFont(size: 10, weight: .semibold)
             .foregroundStyle(isFocused ? .white : DT.Color.textSecondary)
             .padding(.horizontal, 10 * DT.Scale.font)
             .padding(.vertical, 4 * DT.Scale.font)
@@ -186,9 +186,9 @@ struct TVHeroButtonLabel: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 12 * DT.Scale.font))
+                .scaledFont(size: 12)
             Text(text)
-                .font(.system(size: 14 * DT.Scale.font, weight: isPrimary ? .bold : .semibold))
+                .scaledFont(size: 14, weight: isPrimary ? .bold : .semibold)
         }
         .foregroundStyle(isFocused ? .white : Color.white.opacity(0.65))
         .padding(.horizontal, (isPrimary ? 28 : 20) * DT.Scale.font)
@@ -234,9 +234,9 @@ struct TVDetailButtonLabel: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 15 * DT.Scale.font))
+                .scaledFont(size: 15)
             Text(text)
-                .font(.system(size: 15 * DT.Scale.font, weight: isPrimary ? .bold : .medium))
+                .scaledFont(size: 15, weight: isPrimary ? .bold : .medium)
         }
         .foregroundStyle(
             isFocused
@@ -265,14 +265,14 @@ struct TVDescriptionLabel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(text)
-                .font(.system(size: 11 * DT.Scale.font))
+                .scaledFont(size: 11)
                 .foregroundStyle(isFocused ? .white : DT.Color.textSecondary)
                 .lineLimit(4)
                 .lineSpacing(5)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text("Read more")
-                .font(.system(size: 10 * DT.Scale.font, weight: .semibold))
+                .scaledFont(size: 10, weight: .semibold)
                 .foregroundStyle(DT.Color.accent)
                 .opacity(isFocused ? 1 : 0)
         }
