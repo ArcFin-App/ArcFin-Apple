@@ -77,6 +77,9 @@ struct PlayerView: View {
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
+    /// Seconds subtitles are shifted later (+) or earlier (-) — for sources whose subtitle
+    /// timing doesn't match the cut being played. Not persisted: it's per-viewing.
+    @State var subtitleDelay: Double = 0
     @State var currentSubtitleText: String?
     /// Only ever non-nil on AetherEnginePlayer — a native embedded PGS/DVB bitmap track has
     /// no Jellyfin delivery URL for SubtitleLoader to fetch, so this is genuinely new
@@ -321,6 +324,7 @@ struct PlayerView: View {
             macVolumeHUDTask?.cancel()
             #endif
         }
+        .onChange(of: subtitleDelay) { _, _ in updateSubtitleText(forTicks: player.positionTicks) }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
@@ -1339,7 +1343,7 @@ struct PlayerView: View {
             currentBitmapCue = nil
             return
         }
-        let seconds = Double(ticks) / 10_000_000
+        let seconds = Double(ticks) / 10_000_000 - subtitleDelay
         if subtitleCues.isEmpty {
             currentSubtitleText = nil
         } else {

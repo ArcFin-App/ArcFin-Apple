@@ -289,6 +289,20 @@ extension PlayerView {
             Button { showRateMenu = true } label: {
                 Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
             }
+            if !subtitleCues.isEmpty {
+                Menu {
+                    Button("Later by 0.5 s") { subtitleDelay += 0.5 }
+                    Button("Earlier by 0.5 s") { subtitleDelay -= 0.5 }
+                    Button("Later by 0.1 s") { subtitleDelay += 0.1 }
+                    Button("Earlier by 0.1 s") { subtitleDelay -= 0.1 }
+                    Button("Reset", role: .destructive) { subtitleDelay = 0 }
+                        .disabled(subtitleDelay == 0)
+                } label: {
+                    Label(
+                        subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", subtitleDelay)) s)",
+                        systemImage: "clock.arrow.2.circlepath")
+                }
+            }
             Button { showQualityMenu = true } label: {
                 Label("Quality", systemImage: "slider.horizontal.3")
             }
