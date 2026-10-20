@@ -973,6 +973,13 @@ struct HomeView: View {
                     }
                 }
                 .padding(.top, 14)
+                .accessibilityElement()
+                .accessibilityLabel("Featured")
+                .accessibilityValue("\(heroIndex + 1) of \(heroItems.count)")
+                .accessibilityAdjustableAction { direction in
+                    let next = heroIndex + (direction == .increment ? 1 : -1)
+                    withAnimation(DT.Animation.standard) { heroIndex = min(max(next, 0), heroItems.count - 1) }
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -1053,6 +1060,7 @@ struct HomeView: View {
 
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {
+        ItemQuickActions(item: item)
         if statsRepo.isConfigured {
             Button {
                 Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
