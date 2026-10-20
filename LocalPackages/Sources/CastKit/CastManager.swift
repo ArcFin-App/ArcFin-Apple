@@ -102,6 +102,13 @@ public final class CastManager: NSObject {
         #endif
     }
 
+    public func setActiveSubtitleTrack(id: Int?) {
+        #if canImport(GoogleCast)
+        GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?
+            .setActiveTrackIDs(id.map { [NSNumber(value: $0)] } ?? [])
+        #endif
+    }
+
     public func play() {
         #if canImport(GoogleCast)
         GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient?.play()

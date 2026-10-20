@@ -1176,6 +1176,15 @@ extension PlayerView {
         .transition(.opacity)
     }
 
+    private func castTrackLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.system(.footnote, design: .default, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .background(.white.opacity(0.15), in: Capsule())
+            .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+    }
+
     private var castInfo: some View {
         VStack(spacing: 14) {
             Image(systemName: "tv")
@@ -1282,6 +1291,34 @@ extension PlayerView {
             }
             .buttonStyle(.plain)
             .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+
+            HStack(spacing: 12) {
+                if let audio = playbackInfo?.audioStreams, audio.count > 1 {
+                    Menu {
+                        Picker("Audio", selection: Binding(
+                            get: { selectedAudioIndex ?? playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
+                            set: { selectCastAudio(index: $0) }
+                        )) {
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                        }
+                    } label: {
+                        castTrackLabel("Audio", systemImage: "speaker.wave.2")
+                    }
+                }
+                if let subs = playbackInfo?.subtitleStreams, !subs.isEmpty {
+                    Menu {
+                        Picker("Subtitles", selection: Binding(
+                            get: { selectedSubtitleIndex ?? -1 },
+                            set: { selectCastSubtitle(index: $0 < 0 ? nil : $0) }
+                        )) {
+                            Text("Off").tag(-1)
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                        }
+                    } label: {
+                        castTrackLabel("Subtitles", systemImage: "captions.bubble")
+                    }
+                }
+            }
 
             Button {
                 cast.endSession()
