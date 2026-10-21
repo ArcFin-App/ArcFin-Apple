@@ -6,6 +6,7 @@ import Combine
 import JellyfinAPI
 import SeerrAPI
 import AuthCore
+import CastKit
 import Persistence
 import Telemetry
 import os
@@ -100,6 +101,11 @@ struct MainTabView: View {
             }
             .tabViewStyle(.sidebarAdaptable)
             .preferredColorScheme(.dark)
+            #if os(iOS)
+            .tabViewBottomAccessory(isEnabled: CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil) {
+                CastMiniController()
+            }
+            #endif
             // arcfin://downloads — from the download Live Activity's tap target.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 selectedTab = .browse
