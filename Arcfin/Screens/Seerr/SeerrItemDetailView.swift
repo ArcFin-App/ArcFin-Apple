@@ -94,6 +94,8 @@ struct SeerrItemDetailView: View {
                         seasonsRow(seasons)
                     }
 
+                    TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .ratings)
+
                     if let cast = detail?.cast, !cast.isEmpty {
                         castRow(cast)
                     }
@@ -101,7 +103,7 @@ struct SeerrItemDetailView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.md)
 
-                TitleInsights(tmdbId: item.id, mediaType: item.mediaType)
+                TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.lg)
 

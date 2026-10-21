@@ -12,6 +12,11 @@ struct TitleInsights: View {
     let tmdbId: Int?
     let mediaType: RequestMediaType?
     var detail: MediaItemDetail? = nil
+    /// One part of the section, for pages that place the scores apart from the rest; nil
+    /// shows everything.
+    var part: Part? = nil
+
+    enum Part { case ratings, details }
 
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.openURL) private var openURL
@@ -22,23 +27,28 @@ struct TitleInsights: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-            if let ratings, !ratings.isEmpty { ratingsRow(ratings) }
-            if let next = info?.nextEpisode { nextEpisodeRow(next) }
-            if let watch = info?.watch, !watch.isEmpty {
-                whereToWatch(watch)
+            if part != .details, let ratings, !ratings.isEmpty { ratingsRow(ratings) }
+            if part != .ratings {
+                if let next = info?.nextEpisode { nextEpisodeRow(next) }
+                if let watch = info?.watch, !watch.isEmpty {
+                    whereToWatch(watch)
+                }
+                if !detailRows.isEmpty { detailsList }
+                if !links.isEmpty { linksRow }
             }
-            if !detailRows.isEmpty { detailsList }
-            if !links.isEmpty { linksRow }
         }
         .task(id: tmdbId) { await load() }
     }
 
     private func load() async {
         guard seerrRepo.hasCatalog, let tmdbId, let mediaType else { return }
-        region = await seerrRepo.region()
-        async let fetchedInfo = seerrRepo.relatedInfo(mediaType: mediaType, tmdbId: tmdbId)
-        async let fetchedRatings = seerrRepo.ratings(mediaType: mediaType, tmdbId: tmdbId)
-        (info, ratings) = await (fetchedInfo, fetchedRatings)
+        if part != .details {
+            ratings = await seerrRepo.ratings(mediaType: mediaType, tmdbId: tmdbId)
+        }
+        if part != .ratings {
+            region = await seerrRepo.region()
+            info = await seerrRepo.relatedInfo(mediaType: mediaType, tmdbId: tmdbId)
+        }
     }
 
     // MARK: - Ratings

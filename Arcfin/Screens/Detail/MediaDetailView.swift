@@ -961,6 +961,10 @@ struct MediaDetailView: View {
         }
 
         // Cast
+        // Review scores sit with the description, ahead of the cast.
+        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings)
+            .padding(.horizontal, DT.Spacing.pagePad)
+
         if let d = detail, !d.cast.isEmpty { castSection(d) }
 
         // Crew
@@ -988,10 +992,7 @@ struct MediaDetailView: View {
         // Scores, where else it's streaming, and the details list. An episode's TMDB id is
         // the episode's, which Seerr's title lookups don't take, so episodes show the
         // server's details only.
-        TitleInsights(
-            tmdbId: item.type == .episode ? nil : (detail?.item.tmdbId ?? item.tmdbId),
-            mediaType: seerrMediaType(for: item),
-            detail: detail)
+        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, DT.Spacing.md)
     }
@@ -1582,6 +1583,10 @@ struct MediaDetailView: View {
     }
 
     // MARK: - Helpers
+
+    private var insightsTmdbId: Int? {
+        item.type == .episode ? nil : (detail?.item.tmdbId ?? item.tmdbId)
+    }
 
     private func seerrMediaType(for item: MediaItem) -> RequestMediaType? {
         switch item.type {
