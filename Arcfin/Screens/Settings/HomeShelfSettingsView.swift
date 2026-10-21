@@ -10,7 +10,9 @@ struct HomeShelfSettingsView: View {
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
+    #if os(iOS)
     private var editMode: EditMode { shuffleShelves ? .inactive : .active }
+    #endif
 
     private var footerText: String {
         shuffleShelves
