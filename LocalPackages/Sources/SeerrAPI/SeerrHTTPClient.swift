@@ -635,7 +635,9 @@ private struct SeerrItemResponse: Decodable {
     }
 
     func toItem(defaultMediaType: RequestMediaType? = nil) -> SeerrItem? {
-        guard let displayTitle = title ?? name else { return nil }
+        // Search also returns people (and collections), which aren't requestable titles.
+        guard mediaType == nil || mediaType == "movie" || mediaType == "tv",
+              let displayTitle = title ?? name else { return nil }
         let type = resolvedMediaType ?? defaultMediaType ?? .movie
         let year = (releaseDate ?? firstAirDate).flatMap { $0.count >= 4 ? String($0.prefix(4)) : nil }
         let status = mediaInfo.flatMap { SeerrAvailabilityStatus(rawValue: $0.status) }
