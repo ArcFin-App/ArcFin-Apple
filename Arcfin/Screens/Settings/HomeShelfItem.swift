@@ -27,6 +27,13 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         }
     }
 
+    var isSeerr: Bool {
+        switch self {
+        case .seerrWatchlist, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries: true
+        default: false
+        }
+    }
+
     var icon: String {
         switch self {
         case .continueWatching:       "play.circle"

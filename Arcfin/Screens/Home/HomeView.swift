@@ -101,6 +101,9 @@ struct MainTabView: View {
             }
             .tabViewStyle(.sidebarAdaptable)
             .preferredColorScheme(.dark)
+            .onChange(of: selectedTab) { old, _ in
+                if old == .home { NotificationCenter.default.post(name: .arcfinHomeTabLeft, object: nil) }
+            }
             #if os(iOS)
             .modifier(CastMiniControllerAccessory())
             #endif
@@ -154,7 +157,7 @@ struct HomeView: View {
     @AppStorage(HomeShelfPrefs.activeKey) private var homeShelfActiveString = ""
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
     @State private var shuffledShelves = HomeShelfPrefs.shuffledOrder()
-    @State private var lastShuffle = Date()
+    @Environment(\.scenePhase) private var scenePhase
     #if os(iOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @Query private var downloadedItems: [DownloadedItem]
@@ -225,9 +228,15 @@ struct HomeView: View {
         return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
     }
 
+    /// During the first load nothing has content yet, so shelves would pop in one by one and
+    /// the shuffled order would look like it is rearranging. Showing every shelf as a
+    /// placeholder row, in its final position, keeps the layout steady until real data arrives.
+    private var showsShelfSkeleton: Bool {
+        shuffleHomeShelves && !mediaRepo.hasAnyContent && !mediaRepo.connectionFailed
+    }
+
     private func reshuffleShelves() {
         shuffledShelves = HomeShelfPrefs.shuffledOrder()
-        lastShuffle = Date()
     }
 
     private var orderedVisibleShelves: [HomeShelf] {
@@ -457,7 +466,11 @@ struct HomeView: View {
                                 connectionFailedBanner
                             }
                             ForEach(orderedVisibleShelves) { shelf in
-                                shelfView(for: shelf)
+                                if showsShelfSkeleton, !HomeShelfPrefs.pinned.contains(shelf), !shelf.isSeerr {
+                                    ShelfRow(title: shelf.title) { mediaShelfContent([]) }
+                                } else {
+                                    shelfView(for: shelf)
+                                }
                             }
                         }
                         .padding(.top, 12)
@@ -576,7 +589,10 @@ struct HomeView: View {
         // view's task lifecycle — detaching into one here the same way lets the load
         // survive that cancellation instead of losing the race every cold launch.
         .task(id: authManager.state.credential?.id) { Task { await loadHome() } }
-        .refreshable { await loadHome(force: true) }
+        .refreshable {
+            if shuffleHomeShelves { reshuffleShelves() }
+            await loadHome(force: true)
+        }
         #if os(iOS)
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
             if isFailed && !wasFailed { showOfflinePrompt = true }
@@ -618,9 +634,14 @@ struct HomeView: View {
         }
         .onAppear {
             loadHeroVideoBackdrop()
-            // Coming back from a detail screen also fires onAppear; reshuffling then would
-            // make shelves jump under the reader, so only a real return to Home reshuffles.
-            if shuffleHomeShelves, Date().timeIntervalSince(lastShuffle) > 20 { reshuffleShelves() }
+        }
+        // The order only ever changes while Home is off-screen (tab switch, app backgrounded)
+        // or when the user pulls to refresh, so what's on screen never rearranges itself.
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinHomeTabLeft)) { _ in
+            if shuffleHomeShelves { reshuffleShelves() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background, shuffleHomeShelves { reshuffleShelves() }
         }
         .onChange(of: shuffleHomeShelves) { _, isOn in
             if isOn { reshuffleShelves() }

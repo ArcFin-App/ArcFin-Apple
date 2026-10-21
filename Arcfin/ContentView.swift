@@ -24,6 +24,9 @@ extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
     /// Posted by onOpenURL for arcfin://downloads — tapping the download Live Activity.
     static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
+    /// Posted when the user switches away from the Home tab, so a shuffled Home can reorder
+    /// itself while it is off-screen.
+    static let arcfinHomeTabLeft = Notification.Name("arcfinHomeTabLeft")
     /// Posted by the macOS app menu's Settings… command (Cmd+,) — there's no scene-level
     /// binding into MainTabView's private navigation state to reach otherwise, so this
     /// follows the same NotificationCenter pattern arcfinShowDownloads already established.
