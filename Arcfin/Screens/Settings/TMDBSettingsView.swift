@@ -5,71 +5,101 @@ import AuthCore
 import SeerrAPI
 
 /// The user's own TMDB key. With it, title pages, streaming rows and Home's catalogue shelves
-/// work without Seerr, and keep working when Seerr's requests fail.
+/// work without Seerr, and keep working when Seerr's requests fail. Laid out like the Seerr
+/// and Streamystats pages.
 struct TMDBSettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var key = TMDBCredential.load() ?? ""
-    @State private var status: Status = .idle
-
-    private enum Status: Equatable {
-        case idle, checking, ok
-        case failed(String)
-    }
+    @State private var savedKey = TMDBCredential.load() ?? ""
+    @State private var testResult: String?
+    @State private var isTesting = false
 
     var body: some View {
         List {
             Section {
                 SecureField("API key or read access token", text: $key)
+                    .autocorrectionDisabled()
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
                     #endif
-                    .font(.system(.body, design: .monospaced))
-                Button("Save and Test") { Task { await saveAndTest() } }
-                    .disabled(status == .checking)
-                if !key.isEmpty {
-                    Button("Remove Key", role: .destructive) {
-                        key = ""
-                        try? TMDBCredential.save("")
-                        seerrRepo.reloadTMDB()
-                        status = .idle
-                    }
-                }
+                    .onSubmit(save)
+            } header: {
+                Label("API Key", systemImage: "key")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
             } footer: {
-                Text("Optional. With your own free key from themoviedb.org (Settings → API), Arcfin can show where titles are streaming, review details and what's popular without Seerr, and fill in when Seerr can't reach TMDB. Requests still need Seerr. The key is stored in the Keychain.")
+                Text("Optional. Get a free key at themoviedb.org under Settings → API. Arcfin uses it for where titles are streaming, title details and what's popular without Seerr, and when Seerr can't reach TMDB. Requests still go through Seerr. Stored in the Keychain on this device.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
 
-            switch status {
-            case .idle: EmptyView()
-            case .checking:
-                Section { HStack { ProgressView(); Text("Checking…").foregroundStyle(DT.Color.textSecondary) } }
-            case .ok:
-                Section { Label("Connected to TMDB", systemImage: "checkmark.circle.fill").foregroundStyle(.green) }
-            case .failed(let message):
+            Section {
+                Button {
+                    testConnection()
+                } label: {
+                    HStack {
+                        if isTesting {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "network")
+                        }
+                        Text(isTesting ? "Testing…" : "Test Connection")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .disabled(key.trimmingCharacters(in: .whitespaces).isEmpty || isTesting)
+
+                if let result = testResult {
+                    Text(result)
+                        .font(.caption)
+                        .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+
+            if !savedKey.isEmpty {
                 Section {
-                    Label("TMDB didn't accept this key", systemImage: "xmark.octagon.fill").foregroundStyle(.red)
-                    Text(message).font(.footnote).foregroundStyle(DT.Color.textSecondary)
+                    Button(role: .destructive) {
+                        key = ""
+                        save()
+                        testResult = nil
+                    } label: {
+                        Text("Remove Key").frame(maxWidth: .infinity, alignment: .center)
+                    }
                 }
             }
         }
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("TMDB")
+        // Kept like the other integrations' fields: leaving the page saves what's typed.
+        .onDisappear(perform: save)
     }
 
-    private func saveAndTest() async {
+    private func save() {
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        status = .checking
-        do {
-            _ = try await TMDBClient(key: trimmed).trending()
-            try TMDBCredential.save(trimmed)
-            seerrRepo.reloadTMDB()
-            status = .ok
-            Task { await seerrRepo.loadDiscover() }
-        } catch {
-            status = .failed(error.localizedDescription)
+        guard trimmed != savedKey else { return }
+        try? TMDBCredential.save(trimmed)
+        savedKey = trimmed
+        seerrRepo.reloadTMDB()
+        if !trimmed.isEmpty { Task { await seerrRepo.loadDiscover() } }
+    }
+
+    private func testConnection() {
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        isTesting = true
+        testResult = nil
+        Task {
+            do {
+                _ = try await TMDBClient(key: trimmed).trending()
+                testResult = "✓ Connected to TMDB"
+                save()
+            } catch {
+                testResult = "✗ \(error.localizedDescription)"
+            }
+            isTesting = false
         }
     }
 }
