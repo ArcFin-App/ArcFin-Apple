@@ -38,6 +38,7 @@ struct MediaDetailView: View {
     @State private var awards: [WikidataAward] = []
     @State private var isFavorite = false
     @State private var likes: Bool?
+    @State private var heroTint: Color?
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
     /// Jellyfin-native fallback for the "Recommended" row when Seerr isn't configured —
@@ -122,9 +123,22 @@ struct MediaDetailView: View {
             .focusSection()
 #endif
         }
-        .background(DT.Color.backgroundPrimary)
+        .background {
+            ZStack {
+                DT.Color.backgroundPrimary
+                if let heroTint {
+                    LinearGradient(colors: [heroTint.opacity(0.4), .clear], startPoint: .top, endPoint: .bottom)
+                }
+            }
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.4), value: heroTint)
+        }
         .ignoresSafeArea(edges: .top)
         #if os(iOS)
+        .task(id: item.id) {
+            guard let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 120) else { return }
+            heroTint = await AverageColor.load(from: url)
+        }
         // Handoff to another device, Spotlight, and on-screen awareness: Siri and Apple
         // Intelligence can resolve "this movie" to the MediaEntity for what's on screen.
         .userActivity(ArcfinActivity.viewTitle) { activity in
