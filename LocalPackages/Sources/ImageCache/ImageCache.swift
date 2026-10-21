@@ -3,6 +3,7 @@
 import Foundation
 import SwiftUI
 import Nuke
+import AuthCore
 import Telemetry
 
 // MARK: - Pipeline
@@ -11,11 +12,32 @@ public enum ImageCache: Sendable {
 
     private static let log = Telemetry.logger(category: "ImageCache")
 
-    public static let shared: ImagePipeline = {
-        var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
-        config.dataCachePolicy = .automatic
-        return ImagePipeline(configuration: config)
-    }()
+    /// Rebuilt when the custom headers change, keeping the same on-disk cache.
+    public static var shared: ImagePipeline {
+        PipelineBox.pipeline(for: CustomHTTPHeaders.current)
+    }
+
+    private enum PipelineBox {
+        private static let lock = NSLock()
+        nonisolated(unsafe) private static var cached: (headers: [String: String], pipeline: ImagePipeline)?
+
+        static func pipeline(for headers: [String: String]) -> ImagePipeline {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached, cached.headers == headers { return cached.pipeline }
+            var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
+            config.dataCachePolicy = .automatic
+            if !headers.isEmpty {
+                let session = URLSessionConfiguration.default
+                session.httpAdditionalHeaders = headers
+                session.urlCache = nil
+                config.dataLoader = DataLoader(configuration: session)
+            }
+            let pipeline = ImagePipeline(configuration: config)
+            cached = (headers, pipeline)
+            return pipeline
+        }
+    }
 
     /// Bytes the on-disk image cache currently holds.
     public static var diskCacheSize: Int {

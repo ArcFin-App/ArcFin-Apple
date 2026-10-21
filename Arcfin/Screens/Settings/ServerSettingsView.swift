@@ -156,6 +156,14 @@ struct ServerSettingsView: View {
             }
 
             Section {
+                NavigationLink("Custom Headers") { CustomHeadersView() }
+            } footer: {
+                Text("Extra headers for a server behind an access gateway, such as Cloudflare Access.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
                 LabeledContent("Currently Using", value: currentlyUsing)
             } footer: {
                 Text("Close and reopen the app for URL or Wi-Fi network changes to take effect.")

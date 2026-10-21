@@ -116,6 +116,7 @@ let package = Package(
         .target(
             name: "ImageCache",
             dependencies: [
+                "AuthCore",
                 "Telemetry",
                 .product(name: "Nuke",   package: "Nuke"),
                 .product(name: "NukeUI", package: "Nuke"),
@@ -182,6 +183,7 @@ let package = Package(
             name: "MediaEngine",
             dependencies: [
                 "AppState",
+                "AuthCore",
                 "JellyfinAPI",
                 "Telemetry",
                 .product(name: "AetherEngine", package: "AetherEngine"),

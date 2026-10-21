@@ -954,6 +954,7 @@ final class DownloadManager: NSObject {
                 task = session.downloadTask(withResumeData: resumeData)
             } else {
                 var req = URLRequest(url: url)
+                for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
                 req.setValue(authHeader, forHTTPHeaderField: "Authorization")
                 req.timeoutInterval = 60 * 60
                 task = session.downloadTask(with: req)

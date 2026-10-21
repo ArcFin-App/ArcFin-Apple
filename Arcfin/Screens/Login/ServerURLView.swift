@@ -16,6 +16,7 @@ struct ServerURLView: View {
     @State private var serverURL: String = ""
     @State private var connecting: Bool = false
     @State private var connected: Bool = false
+    @State private var showCustomHeaders = false
     @State private var showError: Bool = false
     @State private var errorMessage: String = ""
     @State private var discoveredServers: [DiscoveredServer] = []
@@ -94,6 +95,15 @@ struct ServerURLView: View {
                             .foregroundStyle(.red)
                             .padding(.leading, 2)
                     }
+
+                    Button { showCustomHeaders = true } label: {
+                        Label("Custom Headers", systemImage: "key.horizontal")
+                            .font(DT.Font.caption2)
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, 2)
+                    .accessibilityHint("For a server behind an access gateway")
                 }
                 .padding(.top, DT.Spacing.lg)
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -193,6 +203,14 @@ struct ServerURLView: View {
         }
         .task { await runDiscovery() }
         .sheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
+        .sheet(isPresented: $showCustomHeaders) {
+            NavigationStack {
+                CustomHeadersView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") { showCustomHeaders = false } }
+                    }
+            }
+        }
     }
 
     // MARK: - Subviews
