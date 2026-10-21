@@ -889,8 +889,10 @@ private struct JellyfinItemResponse: Decodable {
     let parentBackdropItemId: String?
     let parentBackdropImageTags: [String]?
     let providerIds: [String: String]?
+    let genres: [String]?
 
     enum CodingKeys: String, CodingKey {
+        case genres = "Genres"
         case id = "Id"
         case name = "Name"
         case type = "Type"
