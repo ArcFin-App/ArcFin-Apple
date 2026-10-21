@@ -180,6 +180,9 @@ struct HomeView: View {
     @State private var showSettings = false
     /// Titles the user requested through Seerr that have since arrived in the library.
     @State private var nowAvailable: [MediaItem] = []
+    /// The first load has been trying for a while with nothing to show yet; offers a way
+    /// out instead of leaving the placeholder shelves up for the whole retry cycle.
+    @State private var isSlowFirstLoad = false
     @State private var heroDetailItem: MediaItem?
     @State private var trailerLaunchItem: MediaItem?
     /// Play / Resume straight from a poster's long-press menu, without opening its page.
@@ -513,7 +516,7 @@ struct HomeView: View {
                         .frame(height: heroH)
 
                         VStack(spacing: 0) {
-                            if mediaRepo.connectionFailed && !mediaRepo.isLoading {
+                            if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || isSlowFirstLoad {
                                 connectionFailedBanner
                             }
                             ForEach(orderedVisibleShelves) { shelf in
@@ -702,6 +705,15 @@ struct HomeView: View {
         }
         .onChange(of: shuffleHomeShelves) { _, isOn in
             if isOn { reshuffleShelves() }
+        }
+        .task(id: mediaRepo.isLoading) {
+            guard mediaRepo.isLoading, !mediaRepo.hasAnyContent else {
+                isSlowFirstLoad = false
+                return
+            }
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, mediaRepo.isLoading, !mediaRepo.hasAnyContent else { return }
+            withAnimation(DT.Animation.fast) { isSlowFirstLoad = true }
         }
         .task(id: recentlyAvailableRequests.map(\.id)) {
             await loadNowAvailable(recentlyAvailableRequests)
@@ -912,33 +924,37 @@ struct HomeView: View {
                     .font(.system(.title3))
                     .foregroundStyle(Color(hex: "f59e0b"))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Can't reach your server")
+                    Text(mediaRepo.isLoading ? "Still trying to reach your server" : "Can't reach your server")
                         .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text("Check your connection or Server Settings, then retry.")
+                    Text(mediaRepo.isLoading
+                         ? "This is taking longer than usual. Your downloads work without a connection."
+                         : "Check your connection or Server Settings, then retry.")
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
-                Button("Retry") {
-                    guard case .authenticated(let cred) = authManager.state else { return }
-                    Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
-                }
-                .font(.system(.footnote, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.accent)
-            }
-            #if os(iOS)
-            if !downloadedItems.isEmpty {
-                Button {
-                    offlineModeEnabled = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.down.circle.fill")
-                        Text("Watch Downloads Instead")
+                if mediaRepo.isLoading {
+                    ProgressView().tint(DT.Color.accent)
+                } else {
+                    Button("Retry") {
+                        guard case .authenticated(let cred) = authManager.state else { return }
+                        Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: true) }
                     }
-                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
                 }
+            }
+            #if os(iOS)
+            Button {
+                offlineModeEnabled = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.circle.fill")
+                    Text(downloadedItems.isEmpty ? "Turn On Offline Mode" : "Watch Downloads Instead")
+                }
+                .font(.system(.caption, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.accent)
             }
             #endif
         }
