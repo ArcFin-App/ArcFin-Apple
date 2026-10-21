@@ -1161,10 +1161,19 @@ struct MediaDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
 
                     VStack(alignment: .leading, spacing: 4) {
-                        if let epNum = ep.indexNumber {
-                            Text("E\(epNum)")
-                                .font(.system(.caption2, design: .default, weight: .semibold))
-                                .foregroundStyle(DT.Color.accent)
+                        HStack(spacing: 6) {
+                            if let epNum = ep.indexNumber {
+                                Text("E\(epNum)")
+                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .foregroundStyle(DT.Color.accent)
+                            }
+                            if let badge = episodeBadge(ep) {
+                                Text(badge)
+                                    .font(.system(.caption2, design: .default, weight: .bold))
+                                    .padding(.horizontal, 6).padding(.vertical, 1)
+                                    .background(DT.Color.accent.opacity(0.18), in: Capsule())
+                                    .foregroundStyle(DT.Color.accent)
+                            }
                         }
                         Text(ep.name)
                             .font(.system(.footnote, design: .default, weight: .semibold))
@@ -1203,6 +1212,17 @@ struct MediaDetailView: View {
         }, preview: {
             episodeRowPreview(ep)
         })
+    }
+
+    /// "NEW" for an unwatched episode that premiered in the last two weeks; "FINALE" for the
+    /// last episode of the season being shown.
+    private func episodeBadge(_ ep: MediaItem) -> String? {
+        if ep.userData?.played != true, let premiere = ep.premiereDate,
+           premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
+            return "NEW"
+        }
+        if episodes.count > 1, ep.id == episodes.last?.id { return "FINALE" }
+        return nil
     }
 
     private func episodeRowPreview(_ ep: MediaItem) -> some View {

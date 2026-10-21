@@ -646,7 +646,7 @@ public struct JellyfinMediaClient: Sendable {
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
             .init(name: "SeasonId", value: seasonId),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,PremiereDate,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableImages", value: "true"),
             .init(name: "ImageTypeLimit", value: "1"),
@@ -1000,8 +1000,10 @@ private struct JellyfinItemResponse: Decodable {
     let parentBackdropImageTags: [String]?
     let providerIds: [String: String]?
     let genres: [String]?
+    let premiereDate: String?
 
     enum CodingKeys: String, CodingKey {
+        case premiereDate = "PremiereDate"
         case genres = "Genres"
         case id = "Id"
         case name = "Name"
@@ -1050,8 +1052,17 @@ private struct JellyfinItemResponse: Decodable {
             seriesPrimaryImageTag: seriesPrimaryImageTag,
             parentBackdropItemId: parentBackdropItemId,
             parentBackdropImageTags: parentBackdropImageTags ?? [],
-            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
+            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            premiereDate: premiereDate.flatMap(Self.parseDay)
         )
+    }
+
+    /// Jellyfin sends 7-digit fractional seconds that ISO8601DateFormatter is unreliable
+    /// with; only the calendar day matters here, so just that prefix is parsed.
+    private static func parseDay(_ raw: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter.date(from: String(raw.prefix(10)))
     }
 }
 

@@ -45,6 +45,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public var parentBackdropItemId: String?
     public var parentBackdropImageTags: [String]
     public var tmdbId: Int?
+    public var premiereDate: Date?
 
     public init(
         id: String,
@@ -64,7 +65,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         seriesPrimaryImageTag: String? = nil,
         parentBackdropItemId: String? = nil,
         parentBackdropImageTags: [String] = [],
-        tmdbId: Int? = nil
+        tmdbId: Int? = nil,
+        premiereDate: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -84,6 +86,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         self.parentBackdropItemId = parentBackdropItemId
         self.parentBackdropImageTags = parentBackdropImageTags
         self.tmdbId = tmdbId
+        self.premiereDate = premiereDate
     }
 }
 
