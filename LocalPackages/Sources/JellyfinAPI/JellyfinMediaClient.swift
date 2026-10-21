@@ -709,6 +709,33 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// The series' next episode to watch and the ones after it, in order. Next Up itself only
+    /// ever returns one episode per series, whatever the limit.
+    public func getUpcomingEpisodes(
+        credential: ServerCredential,
+        authHeader: String,
+        seriesId: String,
+        count: Int
+    ) async throws -> [MediaItem] {
+        guard let next = try await getNextEpisode(credential: credential, authHeader: authHeader, seriesId: seriesId) else { return [] }
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Episodes"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "StartItemId", value: next.id),
+            .init(name: "Limit", value: "\(count)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let episodes = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        return episodes.isEmpty ? [next] : episodes.filter { $0.userData?.played != true }
+    }
+
     public func getNextEpisode(
         credential: ServerCredential,
         authHeader: String,

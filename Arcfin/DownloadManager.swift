@@ -446,12 +446,18 @@ final class DownloadManager: NSObject {
     private func processQueue() async {
         guard !isProcessingQueue else { return }
         isProcessingQueue = true
+        var downloadedEpisode = false
         while !pendingQueue.isEmpty, !isQueuePaused {
             let next = pendingQueue.removeFirst()
             guard !isDownloaded(next.item.id) else { continue }
             await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
+            if next.item.type == .episode { downloadedEpisode = true }
         }
         isProcessingQueue = false
+        // A show just got a downloaded episode, so Smart Downloads can line up the ones after
+        // it. Only once the queue has drained: running it mid-queue would reenter this loop
+        // (see runSmartDownloadsIfNeeded), and a run already in progress ignores this.
+        if downloadedEpisode, !isQueuePaused { refreshSmartDownloads() }
     }
 
     /// `skipVideoDownload` is set only by orphan recovery (see recoverOrphanedDownload) —
@@ -886,7 +892,9 @@ final class DownloadManager: NSObject {
         }
 
         for (seriesId, count) in targets {
-            guard let nextUp = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: count) else { continue }
+            // The episode up next plus the `count` after it: the one you're on doesn't use
+            // up the allowance.
+            guard let nextUp = try? await client.getUpcomingEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, count: count + 1) else { continue }
             // Episodes before the next one up were watched, possibly streamed on another
             // device, which the downloaded copy's own played flag never hears about.
             if kept[seriesId] != nil, let first = nextUp.first,

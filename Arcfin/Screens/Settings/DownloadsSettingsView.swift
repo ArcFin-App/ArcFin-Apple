@@ -74,7 +74,7 @@ struct DownloadsSettingsView: View {
                     .syncLocked("smartDownloadsStorageBudgetGB", authManager)
                 }
             } footer: {
-                Text("Smart Downloads keeps the next unwatched episodes of your shows downloaded automatically, removing watched ones to stay under your storage budget.")
+                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing watched ones to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, and when you close the player. With Wi-Fi Only on, it waits for Wi-Fi.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
