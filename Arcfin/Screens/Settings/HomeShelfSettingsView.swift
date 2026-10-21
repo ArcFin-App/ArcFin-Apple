@@ -48,7 +48,7 @@ struct HomeShelfSettingsView: View {
             }
         }
         #if os(iOS)
-        .environment(\.editMode, .constant(shuffleShelves ? .inactive : .active))
+        .environment(\.editMode, Binding<EditMode>.constant(shuffleShelves ? .inactive : .active))
         #endif
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
