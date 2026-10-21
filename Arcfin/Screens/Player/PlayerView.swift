@@ -115,6 +115,9 @@ struct PlayerView: View {
     @State var networkToast: String?
     @State var chapters: [MediaChapter] = []
     @State var castMembers: [MediaPerson] = []
+    @State var showXRay = false
+    /// A cast member picked in X-Ray; their page opens over the paused player.
+    @State var xRayPerson: MediaPerson?
     @State var audioOnly = false
     /// Set when the player is about to be replaced by the next title in the same cover, so
     /// the outgoing instance doesn't unlock the orientation the viewer had chosen.
@@ -291,6 +294,7 @@ struct PlayerView: View {
 
             #if !os(tvOS)
             moreLikeThisOverlay
+            xRayOverlay
             #endif
 
             if showStillWatchingPrompt {
@@ -425,6 +429,16 @@ struct PlayerView: View {
         #if !os(macOS)
         .sheet(isPresented: $showChapterMenu) {
             chapterListSheet
+        }
+        #endif
+        #if !os(tvOS)
+        .sheet(item: $xRayPerson, onDismiss: { Task { await player.play() } }) { person in
+            NavigationStack {
+                PersonDetailView(person: person)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") { xRayPerson = nil } }
+                    }
+            }
         }
         #endif
         .sheet(isPresented: $showInfoSheet) {

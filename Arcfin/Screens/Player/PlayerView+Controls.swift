@@ -98,6 +98,10 @@ extension PlayerView {
 
             Spacer()
 
+            #if !os(tvOS)
+            if !castMembers.isEmpty { xRayButton }
+            #endif
+
             #if canImport(UIKit) && !os(tvOS)
             quickActionIcons
             #elseif os(macOS)
@@ -741,26 +745,157 @@ extension PlayerView {
         HapticManager.impact(.light)
     }
 
+    // MARK: - X-Ray
+
+    #if !os(tvOS)
+    private var xRayButton: some View {
+        Button {
+            withAnimation(DT.Animation.fast) {
+                showXRay = true
+                isControlsVisible = false
+            }
+        } label: {
+            Label("X-Ray", systemImage: "person.2.fill")
+                .labelStyle(.titleAndIcon)
+                .font(.system(.caption, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .frame(height: 32)
+                .background(Color.white.opacity(0.15), in: Capsule())
+                .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("X-Ray: cast")
+    }
+
+    /// Who's in this, beside the picture: a panel on the trailing edge in landscape, along the
+    /// bottom in portrait. Playback carries on; picking someone pauses and opens their page.
+    @ViewBuilder
+    var xRayOverlay: some View {
+        if showXRay {
+            GeometryReader { proxy in
+                let landscape = proxy.size.width > proxy.size.height
+                ZStack(alignment: landscape ? .trailing : .bottom) {
+                    Color.black.opacity(0.25)
+                        .ignoresSafeArea()
+                        .onTapGesture { withAnimation(DT.Animation.fast) { showXRay = false } }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("X-Ray")
+                                    .font(.system(.headline, weight: .bold))
+                                    .foregroundStyle(.white)
+                                Text("In \(item.type == .episode ? (item.seriesName ?? item.name) : item.name)")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.6))
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                            Button {
+                                withAnimation(DT.Animation.fast) { showXRay = false }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(.footnote, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 30, height: 30)
+                                    .background(Color.white.opacity(0.15), in: Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Close X-Ray")
+                        }
+                        ScrollView(landscape ? .vertical : .horizontal, showsIndicators: false) {
+                            let layout = landscape
+                                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+                                : AnyLayout(HStackLayout(alignment: .top, spacing: 14))
+                            layout {
+                                ForEach(castMembers) { person in
+                                    Button { openXRayPerson(person) } label: {
+                                        xRayRow(person, compact: !landscape)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .frame(width: landscape ? min(340, proxy.size.width * 0.42) : nil)
+                    .frame(maxWidth: landscape ? nil : .infinity)
+                    .frame(maxHeight: landscape ? .infinity : 230)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .padding(landscape ? 12 : 10)
+                    .transition(.move(edge: landscape ? .trailing : .bottom).combined(with: .opacity))
+                }
+            }
+        }
+    }
+
+    private func xRayRow(_ person: MediaPerson, compact: Bool) -> some View {
+        let photo = CachedAsyncImage(url: person.primaryImageTag.flatMap {
+            mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 160)
+        }) { phase in
+            switch phase {
+            case .success(let image): image.resizable().scaledToFill()
+            default:
+                ZStack {
+                    Color.white.opacity(0.1)
+                    Image(systemName: "person.fill").foregroundStyle(.white.opacity(0.4))
+                }
+            }
+        }
+        return Group {
+            if compact {
+                VStack(spacing: 6) {
+                    photo.frame(width: 72, height: 72).clipShape(Circle())
+                    Text(person.name)
+                        .font(.system(.caption, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                    if let role = person.role, !role.isEmpty {
+                        Text(role)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
+                }
+                .frame(width: 88)
+            } else {
+                HStack(spacing: 12) {
+                    photo.frame(width: 48, height: 48).clipShape(Circle())
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(person.name)
+                            .font(.system(.subheadline, weight: .semibold))
+                            .foregroundStyle(.white)
+                        if let role = person.role, !role.isEmpty {
+                            Text(role)
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .contentShape(Rectangle())
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens their page")
+    }
+
+    private func openXRayPerson(_ person: MediaPerson) {
+        Task { await player.pause() }
+        xRayPerson = person
+    }
+    #endif
+
     // MARK: - Media info
 
     var mediaInfoSheet: some View {
         NavigationStack {
         List {
-            if !castMembers.isEmpty {
-                Section("Cast") {
-                    ForEach(castMembers) { person in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(person.name)
-                                .foregroundStyle(DT.Color.textPrimary)
-                            if let role = person.role, !role.isEmpty {
-                                Text(role)
-                                    .font(.system(.footnote))
-                                    .foregroundStyle(DT.Color.textSecondary)
-                            }
-                        }
-                    }
-                }
-            }
             if let info = playbackInfo {
                 Section("Video") {
                     if let codec = info.videoStream?.codec {
@@ -1397,7 +1532,7 @@ extension PlayerView {
             .font(.system(.footnote, design: .default, weight: .semibold))
             .foregroundStyle(.white.opacity(0.9))
             .padding(.horizontal, 14).padding(.vertical, 9)
-            .background(.white.opacity(0.15), in: Capsule())
+            .background(Color.white.opacity(0.15), in: Capsule())
             .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
     }
 
@@ -1561,7 +1696,7 @@ extension PlayerView {
                     .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.9))
                     .padding(.horizontal, 18).padding(.vertical, 9)
-                    .background(.white.opacity(0.15), in: Capsule())
+                    .background(Color.white.opacity(0.15), in: Capsule())
                     .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
             }
             .buttonStyle(.plain)
