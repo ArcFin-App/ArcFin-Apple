@@ -1098,18 +1098,19 @@ extension PlayerView {
 
     // MARK: - More Like This
 
-    /// Suggestions over the credits: a horizontal row along the bottom in landscape, a
-    /// vertical list filling the lower part of the screen in portrait.
+    /// The credits panel: the top three suggestions in the middle of the screen (a row in
+    /// landscape, a stack in portrait) and Like / Dislike buttons for what was just watched
+    /// along the bottom.
     @ViewBuilder
     var moreLikeThisOverlay: some View {
         if showMoreLikeThis, !moreLikeThis.isEmpty {
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                Color.black.opacity(0.6)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+
+                VStack(spacing: 0) {
                     HStack {
-                        Text("More Like This")
-                            .font(.system(.headline, weight: .bold))
-                            .foregroundStyle(.white)
                         Spacer()
                         Button {
                             moreLikeThisDismissed = true
@@ -1118,47 +1119,72 @@ extension PlayerView {
                             Image(systemName: "xmark")
                                 .font(.system(.footnote, weight: .semibold))
                                 .foregroundStyle(.white)
-                                .frame(width: 30, height: 30)
+                                .frame(width: 34, height: 34)
                                 .background(.white.opacity(0.18), in: Circle())
                         }
                         .accessibilityLabel("Dismiss suggestions")
                     }
-                    if suggestionsAreHorizontal {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(moreLikeThis) { suggestion in
-                                    Button { onPlayNext(suggestion) } label: {
-                                        suggestionCard(suggestion)
-                                    }
-                                    .buttonStyle(.plain)
+
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: 14) {
+                        Text("More Like This")
+                            .font(.system(.title3, weight: .bold))
+                            .foregroundStyle(.white)
+                        let top = Array(moreLikeThis.prefix(3))
+                        if suggestionsAreHorizontal {
+                            HStack(spacing: 14) {
+                                ForEach(top) { suggestion in
+                                    Button { onPlayNext(suggestion) } label: { suggestionCard(suggestion) }
+                                        .buttonStyle(.plain)
                                 }
                             }
-                        }
-                    } else {
-                        ScrollView(.vertical, showsIndicators: false) {
+                        } else {
                             VStack(spacing: 10) {
-                                ForEach(moreLikeThis) { suggestion in
-                                    Button { onPlayNext(suggestion) } label: {
-                                        suggestionRow(suggestion)
-                                    }
-                                    .buttonStyle(.plain)
+                                ForEach(top) { suggestion in
+                                    Button { onPlayNext(suggestion) } label: { suggestionRow(suggestion) }
+                                        .buttonStyle(.plain)
                                 }
                             }
                         }
-                        .frame(maxHeight: 380)
                     }
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: 12) {
+                        ratingButton(title: "Like", systemImage: "hand.thumbsup", isSelected: currentLikes == true) {
+                            rateCurrentItem(true)
+                        }
+                        ratingButton(title: "Dislike", systemImage: "hand.thumbsdown", isSelected: currentLikes == false) {
+                            rateCurrentItem(false)
+                        }
+                    }
+                    .frame(maxWidth: 420)
+                    .padding(.bottom, isControlsVisible ? 90 : 0)
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.top, 14)
-                .padding(.bottom, isControlsVisible ? 120 : 24)
-                .background(
-                    LinearGradient(colors: [.clear, .black.opacity(0.85), .black.opacity(0.95)],
-                                   startPoint: .top, endPoint: .bottom)
-                )
+                .padding(.vertical, 20)
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .transition(.opacity)
             .animation(DT.Animation.fast, value: isControlsVisible)
         }
+    }
+
+    private func ratingButton(title: String, systemImage: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: isSelected ? "\(systemImage).fill" : systemImage)
+                .font(.system(.body, weight: .semibold))
+                .foregroundStyle(isSelected ? .black : .white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.16)),
+                    in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(.white.opacity(0.3), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     /// Landscape (and the always-wide Mac window) lays suggestions out in a row; portrait
@@ -1190,13 +1216,13 @@ extension PlayerView {
     private func suggestionCard(_ suggestion: MediaItem) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             suggestionThumb(suggestion)
-                .frame(width: 200, height: 113)
+                .frame(width: 176, height: 99)
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm))
             Text(suggestion.name)
                 .font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
-                .frame(width: 200, alignment: .leading)
+                .frame(width: 176, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Play \(suggestion.name)")

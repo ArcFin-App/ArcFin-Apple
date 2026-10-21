@@ -117,6 +117,7 @@ struct PlayerView: View {
     @State var castMembers: [MediaPerson] = []
     @State var audioOnly = false
     @State var moreLikeThis: [MediaItem] = []
+    @State var currentLikes: Bool?
     @State var showMoreLikeThis = false
     @State var moreLikeThisDismissed = false
     @State var nextEpisode: MediaItem?
@@ -898,6 +899,7 @@ struct PlayerView: View {
             }
             chapters = detail?.chapters ?? []
             castMembers = detail?.cast ?? []
+            currentLikes = detail?.item.userData?.likes
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
             // Auto's pre-flight pick can't catch everything — a runtime load failure on
@@ -1326,6 +1328,17 @@ struct PlayerView: View {
         if inCredits != showMoreLikeThis {
             withAnimation(DT.Animation.fast) { showMoreLikeThis = inCredits }
         }
+    }
+
+    /// Thumbs rating for what's playing, set from the credits panel; choosing the current
+    /// rating again clears it.
+    func rateCurrentItem(_ value: Bool) {
+        guard let credential, let authHeader else { return }
+        let newValue: Bool? = currentLikes == value ? nil : value
+        currentLikes = newValue
+        HapticManager.impact(.light)
+        let id = item.id
+        Task { try? await client.setRating(credential: credential, authHeader: authHeader, itemId: id, likes: newValue) }
     }
 
     private func startUpNextCountdown() {
