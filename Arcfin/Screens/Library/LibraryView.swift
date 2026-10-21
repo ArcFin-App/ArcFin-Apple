@@ -1099,15 +1099,15 @@ struct LibraryDetailView: View {
 #endif
 #if !os(tvOS)
         .toolbar {
-            if !isCollections {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { Task { await pickRandom() } } label: {
-                        Image(systemName: "dice")
-                    }
-                    .disabled(isPickingRandom)
-                    .accessibilityLabel("Surprise me")
-                    .accessibilityHint("Opens a random title from this library using the current filters")
+            ToolbarItem(placement: .primaryAction) {
+                Button { Task { await pickRandom() } } label: {
+                    Image(systemName: "dice")
                 }
+                .disabled(isPickingRandom)
+                .accessibilityLabel("Surprise me")
+                .accessibilityHint(isCollections
+                    ? "Opens a random collection"
+                    : "Opens a random title from this library using the current filters")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button { showFilterSheet = true } label: {
@@ -1180,7 +1180,13 @@ struct LibraryDetailView: View {
         .onChange(of: extraFilters) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
-        .navigationDestination(item: $randomPick) { MediaDetailView(item: $0) }
+        .navigationDestination(item: $randomPick) { pick in
+            if pick.type == .boxSet {
+                CollectionDetailView(collection: pick)
+            } else {
+                MediaDetailView(item: pick)
+            }
+        }
         .onChange(of: sortOption) { _, newValue in
             UserDefaults.standard.set(newValue.rawValue, forKey: sortDefaultsKey)
             if restoringSort { restoringSort = false; return }
