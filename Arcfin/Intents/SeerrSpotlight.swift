@@ -11,7 +11,7 @@ import SeerrAPI
 /// The personal slice of Seerr that Spotlight and Siri can see: the signed-in user's watchlist
 /// and their requests. Kept as a small JSON snapshot so an intent running outside the app can
 /// answer without logging in to Seerr. The rest of Seerr's catalog is far too large to index.
-struct SeerrSpotlightEntry: Codable, Equatable {
+nonisolated struct SeerrSpotlightEntry: Codable, Equatable {
     var tmdbId: Int
     var mediaType: String
     var title: String
@@ -33,7 +33,7 @@ struct SeerrSpotlightEntry: Codable, Equatable {
     }
 }
 
-enum SeerrSpotlightStore {
+nonisolated enum SeerrSpotlightStore {
     private static let key = "arcfin.seerrSpotlight"
 
     static func load() -> [SeerrSpotlightEntry] {
@@ -71,7 +71,7 @@ struct SeerrTitleEntity: AppEntity, IndexedEntity {
     @Property(title: "Status")
     var status: String
 
-    var kind: String
+    var kind: String = ""
     var posterURL: URL?
     var thumbnailData: Data?
 
