@@ -361,15 +361,45 @@ final class SeerrRepository {
 
     func relatedInfo(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrRelatedInfo? {
         guard let client else { return nil }
-        return try? await client.related(mediaType: mediaType, tmdbId: tmdbId)
+        return try? await client.related(mediaType: mediaType, tmdbId: tmdbId, region: Self.region)
+    }
+
+    func ratings(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrRatings? {
+        guard let client else { return nil }
+        return try? await client.ratings(mediaType: mediaType, tmdbId: tmdbId)
+    }
+
+    /// This device's country, which streaming availability depends on.
+    static var region: String { Locale.current.region?.identifier ?? "US" }
+
+    /// Streaming services available in this country, for picking which get a Home row.
+    func streamingServices() async -> [SeerrWatchProvider] {
+        guard let client else { return [] }
+        async let movies = (try? await client.watchProviders(mediaType: .movie, region: Self.region)) ?? []
+        async let shows = (try? await client.watchProviders(mediaType: .tv, region: Self.region)) ?? []
+        var seen = Set<Int>()
+        return await (movies + shows).filter { seen.insert($0.id).inserted }
+    }
+
+    /// Popular movies and shows on a streaming service here, alternating.
+    func popularOn(_ providerId: Int) async -> [SeerrItem] {
+        guard let client else { return [] }
+        async let movies = (try? await client.discoverByWatchProvider(providerId, mediaType: .movie, region: Self.region)) ?? []
+        async let shows = (try? await client.discoverByWatchProvider(providerId, mediaType: .tv, region: Self.region)) ?? []
+        let (m, t) = await (movies, shows)
+        var mixed: [SeerrItem] = []
+        for index in 0..<max(m.count, t.count) {
+            if index < m.count { mixed.append(m[index]) }
+            if index < t.count { mixed.append(t[index]) }
+        }
+        return await visible(mixed)
     }
 
     /// A Seerr title's age rating, for showing on its page.
     func certification(for item: SeerrItem) async -> String? {
         if let known = ProfileRules.shared.certification(for: item) { return known }
         guard let client else { return nil }
-        let region = Locale.current.region?.identifier ?? "US"
-        return try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region)
+        return try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: Self.region)
     }
 
     // MARK: - Parental controls

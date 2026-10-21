@@ -191,6 +191,9 @@ struct HomeView: View {
     @State private var showSettings = false
     /// Titles the user requested through Seerr that have since arrived in the library.
     @State private var nowAvailable: [MediaItem] = []
+    @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
+    /// "Popular on …" rows, by streaming service id.
+    @State private var serviceRows: [Int: [SeerrItem]] = [:]
     /// The first load has been trying for a while with nothing to show yet; offers a way
     /// out instead of leaving the placeholder shelves up for the whole retry cycle.
     @State private var isSlowFirstLoad = false
@@ -418,6 +421,14 @@ struct HomeView: View {
                     seeAllShelf = SeeAllShelf(title: "Now Available", items: nowAvailable)
                 }) {
                     mediaShelfContent(nowAvailable)
+                }
+            }
+        case .streamingServices:
+            if seerrRepo.isConfigured {
+                ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
+                    if let items = serviceRows[provider.id], !items.isEmpty {
+                        seerrShelf(title: "Popular on \(provider.name)", items: items)
+                    }
                 }
             }
         case .seerrWatchlist:
@@ -747,6 +758,9 @@ struct HomeView: View {
             guard !Task.isCancelled, mediaRepo.isLoading, !mediaRepo.hasAnyContent else { return }
             withAnimation(DT.Animation.fast) { isSlowFirstLoad = true }
         }
+        .task(id: StreamingServicePrefs.decode(streamingServicesData).map(\.id) + [seerrRepo.isConfigured ? 1 : 0]) {
+            await loadServiceRows()
+        }
         .task(id: recentlyAvailableRequests.map(\.id)) {
             await loadNowAvailable(recentlyAvailableRequests)
         }
@@ -792,6 +806,20 @@ struct HomeView: View {
         case "HasActorFromRecentlyPlayed", "HasLikedActor": return "Starring \(name)"
         default: return "Recommended"
         }
+    }
+
+    private func loadServiceRows() async {
+        guard seerrRepo.isConfigured else { return }
+        let providers = StreamingServicePrefs.decode(streamingServicesData)
+        var rows: [Int: [SeerrItem]] = [:]
+        await withTaskGroup(of: (Int, [SeerrItem]).self) { group in
+            for provider in providers {
+                let id = provider.id
+                group.addTask { @MainActor in (id, await seerrRepo.popularOn(id)) }
+            }
+            for await (id, items) in group { rows[id] = items }
+        }
+        serviceRows = rows
     }
 
     /// Requests from the last two months whose title has arrived, newest first.

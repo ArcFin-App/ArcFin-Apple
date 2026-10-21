@@ -8,6 +8,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
     case favorites, topRatedUnwatched
     case nowAvailable
     case suggested, recommendations
+    case streamingServices
     case seerrWatchlist, seerrTrending, seerrPopularMovies, seerrPopularSeries
 
     var id: String { rawValue }
@@ -28,6 +29,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         case .nowAvailable:           "Now Available"
         case .suggested:              "Suggested for You"
         case .recommendations:        "Recommended"
+        case .streamingServices:      "Your Streaming Services"
         case .seerrWatchlist:         "Watchlist"
         case .seerrTrending:          "Trending"
         case .seerrPopularMovies:     "Popular Movies"
@@ -37,7 +39,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
 
     var isSeerr: Bool {
         switch self {
-        case .nowAvailable, .seerrWatchlist, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries: true
+        case .nowAvailable, .streamingServices, .seerrWatchlist, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries: true
         default: false
         }
     }
@@ -58,6 +60,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         case .nowAvailable:           "checkmark.seal"
         case .suggested:              "wand.and.stars"
         case .recommendations:        "hand.thumbsup"
+        case .streamingServices:      "play.tv"
         case .seerrWatchlist:         "bookmark"
         case .seerrTrending:          "chart.line.uptrend.xyaxis"
         case .seerrPopularMovies:     "star"

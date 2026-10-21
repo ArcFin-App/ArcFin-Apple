@@ -398,16 +398,89 @@ public actor SeerrHTTPClient {
         return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
     }
 
-    /// A title's studios (movies) or networks (TV) and keywords, for "more like this" rows.
-    public func related(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrRelatedInfo {
+    /// A title's studios (movies) or networks (TV), keywords, where it's streaming in
+    /// `region`, and the facts for a details section.
+    public func related(mediaType: RequestMediaType, tmdbId: Int, region: String = "US") async throws -> SeerrRelatedInfo {
         try await ensureAuthenticated()
         let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
         let data = try await fetch(baseURL.appendingPathComponent(path))
         let decoded = try JSONDecoder().decode(SeerrRelatedResponse.self, from: data)
         let companies = (mediaType == .tv ? decoded.networks : decoded.productionCompanies) ?? []
-        return SeerrRelatedInfo(
+        var info = SeerrRelatedInfo(
             companies: companies.map { SeerrNamedEntity(id: $0.id, name: $0.name) },
             keywords: (decoded.keywords ?? []).map { SeerrNamedEntity(id: $0.id, name: $0.name) })
+        if let entry = decoded.watchProviders?.first(where: { $0.region == region.uppercased() }) {
+            info.watch = SeerrWatchAvailability(
+                streaming: (entry.flatrate ?? []).map(\.model), rent: (entry.rent ?? []).map(\.model),
+                buy: (entry.buy ?? []).map(\.model), link: entry.link.flatMap(URL.init(string:)))
+        }
+        info.originalTitle = decoded.originalTitle ?? decoded.originalName
+        info.originalLanguage = decoded.originalLanguage
+        info.countries = (decoded.productionCountries ?? []).map(\.name)
+        info.status = decoded.status
+        info.budget = decoded.budget.flatMap { $0 > 0 ? $0 : nil }
+        info.revenue = decoded.revenue.flatMap { $0 > 0 ? $0 : nil }
+        info.createdBy = (decoded.createdBy ?? []).map(\.name)
+        info.networks = (decoded.networks ?? []).map(\.name)
+        info.numberOfSeasons = decoded.numberOfSeasons
+        info.imdbId = decoded.externalIds?.imdbId ?? decoded.imdbId
+        if let next = decoded.nextEpisodeToAir {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            info.nextEpisode = SeerrNextEpisode(
+                name: next.name ?? "", seasonNumber: next.seasonNumber ?? 0,
+                episodeNumber: next.episodeNumber ?? 0, airDate: next.airDate.flatMap(formatter.date(from:)))
+        }
+        return info
+    }
+
+    /// Rotten Tomatoes and IMDb scores (movies get both, shows Rotten Tomatoes only).
+    public func ratings(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrRatings {
+        try await ensureAuthenticated()
+        var result = SeerrRatings()
+        if mediaType == .tv {
+            let data = try await fetch(baseURL.appendingPathComponent("api/v1/tv/\(tmdbId)/ratings"))
+            let rt = try JSONDecoder().decode(SeerrRTResponse.self, from: data)
+            result.criticsScore = rt.criticsScore
+            result.criticsRating = rt.criticsRating
+            result.rottenTomatoesURL = rt.url.flatMap(URL.init(string:))
+        } else {
+            let data = try await fetch(baseURL.appendingPathComponent("api/v1/movie/\(tmdbId)/ratingscombined"))
+            struct Combined: Decodable {
+                struct IMDb: Decodable { let criticsScore: Double?; let url: String? }
+                let rt: SeerrRTResponse?
+                let imdb: IMDb?
+            }
+            let combined = try JSONDecoder().decode(Combined.self, from: data)
+            result.criticsScore = combined.rt?.criticsScore
+            result.criticsRating = combined.rt?.criticsRating
+            result.audienceScore = combined.rt?.audienceScore
+            result.audienceRating = combined.rt?.audienceRating
+            result.rottenTomatoesURL = combined.rt?.url.flatMap(URL.init(string:))
+            result.imdbScore = combined.imdb?.criticsScore
+            result.imdbURL = combined.imdb?.url.flatMap(URL.init(string:))
+        }
+        return result
+    }
+
+    /// The streaming services TMDB lists for a country, most popular first.
+    public func watchProviders(mediaType: RequestMediaType, region: String) async throws -> [SeerrWatchProvider] {
+        try await ensureAuthenticated()
+        var comps = URLComponents(
+            url: baseURL.appendingPathComponent(mediaType == .tv ? "api/v1/watchproviders/tv" : "api/v1/watchproviders/movies"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [URLQueryItem(name: "watchRegion", value: region.uppercased())]
+        let data = try await fetch(comps.url!)
+        return try JSONDecoder().decode([SeerrProviderResponse].self, from: data).map(\.model)
+    }
+
+    /// Popular titles on a streaming service in a country.
+    public func discoverByWatchProvider(_ providerId: Int, mediaType: RequestMediaType, region: String, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage(mediaType == .tv ? "api/v1/discover/tv" : "api/v1/discover/movies",
+                            query: [("watchProviders", "\(providerId)"), ("watchRegion", region.uppercased()),
+                                    ("sortBy", "popularity.desc"), ("page", "\(page)")],
+                            defaultMediaType: mediaType)
     }
 
     /// Server-wide request settings — whether a partial (per-season) request is even offered,
@@ -852,9 +925,54 @@ private struct SeerrCertificationResponse: Decodable {
     let contentRatings: ContentRatings?
 }
 
+private struct SeerrProviderResponse: Decodable {
+    let id: Int
+    let name: String
+    let logoPath: String?
+    var model: SeerrWatchProvider { SeerrWatchProvider(id: id, name: name, logoPath: logoPath) }
+}
+
+private struct SeerrRTResponse: Decodable {
+    let criticsScore: Int?
+    let criticsRating: String?
+    let audienceScore: Int?
+    let audienceRating: String?
+    let url: String?
+}
+
 private struct SeerrRelatedResponse: Decodable {
     struct Named: Decodable { let id: Int; let name: String }
+    struct Country: Decodable { let name: String }
+    struct Creator: Decodable { let name: String }
+    struct ExternalIds: Decodable { let imdbId: String? }
+    struct Episode: Decodable {
+        let name: String?
+        let seasonNumber: Int?
+        let episodeNumber: Int?
+        let airDate: String?
+    }
+    struct WatchEntry: Decodable {
+        let region: String
+        let link: String?
+        let flatrate: [SeerrProviderResponse]?
+        let rent: [SeerrProviderResponse]?
+        let buy: [SeerrProviderResponse]?
+        enum CodingKeys: String, CodingKey { case region = "iso_3166_1", link, flatrate, rent, buy }
+    }
     let productionCompanies: [Named]?
     let networks: [Named]?
     let keywords: [Named]?
+    let watchProviders: [WatchEntry]?
+    let originalTitle: String?
+    let originalName: String?
+    let originalLanguage: String?
+    let productionCountries: [Country]?
+    let status: String?
+    let budget: Int?
+    let revenue: Int?
+    let createdBy: [Creator]?
+    let numberOfSeasons: Int?
+    let nextEpisodeToAir: Episode?
+    let externalIds: ExternalIds?
+    let imdbId: String?
 }

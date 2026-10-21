@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct HomeShelfSettingsView: View {
+    @Environment(SeerrRepository.self) private var seerrRepo
     @AppStorage(HomeShelfPrefs.orderKey) private var orderString = ""
     @AppStorage(HomeShelfPrefs.activeKey) private var activeString = ""
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleShelves = false
@@ -54,6 +55,14 @@ struct HomeShelfSettingsView: View {
                 Text("Home Shelves")
             } footer: {
                 Text(footerText)
+            }
+
+            if seerrRepo.isConfigured {
+                Section {
+                    NavigationLink("Streaming Services") { StreamingServicesView() }
+                } footer: {
+                    Text("Pick the services you use to get a row of what's popular on each, from Seerr.")
+                }
             }
         }
         #if os(iOS)
