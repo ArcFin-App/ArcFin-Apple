@@ -389,7 +389,11 @@ struct HomeView: View {
         // Long press opens the trailer preview sheet (which carries the quick actions in its
         // ••• menu). A context-menu preview isn't interactive, and a custom-sized one
         // confused UIKit about which tightly-packed shelf card was actually touched.
+        #if os(iOS)
         .onLongPressGesture(minimumDuration: 0.4) { showTrailerPreview(item) }
+        #else
+        .contextMenu { quickLookMenu(item) }
+        #endif
         .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
     }
@@ -1231,7 +1235,11 @@ struct HomeView: View {
                 .contextMenu { quickLookMenu(item) }
 #else
                 .buttonStyle(PressableButtonStyle())
+                #if os(iOS)
                 .onLongPressGesture(minimumDuration: 0.4) { showTrailerPreview(item) }
+                #else
+                .contextMenu { quickLookMenu(item) }
+                #endif
                 .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
             }
