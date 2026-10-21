@@ -2,10 +2,10 @@
 
 import SwiftUI
 
-/// Launch animation: behind everything, a tilted wall of the library's recently added posters
-/// drifts into view (when someone has signed in before); in front, a ring draws itself around
-/// the mark, the logo resolves out of a blur inside it, a highlight sweeps across the logo,
-/// and the wordmark tightens into place.
+/// Launch: a dark aurora wakes up behind a horizon of light; the library's recent posters
+/// rise into a slowly turning 3D ring; the logo flips in at its centre and the name spells
+/// itself out letter by letter. Leaving, the logo flies toward the viewer and everything else
+/// falls away, so the app appears to open out of it.
 struct SplashView: View {
     /// Reflects real work still happening (e.g. auth check) — not just a fixed timer. The
     /// exit animation waits for this to go false in addition to the minimum presentation time.
@@ -15,86 +15,57 @@ struct SplashView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var posters = SplashMosaicStore.loadImages()
-    @State private var mosaicReveal: Double = 0
-    @State private var mosaicScale: CGFloat = 1.08
-    @State private var glowOpacity: Double = 0
-    @State private var glowScale: CGFloat = 0.8
-    @State private var ringTrim: CGFloat = 0
-    @State private var ringRotation: Double = -90
-    @State private var ringOpacity: Double = 1
-    @State private var logoScale: CGFloat = 0.78
+    @State private var auroraOpacity: Double = 0
+    @State private var horizonWidth: CGFloat = 0
+    @State private var horizonOpacity: Double = 0
+    @State private var carouselReveal: Double = 0
+    @State private var logoFlip: Double = 90
+    @State private var logoScale: CGFloat = 0.4
     @State private var logoOpacity: Double = 0
-    @State private var logoBlur: CGFloat = 16
-    @State private var shineOffset: CGFloat = -1
-    @State private var wordOpacity: Double = 0
-    @State private var wordTracking: CGFloat = 14
+    @State private var logoBlur: CGFloat = 12
+    @State private var lettersShown = 0
     @State private var spinnerOpacity: Double = 0
     @State private var creditOpacity: Double = 0
-    @State private var sceneOpacity: Double = 1
-    @State private var sceneScale: CGFloat = 1
+    @State private var exiting = false
     @State private var minimumTimeElapsed = false
 
-    private let logoSize: CGFloat = 132
+    private let logoSize: CGFloat = 116
+    private let name = Array("Arcfin")
 
     var body: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
+            aurora
+                .opacity(auroraOpacity)
+                .ignoresSafeArea()
+
+            horizon
+
             if !posters.isEmpty {
-                SplashMosaicView(posters: posters, reveal: mosaicReveal, isAnimated: !reduceMotion)
-                    .scaleEffect(mosaicScale)
-                    .opacity(0.55)
-                    .ignoresSafeArea()
-                // Darken toward the middle and the edges so the mark reads clearly on top.
-                RadialGradient(
-                    colors: [DT.Color.backgroundPrimary.opacity(0.92), DT.Color.backgroundPrimary.opacity(0.25)],
-                    center: .center, startRadius: 40, endRadius: 360
-                )
-                .ignoresSafeArea()
-                LinearGradient(
-                    colors: [DT.Color.backgroundPrimary.opacity(0.7), .clear, DT.Color.backgroundPrimary.opacity(0.9)],
-                    startPoint: .top, endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                SplashPosterCarousel(posters: posters, reveal: carouselReveal, isAnimated: !reduceMotion)
+                    .frame(height: logoSize * 3.2)
+                    .offset(y: -logoSize * 0.35)
+                    .opacity(exiting ? 0 : 1)
+                    .scaleEffect(exiting ? 0.7 : 1)
             }
 
-            // Soft light that blooms behind the mark
-            RadialGradient(
-                colors: [DT.Color.accent.opacity(0.32), DT.Color.accentDeep.opacity(0.10), .clear],
-                center: .center, startRadius: 0, endRadius: 280
-            )
-            .frame(width: 560, height: 560)
-            .scaleEffect(glowScale)
-            .opacity(glowOpacity)
-            .blur(radius: 24)
-            .allowsHitTesting(false)
+            VStack(spacing: 26) {
+                Image("ArcfinLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: logoSize, height: logoSize)
+                    .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25, style: .continuous))
+                    .shadow(color: DT.Color.accent.opacity(0.6), radius: 36)
+                    .shadow(color: .black.opacity(0.7), radius: 20, y: 10)
+                    .rotation3DEffect(.degrees(logoFlip), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+                    .blur(radius: logoBlur)
+                    .scaleEffect(exiting && !reduceMotion ? 7 : logoScale)
+                    .opacity(exiting ? 0 : logoOpacity)
+                    .padding(.top, posters.isEmpty ? 0 : logoSize * 0.2)
 
-            VStack(spacing: 30) {
-                ZStack {
-                    // The "arc": a bright head trailing a fading tail
-                    Circle()
-                        .trim(from: 0, to: ringTrim)
-                        .stroke(
-                            AngularGradient(
-                                colors: [DT.Color.accent.opacity(0), DT.Color.accent, .white],
-                                center: .center),
-                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                        )
-                        .frame(width: logoSize * 1.42, height: logoSize * 1.42)
-                        .rotationEffect(.degrees(ringRotation))
-                        .opacity(ringOpacity)
-                        .shadow(color: DT.Color.accent.opacity(0.7), radius: 10)
-
-                    logo
-                }
-                .frame(height: logoSize * 1.42)
-
-                Text("Arcfin")
-                    .font(.system(.title, design: .rounded, weight: .semibold))
-                    .tracking(wordTracking)
-                    .foregroundStyle(.white)
-                    .opacity(wordOpacity)
-                    .accessibilityHidden(true)
+                wordmark
+                    .opacity(exiting ? 0 : 1)
 
                 ProgressView()
                     .tint(.white)
@@ -107,102 +78,126 @@ struct SplashView: View {
                     .font(.system(.caption2, design: .default, weight: .medium))
                     .tracking(2.5)
                     .textCase(.uppercase)
-                    .foregroundStyle(.white.opacity(0.18))
+                    .foregroundStyle(.white.opacity(0.22))
                     .padding(.bottom, 40)
-                    .opacity(creditOpacity)
+                    .opacity(exiting ? 0 : creditOpacity)
             }
         }
-        .scaleEffect(sceneScale)
-        .opacity(sceneOpacity)
         .onAppear { runSequence() }
         .onChange(of: isLoading) { _, _ in attemptFinish() }
     }
 
-    private var logo: some View {
-        Image("ArcfinLogo")
-            .resizable()
-            .scaledToFit()
-            .frame(width: logoSize, height: logoSize)
-            .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25, style: .continuous))
-            .overlay {
-                // A diagonal highlight passing over the mark once, clipped to its shape
-                LinearGradient(
-                    colors: [.clear, .white.opacity(0.55), .clear],
-                    startPoint: .leading, endPoint: .trailing
-                )
-                .frame(width: logoSize * 0.5)
-                .rotationEffect(.degrees(20))
-                .offset(x: shineOffset * logoSize)
-                .blendMode(.plusLighter)
-                .allowsHitTesting(false)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25, style: .continuous))
-            .shadow(color: DT.Color.accent.opacity(0.5), radius: 40)
-            .shadow(color: .black.opacity(0.6), radius: 22, y: 12)
-            .blur(radius: logoBlur)
-            .scaleEffect(logoScale)
-            .opacity(logoOpacity)
+    // MARK: - Layers
+
+    /// Brand-coloured light slowly shifting across a near-black field.
+    private var aurora: some View {
+        TimelineView(.animation(paused: reduceMotion)) { timeline in
+            let t = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+            let wobble = Float(sin(t * 0.6)) * 0.12
+            let sway = Float(cos(t * 0.45)) * 0.1
+            MeshGradient(
+                width: 3, height: 3,
+                points: [
+                    [0, 0], [0.5 + sway, 0], [1, 0],
+                    [0, 0.5 + wobble], [0.5 - sway, 0.55 + wobble], [1, 0.5 - wobble],
+                    [0, 1], [0.5 + wobble, 1], [1, 1],
+                ],
+                colors: [
+                    DT.Color.backgroundPrimary, Color(hex: "06303B"), DT.Color.backgroundPrimary,
+                    Color(hex: "042A33"), DT.Color.accentDeep.opacity(0.55), Color(hex: "0B1E3A"),
+                    DT.Color.backgroundPrimary, Color(hex: "05222B"), DT.Color.backgroundPrimary,
+                ]
+            )
+        }
     }
+
+    /// A thin line of light that opens out across the screen like a sunrise.
+    private var horizon: some View {
+        Capsule()
+            .fill(
+                LinearGradient(
+                    colors: [.clear, DT.Color.accent, .white, DT.Color.accent, .clear],
+                    startPoint: .leading, endPoint: .trailing)
+            )
+            .frame(width: horizonWidth, height: 2)
+            .shadow(color: DT.Color.accent, radius: 12)
+            .shadow(color: DT.Color.accent.opacity(0.6), radius: 40)
+            .offset(y: logoSize * 1.25)
+            .opacity(horizonOpacity)
+            .allowsHitTesting(false)
+    }
+
+    /// "Arcfin", each letter rising out of a blur in turn.
+    private var wordmark: some View {
+        HStack(spacing: 2) {
+            ForEach(Array(name.enumerated()), id: \.offset) { index, letter in
+                let shown = index < lettersShown
+                Text(String(letter))
+                    .font(.system(.largeTitle, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .opacity(shown ? 1 : 0)
+                    .offset(y: shown ? 0 : 14)
+                    .blur(radius: shown ? 0 : 6)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Arcfin")
+    }
+
+    // MARK: - Sequence
 
     private func runSequence() {
         guard !reduceMotion else {
-            // No drawing, spinning, sweeping or drifting: everything simply fades in.
             withAnimation(.easeOut(duration: 0.4)) {
-                mosaicReveal = 1; mosaicScale = 1
-                glowOpacity = 1; glowScale = 1
-                logoScale = 1; logoOpacity = 1; logoBlur = 0
-                wordOpacity = 1; wordTracking = 2; ringOpacity = 0
+                auroraOpacity = 1
+                carouselReveal = 1
+                logoFlip = 0; logoScale = 1; logoOpacity = 1; logoBlur = 0
+                lettersShown = name.count
+                creditOpacity = 1
             }
-            schedule(after: 0.5) { withAnimation(.easeIn(duration: 0.3)) { creditOpacity = 1 } }
-            scheduleSpinnerAndExit()
+            scheduleSpinnerAndExit(exitAfter: 1.2)
             return
         }
 
-        // 0. The poster wall fades in column by column and settles from a slight zoom
-        withAnimation(.easeOut(duration: 1.2)) { mosaicReveal = 1 }
-        withAnimation(.easeOut(duration: 2.2)) { mosaicScale = 1 }
+        // 1. The aurora wakes and a horizon of light opens across the screen.
+        withAnimation(.easeOut(duration: 1.2)) { auroraOpacity = 1 }
+        withAnimation(.easeOut(duration: 0.25)) { horizonOpacity = 1 }
+        withAnimation(.timingCurve(0.2, 0.9, 0.2, 1, duration: 0.9)) { horizonWidth = 520 }
 
-        // 1. Light blooms and the ring starts drawing, turning as it goes
-        withAnimation(.easeOut(duration: 0.7)) { glowOpacity = 1; glowScale = 1 }
-        withAnimation(.easeInOut(duration: 1.0)) { ringTrim = 1 }
-        withAnimation(.easeInOut(duration: 1.0)) { ringRotation = 270 }
+        // 2. Posters rise into the turning ring.
+        schedule(after: 0.25) {
+            withAnimation(.spring(response: 1.1, dampingFraction: 0.85)) { carouselReveal = 1 }
+        }
 
-        // 2. The logo resolves out of a blur inside the ring
-        schedule(after: 0.3) {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.72)) {
+        // 3. The logo flips in at the centre and sharpens.
+        schedule(after: 0.45) {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.68)) {
+                logoFlip = 0
                 logoScale = 1
                 logoOpacity = 1
             }
-            withAnimation(.easeOut(duration: 0.55)) { logoBlur = 0 }
+            withAnimation(.easeOut(duration: 0.5)) { logoBlur = 0 }
         }
 
-        // 3. Highlight sweeps across the mark
-        schedule(after: 0.85) {
-            withAnimation(.easeInOut(duration: 0.7)) { shineOffset = 1.4 }
-        }
-
-        // 4. The ring dissolves and the wordmark tightens into place
-        schedule(after: 1.05) {
-            withAnimation(.easeOut(duration: 0.45)) { ringOpacity = 0 }
-            withAnimation(.easeOut(duration: 0.6)) {
-                wordOpacity = 1
-                wordTracking = 2
+        // 4. The name spells itself out; the horizon settles to a faint glow.
+        for index in name.indices {
+            schedule(after: 0.95 + Double(index) * 0.07) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) { lettersShown = index + 1 }
             }
         }
+        schedule(after: 1.1) { withAnimation(.easeInOut(duration: 0.8)) { horizonOpacity = 0.35 } }
+        schedule(after: 1.4) { withAnimation(.easeIn(duration: 0.4)) { creditOpacity = 1 } }
 
-        schedule(after: 1.2) { withAnimation(.easeIn(duration: 0.4)) { creditOpacity = 1 } }
-        // The poster wall needs a moment longer to be seen.
-        scheduleSpinnerAndExit(exitAfter: posters.isEmpty ? 1.7 : 2.1)
+        scheduleSpinnerAndExit(exitAfter: posters.isEmpty ? 1.9 : 2.3)
     }
 
-    private func scheduleSpinnerAndExit(exitAfter: Double = 1.2) {
-        // Still loading once the entrance settles: a plain spinner, so the screen doesn't
-        // sit there with nothing indicating that work is happening.
+    private func scheduleSpinnerAndExit(exitAfter: Double) {
+        // Still loading once the entrance settles: a plain spinner, so the screen doesn't sit
+        // there with nothing showing that work is happening.
         schedule(after: exitAfter + 0.2) {
             if isLoading { withAnimation(.easeIn(duration: 0.3)) { spinnerOpacity = 1 } }
         }
-        // Exit after the minimum presentation time; authentication continues in the
-        // background and SessionCheckingView covers a slow check.
+        // Authentication continues in the background; SessionCheckingView covers a slow check.
         schedule(after: exitAfter) {
             minimumTimeElapsed = true
             attemptFinish(force: true)
@@ -214,12 +209,15 @@ struct SplashView: View {
     }
 
     private func attemptFinish(force: Bool = false) {
-        guard minimumTimeElapsed, force || !isLoading else { return }
-        withAnimation(.easeInOut(duration: 0.48)) {
-            sceneOpacity = 0
-            sceneScale = reduceMotion ? 1 : 1.06
+        guard minimumTimeElapsed, !exiting, force || !isLoading else { return }
+        let duration = reduceMotion ? 0.35 : 0.55
+        withAnimation(.easeIn(duration: duration)) {
+            exiting = true
+            auroraOpacity = 0
+            horizonOpacity = 0
+            spinnerOpacity = 0
         }
-        schedule(after: 0.48) { onComplete() }
+        schedule(after: duration) { onComplete() }
     }
 }
 
