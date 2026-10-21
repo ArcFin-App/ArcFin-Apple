@@ -5,12 +5,29 @@ import SwiftUI
 struct HomeShelfSettingsView: View {
     @AppStorage(HomeShelfPrefs.orderKey) private var orderString = ""
     @AppStorage(HomeShelfPrefs.activeKey) private var activeString = ""
+    @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleShelves = false
 
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
+    #if os(iOS)
+    private var editMode: EditMode { shuffleShelves ? .inactive : .active }
+    #endif
+
+    private var footerText: String {
+        shuffleShelves
+            ? "Turning a shelf off hides it from Home — it still only shows when it actually has content."
+            : "Drag to reorder. Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before."
+    }
+
     var body: some View {
         List {
+            Section {
+                Toggle("Shuffle Shelves", isOn: $shuffleShelves)
+            } footer: {
+                Text("Mixes up the order of your shelves every time you open Home. Continue Watching and Next Up stay at the top. Reordering is turned off while this is on.")
+            }
+
             Section {
                 ForEach(order) { shelf in
                     HStack(spacing: 12) {
@@ -32,14 +49,15 @@ struct HomeShelfSettingsView: View {
                     }
                 }
                 .onMove(perform: move)
+                .moveDisabled(shuffleShelves)
             } header: {
                 Text("Home Shelves")
             } footer: {
-                Text("Drag to reorder. Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before.")
+                Text(footerText)
             }
         }
         #if os(iOS)
-        .environment(\.editMode, .constant(.active))
+        .environment(\.editMode, Binding<EditMode>.constant(editMode))
         #endif
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
