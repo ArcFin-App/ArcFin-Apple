@@ -163,6 +163,9 @@ enum SeerrSpotlightIndexer {
             entries[entry.id] = entry
         }
         let all = Array(entries.values).sorted { $0.title < $1.title }.prefix(120)
+        // Requests reload every few minutes; re-indexing (and re-fetching 120 posters) is only
+        // worth it when something actually changed.
+        guard Array(all) != SeerrSpotlightStore.load() else { return }
         SeerrSpotlightStore.save(Array(all))
 
         let entities = await withTaskGroup(of: SeerrTitleEntity.self) { group in

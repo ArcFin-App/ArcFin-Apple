@@ -140,6 +140,9 @@ struct MediaDetailView: View {
         }
         .ignoresSafeArea(edges: .top)
         #if os(iOS)
+        // Pull down to pick up changes made elsewhere (another device, the web UI): watched
+        // state, resume position, the next episode and the season's progress.
+        .refreshable { await refreshAfterPlayback(waitForReport: false) }
         .task(id: item.id) {
             guard let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 120) else { return }
             heroTint = await AverageColor.load(from: url)
@@ -480,10 +483,10 @@ struct MediaDetailView: View {
         if !sameSeries { selectedEpisode = last }
     }
 
-    private func refreshAfterPlayback() async {
+    private func refreshAfterPlayback(waitForReport: Bool = true) async {
         guard let cred = credential, let header = authHeader else { return }
         // The player reports its final position as it closes; give that request a moment to land.
-        try? await Task.sleep(for: .milliseconds(700))
+        if waitForReport { try? await Task.sleep(for: .milliseconds(700)) }
         if let fresh = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id) {
             detail = fresh
         }

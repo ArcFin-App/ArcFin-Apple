@@ -270,6 +270,8 @@ enum ArcfinRouting {
 /// Siri and Spotlight can find them by description and hand them to OpenTitleIntent.
 enum SpotlightIndexer {
     private static let maxEntities = 60
+    /// What was last handed to Spotlight; Home reloads often and usually nothing changed.
+    private static var lastIndexed: [String] = []
 
     static func index(_ items: [MediaItem]) async {
         guard let credential = IntentSession.credential() else { return }
@@ -278,6 +280,9 @@ enum SpotlightIndexer {
             .filter { $0.type == .movie || $0.type == .series || $0.type == .episode }
             .filter { seen.insert($0.id).inserted }
             .prefix(maxEntities)
+        let ids = wanted.map(\.id)
+        guard ids != lastIndexed else { return }
+        lastIndexed = ids
         let thumbnails = await Thumbnails.fetch(for: Array(wanted), credential: credential)
         let entities = wanted.map { item -> MediaEntity in
             var entity = MediaEntity(item: item)
@@ -290,6 +295,7 @@ enum SpotlightIndexer {
 
     /// Called on sign-out / profile switch so another user's titles don't linger.
     static func clear() async {
+        lastIndexed = []
         try? await CSSearchableIndex.default().deleteAllSearchableItems()
     }
 }

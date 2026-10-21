@@ -671,6 +671,9 @@ struct PlayerView: View {
               let (data, _) = try? await URLSession.arcfin.data(from: url),
               let image = PlatformImage(data: data)
         else { return }
+        // Only the current title's artwork is ever read, so a long session of back-to-back
+        // episodes shouldn't keep every previous 600px poster alive in memory.
+        if Self.artworkCache.count >= 8 { Self.artworkCache.removeAll() }
         Self.artworkCache[item.id] = image
         updateNowPlayingInfo()
     }
