@@ -28,6 +28,15 @@ nonisolated enum BackgroundRefresh {
     /// task that finishes it.
     private struct TaskBox: @unchecked Sendable { let task: BGAppRefreshTask }
 
+    /// Forgets what earlier checks saw, so the next account's first run only records state
+    /// instead of announcing its whole library.
+    static func resetState() {
+        let defaults = UserDefaults.standard
+        for key in [seenLibraryKey, seerrStatusKey, announcedWatchlistKey] {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
     static func register() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: BackgroundTaskIdentifier.refresh, using: nil) { task in
             guard let refresh = task as? BGAppRefreshTask else {

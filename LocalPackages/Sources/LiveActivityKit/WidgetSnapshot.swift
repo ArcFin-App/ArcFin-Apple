@@ -74,6 +74,13 @@ public enum WidgetSnapshotStore {
         try? data.write(to: url, options: .atomic)
     }
 
+    /// Removes everything the widgets show: used on sign-out so a Lock Screen or Home Screen
+    /// widget doesn't keep displaying the previous account's titles.
+    public static func clear() {
+        guard let directory else { return }
+        try? FileManager.default.removeItem(at: directory)
+    }
+
     /// Deletes poster files the current snapshot no longer references so the container
     /// doesn't grow every time Continue Watching changes.
     public static func prunePosters(keeping names: Set<String>) {

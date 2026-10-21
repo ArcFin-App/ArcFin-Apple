@@ -11,6 +11,12 @@ import WidgetKit
 enum WidgetSnapshotUpdater {
     private static let maxItems = 6
 
+    /// Sign-out / profile removal: empties the widgets right away.
+    static func clear() {
+        WidgetSnapshotStore.clear()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     @MainActor
     static func update(items: [MediaItem], imageURL: (MediaItem) -> URL?) async {
         let selected = Array(items.prefix(maxItems))

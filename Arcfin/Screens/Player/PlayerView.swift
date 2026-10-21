@@ -898,6 +898,27 @@ struct PlayerView: View {
                 selectedSubtitleIndex = match.index
                 languagePreferenceApplied = true
             }
+            // A show's own remembered choice beats the global defaults above.
+            if ShowTrackMemory.isEnabled, item.type == .episode, let seriesId = item.seriesId,
+               let memory = ShowTrackMemory.load(seriesID: seriesId) {
+                if let language = memory.audio,
+                   let match = info.audioStreams.first(where: { $0.language == language }),
+                   match.index != selectedAudioIndex {
+                    selectedAudioIndex = match.index
+                    languagePreferenceApplied = true
+                }
+                if memory.subtitlesOff {
+                    if selectedSubtitleIndex != nil {
+                        selectedSubtitleIndex = nil
+                        languagePreferenceApplied = true
+                    }
+                } else if let language = memory.subtitle,
+                          let match = info.subtitleStreams.first(where: { $0.language == language }),
+                          match.index != selectedSubtitleIndex {
+                    selectedSubtitleIndex = match.index
+                    languagePreferenceApplied = true
+                }
+            }
             // Jellyfin negotiates audio/subtitle selection server-side (see changeTrack) —
             // a language default that actually changed the pick needs the same re-fetch
             // with explicit indices before the very first play, not just a local index change.
@@ -1479,7 +1500,31 @@ struct PlayerView: View {
     func changeTrack(audioIndex: Int? = nil, subtitleIndex: Int?? = nil) {
         if let audioIndex { selectedAudioIndex = audioIndex }
         if let subtitleIndex { selectedSubtitleIndex = subtitleIndex }
+        rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil)
         reload(errorContext: "switch track")
+    }
+
+    /// Stores the language of a track the viewer just picked, for the rest of the show.
+    private func rememberTracks(audioChanged: Bool, subtitleChanged: Bool) {
+        guard ShowTrackMemory.isEnabled, item.type == .episode, let seriesId = item.seriesId,
+              let info = playbackInfo
+        else { return }
+        var entry = ShowTrackMemory.load(seriesID: seriesId) ?? .init()
+        if audioChanged, let index = selectedAudioIndex,
+           let language = info.audioStreams.first(where: { $0.index == index })?.language {
+            entry.audio = language
+        }
+        if subtitleChanged {
+            if let index = selectedSubtitleIndex {
+                if let language = info.subtitleStreams.first(where: { $0.index == index })?.language {
+                    entry.subtitle = language
+                    entry.subtitlesOff = false
+                }
+            } else {
+                entry.subtitlesOff = true
+            }
+        }
+        ShowTrackMemory.save(entry, seriesID: seriesId)
     }
 
     private func loadSubtitleCues(from info: JellyfinPlaybackInfo, credential: ServerCredential) async {

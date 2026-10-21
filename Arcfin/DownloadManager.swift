@@ -376,10 +376,33 @@ final class DownloadManager: NSObject {
         return active + queuedItemIds
     }
 
-    func pauseQueue() { isQueuePaused = true }
+    /// Items whose transfer is suspended mid-download: the bytes already received are kept and
+    /// the transfer carries on from there when resumed.
+    private(set) var pausedItemIds: Set<String> = []
+
+    func pauseDownload(itemId: String) {
+        guard let task = downloadTasks[itemId], task.state == .running else { return }
+        task.suspend()
+        pausedItemIds.insert(itemId)
+        stats[itemId]?.bytesPerSecond = 0
+        speedSamples[itemId] = nil
+    }
+
+    func resumeDownload(itemId: String) {
+        guard pausedItemIds.remove(itemId) != nil else { return }
+        downloadTasks[itemId]?.resume()
+    }
+
+    /// Stops new items starting and suspends the transfer already in flight.
+    func pauseQueue() {
+        isQueuePaused = true
+        for id in Array(downloadTasks.keys) { pauseDownload(itemId: id) }
+    }
 
     func resumeQueue() {
         isQueuePaused = false
+        for id in pausedItemIds { downloadTasks[id]?.resume() }
+        pausedItemIds = []
         Task { await processQueue() }
     }
 
@@ -636,6 +659,7 @@ final class DownloadManager: NSObject {
         pendingQueue.removeAll { $0.item.id == itemId }
         downloadTasks[itemId]?.cancel()
         downloadTasks[itemId] = nil
+        pausedItemIds.remove(itemId)
         activeItemIds.remove(itemId)
         activeItemTitles[itemId] = nil
         progress[itemId] = nil

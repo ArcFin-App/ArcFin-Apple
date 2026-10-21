@@ -107,7 +107,7 @@ struct DownloadsView: View {
                                         Button { downloadManager.resumeQueue() } label: {
                                             Label("Resume Queue", systemImage: "play.fill")
                                         }
-                                    } else if !downloadManager.queuedItemIds.isEmpty {
+                                    } else if !downloadManager.queuedItemIds.isEmpty || !downloadManager.activeItemIds.isEmpty {
                                         Button { downloadManager.pauseQueue() } label: {
                                             Label("Pause Queue", systemImage: "pause.fill")
                                         }
@@ -400,6 +400,19 @@ struct DownloadsView: View {
                         .contentTransition(.numericText())
                         .animation(.default, value: fraction)
                 }
+                if downloadManager.activeItemIds.contains(itemId), !downloadManager.queuedItemIds.contains(itemId) {
+                    let isPaused = downloadManager.pausedItemIds.contains(itemId)
+                    Button {
+                        if isPaused { downloadManager.resumeDownload(itemId: itemId) }
+                        else { downloadManager.pauseDownload(itemId: itemId) }
+                    } label: {
+                        Image(systemName: isPaused ? "play.circle.fill" : "pause.circle.fill")
+                            .font(.system(.body))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    .accessibilityLabel(isPaused ? "Resume download" : "Pause download")
+                    .buttonStyle(.plain)
+                }
                 Button { downloadManager.cancelDownload(itemId: itemId) } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(.body))
@@ -431,7 +444,9 @@ struct DownloadsView: View {
                     Text("Preparing…")
                 }
                 Spacer()
-                if let stats, stats.bytesPerSecond > 0 {
+                if downloadManager.pausedItemIds.contains(itemId) {
+                    Text("Paused")
+                } else if let stats, stats.bytesPerSecond > 0 {
                     Text("\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s")
                 }
             }

@@ -17,6 +17,8 @@ struct PlaybackSettingsView: View {
     @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
     @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
     @AppStorage("rememberPlaybackSpeed") private var rememberPlaybackSpeed = false
+    @AppStorage(ShowTrackMemory.enabledKey) private var rememberTracksPerShow = true
+    @State private var rememberedShowCount = ShowTrackMemory.rememberedShowCount
     @AppStorage("skipForwardSeconds")  private var skipForwardSeconds  = 10
     @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
 
@@ -188,6 +190,26 @@ struct PlaybackSettingsView: View {
                 .syncLocked("preferredSubtitleLanguage", authManager)
             } footer: {
                 Text("Used to pick a starting audio/subtitle track when a title has a matching language available — otherwise falls back to the server's default.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle(isOn: $rememberTracksPerShow) {
+                    TVRowLabelText(title: "Remember Tracks Per Show")
+                }
+                .tvListRow()
+                .syncLocked(ShowTrackMemory.enabledKey, authManager)
+                if rememberTracksPerShow, rememberedShowCount > 0 {
+                    Button(role: .destructive) {
+                        ShowTrackMemory.clear()
+                        rememberedShowCount = 0
+                    } label: {
+                        Text("Forget \(rememberedShowCount) Remembered \(rememberedShowCount == 1 ? "Show" : "Shows")")
+                    }
+                }
+            } footer: {
+                Text("Pick Japanese audio or turn subtitles off once, and the rest of that show's episodes start the same way. Overrides the preferred languages above for shows you've adjusted.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

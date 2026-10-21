@@ -338,6 +338,9 @@ final class AuthManager {
         #if os(iOS)
         // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
         Task { await SpotlightIndexer.clear() }
+        // Likewise for the widgets and the background notification bookkeeping.
+        WidgetSnapshotUpdater.clear()
+        BackgroundRefresh.resetState()
         #endif
         if case .authenticated(let current) = state, current.id == id {
             if let next = profiles.first {
