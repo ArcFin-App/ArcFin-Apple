@@ -1135,14 +1135,14 @@ extension PlayerView {
                         if suggestionsAreHorizontal {
                             HStack(spacing: 14) {
                                 ForEach(top) { suggestion in
-                                    Button { onPlayNext(suggestion) } label: { suggestionCard(suggestion) }
+                                    Button { playSuggestion(suggestion) } label: { suggestionCard(suggestion) }
                                         .buttonStyle(.plain)
                                 }
                             }
                         } else {
                             VStack(spacing: 10) {
                                 ForEach(top) { suggestion in
-                                    Button { onPlayNext(suggestion) } label: { suggestionRow(suggestion) }
+                                    Button { playSuggestion(suggestion) } label: { suggestionRow(suggestion) }
                                         .buttonStyle(.plain)
                                 }
                             }
@@ -1168,6 +1168,14 @@ extension PlayerView {
             .transition(.opacity)
             .animation(DT.Animation.fast, value: isControlsVisible)
         }
+    }
+
+    /// Closes the panel before handing over, since this view can outlive the item it was
+    /// showing suggestions for.
+    private func playSuggestion(_ suggestion: MediaItem) {
+        moreLikeThisDismissed = true
+        withAnimation(DT.Animation.fast) { showMoreLikeThis = false }
+        onPlayNext(suggestion)
     }
 
     private func ratingButton(title: String, systemImage: String, isSelected: Bool, action: @escaping () -> Void) -> some View {

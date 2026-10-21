@@ -978,6 +978,9 @@ struct PlayerView: View {
 
         // Anything with an Up Next card already has something to watch next; the rest (movies,
         // a series finale) get suggestions instead once the credits start.
+        moreLikeThis = []
+        showMoreLikeThis = false
+        moreLikeThisDismissed = false
         if nextEpisode == nil {
             moreLikeThis = ((try? await client.getSimilarItems(
                 credential: credential, authHeader: authHeader, itemId: item.id, limit: 12)) ?? [])
