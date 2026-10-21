@@ -142,56 +142,6 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
-    /// Movies and series the user has favorited, for Home's Favorites shelf.
-    public func getFavorites(
-        credential: ServerCredential,
-        authHeader: String,
-        limit: Int = 20
-    ) async throws -> [MediaItem] {
-        try await getHomeShelfItems(
-            credential: credential, authHeader: authHeader, limit: limit,
-            extra: [.init(name: "Filters", value: "IsFavorite"),
-                    .init(name: "SortBy", value: "SortName"),
-                    .init(name: "SortOrder", value: "Ascending")])
-    }
-
-    /// Highly rated titles the user hasn't watched — "what should I watch tonight" picks.
-    public func getTopRatedUnwatched(
-        credential: ServerCredential,
-        authHeader: String,
-        limit: Int = 16
-    ) async throws -> [MediaItem] {
-        try await getHomeShelfItems(
-            credential: credential, authHeader: authHeader, limit: limit,
-            extra: [.init(name: "IsPlayed", value: "false"),
-                    .init(name: "MinCommunityRating", value: "7"),
-                    .init(name: "SortBy", value: "CommunityRating"),
-                    .init(name: "SortOrder", value: "Descending")])
-    }
-
-    private func getHomeShelfItems(
-        credential: ServerCredential,
-        authHeader: String,
-        limit: Int,
-        extra: [URLQueryItem]
-    ) async throws -> [MediaItem] {
-        var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
-            resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            .init(name: "IncludeItemTypes", value: "Movie,Series"),
-            .init(name: "Recursive", value: "true"),
-            .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating"),
-            .init(name: "EnableUserData", value: "true"),
-        ] + extra
-        var req = URLRequest(url: comps.url!)
-        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 15
-        let (data, _) = try await URLSession.arcfin.data(for: req)
-        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
-    }
-
     public func getContinueWatching(
         credential: ServerCredential,
         authHeader: String,
@@ -712,6 +662,7 @@ public struct JellyfinMediaClient: Sendable {
         recursive: Bool = true,
         includeItemTypes: String? = nil,
         genres: [String] = [],
+        requireAllGenres: Bool = false,
         years: [Int] = [],
         officialRatings: [String] = [],
         minCommunityRating: Double? = nil,
@@ -723,7 +674,7 @@ public struct JellyfinMediaClient: Sendable {
         isFavorite: Bool? = nil,
         sortBy: String = "SortName",
         sortOrder: String = "Ascending"
-    ) async throws -> (items: [MediaItem], total: Int) {
+    ) async throws -> (items: [MediaItem], total: Int, consumed: Int) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
             resolvingAgainstBaseURL: false)!
@@ -777,7 +728,12 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
-        return (items: page.items.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0)
+        // The server's Genres filter is "any of"; narrowing to "all of" happens here, so
+        // `consumed` reports how many server rows were read for paging.
+        let rows = requireAllGenres && genres.count > 1
+            ? page.items.filter { Set(genres).isSubset(of: $0.genres ?? []) }
+            : page.items
+        return (items: rows.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0, consumed: page.items.count)
     }
 
     /// Available filter facets (genres/years) for a library — from /Items/Filters2, scoped

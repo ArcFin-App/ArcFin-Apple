@@ -1315,7 +1315,8 @@ struct LibraryDetailView: View {
                 libraryId: library.id, startIndex: offset, limit: limit,
                 recursive: true,
                 includeItemTypes: includeTypes,
-                genres: Array(selectedGenres), years: Array(selectedYears),
+                genres: Array(selectedGenres), requireAllGenres: matchesAllGenres,
+                years: Array(selectedYears),
                 officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
                 tags: Array(extraFilters.tags),
                 isHD: extraFilters.quality == .hd ? true : nil,
@@ -1326,12 +1327,10 @@ struct LibraryDetailView: View {
                 sortBy: sortBy ?? sortOption.sortBy, sortOrder: sortOrder ?? sortOption.sortOrder
             )
             total = page.total
-            offset += page.items.count
-            collected += matchesAllGenres
-                ? page.items.filter { selectedGenres.isSubset(of: $0.genres) }
-                : page.items
+            offset += page.consumed
+            collected += page.items
             requests += 1
-            if page.items.isEmpty { offset = total }
+            if page.consumed == 0 { offset = total }
         } while matchesAllGenres && collected.count < limit / 2 && offset < total && requests < 5
         return (collected, offset, total)
     }
