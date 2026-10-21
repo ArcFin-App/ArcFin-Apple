@@ -4,8 +4,7 @@ import SwiftUI
 
 /// Launch animation: behind everything, a tilted wall of the library's recently added posters
 /// drifts into view (when someone has signed in before); in front, the logo resolves out of a
-/// blur as a backlight glows up behind it, a highlight sweeps across it, and the name spells
-/// itself out.
+/// blur as a backlight glows up behind it, and a highlight sweeps across it.
 struct SplashView: View {
     /// Reflects real work still happening (e.g. auth check) — not just a fixed timer. The
     /// exit animation waits for this to go false in addition to the minimum presentation time.
@@ -25,8 +24,6 @@ struct SplashView: View {
     @State private var logoOpacity: Double = 0
     @State private var logoBlur: CGFloat = 16
     @State private var shineOffset: CGFloat = -1
-    @State private var lettersShown = 0
-    @State private var wordSpacing: CGFloat = 12
     @State private var breathing = false
     @State private var spinnerOpacity: Double = 0
     @State private var creditOpacity: Double = 0
@@ -36,7 +33,6 @@ struct SplashView: View {
     @State private var isExiting = false
 
     private let logoSize: CGFloat = 132
-    private let name = Array("Arcfin")
 
     var body: some View {
         ZStack {
@@ -90,20 +86,6 @@ struct SplashView: View {
                     logo
                 }
                 .frame(height: logoSize * 1.42)
-
-                // Each letter rises out of a blur in turn while the spacing closes up.
-                HStack(spacing: wordSpacing) {
-                    ForEach(Array(name.enumerated()), id: \.offset) { index, letter in
-                        let shown = index < lettersShown
-                        Text(String(letter))
-                            .font(.system(.title, design: .rounded, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .opacity(shown ? 1 : 0)
-                            .offset(y: shown ? 0 : 10)
-                            .blur(radius: shown ? 0 : 5)
-                    }
-                }
-                .accessibilityHidden(true)
 
                 ProgressView()
                     .tint(.white)
@@ -160,7 +142,6 @@ struct SplashView: View {
                 mosaicReveal = 1; mosaicScale = 1
                 glowOpacity = 1; glowScale = 1
                 logoScale = 1; logoOpacity = 1; logoBlur = 0
-                lettersShown = name.count; wordSpacing = 1
                 backlightOpacity = 1; backlightScale = 1.35
             }
             schedule(after: 0.5) { withAnimation(.easeIn(duration: 0.3)) { creditOpacity = 1 } }
@@ -193,16 +174,9 @@ struct SplashView: View {
             withAnimation(.easeInOut(duration: 0.7)) { shineOffset = 1.4 }
         }
 
-        // 4. The backlight settles into a slow breathe, and the name spells itself out while
-        //    its letters draw together.
+        // 4. The backlight settles into a slow breathe.
         schedule(after: 1.05) {
-            withAnimation(.easeOut(duration: 0.7)) { wordSpacing = 1 }
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { breathing = true }
-        }
-        for index in name.indices {
-            schedule(after: 1.0 + Double(index) * 0.06) {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) { lettersShown = index + 1 }
-            }
         }
 
         schedule(after: 1.2) { withAnimation(.easeIn(duration: 0.4)) { creditOpacity = 1 } }

@@ -13,7 +13,7 @@ import AppKit
 /// instantly: at that moment nothing is signed in or loaded yet, so they can't come from the
 /// network. Cleared on sign-out so one account's library never appears for another.
 enum SplashMosaicStore {
-    static let maxPosters = 18
+    static let maxPosters = 36
     private static let idsFile = "ids.json"
 
     private static var directory: URL? {
@@ -71,16 +71,16 @@ struct SplashMosaicView: View {
     var reveal: Double
     var isAnimated: Bool
 
-    private let columnCount = 5
+    private let columnCount = 8
     /// Each column is one run of posters shown twice, so scrolling by exactly one run loops
     /// seamlessly.
-    private let run = 4
+    private let run = 6
 
     var body: some View {
         GeometryReader { proxy in
-            let columnWidth = max(proxy.size.width, proxy.size.height) / 4.2
+            let columnWidth = max(proxy.size.width, proxy.size.height) / 7
             let posterHeight = columnWidth * 1.5
-            let spacing: CGFloat = 12
+            let spacing: CGFloat = 8
             let cycle = (posterHeight + spacing) * CGFloat(run)
 
             TimelineView(.animation(paused: !isAnimated)) { timeline in
@@ -97,7 +97,7 @@ struct SplashMosaicView: View {
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: columnWidth, height: posterHeight)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                             }
                         }
                         .offset(y: drift - cycle)
