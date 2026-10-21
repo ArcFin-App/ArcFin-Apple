@@ -2,6 +2,9 @@
 
 import SwiftUI
 import JellyfinAPI
+#if os(iOS)
+import AppIntents
+#endif
 import SeerrAPI
 import AuthCore
 #if os(iOS)
@@ -120,6 +123,18 @@ struct MediaDetailView: View {
         }
         .background(DT.Color.backgroundPrimary)
         .ignoresSafeArea(edges: .top)
+        #if os(iOS)
+        // Handoff to another device, Spotlight, and on-screen awareness: Siri and Apple
+        // Intelligence can resolve "this movie" to the MediaEntity for what's on screen.
+        .userActivity(ArcfinActivity.viewTitle) { activity in
+            activity.title = item.name
+            activity.isEligibleForHandoff = true
+            activity.isEligibleForSearch = true
+            activity.userInfo = ["itemID": item.id]
+            activity.webpageURL = shareURL
+            activity.appEntityIdentifier = EntityIdentifier(for: MediaEntity.self, identifier: item.id)
+        }
+        #endif
         .navigationTitle("")
         #if os(iOS)
         .toolbarBackground(.hidden, for: .navigationBar)

@@ -335,6 +335,10 @@ final class AuthManager {
         let k = keychain
         Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id) }
         profiles.removeAll { $0.id == id }
+        #if os(iOS)
+        // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
+        Task { await SpotlightIndexer.clear() }
+        #endif
         if case .authenticated(let current) = state, current.id == id {
             if let next = profiles.first {
                 persist(active: next)
