@@ -332,16 +332,19 @@ struct CollectionDetailView: View {
                     }
                 } label: {
                     Label(sort.rawValue, systemImage: "arrow.up.arrow.down")
-                        .font(.system(.caption, weight: .semibold))
+                        .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
+                        .frame(minHeight: 44)
                 }
+                .accessibilityLabel("Sort by \(sort.rawValue)")
                 Button {
                     withAnimation(DT.Animation.fast) { showsGrid.toggle() }
                 } label: {
                     Image(systemName: showsGrid ? "list.bullet" : "square.grid.3x2")
                         .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
-                        .frame(width: 32, height: 28)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel(showsGrid ? "Show as list" : "Show as grid")
             }

@@ -72,6 +72,8 @@ struct LoginTextField: View {
                     Button { revealsPassword.toggle() } label: {
                         Image(systemName: revealsPassword ? "eye.slash" : "eye")
                             .foregroundStyle(DT.Color.textSecondary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(revealsPassword ? "Hide password" : "Show password")

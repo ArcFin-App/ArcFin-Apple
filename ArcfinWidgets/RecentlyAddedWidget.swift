@@ -135,7 +135,7 @@ struct RecentlyAddedWidget: Widget {
             RecentlyAddedWidgetView(entry: entry)
         }
         .configurationDisplayName("Recently Added")
-        .description("The newest movies and shows on your server.")
+        .description("See the newest movies and shows on your server.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
     }
 }

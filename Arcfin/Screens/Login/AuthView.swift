@@ -100,7 +100,7 @@ struct AuthView: View {
                     ProgressView().frame(height: 56)
                 } else {
                     Text(qcCode)
-                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
                         .monospacedDigit()
                         .tracking(6)
                         .foregroundStyle(DT.Color.textPrimary)

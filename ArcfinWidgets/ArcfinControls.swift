@@ -13,6 +13,7 @@ struct ResumeWatchingControl: ControlWidget {
             ControlWidgetButton(action: ResumeWatchingIntent()) {
                 Label("Resume Watching", systemImage: "play.fill")
             }
+            .controlWidgetActionHint("Resume watching")
         }
         .displayName("Resume Watching")
         .description("Plays whatever you were watching last.")
@@ -25,9 +26,10 @@ struct DownloadsControl: ControlWidget {
             ControlWidgetButton(action: OpenDownloadsIntent()) {
                 Label("Downloads", systemImage: "arrow.down.circle")
             }
+            .controlWidgetActionHint("Open downloads")
         }
         .displayName("Downloads")
-        .description("Opens your downloads, for watching offline.")
+        .description("Open your downloads to watch offline.")
     }
 }
 
@@ -37,8 +39,9 @@ struct DiscoverControl: ControlWidget {
             ControlWidgetButton(action: OpenDiscoverIntent()) {
                 Label("Discover", systemImage: "sparkle.magnifyingglass")
             }
+            .controlWidgetActionHint("Discover something new")
         }
         .displayName("Discover & Request")
-        .description("Find something new and request it.")
+        .description("Find something new to watch and request it.")
     }
 }

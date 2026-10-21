@@ -771,6 +771,8 @@ extension PlayerView {
                 .frame(height: 32)
                 .background(Color.white.opacity(0.15), in: Capsule())
                 .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("X-Ray: cast")
@@ -808,6 +810,8 @@ extension PlayerView {
                                     .foregroundStyle(.white)
                                     .frame(width: 30, height: 30)
                                     .background(Color.white.opacity(0.15), in: Circle())
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Close X-Ray")
