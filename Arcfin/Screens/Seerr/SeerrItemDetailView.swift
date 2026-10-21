@@ -23,6 +23,11 @@ struct SeerrItemDetailView: View {
     /// The title's age rating for this region, e.g. "PG-13".
     @State private var certification: String?
     @State private var isLoadingDetail = false
+    @State private var heroTint: Color?
+    @State private var moreLikeThis: [SeerrItem] = []
+    @State private var companyRow: (name: String, items: [SeerrItem])?
+    @State private var keywordRow: (name: String, items: [SeerrItem])?
+    @State private var openSeerrItem: SeerrItem?
     @State private var requestingItem: SeerrItem? = nil
     @State private var requestBounceTrigger = 0
     #if os(iOS)
@@ -96,10 +101,14 @@ struct SeerrItemDetailView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.md)
 
+                if !moreLikeThis.isEmpty { discoveryRow("More Like This", moreLikeThis) }
+                if let companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
+                if let keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
         }
-        .screenBackground()
+        .detailPageBackground(tint: heroTint)
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         #if os(iOS)
@@ -123,6 +132,11 @@ struct SeerrItemDetailView: View {
             }
         }
         .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
+        .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
+        .task(id: item.id) {
+            if let url = item.backdropURL ?? item.posterURL { heroTint = await AverageColor.load(from: url) }
+        }
+        .task(id: item.id) { await loadDiscovery() }
         .task {
             isLoadingDetail = true
             detail = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
@@ -305,39 +319,72 @@ struct SeerrItemDetailView: View {
     // MARK: - Hero
 
     private var heroSection: some View {
-        ZStack(alignment: .bottom) {
-            if let url = item.backdropURL ?? item.posterURL {
-                CachedAsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    default: fallbackHero
-                    }
-                }
-            } else { fallbackHero }
-
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
-                    .init(color: DT.Color.backgroundPrimary, location: 1),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-        }
-        .frame(height: 260)
-        .containerRelativeFrame(.horizontal)
-        .clipped()
+        DetailHeroBackdrop(url: item.backdropURL ?? item.posterURL)
     }
 
-    private var fallbackHero: some View {
-        LinearGradient(
-            colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
+    // MARK: - Discovery
+
+    /// Related titles, the studio's (or network's) other titles, and others sharing the
+    /// title's main keyword — each already filtered by the profile's parental controls.
+    private func loadDiscovery() async {
+        async let related = seerrRepo.relatedMedia(mediaType: item.mediaType, mediaId: item.id)
+        async let info = seerrRepo.relatedInfo(mediaType: item.mediaType, tmdbId: item.id)
+        moreLikeThis = Array(await related.filter { $0.id != item.id }.prefix(20))
+        guard let info = await info else { return }
+        if let company = info.companies.first {
+            let items = await seerrRepo.discoverByCompany(company.id, mediaType: item.mediaType).filter { $0.id != item.id }
+            if items.count >= 3 { companyRow = (company.name, Array(items.prefix(20))) }
+        }
+        // Keyword discovery covers movies only.
+        if item.mediaType == .movie, let keyword = info.keywords.first {
+            let items = await seerrRepo.discoverByKeyword(keyword.id).filter { $0.id != item.id }
+            if items.count >= 3 { keywordRow = (keyword.name, Array(items.prefix(20))) }
+        }
+    }
+
+    private func discoveryRow(_ title: String, _ items: [SeerrItem]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(DT.Font.cardTitle)
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+                .padding(.horizontal, DT.Spacing.pagePad)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 12) {
+                    ForEach(items) { related in
+                        Button { openSeerrItem = related } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                CachedAsyncImage(url: related.posterURL) { phase in
+                                    switch phase {
+                                    case .success(let image): image.resizable().scaledToFill()
+                                    default: DT.Color.backgroundSecondary
+                                    }
+                                }
+                                .frame(width: 110, height: 165)
+                                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+                                .overlay(alignment: .topTrailing) {
+                                    if let status = related.availabilityStatus {
+                                        Circle().fill(Color(hex: status.colorHex)).frame(width: 10, height: 10).padding(6)
+                                            .accessibilityLabel(status.label)
+                                    }
+                                }
+                                Text(related.title)
+                                    .font(.system(.caption2, weight: .semibold))
+                                    .foregroundStyle(DT.Color.textPrimary)
+                                    .lineLimit(1)
+                                if let year = related.year {
+                                    Text(year).font(.caption2).foregroundStyle(DT.Color.textSecondary)
+                                }
+                            }
+                            .frame(width: 110)
+                        }
+                        .buttonStyle(PressableButtonStyle())
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+            }
+        }
+        .padding(.bottom, DT.Spacing.md)
     }
 
     // MARK: - Title block

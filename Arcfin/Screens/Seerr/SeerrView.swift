@@ -15,6 +15,8 @@ struct SeerrView: View {
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
     @State private var requestingItem: SeerrItem? = nil
+    /// Popular titles first made in this device's language, when it isn't English.
+    @State private var languageItems: [SeerrItem] = []
 
     private var genresForType: [SeerrGenre] {
         mediaType == .tv ? seerrRepo.tvGenres : seerrRepo.movieGenres
@@ -111,6 +113,9 @@ struct SeerrView: View {
                     if !upcomingForType.isEmpty {
                         upcomingSection
                     }
+                    if !languageItems.isEmpty, let languageName {
+                        itemGrid(title: "Popular in \(languageName)", items: Array(languageItems.prefix(10)), isLoading: false)
+                    }
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
@@ -119,7 +124,9 @@ struct SeerrView: View {
             async let discover: Void = seerrRepo.loadDiscover()
             async let upcoming: Void = seerrRepo.loadUpcoming()
             _ = await (discover, upcoming)
+            await loadLanguageItems()
         }
+        .task(id: mediaType) { await loadLanguageItems() }
     }
 
     // MARK: - Header
@@ -172,6 +179,20 @@ struct SeerrView: View {
     }
 
     // MARK: - Trending / Upcoming / Genre sections
+
+    private var deviceLanguage: String? {
+        guard let code = Locale.current.language.languageCode?.identifier, code != "en" else { return nil }
+        return code
+    }
+
+    private var languageName: String? {
+        deviceLanguage.flatMap { Locale.current.localizedString(forLanguageCode: $0) }
+    }
+
+    private func loadLanguageItems() async {
+        guard let deviceLanguage else { return }
+        languageItems = await seerrRepo.discoverByLanguage(deviceLanguage, mediaType: mediaType)
+    }
 
     private var trendingSection: some View {
         itemGrid(title: "Trending Now", items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
