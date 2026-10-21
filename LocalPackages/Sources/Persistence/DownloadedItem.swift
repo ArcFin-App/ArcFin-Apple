@@ -53,6 +53,19 @@ public final class DownloadedItem {
     /// OfflineProgressSync (SyncEngine) has successfully reported it back to the server.
     public var needsSync: Bool = false
 
+    // Richer page details, saved at download time so the downloaded page reads like the
+    // online one. Defaults keep older downloads (made before these existed) loading as-is.
+    public var tagline: String?
+    public var studios: [String] = []
+    public var directors: [String] = []
+    /// Up to ten billed cast members, with roles and small photos saved alongside.
+    public var castNames: [String] = []
+    public var castRoles: [String] = []
+    public var castPhotoFileNames: [String] = []
+    /// e.g. "4K · HDR10 · HEVC" and "English · Dolby Digital 5.1".
+    public var videoSummary: String?
+    public var audioSummary: String?
+
     public init(
         itemId: String, name: String, typeRaw: String, overview: String? = nil,
         runtimeTicks: Int64 = 0, productionYear: Int? = nil, communityRating: Double? = nil,

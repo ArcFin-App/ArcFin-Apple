@@ -584,6 +584,15 @@ final class DownloadManager: NSObject {
                 introEndSeconds: introEnd, creditsStartSeconds: creditsStart,
                 fileSizeBytes: fileSize
             )
+            downloaded.tagline = detail.taglines.first
+            downloaded.studios = detail.studios
+            downloaded.directors = detail.directors.map(\.name)
+            downloaded.videoSummary = detail.videoStream?.displayTitle
+            downloaded.audioSummary = detail.audioStreams.first(where: \.isDefault)?.displayTitle ?? detail.audioStreams.first?.displayTitle
+            let cast = Array(detail.cast.prefix(10))
+            downloaded.castNames = cast.map(\.name)
+            downloaded.castRoles = cast.map { $0.role ?? "" }
+            downloaded.castPhotoFileNames = await saveCastPhotos(cast, credential: credential, to: dir)
             modelContext.insert(downloaded)
             try? modelContext.save()
             Task { await NotificationManager.notifyDownloadComplete(title: detail.item.name) }
@@ -623,6 +632,28 @@ final class DownloadManager: NSObject {
     /// series since the row already exists. Best-effort: a failure here doesn't fail the
     /// episode download itself, it just leaves the series container without a poster/overview
     /// until a later episode download succeeds in fetching it.
+    /// Small photos of the billed cast, so the downloaded page can show faces offline. An
+    /// empty name keeps the arrays aligned for someone without a photo.
+    private func saveCastPhotos(_ cast: [MediaPerson], credential: ServerCredential, to dir: URL) async -> [String] {
+        var names: [String] = []
+        for person in cast {
+            guard let tag = person.primaryImageTag else { names.append(""); continue }
+            var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Items/\(person.id)/Images/Primary"), resolvingAgainstBaseURL: false)!
+            comps.queryItems = [
+                .init(name: "tag", value: tag), .init(name: "fillWidth", value: "160"),
+                .init(name: "quality", value: "85"), .init(name: "api_key", value: credential.accessToken),
+            ]
+            let fileName = "cast-\(person.id).jpg"
+            if let url = comps.url, let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty,
+               (try? data.write(to: dir.appendingPathComponent(fileName))) != nil {
+                names.append(fileName)
+            } else {
+                names.append("")
+            }
+        }
+        return names
+    }
+
     private func ensureSeriesMetadata(seriesId: String, credential: ServerCredential, authHeader: String) async {
         guard let modelContext else { return }
         let descriptor = FetchDescriptor<DownloadedSeries>(predicate: #Predicate { $0.seriesId == seriesId })

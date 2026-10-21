@@ -30,6 +30,7 @@ struct DownloadedSeriesDetailView: View {
     #endif
     @State private var selection = Set<String>()
     @State private var showBulkDeleteConfirm = false
+    @State private var heroTint: Color?
 
     private var series: DownloadedSeries? { allSeries.first { $0.seriesId == seriesId } }
     private var episodes: [DownloadedItem] { allItems.filter { $0.seriesId == seriesId } }
@@ -56,9 +57,6 @@ struct DownloadedSeriesDetailView: View {
                                     .font(.system(.caption2))
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
-                            Text("· \(episodes.count) episode\(episodes.count == 1 ? "" : "s") downloaded")
-                                .font(.system(.caption2))
-                                .foregroundStyle(DT.Color.textSecondary)
                             if let rating = series?.communityRating, rating > 0 {
                                 HStack(spacing: 2) {
                                     Image(systemName: "star.fill").font(.system(.caption2))
@@ -107,8 +105,11 @@ struct DownloadedSeriesDetailView: View {
         .scrollContentBackground(.hidden)
         .environment(\.editMode, $editMode)
         #endif
-        .screenBackground()
+        .detailPageBackground(tint: heroTint)
         .ignoresSafeArea(edges: .top)
+        .task(id: seriesId) {
+            if let url = heroURL { heroTint = await AverageColor.load(from: url) }
+        }
         .navigationTitle("")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -190,35 +191,43 @@ struct DownloadedSeriesDetailView: View {
         #endif
     }
 
+    private func fileURL(_ name: String?) -> URL? {
+        guard let name, !name.isEmpty else { return nil }
+        return dir.appendingPathComponent(name)
+    }
+
+    private var heroURL: URL? { fileURL(series?.backdropFileName) ?? fileURL(series?.posterFileName) }
+
+    /// The same hero and poster-and-title block as a show's page online.
     private var backdrop: some View {
-        ZStack(alignment: .bottomLeading) {
-            #if canImport(UIKit)
-            if let fileName = series?.backdropFileName ?? series?.posterFileName,
-               let uiImage = UIImage(contentsOfFile: dir.appendingPathComponent(fileName).path) {
-                Image(uiImage: uiImage).resizable().scaledToFill()
-            } else {
-                DT.Color.backgroundSecondary
+        VStack(alignment: .leading, spacing: 0) {
+            DetailHeroBackdrop(url: heroURL)
+            HStack(alignment: .bottom, spacing: 14) {
+                CachedAsyncImage(url: fileURL(series?.posterFileName)) { phase in
+                    switch phase {
+                    case .success(let image): image.resizable().scaledToFill()
+                    default: DT.Color.backgroundSecondary
+                    }
+                }
+                .frame(width: 90, height: 132)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+                .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(series?.name ?? episodes.first?.seriesName ?? "Show")
+                        .font(.system(.title3, weight: .heavy))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .lineLimit(3)
+                    Label("\(episodes.count) episode\(episodes.count == 1 ? "" : "s") downloaded", systemImage: "arrow.down.circle.fill")
+                        .font(.system(.caption2, weight: .semibold))
+                        .foregroundStyle(DT.Color.accent)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            #elseif os(macOS)
-            if let fileName = series?.backdropFileName ?? series?.posterFileName,
-               let nsImage = NSImage(contentsOfFile: dir.appendingPathComponent(fileName).path) {
-                Image(nsImage: nsImage).resizable().scaledToFill()
-            } else {
-                DT.Color.backgroundSecondary
-            }
-            #else
-            DT.Color.backgroundSecondary
-            #endif
-            LinearGradient(colors: [.black.opacity(0.85), .clear], startPoint: .bottom, endPoint: .center)
-            Text(series?.name ?? episodes.first?.seriesName ?? "Show")
-                .font(.system(.title2, design: .default, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(DT.Spacing.pagePad)
-                .shadow(color: .black.opacity(0.6), radius: 6)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, -60)
         }
-        .frame(height: 220)
-        .containerRelativeFrame(.horizontal)
-        .clipped()
     }
 
     private var seasonPicker: some View {
