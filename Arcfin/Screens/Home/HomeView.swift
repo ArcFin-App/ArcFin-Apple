@@ -175,6 +175,8 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
     @State private var trailerLaunchItem: MediaItem?
+    /// Play / Resume straight from a poster's long-press menu, without opening its page.
+    @State private var quickPlayRequest: PlaybackRequest?
     #if !os(tvOS)
     @Namespace private var zoomNamespace
     #endif
@@ -725,6 +727,11 @@ struct HomeView: View {
         }
         #if os(iOS)
         .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
+        .fullScreenCover(item: $quickPlayRequest, onDismiss: { Task { await loadHome(force: true) } }) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                quickPlayRequest = PlaybackRequest(item: next, startTicks: 0)
+            }
+        }
         #endif
         #if os(iOS)
         .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenSeerrTitle)) { note in
@@ -1250,6 +1257,12 @@ struct HomeView: View {
     @ViewBuilder
     private func longPressMenu(_ item: MediaItem) -> some View {
         #if os(iOS)
+        if item.type == .movie || item.type == .episode {
+            let ticks = (item.userData?.played == true) ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+            Button { quickPlayRequest = PlaybackRequest(item: item, startTicks: ticks) } label: {
+                Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+            }
+        }
         Button { trailerLaunchItem = item } label: {
             Label("Play Trailer", systemImage: "play.rectangle")
         }

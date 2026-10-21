@@ -983,6 +983,7 @@ struct LibraryDetailView: View {
     @State private var sortOption: LibrarySortOption = .nameAsc
     @State private var randomPick: MediaItem?
     @State private var trailerLaunchItem: MediaItem?
+    @State private var quickPlayRequest: PlaybackRequest?
     @State private var isPickingRandom = false
     /// Set while load() restores the saved sort, so the resulting onChange doesn't fire a
     /// second fetch on top of the initial one.
@@ -1192,6 +1193,11 @@ struct LibraryDetailView: View {
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
         #if os(iOS)
         .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
+        .fullScreenCover(item: $quickPlayRequest) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                quickPlayRequest = PlaybackRequest(item: next, startTicks: 0)
+            }
+        }
         #endif
         .navigationDestination(item: $randomPick) { pick in
             if pick.type == .boxSet {
@@ -1253,6 +1259,12 @@ struct LibraryDetailView: View {
     @ViewBuilder
     private func libraryMenu(_ item: MediaItem) -> some View {
         #if os(iOS)
+        if item.type == .movie || item.type == .episode {
+            let ticks = (item.userData?.played == true) ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+            Button { quickPlayRequest = PlaybackRequest(item: item, startTicks: ticks) } label: {
+                Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+            }
+        }
         Button { trailerLaunchItem = item } label: {
             Label("Play Trailer", systemImage: "play.rectangle")
         }
