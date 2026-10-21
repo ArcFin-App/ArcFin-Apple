@@ -1407,11 +1407,15 @@ struct LibraryFilterList: View {
             // macOS — a known-unreliable style inside a List on that platform. Plain
             // tappable rows, same pattern as the Genre/Year sections below, work
             // identically everywhere since nothing depends on a platform picker style.
-            Section("Sort By") {
-                ForEach(LibrarySortOption.allCases) { option in
-                    filterRow(option.rawValue, isSelected: sortOption == option) {
-                        sortOption = option
+            Section {
+                DisclosureGroup {
+                    ForEach(LibrarySortOption.allCases) { option in
+                        filterRow(option.rawValue, isSelected: sortOption == option) {
+                            sortOption = option
+                        }
                     }
+                } label: {
+                    LabeledContent("Sort By", value: sortOption.rawValue)
                 }
             }
 
@@ -1426,7 +1430,8 @@ struct LibraryFilterList: View {
             }
 
             if !availableGenres.isEmpty {
-                Section("Genre") {
+                Section {
+                    DisclosureGroup {
                     if selectedGenres.count > 1 {
                         Picker("Match", selection: $extraFilters.matchAllGenres) {
                             Text("Any").tag(false)
@@ -1439,15 +1444,22 @@ struct LibraryFilterList: View {
                             toggle(genre, in: &selectedGenres)
                         }
                     }
+                    } label: {
+                        LabeledContent("Genre", value: Self.summary(selectedGenres))
+                    }
                 }
             }
 
             if !availableYears.isEmpty {
-                Section("Year") {
-                    ForEach(availableYears, id: \.self) { year in
-                        filterRow(String(year), isSelected: selectedYears.contains(year)) {
-                            toggle(year, in: &selectedYears)
+                Section {
+                    DisclosureGroup {
+                        ForEach(availableYears, id: \.self) { year in
+                            filterRow(String(year), isSelected: selectedYears.contains(year)) {
+                                toggle(year, in: &selectedYears)
+                            }
                         }
+                    } label: {
+                        LabeledContent("Year", value: Self.summary(Set(selectedYears.map(String.init))))
                     }
                 }
             }
@@ -1493,11 +1505,15 @@ struct LibraryFilterList: View {
             }
 
             if !availableTags.isEmpty {
-                Section("Tags") {
-                    ForEach(availableTags, id: \.self) { tag in
-                        filterRow(tag, isSelected: extraFilters.tags.contains(tag)) {
-                            toggle(tag, in: &extraFilters.tags)
+                Section {
+                    DisclosureGroup {
+                        ForEach(availableTags, id: \.self) { tag in
+                            filterRow(tag, isSelected: extraFilters.tags.contains(tag)) {
+                                toggle(tag, in: &extraFilters.tags)
+                            }
                         }
+                    } label: {
+                        LabeledContent("Tags", value: Self.summary(extraFilters.tags))
                     }
                 }
             }
@@ -1516,6 +1532,14 @@ struct LibraryFilterList: View {
                     }
                 }
             }
+        }
+    }
+
+    private static func summary(_ selected: Set<String>) -> String {
+        switch selected.count {
+        case 0: "Any"
+        case 1: selected.first ?? "Any"
+        default: "\(selected.count) selected"
         }
     }
 
