@@ -182,6 +182,7 @@ public enum SettingsSyncRegistry {
         .init("hapticsEnabled", .bool),
         .init("mergeContinueWatchingAndUpNext", .bool),
         .init("heroVideoBackdropsEnabled", .bool),
+        .init("shuffleHomeShelves", .bool),
         // Notifications
         .init("notifyNewContent", .bool),
         .init("notifyDownload", .bool),
