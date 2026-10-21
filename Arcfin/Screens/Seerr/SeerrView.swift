@@ -13,6 +13,7 @@ struct SeerrView: View {
     @State private var searchText = ""
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>?
     @State private var requestingItem: SeerrItem? = nil
 
     private var genresForType: [SeerrGenre] {
@@ -438,11 +439,17 @@ struct SeerrView: View {
 
     // MARK: - Search
 
+    /// Debounced, and a response for an older query never replaces a newer one's results.
     private func performSearch(query: String) {
+        searchTask?.cancel()
         guard !query.isEmpty else { searchResults = []; isSearching = false; return }
         isSearching = true
-        Task {
-            searchResults = await seerrRepo.search(query: query)
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            let results = await seerrRepo.search(query: query)
+            guard !Task.isCancelled else { return }
+            searchResults = results
             isSearching = false
         }
     }
