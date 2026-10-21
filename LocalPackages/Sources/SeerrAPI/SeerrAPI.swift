@@ -319,8 +319,12 @@ public struct SeerrWatchProvider: Sendable, Identifiable, Equatable, Hashable, C
 /// Where a title can be watched in one country.
 public struct SeerrWatchAvailability: Sendable, Equatable {
     public let streaming: [SeerrWatchProvider]
+    public var free: [SeerrWatchProvider] = []
+    public var ads: [SeerrWatchProvider] = []
     public let rent: [SeerrWatchProvider]
     public let buy: [SeerrWatchProvider]
+
+    public var isEmpty: Bool { streaming.isEmpty && free.isEmpty && ads.isEmpty && rent.isEmpty && buy.isEmpty }
     /// TMDB's page listing every option, with links out to each service.
     public let link: URL?
 }

@@ -18,12 +18,13 @@ struct TitleInsights: View {
 
     @State private var info: SeerrRelatedInfo?
     @State private var ratings: SeerrRatings?
+    @State private var region = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.lg) {
             if let ratings, !ratings.isEmpty { ratingsRow(ratings) }
             if let next = info?.nextEpisode { nextEpisodeRow(next) }
-            if let watch = info?.watch, !(watch.streaming.isEmpty && watch.rent.isEmpty && watch.buy.isEmpty) {
+            if let watch = info?.watch, !watch.isEmpty {
                 whereToWatch(watch)
             }
             if !detailRows.isEmpty { detailsList }
@@ -34,6 +35,7 @@ struct TitleInsights: View {
 
     private func load() async {
         guard seerrRepo.isConfigured, let tmdbId, let mediaType else { return }
+        region = await seerrRepo.region()
         async let fetchedInfo = seerrRepo.relatedInfo(mediaType: mediaType, tmdbId: tmdbId)
         async let fetchedRatings = seerrRepo.ratings(mediaType: mediaType, tmdbId: tmdbId)
         (info, ratings) = await (fetchedInfo, fetchedRatings)
@@ -114,50 +116,56 @@ struct TitleInsights: View {
 
     // MARK: - Where to watch
 
+    /// Every way to watch it in Seerr's country, grouped the way the services sell it.
     private func whereToWatch(_ watch: SeerrWatchAvailability) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Where to Watch")
-                    .font(DT.Font.cardTitle)
-                    .foregroundStyle(DT.Color.textPrimary)
-                Spacer()
-                if let link = watch.link {
-                    Button("All Options") { openURL(link) }
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(DT.Color.accent)
-                }
-            }
-            if !watch.streaming.isEmpty {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(region.isEmpty ? "Where to Watch" : "Where to Watch in \(Locale.current.localizedString(forRegionCode: region) ?? region)")
+                .font(DT.Font.cardTitle)
+                .foregroundStyle(DT.Color.textPrimary)
+            providerGroup("Stream", watch.streaming)
+            providerGroup("Free", watch.free)
+            providerGroup("With Ads", watch.ads)
+            providerGroup("Rent", watch.rent)
+            providerGroup("Buy", watch.buy)
+            // JustWatch supplies this data through TMDB, which asks for it to be credited.
+            Text("Availability from JustWatch")
+                .font(.caption2)
+                .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
+        }
+    }
+
+    @ViewBuilder
+    private func providerGroup(_ title: String, _ providers: [SeerrWatchProvider]) -> some View {
+        if !providers.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(watch.streaming) { provider in
-                            VStack(spacing: 4) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ForEach(providers) { provider in
+                            VStack(spacing: 5) {
                                 CachedAsyncImage(url: provider.logoURL) { phase in
                                     switch phase {
                                     case .success(let image): image.resizable().scaledToFill()
                                     default: DT.Color.backgroundTertiary
                                     }
                                 }
-                                .frame(width: 48, height: 48)
-                                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                .frame(width: 52, height: 52)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.white.opacity(0.08), lineWidth: 1))
                                 Text(provider.name)
                                     .font(.caption2)
-                                    .foregroundStyle(DT.Color.textSecondary)
-                                    .lineLimit(1)
+                                    .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
                             }
-                            .frame(width: 64)
+                            .frame(width: 70)
                             .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(provider.name), \(title.lowercased())")
                         }
                     }
                 }
-            }
-            let others = Set(watch.rent.map(\.id) + watch.buy.map(\.id)).count
-            if others > 0 {
-                Text(watch.streaming.isEmpty
-                     ? "To rent or buy from \(others) store\(others == 1 ? "" : "s")."
-                     : "Also to rent or buy from \(others) store\(others == 1 ? "" : "s").")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
         }
     }

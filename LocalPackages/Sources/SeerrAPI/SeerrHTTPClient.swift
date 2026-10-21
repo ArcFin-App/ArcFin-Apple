@@ -410,9 +410,12 @@ public actor SeerrHTTPClient {
             companies: companies.map { SeerrNamedEntity(id: $0.id, name: $0.name) },
             keywords: (decoded.keywords ?? []).map { SeerrNamedEntity(id: $0.id, name: $0.name) })
         if let entry = decoded.watchProviders?.first(where: { $0.region == region.uppercased() }) {
-            info.watch = SeerrWatchAvailability(
+            var watch = SeerrWatchAvailability(
                 streaming: (entry.flatrate ?? []).map(\.model), rent: (entry.rent ?? []).map(\.model),
                 buy: (entry.buy ?? []).map(\.model), link: entry.link.flatMap(URL.init(string:)))
+            watch.free = (entry.free ?? []).map(\.model)
+            watch.ads = (entry.ads ?? []).map(\.model)
+            info.watch = watch
         }
         info.originalTitle = decoded.originalTitle ?? decoded.originalName
         info.originalLanguage = decoded.originalLanguage
@@ -1001,9 +1004,11 @@ private struct SeerrRelatedResponse: Decodable {
         let region: String
         let link: String?
         let flatrate: [SeerrProviderResponse]?
+        let free: [SeerrProviderResponse]?
+        let ads: [SeerrProviderResponse]?
         let rent: [SeerrProviderResponse]?
         let buy: [SeerrProviderResponse]?
-        enum CodingKeys: String, CodingKey { case region = "iso_3166_1", link, flatrate, rent, buy }
+        enum CodingKeys: String, CodingKey { case region = "iso_3166_1", link, flatrate, free, ads, rent, buy }
     }
     let productionCompanies: [Named]?
     let networks: [Named]?
