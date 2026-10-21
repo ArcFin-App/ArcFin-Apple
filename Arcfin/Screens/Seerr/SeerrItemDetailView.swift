@@ -101,6 +101,10 @@ struct SeerrItemDetailView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.md)
 
+                TitleInsights(tmdbId: item.id, mediaType: item.mediaType)
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .padding(.bottom, DT.Spacing.lg)
+
                 if !moreLikeThis.isEmpty { discoveryRow("More Like This", moreLikeThis) }
                 if let companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
                 if let keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }

@@ -479,7 +479,7 @@ public struct JellyfinMediaClient: Sendable {
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters,Trickplay,RemoteTrailers"),
+            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters,Trickplay,RemoteTrailers,OriginalTitle,ProductionLocations,ExternalUrls,Tags,MediaSources,AirTime"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -1248,9 +1248,37 @@ private struct ItemDetailResponse: Decodable {
     let trickplay: [String: [String: TrickplayInfoResponse]]?
     let remoteTrailers: [RemoteTrailerResponse]?
     let criticRating: Double?
+    let originalTitle: String?
+    let productionLocations: [String]?
+    let tags: [String]?
+    let status: String?
+    let airDays: [String]?
+    let airTime: String?
+    let premiereDate: String?
+    let endDate: String?
+    let externalUrls: [ExternalUrlResponse]?
+    let mediaSources: [MediaSourceSummary]?
+
+    struct ExternalUrlResponse: Decodable {
+        let name: String?
+        let url: String?
+        enum CodingKeys: String, CodingKey { case name = "Name", url = "Url" }
+    }
+
+    struct MediaSourceSummary: Decodable {
+        let id: String
+        let name: String?
+        let container: String?
+        let size: Int64?
+        let bitrate: Int?
+        enum CodingKeys: String, CodingKey { case id = "Id", name = "Name", container = "Container", size = "Size", bitrate = "Bitrate" }
+    }
 
     enum CodingKeys: String, CodingKey {
-        case criticRating = "CriticRating"
+        case criticRating = "CriticRating", originalTitle = "OriginalTitle"
+        case productionLocations = "ProductionLocations", tags = "Tags", status = "Status"
+        case airDays = "AirDays", airTime = "AirTime", premiereDate = "PremiereDate", endDate = "EndDate"
+        case externalUrls = "ExternalUrls", mediaSources = "MediaSources"
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
         case imageTags = "ImageTags", backdropImageTags = "BackdropImageTags"
         case userData = "UserData", productionYear = "ProductionYear"
@@ -1289,7 +1317,7 @@ private struct ItemDetailResponse: Decodable {
             seriesPrimaryImageTag: seriesPrimaryImageTag,
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
         )
-        return MediaItemDetail(
+        var detail = MediaItemDetail(
             item: mediaItem,
             people: people?.compactMap { p in
                 MediaPerson(id: p.id, name: p.name, role: p.role,
@@ -1311,6 +1339,28 @@ private struct ItemDetailResponse: Decodable {
             } ?? [],
             criticRating: criticRating
         )
+        detail.originalTitle = originalTitle
+        detail.productionLocations = productionLocations ?? []
+        detail.tags = tags ?? []
+        detail.status = status
+        detail.airDays = airDays ?? []
+        detail.airTime = airTime
+        detail.premiereDate = premiereDate.flatMap(Self.parseDay)
+        detail.endDate = endDate.flatMap(Self.parseDay)
+        detail.externalLinks = (externalUrls ?? []).compactMap { link in
+            guard let name = link.name, let url = link.url.flatMap(URL.init(string:)) else { return nil }
+            return ExternalLink(name: name, url: url)
+        }
+        detail.files = (mediaSources ?? []).map {
+            MediaFileInfo(id: $0.id, name: $0.name, container: $0.container, sizeBytes: $0.size, bitrate: $0.bitrate)
+        }
+        return detail
+    }
+
+    private static func parseDay(_ raw: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter.date(from: String(raw.prefix(10)))
     }
 }
 

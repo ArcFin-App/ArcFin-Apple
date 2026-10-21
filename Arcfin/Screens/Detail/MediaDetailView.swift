@@ -974,6 +974,16 @@ struct MediaDetailView: View {
         if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
             jellyfinRecommendedSection(jellyfinRecommended)
         }
+
+        // Scores, where else it's streaming, and the details list. An episode's TMDB id is
+        // the episode's, which Seerr's title lookups don't take, so episodes show the
+        // server's details only.
+        TitleInsights(
+            tmdbId: item.type == .episode ? nil : (detail?.item.tmdbId ?? item.tmdbId),
+            mediaType: seerrMediaType(for: item),
+            detail: detail)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, DT.Spacing.md)
     }
 
     // MARK: - Overview
