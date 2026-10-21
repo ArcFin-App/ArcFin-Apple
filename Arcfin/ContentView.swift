@@ -141,7 +141,6 @@ struct ContentView: View {
         case .checkingSession:
             SessionCheckingView(
                 onSignInManually: { bypassSessionCheck = true },
-                onRetry: { Task { await authManager.checkStoredAuth() } },
                 onGoOffline: { offlineModeEnabled = true }
             )
             .transition(.opacity)

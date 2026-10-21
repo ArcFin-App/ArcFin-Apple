@@ -13,7 +13,6 @@ import Network
 /// it does, and gives them a way out if it genuinely never does.
 struct SessionCheckingView: View {
     let onSignInManually: () -> Void
-    let onRetry: () -> Void
     let onGoOffline: () -> Void
 
     @State private var showOptions = false
@@ -35,22 +34,14 @@ struct SessionCheckingView: View {
                         Text(isOffline ? "You appear to be offline." : "This is taking longer than usual.")
                             .font(.system(.footnote, design: .default))
                             .foregroundStyle(DT.Color.textSecondary)
-                        Button(action: onRetry) {
-                            Text("Retry")
-                                .font(.system(.subheadline, design: .default, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(DT.Color.accent)
                         Button(action: onGoOffline) {
                             Label("Watch Downloads Offline", systemImage: "arrow.down.circle")
                                 .font(.system(.subheadline, design: .default, weight: .semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(DT.Color.textPrimary)
+                        .buttonStyle(.borderedProminent)
+                        .tint(DT.Color.accent)
                         Button(action: onSignInManually) {
                             Text("Sign In Instead")
                                 .font(.system(.subheadline, design: .default, weight: .medium))
@@ -81,7 +72,7 @@ struct SessionCheckingView: View {
 }
 
 #Preview {
-    SessionCheckingView(onSignInManually: {}, onRetry: {}, onGoOffline: {})
+    SessionCheckingView(onSignInManually: {}, onGoOffline: {})
 }
 #endif
 
