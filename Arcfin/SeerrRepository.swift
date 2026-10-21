@@ -125,7 +125,9 @@ final class SeerrRepository {
 
     func loadWatchlist() async {
         guard let client else { return }
-        watchlist = await visible((try? await client.watchlist()) ?? [])
+        // A failed fetch keeps what's shown, so the shelf doesn't vanish and come back.
+        guard let fetched = try? await client.watchlist() else { return }
+        watchlist = await visible(fetched)
         indexForSpotlight()
     }
 
@@ -203,11 +205,11 @@ final class SeerrRepository {
 
     func loadUpcoming() async {
         guard let client else { return }
-        async let m = (try? await client.upcomingMovies()) ?? []
-        async let t = (try? await client.upcomingTV()) ?? []
+        async let m = try? await client.upcomingMovies()
+        async let t = try? await client.upcomingTV()
         let (movies, tv) = await (m, t)
-        upcomingMovies = await visible(movies)
-        upcomingTV = await visible(tv)
+        if let movies { upcomingMovies = await visible(movies) }
+        if let tv { upcomingTV = await visible(tv) }
     }
 
     func discoverByGenre(_ genreId: Int, mediaType: RequestMediaType) async -> [SeerrItem] {

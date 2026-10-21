@@ -818,7 +818,9 @@ struct HomeView: View {
                 let id = provider.id
                 group.addTask { @MainActor in (id, await seerrRepo.popularOn(id)) }
             }
-            for await (id, items) in group { rows[id] = items }
+            // An empty answer is far more often a failed request than an empty catalogue; the
+            // row keeps what it had rather than disappearing until the next load.
+            for await (id, items) in group { rows[id] = items.isEmpty ? serviceRows[id] : items }
         }
         serviceRows = rows
     }
@@ -859,7 +861,7 @@ struct HomeView: View {
                 if let item { found[index] = item }
             }
         }
-        guard !Task.isCancelled else { return }
+        guard !Task.isCancelled, !(found.isEmpty && !nowAvailable.isEmpty) else { return }
         nowAvailable = found.sorted { $0.key < $1.key }.map(\.value).filter { $0.userData?.played != true }
     }
 
