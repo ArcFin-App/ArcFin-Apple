@@ -1369,9 +1369,17 @@ struct LibraryDetailView: View {
     private func loadFilterOptions() async {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
-        let options = try? await client.getLibraryFilterOptions(
-            credential: cred, authHeader: header, libraryId: library.id, includeItemTypes: includeTypes
-        )
+        let options: (genres: [String], years: [Int], officialRatings: [String], tags: [String])?
+        do {
+            options = try await client.getLibraryFilterOptions(
+                credential: cred, authHeader: header, libraryId: library.id, includeItemTypes: includeTypes
+            )
+        } catch {
+            Telemetry.logger(category: "LibraryView").error(
+                "getLibraryFilterOptions failed for library \(library.id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+            options = nil
+        }
         availableGenres = options?.genres ?? []
         availableYears = options?.years ?? []
         availableRatings = options?.officialRatings ?? []

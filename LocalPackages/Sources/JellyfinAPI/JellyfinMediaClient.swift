@@ -856,7 +856,17 @@ private struct ItemsPage: Decodable {
 }
 
 private struct LibraryFiltersResponse: Decodable {
-    struct NamedFacet: Decodable { let name: String
+    /// Servers differ: Filters2 sends genres as `{Name, Id}` objects, older/legacy ones as
+    /// plain strings. One odd shape must not blank out every facet.
+    struct NamedFacet: Decodable {
+        let name: String
+        init(from decoder: Decoder) throws {
+            if let plain = try? decoder.singleValueContainer().decode(String.self) {
+                name = plain
+            } else {
+                name = try decoder.container(keyedBy: CodingKeys.self).decode(String.self, forKey: .name)
+            }
+        }
         enum CodingKeys: String, CodingKey { case name = "Name" }
     }
     let genres: [NamedFacet]
@@ -868,6 +878,13 @@ private struct LibraryFiltersResponse: Decodable {
         case genres = "Genres"
         case years = "Years"
         case officialRatings = "OfficialRatings"
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        genres = (try? c.decodeIfPresent([NamedFacet].self, forKey: .genres)) ?? []
+        years = (try? c.decodeIfPresent([Int].self, forKey: .years)) ?? []
+        officialRatings = try? c.decodeIfPresent([String].self, forKey: .officialRatings)
+        tags = try? c.decodeIfPresent([String].self, forKey: .tags)
     }
 }
 
