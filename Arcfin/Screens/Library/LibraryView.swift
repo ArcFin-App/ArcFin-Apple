@@ -91,6 +91,15 @@ struct LibraryView: View {
             .navigationDestination(isPresented: $navigateToDownloadsDeepLink) {
                 DownloadsView()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { note in
+                if let term = note.userInfo?["term"] as? String { searchQuery = term }
+            }
+            .onAppear {
+                if let term = UserDefaults.standard.string(forKey: "arcfin.pendingSearch") {
+                    UserDefaults.standard.removeObject(forKey: "arcfin.pendingSearch")
+                    searchQuery = term
+                }
+            }
             // arcfin://downloads — tapping the download Live Activity.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 searchQuery = ""

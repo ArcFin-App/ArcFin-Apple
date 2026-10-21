@@ -111,6 +111,14 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 selectedTab = .browse
             }
+            // A Seerr notification tap: Discover when that tab is on, otherwise Browse.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDiscover)) { _ in
+                selectedTab = visibleTabs.contains(.requests) ? .requests : .browse
+            }
+            // Siri / Shortcuts search: results are shown by the Browse tab.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { _ in
+                selectedTab = .browse
+            }
             #if os(macOS)
             // Cmd+, / Arcfin > Settings… — switches to Home so its own
             // arcfinShowSettings listener (below) can actually present it.
@@ -714,7 +722,11 @@ struct HomeView: View {
         await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: force)
         mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
         #if os(iOS)
-        let indexable = mediaRepo.continueWatching + mediaRepo.recentlyAdded
+        // Everything the shelves already hold: titles in progress or queued up, favorites,
+        // recent additions and what was watched lately, so search covers more than "latest".
+        let indexable = mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.favorites
+            + mediaRepo.recentlyAdded + mediaRepo.recentlyAddedMovies + mediaRepo.recentlyAddedShows
+            + mediaRepo.watchAgain
         Task { await SpotlightIndexer.index(indexable) }
         #endif
         TopShelfBridge.save(

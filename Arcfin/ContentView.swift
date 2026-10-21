@@ -24,6 +24,10 @@ extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
     /// Posted by onOpenURL for arcfin://downloads — tapping the download Live Activity.
     static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
+    /// Posted when a notification about a Seerr request or watchlist item is tapped.
+    static let arcfinShowDiscover = Notification.Name("arcfinShowDiscover")
+    /// Posted with a "term" in userInfo to show in-app search results (Siri / Shortcuts).
+    static let arcfinSearch = Notification.Name("arcfinSearch")
     /// Posted when the user switches away from the Home tab, so a shuffled Home can reorder
     /// itself while it is off-screen.
     static let arcfinHomeTabLeft = Notification.Name("arcfinHomeTabLeft")

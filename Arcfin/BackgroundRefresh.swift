@@ -86,7 +86,7 @@ nonisolated enum BackgroundRefresh {
 
         let fresh = latest.filter { !seen.contains($0.id) }
         guard !fresh.isEmpty else { return }
-        await NotificationManager.notifyNewContent(titles: fresh.map(\.name))
+        await NotificationManager.notifyNewContent(titles: fresh.map(\.name), firstItemID: fresh.first?.id)
     }
 
     // MARK: - Seerr
