@@ -208,6 +208,10 @@ struct HomeView: View {
     #endif
     @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 8, on: .main, in: .common).autoconnect()
+    /// The rotation (and the trailer fetch each new slide starts) only runs while Home is
+    /// actually on screen: the timer kept firing behind other tabs, pushed screens and a
+    /// backgrounded app, loading hero trailers nobody could see.
+    @State private var isHomeVisible = false
 
     /// 2 Continue Watching + 2 Up Next + 6 Recently Added — deduped in case the same item
     /// shows up in more than one list. TabView's page style only instantiates the current
@@ -643,7 +647,7 @@ struct HomeView: View {
         }
         #endif
         .onReceive(heroTimer) { _ in
-            guard heroItems.count > 1 else { return }
+            guard heroItems.count > 1, isHomeVisible, scenePhase == .active else { return }
             // A trailer is actively showing for this slide — let loadHeroVideoBackdrop's own
             // 15s timeout advance instead of jumping away mid-playback just because the
             // regular rotation interval happened to land first.
@@ -667,8 +671,10 @@ struct HomeView: View {
     private var homeObservers: some View {
         homeNavigation
         .onAppear {
+            isHomeVisible = true
             loadHeroVideoBackdrop()
         }
+        .onDisappear { isHomeVisible = false }
         // The order only ever changes while Home is off-screen (tab switch, app backgrounded)
         // or when the user pulls to refresh, so what's on screen never rearranges itself.
         .onReceive(NotificationCenter.default.publisher(for: .arcfinHomeTabLeft)) { _ in
