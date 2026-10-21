@@ -82,7 +82,7 @@ public actor SeerrHTTPClient {
 
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
-    private var loginInFlight = false
+    private var loginTask: Task<Void, Error>?
     private let session: URLSession
     // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
     private let authFailedKey: String
@@ -155,13 +155,18 @@ public actor SeerrHTTPClient {
             throw SeerrError.authFailed
         }
         guard !isAuthenticated else { return }
-        // Actor suspends during network I/O, so concurrent callers can reach here while
-        // a login is already in flight. Skip rather than fan out — the first caller's
-        // login will set isAuthenticated = true before the retry.
-        guard !loginInFlight else { return }
-        loginInFlight = true
-        defer { loginInFlight = false }
-        try await login()
+        // The actor suspends during network I/O, so concurrent callers (Discover fires
+        // several requests at once, alongside Requests) reach here while a login is already
+        // running. They wait for that same login instead of returning early and sending
+        // their request unauthenticated, which came back 401 and surfaced as error -1011.
+        if let loginTask {
+            try await loginTask.value
+            return
+        }
+        let task = Task { try await login() }
+        loginTask = task
+        defer { loginTask = nil }
+        try await task.value
     }
 
     // MARK: - Discover
