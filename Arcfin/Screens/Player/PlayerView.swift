@@ -114,6 +114,7 @@ struct PlayerView: View {
     @State var lastLoadStartedAt: Date?
     @State var networkToast: String?
     @State var chapters: [MediaChapter] = []
+    @State var castMembers: [MediaPerson] = []
     @State var nextEpisode: MediaItem?
     @State var showUpNext = false
     @State var upNextDismissed = false
@@ -860,6 +861,7 @@ struct PlayerView: View {
                 trickplayLoader = TrickplayLoader(credential: credential, authHeader: authHeader, client: client, itemId: item.id, info: trickplay)
             }
             chapters = detail?.chapters ?? []
+            castMembers = detail?.cast ?? []
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
             // Auto's pre-flight pick can't catch everything — a runtime load failure on

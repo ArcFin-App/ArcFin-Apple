@@ -743,6 +743,21 @@ extension PlayerView {
     var mediaInfoSheet: some View {
         NavigationStack {
         List {
+            if !castMembers.isEmpty {
+                Section("Cast") {
+                    ForEach(castMembers) { person in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(person.name)
+                                .foregroundStyle(DT.Color.textPrimary)
+                            if let role = person.role, !role.isEmpty {
+                                Text(role)
+                                    .font(.system(.footnote))
+                                    .foregroundStyle(DT.Color.textSecondary)
+                            }
+                        }
+                    }
+                }
+            }
             if let info = playbackInfo {
                 Section("Video") {
                     if let codec = info.videoStream?.codec {
