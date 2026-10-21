@@ -124,6 +124,10 @@ final class AuthManager {
     /// Watches for network changes (leaving/joining the home Wi-Fi, Wi-Fi↔cellular) and
     /// re-resolves Local vs Remote server URL live — previously this only happened once at
     /// launch, so switching networks mid-session required force-quitting the app.
+    /// Bumped after each settled network change, for work that should retry once the
+    /// connection is back (offline progress sync).
+    private(set) var networkChanges = 0
+
     func startNetworkMonitoring() {
         #if os(iOS)
         guard pathMonitor == nil else { return }
@@ -146,6 +150,7 @@ final class AuthManager {
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
             await reresolveBaseURLIfNeeded()
+            networkChanges += 1
         }
     }
 

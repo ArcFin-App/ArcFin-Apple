@@ -763,6 +763,44 @@ public struct JellyfinMediaClient: Sendable {
         _ = try await URLSession.arcfin.data(for: req)
     }
 
+    /// Writes a resume position and watched state straight to the user's data for an item —
+    /// how progress recorded offline is handed back, since a late "playback stopped" report
+    /// isn't reliably applied to an item that has no session playing it.
+    public func updateUserData(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String,
+        positionTicks: Int64,
+        played: Bool,
+        lastPlayed: Date = Date()
+    ) async throws {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)/UserData")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "PlaybackPositionTicks": played ? 0 : positionTicks,
+            "Played": played,
+            "LastPlayedDate": ISO8601DateFormatter().string(from: lastPlayed),
+        ])
+        req.timeoutInterval = 15
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    /// An item's resume position and watched state for this user, if the server answers.
+    public func getUserData(credential: ServerCredential, authHeader: String, itemId: String) async throws -> UserData? {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)")
+        var req = URLRequest(url: url)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 4
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(JellyfinItemResponse.self, from: data).toMediaItem().userData
+    }
+
     public func markFavorite(
         credential: ServerCredential,
         authHeader: String,

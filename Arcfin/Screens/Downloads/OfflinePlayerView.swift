@@ -5,6 +5,9 @@ import SwiftData
 import AVFoundation
 import AVKit
 import MediaEngine
+import AuthCore
+import JellyfinAPI
+import SyncEngine
 import Persistence
 import SwiftVLC
 #if canImport(UIKit)
@@ -13,9 +16,10 @@ import UIKit
 import AppKit
 #endif
 
-/// Fully offline playback of a DownloadedItem — no network calls of any kind. Simpler than
-/// PlayerView by design: no quality/transcode menu (there's exactly one file), no server
-/// progress reporting (position is saved to the local SwiftData record instead).
+/// Playback of a DownloadedItem from its local file. Simpler than PlayerView by design: no
+/// quality/transcode menu (there's exactly one file). Position is saved to the local
+/// SwiftData record and handed to the server as soon as it's reachable (OfflineProgressSync);
+/// when it's reachable at the start, a newer resume point from another device is used.
 struct OfflinePlayerView: View {
     let downloadedItem: DownloadedItem
     /// Overrides the saved resume position — nil (the default) resumes from
@@ -25,6 +29,8 @@ struct OfflinePlayerView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(DownloadManager.self) private var downloadManager
+    @Environment(AuthManager.self) private var authManager
+    @AppStorage("playbackEngine") private var playbackEnginePreference = PlaybackEngineKind.auto
     @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
 
     // Aether first, same as the online PlayerView — handles whatever container/codec the
@@ -226,7 +232,12 @@ struct OfflinePlayerView: View {
         await activateAudioSession()
         #endif
         let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
-        let startTicks = startPositionOverride ?? downloadedItem.playbackPositionTicks
+        let startTicks = await resumeTicks()
+        // The engine picked in Settings; Aether otherwise (AVFoundation can't open most
+        // downloaded containers, so it isn't offered here).
+        if playbackEnginePreference == .vlc, !(player is VLCEnginePlayer) {
+            player = VLCEnginePlayer()
+        }
         do {
             try await player.load(url: videoURL, startPositionTicks: startTicks)
         } catch where player is AetherEnginePlayer {
@@ -260,6 +271,38 @@ struct OfflinePlayerView: View {
     }
     #endif
 
+    /// Where to start: an explicit Start Over, else the local position, unless the server
+    /// (asked briefly, so offline starts aren't held up) has a newer one from another device.
+    private func resumeTicks() async -> Int64 {
+        if let startPositionOverride { return startPositionOverride }
+        let local = downloadedItem.playbackPositionTicks
+        // Unsynced local progress is the newest there is.
+        guard !downloadedItem.needsSync,
+              let credential = authManager.profiles.first(where: {
+                  $0.id.uuidString == downloadedItem.serverId && $0.userID == downloadedItem.userId
+              })
+        else { return local }
+        let header = authManager.authClient.authHeader(token: credential.accessToken)
+        let itemId = downloadedItem.itemId
+        // Whichever finishes first: the server's answer, or nil after 2.5 seconds.
+        let server: UserData? = await withTaskGroup(of: UserData?.self) { group in
+            group.addTask {
+                let data = try? await JellyfinMediaClient().getUserData(credential: credential, authHeader: header, itemId: itemId)
+                return data ?? nil
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(2.5))
+                return nil
+            }
+            let first = await group.next()
+            group.cancelAll()
+            return first ?? nil
+        }
+        guard let server else { return local }
+        if server.played && server.playbackPositionTicks == 0 { return local }
+        return server.playbackPositionTicks
+    }
+
     private func startProgressSaving() {
         progressSaveTask?.cancel()
         progressSaveTask = Task {
@@ -280,7 +323,24 @@ struct OfflinePlayerView: View {
         // record that playback happened at all while offline.
         downloadedItem.needsSync = true
         try? modelContext.save()
-        if final { progressSaveTask?.cancel() }
+        if final {
+            progressSaveTask?.cancel()
+            syncNow()
+        }
+    }
+
+    /// Hands the position to the server right away when it's reachable; otherwise it waits
+    /// for the next sync (coming back online, the app reopening).
+    private func syncNow() {
+        let profiles = authManager.profiles
+        let authClient = authManager.authClient
+        let context = modelContext
+        Task {
+            await OfflineProgressSync.syncPending(
+                modelContext: context, profiles: profiles,
+                authHeader: { authClient.authHeader(token: $0.accessToken) }
+            )
+        }
     }
 
     // MARK: - Subtitles

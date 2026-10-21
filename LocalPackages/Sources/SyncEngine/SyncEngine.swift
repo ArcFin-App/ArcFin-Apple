@@ -38,13 +38,14 @@ public enum OfflineProgressSync {
             }) else { continue }
 
             let header = authHeader(credential)
-            await client.reportPlaybackStopped(
-                credential: credential, authHeader: header,
-                itemId: item.itemId, mediaSourceId: item.itemId,
-                positionTicks: item.playbackPositionTicks
-            )
-            if item.played {
-                try? await client.markWatched(credential: credential, authHeader: header, itemId: item.itemId, watched: true)
+            do {
+                try await client.updateUserData(
+                    credential: credential, authHeader: header, itemId: item.itemId,
+                    positionTicks: item.playbackPositionTicks, played: item.played
+                )
+            } catch {
+                // Left marked, so the next sync tries again.
+                continue
             }
             item.needsSync = false
             syncedCount += 1

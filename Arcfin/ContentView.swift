@@ -268,6 +268,7 @@ struct ContentView: View {
             if newPhase == .active {
                 Task { await authManager.reresolveBaseURLIfNeeded() }
                 downloadManager.refreshSmartDownloads()
+                syncOfflineProgress()
             }
             #endif
         }
@@ -295,6 +296,7 @@ struct ContentView: View {
         }
         // The explicit "I'm back online" moment — items played while offline sync then too,
         // not just at next cold launch.
+        .onChange(of: authManager.networkChanges) { syncOfflineProgress() }
         .onChange(of: offlineModeEnabled) { _, isOffline in
             if !isOffline { syncOfflineProgress() }
         }
