@@ -237,6 +237,8 @@ enum ArcfinRouting {
 
     @MainActor
     static func showDiscover() {
+        // Read by the tab bar when it first appears, for a cold launch.
+        UserDefaults.standard.set(true, forKey: "arcfin.pendingDiscover")
         Task {
             try? await Task.sleep(for: .seconds(1.5))
             NotificationCenter.default.post(name: .arcfinShowDiscover, object: nil)

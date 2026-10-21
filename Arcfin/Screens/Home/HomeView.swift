@@ -118,11 +118,22 @@ struct MainTabView: View {
             }
             // A Seerr notification tap: Discover when that tab is on, otherwise Browse.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDiscover)) { _ in
+                UserDefaults.standard.removeObject(forKey: "arcfin.pendingDiscover")
                 selectedTab = visibleTabs.contains(.requests) ? .requests : .browse
+            }
+            .onAppear {
+                if UserDefaults.standard.bool(forKey: "arcfin.pendingDiscover") {
+                    UserDefaults.standard.removeObject(forKey: "arcfin.pendingDiscover")
+                    selectedTab = visibleTabs.contains(.requests) ? .requests : .browse
+                }
             }
             // Siri / Shortcuts search: results are shown by the Browse tab.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { _ in
                 selectedTab = .browse
+            }
+            // The Resume Watching control plays from Home.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
+                selectedTab = .home
             }
             #if os(macOS)
             // Cmd+, / Arcfin > Settings… — switches to Home so its own

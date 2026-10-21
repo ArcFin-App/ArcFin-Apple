@@ -4,17 +4,13 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// Controls for Control Center, the Lock Screen and the Action button. Each opens the app at
-// one of its own arcfin:// links, which ContentView routes.
-
-private func arcfinURL(_ path: String) -> URL {
-    URL(string: "arcfin://\(path)")!
-}
+// Controls for Control Center, the Lock Screen and the Action button. Their intents live in
+// Arcfin/Intents/ControlIntents.swift, shared with the app, which performs them.
 
 struct ResumeWatchingControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.psmattas.arcfin.control.resume") {
-            ControlWidgetButton(action: OpenURLIntent(arcfinURL("resume"))) {
+            ControlWidgetButton(action: ResumeWatchingIntent()) {
                 Label("Resume Watching", systemImage: "play.fill")
             }
         }
@@ -26,7 +22,7 @@ struct ResumeWatchingControl: ControlWidget {
 struct DownloadsControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.psmattas.arcfin.control.downloads") {
-            ControlWidgetButton(action: OpenURLIntent(arcfinURL("downloads"))) {
+            ControlWidgetButton(action: OpenDownloadsIntent()) {
                 Label("Downloads", systemImage: "arrow.down.circle")
             }
         }
@@ -38,7 +34,7 @@ struct DownloadsControl: ControlWidget {
 struct DiscoverControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.psmattas.arcfin.control.discover") {
-            ControlWidgetButton(action: OpenURLIntent(arcfinURL("discover"))) {
+            ControlWidgetButton(action: OpenDiscoverIntent()) {
                 Label("Discover", systemImage: "sparkle.magnifyingglass")
             }
         }

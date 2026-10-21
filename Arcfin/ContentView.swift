@@ -75,6 +75,41 @@ struct ContentView: View {
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @State private var showSeerrSetupPrompt = false
 
+    /// Routes an arcfin:// link from a widget, Live Activity, the Top Shelf or a control.
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == "arcfin" else { return }
+        switch url.host {
+        case "play":
+            // arcfin://play/<itemId>. Buffered for a cold launch: Home reads it after loading.
+            guard let itemID = url.pathComponents.dropFirst().first else { return }
+            UserDefaults.standard.set(itemID, forKey: "arcfin.pendingPlayID")
+            NotificationCenter.default.post(name: .arcfinPlayItem, object: nil, userInfo: ["itemID": itemID])
+        case "downloads":
+            // Buffered too: the Browse tab that shows Downloads may not be mounted yet.
+            UserDefaults.standard.set(true, forKey: "arcfin.pendingDownloads")
+            NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
+        case "resume":
+            UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
+            NotificationCenter.default.post(name: .arcfinResume, object: nil)
+        #if os(iOS)
+        case "discover":
+            ArcfinRouting.showDiscover()
+        case "search":
+            ArcfinRouting.search(url.pathComponents.dropFirst().first ?? "")
+        #endif
+        default:
+            break
+        }
+    }
+
+    #if os(iOS)
+    private func consumeControlLink() {
+        guard let link = UserDefaults.standard.string(forKey: ControlRoute.pendingKey), let url = URL(string: link) else { return }
+        UserDefaults.standard.removeObject(forKey: ControlRoute.pendingKey)
+        handleDeepLink(url)
+    }
+    #endif
+
     private var phase: AppPhase {
         guard splashDone else { return .splash }
         if offlineModeEnabled { return .offline }
@@ -190,42 +225,20 @@ struct ContentView: View {
         .environment(statsRepo)
         .environment(downloadManager)
         .environment(syncPlayManager)
-        .onOpenURL { url in
-            guard url.scheme == "arcfin" else { return }
-            switch url.host {
-            case "play":
-                // arcfin://play/<itemId> — from Top Shelf or Siri
-                guard let itemID = url.pathComponents.dropFirst().first else { return }
-                // Buffer for cold-launch: HomeView .task reads this after mediaRepo.load()
-                UserDefaults.standard.set(itemID, forKey: "arcfin.pendingPlayID")
-                // Also post for warm/already-running case
-                NotificationCenter.default.post(
-                    name: .arcfinPlayItem,
-                    object: nil,
-                    userInfo: ["itemID": itemID]
-                )
-            case "downloads":
-                // arcfin://downloads — tapping the download Live Activity.
-                NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
-            case "resume":
-                // Buffered like play: Home reads it once its shelves have loaded.
-                UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
-                NotificationCenter.default.post(name: .arcfinResume, object: nil)
-            #if os(iOS)
-            case "discover":
-                ArcfinRouting.showDiscover()
-            case "search":
-                ArcfinRouting.search(url.pathComponents.dropFirst().first ?? "")
-            #endif
-            default:
-                break
-            }
+        .onOpenURL { handleDeepLink($0) }
+        #if os(iOS)
+        .onReceive(NotificationCenter.default.publisher(for: ControlRoute.notification)) { _ in
+            consumeControlLink()
         }
+        #endif
         .task {
             await authManager.checkStoredAuth()
             #if !os(tvOS)
             await refreshLockRequirement()
             if activeProfileHasPIN { isAppLocked = true }
+            #endif
+            #if os(iOS)
+            consumeControlLink()
             #endif
         }
         .task { authManager.startNetworkMonitoring() }

@@ -101,6 +101,13 @@
 			);
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 		};
+		FA70FDB5305CEA9F00C55248 /* Exceptions for "Arcfin" folder in "ArcfinWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Intents/ControlIntents.swift,
+			);
+			target = FA2E1939305DEF7900513FD4 /* ArcfinWidgetsExtension */;
+		};
 		FAB5D8762FA9621A002031A9 /* Exceptions for "ArcfinTopShelf" folder in "ArcfinTopShelf" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -123,6 +130,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				FA70FDB4305CEA9F00C55247 /* Exceptions for "Arcfin" folder in "Arcfin" target */,
+				FA70FDB5305CEA9F00C55248 /* Exceptions for "Arcfin" folder in "ArcfinWidgetsExtension" target */,
 			);
 			path = Arcfin;
 			sourceTree = "<group>";
