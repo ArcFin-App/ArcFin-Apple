@@ -154,6 +154,7 @@ final class DownloadManager: NSObject {
             guard let authManager, let credential = authManager.state.credential else { return }
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
+            purgeWatchedDownloads()
         }
     }
 
@@ -815,18 +816,49 @@ final class DownloadManager: NSObject {
     private static let smartDownloadsEpisodeCountKey = "smartDownloadsEpisodeCount"
     private static let smartDownloadsStorageBudgetGBKey = "smartDownloadsStorageBudgetGB"
 
-    /// Netflix-style auto-management for shows the user already has downloads/progress in:
-    /// tops up the next few unwatched episodes per show and clears out watched ones to make
-    /// room, all capped by a hard storage budget. Only wired to run at launch (see
-    /// runSmartDownloadsOnLaunch) — deliberately NOT called from performDownload's own
-    /// completion path: that would reenter this same queue (pendingQueue/isProcessingQueue)
-    /// while its own while-loop is still mid-iteration, so startDownload would just append
-    /// and return immediately instead of actually awaiting the download, which would make
-    /// the budget check below (totalDownloadedBytes) race against downloads that haven't
-    /// happened yet. isRunningSmartDownloads still guards reentrancy generally.
+    /// Shows the user asked to keep topped up from the show's own page, with how many
+    /// upcoming episodes to keep. Works with or without the global Smart Downloads toggle.
+    struct KeptShow: Codable, Equatable {
+        var name: String
+        var episodeCount: Int
+    }
+
+    private static let keptShowsKey = "smartDownloadsKeptShows"
+
+    static var keptShows: [String: KeptShow] {
+        guard let data = UserDefaults.standard.data(forKey: keptShowsKey) else { return [:] }
+        return (try? JSONDecoder().decode([String: KeptShow].self, from: data)) ?? [:]
+    }
+
+    /// nil `episodeCount` stops keeping that show; its downloads stay until watched or removed.
+    func setKeptShow(seriesId: String, name: String, episodeCount: Int?) {
+        var shows = Self.keptShows
+        shows[seriesId] = episodeCount.map { KeptShow(name: name, episodeCount: $0) }
+        UserDefaults.standard.set(try? JSONEncoder().encode(shows), forKey: Self.keptShowsKey)
+        if episodeCount != nil { refreshSmartDownloads() }
+    }
+
+    /// Re-checks kept shows from places other than launch: the app coming to the foreground,
+    /// the player closing, or a show being switched on.
+    func refreshSmartDownloads() {
+        guard let authManager, let credential = authManager.state.credential else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        Task { await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader) }
+    }
+
+    /// Keeps the next few unwatched episodes downloaded, for every show with downloads when
+    /// Smart Downloads is on and for each show kept from its own page, and clears out watched
+    /// ones to make room, all capped by a hard storage budget. Deliberately NOT called from
+    /// performDownload's own completion path: that would reenter this same queue
+    /// (pendingQueue/isProcessingQueue) while its own while-loop is still mid-iteration, so
+    /// startDownload would just append and return immediately instead of actually awaiting the
+    /// download, which would make the budget check below (totalDownloadedBytes) race against
+    /// downloads that haven't happened yet. isRunningSmartDownloads guards reentrancy.
     func runSmartDownloadsIfNeeded(credential: ServerCredential, authHeader: String) async {
         guard let modelContext else { return }
-        guard UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false else { return }
+        let globalOn = UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false
+        let kept = Self.keptShows
+        guard globalOn || !kept.isEmpty else { return }
         let wifiOnly = UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true
         guard !wifiOnly || isOnWiFi else { return }
         guard !isRunningSmartDownloads else { return }
@@ -838,12 +870,18 @@ final class DownloadManager: NSObject {
         let budgetBytes = Int64(budgetGB) * 1_000_000_000
 
         let allDownloaded = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
-        let seriesIds = Set(allDownloaded.compactMap { $0.seriesId })
-        guard !seriesIds.isEmpty else { return }
+        var targets: [String: Int] = [:]
+        if globalOn {
+            for seriesId in Set(allDownloaded.compactMap(\.seriesId)) { targets[seriesId] = episodeCount }
+        }
+        for (seriesId, show) in kept { targets[seriesId] = show.episodeCount }
+        guard !targets.isEmpty else { return }
 
-        // Clear fully watched episodes first, freeing space for whatever's next up.
-        for item in allDownloaded where item.seriesId != nil && item.played {
-            deleteDownload(item)
+        // Watched episodes are queued for removal rather than deleted here: this also runs
+        // while a downloads screen may be showing those rows (see markForDeletionAfterWatching).
+        for item in allDownloaded where item.played {
+            guard let seriesId = item.seriesId, targets[seriesId] != nil else { continue }
+            markForDeletionAfterWatching(itemId: item.itemId)
         }
 
         func totalDownloadedBytes() -> Int64 {
@@ -851,8 +889,19 @@ final class DownloadManager: NSObject {
             return current.reduce(0) { $0 + $1.fileSizeBytes }
         }
 
-        for seriesId in seriesIds {
-            guard let nextUp = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: episodeCount) else { continue }
+        for (seriesId, count) in targets {
+            guard let nextUp = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: count) else { continue }
+            // Episodes before the next one up were watched, possibly streamed on another
+            // device, which the downloaded copy's own played flag never hears about.
+            if kept[seriesId] != nil, let first = nextUp.first,
+               let season = first.parentIndexNumber, let episode = first.indexNumber {
+                for item in allDownloaded where item.seriesId == seriesId {
+                    let s = item.seasonNumber ?? 0, e = item.episodeNumber ?? 0
+                    if s < season || (s == season && e < episode) {
+                        markForDeletionAfterWatching(itemId: item.itemId)
+                    }
+                }
+            }
             for episode in nextUp {
                 guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
                 guard totalDownloadedBytes() < budgetBytes else { return }

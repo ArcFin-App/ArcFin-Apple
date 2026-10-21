@@ -39,6 +39,8 @@ struct MediaDetailView: View {
     @State private var isFavorite = false
     @State private var likes: Bool?
     @State private var showSubtitleSearch = false
+    /// Upcoming episodes of this show kept downloaded automatically; 0 when off.
+    @State private var keptEpisodeCount = 0
     @State private var heroTint: Color?
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
@@ -145,6 +147,9 @@ struct MediaDetailView: View {
         // state, resume position, the next episode and the season's progress.
         .refreshable { await refreshAfterPlayback(waitForReport: false) }
         .task(id: item.id) {
+            if let seriesId = seasonSeriesId {
+                keptEpisodeCount = DownloadManager.keptShows[seriesId]?.episodeCount ?? 0
+            }
             guard let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 120) else { return }
             heroTint = await AverageColor.load(from: url)
         }
@@ -489,6 +494,7 @@ struct MediaDetailView: View {
         let last = lastPlayedItem
         lastPlayedItem = nil
         Task { await refreshAfterPlayback() }
+        downloadManager.refreshSmartDownloads()
         guard let last, last.id != item.id else { return }
         let sameSeries = last.type == .episode && last.seriesId != nil && last.seriesId == seasonSeriesId
         if !sameSeries { selectedEpisode = last }
@@ -1334,6 +1340,24 @@ struct MediaDetailView: View {
                 Button { showSubtitleSearch = true } label: {
                     Label("Search for Subtitles…", systemImage: "captions.bubble")
                 }
+            }
+            if let seriesId = seasonSeriesId {
+                Picker(selection: Binding(
+                    get: { keptEpisodeCount },
+                    set: { count in
+                        keptEpisodeCount = count
+                        downloadManager.setKeptShow(seriesId: seriesId, name: item.seriesName ?? item.name,
+                                                    episodeCount: count == 0 ? nil : count)
+                    }
+                )) {
+                    Text("Off").tag(0)
+                    ForEach([1, 2, 3, 5], id: \.self) { count in
+                        Text(count == 1 ? "Next Episode" : "Next \(count) Episodes").tag(count)
+                    }
+                } label: {
+                    Label("Keep Downloaded", systemImage: "arrow.down.circle.dotted")
+                }
+                .pickerStyle(.menu)
             }
         } label: {
             Image(systemName: "ellipsis")

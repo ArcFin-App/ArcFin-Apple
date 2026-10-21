@@ -14,7 +14,9 @@ struct DownloadsSettingsView: View {
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
     @AppStorage("smartDownloadsStorageBudgetGB") private var smartDownloadsStorageBudgetGB = 10
     @Environment(AuthManager.self) private var authManager
+    @Environment(DownloadManager.self) private var downloadManager
     @State private var imageCacheBytes = ImageCache.diskCacheSize
+    @State private var keptShows = DownloadManager.keptShows
 
     var body: some View {
         List {
@@ -75,6 +77,26 @@ struct DownloadsSettingsView: View {
                 Text("Smart Downloads keeps the next unwatched episodes of your shows downloaded automatically, removing watched ones to stay under your storage budget.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            if !keptShows.isEmpty {
+                Section {
+                    ForEach(keptShows.sorted { $0.value.name < $1.value.name }, id: \.key) { seriesId, show in
+                        LabeledContent(show.name, value: show.episodeCount == 1 ? "Next episode" : "Next \(show.episodeCount)")
+                            .swipeActions {
+                                Button("Stop", role: .destructive) {
+                                    downloadManager.setKeptShow(seriesId: seriesId, name: show.name, episodeCount: nil)
+                                    keptShows = DownloadManager.keptShows
+                                }
+                            }
+                    }
+                } header: {
+                    Text("Kept Downloaded")
+                } footer: {
+                    Text("Shows set to Keep Downloaded from their page. Swipe to stop; episodes already downloaded stay until watched.")
+                        .font(.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
             }
 
             #if os(iOS)

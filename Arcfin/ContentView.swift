@@ -242,6 +242,7 @@ struct ContentView: View {
             // Arcfin having noticed yet.
             if newPhase == .active {
                 Task { await authManager.reresolveBaseURLIfNeeded() }
+                downloadManager.refreshSmartDownloads()
             }
             #endif
         }
