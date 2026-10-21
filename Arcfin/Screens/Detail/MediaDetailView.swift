@@ -517,16 +517,33 @@ struct MediaDetailView: View {
                 )
             } else { fallbackHero }
 
+            // Progressive blur: the material only shows toward the bottom edge, so the
+            // image softens as it leaves the frame rather than being covered by a flat band.
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0.35),
+                            .init(color: .black, location: 1),
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+        }
+        .frame(height: 260)
+        // Fading the artwork's own opacity (instead of painting the page color over it)
+        // blends into whatever is behind, including the artwork-tinted page background.
+        .mask(
             LinearGradient(
                 stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
-                    .init(color: DT.Color.backgroundPrimary, location: 1),
+                    .init(color: .black, location: 0),
+                    .init(color: .black, location: 0.5),
+                    .init(color: .clear, location: 1),
                 ],
                 startPoint: .top, endPoint: .bottom
             )
-        }
-        .frame(height: 260)
+        )
         .clipped()
     }
 
