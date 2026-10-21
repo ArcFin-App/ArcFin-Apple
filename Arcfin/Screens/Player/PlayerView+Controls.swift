@@ -1096,6 +1096,127 @@ extension PlayerView {
         .animation(DT.Animation.fast, value: showUpNext)
     }
 
+    // MARK: - More Like This
+
+    /// Suggestions over the credits: a horizontal row along the bottom in landscape, a
+    /// vertical list filling the lower part of the screen in portrait.
+    @ViewBuilder
+    var moreLikeThisOverlay: some View {
+        if showMoreLikeThis, !moreLikeThis.isEmpty {
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("More Like This")
+                            .font(.system(.headline, weight: .bold))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Button {
+                            moreLikeThisDismissed = true
+                            withAnimation(DT.Animation.fast) { showMoreLikeThis = false }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(.footnote, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 30, height: 30)
+                                .background(.white.opacity(0.18), in: Circle())
+                        }
+                        .accessibilityLabel("Dismiss suggestions")
+                    }
+                    if isLandscape {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(moreLikeThis) { suggestion in
+                                    Button { onPlayNext(suggestion) } label: {
+                                        suggestionCard(suggestion)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    } else {
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(spacing: 10) {
+                                ForEach(moreLikeThis) { suggestion in
+                                    Button { onPlayNext(suggestion) } label: {
+                                        suggestionRow(suggestion)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.top, 14)
+                .padding(.bottom, isControlsVisible ? 120 : 24)
+                .background(
+                    LinearGradient(colors: [.clear, .black.opacity(0.85), .black.opacity(0.95)],
+                                   startPoint: .top, endPoint: .bottom)
+                )
+            }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .animation(DT.Animation.fast, value: isControlsVisible)
+        }
+    }
+
+    private func suggestionImageURL(_ suggestion: MediaItem) -> URL? {
+        mediaRepo.imageURL(for: suggestion, type: .thumb, fillWidth: 400)
+            ?? mediaRepo.imageURL(for: suggestion, type: .backdrop, fillWidth: 400)
+            ?? mediaRepo.imageURL(for: suggestion, type: .primary, fillWidth: 400)
+    }
+
+    private func suggestionThumb(_ suggestion: MediaItem) -> some View {
+        AsyncImage(url: suggestionImageURL(suggestion)) { phase in
+            if case .success(let image) = phase {
+                image.resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+        }
+    }
+
+    private func suggestionCard(_ suggestion: MediaItem) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            suggestionThumb(suggestion)
+                .frame(width: 200, height: 113)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm))
+            Text(suggestion.name)
+                .font(.system(.footnote, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .frame(width: 200, alignment: .leading)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Play \(suggestion.name)")
+    }
+
+    private func suggestionRow(_ suggestion: MediaItem) -> some View {
+        HStack(spacing: 12) {
+            suggestionThumb(suggestion)
+                .frame(width: 128, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(suggestion.name)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                if let year = suggestion.productionYear {
+                    Text(String(year))
+                        .font(.system(.caption))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "play.fill")
+                .font(.system(.footnote))
+                .foregroundStyle(.white.opacity(0.8))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Play \(suggestion.name)")
+    }
+
     // MARK: - Are you still watching
 
     var stillWatchingOverlay: some View {

@@ -116,6 +116,9 @@ struct PlayerView: View {
     @State var chapters: [MediaChapter] = []
     @State var castMembers: [MediaPerson] = []
     @State var audioOnly = false
+    @State var moreLikeThis: [MediaItem] = []
+    @State var showMoreLikeThis = false
+    @State var moreLikeThisDismissed = false
     @State var nextEpisode: MediaItem?
     @State var showUpNext = false
     @State var upNextDismissed = false
@@ -282,6 +285,10 @@ struct PlayerView: View {
                 upNextCard(nextEpisode)
             }
 
+            #if !os(tvOS)
+            moreLikeThisOverlay
+            #endif
+
             if showStillWatchingPrompt {
                 stillWatchingOverlay
             }
@@ -338,6 +345,7 @@ struct PlayerView: View {
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
+            checkMoreLikeThisThreshold(positionTicks: newValue)
             #if !os(tvOS)
             updateNowPlayingInfo()
             #endif
@@ -965,6 +973,14 @@ struct PlayerView: View {
                 nextEpisode = upNext?.first
             }
         }
+
+        // Anything with an Up Next card already has something to watch next; the rest (movies,
+        // a series finale) get suggestions instead once the credits start.
+        if nextEpisode == nil {
+            moreLikeThis = ((try? await client.getSimilarItems(
+                credential: credential, authHeader: authHeader, itemId: item.id, limit: 12)) ?? [])
+                .filter { $0.id != item.id }
+        }
     }
 
     // MARK: - SyncPlay
@@ -1296,6 +1312,19 @@ struct PlayerView: View {
         } else if !withinWindow, showUpNext {
             showUpNext = false
             upNextCountdown?.cancel()
+        }
+    }
+
+    /// Shows the suggestions from the credits start (when the server knows it) or, failing
+    /// that, the last four minutes; seeking back out of the credits hides them again.
+    private func checkMoreLikeThisThreshold(positionTicks: Int64) {
+        guard nextEpisode == nil, !moreLikeThis.isEmpty, !moreLikeThisDismissed, player.durationTicks > 0 else { return }
+        let duration = Double(player.durationTicks) / 10_000_000
+        let seconds = Double(positionTicks) / 10_000_000
+        let start = creditsStart ?? max(duration - 240, 0)
+        let inCredits = seconds >= start && seconds < duration
+        if inCredits != showMoreLikeThis {
+            withAnimation(DT.Animation.fast) { showMoreLikeThis = inCredits }
         }
     }
 
