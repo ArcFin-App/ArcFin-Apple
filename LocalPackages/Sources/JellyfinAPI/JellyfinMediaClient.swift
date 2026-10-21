@@ -662,12 +662,19 @@ public struct JellyfinMediaClient: Sendable {
         recursive: Bool = true,
         includeItemTypes: String? = nil,
         genres: [String] = [],
+        requireAllGenres: Bool = false,
         years: [Int] = [],
+        officialRatings: [String] = [],
+        minCommunityRating: Double? = nil,
+        tags: [String] = [],
+        isHD: Bool? = nil,
+        is4K: Bool? = nil,
+        hasSubtitles: Bool? = nil,
         isPlayed: Bool? = nil,
         isFavorite: Bool? = nil,
         sortBy: String = "SortName",
         sortOrder: String = "Ascending"
-    ) async throws -> (items: [MediaItem], total: Int) {
+    ) async throws -> (items: [MediaItem], total: Int, consumed: Int) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
             resolvingAgainstBaseURL: false)!
@@ -678,7 +685,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: sortOrder),
             .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,Genres,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableTotalRecordCount", value: "true"),
         ]
@@ -690,6 +697,24 @@ public struct JellyfinMediaClient: Sendable {
         }
         if !years.isEmpty {
             queryItems.append(.init(name: "Years", value: years.map(String.init).joined(separator: ",")))
+        }
+        if !officialRatings.isEmpty {
+            queryItems.append(.init(name: "OfficialRatings", value: officialRatings.joined(separator: "|")))
+        }
+        if let minCommunityRating {
+            queryItems.append(.init(name: "MinCommunityRating", value: String(minCommunityRating)))
+        }
+        if !tags.isEmpty {
+            queryItems.append(.init(name: "Tags", value: tags.joined(separator: "|")))
+        }
+        if let isHD {
+            queryItems.append(.init(name: "IsHD", value: isHD ? "true" : "false"))
+        }
+        if let is4K {
+            queryItems.append(.init(name: "Is4K", value: is4K ? "true" : "false"))
+        }
+        if let hasSubtitles {
+            queryItems.append(.init(name: "HasSubtitles", value: hasSubtitles ? "true" : "false"))
         }
         if let isPlayed {
             queryItems.append(.init(name: "IsPlayed", value: isPlayed ? "true" : "false"))
@@ -703,7 +728,12 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
         let page = try JSONDecoder().decode(ItemsPage.self, from: data)
-        return (items: page.items.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0)
+        // The server's Genres filter is "any of"; narrowing to "all of" happens here, so
+        // `consumed` reports how many server rows were read for paging.
+        let rows = requireAllGenres && genres.count > 1
+            ? page.items.filter { Set(genres).isSubset(of: $0.genres ?? []) }
+            : page.items
+        return (items: rows.map { $0.toMediaItem() }, total: page.totalRecordCount ?? 0, consumed: page.items.count)
     }
 
     /// Available filter facets (genres/years) for a library — from /Items/Filters2, scoped
@@ -713,7 +743,7 @@ public struct JellyfinMediaClient: Sendable {
         authHeader: String,
         libraryId: String,
         includeItemTypes: String? = nil
-    ) async throws -> (genres: [String], years: [Int]) {
+    ) async throws -> (genres: [String], years: [Int], officialRatings: [String], tags: [String]) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/Filters2"),
             resolvingAgainstBaseURL: false)!
@@ -727,7 +757,9 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
         let response = try JSONDecoder().decode(LibraryFiltersResponse.self, from: data)
-        return (genres: response.genres.map(\.name).sorted(), years: response.years.sorted(by: >))
+        return (genres: response.genres.map(\.name).sorted(), years: response.years.sorted(by: >),
+                officialRatings: (response.officialRatings ?? []).sorted(),
+                tags: (response.tags ?? []).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending })
     }
 
     /// Uses /Search/Hints rather than a plain /Items SearchTerm filter — Hints also
@@ -824,14 +856,35 @@ private struct ItemsPage: Decodable {
 }
 
 private struct LibraryFiltersResponse: Decodable {
-    struct NamedFacet: Decodable { let name: String
+    /// Servers differ: Filters2 sends genres as `{Name, Id}` objects, older/legacy ones as
+    /// plain strings. One odd shape must not blank out every facet.
+    struct NamedFacet: Decodable {
+        let name: String
+        init(from decoder: Decoder) throws {
+            if let plain = try? decoder.singleValueContainer().decode(String.self) {
+                name = plain
+            } else {
+                name = try decoder.container(keyedBy: CodingKeys.self).decode(String.self, forKey: .name)
+            }
+        }
         enum CodingKeys: String, CodingKey { case name = "Name" }
     }
     let genres: [NamedFacet]
     let years: [Int]
+    let officialRatings: [String]?
+    let tags: [String]?
     enum CodingKeys: String, CodingKey {
+        case tags = "Tags"
         case genres = "Genres"
         case years = "Years"
+        case officialRatings = "OfficialRatings"
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        genres = (try? c.decodeIfPresent([NamedFacet].self, forKey: .genres)) ?? []
+        years = (try? c.decodeIfPresent([Int].self, forKey: .years)) ?? []
+        officialRatings = try? c.decodeIfPresent([String].self, forKey: .officialRatings)
+        tags = try? c.decodeIfPresent([String].self, forKey: .tags)
     }
 }
 
@@ -853,8 +906,10 @@ private struct JellyfinItemResponse: Decodable {
     let parentBackdropItemId: String?
     let parentBackdropImageTags: [String]?
     let providerIds: [String: String]?
+    let genres: [String]?
 
     enum CodingKeys: String, CodingKey {
+        case genres = "Genres"
         case id = "Id"
         case name = "Name"
         case type = "Type"
