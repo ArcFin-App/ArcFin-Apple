@@ -65,6 +65,33 @@ extension DetailHeroBackdrop where Fallback == LinearGradient {
     }
 }
 
+/// Up to three posters fanned out, so a set (a collection, a playlist) reads as a set.
+struct FannedPosters: View {
+    let urls: [URL?]
+
+    var body: some View {
+        ZStack {
+            ForEach(Array(urls.prefix(3).enumerated().reversed()), id: \.offset) { index, url in
+                CachedAsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image): image.resizable().scaledToFill()
+                    default: DT.Color.backgroundSecondary
+                    }
+                }
+                .frame(width: 92, height: 138)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.12), lineWidth: 1))
+                .shadow(color: .black.opacity(0.6), radius: 10, y: 4)
+                .rotationEffect(.degrees(Double(index) * 6))
+                .offset(x: CGFloat(index) * 14, y: CGFloat(index) * -4)
+                .opacity(index == 0 ? 1 : 0.85)
+            }
+        }
+        .frame(width: 118, height: 150, alignment: .bottomLeading)
+        .accessibilityHidden(true)
+    }
+}
+
 extension View {
     /// The page background behind a DetailHeroBackdrop: the app background, washed from the
     /// top with the artwork's average colour once it's known.

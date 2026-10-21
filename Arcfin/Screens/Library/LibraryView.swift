@@ -1001,6 +1001,7 @@ struct LibraryDetailView: View {
     @State private var showNewPlaylist = false
     @State private var newPlaylistName = ""
     @State private var createdPlaylist: MediaPlaylist?
+    @State private var playlistTint: Color?
 
     init(library: JellyfinLibrary, playlist: MediaPlaylist? = nil, startsAddingTitles: Bool = false) {
         self.library = library
@@ -1191,7 +1192,7 @@ struct LibraryDetailView: View {
 #endif
                 }
                 .scrollPosition(id: $scrolledItemID)
-                .screenBackground()
+                .modifier(PlaylistPageStyle(isPlaylist: playlist != nil, tint: playlistTint))
             }
         }
 #if os(macOS)
@@ -1202,8 +1203,10 @@ struct LibraryDetailView: View {
         // Large + pinned-on-scroll, matching Browse (the parent screen) — this used to fake
         // its own title with a plain Text inside the ScrollView content instead, which just
         // scrolled away with nothing left pinned once you scrolled past it.
-        .navigationTitle(playlistName ?? library.name)
-        .navigationBarTitleDisplayMode(.large)
+        // A playlist has its own title in the hero.
+        .navigationTitle(playlist != nil ? "" : (playlistName ?? library.name))
+        .navigationBarTitleDisplayMode(playlist != nil ? .inline : .large)
+        .toolbarBackground(playlist != nil ? .hidden : .automatic, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
 #endif
 #if !os(tvOS)
@@ -1386,6 +1389,10 @@ struct LibraryDetailView: View {
         }
         .task { await load() }
         .task { await loadFilterOptions() }
+        .task(id: playlistHeroURL) {
+            guard playlist != nil, let url = playlistHeroURL else { return }
+            playlistTint = await AverageColor.load(from: url)
+        }
     }
 
     /// Creates it empty, then opens it straight into picking titles.
@@ -1420,7 +1427,43 @@ struct LibraryDetailView: View {
         }
     }
 
+    /// A playlist's page opens like a collection's: the first title's artwork as the hero,
+    /// its first posters fanned out with the name and length, then Play and Shuffle.
     private var playlistHeader: some View {
+        VStack(alignment: .leading, spacing: DT.Spacing.md) {
+            VStack(alignment: .leading, spacing: 0) {
+                DetailHeroBackdrop(url: playlistHeroURL, height: 300)
+                HStack(alignment: .bottom, spacing: 14) {
+                    FannedPosters(urls: items.prefix(3).map { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 240) })
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("PLAYLIST")
+                            .font(.system(.caption2, weight: .bold))
+                            .tracking(1.5)
+                            .foregroundStyle(DT.Color.accent)
+                        Text(playlistName ?? library.name)
+                            .font(.system(.title2, weight: .heavy))
+                            .foregroundStyle(DT.Color.textPrimary)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.8)
+                        Text(items.count == 1 ? "1 title" : "\(items.count) titles")
+                            .font(.caption)
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.top, -96)
+            }
+            playlistButtons
+        }
+    }
+
+    private var playlistHeroURL: URL? {
+        guard let first = items.first else { return nil }
+        return mediaRepo.imageURL(for: first, type: .backdrop, fillWidth: 1200)
+    }
+
+    private var playlistButtons: some View {
         HStack(spacing: 12) {
             Button { playAllFromStart() } label: {
                 Label("Play", systemImage: "play.fill")
@@ -1754,6 +1797,23 @@ struct LibraryDetailView: View {
 }
 
 // MARK: - Playlist dialogs
+
+/// A playlist's page runs up under the status bar with an artwork-tinted background, like
+/// a collection's; every other library keeps its plain background.
+private struct PlaylistPageStyle: ViewModifier {
+    let isPlaylist: Bool
+    let tint: Color?
+
+    func body(content: Content) -> some View {
+        if isPlaylist {
+            content
+                .detailPageBackground(tint: tint)
+                .ignoresSafeArea(edges: .top)
+        } else {
+            content.screenBackground()
+        }
+    }
+}
 
 /// A playlist's choices and sheets, kept out of LibraryDetailView's already long chain.
 private struct PlaylistModifiers: ViewModifier {

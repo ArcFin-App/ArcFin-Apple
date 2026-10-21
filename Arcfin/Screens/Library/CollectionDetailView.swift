@@ -190,32 +190,9 @@ struct CollectionDetailView: View {
     /// The first few posters fanned out, so the collection reads as a set at a glance.
     private var posterStack: some View {
         let fan = Array(sortedItems.prefix(3))
-        return ZStack {
-            if fan.isEmpty {
-                posterImage(url: mediaRepo.imageURL(for: collection, type: .primary, fillWidth: 240))
-            } else {
-                ForEach(Array(fan.enumerated().reversed()), id: \.element.id) { index, item in
-                    posterImage(url: mediaRepo.imageURL(for: item, type: .primary, fillWidth: 240))
-                        .rotationEffect(.degrees(Double(index) * 6))
-                        .offset(x: CGFloat(index) * 14, y: CGFloat(index) * -4)
-                        .opacity(index == 0 ? 1 : 0.85)
-                }
-            }
-        }
-        .frame(width: 118, height: 150, alignment: .bottomLeading)
-    }
-
-    private func posterImage(url: URL?) -> some View {
-        CachedAsyncImage(url: url) { phase in
-            switch phase {
-            case .success(let image): image.resizable().scaledToFill()
-            default: DT.Color.backgroundSecondary
-            }
-        }
-        .frame(width: 92, height: 138)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.12), lineWidth: 1))
-        .shadow(color: .black.opacity(0.6), radius: 10, y: 4)
+        return FannedPosters(urls: fan.isEmpty
+            ? [mediaRepo.imageURL(for: collection, type: .primary, fillWidth: 240)]
+            : fan.map { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 240) })
     }
 
     // MARK: - Actions & progress
