@@ -22,6 +22,7 @@
 	<array>
 		<string>com.psmattas.arcfin.sync-settings</string>
 		<string>com.psmattas.arcfin.prefetch-content</string>
+		<string>com.psmattas.arcfin.refresh</string>
 	</array>
 </dict>
 </plist>

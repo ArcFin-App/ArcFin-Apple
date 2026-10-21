@@ -32,6 +32,26 @@ enum NotificationManager {
         try? await UNUserNotificationCenter.current().add(request)
     }
 
+    /// For the permission prompt when someone switches a notification toggle on — the lazy
+    /// request in `send` can't prompt from a background refresh, where nobody is looking.
+    static func requestAuthorizationIfNeeded() async {
+        _ = await ensureAuthorized()
+    }
+
+    static func notifyNewContent(titles: [String]) async {
+        guard let first = titles.first else { return }
+        let body = titles.count == 1 ? first : "\(first) and \(titles.count - 1) more"
+        await send(title: "New in Your Library", body: body, identifier: "library-new.\(UUID().uuidString)")
+    }
+
+    static func notifyRequestDeclined(title: String) async {
+        await send(title: "Request Declined", body: title, identifier: "seerr-declined.\(UUID().uuidString)")
+    }
+
+    static func notifyWatchlistAvailable(title: String) async {
+        await send(title: "On Your Watchlist: Now Available", body: title, identifier: "watchlist-available.\(UUID().uuidString)")
+    }
+
     static func notifyDownloadComplete(title: String) async {
         await send(title: "Download Complete", body: title, identifier: "download.\(UUID().uuidString)")
     }

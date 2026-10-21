@@ -17,7 +17,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         CastManager.shared.start()
+        BackgroundRefresh.register()
         return true
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        BackgroundRefresh.schedule()
     }
 
     func application(

@@ -185,6 +185,8 @@ public enum SettingsSyncRegistry {
         .init("shuffleHomeShelves", .bool),
         // Notifications
         .init("notifyNewContent", .bool),
+        .init("notifyRequestUpdates", .bool),
+        .init("notifyWatchlistAvailable", .bool),
         .init("notifyDownload", .bool),
         // Player features
         .init("chapterListEnabled", .bool),

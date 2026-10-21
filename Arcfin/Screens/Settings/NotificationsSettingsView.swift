@@ -6,6 +6,8 @@ struct NotificationsSettingsView: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage("notifyNewContent") private var notifyNewContent = true
     @AppStorage("notifyDownload")   private var notifyDownload   = true
+    @AppStorage("notifyRequestUpdates") private var notifyRequestUpdates = true
+    @AppStorage("notifyWatchlistAvailable") private var notifyWatchlistAvailable = true
 
     var body: some View {
         List {
@@ -15,6 +17,10 @@ struct NotificationsSettingsView: View {
                 }
                 .tvListRow()
                 .syncLocked("notifyNewContent", authManager)
+                Toggle("Request Updates", isOn: $notifyRequestUpdates)
+                    .syncLocked("notifyRequestUpdates", authManager)
+                Toggle("Watchlist Available", isOn: $notifyWatchlistAvailable)
+                    .syncLocked("notifyWatchlistAvailable", authManager)
                 // No downloads on macOS — nothing would ever trigger this notification there.
                 #if os(iOS)
                 Toggle("Download Complete", isOn: $notifyDownload)
@@ -25,6 +31,9 @@ struct NotificationsSettingsView: View {
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
         .arcfinNavTitleLarge("Notifications")
+        .onChange(of: notifyNewContent) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .onChange(of: notifyRequestUpdates) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .onChange(of: notifyWatchlistAvailable) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
     }
 }
 
