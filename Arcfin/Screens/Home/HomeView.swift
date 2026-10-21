@@ -178,6 +178,8 @@ struct HomeView: View {
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
+    /// Titles the user requested through Seerr that have since arrived in the library.
+    @State private var nowAvailable: [MediaItem] = []
     @State private var heroDetailItem: MediaItem?
     @State private var trailerLaunchItem: MediaItem?
     /// Play / Resume straight from a poster's long-press menu, without opening its page.
@@ -377,6 +379,14 @@ struct HomeView: View {
                     seeAllShelf = SeeAllShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
                 }) {
                     mediaShelfContent(mediaRepo.topRatedUnwatched)
+                }
+            }
+        case .nowAvailable:
+            if seerrRepo.isConfigured, !nowAvailable.isEmpty {
+                ShelfRow(title: "Now Available", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Now Available", items: nowAvailable)
+                }) {
+                    mediaShelfContent(nowAvailable)
                 }
             }
         case .seerrWatchlist:
@@ -693,6 +703,49 @@ struct HomeView: View {
         .onChange(of: shuffleHomeShelves) { _, isOn in
             if isOn { reshuffleShelves() }
         }
+        .task(id: recentlyAvailableRequests.map(\.id)) {
+            await loadNowAvailable(recentlyAvailableRequests)
+        }
+    }
+
+    /// Requests from the last two months whose title has arrived, newest first.
+    private var recentlyAvailableRequests: [SeerrRequestItem] {
+        let cutoff = Date().addingTimeInterval(-60 * 86_400)
+        return Array(seerrRepo.requests
+            .filter { request in
+                (request.mediaStatus == .available || request.mediaStatus == .partiallyAvailable)
+                    && request.requestedAt > cutoff && request.tmdbId != nil
+            }
+            .sorted { $0.requestedAt > $1.requestedAt }
+            .prefix(12))
+    }
+
+    /// Finds each arrived request's title in the library, keeping the request order and
+    /// dropping anything already watched.
+    private func loadNowAvailable(_ requests: [SeerrRequestItem]) async {
+        guard !requests.isEmpty, let cred = authManager.state.credential else {
+            nowAvailable = []
+            return
+        }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let client = JellyfinMediaClient()
+        var found: [Int: MediaItem] = [:]
+        await withTaskGroup(of: (Int, MediaItem?).self) { group in
+            for (index, request) in requests.enumerated() {
+                guard let tmdbId = request.tmdbId else { continue }
+                let isSeries = request.mediaType == .tv
+                let title = request.mediaTitle
+                group.addTask {
+                    (index, try? await client.findItem(credential: cred, authHeader: header,
+                                                       tmdbId: tmdbId, isSeries: isSeries, title: title))
+                }
+            }
+            for await (index, item) in group {
+                if let item { found[index] = item }
+            }
+        }
+        guard !Task.isCancelled else { return }
+        nowAvailable = found.sorted { $0.key < $1.key }.map(\.value).filter { $0.userData?.played != true }
     }
 
     var body: some View {
