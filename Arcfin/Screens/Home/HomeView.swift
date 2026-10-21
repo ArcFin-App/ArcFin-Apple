@@ -468,7 +468,9 @@ struct HomeView: View {
 #endif
     }
 
-    var body: some View {
+    // The modifier chain below is split across three properties: as one expression it grew
+    // past what the type checker can solve in reasonable time.
+    private var homeNavigation: some View {
         NavigationStack {
             GeometryReader { proxy in
                 let screenW = proxy.size.width
@@ -660,6 +662,10 @@ struct HomeView: View {
             // still non-empty" — 0 is an inert, always-valid value to sit at either way.
             heroIndex = max(0, newCount - 1)
         }
+    }
+
+    private var homeObservers: some View {
+        homeNavigation
         .onAppear {
             loadHeroVideoBackdrop()
         }
@@ -674,6 +680,10 @@ struct HomeView: View {
         .onChange(of: shuffleHomeShelves) { _, isOn in
             if isOn { reshuffleShelves() }
         }
+    }
+
+    var body: some View {
+        homeObservers
         #if canImport(UIKit) && !os(tvOS)
         .onChange(of: mediaRepo.continueWatching.first?.id, initial: true) { _, _ in
             let first = mediaRepo.continueWatching.first
