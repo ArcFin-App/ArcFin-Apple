@@ -10,16 +10,23 @@ public struct WidgetSnapshot: Codable, Sendable, Equatable {
     public struct Item: Codable, Sendable, Equatable, Identifiable {
         public var id: String
         public var title: String
+        /// Season/episode code ("S2 · E5") for episodes, the year for everything else.
         public var subtitle: String?
+        /// The episode's own title; nil for movies.
+        public var detail: String?
         /// 0...1 watched fraction.
         public var progress: Double
         /// File name inside the store's poster directory, nil when no image could be saved.
         public var posterFileName: String?
 
-        public init(id: String, title: String, subtitle: String?, progress: Double, posterFileName: String?) {
+        public init(
+            id: String, title: String, subtitle: String?, detail: String? = nil,
+            progress: Double, posterFileName: String?
+        ) {
             self.id = id
             self.title = title
             self.subtitle = subtitle
+            self.detail = detail
             self.progress = progress
             self.posterFileName = posterFileName
         }

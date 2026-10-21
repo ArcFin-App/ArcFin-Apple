@@ -575,7 +575,14 @@ struct HomeView: View {
         }
         .onChange(of: mediaRepo.continueWatching.map(\.id), initial: true) { _, _ in
             let items = mediaRepo.continueWatching
-            Task { await WidgetSnapshotUpdater.update(items: items) { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 300) } }
+            Task {
+                await WidgetSnapshotUpdater.update(items: items) { item in
+                    if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }
+                    return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 600)
+                        ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600)
+                        ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600)
+                }
+            }
         }
         #endif
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in

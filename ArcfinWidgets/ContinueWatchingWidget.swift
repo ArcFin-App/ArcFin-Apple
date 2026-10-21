@@ -18,7 +18,7 @@ struct ContinueWatchingEntry: TimelineEntry {
 
 struct ContinueWatchingProvider: TimelineProvider {
     private static let sample = ContinueWatchingEntry(date: Date(), items: [
-        .init(id: "sample-1", title: "Continue Watching", subtitle: "S1E3 · Episode", progress: 0.4, posterFileName: nil),
+        .init(id: "sample-1", title: "Continue Watching", subtitle: "S1 · E3", detail: "Pilot", progress: 0.4, posterFileName: nil),
         .init(id: "sample-2", title: "Up Next", subtitle: "2024", progress: 0.7, posterFileName: nil),
         .init(id: "sample-3", title: "Resume", subtitle: "2023", progress: 0.2, posterFileName: nil),
     ])
@@ -43,16 +43,11 @@ struct ContinueWatchingProvider: TimelineProvider {
 
 // MARK: - Shared pieces
 
-private enum WidgetPalette {
-    static let background = Color(red: 10 / 255, green: 10 / 255, blue: 15 / 255)
-    static let accent = Color(red: 6 / 255, green: 182 / 255, blue: 212 / 255)
-}
-
 private func playURL(_ item: WidgetSnapshot.Item) -> URL {
     URL(string: "arcfin://play/\(item.id)") ?? URL(string: "arcfin://downloads")!
 }
 
-private func posterImage(_ fileName: String?) -> Image? {
+private func artwork(_ fileName: String?) -> Image? {
     guard let fileName, let url = WidgetSnapshotStore.posterURL(fileName: fileName) else { return nil }
     #if canImport(UIKit)
     guard let image = UIImage(contentsOfFile: url.path) else { return nil }
@@ -65,16 +60,24 @@ private func posterImage(_ fileName: String?) -> Image? {
     #endif
 }
 
-private struct PosterView: View {
+/// Artwork keeps its colors in Tinted and Clear Home Screen modes. Without
+/// `.fullColor` the system flattens an image to a single tint, which is what turned
+/// the thumbnail into a plain light box there.
+private struct Artwork: View {
     let item: WidgetSnapshot.Item
 
     var body: some View {
-        if let image = posterImage(item.posterFileName) {
-            image.resizable().scaledToFill()
+        if let image = artwork(item.posterFileName) {
+            image
+                .resizable()
+                .widgetAccentedRenderingMode(.fullColor)
+                .scaledToFill()
         } else {
             ZStack {
-                Color.white.opacity(0.08)
-                Image(systemName: "film").font(.title2).foregroundStyle(.white.opacity(0.4))
+                Rectangle().fill(.fill.tertiary)
+                Image(systemName: "play.rectangle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -84,24 +87,78 @@ private struct ProgressBar: View {
     let progress: Double
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.25))
-                Capsule().fill(WidgetPalette.accent).frame(width: proxy.size.width * progress)
-            }
-        }
-        .frame(height: 3)
+        ProgressView(value: progress)
+            .progressViewStyle(.linear)
+            .tint(.white)
+            .widgetAccentable()
     }
 }
 
 private struct EmptyState: View {
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: "play.circle").font(.title)
+            Image(systemName: "play.circle").font(.largeTitle)
             Text("Nothing to resume").font(.footnote.weight(.semibold))
         }
-        .foregroundStyle(.white.opacity(0.7))
+        .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Title, then "S2 · E5" and the episode name; movies show just the year.
+private struct ItemCaption: View {
+    let item: WidgetSnapshot.Item
+    var titleFont: Font = .headline
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(item.title).font(titleFont).lineLimit(1)
+            if let subtitle = item.subtitle {
+                Text(subtitle).font(.caption.weight(.semibold)).lineLimit(1)
+            }
+            if let detail = item.detail {
+                Text(detail).font(.caption).lineLimit(1).opacity(0.85)
+            }
+        }
+    }
+}
+
+/// Image fills the whole widget with a legibility gradient under the text.
+private struct HeroCard: View {
+    let item: WidgetSnapshot.Item
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Artwork(item: item)
+            LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 6) {
+                ItemCaption(item: item)
+                ProgressBar(progress: item.progress)
+            }
+            .foregroundStyle(.white)
+            .padding(12)
+        }
+    }
+}
+
+private struct CompactRow: View {
+    let item: WidgetSnapshot.Item
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Artwork(item: item)
+                .frame(width: 64)
+                .aspectRatio(16 / 9, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(item.title).font(.footnote.weight(.semibold)).lineLimit(1)
+                Text([item.subtitle, item.detail].compactMap { $0 }.joined(separator: " · "))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
     }
 }
 
@@ -125,43 +182,35 @@ struct ContinueWatchingWidgetView: View {
     @ViewBuilder
     private var small: some View {
         if let item = entry.items.first {
-            ZStack(alignment: .bottomLeading) {
-                PosterView(item: item)
-                LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .center, endPoint: .bottom)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.title).font(.footnote.weight(.bold)).lineLimit(2)
-                    ProgressBar(progress: item.progress)
-                }
-                .foregroundStyle(.white)
-                .padding(10)
-            }
-            .widgetURL(playURL(item))
+            Color.clear
+                .widgetURL(playURL(item))
+                .containerBackground(for: .widget) { HeroCard(item: item) }
         } else {
-            EmptyState()
+            EmptyState().containerBackground(.fill.tertiary, for: .widget)
         }
     }
 
     @ViewBuilder
     private var medium: some View {
-        if entry.items.isEmpty {
-            EmptyState()
-        } else {
-            HStack(alignment: .top, spacing: 10) {
-                ForEach(entry.items.prefix(3)) { item in
-                    Link(destination: playURL(item)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            PosterView(item: item)
-                                .aspectRatio(2 / 3, contentMode: .fit)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            ProgressBar(progress: item.progress)
-                            Text(item.title)
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                        }
+        if let hero = entry.items.first {
+            HStack(spacing: 12) {
+                Link(destination: playURL(hero)) {
+                    HeroCard(item: hero)
+                        .clipShape(ContainerRelativeShape())
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(entry.items.dropFirst().prefix(2)) { item in
+                        Link(destination: playURL(item)) { CompactRow(item: item) }
+                    }
+                    if entry.items.count == 1 {
+                        Text("Up next appears here").font(.caption).foregroundStyle(.secondary)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .containerBackground(.fill.tertiary, for: .widget)
+        } else {
+            EmptyState().containerBackground(.fill.tertiary, for: .widget)
         }
     }
 
@@ -172,34 +221,39 @@ struct ContinueWatchingWidgetView: View {
                 Label(item.title, systemImage: "play.fill")
                     .font(.headline)
                     .lineLimit(1)
-                if let subtitle = item.subtitle {
-                    Text(subtitle).font(.caption).lineLimit(1)
-                }
+                Text([item.subtitle, item.detail].compactMap { $0 }.joined(separator: " · "))
+                    .font(.caption)
+                    .lineLimit(1)
                 ProgressView(value: item.progress)
             }
             .widgetURL(playURL(item))
+            .containerBackground(.clear, for: .widget)
         } else {
             Label("Nothing to resume", systemImage: "play.circle").font(.footnote)
+                .containerBackground(.clear, for: .widget)
         }
     }
 
     @ViewBuilder
     private var circular: some View {
-        if let item = entry.items.first {
-            Gauge(value: item.progress) {
-                Image(systemName: "play.fill")
+        Group {
+            if let item = entry.items.first {
+                Gauge(value: item.progress) {
+                    Image(systemName: "play.fill")
+                }
+                .gaugeStyle(.accessoryCircularCapacity)
+                .widgetURL(playURL(item))
+            } else {
+                Image(systemName: "play.circle")
             }
-            .gaugeStyle(.accessoryCircularCapacity)
-            .widgetURL(playURL(item))
-        } else {
-            Image(systemName: "play.circle")
         }
+        .containerBackground(.clear, for: .widget)
     }
 
     @ViewBuilder
     private var inline: some View {
         if let item = entry.items.first {
-            Label("Resume \(item.title)", systemImage: "play.fill")
+            Label("\(item.title)\(item.subtitle.map { " \($0)" } ?? "")", systemImage: "play.fill")
                 .widgetURL(playURL(item))
         } else {
             Label("Nothing to resume", systemImage: "play.circle")
@@ -215,7 +269,6 @@ struct ContinueWatchingWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ContinueWatchingProvider()) { entry in
             ContinueWatchingWidgetView(entry: entry)
-                .containerBackground(WidgetPalette.background, for: .widget)
         }
         .configurationDisplayName("Continue Watching")
         .description("Pick up where you left off.")

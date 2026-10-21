@@ -31,6 +31,7 @@ enum WidgetSnapshotUpdater {
                 id: item.id,
                 title: item.type == .episode ? (item.seriesName ?? item.name) : item.name,
                 subtitle: subtitle(for: item),
+                detail: item.type == .episode ? item.name : nil,
                 progress: min(max((item.userData?.playedPercentage ?? 0) / 100, 0), 1),
                 posterFileName: fileName))
         }
@@ -45,10 +46,9 @@ enum WidgetSnapshotUpdater {
 
     private static func subtitle(for item: MediaItem) -> String? {
         guard item.type == .episode else { return item.productionYear.map(String.init) }
-        let season = item.parentIndexNumber.map { "S\($0)" }
-        let episode = item.indexNumber.map { "E\($0)" }
-        let code = [season, episode].compactMap { $0 }.joined()
-        return code.isEmpty ? item.name : "\(code) · \(item.name)"
+        let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }]
+            .compactMap { $0 }.joined(separator: " · ")
+        return code.isEmpty ? nil : code
     }
 }
 #endif
