@@ -221,7 +221,7 @@ struct MediaDetailView: View {
             }
             Button("Cancel", role: .cancel) { pendingPlaybackChoice = nil }
         }
-        .fullScreenCover(item: $offlinePlaybackTarget) { downloaded in
+        .fullScreenCover(item: $offlinePlaybackTarget, onDismiss: { Task { await refreshAfterPlayback() } }) { downloaded in
             OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: offlineStartOverride)
         }
         .alert("Download Failed", isPresented: Binding(
@@ -243,7 +243,7 @@ struct MediaDetailView: View {
         }
         #endif
 #if os(iOS)
-        .fullScreenCover(item: $playbackRequest) { request in
+        .fullScreenCover(item: $playbackRequest, onDismiss: { Task { await refreshAfterPlayback() } }) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
@@ -263,6 +263,9 @@ struct MediaDetailView: View {
             guard let request else { return }
             playbackPresenter.present(request.item, startTicks: request.startTicks)
             playbackRequest = nil
+        }
+        .onChange(of: playbackPresenter.request == nil) { _, closed in
+            if closed { Task { await refreshAfterPlayback() } }
         }
 #endif
         .task { await load() }
@@ -438,6 +441,27 @@ struct MediaDetailView: View {
 
         if item.type == .episode, let seriesId = item.seriesId {
             seriesItem = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
+        }
+    }
+
+    /// Re-reads the playback position after the player closes, so Play becomes Resume (and the
+    /// episode list's progress updates) without leaving and re-entering this screen. A full
+    /// `load()` would flash the loading state, so only the progress-bearing data is refetched.
+    private func refreshAfterPlayback() async {
+        guard let cred = credential, let header = authHeader else { return }
+        // The player reports its final position as it closes; give that request a moment to land.
+        try? await Task.sleep(for: .milliseconds(700))
+        if let fresh = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id) {
+            detail = fresh
+        }
+        guard let seriesId = seasonSeriesId else { return }
+        if item.type == .series,
+           let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
+            nextEpisode = nextEp
+        }
+        if let seasonId = loadedSeasonId,
+           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId) {
+            episodes = fresh
         }
     }
 
