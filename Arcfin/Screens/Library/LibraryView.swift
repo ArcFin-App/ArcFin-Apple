@@ -829,6 +829,28 @@ struct LibraryExtraFilters: Equatable {
     var minRating: Double?
 
     var isActive: Bool { !officialRatings.isEmpty || minRating != nil }
+
+    private static let maturityOrder = [
+        "G", "TV-Y", "TV-G", "TV-Y7", "PG", "TV-PG", "PG-13", "TV-14", "R", "TV-MA", "NC-17",
+    ]
+
+    /// Least to most mature; ratings outside the known scale sort last by name.
+    static func ordered(_ ratings: [String]) -> [String] {
+        ratings.sorted { lhs, rhs in
+            let l = maturityOrder.firstIndex(of: lhs) ?? .max
+            let r = maturityOrder.firstIndex(of: rhs) ?? .max
+            return l == r ? lhs < rhs : l < r
+        }
+    }
+
+    /// Slider position for a selection: `ordered.count` means no limit.
+    static func ratingStep(_ selected: Set<String>, in ordered: [String]) -> Int {
+        ordered.lastIndex { selected.contains($0) } ?? ordered.count
+    }
+
+    static func ratings(upToStep step: Int, in ordered: [String]) -> Set<String> {
+        step >= ordered.count ? [] : Set(ordered.prefix(step + 1))
+    }
 }
 
 enum LibrarySortOption: String, CaseIterable, Identifiable {
@@ -1390,20 +1412,34 @@ struct LibraryFilterList: View {
             }
 
             Section("Minimum Score") {
-                ForEach([nil, 6.0, 7.0, 8.0, 9.0] as [Double?], id: \.self) { score in
-                    filterRow(score.map { "\(Int($0))+" } ?? "Any", isSelected: extraFilters.minRating == score) {
-                        extraFilters.minRating = score
-                    }
-                }
+                let score = extraFilters.minRating ?? 0
+                LabeledContent("Score", value: score > 0 ? String(format: "%.1f+", score) : "Any")
+                Slider(
+                    value: Binding(
+                        get: { extraFilters.minRating ?? 0 },
+                        set: { extraFilters.minRating = $0 > 0 ? $0 : nil }
+                    ),
+                    in: 0...9, step: 0.5
+                )
+                .accessibilityLabel("Minimum score")
+                .accessibilityValue(score > 0 ? String(format: "%.1f or higher", score) : "Any")
             }
 
             if !availableRatings.isEmpty {
+                let ordered = LibraryExtraFilters.ordered(availableRatings)
+                let step = LibraryExtraFilters.ratingStep(extraFilters.officialRatings, in: ordered)
+                let label = step >= ordered.count ? "Any" : "Up to \(ordered[step])"
                 Section("Content Rating") {
-                    ForEach(availableRatings, id: \.self) { rating in
-                        filterRow(rating, isSelected: extraFilters.officialRatings.contains(rating)) {
-                            toggle(rating, in: &extraFilters.officialRatings)
-                        }
-                    }
+                    LabeledContent("Maturity", value: label)
+                    Slider(
+                        value: Binding(
+                            get: { Double(step) },
+                            set: { extraFilters.officialRatings = LibraryExtraFilters.ratings(upToStep: Int($0), in: ordered) }
+                        ),
+                        in: 0...Double(ordered.count), step: 1
+                    )
+                    .accessibilityLabel("Maximum content rating")
+                    .accessibilityValue(label)
                 }
             }
 
