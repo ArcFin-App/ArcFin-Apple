@@ -535,6 +535,24 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode([MovieRecommendationResponse].self, from: data).map { $0.toCategory() }
     }
 
+    /// The server's own picks for this user, from what they've watched and liked.
+    public func getSuggestions(credential: ServerCredential, authHeader: String, limit: Int = 20) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Items/Suggestions"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "userId", value: credential.userID),
+            .init(name: "type", value: "Movie"),
+            .init(name: "type", value: "Series"),
+            .init(name: "limit", value: "\(limit)"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
     /// Other titles credited to a person (actor/director/writer), in the user's library.
     public func getPersonItems(
         credential: ServerCredential,

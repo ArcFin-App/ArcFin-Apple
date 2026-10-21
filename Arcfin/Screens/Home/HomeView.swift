@@ -395,6 +395,23 @@ struct HomeView: View {
                     mediaShelfContent(mediaRepo.topRatedUnwatched)
                 }
             }
+        case .suggested:
+            if !mediaRepo.suggestions.isEmpty {
+                ShelfRow(title: "Suggested for You", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Suggested for You", items: mediaRepo.suggestions)
+                }) {
+                    mediaShelfContent(mediaRepo.suggestions)
+                }
+            }
+        case .recommendations:
+            ForEach(mediaRepo.recommendations) { category in
+                let title = recommendationTitle(category)
+                ShelfRow(title: title, onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: title, items: category.items)
+                }) {
+                    mediaShelfContent(category.items)
+                }
+            }
         case .nowAvailable:
             if seerrRepo.isConfigured, !nowAvailable.isEmpty {
                 ShelfRow(title: "Now Available", onSeeAll: {
@@ -764,6 +781,18 @@ struct HomeView: View {
         quickPlayRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
     }
     #endif
+
+    /// Jellyfin names a recommendation row by why it was picked.
+    private func recommendationTitle(_ category: MovieRecommendationCategory) -> String {
+        guard let name = category.baselineItemName, !name.isEmpty else { return "Recommended" }
+        switch category.recommendationType {
+        case "SimilarToRecentlyPlayed": return "Because You Watched \(name)"
+        case "SimilarToLikedItem": return "Because You Liked \(name)"
+        case "HasDirectorFromRecentlyPlayed", "HasLikedDirector": return "Directed by \(name)"
+        case "HasActorFromRecentlyPlayed", "HasLikedActor": return "Starring \(name)"
+        default: return "Recommended"
+        }
+    }
 
     /// Requests from the last two months whose title has arrived, newest first.
     private var recentlyAvailableRequests: [SeerrRequestItem] {

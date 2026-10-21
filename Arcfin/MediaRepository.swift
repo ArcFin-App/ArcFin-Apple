@@ -64,6 +64,11 @@ final class MediaRepository {
     var becauseYouWatched: (source: MediaItem, items: [MediaItem])?
     var favorites: [MediaItem] = []
     var topRatedUnwatched: [MediaItem] = []
+    /// The server's picks for this user.
+    var suggestions: [MediaItem] = []
+    /// The server's recommendation rows: because you watched or liked something, its
+    /// director, its cast.
+    var recommendations: [MovieRecommendationCategory] = []
     var libraries: [JellyfinLibrary] = []
     var topMovies: [MediaItem] = []
     var topShows: [MediaItem] = []
@@ -173,6 +178,8 @@ final class MediaRepository {
         async let genres  = client.getGenreShelves(credential: credential, authHeader: header)
         async let favs    = client.getFavorites(credential: credential, authHeader: header)
         async let topUnw  = client.getTopRatedUnwatched(credential: credential, authHeader: header)
+        async let sugg    = client.getSuggestions(credential: credential, authHeader: header)
+        async let recs    = client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)
 
         // Every result is gathered first and only shown if the server answered: a failed or
         // cancelled attempt used to replace every shelf with an empty list, which with
@@ -209,6 +216,8 @@ final class MediaRepository {
         let genresResult = (try? await genres) ?? []
         let favsResult = (try? await favs) ?? []
         let topUnwResult = (try? await topUnw) ?? []
+        let suggResult = (try? await sugg) ?? []
+        let recsResult = (try? await recs) ?? []
         guard succeeded else { return false }
 
         continueWatching       = cwResult
@@ -228,6 +237,8 @@ final class MediaRepository {
         becauseYouWatched      = await loadBecauseYouWatched(credential: credential, header: header)
         favorites              = favsResult
         topRatedUnwatched      = topUnwResult
+        suggestions            = suggResult
+        recommendations        = recsResult.filter { $0.items.count >= 3 }
 
         return succeeded
     }
