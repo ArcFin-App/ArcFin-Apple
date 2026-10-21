@@ -29,7 +29,7 @@ struct PlaylistsSection: View {
                         NavigationLink {
                             PlaylistDetailView(playlist: playlist)
                         } label: {
-                            PlaylistCard(playlist: playlist, imageURL: imageURL(for: playlist))
+                            PlaylistCard(playlist: playlist, imageURL: playlistImageURL(playlist, mediaRepo: mediaRepo))
                         }
                         .buttonStyle(PressableButtonStyle())
                     }
@@ -66,11 +66,6 @@ struct PlaylistsSection: View {
         }
     }
 
-    private func imageURL(for playlist: MediaPlaylist) -> URL? {
-        guard let tag = playlist.primaryImageTag, let base = mediaRepo.baseURL, let token = mediaRepo.accessToken else { return nil }
-        return JellyfinMediaClient.imageURL(baseURL: base, itemID: playlist.id, tag: tag, type: .primary, fillWidth: 320, token: token)
-    }
-
     private func reload() async {
         guard let cred = authManager.state.credential else { return }
         await store.load(credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken))
@@ -85,6 +80,51 @@ struct PlaylistsSection: View {
                                     authHeader: authManager.authClient.authHeader(token: cred.accessToken))
         }
     }
+}
+
+/// Every playlist as a grid — what the Browse tab's Playlists tile opens.
+struct PlaylistsGridView: View {
+    var title = "Playlists"
+
+    @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
+
+    private var store: PlaylistStore { .shared }
+    private let columns = [GridItem(.adaptive(minimum: PlaylistCard.size), spacing: 16)]
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            if store.playlists.isEmpty && store.hasLoaded {
+                ContentUnavailableView("No Playlists", systemImage: "list.and.film",
+                                       description: Text("Long-press any movie or episode and choose Add to Playlist."))
+                    .padding(.top, 80)
+            } else {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 20) {
+                    ForEach(store.playlists) { playlist in
+                        NavigationLink {
+                            PlaylistDetailView(playlist: playlist)
+                        } label: {
+                            PlaylistCard(playlist: playlist, imageURL: playlistImageURL(playlist, mediaRepo: mediaRepo))
+                        }
+                        .buttonStyle(PressableButtonStyle())
+                    }
+                }
+                .padding(DT.Spacing.pagePad)
+            }
+        }
+        .screenBackground()
+        .navigationTitle(title)
+        .task {
+            guard let cred = authManager.state.credential else { return }
+            await store.load(credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken))
+        }
+    }
+}
+
+@MainActor
+private func playlistImageURL(_ playlist: MediaPlaylist, mediaRepo: MediaRepository) -> URL? {
+    guard let tag = playlist.primaryImageTag, let base = mediaRepo.baseURL, let token = mediaRepo.accessToken else { return nil }
+    return JellyfinMediaClient.imageURL(baseURL: base, itemID: playlist.id, tag: tag, type: .primary, fillWidth: 320, token: token)
 }
 
 private struct PlaylistCard: View {

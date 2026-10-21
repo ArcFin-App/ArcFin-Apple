@@ -57,7 +57,11 @@ struct LibraryView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
-                LibraryDetailView(library: library)
+                if library.collectionType == .playlists {
+                    PlaylistsGridView(title: library.name)
+                } else {
+                    LibraryDetailView(library: library)
+                }
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
                 switch target {
@@ -145,9 +149,9 @@ struct LibraryView: View {
 
     /// Live TV and Music aren't playable yet (no live-TV tuner support, no music player
     /// UI) — hide them from the library list rather than showing a section that just
-    /// leads to a dead end. Playlists have their own section below.
+    /// leads to a dead end.
     private var supportedLibraries: [JellyfinLibrary] {
-        mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && $0.collectionType != .playlists }
+        mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
     }
 
     private var librariesSection: some View {

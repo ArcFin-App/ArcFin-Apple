@@ -335,7 +335,7 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
             case .photos:     "photo"
             case .books:      "books.vertical"
             case .livetv:     "antenna.radiowaves.left.and.right"
-            case .playlists:  "music.note.list"
+            case .playlists:  "list.and.film"
             case .boxsets:    "rectangle.stack"
             case .unknown:    "folder"
             }
