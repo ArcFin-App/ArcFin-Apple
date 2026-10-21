@@ -15,6 +15,7 @@ struct SearchView: View {
     @State private var jellyfinResults: [MediaItem] = []
     @State private var seerrResults: [SeerrItem] = []
     @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>?
     @State private var requestingSeerrItem: SeerrItem?
     @AppStorage("recentSearches") private var recentSearchesData = Data()
 
@@ -198,14 +199,21 @@ struct SearchView: View {
         )
     }
 
+    /// Waits for a short pause in typing, and drops any search still running for an older
+    /// query: every keystroke used to fire both servers, and a slow response for "the" could
+    /// land after the one for "the office" and replace the right results with stale ones.
     private func performSearch(query: String) {
+        searchTask?.cancel()
         guard !query.isEmpty else {
             jellyfinResults = []
             seerrResults = []
+            isSearching = false
             return
         }
         isSearching = true
-        Task {
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
             async let jellyTask: [MediaItem] = mediaRepo.searchIfAuthenticated(
                 query: query,
                 authState: authManager.state,
@@ -213,8 +221,10 @@ struct SearchView: View {
             )
             async let seerrTask = seerrRepo.search(query: query)
 
-            jellyfinResults = await jellyTask
-            seerrResults    = await seerrTask
+            let (jellyfin, seerr) = await (jellyTask, seerrTask)
+            guard !Task.isCancelled else { return }
+            jellyfinResults = jellyfin
+            seerrResults = seerr
             isSearching = false
         }
     }
