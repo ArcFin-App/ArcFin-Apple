@@ -58,8 +58,6 @@ final class MediaRepository {
     var recentlyReleasedMovies: [MediaItem] = []
     var recentlyAiredEpisodes: [MediaItem] = []
     var watchAgain: [MediaItem] = []
-    var favorites: [MediaItem] = []
-    var topRatedUnwatched: [MediaItem] = []
     var libraries: [JellyfinLibrary] = []
     var topMovies: [MediaItem] = []
     var topShows: [MediaItem] = []
@@ -150,8 +148,6 @@ final class MediaRepository {
         async let rrMov   = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Movie")
         async let raEp    = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Episode")
         async let wAgain  = client.getWatchAgain(credential: credential, authHeader: header)
-        async let favs    = client.getFavorites(credential: credential, authHeader: header)
-        async let topUnw  = client.getTopRatedUnwatched(credential: credential, authHeader: header)
 
         continueWatching       = (try? await cw)     ?? []
         recentlyAdded          = (try? await la)     ?? []
@@ -180,8 +176,6 @@ final class MediaRepository {
         recentlyReleasedMovies  = (try? await rrMov)  ?? []
         recentlyAiredEpisodes   = (try? await raEp)   ?? []
         watchAgain              = (try? await wAgain) ?? []
-        favorites               = (try? await favs)   ?? []
-        topRatedUnwatched       = (try? await topUnw) ?? []
 
         return succeeded
     }
