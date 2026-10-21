@@ -53,6 +53,8 @@ struct MediaDetailView: View {
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
     @State private var selectedEpisode: MediaItem?
+    /// The title the player ended up on after handing over to a suggestion or next episode.
+    @State private var lastPlayedItem: MediaItem?
     @State private var selectedPerson: MediaPerson?
     @State private var loadedSeasonId: String?
     @State private var trailers: [MediaItem] = []
@@ -260,9 +262,10 @@ struct MediaDetailView: View {
         }
         #endif
 #if os(iOS)
-        .fullScreenCover(item: $playbackRequest, onDismiss: { Task { await refreshAfterPlayback() } }) { request in
+        .fullScreenCover(item: $playbackRequest, onDismiss: playerDismissed) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 PlayerView.keepOrientationOnNextDisappear = true
+                lastPlayedItem = next
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
             .id(request.item.id)
@@ -466,6 +469,17 @@ struct MediaDetailView: View {
     /// Re-reads the playback position after the player closes, so Play becomes Resume (and the
     /// episode list's progress updates) without leaving and re-entering this screen. A full
     /// `load()` would flash the loading state, so only the progress-bearing data is refetched.
+    /// Closing the player lands on whatever it was last playing: a suggestion opens its own
+    /// detail screen, while later episodes of this series just refresh this one.
+    private func playerDismissed() {
+        let last = lastPlayedItem
+        lastPlayedItem = nil
+        Task { await refreshAfterPlayback() }
+        guard let last, last.id != item.id else { return }
+        let sameSeries = last.type == .episode && last.seriesId != nil && last.seriesId == seasonSeriesId
+        if !sameSeries { selectedEpisode = last }
+    }
+
     private func refreshAfterPlayback() async {
         guard let cred = credential, let header = authHeader else { return }
         // The player reports its final position as it closes; give that request a moment to land.
