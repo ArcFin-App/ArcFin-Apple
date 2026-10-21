@@ -142,6 +142,56 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// Movies and series the user has favorited, for Home's Favorites shelf.
+    public func getFavorites(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 20
+    ) async throws -> [MediaItem] {
+        try await getHomeShelfItems(
+            credential: credential, authHeader: authHeader, limit: limit,
+            extra: [.init(name: "Filters", value: "IsFavorite"),
+                    .init(name: "SortBy", value: "SortName"),
+                    .init(name: "SortOrder", value: "Ascending")])
+    }
+
+    /// Highly rated titles the user hasn't watched — "what should I watch tonight" picks.
+    public func getTopRatedUnwatched(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 16
+    ) async throws -> [MediaItem] {
+        try await getHomeShelfItems(
+            credential: credential, authHeader: authHeader, limit: limit,
+            extra: [.init(name: "IsPlayed", value: "false"),
+                    .init(name: "MinCommunityRating", value: "7"),
+                    .init(name: "SortBy", value: "CommunityRating"),
+                    .init(name: "SortOrder", value: "Descending")])
+    }
+
+    private func getHomeShelfItems(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int,
+        extra: [URLQueryItem]
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating"),
+            .init(name: "EnableUserData", value: "true"),
+        ] + extra
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
     public func getContinueWatching(
         credential: ServerCredential,
         authHeader: String,
