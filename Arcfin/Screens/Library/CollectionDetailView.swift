@@ -101,17 +101,7 @@ struct CollectionDetailView: View {
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
         }
-        .background {
-            ZStack {
-                DT.Color.backgroundPrimary
-                if let heroTint {
-                    LinearGradient(colors: [heroTint.opacity(0.45), .clear], startPoint: .top, endPoint: .center)
-                }
-            }
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.4), value: heroTint)
-        }
-        .screenBackground()
+        .detailPageBackground(tint: heroTint)
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         #if os(iOS)
@@ -159,34 +149,10 @@ struct CollectionDetailView: View {
 
     // MARK: - Hero
 
+    /// The same hero as a title's page, with the fanned posters and title over its fade.
     private var heroSection: some View {
-        ZStack(alignment: .bottomLeading) {
-            Group {
-                if let url = mediaRepo.imageURL(for: collection, type: .backdrop, fillWidth: 1200) {
-                    RetryingAsyncImage(
-                        url: url,
-                        logCategory: "CollectionDetailView",
-                        logContext: "backdrop collection=\(collection.name)",
-                        content: { img in img.resizable().scaledToFill() },
-                        placeholder: { fallbackHero }
-                    )
-                } else {
-                    fallbackHero
-                }
-            }
-            .frame(height: 420)
-            .containerRelativeFrame(.horizontal)
-            .clipped()
-
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.35), location: 0.45),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.85), location: 0.8),
-                    .init(color: DT.Color.backgroundPrimary, location: 1),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
+        VStack(alignment: .leading, spacing: 0) {
+            DetailHeroBackdrop(url: mediaRepo.imageURL(for: collection, type: .backdrop, fillWidth: 1200), height: 300)
 
             HStack(alignment: .bottom, spacing: 14) {
                 posterStack
@@ -209,10 +175,8 @@ struct CollectionDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.bottom, DT.Spacing.sm)
+            .padding(.top, -96)
         }
-        .frame(height: 420)
-        .containerRelativeFrame(.horizontal)
     }
 
     private var metaLine: String {
@@ -252,13 +216,6 @@ struct CollectionDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.12), lineWidth: 1))
         .shadow(color: .black.opacity(0.6), radius: 10, y: 4)
-    }
-
-    private var fallbackHero: some View {
-        LinearGradient(
-            colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
     }
 
     // MARK: - Actions & progress
