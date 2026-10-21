@@ -10,6 +10,14 @@ struct HomeShelfSettingsView: View {
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
+    private var editMode: EditMode { shuffleShelves ? .inactive : .active }
+
+    private var footerText: String {
+        shuffleShelves
+            ? "Turning a shelf off hides it from Home — it still only shows when it actually has content."
+            : "Drag to reorder. Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before."
+    }
+
     var body: some View {
         List {
             Section {
@@ -38,17 +46,16 @@ struct HomeShelfSettingsView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .onMove(perform: shuffleShelves ? nil : move)
+                .onMove(perform: move)
+                .moveDisabled(shuffleShelves)
             } header: {
                 Text("Home Shelves")
             } footer: {
-                Text(shuffleShelves
-                    ? "Turning a shelf off hides it from Home — it still only shows when it actually has content."
-                    : "Drag to reorder. Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before.")
+                Text(footerText)
             }
         }
         #if os(iOS)
-        .environment(\.editMode, Binding<EditMode>.constant(shuffleShelves ? .inactive : .active))
+        .environment(\.editMode, Binding<EditMode>.constant(editMode))
         #endif
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
