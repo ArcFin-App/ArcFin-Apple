@@ -58,6 +58,8 @@ final class MediaRepository {
     var recentlyReleasedMovies: [MediaItem] = []
     var recentlyAiredEpisodes: [MediaItem] = []
     var watchAgain: [MediaItem] = []
+    /// A few random genres, each with unwatched titles — refreshed on every Home load.
+    var genreShelves: [(genre: String, items: [MediaItem])] = []
     /// The most recently finished title and unwatched titles similar to it.
     var becauseYouWatched: (source: MediaItem, items: [MediaItem])?
     var libraries: [JellyfinLibrary] = []
@@ -160,6 +162,7 @@ final class MediaRepository {
         async let rrMov   = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Movie")
         async let raEp    = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Episode")
         async let wAgain  = client.getWatchAgain(credential: credential, authHeader: header)
+        async let genres  = client.getGenreShelves(credential: credential, authHeader: header)
 
         continueWatching       = (try? await cw)     ?? []
         recentlyAdded          = (try? await la)     ?? []
@@ -188,6 +191,7 @@ final class MediaRepository {
         recentlyReleasedMovies  = (try? await rrMov)  ?? []
         recentlyAiredEpisodes   = (try? await raEp)   ?? []
         watchAgain              = (try? await wAgain) ?? []
+        genreShelves            = (try? await genres) ?? []
         becauseYouWatched       = await loadBecauseYouWatched(credential: credential, header: header)
 
         return succeeded
