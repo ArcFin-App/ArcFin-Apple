@@ -64,47 +64,49 @@ enum SplashMosaicStore {
     }
 }
 
-/// The library's recent posters standing in a ring that slowly turns in 3D around the mark,
-/// the nearest cards bright and large, the far side dim and small behind it.
-struct SplashPosterCarousel: View {
+/// A tilted wall of posters, each column drifting in the opposite direction to its neighbour.
+struct SplashMosaicView: View {
     let posters: [Image]
-    /// 0…1 entrance: the ring widens from the centre and fades up.
+    /// 0…1: how far the staggered column fade-in has got.
     var reveal: Double
     var isAnimated: Bool
 
+    private let columnCount = 5
+    /// Each column is one run of posters shown twice, so scrolling by exactly one run loops
+    /// seamlessly.
+    private let run = 4
+
     var body: some View {
         GeometryReader { proxy in
-            let count = min(posters.count, 12)
-            let radius = min(proxy.size.width, 520) * 0.62 * reveal
-            let cardWidth = min(proxy.size.width, 520) * 0.26
+            let columnWidth = max(proxy.size.width, proxy.size.height) / 4.2
+            let posterHeight = columnWidth * 1.5
+            let spacing: CGFloat = 12
+            let cycle = (posterHeight + spacing) * CGFloat(run)
+
             TimelineView(.animation(paused: !isAnimated)) { timeline in
-                let spin = isAnimated ? timeline.date.timeIntervalSinceReferenceDate * 10 : 0
-                ZStack {
-                    ForEach(0..<count, id: \.self) { index in
-                        let angle = (Double(index) / Double(count)) * 360 + spin
-                        let radians = angle * .pi / 180
-                        // depth: 1 nearest the viewer, -1 directly behind the mark
-                        let depth = cos(radians)
-                        posters[index]
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: cardWidth, height: cardWidth * 1.5)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(.white.opacity(0.12), lineWidth: 1)
-                            )
-                            .rotation3DEffect(.degrees(-angle), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
-                            .scaleEffect(0.62 + 0.38 * (depth + 1) / 2)
-                            .brightness(-0.45 * (1 - (depth + 1) / 2))
-                            .offset(x: sin(radians) * radius)
-                            .zIndex(depth)
+                let time = timeline.date.timeIntervalSinceReferenceDate
+                HStack(alignment: .top, spacing: spacing) {
+                    ForEach(0..<columnCount, id: \.self) { column in
+                        let speed = 14 + CGFloat(column % 3) * 4
+                        let travelled = isAnimated ? CGFloat(time * speed).truncatingRemainder(dividingBy: cycle) : cycle / 2
+                        // Alternate columns run up and down.
+                        let drift = column.isMultiple(of: 2) ? travelled : cycle - travelled
+                        VStack(spacing: spacing) {
+                            ForEach(0..<(run * 2), id: \.self) { row in
+                                posters[(column * run + row % run) % posters.count]
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: columnWidth, height: posterHeight)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                        }
+                        .offset(y: drift - cycle)
+                        .opacity(min(max(reveal * Double(columnCount) - Double(column) * 0.6, 0), 1))
                     }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
-                // Seen slightly from above, like a turntable.
-                .rotation3DEffect(.degrees(14), axis: (x: 1, y: 0, z: 0), perspective: 0.4)
-                .opacity(reveal)
+                .rotationEffect(.degrees(-14))
+                .scaleEffect(1.45)
             }
         }
         .allowsHitTesting(false)
