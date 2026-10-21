@@ -27,7 +27,7 @@ struct PlaylistsGridView: View {
                     .buttonStyle(PressableButtonStyle())
                 ForEach(store.playlists) { playlist in
                     NavigationLink {
-                        PlaylistDetailView(playlist: playlist)
+                        LibraryDetailView(library: Self.library(for: playlist), playlist: playlist)
                     } label: {
                         PlaylistCard(playlist: playlist, imageURL: playlistImageURL(playlist, mediaRepo: mediaRepo))
                     }
@@ -49,7 +49,9 @@ struct PlaylistsGridView: View {
             Button("Cancel", role: .cancel) { newPlaylistName = "" }
             Button("Create") { create() }
         }
-        .navigationDestination(item: $createdPlaylist) { PlaylistDetailView(playlist: $0, startsAddingTitles: true) }
+        .navigationDestination(item: $createdPlaylist) {
+            LibraryDetailView(library: Self.library(for: $0), playlist: $0, startsAddingTitles: true)
+        }
         .task { await reload() }
     }
 
@@ -72,6 +74,11 @@ struct PlaylistsGridView: View {
     private func reload() async {
         guard let cred = authManager.state.credential else { return }
         await store.load(credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken))
+    }
+
+    /// A playlist opens in the same library screen as Movies and Shows.
+    static func library(for playlist: MediaPlaylist) -> JellyfinLibrary {
+        JellyfinLibrary(id: playlist.id, name: playlist.name, collectionType: .playlists)
     }
 
     /// Creates it empty, then opens it straight into picking titles.
@@ -135,327 +142,6 @@ private struct PlaylistCard: View {
             Image(systemName: "list.and.film")
                 .font(.system(.title, weight: .light))
                 .foregroundStyle(.white.opacity(0.8))
-        }
-    }
-}
-
-// MARK: - Playlist page
-
-struct PlaylistDetailView: View {
-    let playlist: MediaPlaylist
-
-    @Environment(AuthManager.self) private var authManager
-    @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(PlaybackPresenter.self) private var playbackPresenter
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var entries: [PlaylistEntry] = []
-    @State private var isLoading = true
-    @State private var name: String
-    @State private var playbackRequest: MediaDetailView.PlaybackRequest?
-    @State private var showRename = false
-    @State private var renameText = ""
-    @State private var confirmDelete = false
-    @State private var errorMessage: String?
-    @State private var showAddTitles = false
-
-    private let client = JellyfinMediaClient()
-
-    /// `startsAddingTitles` opens the title picker straight away, for a playlist just created.
-    init(playlist: MediaPlaylist, startsAddingTitles: Bool = false) {
-        self.playlist = playlist
-        _name = State(initialValue: playlist.name)
-        _showAddTitles = State(initialValue: startsAddingTitles)
-    }
-
-    private var credential: ServerCredential? { authManager.state.credential }
-    private var authHeader: String? { credential.map { authManager.authClient.authHeader(token: $0.accessToken) } }
-
-    var body: some View {
-        List {
-            Section {
-                header
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-            }
-
-            if isLoading && entries.isEmpty {
-                ProgressView()
-                    .tint(DT.Color.accent)
-                    .frame(maxWidth: .infinity, minHeight: 160)
-                    .listRowBackground(Color.clear)
-            } else if entries.isEmpty {
-                VStack(spacing: 12) {
-                    ContentUnavailableView(
-                        "Empty Playlist",
-                        systemImage: "list.and.film",
-                        description: Text("Add movies, shows and episodes, or long-press any title and choose Add to Playlist."))
-                    Button { showAddTitles = true } label: {
-                        Label("Add Titles", systemImage: "plus")
-                            .font(.system(.subheadline, weight: .semibold))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(DT.Color.accent)
-                }
-                .frame(maxWidth: .infinity)
-                .listRowBackground(Color.clear)
-            } else {
-                Section {
-                    ForEach(entries) { entry in
-                        Button { play(from: entry) } label: { row(entry.item) }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Color.clear)
-                    }
-                    #if os(iOS)
-                    .onDelete(perform: remove)
-                    .onMove(perform: move)
-                    #endif
-                }
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .screenBackground()
-        .navigationTitle(name)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .toolbar {
-            #if os(iOS)
-            ToolbarItem(placement: .topBarTrailing) {
-                if !entries.isEmpty { EditButton() }
-            }
-            #endif
-            ToolbarItem(placement: .primaryAction) {
-                Button { showAddTitles = true } label: { Image(systemName: "plus") }
-                    .accessibilityLabel("Add Titles")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button { renameText = name; showRename = true } label: { Label("Rename", systemImage: "pencil") }
-                    Button(role: .destructive) { confirmDelete = true } label: { Label("Delete Playlist", systemImage: "trash") }
-                } label: {
-                    Image(systemName: "ellipsis")
-                }
-                .accessibilityLabel("Playlist options")
-            }
-        }
-        .alert("Rename Playlist", isPresented: $showRename) {
-            TextField("Name", text: $renameText)
-            Button("Cancel", role: .cancel) {}
-            Button("Save") { rename() }
-        }
-        .confirmationDialog("Delete \(name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete Playlist", role: .destructive) { deletePlaylist() }
-        } message: {
-            Text("The titles stay in your library.")
-        }
-        .alert("Playlist", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        .sheet(isPresented: $showAddTitles) {
-            AddTitlesToPlaylistSheet(playlistId: playlist.id, existingIds: Set(entries.map(\.item.id))) {
-                Task { await load() }
-            }
-        }
-        .task { await load() }
-        .refreshable { await load() }
-        #if os(macOS)
-        .onChange(of: playbackRequest) { _, request in
-            guard let request else { return }
-            playbackPresenter.present(request.item, startTicks: request.startTicks)
-            playbackRequest = nil
-        }
-        .onChange(of: playbackPresenter.request == nil) { _, closed in
-            if closed { PlayQueue.clear(); Task { await load() } }
-        }
-        #else
-        .fullScreenCover(item: $playbackRequest, onDismiss: {
-            PlayQueue.clear()
-            Task { await load() }
-        }) { request in
-            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                PlayerView.keepOrientationOnNextDisappear = true
-                playbackRequest = MediaDetailView.PlaybackRequest(item: next, startTicks: 0)
-            }
-            .id(request.item.id)
-        }
-        #endif
-    }
-
-    private var header: some View {
-        VStack(spacing: 14) {
-            Text(entries.count == 1 ? "1 title" : "\(entries.count) titles")
-                .font(.system(.footnote))
-                .foregroundStyle(DT.Color.textSecondary)
-            HStack(spacing: 12) {
-                headerButton("Play", systemImage: "play.fill", prominent: true) {
-                    if let first = entries.first { play(from: first) }
-                }
-                headerButton("Shuffle", systemImage: "shuffle", prominent: false) { shuffle() }
-            }
-            .disabled(entries.isEmpty)
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.vertical, DT.Spacing.md)
-    }
-
-    private func headerButton(_ title: String, systemImage: String, prominent: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(.system(.subheadline, weight: .semibold))
-                .foregroundStyle(prominent ? Color.black : DT.Color.textPrimary)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(prominent ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.1)),
-                            in: RoundedRectangle(cornerRadius: DT.Radius.md))
-        }
-        .buttonStyle(PressableButtonStyle())
-    }
-
-    private func row(_ item: MediaItem) -> some View {
-        HStack(spacing: 12) {
-            CachedAsyncImage(url: thumbnailURL(for: item)) { phase in
-                switch phase {
-                case .success(let image): image.resizable().scaledToFill()
-                default: DT.Color.backgroundSecondary
-                }
-            }
-            .frame(width: 112, height: 63)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(alignment: .bottom) {
-                if let pct = item.userData?.playedPercentage, pct > 0, pct < 100 {
-                    GeometryReader { geo in
-                        Capsule().fill(DT.Color.accent)
-                            .frame(width: geo.size.width * pct / 100, height: 3)
-                            .frame(maxHeight: .infinity, alignment: .bottom)
-                    }
-                    .padding(4)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
-                    .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .lineLimit(1)
-                Text(subtitle(for: item))
-                    .font(.system(.caption))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            if item.userData?.played == true {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(DT.Color.accent)
-                    .accessibilityLabel("Watched")
-            }
-        }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-    }
-
-    private func subtitle(for item: MediaItem) -> String {
-        if item.type == .episode {
-            let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }].compactMap { $0 }.joined(separator: " · ")
-            return [code, item.name].filter { !$0.isEmpty }.joined(separator: " · ")
-        }
-        return item.productionYear.map(String.init) ?? ""
-    }
-
-    private func thumbnailURL(for item: MediaItem) -> URL? {
-        item.type == .episode
-            ? mediaRepo.episodeThumbnailURL(for: item, fillWidth: 240)
-            : mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 240)
-    }
-
-    // MARK: - Actions
-
-    private func load() async {
-        guard let credential, let authHeader else { return }
-        if let fetched = try? await client.getPlaylistEntries(credential: credential, authHeader: authHeader, playlistId: playlist.id) {
-            entries = fetched
-        }
-        isLoading = false
-    }
-
-    private func play(from entry: PlaylistEntry) {
-        guard let index = entries.firstIndex(of: entry) else { return }
-        PlayQueue.start(entries[index...].map(\.item))
-        startPlayback(entry.item)
-    }
-
-    private func shuffle() {
-        let shuffled = entries.map(\.item).shuffled()
-        guard let first = shuffled.first else { return }
-        PlayQueue.start(shuffled)
-        startPlayback(first)
-    }
-
-    private func startPlayback(_ item: MediaItem) {
-        let resume = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
-        playbackRequest = MediaDetailView.PlaybackRequest(item: item, startTicks: resume)
-    }
-
-    #if os(iOS)
-    private func remove(at offsets: IndexSet) {
-        guard let credential, let authHeader else { return }
-        let removed = offsets.map { entries[$0].entryId }
-        entries.remove(atOffsets: offsets)
-        Task {
-            do {
-                try await client.removeFromPlaylist(credential: credential, authHeader: authHeader, playlistId: playlist.id, entryIds: removed)
-            } catch {
-                errorMessage = error.localizedDescription
-                await load()
-            }
-        }
-    }
-
-    private func move(from source: IndexSet, to destination: Int) {
-        guard let credential, let authHeader, let from = source.first else { return }
-        let entryId = entries[from].entryId
-        entries.move(fromOffsets: source, toOffset: destination)
-        let newIndex = entries.firstIndex { $0.entryId == entryId } ?? 0
-        Task {
-            do {
-                try await client.movePlaylistEntry(credential: credential, authHeader: authHeader, playlistId: playlist.id, entryId: entryId, toIndex: newIndex)
-            } catch {
-                errorMessage = error.localizedDescription
-                await load()
-            }
-        }
-    }
-    #endif
-
-    private func rename() {
-        let newName = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !newName.isEmpty, newName != name, let credential, let authHeader else { return }
-        let oldName = name
-        name = newName
-        Task {
-            do {
-                try await client.renamePlaylist(credential: credential, authHeader: authHeader, playlistId: playlist.id, name: newName)
-                await PlaylistStore.shared.load(credential: credential, authHeader: authHeader)
-            } catch {
-                name = oldName
-                errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    private func deletePlaylist() {
-        guard let credential, let authHeader else { return }
-        Task {
-            do {
-                try await client.deletePlaylist(credential: credential, authHeader: authHeader, playlistId: playlist.id)
-                await PlaylistStore.shared.load(credential: credential, authHeader: authHeader)
-                dismiss()
-            } catch {
-                errorMessage = error.localizedDescription
-            }
         }
     }
 }

@@ -899,8 +899,12 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
     case releaseDateAsc = "Release Date (Oldest)"
     case ratingDesc = "Rating (Highest)"
     case genreAsc = "Genre"
+    /// The order the playlist was put together in; only offered for playlists.
+    case playlistOrder = "Playlist Order"
 
     var id: String { rawValue }
+
+    static let standard = allCases.filter { $0 != .playlistOrder }
 
     var sortBy: String {
         switch self {
@@ -909,6 +913,7 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
         case .releaseDateDesc, .releaseDateAsc: return "PremiereDate"
         case .ratingDesc: return "CommunityRating"
         case .genreAsc: return "Genres"
+        case .playlistOrder: return "SortName"
         }
     }
 
@@ -916,7 +921,7 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
         switch self {
         case .nameAsc, .releaseDateAsc: return "Ascending"
         case .nameDesc, .dateAddedDesc, .releaseDateDesc, .ratingDesc: return "Descending"
-        case .genreAsc: return "Ascending"
+        case .genreAsc, .playlistOrder: return "Ascending"
         }
     }
 }
@@ -965,10 +970,35 @@ enum LibraryGridDensity: String, CaseIterable, Identifiable {
 
 struct LibraryDetailView: View {
     let library: JellyfinLibrary
+    /// Set when this shows a playlist: the same grid, filters and sort as any library, plus
+    /// playlist order, playing through it, and adding and removing titles.
+    var playlist: MediaPlaylist? = nil
+    /// Opens the title picker straight away, for a playlist that was just created.
+    var startsAddingTitles = false
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(AuthManager.self) private var authManager
     @Environment(StreamystatsRepository.self) private var statsRepo
+    @Environment(PlaybackPresenter.self) private var playbackPresenter
+    @Environment(\.dismiss) private var dismiss
+
+    // Playlist
+    @State private var playlistName: String?
+    /// Playlist entry ids by item id, which removing a row needs.
+    @State private var entryIds: [String: String] = [:]
+    @State private var playlistActionItem: MediaItem?
+    @State private var playlistPlayback: MediaDetailView.PlaybackRequest?
+    @State private var showAddTitles = false
+    @State private var showRename = false
+    @State private var renameText = ""
+    @State private var confirmDeletePlaylist = false
+    @State private var playlistError: String?
+
+    init(library: JellyfinLibrary, playlist: MediaPlaylist? = nil, startsAddingTitles: Bool = false) {
+        self.library = library
+        self.playlist = playlist
+        self.startsAddingTitles = startsAddingTitles
+    }
 
     @State private var items: [MediaItem] = []
     @State private var isLoading = true
@@ -1060,6 +1090,19 @@ struct LibraryDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .screenBackground()
+            } else if items.isEmpty, playlist != nil, !filtersActive {
+                VStack(spacing: 12) {
+                    ContentUnavailableView(
+                        "Empty Playlist", systemImage: "list.and.film",
+                        description: Text("Add movies, shows and episodes, or long-press any title and choose Add to Playlist."))
+                    Button { showAddTitles = true } label: {
+                        Label("Add Titles", systemImage: "plus").font(.headline)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(DT.Color.accent)
+                    Spacer()
+                }
+                .screenBackground()
             } else if items.isEmpty {
                 ContentUnavailableView(library.name,
                                       systemImage: library.collectionType.systemIcon,
@@ -1067,9 +1110,10 @@ struct LibraryDetailView: View {
                 .screenBackground()
             } else {
                 ScrollView(showsIndicators: false) {
+                    if playlist != nil { playlistHeader }
                     LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                         ForEach(items) { item in
-                            NavigationLink(value: navTarget(for: item)) {
+                            gridLink(for: item) {
 #if os(tvOS)
                                 PosterCard(
                                     title: item.name,
@@ -1114,14 +1158,14 @@ struct LibraryDetailView: View {
             }
         }
 #if os(macOS)
-        .navigationTitle(library.name)
+        .navigationTitle(playlistName ?? library.name)
 #elseif os(tvOS)
         .navigationTitle("")
 #else
         // Large + pinned-on-scroll, matching Browse (the parent screen) — this used to fake
         // its own title with a plain Text inside the ScrollView content instead, which just
         // scrolled away with nothing left pinned once you scrolled past it.
-        .navigationTitle(library.name)
+        .navigationTitle(playlistName ?? library.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar(.hidden, for: .tabBar)
 #endif
@@ -1154,6 +1198,22 @@ struct LibraryDetailView: View {
                 }
                 .accessibilityLabel("Grid density")
             }
+            if playlist != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button { showAddTitles = true } label: { Label("Add Titles", systemImage: "plus") }
+                        Button { renameText = playlistName ?? library.name; showRename = true } label: {
+                            Label("Rename", systemImage: "pencil")
+                        }
+                        Button(role: .destructive) { confirmDeletePlaylist = true } label: {
+                            Label("Delete Playlist", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                    .accessibilityLabel("Playlist options")
+                }
+            }
         }
 #if !os(macOS)
         .sheet(isPresented: $showFilterSheet) {
@@ -1161,7 +1221,7 @@ struct LibraryDetailView: View {
                 availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
-                extraFilters: $extraFilters
+                extraFilters: $extraFilters, sortOptions: sortOptions
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -1190,7 +1250,7 @@ struct LibraryDetailView: View {
                             availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                             selectedGenres: $selectedGenres, selectedYears: $selectedYears,
                             watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
-                extraFilters: $extraFilters
+                            extraFilters: $extraFilters, sortOptions: sortOptions
                         )
                     }
                     .frame(width: 380, height: 480)
@@ -1216,6 +1276,18 @@ struct LibraryDetailView: View {
             }
         }
         #endif
+        #if !os(macOS)
+        .fullScreenCover(item: $playlistPlayback, onDismiss: {
+            PlayQueue.clear()
+            Task { await reload() }
+        }) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                playlistPlayback = MediaDetailView.PlaybackRequest(item: next, startTicks: 0)
+            }
+            .id(request.item.id)
+        }
+        #endif
         .navigationDestination(item: $randomPick) { pick in
             if pick.type == .boxSet {
                 CollectionDetailView(collection: pick)
@@ -1229,8 +1301,142 @@ struct LibraryDetailView: View {
             Task { await reload() }
         }
 #endif
+        .modifier(PlaylistModifiers(
+            isPlaylist: playlist != nil,
+            actionItem: $playlistActionItem,
+            playback: $playlistPlayback,
+            showAddTitles: $showAddTitles,
+            showRename: $showRename,
+            renameText: $renameText,
+            confirmDelete: $confirmDeletePlaylist,
+            error: $playlistError,
+            playlistId: playlist?.id ?? "",
+            playlistName: playlistName ?? library.name,
+            existingIds: Set(items.map(\.id)),
+            onPlay: { item, ticks in startPlaylistPlayback(from: item, startTicks: ticks) },
+            onShowDetails: { randomPick = $0 },
+            onRename: renamePlaylist,
+            onDelete: deletePlaylist,
+            onChanged: { Task { await reload() } }
+        ))
+        #if os(macOS)
+        .onChange(of: playlistPlayback) { _, request in
+            guard let request else { return }
+            playbackPresenter.present(request.item, startTicks: request.startTicks)
+            playlistPlayback = nil
+        }
+        .onChange(of: playbackPresenter.request == nil) { _, closed in
+            if closed, playlist != nil { PlayQueue.clear(); Task { await reload() } }
+        }
+        #endif
         .task { await load() }
         .task { await loadFilterOptions() }
+    }
+
+    private var sortOptions: [LibrarySortOption] {
+        playlist != nil ? LibrarySortOption.allCases : LibrarySortOption.standard
+    }
+
+    /// A playlist's titles open a Play / Show Details choice instead of their page.
+    @ViewBuilder
+    private func gridLink<Content: View>(for item: MediaItem, @ViewBuilder label: () -> Content) -> some View {
+        if playlist != nil {
+            Button { playlistActionItem = item } label: { label() }
+        } else {
+            NavigationLink(value: navTarget(for: item)) { label() }
+        }
+    }
+
+    private var playlistHeader: some View {
+        HStack(spacing: 12) {
+            Button { playAllFromStart() } label: {
+                Label("Play", systemImage: "play.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 30)
+            }
+            .buttonStyle(.glassProminent)
+            .tint(DT.Color.accent)
+            Button { shufflePlaylist() } label: {
+                Label("Shuffle", systemImage: "shuffle")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 30)
+            }
+            .buttonStyle(.glass)
+        }
+        .controlSize(.large)
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, DT.Spacing.sm)
+    }
+
+    private var playableItems: [MediaItem] {
+        items.filter { $0.type == .movie || $0.type == .episode }
+    }
+
+    private func playAllFromStart() {
+        guard let first = playableItems.first else { return }
+        let ticks = first.userData?.played == true ? 0 : (first.userData?.playbackPositionTicks ?? 0)
+        startPlaylistPlayback(from: first, startTicks: ticks)
+    }
+
+    private func shufflePlaylist() {
+        let shuffled = playableItems.shuffled()
+        guard let first = shuffled.first else { return }
+        PlayQueue.start(shuffled)
+        playlistPlayback = MediaDetailView.PlaybackRequest(item: first, startTicks: 0)
+    }
+
+    /// Plays from `item` through the rest of the playlist in the order shown.
+    private func startPlaylistPlayback(from item: MediaItem, startTicks: Int64) {
+        let playable = playableItems
+        let start = playable.firstIndex(of: item) ?? 0
+        PlayQueue.start(playable.isEmpty ? [item] : Array(playable[start...]))
+        playlistPlayback = MediaDetailView.PlaybackRequest(item: item, startTicks: startTicks)
+    }
+
+    private func removeFromPlaylist(_ item: MediaItem) {
+        guard let playlist, let entryId = entryIds[item.id], let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        items.removeAll { $0.id == item.id }
+        Task {
+            do {
+                try await client.removeFromPlaylist(credential: cred, authHeader: header, playlistId: playlist.id, entryIds: [entryId])
+                await PlaylistStore.shared.load(credential: cred, authHeader: header)
+            } catch {
+                playlistError = error.localizedDescription
+                await reload()
+            }
+        }
+    }
+
+    private func renamePlaylist(_ name: String) {
+        let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let playlist, !newName.isEmpty, let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let oldName = playlistName
+        playlistName = newName
+        Task {
+            do {
+                try await client.renamePlaylist(credential: cred, authHeader: header, playlistId: playlist.id, name: newName)
+                await PlaylistStore.shared.load(credential: cred, authHeader: header)
+            } catch {
+                playlistName = oldName
+                playlistError = error.localizedDescription
+            }
+        }
+    }
+
+    private func deletePlaylist() {
+        guard let playlist, let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            do {
+                try await client.deletePlaylist(credential: cred, authHeader: header, playlistId: playlist.id)
+                await PlaylistStore.shared.load(credential: cred, authHeader: header)
+                dismiss()
+            } catch {
+                playlistError = error.localizedDescription
+            }
+        }
     }
 
     #if !os(tvOS)
@@ -1275,6 +1481,11 @@ struct LibraryDetailView: View {
 
     @ViewBuilder
     private func libraryMenu(_ item: MediaItem) -> some View {
+        if playlist != nil, entryIds[item.id] != nil {
+            Button(role: .destructive) { removeFromPlaylist(item) } label: {
+                Label("Remove from Playlist", systemImage: "minus.circle")
+            }
+        }
         #if os(iOS)
         if item.type == .movie || item.type == .episode {
             let ticks = (item.userData?.played == true) ? 0 : (item.userData?.playbackPositionTicks ?? 0)
@@ -1312,11 +1523,14 @@ struct LibraryDetailView: View {
     private func load() async {
         guard !hasLoaded else { return }
         hasLoaded = true
-        if let raw = UserDefaults.standard.string(forKey: sortDefaultsKey),
-           let saved = LibrarySortOption(rawValue: raw), saved != sortOption {
+        if playlistName == nil { playlistName = playlist?.name }
+        let saved = UserDefaults.standard.string(forKey: sortDefaultsKey).flatMap(LibrarySortOption.init(rawValue:))
+            ?? (playlist != nil ? .playlistOrder : nil)
+        if let saved, saved != sortOption, sortOptions.contains(saved) {
             restoringSort = true
             sortOption = saved
         }
+        if startsAddingTitles { showAddTitles = true }
         await fetchFirstPage()
     }
 
@@ -1337,6 +1551,19 @@ struct LibraryDetailView: View {
         // silently rendered an empty grid with nothing to point at. Logged now so a real
         // report of that has something concrete behind it instead of another guess.
         var fetched: (items: [MediaItem], nextOffset: Int, total: Int)?
+        if let playlist,
+           let entries = try? await client.getPlaylistEntries(credential: cred, authHeader: header, playlistId: playlist.id) {
+            entryIds = Dictionary(entries.map { ($0.item.id, $0.entryId) }, uniquingKeysWith: { first, _ in first })
+            // Playlist order with no filters is the playlist itself, as it was put together.
+            if sortOption == .playlistOrder, !filtersActive {
+                guard generation == fetchGeneration else { return }
+                items = entries.map(\.item)
+                serverOffset = items.count
+                totalItems = items.count
+                isLoading = false
+                return
+            }
+        }
         do {
             fetched = try await fetchPage(credential: cred, header: header, startIndex: 0)
         } catch {
@@ -1449,6 +1676,68 @@ struct LibraryDetailView: View {
     #endif
 }
 
+// MARK: - Playlist dialogs
+
+/// A playlist's choices and sheets, kept out of LibraryDetailView's already long chain.
+private struct PlaylistModifiers: ViewModifier {
+    let isPlaylist: Bool
+    @Binding var actionItem: MediaItem?
+    @Binding var playback: MediaDetailView.PlaybackRequest?
+    @Binding var showAddTitles: Bool
+    @Binding var showRename: Bool
+    @Binding var renameText: String
+    @Binding var confirmDelete: Bool
+    @Binding var error: String?
+    let playlistId: String
+    let playlistName: String
+    let existingIds: Set<String>
+    let onPlay: (MediaItem, Int64) -> Void
+    let onShowDetails: (MediaItem) -> Void
+    let onRename: (String) -> Void
+    let onDelete: () -> Void
+    let onChanged: () -> Void
+
+    func body(content: Content) -> some View {
+        if isPlaylist {
+            content
+                .confirmationDialog(actionItem?.name ?? "", isPresented: Binding(
+                    get: { actionItem != nil }, set: { if !$0 { actionItem = nil } }
+                ), titleVisibility: .visible, presenting: actionItem) { item in
+                    let resume = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+                    if item.type == .movie || item.type == .episode {
+                        if resume > 0 {
+                            Button("Resume") { onPlay(item, resume) }
+                            Button("Play from Beginning") { onPlay(item, 0) }
+                        } else {
+                            Button("Play") { onPlay(item, 0) }
+                        }
+                    }
+                    Button("Show Details") { onShowDetails(item) }
+                }
+                .sheet(isPresented: $showAddTitles) {
+                    AddTitlesToPlaylistSheet(playlistId: playlistId, existingIds: existingIds, onAdded: onChanged)
+                }
+                .alert("Rename Playlist", isPresented: $showRename) {
+                    TextField("Name", text: $renameText)
+                    Button("Cancel", role: .cancel) {}
+                    Button("Save") { onRename(renameText) }
+                }
+                .confirmationDialog("Delete \(playlistName)?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                    Button("Delete Playlist", role: .destructive, action: onDelete)
+                } message: {
+                    Text("The titles stay in your library.")
+                }
+                .alert("Playlist", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(error ?? "")
+                }
+        } else {
+            content
+        }
+    }
+}
+
 // MARK: - Library filter sheet
 
 #if !os(tvOS)
@@ -1467,6 +1756,7 @@ struct LibraryFilterList: View {
     @Binding var favoritesOnly: Bool
     @Binding var sortOption: LibrarySortOption
     @Binding var extraFilters: LibraryExtraFilters
+    var sortOptions: [LibrarySortOption] = LibrarySortOption.standard
 
     var body: some View {
         List {
@@ -1476,7 +1766,7 @@ struct LibraryFilterList: View {
             // identically everywhere since nothing depends on a platform picker style.
             Section {
                 DisclosureGroup {
-                    ForEach(LibrarySortOption.allCases) { option in
+                    ForEach(sortOptions) { option in
                         filterRow(option.rawValue, isSelected: sortOption == option) {
                             sortOption = option
                         }
@@ -1639,6 +1929,7 @@ struct LibraryFilterSheet: View {
     @Binding var favoritesOnly: Bool
     @Binding var sortOption: LibrarySortOption
     @Binding var extraFilters: LibraryExtraFilters
+    var sortOptions: [LibrarySortOption] = LibrarySortOption.standard
 
     @Environment(\.dismiss) private var dismiss
 
@@ -1648,7 +1939,7 @@ struct LibraryFilterSheet: View {
                 availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
-                extraFilters: $extraFilters
+                extraFilters: $extraFilters, sortOptions: sortOptions
             )
             .navigationTitle("Filter & Sort")
             .navigationBarTitleDisplayMode(.inline)

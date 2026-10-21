@@ -316,7 +316,7 @@ private struct TVLibraryFilterList: View {
     var body: some View {
         List {
             Section("Sort By") {
-                ForEach(LibrarySortOption.allCases) { option in
+                ForEach(LibrarySortOption.standard) { option in
                     filterRow(option.rawValue, isSelected: sortOption == option) {
                         sortOption = option
                     }
