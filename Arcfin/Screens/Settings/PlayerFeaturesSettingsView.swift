@@ -76,7 +76,7 @@ struct PlayerFeaturesSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Player Features")
     }
 }

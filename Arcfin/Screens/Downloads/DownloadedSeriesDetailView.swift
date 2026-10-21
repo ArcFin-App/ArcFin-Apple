@@ -107,7 +107,7 @@ struct DownloadedSeriesDetailView: View {
         .scrollContentBackground(.hidden)
         .environment(\.editMode, $editMode)
         #endif
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         #if os(iOS)

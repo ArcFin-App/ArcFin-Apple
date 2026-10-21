@@ -39,7 +39,7 @@ struct AdminSessionsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Active Sessions")
         .task { await load() }
         .refreshable { await load() }

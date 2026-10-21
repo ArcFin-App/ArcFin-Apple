@@ -164,7 +164,7 @@ struct ServerSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Server Settings")
         .task {
             guard let base = activeBaseURL else { isLoadingInfo = false; return }

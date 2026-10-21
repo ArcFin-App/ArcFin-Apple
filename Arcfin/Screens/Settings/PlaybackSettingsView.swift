@@ -236,7 +236,7 @@ struct PlaybackSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Playback")
     }
 }

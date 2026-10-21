@@ -111,7 +111,7 @@ struct UsersView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Profiles")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -334,7 +334,7 @@ struct ProfileDetailView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle(profile.displayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

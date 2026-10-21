@@ -53,7 +53,7 @@ struct WatchlistView: View {
                 }
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Watchlist")
         .arcfinNavTitleLarge("Watchlist")
         .task {

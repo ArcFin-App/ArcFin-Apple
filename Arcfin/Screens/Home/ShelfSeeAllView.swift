@@ -39,7 +39,7 @@ struct ShelfSeeAllView: View {
             }
             .padding(DT.Spacing.pagePad)
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle(title)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

@@ -113,7 +113,7 @@ struct AppearanceView: View {
             #endif
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Appearance")
     }
 }

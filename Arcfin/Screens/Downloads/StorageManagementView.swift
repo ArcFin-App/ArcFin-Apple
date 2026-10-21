@@ -82,7 +82,7 @@ struct StorageManagementView: View {
                 #endif
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Manage Storage")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)

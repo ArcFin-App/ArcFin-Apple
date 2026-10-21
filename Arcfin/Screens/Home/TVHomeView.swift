@@ -79,7 +79,7 @@ struct TVHomeView: View {
                 .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
                 .ignoresSafeArea()
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationDestination(item: $heroDetailItem) { item in
                 TVMediaDetailView(item: item)
             }

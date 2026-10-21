@@ -89,7 +89,7 @@ struct DownloadsSettingsView: View {
             #endif
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Downloads")
     }
 }

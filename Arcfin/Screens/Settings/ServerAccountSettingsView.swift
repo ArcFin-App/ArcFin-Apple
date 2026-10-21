@@ -77,7 +77,7 @@ struct ServerAccountSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Server")
         #if !os(tvOS)
         .sheet(isPresented: $showSwitchServerSheet) {

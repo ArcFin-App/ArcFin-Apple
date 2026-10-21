@@ -59,7 +59,7 @@ struct BottomNavSettingsView: View {
         .environment(\.editMode, .constant(.active))
         #endif
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge(navTitle)
         .onAppear {
             // Persist the resolved default explicitly so an empty stored string only ever

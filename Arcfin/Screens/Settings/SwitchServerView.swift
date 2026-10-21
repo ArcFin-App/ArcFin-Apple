@@ -52,7 +52,7 @@ struct SwitchServerView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Switch Server")
     #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -67,7 +67,7 @@ struct SwitchServerView: View {
                 }
             }
             .arcfinListStyle()
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationTitle(group.host)
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

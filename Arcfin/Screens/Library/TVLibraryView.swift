@@ -39,7 +39,7 @@ struct TVLibraryView: View {
                     }
                 }
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 LibraryDetailView(library: library)
             }
@@ -109,7 +109,7 @@ struct TVCollectionDetailView: View {
             }
             .ignoresSafeArea()
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationDestination(item: $selectedItem) { i in
             TVMediaDetailView(item: i)
         }

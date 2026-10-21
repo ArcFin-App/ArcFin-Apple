@@ -72,7 +72,7 @@ struct TVMediaDetailView: View {
             .onPreferenceChange(TVSectionOffsetKey.self) { sectionOffsets = $0.sorted() }
             .ignoresSafeArea()
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .task { await load() }
         .task(id: item.tmdbId) {
             guard let tmdbId = item.tmdbId else { return }

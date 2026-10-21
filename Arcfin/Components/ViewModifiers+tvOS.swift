@@ -53,6 +53,15 @@ extension View {
 #endif
     }
 
+    /// A screen's background, always filling the whole screen. Applied straight to content
+    /// that sizes itself (a spinner, an empty state, a short stack while results load), the
+    /// colour only covered that content's narrow frame and the rest showed the system black
+    /// until the full results arrived.
+    func screenBackground() -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background { DT.Color.backgroundPrimary.ignoresSafeArea() }
+    }
+
     @ViewBuilder
     func arcfinRowSeparatorHidden() -> some View {
 #if os(tvOS)

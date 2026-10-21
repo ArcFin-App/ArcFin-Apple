@@ -50,7 +50,7 @@ struct SeerrRequestsListView: View {
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle(title)
         .arcfinNavTitleLarge(title)
         .toolbar {

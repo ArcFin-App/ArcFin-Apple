@@ -49,7 +49,7 @@ struct LibraryView: View {
                     SearchView(query: $searchQuery)
                 }
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationTitle("Browse")
             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
 #if !os(macOS) && !os(tvOS)
@@ -1042,12 +1042,12 @@ struct LibraryDetailView: View {
             if isLoading && items.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(DT.Color.backgroundPrimary)
+                    .screenBackground()
             } else if items.isEmpty {
                 ContentUnavailableView(library.name,
                                       systemImage: library.collectionType.systemIcon,
                                       description: Text("Nothing found in this library."))
-                .background(DT.Color.backgroundPrimary)
+                .screenBackground()
             } else {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
@@ -1093,7 +1093,7 @@ struct LibraryDetailView: View {
 #endif
                 }
                 .scrollPosition(id: $scrolledItemID)
-                .background(DT.Color.backgroundPrimary)
+                .screenBackground()
             }
         }
 #if os(macOS)

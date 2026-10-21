@@ -229,7 +229,7 @@ struct SettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
 #if os(tvOS)
         .id(listID)
         .onAppear { listID = UUID() }
@@ -483,7 +483,7 @@ struct SeerrPluginView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Seerr")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -738,7 +738,7 @@ struct StreamystatsPluginView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Streamystats")
     }
 
@@ -826,7 +826,7 @@ struct TVUsersView: View {
             }
         }
         .listStyle(.plain)
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Profiles")
     }
 

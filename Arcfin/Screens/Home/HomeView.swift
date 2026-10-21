@@ -68,7 +68,7 @@ struct MainTabView: View {
                     NavigationStack {
                         SearchView(query: $searchQuery)
                             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
-                            .background(DT.Color.backgroundPrimary)
+                            .screenBackground()
                             .navigationDestination(for: MediaItem.self) { item in
                                 TVMediaDetailView(item: item)
                             }
@@ -516,7 +516,7 @@ struct HomeView: View {
                     }
                 }
                 .coordinateSpace(name: "homeScroll")
-                .background(DT.Color.backgroundPrimary)
+                .screenBackground()
                 .ignoresSafeArea(edges: .top)
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()

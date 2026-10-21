@@ -97,7 +97,7 @@ struct SeerrItemDetailView: View {
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         #if os(iOS)

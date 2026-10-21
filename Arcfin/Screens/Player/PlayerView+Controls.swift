@@ -810,7 +810,7 @@ extension PlayerView {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         #endif
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Media Info")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -1947,7 +1947,7 @@ struct TrackSelectionSheet: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         #endif
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
     }
 
     private func trackRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {

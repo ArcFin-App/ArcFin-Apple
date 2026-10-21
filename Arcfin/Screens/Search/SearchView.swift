@@ -113,7 +113,7 @@ struct SearchView: View {
                 }
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .onChange(of: query) { _, newValue in
             performSearch(query: newValue)
         }

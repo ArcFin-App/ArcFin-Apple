@@ -49,7 +49,7 @@ struct IntegrationsSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Integrations")
     }
 

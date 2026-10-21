@@ -117,7 +117,7 @@ struct DownloadedItemDetailView: View {
                 .padding(DT.Spacing.pagePad)
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         #if os(iOS)

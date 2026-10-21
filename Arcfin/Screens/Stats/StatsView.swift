@@ -77,7 +77,7 @@ struct StatsView: View {
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .ignoresSafeArea(edges: .top)
         .task { if statsRepo.isConfigured { await statsRepo.load() } }
         .task(id: selectedPeriod) { await loadPeriodStats() }

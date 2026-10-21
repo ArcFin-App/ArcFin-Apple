@@ -21,7 +21,7 @@ struct TVSeerrView: View {
                     mainContent
                 }
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }

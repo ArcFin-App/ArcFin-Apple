@@ -37,7 +37,7 @@ struct SeerrView: View {
                     mainContent
                 }
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationTitle("Discover")
             .arcfinNavTitleLarge("Discover")
             .searchable(text: $searchText, prompt: "Movies, series, people…")

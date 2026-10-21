@@ -147,7 +147,7 @@ struct DownloadsView: View {
                 #endif
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .onAppear { downloadManager.purgeWatchedDownloads() }
         .navigationTitle("Downloads")
         #if os(iOS)

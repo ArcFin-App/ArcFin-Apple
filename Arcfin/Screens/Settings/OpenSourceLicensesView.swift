@@ -80,7 +80,7 @@ struct LicensesView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Licenses & Third-Party Notices")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

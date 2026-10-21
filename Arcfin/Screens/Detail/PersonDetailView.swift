@@ -114,7 +114,7 @@ struct PersonDetailView: View {
             .frame(maxWidth: .infinity)
             .padding(.bottom, DT.Spacing.md)
         }
-        .background { DT.Color.backgroundPrimary.ignoresSafeArea() }
+        .screenBackground()
         .navigationTitle(person.name)
         .sheet(item: $requestingCredit) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingCredit)

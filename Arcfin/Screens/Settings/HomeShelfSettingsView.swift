@@ -60,7 +60,7 @@ struct HomeShelfSettingsView: View {
         .environment(\.editMode, Binding<EditMode>.constant(editMode))
         #endif
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Home Shelves")
         .onAppear {
             if orderString.isEmpty { orderString = HomeShelfPrefs.encode(order) }
