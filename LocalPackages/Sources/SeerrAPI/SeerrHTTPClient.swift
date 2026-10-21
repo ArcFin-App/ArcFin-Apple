@@ -360,6 +360,56 @@ public actor SeerrHTTPClient {
         return try JSONDecoder().decode(SeerrDetailResponse.self, from: data).toDetail(includeSpecials: includeSpecials)
     }
 
+    /// A title's age rating for a country (e.g. "PG-13", "TV-MA"), from its TMDB release
+    /// certifications (movies) or content ratings (TV). Falls back to the US rating, then any.
+    /// nil when TMDB has none.
+    public func certification(mediaType: RequestMediaType, tmdbId: Int, region: String) async throws -> String? {
+        try await ensureAuthenticated()
+        let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        let decoded = try JSONDecoder().decode(SeerrCertificationResponse.self, from: data)
+        var byRegion: [String: String] = [:]
+        for entry in decoded.releases?.results ?? [] {
+            if let rating = entry.releaseDates?.compactMap({ $0.certification }).first(where: { !$0.isEmpty }) {
+                byRegion[entry.region] = rating
+            }
+        }
+        for entry in decoded.contentRatings?.results ?? [] where !(entry.rating ?? "").isEmpty {
+            byRegion[entry.region] = entry.rating
+        }
+        return byRegion[region.uppercased()] ?? byRegion["US"] ?? byRegion.values.first
+    }
+
+    /// Movies (or shows) matching a TMDB keyword, e.g. "time travel".
+    public func discoverByKeyword(_ keywordId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/keyword/\(keywordId)/movies", query: [("page", "\(page)")],
+                            defaultMediaType: .movie)
+    }
+
+    /// Popular titles first made in a language (ISO 639-1, e.g. "ko").
+    public func discoverByLanguage(_ language: String, mediaType: RequestMediaType, page: Int = 1) async throws -> [SeerrItem] {
+        let path = mediaType == .tv ? "api/v1/discover/tv/language/\(language)" : "api/v1/discover/movies/language/\(language)"
+        return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
+    }
+
+    /// Movies from a studio, or shows from a network, by TMDB id.
+    public func discoverByCompany(_ companyId: Int, mediaType: RequestMediaType, page: Int = 1) async throws -> [SeerrItem] {
+        let path = mediaType == .tv ? "api/v1/discover/tv/network/\(companyId)" : "api/v1/discover/movies/studio/\(companyId)"
+        return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
+    }
+
+    /// A title's studios (movies) or networks (TV) and keywords, for "more like this" rows.
+    public func related(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrRelatedInfo {
+        try await ensureAuthenticated()
+        let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        let decoded = try JSONDecoder().decode(SeerrRelatedResponse.self, from: data)
+        let companies = (mediaType == .tv ? decoded.networks : decoded.productionCompanies) ?? []
+        return SeerrRelatedInfo(
+            companies: companies.map { SeerrNamedEntity(id: $0.id, name: $0.name) },
+            keywords: (decoded.keywords ?? []).map { SeerrNamedEntity(id: $0.id, name: $0.name) })
+    }
+
     /// Server-wide request settings — whether a partial (per-season) request is even offered,
     /// and whether specials (season 0) are included in the season picker at all. Unauthenticated;
     /// Seerr serves this publicly.
@@ -574,6 +624,7 @@ private struct SeerrItemResponse: Decodable {
     let firstAirDate: String?
     let overview: String?
     let mediaInfo: SeerrMediaInfoResponse?
+    let adult: Bool?
     // Only present on a person's combined_credits entries — a plain discover/search/
     // recommendations row never has these, so they're harmlessly nil everywhere else.
     let character: String?
@@ -590,7 +641,8 @@ private struct SeerrItemResponse: Decodable {
         let status = mediaInfo.flatMap { SeerrAvailabilityStatus(rawValue: $0.status) }
         return SeerrItem(id: id, title: displayTitle, mediaType: type,
                          posterPath: posterPath, backdropPath: backdropPath,
-                         year: year, overview: overview, availabilityStatus: status)
+                         year: year, overview: overview, availabilityStatus: status,
+                         isAdult: adult ?? false)
     }
 
     /// For a person's combined_credits row — needs the TMDB-assigned mediaType (unlike
@@ -774,4 +826,33 @@ private struct SeerrDetailResponse: Decodable {
             trailerYouTubeKey: trailerYouTubeKey
         )
     }
+}
+
+private struct SeerrCertificationResponse: Decodable {
+    struct Releases: Decodable {
+        struct Entry: Decodable {
+            struct ReleaseDate: Decodable { let certification: String? }
+            let region: String
+            let releaseDates: [ReleaseDate]?
+            enum CodingKeys: String, CodingKey { case region = "iso_3166_1", releaseDates = "release_dates" }
+        }
+        let results: [Entry]?
+    }
+    struct ContentRatings: Decodable {
+        struct Entry: Decodable {
+            let region: String
+            let rating: String?
+            enum CodingKeys: String, CodingKey { case region = "iso_3166_1", rating }
+        }
+        let results: [Entry]?
+    }
+    let releases: Releases?
+    let contentRatings: ContentRatings?
+}
+
+private struct SeerrRelatedResponse: Decodable {
+    struct Named: Decodable { let id: Int; let name: String }
+    let productionCompanies: [Named]?
+    let networks: [Named]?
+    let keywords: [Named]?
 }

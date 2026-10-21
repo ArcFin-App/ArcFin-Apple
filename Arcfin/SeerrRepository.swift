@@ -85,7 +85,8 @@ final class SeerrRepository {
             async let t  = client.trending()
             async let m  = client.discoverMovies()
             async let tv = client.discoverTV()
-            let (newT, newM, newTV) = try await (t, m, tv)
+            let (rawT, rawM, rawTV) = try await (t, m, tv)
+            let newT = await visible(rawT), newM = await visible(rawM), newTV = await visible(rawTV)
             if !newT.isEmpty  || firstLoad { trending = newT }
             if !newM.isEmpty  || firstLoad { popularMovies = newM }
             if !newTV.isEmpty || firstLoad { popularTV = newTV }
@@ -111,7 +112,7 @@ final class SeerrRepository {
 
     func loadWatchlist() async {
         guard let client else { return }
-        watchlist = (try? await client.watchlist()) ?? []
+        watchlist = await visible((try? await client.watchlist()) ?? [])
         indexForSpotlight()
     }
 
@@ -173,7 +174,7 @@ final class SeerrRepository {
 
     func search(query: String) async -> [SeerrItem] {
         guard let client, !query.isEmpty else { return [] }
-        return (try? await client.search(query: query)) ?? []
+        return await visible((try? await client.search(query: query)) ?? [])
     }
 
     /// Genre picker data for browse-by-genre — fetched once per session, cheap and rarely
@@ -192,16 +193,16 @@ final class SeerrRepository {
         async let m = (try? await client.upcomingMovies()) ?? []
         async let t = (try? await client.upcomingTV()) ?? []
         let (movies, tv) = await (m, t)
-        upcomingMovies = movies
-        upcomingTV = tv
+        upcomingMovies = await visible(movies)
+        upcomingTV = await visible(tv)
     }
 
     func discoverByGenre(_ genreId: Int, mediaType: RequestMediaType) async -> [SeerrItem] {
         guard let client else { return [] }
         if mediaType == .tv {
-            return (try? await client.discoverTV(genreId: genreId)) ?? []
+            return await visible((try? await client.discoverTV(genreId: genreId)) ?? [])
         }
-        return (try? await client.discoverMovies(genreId: genreId)) ?? []
+        return await visible((try? await client.discoverMovies(genreId: genreId)) ?? [])
     }
 
     func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
@@ -323,7 +324,9 @@ final class SeerrRepository {
     /// caller can tell "no Seerr" from "fetched, nothing found."
     func personCredits(tmdbId: Int) async -> [SeerrPersonCredit]? {
         guard let client else { return nil }
-        return try? await client.personCredits(tmdbPersonId: tmdbId)
+        guard let credits = try? await client.personCredits(tmdbPersonId: tmdbId) else { return nil }
+        let allowed = Set(await visible(credits.map(\.asSeerrItem)).map { "\($0.mediaType):\($0.id)" })
+        return credits.filter { allowed.contains("\($0.mediaType):\($0.id)") }
     }
 
     func relatedMedia(mediaType: RequestMediaType, mediaId: Int) async -> [SeerrItem] {
@@ -332,8 +335,51 @@ final class SeerrRepository {
         async let similar = (try? await client.similar(mediaType: mediaType, mediaId: mediaId)) ?? []
         let merged = await recommendations + similar
         var seen = Set<Int>()
-        return merged.filter { item in
+        return await visible(merged.filter { item in
             seen.insert(item.id).inserted
+        })
+    }
+
+    // MARK: - More discovery
+
+    /// Popular titles first made in a language (ISO 639-1).
+    func discoverByLanguage(_ language: String, mediaType: RequestMediaType) async -> [SeerrItem] {
+        guard let client else { return [] }
+        return await visible((try? await client.discoverByLanguage(language, mediaType: mediaType)) ?? [])
+    }
+
+    /// Movies from a studio, or shows from a network.
+    func discoverByCompany(_ id: Int, mediaType: RequestMediaType) async -> [SeerrItem] {
+        guard let client else { return [] }
+        return await visible((try? await client.discoverByCompany(id, mediaType: mediaType)) ?? [])
+    }
+
+    func discoverByKeyword(_ id: Int) async -> [SeerrItem] {
+        guard let client else { return [] }
+        return await visible((try? await client.discoverByKeyword(id)) ?? [])
+    }
+
+    func relatedInfo(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrRelatedInfo? {
+        guard let client else { return nil }
+        return try? await client.related(mediaType: mediaType, tmdbId: tmdbId)
+    }
+
+    /// A Seerr title's age rating, for showing on its page.
+    func certification(for item: SeerrItem) async -> String? {
+        if let known = ProfileRules.shared.certification(for: item) { return known }
+        guard let client else { return nil }
+        let region = Locale.current.region?.identifier ?? "US"
+        return try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region)
+    }
+
+    // MARK: - Parental controls
+
+    /// What the signed-in profile may see of a Seerr list, by its parental controls.
+    private func visible(_ items: [SeerrItem]) async -> [SeerrItem] {
+        guard let client else { return items }
+        return await ProfileRules.shared.visible(items) { item, region in
+            let rating = try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region)
+            return rating ?? nil
         }
     }
 }

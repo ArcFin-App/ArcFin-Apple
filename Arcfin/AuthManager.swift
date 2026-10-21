@@ -350,6 +350,7 @@ final class AuthManager {
         #endif
         SplashMosaicStore.clear()
         PlaylistStore.shared.clear()
+        ProfileRules.shared.clear()
         if case .authenticated(let current) = state, current.id == id {
             if let next = profiles.first {
                 persist(active: next)

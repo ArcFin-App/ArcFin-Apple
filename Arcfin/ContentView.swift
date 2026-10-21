@@ -102,6 +102,18 @@ struct ContentView: View {
         }
     }
 
+    /// Through the lock screen's profile picker, so a PIN on another profile still applies.
+    private func switchProfileFromSchedule() {
+        #if !os(tvOS)
+        isAppLocked = true
+        #endif
+    }
+
+    private func loadProfileRules() async {
+        guard let credential = authManager.state.credential else { return }
+        await ProfileRules.shared.load(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
+    }
+
     #if os(iOS)
     private func consumeControlLink() {
         guard let link = UserDefaults.standard.string(forKey: ControlRoute.pendingKey), let url = URL(string: link) else { return }
@@ -146,8 +158,15 @@ struct ContentView: View {
             .transition(.opacity)
         #endif
         case .main:
-            MainTabView()
-                .transition(.opacity)
+            // The profile's access schedule, checked every minute.
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                if ProfileRules.shared.isWithinSchedule(at: context.date) {
+                    MainTabView()
+                } else {
+                    AccessScheduleView(onSwitchProfile: switchProfileFromSchedule)
+                }
+            }
+            .transition(.opacity)
         case .offline:
             NavigationStack {
                 DownloadsView(goBackOnline: { offlineModeEnabled = false })
@@ -269,6 +288,7 @@ struct ContentView: View {
                 Task { await authManager.reresolveBaseURLIfNeeded() }
                 downloadManager.refreshSmartDownloads()
                 syncOfflineProgress()
+                Task { await loadProfileRules() }
             }
             #endif
         }
@@ -297,6 +317,9 @@ struct ContentView: View {
         // The explicit "I'm back online" moment — items played while offline sync then too,
         // not just at next cold launch.
         .onChange(of: authManager.networkChanges) { syncOfflineProgress() }
+        // The profile's parental controls and permissions, from the server: on sign-in, a
+        // profile switch, and each return to the app (an admin may have changed them).
+        .task(id: authManager.state.credential?.id) { await loadProfileRules() }
         .onChange(of: offlineModeEnabled) { _, isOffline in
             if !isOffline { syncOfflineProgress() }
         }

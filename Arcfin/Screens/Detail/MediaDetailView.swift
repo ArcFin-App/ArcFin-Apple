@@ -1135,6 +1135,7 @@ struct MediaDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(episodes.isEmpty || isSeasonFullyDownloaded)
+                .shown(ProfileRules.shared.canDownload)
                 #else
                 Text("Episodes")
                     .font(.system(.footnote, design: .default, weight: .medium))
@@ -1339,12 +1340,12 @@ struct MediaDetailView: View {
             Button { PlaylistStore.shared.addingItem = item } label: {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }
-            if item.type == .movie || item.type == .episode {
+            if (item.type == .movie || item.type == .episode) && ProfileRules.shared.canManageSubtitles {
                 Button { showSubtitleSearch = true } label: {
                     Label("Search for Subtitles…", systemImage: "captions.bubble")
                 }
             }
-            if let seriesId = seasonSeriesId {
+            if let seriesId = seasonSeriesId, ProfileRules.shared.canDownload {
                 Picker(selection: Binding(
                     get: { keptEpisodeCount },
                     set: { count in

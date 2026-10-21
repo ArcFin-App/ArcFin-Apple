@@ -99,13 +99,16 @@ public struct SeerrItem: Sendable, Identifiable, Equatable, Hashable {
     public var year: String?
     public var overview: String?
     public var availabilityStatus: SeerrAvailabilityStatus?
+    /// TMDB's adult flag, on movies only.
+    public var isAdult: Bool
 
     public init(id: Int, title: String, mediaType: RequestMediaType, posterPath: String? = nil,
                 backdropPath: String? = nil, year: String? = nil, overview: String? = nil,
-                availabilityStatus: SeerrAvailabilityStatus? = nil) {
+                availabilityStatus: SeerrAvailabilityStatus? = nil, isAdult: Bool = false) {
         self.id = id; self.title = title; self.mediaType = mediaType
         self.posterPath = posterPath; self.backdropPath = backdropPath
         self.year = year; self.overview = overview; self.availabilityStatus = availabilityStatus
+        self.isAdult = isAdult
     }
 
     public var posterURL: URL? {
@@ -288,5 +291,21 @@ public struct SeerrMediaDetail: Sendable, Equatable {
         self.runtimeMinutes = runtimeMinutes; self.voteAverage = voteAverage
         self.status = status; self.cast = cast; self.seasons = seasons
         self.seasonRows = seasonRows; self.trailerYouTubeKey = trailerYouTubeKey
+    }
+}
+
+/// A TMDB company, network or keyword: just enough to label and browse a row by it.
+public struct SeerrNamedEntity: Sendable, Identifiable, Equatable, Hashable {
+    public let id: Int
+    public let name: String
+    public init(id: Int, name: String) { self.id = id; self.name = name }
+}
+
+public struct SeerrRelatedInfo: Sendable, Equatable {
+    public let companies: [SeerrNamedEntity]
+    public let keywords: [SeerrNamedEntity]
+    public init(companies: [SeerrNamedEntity], keywords: [SeerrNamedEntity]) {
+        self.companies = companies
+        self.keywords = keywords
     }
 }

@@ -741,7 +741,7 @@ struct PlayerView: View {
                     showTrackMenu = false
                     changeTrack(subtitleIndex: .some(index))
                 },
-                subtitleSearchItemId: item.id,
+                subtitleSearchItemId: ProfileRules.shared.canManageSubtitles ? item.id : nil,
                 onSubtitleDownloaded: {
                     showTrackMenu = false
                     adoptDownloadedSubtitle()

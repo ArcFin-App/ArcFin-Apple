@@ -888,7 +888,7 @@ final class DownloadManager: NSObject {
     /// download, which would make the budget check below (totalDownloadedBytes) race against
     /// downloads that haven't happened yet. isRunningSmartDownloads guards reentrancy.
     func runSmartDownloadsIfNeeded(credential: ServerCredential, authHeader: String) async {
-        guard let modelContext else { return }
+        guard let modelContext, ProfileRules.shared.canDownload else { return }
         let globalOn = UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false
         let kept = Self.keptShows
         guard globalOn || !kept.isEmpty else { return }

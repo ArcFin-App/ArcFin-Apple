@@ -283,7 +283,7 @@ extension PlayerView {
             #endif
 
             #if !os(tvOS)
-            if syncPlayEnabled {
+            if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
                 Button { showSyncPlayMenu = true } label: {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }

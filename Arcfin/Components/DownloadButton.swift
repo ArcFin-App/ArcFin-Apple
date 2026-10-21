@@ -28,6 +28,14 @@ struct DownloadButton: View {
     }
 
     var body: some View {
+        // A profile the server doesn't allow to download still sees, and can delete, what's
+        // already on the device.
+        if ProfileRules.shared.canDownload || isDownloaded || progress != nil || isQueued {
+            button
+        }
+    }
+
+    private var button: some View {
         Button {
             if isDownloaded {
                 showDeleteConfirm = true
