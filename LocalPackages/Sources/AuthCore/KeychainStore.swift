@@ -146,11 +146,37 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
     // MARK: - Seerr password (separate service — was previously plain UserDefaults)
 
     public func saveSeerrPassword(_ password: String) throws {
+        try saveSeerr(password, account: seerrAccount)
+    }
+
+    public func loadSeerrPassword() throws -> String? {
+        try loadSeerr(account: seerrAccount)
+    }
+
+    public func deleteSeerrPassword() throws {
+        try deleteSeerr(account: seerrAccount)
+    }
+
+    // Each profile's own Seerr password, set aside while another profile is active.
+
+    public func saveSeerrPassword(_ password: String, profile: UUID) throws {
+        try saveSeerr(password, account: "\(seerrAccount).\(profile.uuidString)")
+    }
+
+    public func loadSeerrPassword(profile: UUID) throws -> String? {
+        try loadSeerr(account: "\(seerrAccount).\(profile.uuidString)")
+    }
+
+    public func deleteSeerrPassword(profile: UUID) throws {
+        try deleteSeerr(account: "\(seerrAccount).\(profile.uuidString)")
+    }
+
+    private func saveSeerr(_ password: String, account: String) throws {
         guard let data = password.data(using: .utf8) else { return }
         let query: [CFString: Any] = [
             kSecClass:       kSecClassGenericPassword,
             kSecAttrService: seerrService,
-            kSecAttrAccount: seerrAccount,
+            kSecAttrAccount: account,
             kSecUseDataProtectionKeychain: true,
         ]
         var status = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
@@ -162,11 +188,11 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
         guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
     }
 
-    public func loadSeerrPassword() throws -> String? {
+    private func loadSeerr(account: String) throws -> String? {
         let query: [CFString: Any] = [
             kSecClass:       kSecClassGenericPassword,
             kSecAttrService: seerrService,
-            kSecAttrAccount: seerrAccount,
+            kSecAttrAccount: account,
             kSecReturnData:  true,
             kSecMatchLimit:  kSecMatchLimitOne,
             kSecUseDataProtectionKeychain: true,
@@ -180,11 +206,11 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
         return String(data: data, encoding: .utf8)
     }
 
-    public func deleteSeerrPassword() throws {
+    private func deleteSeerr(account: String) throws {
         let query: [CFString: Any] = [
             kSecClass:       kSecClassGenericPassword,
             kSecAttrService: seerrService,
-            kSecAttrAccount: seerrAccount,
+            kSecAttrAccount: account,
             kSecUseDataProtectionKeychain: true,
         ]
         let status = SecItemDelete(query as CFDictionary)

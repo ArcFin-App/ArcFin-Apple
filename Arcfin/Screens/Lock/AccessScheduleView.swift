@@ -2,6 +2,7 @@
 
 import SwiftUI
 import AuthCore
+import JellyfinAPI
 
 /// Shown in place of the app outside the hours the profile's parental controls allow. The
 /// server refuses the profile's requests then too; this says why, and when it opens again.
