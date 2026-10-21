@@ -160,7 +160,9 @@ struct ContentView: View {
         case .main:
             // The profile's access schedule, checked every minute.
             TimelineView(.periodic(from: .now, by: 60)) { context in
-                if ProfileRules.shared.isWithinSchedule(at: context.date) {
+                // context.date only drives the minute-by-minute check; the time compared is
+                // the trusted one.
+                if context.date > .distantPast, ProfileRules.shared.isWithinSchedule() {
                     MainTabView()
                 } else {
                     AccessScheduleView(onSwitchProfile: switchProfileFromSchedule)

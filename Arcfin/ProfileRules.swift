@@ -32,6 +32,9 @@ final class ProfileRules {
 
     func load(credential: ServerCredential, authHeader: String) async {
         let client = JellyfinMediaClient()
+        if let serverDate = await client.getServerDate(baseURL: credential.baseURL) {
+            TrustedClock.anchor(to: serverDate)
+        }
         async let fetchedProfile = try? client.getUserProfile(credential: credential, authHeader: authHeader)
         async let fetchedRatings = try? client.getParentalRatings(credential: credential, authHeader: authHeader)
         let (newProfile, newRatings) = await (fetchedProfile, fetchedRatings)
@@ -131,9 +134,9 @@ final class ProfileRules {
 
     // MARK: - Access schedule
 
-    /// Whether the profile's access schedule allows using the server at `date`. No schedule
-    /// means any time. Uses this device's clock and time zone.
-    func isWithinSchedule(at date: Date = Date()) -> Bool {
+    /// Whether the profile's access schedule allows using the server at `date` (by default
+    /// the trusted time, not the device's clock setting). No schedule means any time.
+    func isWithinSchedule(at date: Date = TrustedClock.now) -> Bool {
         let schedules = policy.accessSchedules
         guard !schedules.isEmpty else { return true }
         let calendar = Calendar.current
@@ -145,7 +148,7 @@ final class ProfileRules {
     }
 
     /// When the schedule next allows access, within the coming week.
-    func nextAllowedTime(after date: Date = Date()) -> Date? {
+    func nextAllowedTime(after date: Date = TrustedClock.now) -> Date? {
         let calendar = Calendar.current
         for minutes in stride(from: 15, through: 7 * 24 * 60, by: 15) {
             let candidate = calendar.date(byAdding: .minute, value: minutes, to: date)!
@@ -184,5 +187,34 @@ final class ProfileRules {
         components.minute = total % 60
         guard let date = Calendar.current.date(from: components) else { return "\(hours)" }
         return hours >= 24 ? "midnight" : date.formatted(date: .omitted, time: .shortened)
+    }
+}
+
+/// The current time as the server last told it, carried forward by a counter that runs from
+/// boot (through sleep) and that changing the device's date and time doesn't touch — so the
+/// access schedule can't be dodged by setting the clock back. Falls back to the device clock
+/// only before the server has been reached since the device last restarted.
+enum TrustedClock {
+    private static let serverDateKey = "arcfin.trustedClock.serverDate"
+    private static let monotonicKey = "arcfin.trustedClock.monotonic"
+
+    static func anchor(to serverDate: Date) {
+        UserDefaults.standard.set(serverDate.timeIntervalSince1970, forKey: serverDateKey)
+        UserDefaults.standard.set(monotonicSeconds, forKey: monotonicKey)
+    }
+
+    static var now: Date {
+        let defaults = UserDefaults.standard
+        let anchorDate = defaults.double(forKey: serverDateKey)
+        let anchorMonotonic = defaults.double(forKey: monotonicKey)
+        let elapsed = monotonicSeconds - anchorMonotonic
+        // The counter starts again from zero on restart, which makes an old anchor unusable.
+        guard anchorDate > 0, elapsed >= 0 else { return Date() }
+        return Date(timeIntervalSince1970: anchorDate + elapsed)
+    }
+
+    /// Seconds since boot, including time asleep.
+    private static var monotonicSeconds: Double {
+        Double(clock_gettime_nsec_np(CLOCK_MONOTONIC)) / 1_000_000_000
     }
 }

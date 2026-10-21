@@ -105,6 +105,20 @@ extension JellyfinMediaClient {
         return try JSONDecoder().decode(UserResponse.self, from: data).model
     }
 
+    /// The server's own clock, from the Date header of an unauthenticated ping.
+    public func getServerDate(baseURL: URL) async -> Date? {
+        var req = URLRequest(url: baseURL.appendingPathComponent("System/Ping"))
+        req.timeoutInterval = 8
+        guard let (_, response) = try? await URLSession.arcfin.data(for: req),
+              let header = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Date")
+        else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "GMT")
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        return formatter.date(from: header)
+    }
+
     public func getParentalRatings(credential: ServerCredential, authHeader: String) async throws -> [ParentalRating] {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Localization/ParentalRatings"))
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
