@@ -57,17 +57,15 @@ struct LibraryView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
-                if library.collectionType == .playlists {
-                    PlaylistsGridView(title: library.name)
-                } else {
-                    LibraryDetailView(library: library)
-                }
+                LibraryDetailView(library: library)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
                 switch target {
                 case .media(let item):   MediaDetailView(item: item)
                 case .collection(let item):
                     CollectionDetailView(collection: item)
+                case .playlist(let item):
+                    LibraryDetailView(playlistItem: item)
                 }
             }
             .navigationDestination(for: MediaItem.self) { item in
@@ -158,7 +156,7 @@ struct LibraryView: View {
         // The server only lists a Playlists library once a playlist exists; the tile is
         // always there so the first one can be made from it.
         guard !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) else { return libraries }
-        return libraries + [JellyfinLibrary(id: "arcfin.playlists", name: "Playlists", collectionType: .playlists)]
+        return libraries + [JellyfinLibrary(id: LibraryDetailView.allPlaylistsID, name: "Playlists", collectionType: .playlists)]
         #endif
     }
 
@@ -839,6 +837,7 @@ struct LocalPlayerView: View {
 // MARK: - Library detail
 
 enum LibraryNavTarget: Hashable {
+    case playlist(MediaItem)     // a playlist in the Playlists library — opens its titles
     case media(MediaItem)
     case collection(MediaItem)   // BoxSet item — routed to collection detail
 }
@@ -993,12 +992,30 @@ struct LibraryDetailView: View {
     @State private var renameText = ""
     @State private var confirmDeletePlaylist = false
     @State private var playlistError: String?
+    @State private var showNewPlaylist = false
+    @State private var newPlaylistName = ""
+    @State private var createdPlaylist: MediaPlaylist?
 
     init(library: JellyfinLibrary, playlist: MediaPlaylist? = nil, startsAddingTitles: Bool = false) {
         self.library = library
         self.playlist = playlist
         self.startsAddingTitles = startsAddingTitles
     }
+
+    /// A playlist picked from the Playlists library.
+    init(playlistItem item: MediaItem, startsAddingTitles: Bool = false) {
+        self.init(
+            library: JellyfinLibrary(id: item.id, name: item.name, collectionType: .playlists),
+            playlist: MediaPlaylist(id: item.id, name: item.name, itemCount: 0, primaryImageTag: item.primaryImageTag),
+            startsAddingTitles: startsAddingTitles)
+    }
+
+    /// The Playlists tile Browse shows before the server has a Playlists library of its own.
+    static let allPlaylistsID = "arcfin.playlists"
+
+    /// The Playlists library itself (its titles are playlists), as opposed to one playlist.
+    private var isPlaylistsLibrary: Bool { library.collectionType == .playlists && playlist == nil }
+    private var parentId: String { library.id == Self.allPlaylistsID ? "" : library.id }
 
     @State private var items: [MediaItem] = []
     @State private var isLoading = true
@@ -1056,6 +1073,7 @@ struct LibraryDetailView: View {
         case .boxsets: return "BoxSet"
         case .music:   return "MusicAlbum"
         case .unknown: return "Movie,Series"   // inside a BoxSet
+        case .playlists: return playlist == nil ? "Playlist" : nil
         default:       return nil
         }
     }
@@ -1097,6 +1115,19 @@ struct LibraryDetailView: View {
                         description: Text("Add movies, shows and episodes, or long-press any title and choose Add to Playlist."))
                     Button { showAddTitles = true } label: {
                         Label("Add Titles", systemImage: "plus").font(.headline)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(DT.Color.accent)
+                    Spacer()
+                }
+                .screenBackground()
+            } else if items.isEmpty, isPlaylistsLibrary, !filtersActive {
+                VStack(spacing: 12) {
+                    ContentUnavailableView(
+                        "No Playlists", systemImage: "list.and.film",
+                        description: Text("Make a playlist, then add movies, shows and episodes to it."))
+                    Button { showNewPlaylist = true } label: {
+                        Label("New Playlist", systemImage: "plus").font(.headline)
                     }
                     .buttonStyle(.glassProminent)
                     .tint(DT.Color.accent)
@@ -1198,6 +1229,12 @@ struct LibraryDetailView: View {
                 }
                 .accessibilityLabel("Grid density")
             }
+            if isPlaylistsLibrary {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showNewPlaylist = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel("New Playlist")
+                }
+            }
             if playlist != nil {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -1291,6 +1328,8 @@ struct LibraryDetailView: View {
         .navigationDestination(item: $randomPick) { pick in
             if pick.type == .boxSet {
                 CollectionDetailView(collection: pick)
+            } else if pick.type == .playlist {
+                LibraryDetailView(playlistItem: pick)
             } else {
                 MediaDetailView(item: pick)
             }
@@ -1302,7 +1341,7 @@ struct LibraryDetailView: View {
         }
 #endif
         .modifier(PlaylistModifiers(
-            isPlaylist: playlist != nil,
+            isPlaylist: playlist != nil || isPlaylistsLibrary,
             actionItem: $playlistActionItem,
             playback: $playlistPlayback,
             showAddTitles: $showAddTitles,
@@ -1329,8 +1368,36 @@ struct LibraryDetailView: View {
             if closed, playlist != nil { PlayQueue.clear(); Task { await reload() } }
         }
         #endif
+        .alert("New Playlist", isPresented: $showNewPlaylist) {
+            TextField("Name", text: $newPlaylistName)
+            Button("Cancel", role: .cancel) { newPlaylistName = "" }
+            Button("Create") { createPlaylist() }
+        }
+        .navigationDestination(item: $createdPlaylist) { created in
+            LibraryDetailView(
+                library: JellyfinLibrary(id: created.id, name: created.name, collectionType: .playlists),
+                playlist: created, startsAddingTitles: true)
+        }
         .task { await load() }
         .task { await loadFilterOptions() }
+    }
+
+    /// Creates it empty, then opens it straight into picking titles.
+    private func createPlaylist() {
+        let name = newPlaylistName.trimmingCharacters(in: .whitespacesAndNewlines)
+        newPlaylistName = ""
+        guard !name.isEmpty, let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            do {
+                let id = try await client.createPlaylist(credential: cred, authHeader: header, name: name, itemIds: [])
+                await PlaylistStore.shared.load(credential: cred, authHeader: header)
+                await reload()
+                createdPlaylist = MediaPlaylist(id: id, name: name, itemCount: 0)
+            } catch {
+                playlistError = error.localizedDescription
+            }
+        }
     }
 
     private var sortOptions: [LibrarySortOption] {
@@ -1444,7 +1511,11 @@ struct LibraryDetailView: View {
     #endif
 
     private func navTarget(for item: MediaItem) -> LibraryNavTarget {
-        item.type == .boxSet ? .collection(item) : .media(item)
+        switch item.type {
+        case .boxSet: .collection(item)
+        case .playlist: .playlist(item)
+        default: .media(item)
+        }
     }
 
     private func shouldLoadMore(after item: MediaItem) -> Bool {
@@ -1598,7 +1669,7 @@ struct LibraryDetailView: View {
         repeat {
             let page = try await client.getLibraryItems(
                 credential: credential, authHeader: header,
-                libraryId: library.id, startIndex: offset, limit: limit,
+                libraryId: parentId, startIndex: offset, limit: limit,
                 recursive: true,
                 includeItemTypes: includeTypes,
                 genres: Array(selectedGenres), requireAllGenres: matchesAllGenres,
@@ -1658,7 +1729,7 @@ struct LibraryDetailView: View {
         let options: (genres: [String], years: [Int], officialRatings: [String], tags: [String])?
         do {
             options = try await client.getLibraryFilterOptions(
-                credential: cred, authHeader: header, libraryId: library.id, includeItemTypes: includeTypes
+                credential: cred, authHeader: header, libraryId: parentId, includeItemTypes: includeTypes
             )
         } catch {
             Telemetry.logger(category: "LibraryView").error(

@@ -50,6 +50,7 @@ struct TVLibraryView: View {
                 switch target {
                 case .media(let item):       TVMediaDetailView(item: item)
                 case .collection(let item):  TVCollectionDetailView(item: item)
+                case .playlist(let item):    LibraryDetailView(playlistItem: item)
                 }
             }
         }

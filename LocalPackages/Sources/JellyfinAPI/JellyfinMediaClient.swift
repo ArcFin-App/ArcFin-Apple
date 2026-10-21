@@ -887,8 +887,8 @@ public struct JellyfinMediaClient: Sendable {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
             resolvingAgainstBaseURL: false)!
-        var queryItems: [URLQueryItem] = [
-            .init(name: "ParentId", value: libraryId),
+        // An empty libraryId searches everything the user can see (e.g. every playlist).
+        var queryItems: [URLQueryItem] = (libraryId.isEmpty ? [] : [.init(name: "ParentId", value: libraryId)]) + [
             .init(name: "Recursive", value: recursive ? "true" : "false"),
             .init(name: "SortBy", value: sortBy),
             .init(name: "SortOrder", value: sortOrder),
@@ -956,7 +956,7 @@ public struct JellyfinMediaClient: Sendable {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/Filters2"),
             resolvingAgainstBaseURL: false)!
-        var queryItems: [URLQueryItem] = [.init(name: "ParentId", value: libraryId)]
+        var queryItems: [URLQueryItem] = libraryId.isEmpty ? [] : [.init(name: "ParentId", value: libraryId)]
         if let types = includeItemTypes {
             queryItems.append(.init(name: "IncludeItemTypes", value: types))
         }
