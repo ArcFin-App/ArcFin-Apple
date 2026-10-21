@@ -1117,7 +1117,7 @@ struct JellyfinItemResponse: Decodable {
     }
 }
 
-private struct UserDataResponse: Decodable {
+struct UserDataResponse: Decodable {
     let playbackPositionTicks: Int64?
     let playCount: Int?
     let isFavorite: Bool?

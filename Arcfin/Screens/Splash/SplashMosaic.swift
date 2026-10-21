@@ -22,12 +22,15 @@ enum SplashMosaicStore {
     }
 
     /// Small enough to read on the main thread while the splash appears.
+    @MainActor
     static func loadImages() -> [Image] {
         guard let directory else { return [] }
-        return (0..<maxPosters).compactMap { index in
+        var images: [Image] = []
+        for index in 0..<maxPosters {
             let path = directory.appendingPathComponent("\(index).jpg").path
-            return PlatformImage(contentsOfFile: path).map(Image.init(platformImage:))
+            if let image = PlatformImage(contentsOfFile: path) { images.append(Image(platformImage: image)) }
         }
+        return images
     }
 
     /// Re-downloads only when the set of titles changed since the last save.
