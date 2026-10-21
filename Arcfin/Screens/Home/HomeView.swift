@@ -152,6 +152,9 @@ struct HomeView: View {
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
     @AppStorage(HomeShelfPrefs.orderKey) private var homeShelfOrderString = ""
     @AppStorage(HomeShelfPrefs.activeKey) private var homeShelfActiveString = ""
+    @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
+    @State private var shuffledShelves = HomeShelfPrefs.shuffledOrder()
+    @State private var lastShuffle = Date()
     #if os(iOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @Query private var downloadedItems: [DownloadedItem]
@@ -222,9 +225,15 @@ struct HomeView: View {
         return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
     }
 
+    private func reshuffleShelves() {
+        shuffledShelves = HomeShelfPrefs.shuffledOrder()
+        lastShuffle = Date()
+    }
+
     private var orderedVisibleShelves: [HomeShelf] {
         let active = HomeShelfPrefs.active(from: homeShelfActiveString)
-        return HomeShelfPrefs.order(from: homeShelfOrderString).filter { active.contains($0) }
+        let order = shuffleHomeShelves ? shuffledShelves : HomeShelfPrefs.order(from: homeShelfOrderString)
+        return order.filter { active.contains($0) }
     }
 
     /// Sequencing/visibility is data-driven (order + on/off per HomeShelfSettingsView) —
@@ -598,7 +607,15 @@ struct HomeView: View {
             // still non-empty" — 0 is an inert, always-valid value to sit at either way.
             heroIndex = max(0, newCount - 1)
         }
-        .onAppear { loadHeroVideoBackdrop() }
+        .onAppear {
+            loadHeroVideoBackdrop()
+            // Coming back from a detail screen also fires onAppear; reshuffling then would
+            // make shelves jump under the reader, so only a real return to Home reshuffles.
+            if shuffleHomeShelves, Date().timeIntervalSince(lastShuffle) > 20 { reshuffleShelves() }
+        }
+        .onChange(of: shuffleHomeShelves) { _, isOn in
+            if isOn { reshuffleShelves() }
+        }
         #if canImport(UIKit) && !os(tvOS)
         .onChange(of: mediaRepo.continueWatching.first?.id, initial: true) { _, _ in
             let first = mediaRepo.continueWatching.first

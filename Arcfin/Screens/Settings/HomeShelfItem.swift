@@ -47,6 +47,14 @@ enum HomeShelf: String, CaseIterable, Identifiable {
 enum HomeShelfPrefs {
     static let orderKey = "homeShelfOrder"
     static let activeKey = "homeShelfActive"
+    static let shuffleKey = "shuffleHomeShelves"
+
+    /// Continue Watching and Up Next always lead; everything else is fair game when shuffling.
+    static let pinned: [HomeShelf] = [.continueWatching, .nextUp]
+
+    static func shuffledOrder() -> [HomeShelf] {
+        pinned + HomeShelf.allCases.filter { !pinned.contains($0) }.shuffled()
+    }
 
     /// Every shelf, in the user's chosen order — any shelf type added in a future update
     /// that isn't in the saved order yet is appended at the end rather than dropped.

@@ -5,12 +5,19 @@ import SwiftUI
 struct HomeShelfSettingsView: View {
     @AppStorage(HomeShelfPrefs.orderKey) private var orderString = ""
     @AppStorage(HomeShelfPrefs.activeKey) private var activeString = ""
+    @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleShelves = false
 
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
     var body: some View {
         List {
+            Section {
+                Toggle("Shuffle Shelves", isOn: $shuffleShelves)
+            } footer: {
+                Text("Mixes up the order of your shelves every time you open Home. Continue Watching and Next Up stay at the top. Reordering is turned off while this is on.")
+            }
+
             Section {
                 ForEach(order) { shelf in
                     HStack(spacing: 12) {
@@ -31,15 +38,17 @@ struct HomeShelfSettingsView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .onMove(perform: move)
+                .onMove(perform: shuffleShelves ? nil : move)
             } header: {
                 Text("Home Shelves")
             } footer: {
-                Text("Drag to reorder. Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before.")
+                Text(shuffleShelves
+                    ? "Turning a shelf off hides it from Home — it still only shows when it actually has content."
+                    : "Drag to reorder. Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before.")
             }
         }
         #if os(iOS)
-        .environment(\.editMode, .constant(.active))
+        .environment(\.editMode, .constant(shuffleShelves ? .inactive : .active))
         #endif
         .arcfinListStyle()
         .background(DT.Color.backgroundPrimary)
