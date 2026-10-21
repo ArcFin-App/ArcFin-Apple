@@ -973,6 +973,7 @@ struct LibraryDetailView: View {
     @State private var favoritesOnly = false
     @State private var sortOption: LibrarySortOption = .nameAsc
     @State private var randomPick: MediaItem?
+    @State private var trailerPreviewItem: MediaItem?
     @State private var isPickingRandom = false
     /// Set while load() restores the saved sort, so the resulting onChange doesn't fire a
     /// second fetch on top of the initial one.
@@ -1060,7 +1061,14 @@ struct LibraryDetailView: View {
                             .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
 #else
                             .buttonStyle(PressableButtonStyle())
+#if os(iOS)
+                            .onLongPressGesture(minimumDuration: 0.4) {
+                                HapticManager.impact(.medium)
+                                trailerPreviewItem = item
+                            }
+#else
                             .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
+#endif
 #endif
                             .onAppear {
                                 if shouldLoadMore(after: item) {
@@ -1180,6 +1188,11 @@ struct LibraryDetailView: View {
         .onChange(of: extraFilters) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
+        #if os(iOS)
+        .sheet(item: $trailerPreviewItem) { item in
+            TrailerPreviewSheet(item: item) { randomPick = $0 }
+        }
+        #endif
         .navigationDestination(item: $randomPick) { pick in
             if pick.type == .boxSet {
                 CollectionDetailView(collection: pick)

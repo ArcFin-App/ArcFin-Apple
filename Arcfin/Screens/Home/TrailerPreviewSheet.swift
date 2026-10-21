@@ -148,6 +148,9 @@ struct TrailerPreviewSheet: View {
             }
 
             HStack(spacing: 12) {
+                // Series and collections aren't directly playable; their detail screen
+                // picks the right episode or title.
+                if item.type == .movie || item.type == .episode {
                 Button { showPlayer = true } label: {
                     Label(resumeTicks > 0 ? "Resume" : "Play", systemImage: "play.fill")
                         .font(.system(.body, weight: .semibold))
@@ -155,6 +158,7 @@ struct TrailerPreviewSheet: View {
                         .padding(.vertical, 12)
                         .background(.white, in: RoundedRectangle(cornerRadius: DT.Radius.md))
                         .foregroundStyle(.black)
+                }
                 }
                 Button {
                     dismiss()
