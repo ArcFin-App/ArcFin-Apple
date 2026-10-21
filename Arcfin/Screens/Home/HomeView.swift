@@ -6,6 +6,7 @@ import Combine
 import JellyfinAPI
 import SeerrAPI
 import AuthCore
+import CastKit
 import Persistence
 import Telemetry
 import os
@@ -100,6 +101,9 @@ struct MainTabView: View {
             }
             .tabViewStyle(.sidebarAdaptable)
             .preferredColorScheme(.dark)
+            #if os(iOS)
+            .modifier(CastMiniControllerAccessory())
+            #endif
             // arcfin://downloads — from the download Live Activity's tap target.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 selectedTab = .browse
@@ -115,6 +119,24 @@ struct MainTabView: View {
 #endif
     }
 }
+
+#if os(iOS)
+/// `isEnabled:` arrived in iOS 26.1; the older overload can't hide the bar, so on 26.0
+/// there is no mini controller rather than a permanently empty accessory.
+private struct CastMiniControllerAccessory: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.1, *) {
+            content.tabViewBottomAccessory(
+                isEnabled: CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil
+            ) {
+                CastMiniController()
+            }
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 // MARK: - Home screen
 
@@ -572,6 +594,18 @@ struct HomeView: View {
         .onChange(of: mediaRepo.continueWatching.first?.id, initial: true) { _, _ in
             let first = mediaRepo.continueWatching.first
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
+        }
+        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp).map(\.id), initial: true) { _, _ in
+            var seen = Set<String>()
+            let items = (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
+            Task {
+                await WidgetSnapshotUpdater.update(items: items) { item in
+                    if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }
+                    return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 600)
+                        ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600)
+                        ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600)
+                }
+            }
         }
         #endif
         #if os(iOS)
