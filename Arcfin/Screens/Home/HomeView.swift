@@ -313,6 +313,15 @@ struct HomeView: View {
                     mediaShelfContent(mediaRepo.watchAgain)
                 }
             }
+        case .genreShelves:
+            ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
+                let title = "More \(shelf.genre)"
+                ShelfRow(title: title, onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: title, items: shelf.items)
+                }) {
+                    mediaShelfContent(shelf.items)
+                }
+            }
         case .becauseYouWatched:
             if let recommendation = mediaRepo.becauseYouWatched {
                 let title = "Because You Watched \(recommendation.source.name)"
