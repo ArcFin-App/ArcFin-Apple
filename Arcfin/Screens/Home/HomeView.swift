@@ -785,16 +785,20 @@ struct HomeView: View {
             let first = mediaRepo.continueWatching.first
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
         }
-        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp).map(\.id), initial: true) { _, _ in
+        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).map(\.id), initial: true) { _, _ in
             var seen = Set<String>()
             let items = (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
             Task {
-                await WidgetSnapshotUpdater.update(items: items) { item in
-                    if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }
-                    return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 600)
-                        ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600)
-                        ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600)
-                }
+                await WidgetSnapshotUpdater.update(
+                    items: items,
+                    recentlyAdded: mediaRepo.recentlyAdded,
+                    artworkURL: { item in
+                        if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }
+                        return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 600)
+                            ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600)
+                            ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600)
+                    },
+                    posterURL: { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 300) })
             }
         }
         #endif

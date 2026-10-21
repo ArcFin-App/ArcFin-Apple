@@ -6,10 +6,11 @@ import JellyfinAPI
 import LiveActivityKit
 import WidgetKit
 
-/// Publishes the Continue Watching shelf to the widgets: a JSON snapshot plus a small poster
-/// file per item in the shared App Group container, then a timeline reload.
+/// Publishes Continue Watching and Recently Added to the widgets: a JSON snapshot plus a small
+/// image file per item in the shared App Group container, then a timeline reload.
 enum WidgetSnapshotUpdater {
     private static let maxItems = 6
+    private static let maxRecentlyAdded = 8
 
     /// Sign-out / profile removal: empties the widgets right away.
     static func clear() {
@@ -17,37 +18,55 @@ enum WidgetSnapshotUpdater {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// `artworkURL` is the landscape art for Continue Watching, `posterURL` the portrait
+    /// poster for Recently Added.
     @MainActor
-    static func update(items: [MediaItem], imageURL: (MediaItem) -> URL?) async {
-        let selected = Array(items.prefix(maxItems))
-        let jobs = selected.map { (item: $0, url: imageURL($0)) }
-
-        var entries: [WidgetSnapshot.Item] = []
+    static func update(
+        items: [MediaItem],
+        recentlyAdded: [MediaItem],
+        artworkURL: (MediaItem) -> URL?,
+        posterURL: (MediaItem) -> URL?
+    ) async {
         var keep = Set<String>()
-        for job in jobs {
-            let item = job.item
-            var fileName: String?
-            if let url = job.url, let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty {
-                let name = "\(item.id).jpg"
-                WidgetSnapshotStore.writePoster(data, fileName: name)
-                fileName = name
-                keep.insert(name)
-            }
-            entries.append(.init(
-                id: item.id,
-                title: item.type == .episode ? (item.seriesName ?? item.name) : item.name,
-                subtitle: subtitle(for: item),
-                detail: item.type == .episode ? item.name : nil,
-                progress: min(max((item.userData?.playedPercentage ?? 0) / 100, 0), 1),
-                posterFileName: fileName))
+        var entries: [WidgetSnapshot.Item] = []
+        for item in items.prefix(maxItems) {
+            let fileName = await storeImage(prefix: "cw", item: item, url: artworkURL(item))
+            fileName.map { keep.insert($0) }
+            entries.append(entry(for: item, fileName: fileName))
+        }
+        var added: [WidgetSnapshot.Item] = []
+        for item in recentlyAdded.prefix(maxRecentlyAdded) {
+            let fileName = await storeImage(prefix: "ra", item: item, url: posterURL(item))
+            fileName.map { keep.insert($0) }
+            added.append(entry(for: item, fileName: fileName))
         }
 
-        let snapshot = WidgetSnapshot(items: entries)
-        if snapshot.items != WidgetSnapshotStore.load()?.items {
-            WidgetSnapshotStore.save(snapshot)
-            WidgetSnapshotStore.prunePosters(keeping: keep)
-            WidgetCenter.shared.reloadAllTimelines()
-        }
+        let previous = WidgetSnapshotStore.load()
+        guard entries != previous?.items || added != (previous?.recentlyAdded ?? []) else { return }
+        WidgetSnapshotStore.save(WidgetSnapshot(items: entries, recentlyAdded: added))
+        WidgetSnapshotStore.prunePosters(keeping: keep)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Images are keyed by item id and kept between updates, so an unchanged shelf costs no
+    /// downloads at all.
+    @MainActor
+    private static func storeImage(prefix: String, item: MediaItem, url: URL?) async -> String? {
+        let name = "\(prefix)-\(item.id).jpg"
+        if WidgetSnapshotStore.hasPoster(fileName: name) { return name }
+        guard let url, let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty else { return nil }
+        WidgetSnapshotStore.writePoster(data, fileName: name)
+        return name
+    }
+
+    private static func entry(for item: MediaItem, fileName: String?) -> WidgetSnapshot.Item {
+        .init(
+            id: item.id,
+            title: item.type == .episode ? (item.seriesName ?? item.name) : item.name,
+            subtitle: subtitle(for: item),
+            detail: item.type == .episode ? item.name : nil,
+            progress: min(max((item.userData?.playedPercentage ?? 0) / 100, 0), 1),
+            posterFileName: fileName)
     }
 
     private static func subtitle(for item: MediaItem) -> String? {

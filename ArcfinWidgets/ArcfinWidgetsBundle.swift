@@ -15,5 +15,9 @@ struct ArcfinWidgetsBundle: WidgetBundle {
     var body: some Widget {
         DownloadLiveActivity()
         ContinueWatchingWidget()
+        RecentlyAddedWidget()
+        ResumeWatchingControl()
+        DownloadsControl()
+        DiscoverControl()
     }
 }
