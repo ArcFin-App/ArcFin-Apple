@@ -12,11 +12,11 @@ struct ResumeWatchingControl: ControlWidget {
         StaticControlConfiguration(kind: "com.psmattas.arcfin.control.resume") {
             ControlWidgetButton(action: ResumeWatchingIntent()) {
                 Label("Resume Watching", systemImage: "play.fill")
+                    .controlWidgetActionHint("Resume watching")
             }
-            .controlWidgetActionHint("Resume watching")
         }
         .displayName("Resume Watching")
-        .description("Plays whatever you were watching last.")
+        .description("Play whatever you were watching last.")
     }
 }
 
@@ -25,8 +25,8 @@ struct DownloadsControl: ControlWidget {
         StaticControlConfiguration(kind: "com.psmattas.arcfin.control.downloads") {
             ControlWidgetButton(action: OpenDownloadsIntent()) {
                 Label("Downloads", systemImage: "arrow.down.circle")
+                    .controlWidgetActionHint("Open downloads")
             }
-            .controlWidgetActionHint("Open downloads")
         }
         .displayName("Downloads")
         .description("Open your downloads to watch offline.")
@@ -38,8 +38,8 @@ struct DiscoverControl: ControlWidget {
         StaticControlConfiguration(kind: "com.psmattas.arcfin.control.discover") {
             ControlWidgetButton(action: OpenDiscoverIntent()) {
                 Label("Discover", systemImage: "sparkle.magnifyingglass")
+                    .controlWidgetActionHint("Discover something new")
             }
-            .controlWidgetActionHint("Discover something new")
         }
         .displayName("Discover & Request")
         .description("Find something new to watch and request it.")
