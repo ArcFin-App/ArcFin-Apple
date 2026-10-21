@@ -1123,7 +1123,7 @@ extension PlayerView {
                         }
                         .accessibilityLabel("Dismiss suggestions")
                     }
-                    if isLandscape {
+                    if suggestionsAreHorizontal {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
                                 ForEach(moreLikeThis) { suggestion in
@@ -1145,7 +1145,7 @@ extension PlayerView {
                                 }
                             }
                         }
-                        .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
+                        .frame(maxHeight: 380)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -1159,6 +1159,16 @@ extension PlayerView {
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .animation(DT.Animation.fast, value: isControlsVisible)
         }
+    }
+
+    /// Landscape (and the always-wide Mac window) lays suggestions out in a row; portrait
+    /// stacks them in a list.
+    private var suggestionsAreHorizontal: Bool {
+        #if os(macOS)
+        true
+        #else
+        isLandscape
+        #endif
     }
 
     private func suggestionImageURL(_ suggestion: MediaItem) -> URL? {
