@@ -827,6 +827,8 @@ enum LibraryWatchedFilter: String, CaseIterable, Identifiable {
 struct LibraryExtraFilters: Equatable {
     var officialRatings: Set<String> = []
     var minRating: Double?
+    /// Jellyfin's `Genres` filter is "any of"; this narrows to titles carrying every selected genre.
+    var matchAllGenres = false
 
     var isActive: Bool { !officialRatings.isEmpty || minRating != nil }
 
@@ -936,6 +938,9 @@ struct LibraryDetailView: View {
     @State private var isLoading = true
     @State private var isLoadingMore = false
     @State private var totalItems = 0
+    /// Where the next server page starts. Equals `items.count` unless genres are matched
+    /// with "all", where the client drops titles from each server page.
+    @State private var serverOffset = 0
     @State private var hasLoaded = false
     @State private var scrolledItemID: MediaItem.ID? = nil
     private let pageSize = 100
@@ -969,7 +974,8 @@ struct LibraryDetailView: View {
             || extraFilters.isActive
     }
 
-    private var hasMore: Bool { items.count < totalItems }
+    private var matchesAllGenres: Bool { extraFilters.matchAllGenres && selectedGenres.count > 1 }
+    private var hasMore: Bool { serverOffset < totalItems }
     private var isCollections: Bool { library.collectionType == .boxsets }
 
     // Maps the library type to the items it should show.
@@ -1260,19 +1266,9 @@ struct LibraryDetailView: View {
         // combination that made the server reject the request (or any other failure) just
         // silently rendered an empty grid with nothing to point at. Logged now so a real
         // report of that has something concrete behind it instead of another guess.
-        var fetched: (items: [MediaItem], total: Int)?
+        var fetched: (items: [MediaItem], nextOffset: Int, total: Int)?
         do {
-            fetched = try await client.getLibraryItems(
-                credential: cred, authHeader: header,
-                libraryId: library.id, startIndex: 0, limit: pageSize,
-                recursive: true,
-                includeItemTypes: includeTypes,
-                genres: Array(selectedGenres), years: Array(selectedYears),
-                officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
-                isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
-                isFavorite: favoritesOnly ? true : nil,
-                sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
-            )
+            fetched = try await fetchPage(credential: cred, header: header, startIndex: 0)
         } catch {
             let nsError = error as NSError
             Telemetry.logger(category: "LibraryView").error(
@@ -1284,9 +1280,45 @@ struct LibraryDetailView: View {
         // correct result with whatever this older, possibly narrower selection matched.
         guard generation == fetchGeneration else { return }
         items = fetched?.items ?? []
+        serverOffset = fetched?.nextOffset ?? 0
         totalItems = fetched?.total ?? 0
         mediaRepo.prefetchQuickLookAssets(for: items)
         isLoading = false
+    }
+
+    /// One page under the current filters. With "match all genres" the server can only
+    /// return titles matching *any* selected genre, so pages are narrowed here and further
+    /// server pages are pulled until this one is reasonably full.
+    private func fetchPage(
+        credential: ServerCredential, header: String, startIndex: Int,
+        limit: Int? = nil, sortBy: String? = nil, sortOrder: String? = nil
+    ) async throws -> (items: [MediaItem], nextOffset: Int, total: Int) {
+        let limit = limit ?? pageSize
+        var offset = startIndex
+        var collected: [MediaItem] = []
+        var total = 0
+        var requests = 0
+        repeat {
+            let page = try await client.getLibraryItems(
+                credential: credential, authHeader: header,
+                libraryId: library.id, startIndex: offset, limit: limit,
+                recursive: true,
+                includeItemTypes: includeTypes,
+                genres: Array(selectedGenres), years: Array(selectedYears),
+                officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
+                isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
+                isFavorite: favoritesOnly ? true : nil,
+                sortBy: sortBy ?? sortOption.sortBy, sortOrder: sortOrder ?? sortOption.sortOrder
+            )
+            total = page.total
+            offset += page.items.count
+            collected += matchesAllGenres
+                ? page.items.filter { selectedGenres.isSubset(of: $0.genres) }
+                : page.items
+            requests += 1
+            if page.items.isEmpty { offset = total }
+        } while matchesAllGenres && collected.count < limit / 2 && offset < total && requests < 5
+        return (collected, offset, total)
     }
 
     private func loadMore() async {
@@ -1294,19 +1326,12 @@ struct LibraryDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoadingMore = true
-        let fetched = try? await client.getLibraryItems(
-            credential: cred, authHeader: header,
-            libraryId: library.id, startIndex: items.count, limit: pageSize,
-            recursive: true,
-            includeItemTypes: includeTypes,
-            genres: Array(selectedGenres), years: Array(selectedYears),
-            officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
-            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
-            isFavorite: favoritesOnly ? true : nil,
-            sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
-        )
+        let fetched = try? await fetchPage(credential: cred, header: header, startIndex: serverOffset)
         items.append(contentsOf: fetched?.items ?? [])
-        if let total = fetched?.total { totalItems = total }
+        if let fetched {
+            serverOffset = fetched.nextOffset
+            totalItems = fetched.total
+        }
         isLoadingMore = false
     }
 
@@ -1317,16 +1342,9 @@ struct LibraryDetailView: View {
         isPickingRandom = true
         defer { isPickingRandom = false }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
-        let result = try? await client.getLibraryItems(
-            credential: cred, authHeader: header,
-            libraryId: library.id, startIndex: 0, limit: 1, recursive: true,
-            includeItemTypes: includeTypes,
-            genres: Array(selectedGenres), years: Array(selectedYears),
-            officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
-            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
-            isFavorite: favoritesOnly ? true : nil,
-            sortBy: "Random", sortOrder: "Ascending"
-        )
+        let result = try? await fetchPage(
+            credential: cred, header: header, startIndex: 0, limit: matchesAllGenres ? pageSize : 1,
+            sortBy: "Random", sortOrder: "Ascending")
         if let pick = result?.items.first {
             HapticManager.impact(.light)
             randomPick = pick
@@ -1393,6 +1411,13 @@ struct LibraryFilterList: View {
 
             if !availableGenres.isEmpty {
                 Section("Genre") {
+                    if selectedGenres.count > 1 {
+                        Picker("Match", selection: $extraFilters.matchAllGenres) {
+                            Text("Any").tag(false)
+                            Text("All").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                    }
                     ForEach(availableGenres, id: \.self) { genre in
                         filterRow(genre, isSelected: selectedGenres.contains(genre)) {
                             toggle(genre, in: &selectedGenres)

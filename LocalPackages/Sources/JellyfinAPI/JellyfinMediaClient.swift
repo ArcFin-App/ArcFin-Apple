@@ -680,7 +680,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: sortOrder),
             .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,Genres,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableTotalRecordCount", value: "true"),
         ]
