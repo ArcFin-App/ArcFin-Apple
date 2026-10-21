@@ -829,8 +829,13 @@ struct LibraryExtraFilters: Equatable {
     var minRating: Double?
     /// Jellyfin's `Genres` filter is "any of"; this narrows to titles carrying every selected genre.
     var matchAllGenres = false
+    var tags: Set<String> = []
+    var quality: LibraryQualityFilter = .any
+    var hasSubtitles = false
 
-    var isActive: Bool { !officialRatings.isEmpty || minRating != nil }
+    var isActive: Bool {
+        !officialRatings.isEmpty || minRating != nil || !tags.isEmpty || quality != .any || hasSubtitles
+    }
 
     private static let maturityOrder = [
         "G", "TV-Y", "TV-G", "TV-Y7", "PG", "TV-PG", "PG-13", "TV-14", "R", "TV-MA", "NC-17",
@@ -853,6 +858,11 @@ struct LibraryExtraFilters: Equatable {
     static func ratings(upToStep step: Int, in ordered: [String]) -> Set<String> {
         step >= ordered.count ? [] : Set(ordered.prefix(step + 1))
     }
+}
+
+enum LibraryQualityFilter: String, CaseIterable, Identifiable {
+    case any = "Any", hd = "HD", uhd = "4K"
+    var id: String { rawValue }
 }
 
 enum LibrarySortOption: String, CaseIterable, Identifiable {
@@ -955,6 +965,7 @@ struct LibraryDetailView: View {
     @State private var availableGenres: [String] = []
     @State private var availableYears: [Int] = []
     @State private var availableRatings: [String] = []
+    @State private var availableTags: [String] = []
     @State private var extraFilters = LibraryExtraFilters()
     @State private var selectedGenres: Set<String> = []
     @State private var selectedYears: Set<Int> = []
@@ -1119,7 +1130,7 @@ struct LibraryDetailView: View {
 #if !os(macOS)
         .sheet(isPresented: $showFilterSheet) {
             LibraryFilterSheet(
-                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings,
+                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
                 extraFilters: $extraFilters
@@ -1148,7 +1159,7 @@ struct LibraryDetailView: View {
                         .padding(.vertical, 12)
                         Divider()
                         LibraryFilterList(
-                            availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings,
+                            availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                             selectedGenres: $selectedGenres, selectedYears: $selectedYears,
                             watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
                 extraFilters: $extraFilters
@@ -1306,6 +1317,10 @@ struct LibraryDetailView: View {
                 includeItemTypes: includeTypes,
                 genres: Array(selectedGenres), years: Array(selectedYears),
                 officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
+                tags: Array(extraFilters.tags),
+                isHD: extraFilters.quality == .hd ? true : nil,
+                is4K: extraFilters.quality == .uhd ? true : nil,
+                hasSubtitles: extraFilters.hasSubtitles ? true : nil,
                 isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
                 isFavorite: favoritesOnly ? true : nil,
                 sortBy: sortBy ?? sortOption.sortBy, sortOrder: sortOrder ?? sortOption.sortOrder
@@ -1361,6 +1376,7 @@ struct LibraryDetailView: View {
         availableGenres = options?.genres ?? []
         availableYears = options?.years ?? []
         availableRatings = options?.officialRatings ?? []
+        availableTags = options?.tags ?? []
     }
     #else
     private func loadFilterOptions() async {}
@@ -1378,6 +1394,7 @@ struct LibraryFilterList: View {
     let availableGenres: [String]
     let availableYears: [Int]
     let availableRatings: [String]
+    let availableTags: [String]
     @Binding var selectedGenres: Set<String>
     @Binding var selectedYears: Set<Int>
     @Binding var watchedFilter: LibraryWatchedFilter
@@ -1468,6 +1485,24 @@ struct LibraryFilterList: View {
                 }
             }
 
+            Section("Quality") {
+                Picker("Resolution", selection: $extraFilters.quality) {
+                    ForEach(LibraryQualityFilter.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                Toggle("Has Subtitles", isOn: $extraFilters.hasSubtitles)
+            }
+
+            if !availableTags.isEmpty {
+                Section("Tags") {
+                    ForEach(availableTags, id: \.self) { tag in
+                        filterRow(tag, isSelected: extraFilters.tags.contains(tag)) {
+                            toggle(tag, in: &extraFilters.tags)
+                        }
+                    }
+                }
+            }
+
             if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
                 || extraFilters.isActive {
                 Section {
@@ -1507,6 +1542,7 @@ struct LibraryFilterSheet: View {
     let availableGenres: [String]
     let availableYears: [Int]
     let availableRatings: [String]
+    let availableTags: [String]
     @Binding var selectedGenres: Set<String>
     @Binding var selectedYears: Set<Int>
     @Binding var watchedFilter: LibraryWatchedFilter
@@ -1519,7 +1555,7 @@ struct LibraryFilterSheet: View {
     var body: some View {
         NavigationStack {
             LibraryFilterList(
-                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings,
+                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
                 extraFilters: $extraFilters

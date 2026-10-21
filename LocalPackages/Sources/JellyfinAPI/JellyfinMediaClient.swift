@@ -665,6 +665,10 @@ public struct JellyfinMediaClient: Sendable {
         years: [Int] = [],
         officialRatings: [String] = [],
         minCommunityRating: Double? = nil,
+        tags: [String] = [],
+        isHD: Bool? = nil,
+        is4K: Bool? = nil,
+        hasSubtitles: Bool? = nil,
         isPlayed: Bool? = nil,
         isFavorite: Bool? = nil,
         sortBy: String = "SortName",
@@ -699,6 +703,18 @@ public struct JellyfinMediaClient: Sendable {
         if let minCommunityRating {
             queryItems.append(.init(name: "MinCommunityRating", value: String(minCommunityRating)))
         }
+        if !tags.isEmpty {
+            queryItems.append(.init(name: "Tags", value: tags.joined(separator: "|")))
+        }
+        if let isHD {
+            queryItems.append(.init(name: "IsHD", value: isHD ? "true" : "false"))
+        }
+        if let is4K {
+            queryItems.append(.init(name: "Is4K", value: is4K ? "true" : "false"))
+        }
+        if let hasSubtitles {
+            queryItems.append(.init(name: "HasSubtitles", value: hasSubtitles ? "true" : "false"))
+        }
         if let isPlayed {
             queryItems.append(.init(name: "IsPlayed", value: isPlayed ? "true" : "false"))
         }
@@ -721,7 +737,7 @@ public struct JellyfinMediaClient: Sendable {
         authHeader: String,
         libraryId: String,
         includeItemTypes: String? = nil
-    ) async throws -> (genres: [String], years: [Int], officialRatings: [String]) {
+    ) async throws -> (genres: [String], years: [Int], officialRatings: [String], tags: [String]) {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/Filters2"),
             resolvingAgainstBaseURL: false)!
@@ -736,7 +752,8 @@ public struct JellyfinMediaClient: Sendable {
         let (data, _) = try await URLSession.arcfin.data(for: req)
         let response = try JSONDecoder().decode(LibraryFiltersResponse.self, from: data)
         return (genres: response.genres.map(\.name).sorted(), years: response.years.sorted(by: >),
-                officialRatings: (response.officialRatings ?? []).sorted())
+                officialRatings: (response.officialRatings ?? []).sorted(),
+                tags: (response.tags ?? []).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending })
     }
 
     /// Uses /Search/Hints rather than a plain /Items SearchTerm filter — Hints also
@@ -839,7 +856,9 @@ private struct LibraryFiltersResponse: Decodable {
     let genres: [NamedFacet]
     let years: [Int]
     let officialRatings: [String]?
+    let tags: [String]?
     enum CodingKeys: String, CodingKey {
+        case tags = "Tags"
         case genres = "Genres"
         case years = "Years"
         case officialRatings = "OfficialRatings"
