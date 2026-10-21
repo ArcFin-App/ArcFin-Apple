@@ -375,7 +375,7 @@ private struct LibraryCard: View {
     @ViewBuilder
     private var background: some View {
         if let imageURL {
-            AsyncImage(url: imageURL) { phase in
+            CachedAsyncImage(url: imageURL) { phase in
                 switch phase {
                 case .success(let img):
                     img.resizable().scaledToFill().blur(radius: 3)
@@ -455,7 +455,7 @@ private struct LibraryItemCard: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             if let imageURL {
-                AsyncImage(url: imageURL) { phase in
+                CachedAsyncImage(url: imageURL) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: Color(DT.Color.backgroundSecondary)
@@ -1232,7 +1232,7 @@ struct LibraryDetailView: View {
 
     private func libraryItemPreview(_ item: MediaItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: mediaRepo.imageURL(for: item)) { phase in
+            CachedAsyncImage(url: mediaRepo.imageURL(for: item)) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default: DT.Color.backgroundSecondary

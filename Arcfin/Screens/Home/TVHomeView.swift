@@ -235,7 +235,7 @@ struct TVHomeView: View {
     private var heroInfoBlock: some View {
         if let item = heroDisplayItem {
             VStack(alignment: .leading, spacing: 16) {
-                AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFit()
                             .frame(maxWidth: 300, maxHeight: 90)

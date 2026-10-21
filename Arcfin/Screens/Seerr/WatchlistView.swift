@@ -78,7 +78,7 @@ struct WatchlistView: View {
         VStack(alignment: .leading, spacing: 4) {
             ZStack(alignment: .topTrailing) {
                 if let url = item.posterURL {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: DT.Color.backgroundSecondary
@@ -138,7 +138,7 @@ struct WatchlistView: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let url = item.posterURL {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: DT.Color.backgroundSecondary

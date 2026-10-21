@@ -226,7 +226,7 @@ private struct TVSeerrCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             ZStack(alignment: .topLeading) {
-                AsyncImage(url: item.backdropURL ?? item.posterURL) { phase in
+                CachedAsyncImage(url: item.backdropURL ?? item.posterURL) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default:
@@ -286,7 +286,7 @@ private struct TVRequestRow: View {
 
     var body: some View {
         HStack(spacing: 20) {
-            AsyncImage(url: req.backdropURL ?? req.posterURL) { phase in
+            CachedAsyncImage(url: req.backdropURL ?? req.posterURL) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default:

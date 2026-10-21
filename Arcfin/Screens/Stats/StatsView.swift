@@ -280,7 +280,7 @@ struct StatsView: View {
             .frame(width: 32)
 
             if let url = mediaRepo.imageURL(for: item) {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: RoundedRectangle(cornerRadius: 6).fill(DT.Color.backgroundTertiary)
@@ -346,7 +346,7 @@ struct StatsView: View {
     private func movieCard(rank: Int, movie: MediaItem) -> some View {
         ZStack(alignment: .bottom) {
             if let url = mediaRepo.imageURL(for: movie) {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: DT.Color.backgroundSecondary
@@ -415,7 +415,7 @@ struct StatsView: View {
                     ForEach(statsRepo.recommendations) { rec in
                         if let item = rec.item {
                             VStack(alignment: .leading, spacing: 6) {
-                                AsyncImage(url: item.posterURL) { phase in
+                                CachedAsyncImage(url: item.posterURL) { phase in
                                     switch phase {
                                     case .success(let img): img.resizable().scaledToFill()
                                     default: Rectangle().fill(DT.Color.backgroundTertiary)

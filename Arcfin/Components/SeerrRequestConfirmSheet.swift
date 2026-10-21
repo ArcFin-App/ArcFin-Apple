@@ -161,7 +161,7 @@ struct SeerrRequestConfirmSheet: View {
     private var header: some View {
         HStack(spacing: 14) {
             if let url = item.posterURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: RoundedRectangle(cornerRadius: 8).fill(DT.Color.backgroundSecondary)
@@ -237,7 +237,7 @@ struct SeerrRequestConfirmSheet: View {
             HStack(spacing: 12) {
                 ForEach(cast) { member in
                     VStack(spacing: 4) {
-                        AsyncImage(url: member.profileURL) { phase in
+                        CachedAsyncImage(url: member.profileURL) { phase in
                             switch phase {
                             case .success(let img): img.resizable().scaledToFill()
                             default: Circle().fill(DT.Color.backgroundSecondary)

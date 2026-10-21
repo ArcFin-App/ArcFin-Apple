@@ -114,7 +114,7 @@ struct TVMediaDetailView: View {
         ZStack(alignment: .bottomLeading) {
             Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920) {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img):
                         img.resizable().scaledToFill()
@@ -159,7 +159,7 @@ struct TVMediaDetailView: View {
 
     @ViewBuilder
     private var logoBlock: some View {
-        AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+        CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
             if case .success(let img) = phase {
                 img.resizable().scaledToFit()
                     .frame(maxWidth: 360, maxHeight: 108)
@@ -652,7 +652,7 @@ private struct TVEpisodeCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: mediaRepo.episodeThumbnailURL(for: ep, fillWidth: 400)) { phase in
+            CachedAsyncImage(url: mediaRepo.episodeThumbnailURL(for: ep, fillWidth: 400)) { phase in
                 switch phase {
                 case .success(let img):
                     img.resizable().scaledToFill()
@@ -702,7 +702,7 @@ private struct CastPersonCard<Placeholder: View>: View {
         VStack(spacing: 6) {
             Group {
                 if let imageURL {
-                    AsyncImage(url: imageURL) { phase in
+                    CachedAsyncImage(url: imageURL) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: placeholder()

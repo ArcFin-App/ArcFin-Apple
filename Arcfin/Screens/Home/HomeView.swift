@@ -425,7 +425,7 @@ struct HomeView: View {
     @ViewBuilder
     private var avatarView: some View {
         if let cred = authManager.state.credential, let tag = cred.userImageTag {
-            AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, token: cred.accessToken)) { phase in
+            CachedAsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, token: cred.accessToken)) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default: initialsView
@@ -931,7 +931,7 @@ struct HomeView: View {
         ZStack {
             if let item = heroItems[safe: heroIndex],
                let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img):
                         img
@@ -977,7 +977,7 @@ struct HomeView: View {
         return ZStack {
             Group {
                 if let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img):
                             img.resizable().scaledToFill()
@@ -1027,7 +1027,7 @@ struct HomeView: View {
     private var heroContent: some View {
         VStack(spacing: 0) {
             if let item = heroItems[safe: heroIndex] {
-                AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFit()
                             .frame(maxWidth: 240 * DT.Scale.font, maxHeight: 76 * DT.Scale.font)

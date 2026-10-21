@@ -1177,7 +1177,7 @@ struct MediaDetailView: View {
                 HStack(alignment: .top, spacing: 12) {
                     ZStack {
                         if let url = mediaRepo.episodeThumbnailURL(for: ep) {
-                            AsyncImage(url: url) { phase in
+                            CachedAsyncImage(url: url) { phase in
                                 switch phase {
                                 case .success(let img): img.resizable().scaledToFill()
                                 default: episodeThumbPlaceholder
@@ -1279,7 +1279,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let url = mediaRepo.episodeThumbnailURL(for: ep) {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: episodeThumbPlaceholder

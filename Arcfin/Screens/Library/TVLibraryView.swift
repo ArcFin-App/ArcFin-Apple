@@ -151,7 +151,7 @@ struct TVCollectionDetailView: View {
             let heroURL = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920)
                 ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 1200)
             if let url = heroURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFill()
                     } else { fallbackGradient }
@@ -393,7 +393,7 @@ private struct TVCollectionItemCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: imageURL) { phase in
+            CachedAsyncImage(url: imageURL) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default:

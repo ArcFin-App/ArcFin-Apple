@@ -133,7 +133,7 @@ struct SeerrRequestsListView: View {
     private func requestRow(_ req: SeerrRequestItem) -> some View {
         HStack(spacing: 10) {
             if let url = req.posterURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: posterMiniFallback
@@ -182,7 +182,7 @@ struct SeerrRequestsListView: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let url = req.posterURL {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: posterMiniFallback

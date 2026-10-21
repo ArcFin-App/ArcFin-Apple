@@ -112,7 +112,7 @@ struct AppLockView: View {
     private func avatarContent(_ profile: ServerCredential) -> some View {
         if let tag = profile.userImageTag {
             let url = JellyfinMediaClient.userImageURL(baseURL: profile.baseURL, userID: profile.userID, tag: tag, fillWidth: 200, token: profile.accessToken)
-            AsyncImage(url: url) { phase in
+            CachedAsyncImage(url: url) { phase in
                 if case .success(let img) = phase {
                     img.resizable().scaledToFill()
                 } else {

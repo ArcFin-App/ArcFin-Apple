@@ -1030,7 +1030,7 @@ extension PlayerView {
                 Spacer()
                 HStack(spacing: 12) {
                     if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
-                        AsyncImage(url: url) { phase in
+                        CachedAsyncImage(url: url) { phase in
                             switch phase {
                             case .success(let img): img.resizable().scaledToFill()
                             default: DT.Color.backgroundSecondary
@@ -1212,7 +1212,7 @@ extension PlayerView {
     }
 
     private func suggestionThumb(_ suggestion: MediaItem) -> some View {
-        AsyncImage(url: suggestionImageURL(suggestion)) { phase in
+        CachedAsyncImage(url: suggestionImageURL(suggestion)) { phase in
             if case .success(let image) = phase {
                 image.resizable().scaledToFill()
             } else {
@@ -1377,7 +1377,7 @@ extension PlayerView {
             ZStack {
                 Color.black
                 if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: Color.clear

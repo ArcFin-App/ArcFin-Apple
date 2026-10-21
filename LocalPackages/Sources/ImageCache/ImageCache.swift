@@ -29,6 +29,24 @@ public enum ImageCache: Sendable {
         (shared.configuration.dataCache as? DataCache)?.removeAll()
     }
 
+    #if canImport(UIKit)
+    public typealias PlatformImage = UIImage
+    #elseif canImport(AppKit)
+    public typealias PlatformImage = NSImage
+    #endif
+
+    /// An already decoded image from the in-memory cache, if there is one: lets a view show
+    /// it on its very first frame instead of flashing a placeholder.
+    public static func memoryImage(for url: URL) -> PlatformImage? {
+        shared.cache[ImageRequest(url: url)]?.image
+    }
+
+    /// Loads through the shared pipeline: memory cache, then disk cache, then network, with
+    /// decoding off the main thread and duplicate in-flight requests coalesced.
+    public static func load(_ url: URL) async throws -> PlatformImage {
+        try await shared.image(for: url)
+    }
+
     /// Loads all URLs into the Nuke decoded cache concurrently so images render
     /// without a network round-trip or decode stall.
     public static func preheat(urls: [URL]) {

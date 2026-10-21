@@ -312,7 +312,7 @@ struct SettingsView: View {
                     .frame(width: 52, height: 52)
                     .shadow(color: DT.Color.accent.opacity(0.35), radius: 10, y: 3)
                 if let tag = cred.userImageTag {
-                    AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
+                    CachedAsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: initialsLabel(initials)

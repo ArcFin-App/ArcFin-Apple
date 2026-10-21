@@ -233,7 +233,7 @@ private struct SearchResultCard: View {
         VStack(alignment: .leading, spacing: 4) {
             ZStack {
                 if let imageURL {
-                    AsyncImage(url: imageURL) { phase in
+                    CachedAsyncImage(url: imageURL) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: DT.Color.backgroundSecondary

@@ -272,7 +272,7 @@ struct SeerrItemDetailView: View {
                 HStack(spacing: 10) {
                     ForEach(cast.prefix(12)) { member in
                         VStack(spacing: 4) {
-                            AsyncImage(url: member.profileURL) { phase in
+                            CachedAsyncImage(url: member.profileURL) { phase in
                                 switch phase {
                                 case .success(let img): img.resizable().scaledToFill()
                                 default: DT.Color.backgroundSecondary
@@ -304,7 +304,7 @@ struct SeerrItemDetailView: View {
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
             if let url = item.backdropURL ?? item.posterURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img):
                         img
@@ -341,7 +341,7 @@ struct SeerrItemDetailView: View {
     private var titleBlock: some View {
         HStack(alignment: .top, spacing: 14) {
             if let url = item.posterURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
