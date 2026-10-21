@@ -67,7 +67,7 @@ struct SplashView: View {
                 .frame(height: logoSize * 1.42)
 
                 Text("Arcfin")
-                    .font(.system(size: 30, weight: .semibold, design: .rounded))
+                    .font(.system(.title, design: .rounded, weight: .semibold))
                     .tracking(wordTracking)
                     .foregroundStyle(.white)
                     .opacity(wordOpacity)
