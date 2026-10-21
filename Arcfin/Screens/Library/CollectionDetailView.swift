@@ -174,8 +174,8 @@ struct CollectionDetailView: View {
                     fallbackHero
                 }
             }
-            .frame(maxWidth: .infinity)
             .frame(height: 420)
+            .containerRelativeFrame(.horizontal)
             .clipped()
 
             LinearGradient(
@@ -212,6 +212,7 @@ struct CollectionDetailView: View {
             .padding(.bottom, DT.Spacing.sm)
         }
         .frame(height: 420)
+        .containerRelativeFrame(.horizontal)
     }
 
     private var metaLine: String {

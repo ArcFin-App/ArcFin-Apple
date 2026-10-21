@@ -326,6 +326,7 @@ struct SeerrItemDetailView: View {
             )
         }
         .frame(height: 260)
+        .containerRelativeFrame(.horizontal)
         .clipped()
     }
 

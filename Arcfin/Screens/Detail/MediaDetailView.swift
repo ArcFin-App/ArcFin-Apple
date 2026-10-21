@@ -552,6 +552,9 @@ struct MediaDetailView: View {
                 )
         }
         .frame(height: 260)
+        // Exactly the screen's width: a fill-scaled backdrop is wider than a small phone, and
+        // sized by its own width it pushed the whole page out past both edges.
+        .containerRelativeFrame(.horizontal)
         // Fading the artwork's own opacity (instead of painting the page color over it)
         // blends into whatever is behind, including the artwork-tinted page background.
         .mask(

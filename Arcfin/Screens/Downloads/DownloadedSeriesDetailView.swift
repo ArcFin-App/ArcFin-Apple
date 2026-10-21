@@ -217,6 +217,7 @@ struct DownloadedSeriesDetailView: View {
                 .shadow(color: .black.opacity(0.6), radius: 6)
         }
         .frame(height: 220)
+        .containerRelativeFrame(.horizontal)
         .clipped()
     }
 
