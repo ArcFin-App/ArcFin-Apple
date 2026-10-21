@@ -169,7 +169,6 @@ public enum SettingsSyncRegistry {
         .init("preferredSubtitleLanguage", .string),
         .init("skipForwardSeconds", .int),
         .init("skipBackwardSeconds", .int),
-        .init("rememberPlaybackSpeed", .bool),
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),

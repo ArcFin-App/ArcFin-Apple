@@ -822,6 +822,49 @@ enum LibraryWatchedFilter: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// Filters beyond genre/year/watched/favorites: content rating and a minimum community
+/// score, kept as one value so it travels through the filter sheet as a single binding.
+struct LibraryExtraFilters: Equatable {
+    var officialRatings: Set<String> = []
+    var minRating: Double?
+    /// Jellyfin's `Genres` filter is "any of"; this narrows to titles carrying every selected genre.
+    var matchAllGenres = false
+    var tags: Set<String> = []
+    var quality: LibraryQualityFilter = .any
+    var hasSubtitles = false
+
+    var isActive: Bool {
+        !officialRatings.isEmpty || minRating != nil || !tags.isEmpty || quality != .any || hasSubtitles
+    }
+
+    private static let maturityOrder = [
+        "G", "TV-Y", "TV-G", "TV-Y7", "PG", "TV-PG", "PG-13", "TV-14", "R", "TV-MA", "NC-17",
+    ]
+
+    /// Least to most mature; ratings outside the known scale sort last by name.
+    static func ordered(_ ratings: [String]) -> [String] {
+        ratings.sorted { lhs, rhs in
+            let l = maturityOrder.firstIndex(of: lhs) ?? .max
+            let r = maturityOrder.firstIndex(of: rhs) ?? .max
+            return l == r ? lhs < rhs : l < r
+        }
+    }
+
+    /// Slider position for a selection: `ordered.count` means no limit.
+    static func ratingStep(_ selected: Set<String>, in ordered: [String]) -> Int {
+        ordered.lastIndex { selected.contains($0) } ?? ordered.count
+    }
+
+    static func ratings(upToStep step: Int, in ordered: [String]) -> Set<String> {
+        step >= ordered.count ? [] : Set(ordered.prefix(step + 1))
+    }
+}
+
+enum LibraryQualityFilter: String, CaseIterable, Identifiable {
+    case any = "Any", hd = "HD", uhd = "4K"
+    var id: String { rawValue }
+}
+
 enum LibrarySortOption: String, CaseIterable, Identifiable {
     case nameAsc = "Name (A–Z)"
     case nameDesc = "Name (Z–A)"
@@ -905,6 +948,9 @@ struct LibraryDetailView: View {
     @State private var isLoading = true
     @State private var isLoadingMore = false
     @State private var totalItems = 0
+    /// Where the next server page starts. Equals `items.count` unless genres are matched
+    /// with "all", where the client drops titles from each server page.
+    @State private var serverOffset = 0
     @State private var hasLoaded = false
     @State private var scrolledItemID: MediaItem.ID? = nil
     private let pageSize = 100
@@ -918,6 +964,9 @@ struct LibraryDetailView: View {
     // Filters
     @State private var availableGenres: [String] = []
     @State private var availableYears: [Int] = []
+    @State private var availableRatings: [String] = []
+    @State private var availableTags: [String] = []
+    @State private var extraFilters = LibraryExtraFilters()
     @State private var selectedGenres: Set<String> = []
     @State private var selectedYears: Set<Int> = []
     @State private var watchedFilter: LibraryWatchedFilter = .all
@@ -933,9 +982,11 @@ struct LibraryDetailView: View {
 
     private var filtersActive: Bool {
         !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
+            || extraFilters.isActive
     }
 
-    private var hasMore: Bool { items.count < totalItems }
+    private var matchesAllGenres: Bool { extraFilters.matchAllGenres && selectedGenres.count > 1 }
+    private var hasMore: Bool { serverOffset < totalItems }
     private var isCollections: Bool { library.collectionType == .boxsets }
 
     // Maps the library type to the items it should show.
@@ -1048,15 +1099,15 @@ struct LibraryDetailView: View {
 #endif
 #if !os(tvOS)
         .toolbar {
-            if !isCollections {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { Task { await pickRandom() } } label: {
-                        Image(systemName: "dice")
-                    }
-                    .disabled(isPickingRandom)
-                    .accessibilityLabel("Surprise me")
-                    .accessibilityHint("Opens a random title from this library using the current filters")
+            ToolbarItem(placement: .primaryAction) {
+                Button { Task { await pickRandom() } } label: {
+                    Image(systemName: "dice")
                 }
+                .disabled(isPickingRandom)
+                .accessibilityLabel("Surprise me")
+                .accessibilityHint(isCollections
+                    ? "Opens a random collection"
+                    : "Opens a random title from this library using the current filters")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button { showFilterSheet = true } label: {
@@ -1079,9 +1130,10 @@ struct LibraryDetailView: View {
 #if !os(macOS)
         .sheet(isPresented: $showFilterSheet) {
             LibraryFilterSheet(
-                availableGenres: availableGenres, availableYears: availableYears,
+                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
-                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
+                extraFilters: $extraFilters
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -1107,9 +1159,10 @@ struct LibraryDetailView: View {
                         .padding(.vertical, 12)
                         Divider()
                         LibraryFilterList(
-                            availableGenres: availableGenres, availableYears: availableYears,
+                            availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                             selectedGenres: $selectedGenres, selectedYears: $selectedYears,
-                            watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                            watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
+                extraFilters: $extraFilters
                         )
                     }
                     .frame(width: 380, height: 480)
@@ -1124,9 +1177,16 @@ struct LibraryDetailView: View {
 #endif
         .onChange(of: selectedGenres) { _, _ in Task { await reload() } }
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }
+        .onChange(of: extraFilters) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
-        .navigationDestination(item: $randomPick) { MediaDetailView(item: $0) }
+        .navigationDestination(item: $randomPick) { pick in
+            if pick.type == .boxSet {
+                CollectionDetailView(collection: pick)
+            } else {
+                MediaDetailView(item: pick)
+            }
+        }
         .onChange(of: sortOption) { _, newValue in
             UserDefaults.standard.set(newValue.rawValue, forKey: sortDefaultsKey)
             if restoringSort { restoringSort = false; return }
@@ -1223,18 +1283,9 @@ struct LibraryDetailView: View {
         // combination that made the server reject the request (or any other failure) just
         // silently rendered an empty grid with nothing to point at. Logged now so a real
         // report of that has something concrete behind it instead of another guess.
-        var fetched: (items: [MediaItem], total: Int)?
+        var fetched: (items: [MediaItem], nextOffset: Int, total: Int)?
         do {
-            fetched = try await client.getLibraryItems(
-                credential: cred, authHeader: header,
-                libraryId: library.id, startIndex: 0, limit: pageSize,
-                recursive: true,
-                includeItemTypes: includeTypes,
-                genres: Array(selectedGenres), years: Array(selectedYears),
-                isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
-                isFavorite: favoritesOnly ? true : nil,
-                sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
-            )
+            fetched = try await fetchPage(credential: cred, header: header, startIndex: 0)
         } catch {
             let nsError = error as NSError
             Telemetry.logger(category: "LibraryView").error(
@@ -1246,9 +1297,48 @@ struct LibraryDetailView: View {
         // correct result with whatever this older, possibly narrower selection matched.
         guard generation == fetchGeneration else { return }
         items = fetched?.items ?? []
+        serverOffset = fetched?.nextOffset ?? 0
         totalItems = fetched?.total ?? 0
         mediaRepo.prefetchQuickLookAssets(for: items)
         isLoading = false
+    }
+
+    /// One page under the current filters. With "match all genres" the server can only
+    /// return titles matching *any* selected genre, so pages are narrowed here and further
+    /// server pages are pulled until this one is reasonably full.
+    private func fetchPage(
+        credential: ServerCredential, header: String, startIndex: Int,
+        limit: Int? = nil, sortBy: String? = nil, sortOrder: String? = nil
+    ) async throws -> (items: [MediaItem], nextOffset: Int, total: Int) {
+        let limit = limit ?? pageSize
+        var offset = startIndex
+        var collected: [MediaItem] = []
+        var total = 0
+        var requests = 0
+        repeat {
+            let page = try await client.getLibraryItems(
+                credential: credential, authHeader: header,
+                libraryId: library.id, startIndex: offset, limit: limit,
+                recursive: true,
+                includeItemTypes: includeTypes,
+                genres: Array(selectedGenres), requireAllGenres: matchesAllGenres,
+                years: Array(selectedYears),
+                officialRatings: Array(extraFilters.officialRatings), minCommunityRating: extraFilters.minRating,
+                tags: Array(extraFilters.tags),
+                isHD: extraFilters.quality == .hd ? true : nil,
+                is4K: extraFilters.quality == .uhd ? true : nil,
+                hasSubtitles: extraFilters.hasSubtitles ? true : nil,
+                isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
+                isFavorite: favoritesOnly ? true : nil,
+                sortBy: sortBy ?? sortOption.sortBy, sortOrder: sortOrder ?? sortOption.sortOrder
+            )
+            total = page.total
+            offset += page.consumed
+            collected += page.items
+            requests += 1
+            if page.consumed == 0 { offset = total }
+        } while matchesAllGenres && collected.count < limit / 2 && offset < total && requests < 5
+        return (collected, offset, total)
     }
 
     private func loadMore() async {
@@ -1256,18 +1346,12 @@ struct LibraryDetailView: View {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoadingMore = true
-        let fetched = try? await client.getLibraryItems(
-            credential: cred, authHeader: header,
-            libraryId: library.id, startIndex: items.count, limit: pageSize,
-            recursive: true,
-            includeItemTypes: includeTypes,
-            genres: Array(selectedGenres), years: Array(selectedYears),
-            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
-            isFavorite: favoritesOnly ? true : nil,
-            sortBy: sortOption.sortBy, sortOrder: sortOption.sortOrder
-        )
+        let fetched = try? await fetchPage(credential: cred, header: header, startIndex: serverOffset)
         items.append(contentsOf: fetched?.items ?? [])
-        if let total = fetched?.total { totalItems = total }
+        if let fetched {
+            serverOffset = fetched.nextOffset
+            totalItems = fetched.total
+        }
         isLoadingMore = false
     }
 
@@ -1278,15 +1362,9 @@ struct LibraryDetailView: View {
         isPickingRandom = true
         defer { isPickingRandom = false }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
-        let result = try? await client.getLibraryItems(
-            credential: cred, authHeader: header,
-            libraryId: library.id, startIndex: 0, limit: 1, recursive: true,
-            includeItemTypes: includeTypes,
-            genres: Array(selectedGenres), years: Array(selectedYears),
-            isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
-            isFavorite: favoritesOnly ? true : nil,
-            sortBy: "Random", sortOrder: "Ascending"
-        )
+        let result = try? await fetchPage(
+            credential: cred, header: header, startIndex: 0, limit: matchesAllGenres ? pageSize : 1,
+            sortBy: "Random", sortOrder: "Ascending")
         if let pick = result?.items.first {
             HapticManager.impact(.light)
             randomPick = pick
@@ -1297,11 +1375,21 @@ struct LibraryDetailView: View {
     private func loadFilterOptions() async {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
-        let options = try? await client.getLibraryFilterOptions(
-            credential: cred, authHeader: header, libraryId: library.id, includeItemTypes: includeTypes
-        )
+        let options: (genres: [String], years: [Int], officialRatings: [String], tags: [String])?
+        do {
+            options = try await client.getLibraryFilterOptions(
+                credential: cred, authHeader: header, libraryId: library.id, includeItemTypes: includeTypes
+            )
+        } catch {
+            Telemetry.logger(category: "LibraryView").error(
+                "getLibraryFilterOptions failed for library \(library.id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+            options = nil
+        }
         availableGenres = options?.genres ?? []
         availableYears = options?.years ?? []
+        availableRatings = options?.officialRatings ?? []
+        availableTags = options?.tags ?? []
     }
     #else
     private func loadFilterOptions() async {}
@@ -1318,11 +1406,14 @@ struct LibraryDetailView: View {
 struct LibraryFilterList: View {
     let availableGenres: [String]
     let availableYears: [Int]
+    let availableRatings: [String]
+    let availableTags: [String]
     @Binding var selectedGenres: Set<String>
     @Binding var selectedYears: Set<Int>
     @Binding var watchedFilter: LibraryWatchedFilter
     @Binding var favoritesOnly: Bool
     @Binding var sortOption: LibrarySortOption
+    @Binding var extraFilters: LibraryExtraFilters
 
     var body: some View {
         List {
@@ -1330,11 +1421,15 @@ struct LibraryFilterList: View {
             // macOS — a known-unreliable style inside a List on that platform. Plain
             // tappable rows, same pattern as the Genre/Year sections below, work
             // identically everywhere since nothing depends on a platform picker style.
-            Section("Sort By") {
-                ForEach(LibrarySortOption.allCases) { option in
-                    filterRow(option.rawValue, isSelected: sortOption == option) {
-                        sortOption = option
+            Section {
+                DisclosureGroup {
+                    ForEach(LibrarySortOption.allCases) { option in
+                        filterRow(option.rawValue, isSelected: sortOption == option) {
+                            sortOption = option
+                        }
                     }
+                } label: {
+                    LabeledContent("Sort By", value: sortOption.rawValue)
                 }
             }
 
@@ -1349,30 +1444,101 @@ struct LibraryFilterList: View {
             }
 
             if !availableGenres.isEmpty {
-                Section("Genre") {
+                Section {
+                    DisclosureGroup {
+                    if selectedGenres.count > 1 {
+                        Picker("Match", selection: $extraFilters.matchAllGenres) {
+                            Text("Any").tag(false)
+                            Text("All").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                    }
                     ForEach(availableGenres, id: \.self) { genre in
                         filterRow(genre, isSelected: selectedGenres.contains(genre)) {
                             toggle(genre, in: &selectedGenres)
                         }
                     }
-                }
-            }
-
-            if !availableYears.isEmpty {
-                Section("Year") {
-                    ForEach(availableYears, id: \.self) { year in
-                        filterRow(String(year), isSelected: selectedYears.contains(year)) {
-                            toggle(year, in: &selectedYears)
-                        }
+                    } label: {
+                        LabeledContent("Genre", value: Self.summary(selectedGenres))
                     }
                 }
             }
 
-            if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly {
+            if !availableYears.isEmpty {
+                Section {
+                    DisclosureGroup {
+                        ForEach(availableYears, id: \.self) { year in
+                            filterRow(String(year), isSelected: selectedYears.contains(year)) {
+                                toggle(year, in: &selectedYears)
+                            }
+                        }
+                    } label: {
+                        LabeledContent("Year", value: Self.summary(Set(selectedYears.map(String.init))))
+                    }
+                }
+            }
+
+            Section("Minimum Score") {
+                let score = extraFilters.minRating ?? 0
+                LabeledContent("Score", value: score > 0 ? String(format: "%.1f+", score) : "Any")
+                Slider(
+                    value: Binding(
+                        get: { extraFilters.minRating ?? 0 },
+                        set: { extraFilters.minRating = $0 > 0 ? $0 : nil }
+                    ),
+                    in: 0...9, step: 0.5
+                )
+                .accessibilityLabel("Minimum score")
+                .accessibilityValue(score > 0 ? String(format: "%.1f or higher", score) : "Any")
+            }
+
+            if !availableRatings.isEmpty {
+                let ordered = LibraryExtraFilters.ordered(availableRatings)
+                let step = LibraryExtraFilters.ratingStep(extraFilters.officialRatings, in: ordered)
+                let label = step >= ordered.count ? "Any" : "Up to \(ordered[step])"
+                Section("Content Rating") {
+                    LabeledContent("Maturity", value: label)
+                    Slider(
+                        value: Binding(
+                            get: { Double(step) },
+                            set: { extraFilters.officialRatings = LibraryExtraFilters.ratings(upToStep: Int($0), in: ordered) }
+                        ),
+                        in: 0...Double(ordered.count), step: 1
+                    )
+                    .accessibilityLabel("Maximum content rating")
+                    .accessibilityValue(label)
+                }
+            }
+
+            Section("Quality") {
+                Picker("Resolution", selection: $extraFilters.quality) {
+                    ForEach(LibraryQualityFilter.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                Toggle("Has Subtitles", isOn: $extraFilters.hasSubtitles)
+            }
+
+            if !availableTags.isEmpty {
+                Section {
+                    DisclosureGroup {
+                        ForEach(availableTags, id: \.self) { tag in
+                            filterRow(tag, isSelected: extraFilters.tags.contains(tag)) {
+                                toggle(tag, in: &extraFilters.tags)
+                            }
+                        }
+                    } label: {
+                        LabeledContent("Tags", value: Self.summary(extraFilters.tags))
+                    }
+                }
+            }
+
+            if !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
+                || extraFilters.isActive {
                 Section {
                     Button(role: .destructive) {
                         selectedGenres.removeAll()
                         selectedYears.removeAll()
+                        extraFilters = LibraryExtraFilters()
                         watchedFilter = .all
                         favoritesOnly = false
                     } label: {
@@ -1380,6 +1546,14 @@ struct LibraryFilterList: View {
                     }
                 }
             }
+        }
+    }
+
+    private static func summary(_ selected: Set<String>) -> String {
+        switch selected.count {
+        case 0: "Any"
+        case 1: selected.first ?? "Any"
+        default: "\(selected.count) selected"
         }
     }
 
@@ -1404,20 +1578,24 @@ struct LibraryFilterList: View {
 struct LibraryFilterSheet: View {
     let availableGenres: [String]
     let availableYears: [Int]
+    let availableRatings: [String]
+    let availableTags: [String]
     @Binding var selectedGenres: Set<String>
     @Binding var selectedYears: Set<Int>
     @Binding var watchedFilter: LibraryWatchedFilter
     @Binding var favoritesOnly: Bool
     @Binding var sortOption: LibrarySortOption
+    @Binding var extraFilters: LibraryExtraFilters
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             LibraryFilterList(
-                availableGenres: availableGenres, availableYears: availableYears,
+                availableGenres: availableGenres, availableYears: availableYears, availableRatings: availableRatings, availableTags: availableTags,
                 selectedGenres: $selectedGenres, selectedYears: $selectedYears,
-                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
+                watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
+                extraFilters: $extraFilters
             )
             .navigationTitle("Filter & Sort")
             .navigationBarTitleDisplayMode(.inline)
