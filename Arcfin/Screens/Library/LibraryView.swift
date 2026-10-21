@@ -1062,10 +1062,12 @@ struct LibraryDetailView: View {
 #else
                             .buttonStyle(PressableButtonStyle())
 #if os(iOS)
-                            .onLongPressGesture(minimumDuration: 0.4) {
-                                HapticManager.impact(.medium)
-                                trailerPreviewItem = item
-                            }
+                            .highPriorityGesture(
+                                LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                                    HapticManager.impact(.medium)
+                                    trailerPreviewItem = item
+                                }
+                            )
 #else
                             .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
 #endif

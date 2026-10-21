@@ -390,7 +390,9 @@ struct HomeView: View {
         // ••• menu). A context-menu preview isn't interactive, and a custom-sized one
         // confused UIKit about which tightly-packed shelf card was actually touched.
         #if os(iOS)
-        .onLongPressGesture(minimumDuration: 0.4) { showTrailerPreview(item) }
+        .highPriorityGesture(
+            LongPressGesture(minimumDuration: 0.4).onEnded { _ in showTrailerPreview(item) }
+        )
         #else
         .contextMenu { quickLookMenu(item) }
         #endif
@@ -1250,7 +1252,9 @@ struct HomeView: View {
 #else
                 .buttonStyle(PressableButtonStyle())
                 #if os(iOS)
-                .onLongPressGesture(minimumDuration: 0.4) { showTrailerPreview(item) }
+                .highPriorityGesture(
+            LongPressGesture(minimumDuration: 0.4).onEnded { _ in showTrailerPreview(item) }
+        )
                 #else
                 .contextMenu { quickLookMenu(item) }
                 #endif
