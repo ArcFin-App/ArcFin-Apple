@@ -166,6 +166,7 @@ struct HomeView: View {
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
+    @State private var trailerPreviewItem: MediaItem?
     #if !os(tvOS)
     @Namespace private var zoomNamespace
     #endif
@@ -385,11 +386,10 @@ struct HomeView: View {
         .contextMenu { quickLookMenu(item) }
 #else
         .buttonStyle(PressableButtonStyle())
-        // No custom preview: — a preview whose size doesn't match the tiny source card
-        // confuses UIKit's context-menu interaction proxy about which cell was actually
-        // touched in a tightly-packed horizontal shelf, causing taps to land on the
-        // neighboring card instead of the one under your finger.
-        .contextMenu { quickLookMenu(item) }
+        // Long press opens the trailer preview sheet (which carries the quick actions in its
+        // ••• menu). A context-menu preview isn't interactive, and a custom-sized one
+        // confused UIKit about which tightly-packed shelf card was actually touched.
+        .onLongPressGesture(minimumDuration: 0.4) { showTrailerPreview(item) }
         .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
     }
@@ -679,6 +679,11 @@ struct HomeView: View {
                     ?? mediaRepo.recentlyAdded.first { $0.id == id }
             }
         }
+        #if os(iOS)
+        .sheet(item: $trailerPreviewItem) { item in
+            TrailerPreviewSheet(item: item) { heroDetailItem = $0 }
+        }
+        #endif
         .sheet(item: $seerrRequestItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $seerrRequestItem)
                 .presentationDetents([.medium, .large])
@@ -1159,6 +1164,13 @@ struct HomeView: View {
         }
     }
 
+    private func showTrailerPreview(_ item: MediaItem) {
+        #if os(iOS)
+        HapticManager.impact(.medium)
+        trailerPreviewItem = item
+        #endif
+    }
+
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {
         ItemQuickActions(item: item)
@@ -1219,7 +1231,7 @@ struct HomeView: View {
                 .contextMenu { quickLookMenu(item) }
 #else
                 .buttonStyle(PressableButtonStyle())
-                .contextMenu { quickLookMenu(item) }
+                .onLongPressGesture(minimumDuration: 0.4) { showTrailerPreview(item) }
                 .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
             }
