@@ -40,6 +40,15 @@ struct ItemQuickActions: View {
         } label: {
             Label(favorite ? "Remove from Favorites" : "Add to Favorites", systemImage: favorite ? "heart.slash" : "heart")
         }
+        #if !os(tvOS)
+        if [.movie, .episode, .series, .season].contains(item.type) {
+            Button {
+                PlaylistStore.shared.addingItem = item
+            } label: {
+                Label("Add to Playlist…", systemImage: "text.badge.plus")
+            }
+        }
+        #endif
     }
 
     private func perform(_ action: @escaping (JellyfinMediaClient, ServerCredential, String) async -> Void) {

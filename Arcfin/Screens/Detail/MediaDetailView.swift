@@ -184,6 +184,7 @@ struct MediaDetailView: View {
                     .accessibilityLabel("Share")
                 }
             }
+            ToolbarItem(placement: .topBarTrailing) { moreMenu }
         }
         #elseif os(macOS)
         // Downloads are iOS-only (DownloadManager isn't wired up on macOS elsewhere in
@@ -1312,6 +1313,18 @@ struct MediaDetailView: View {
                     .font(.system(.title3))
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.3))
             )
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button { PlaylistStore.shared.addingItem = item } label: {
+                Label("Add to Playlist…", systemImage: "text.badge.plus")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .foregroundStyle(.white)
+        }
+        .accessibilityLabel("More")
     }
 
     private var ratingMenu: some View {

@@ -1062,7 +1062,7 @@ extension PlayerView {
                                 .frame(width: 30, height: 30)
                                 .background(.white, in: Circle())
                         }
-                        .accessibilityLabel("Play next episode")
+                        .accessibilityLabel("Play next")
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()

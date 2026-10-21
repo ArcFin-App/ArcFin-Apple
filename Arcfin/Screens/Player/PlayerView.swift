@@ -1014,10 +1014,13 @@ struct PlayerView: View {
             creditsStart = segments.creditsStart
             recapEnd = segments.recapEnd
 
-            if let seriesId = item.seriesId {
+            if !PlayQueue.contains(item.id), let seriesId = item.seriesId {
                 let upNext = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: 1)
                 nextEpisode = upNext?.first
             }
+        }
+        if let queued = PlayQueue.item(after: item.id) {
+            nextEpisode = queued
         }
 
         // Anything with an Up Next card already has something to watch next; the rest (movies,

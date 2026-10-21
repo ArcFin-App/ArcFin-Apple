@@ -23,6 +23,7 @@ struct MainTabView: View {
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     @State private var selectedTab: BottomNavItem = .home
+    @Bindable private var playlistStore = PlaylistStore.shared
     #endif
 
     #if !os(tvOS)
@@ -101,6 +102,10 @@ struct MainTabView: View {
             }
             .tabViewStyle(.sidebarAdaptable)
             .preferredColorScheme(.dark)
+            .sheet(item: $playlistStore.addingItem) { item in
+                AddToPlaylistSheet(item: item)
+                    .presentationDetents([.medium, .large])
+            }
             .onChange(of: selectedTab) { old, _ in
                 if old == .home { NotificationCenter.default.post(name: .arcfinHomeTabLeft, object: nil) }
             }

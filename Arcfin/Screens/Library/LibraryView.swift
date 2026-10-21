@@ -117,6 +117,11 @@ struct LibraryView: View {
                     librariesSection
                 }
 
+                // ── Playlists ───────────────────────────────────────────
+                #if !os(tvOS)
+                PlaylistsSection()
+                #endif
+
                 // ── Your Requests ───────────────────────────────────────
                 if seerrRepo.isConfigured {
                     requestsSection
@@ -140,9 +145,9 @@ struct LibraryView: View {
 
     /// Live TV and Music aren't playable yet (no live-TV tuner support, no music player
     /// UI) — hide them from the library list rather than showing a section that just
-    /// leads to a dead end.
+    /// leads to a dead end. Playlists have their own section below.
     private var supportedLibraries: [JellyfinLibrary] {
-        mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
+        mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && $0.collectionType != .playlists }
     }
 
     private var librariesSection: some View {

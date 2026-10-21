@@ -990,7 +990,7 @@ public struct JellyfinMediaClient: Sendable {
 
 // MARK: - Private response types
 
-private struct ItemsPage: Decodable {
+struct ItemsPage: Decodable {
     let items: [JellyfinItemResponse]
     let totalRecordCount: Int?
     enum CodingKeys: String, CodingKey {
@@ -1032,7 +1032,7 @@ private struct LibraryFiltersResponse: Decodable {
     }
 }
 
-private struct JellyfinItemResponse: Decodable {
+struct JellyfinItemResponse: Decodable {
     let id: String
     let name: String
     let type: String

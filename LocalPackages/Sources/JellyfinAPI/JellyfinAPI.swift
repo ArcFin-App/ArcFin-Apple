@@ -98,6 +98,7 @@ public enum MediaType: String, Sendable, Equatable {
     case audio = "Audio"
     case musicAlbum = "MusicAlbum"
     case boxSet = "BoxSet"
+    case playlist = "Playlist"
     case unknown
 }
 
