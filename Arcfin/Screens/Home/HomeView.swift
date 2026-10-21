@@ -288,22 +288,6 @@ struct HomeView: View {
                     mediaShelfContent(mediaRepo.watchAgain)
                 }
             }
-        case .favorites:
-            if !mediaRepo.favorites.isEmpty {
-                ShelfRow(title: "Favorites", onSeeAll: {
-                    seeAllShelf = SeeAllShelf(title: "Favorites", items: mediaRepo.favorites)
-                }) {
-                    mediaShelfContent(mediaRepo.favorites)
-                }
-            }
-        case .topRatedUnwatched:
-            if !mediaRepo.topRatedUnwatched.isEmpty {
-                ShelfRow(title: "Top Rated, Unwatched", onSeeAll: {
-                    seeAllShelf = SeeAllShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
-                }) {
-                    mediaShelfContent(mediaRepo.topRatedUnwatched)
-                }
-            }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
                 seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
@@ -594,6 +578,18 @@ struct HomeView: View {
         .onChange(of: mediaRepo.continueWatching.first?.id, initial: true) { _, _ in
             let first = mediaRepo.continueWatching.first
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
+        }
+        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp).map(\.id), initial: true) { _, _ in
+            var seen = Set<String>()
+            let items = (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
+            Task {
+                await WidgetSnapshotUpdater.update(items: items) { item in
+                    if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }
+                    return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 600)
+                        ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600)
+                        ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600)
+                }
+            }
         }
         #endif
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
