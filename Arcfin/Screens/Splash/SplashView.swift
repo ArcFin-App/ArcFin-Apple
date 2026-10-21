@@ -2,8 +2,10 @@
 
 import SwiftUI
 
-/// Launch animation: a ring draws itself around the mark, the logo resolves out of a blur
-/// inside it, a highlight sweeps across the logo, and the wordmark tightens into place.
+/// Launch animation: behind everything, a tilted wall of the library's recently added posters
+/// drifts into view (when someone has signed in before); in front, a ring draws itself around
+/// the mark, the logo resolves out of a blur inside it, a highlight sweeps across the logo,
+/// and the wordmark tightens into place.
 struct SplashView: View {
     /// Reflects real work still happening (e.g. auth check) — not just a fixed timer. The
     /// exit animation waits for this to go false in addition to the minimum presentation time.
@@ -12,6 +14,9 @@ struct SplashView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @State private var posters = SplashMosaicStore.loadImages()
+    @State private var mosaicReveal: Double = 0
+    @State private var mosaicScale: CGFloat = 1.08
     @State private var glowOpacity: Double = 0
     @State private var glowScale: CGFloat = 0.8
     @State private var ringTrim: CGFloat = 0
@@ -34,6 +39,24 @@ struct SplashView: View {
     var body: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
+
+            if !posters.isEmpty {
+                SplashMosaicView(posters: posters, reveal: mosaicReveal, isAnimated: !reduceMotion)
+                    .scaleEffect(mosaicScale)
+                    .opacity(0.55)
+                    .ignoresSafeArea()
+                // Darken toward the middle and the edges so the mark reads clearly on top.
+                RadialGradient(
+                    colors: [DT.Color.backgroundPrimary.opacity(0.92), DT.Color.backgroundPrimary.opacity(0.25)],
+                    center: .center, startRadius: 40, endRadius: 360
+                )
+                .ignoresSafeArea()
+                LinearGradient(
+                    colors: [DT.Color.backgroundPrimary.opacity(0.7), .clear, DT.Color.backgroundPrimary.opacity(0.9)],
+                    startPoint: .top, endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            }
 
             // Soft light that blooms behind the mark
             RadialGradient(
@@ -123,8 +146,9 @@ struct SplashView: View {
 
     private func runSequence() {
         guard !reduceMotion else {
-            // No drawing, spinning or sweeping: the mark and name simply fade in.
+            // No drawing, spinning, sweeping or drifting: everything simply fades in.
             withAnimation(.easeOut(duration: 0.4)) {
+                mosaicReveal = 1; mosaicScale = 1
                 glowOpacity = 1; glowScale = 1
                 logoScale = 1; logoOpacity = 1; logoBlur = 0
                 wordOpacity = 1; wordTracking = 2; ringOpacity = 0
@@ -133,6 +157,10 @@ struct SplashView: View {
             scheduleSpinnerAndExit()
             return
         }
+
+        // 0. The poster wall fades in column by column and settles from a slight zoom
+        withAnimation(.easeOut(duration: 1.2)) { mosaicReveal = 1 }
+        withAnimation(.easeOut(duration: 2.2)) { mosaicScale = 1 }
 
         // 1. Light blooms and the ring starts drawing, turning as it goes
         withAnimation(.easeOut(duration: 0.7)) { glowOpacity = 1; glowScale = 1 }
@@ -163,7 +191,8 @@ struct SplashView: View {
         }
 
         schedule(after: 1.2) { withAnimation(.easeIn(duration: 0.4)) { creditOpacity = 1 } }
-        scheduleSpinnerAndExit(exitAfter: 1.7)
+        // The poster wall needs a moment longer to be seen.
+        scheduleSpinnerAndExit(exitAfter: posters.isEmpty ? 1.7 : 2.1)
     }
 
     private func scheduleSpinnerAndExit(exitAfter: Double = 1.2) {

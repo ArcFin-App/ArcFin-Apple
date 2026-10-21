@@ -343,6 +343,7 @@ final class AuthManager {
         SeerrSpotlightStore.clear()
         BackgroundRefresh.resetState()
         #endif
+        SplashMosaicStore.clear()
         if case .authenticated(let current) = state, current.id == id {
             if let next = profiles.first {
                 persist(active: next)

@@ -753,6 +753,10 @@ struct HomeView: View {
             + mediaRepo.watchAgain
         Task { await SpotlightIndexer.index(indexable) }
         #endif
+        let splashPicks = mediaRepo.recentlyAddedMovies + mediaRepo.recentlyAddedShows + mediaRepo.recentlyAdded
+        Task {
+            await SplashMosaicStore.save(splashPicks) { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 240) }
+        }
         TopShelfBridge.save(
             continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
                 TopShelfMediaItem(
