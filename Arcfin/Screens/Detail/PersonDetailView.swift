@@ -60,9 +60,11 @@ struct PersonDetailView: View {
                 header
 
                 if isLoading {
+                    // Full width and a fixed height, so the page is already its final size
+                    // while loading instead of starting narrow and widening once data lands.
                     ProgressView()
                         .tint(DT.Color.accent)
-                        .padding(.top, 40)
+                        .frame(maxWidth: .infinity, minHeight: 240)
                 } else {
                     if let overview = detail?.overview, !overview.isEmpty {
                         Text(overview)
@@ -109,9 +111,10 @@ struct PersonDetailView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding(.bottom, DT.Spacing.md)
         }
-        .background(DT.Color.backgroundPrimary)
+        .background { DT.Color.backgroundPrimary.ignoresSafeArea() }
         .navigationTitle(person.name)
         .sheet(item: $requestingCredit) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingCredit)

@@ -50,8 +50,7 @@ struct CollectionDetailView: View {
                 if isLoading {
                     ProgressView()
                         .tint(DT.Color.accent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 40)
+                        .frame(maxWidth: .infinity, minHeight: 240)
                 } else {
                     VStack(alignment: .leading, spacing: DT.Spacing.md) {
                         if let overview = detail?.item.overview ?? collection.overview, !overview.isEmpty {
@@ -93,7 +92,7 @@ struct CollectionDetailView: View {
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .background { DT.Color.backgroundPrimary.ignoresSafeArea() }
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         #if os(iOS)

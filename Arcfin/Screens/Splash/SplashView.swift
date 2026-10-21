@@ -2,6 +2,8 @@
 
 import SwiftUI
 
+/// Launch animation: a ring draws itself around the mark, the logo resolves out of a blur
+/// inside it, a highlight sweeps across the logo, and the wordmark tightens into place.
 struct SplashView: View {
     /// Reflects real work still happening (e.g. auth check) — not just a fixed timer. The
     /// exit animation waits for this to go false in addition to the minimum presentation time.
@@ -10,68 +12,72 @@ struct SplashView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var logoScale: CGFloat = 0.55
-    @State private var logoOpacity: Double = 0
-    @State private var logoBlur: CGFloat = 14
     @State private var glowOpacity: Double = 0
-    @State private var glowPulse: CGFloat = 1.0
+    @State private var glowScale: CGFloat = 0.8
+    @State private var ringTrim: CGFloat = 0
+    @State private var ringRotation: Double = -90
+    @State private var ringOpacity: Double = 1
+    @State private var logoScale: CGFloat = 0.78
+    @State private var logoOpacity: Double = 0
+    @State private var logoBlur: CGFloat = 16
+    @State private var shineOffset: CGFloat = -1
+    @State private var wordOpacity: Double = 0
+    @State private var wordTracking: CGFloat = 14
     @State private var spinnerOpacity: Double = 0
     @State private var creditOpacity: Double = 0
     @State private var sceneOpacity: Double = 1
     @State private var sceneScale: CGFloat = 1
     @State private var minimumTimeElapsed = false
 
-    private let logoSize: CGFloat = 140
+    private let logoSize: CGFloat = 132
 
     var body: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
-            // Pulsing ambient glow behind the logo
+            // Soft light that blooms behind the mark
             RadialGradient(
-                colors: [DT.Color.accent.opacity(0.28), DT.Color.accentDeep.opacity(0.12), .clear],
-                center: .center, startRadius: 0, endRadius: 300
+                colors: [DT.Color.accent.opacity(0.32), DT.Color.accentDeep.opacity(0.10), .clear],
+                center: .center, startRadius: 0, endRadius: 280
             )
-            .frame(width: 600, height: 600)
-            .scaleEffect(glowPulse)
+            .frame(width: 560, height: 560)
+            .scaleEffect(glowScale)
             .opacity(glowOpacity)
-            .blur(radius: 28)
-            .ignoresSafeArea()
+            .blur(radius: 24)
             .allowsHitTesting(false)
 
-            // Subtle scan-line texture
-            Canvas { ctx, size in
-                for y in stride(from: 0, through: size.height, by: 4) {
-                    ctx.fill(Path(CGRect(x: 0, y: y, width: size.width, height: 1)),
-                             with: .color(.white.opacity(0.012)))
+            VStack(spacing: 30) {
+                ZStack {
+                    // The "arc": a bright head trailing a fading tail
+                    Circle()
+                        .trim(from: 0, to: ringTrim)
+                        .stroke(
+                            AngularGradient(
+                                colors: [DT.Color.accent.opacity(0), DT.Color.accent, .white],
+                                center: .center),
+                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                        )
+                        .frame(width: logoSize * 1.42, height: logoSize * 1.42)
+                        .rotationEffect(.degrees(ringRotation))
+                        .opacity(ringOpacity)
+                        .shadow(color: DT.Color.accent.opacity(0.7), radius: 10)
+
+                    logo
                 }
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
+                .frame(height: logoSize * 1.42)
 
-            VStack(spacing: 0) {
-                Spacer()
-
-                Image("ArcfinLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: logoSize, height: logoSize)
-                    .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25))
-                    .shadow(color: DT.Color.accent.opacity(0.55), radius: 48)
-                    .shadow(color: .black.opacity(0.65), radius: 24, y: 12)
-                    .blur(radius: logoBlur)
-                    .scaleEffect(logoScale)
-                    .opacity(logoOpacity)
+                Text("Arcfin")
+                    .font(.system(size: 30, weight: .semibold, design: .rounded))
+                    .tracking(wordTracking)
+                    .foregroundStyle(.white)
+                    .opacity(wordOpacity)
+                    .accessibilityHidden(true)
 
                 ProgressView()
                     .tint(.white)
                     .opacity(spinnerOpacity)
-                    .padding(.top, 28)
-
-                Spacer()
             }
 
-            // Credit
             VStack {
                 Spacer()
                 Text("by PSMattas")
@@ -89,67 +95,102 @@ struct SplashView: View {
         .onChange(of: isLoading) { _, _ in attemptFinish() }
     }
 
+    private var logo: some View {
+        Image("ArcfinLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: logoSize, height: logoSize)
+            .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25, style: .continuous))
+            .overlay {
+                // A diagonal highlight passing over the mark once, clipped to its shape
+                LinearGradient(
+                    colors: [.clear, .white.opacity(0.55), .clear],
+                    startPoint: .leading, endPoint: .trailing
+                )
+                .frame(width: logoSize * 0.5)
+                .rotationEffect(.degrees(20))
+                .offset(x: shineOffset * logoSize)
+                .blendMode(.plusLighter)
+                .allowsHitTesting(false)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25, style: .continuous))
+            .shadow(color: DT.Color.accent.opacity(0.5), radius: 40)
+            .shadow(color: .black.opacity(0.6), radius: 22, y: 12)
+            .blur(radius: logoBlur)
+            .scaleEffect(logoScale)
+            .opacity(logoOpacity)
+    }
+
     private func runSequence() {
-        // 1. Glow fades in
-        withAnimation(.easeOut(duration: 0.5)) {
-            glowOpacity = 1
+        guard !reduceMotion else {
+            // No drawing, spinning or sweeping: the mark and name simply fade in.
+            withAnimation(.easeOut(duration: 0.4)) {
+                glowOpacity = 1; glowScale = 1
+                logoScale = 1; logoOpacity = 1; logoBlur = 0
+                wordOpacity = 1; wordTracking = 2; ringOpacity = 0
+            }
+            schedule(after: 0.5) { withAnimation(.easeIn(duration: 0.3)) { creditOpacity = 1 } }
+            scheduleSpinnerAndExit()
+            return
         }
 
-        // 2. Logo springs in and sharpens
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            withAnimation(reduceMotion ? .easeOut(duration: 0.3) : .spring(response: 0.55, dampingFraction: 0.7)) {
-                logoOpacity = 1
+        // 1. Light blooms and the ring starts drawing, turning as it goes
+        withAnimation(.easeOut(duration: 0.7)) { glowOpacity = 1; glowScale = 1 }
+        withAnimation(.easeInOut(duration: 1.0)) { ringTrim = 1 }
+        withAnimation(.easeInOut(duration: 1.0)) { ringRotation = 270 }
+
+        // 2. The logo resolves out of a blur inside the ring
+        schedule(after: 0.3) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.72)) {
                 logoScale = 1
+                logoOpacity = 1
             }
+            withAnimation(.easeOut(duration: 0.55)) { logoBlur = 0 }
+        }
+
+        // 3. Highlight sweeps across the mark
+        schedule(after: 0.85) {
+            withAnimation(.easeInOut(duration: 0.7)) { shineOffset = 1.4 }
+        }
+
+        // 4. The ring dissolves and the wordmark tightens into place
+        schedule(after: 1.05) {
+            withAnimation(.easeOut(duration: 0.45)) { ringOpacity = 0 }
             withAnimation(.easeOut(duration: 0.6)) {
-                logoBlur = 0
+                wordOpacity = 1
+                wordTracking = 2
             }
         }
 
-        // 3. Credit line
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
-            withAnimation(.easeIn(duration: 0.4)) {
-                creditOpacity = 1
-            }
-        }
+        schedule(after: 1.2) { withAnimation(.easeIn(duration: 0.4)) { creditOpacity = 1 } }
+        scheduleSpinnerAndExit(exitAfter: 1.7)
+    }
 
-        // 4. Glow pulse loop
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
-                glowPulse = 1.18
-            }
+    private func scheduleSpinnerAndExit(exitAfter: Double = 1.2) {
+        // Still loading once the entrance settles: a plain spinner, so the screen doesn't
+        // sit there with nothing indicating that work is happening.
+        schedule(after: exitAfter + 0.2) {
+            if isLoading { withAnimation(.easeIn(duration: 0.3)) { spinnerOpacity = 1 } }
         }
-
-        // 5. If still loading once the entrance settles, fade in a plain spinner below the
-        // logo instead of silently sitting there with no indication anything is happening.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            if isLoading {
-                withAnimation(.easeIn(duration: 0.3)) { spinnerOpacity = 1 }
-            }
-        }
-
-        // 6. Exit after the minimum presentation time; authentication continues in the
-        // background. 1.2s is enough for the entrance animation to read (credit line
-        // finishes fading in at 0.85 + 0.4 = 1.25s) without stalling an already-fast
-        // session check — launching.md: "Launch instantly... people don't want to wait
-        // more than a couple of seconds," which the previous 2.4s (+0.48s fade = ~2.9s
-        // total) was already pushing regardless of whether anything was still loading.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+        // Exit after the minimum presentation time; authentication continues in the
+        // background and SessionCheckingView covers a slow check.
+        schedule(after: exitAfter) {
             minimumTimeElapsed = true
             attemptFinish(force: true)
         }
+    }
+
+    private func schedule(after delay: Double, _ work: @escaping () -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     private func attemptFinish(force: Bool = false) {
         guard minimumTimeElapsed, force || !isLoading else { return }
         withAnimation(.easeInOut(duration: 0.48)) {
             sceneOpacity = 0
-            sceneScale = reduceMotion ? 1 : 0.94
+            sceneScale = reduceMotion ? 1 : 1.06
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
-            onComplete()
-        }
+        schedule(after: 0.48) { onComplete() }
     }
 }
 
