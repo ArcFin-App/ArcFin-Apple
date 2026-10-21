@@ -23,6 +23,8 @@ struct StreamingServicesView: View {
 
     @State private var available: [SeerrWatchProvider] = []
     @State private var isLoading = true
+    @State private var errorMessage: String?
+    @State private var region = ""
     @State private var query = ""
 
     private var selected: [SeerrWatchProvider] { StreamingServicePrefs.decode(selectedData) }
@@ -52,24 +54,47 @@ struct StreamingServicesView: View {
             Section {
                 if isLoading {
                     HStack { Spacer(); ProgressView(); Spacer() }
+                } else if let errorMessage {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Couldn't load services from Seerr.")
+                            .foregroundStyle(DT.Color.textPrimary)
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(DT.Color.textSecondary)
+                        Button("Try Again") { Task { await load() } }
+                            .foregroundStyle(DT.Color.accent)
+                    }
                 } else if available.isEmpty {
-                    Text("Seerr didn't return any services for your region.")
+                    Text("Seerr has no streaming services listed for this country.")
                         .foregroundStyle(DT.Color.textSecondary)
                 } else {
                     ForEach(shown) { provider in row(provider) }
                 }
             } header: {
-                Text("Available in \(Locale.current.localizedString(forRegionCode: SeerrRepository.region) ?? SeerrRepository.region)")
+                if !region.isEmpty {
+                    Text("Available in \(Locale.current.localizedString(forRegionCode: region) ?? region)")
+                }
+            } footer: {
+                Text("The country comes from your region setting in Seerr, the same one its own pages use.")
             }
         }
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Streaming Services")
         .searchable(text: $query, prompt: "Search services")
-        .task {
-            available = await seerrRepo.streamingServices()
-            isLoading = false
+        .task { await load() }
+    }
+
+    private func load() async {
+        isLoading = true
+        errorMessage = nil
+        region = await seerrRepo.region()
+        do {
+            available = try await seerrRepo.streamingServices()
+        } catch {
+            errorMessage = error.localizedDescription
         }
+        isLoading = false
     }
 
     private func row(_ provider: SeerrWatchProvider) -> some View {

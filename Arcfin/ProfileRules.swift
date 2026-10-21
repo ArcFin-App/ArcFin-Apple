@@ -92,11 +92,10 @@ final class ProfileRules {
     /// Keeps only the Seerr titles this profile may see. Allowed tags can't match anything
     /// outside the library, so a profile limited to tagged media sees none of Seerr's
     /// catalogue, the same as an untagged title in the library.
-    func visible(_ items: [SeerrItem], lookUp: @escaping @Sendable (SeerrItem, String) async -> String?) async -> [SeerrItem] {
+    func visible(_ items: [SeerrItem], region: String, lookUp: @escaping @Sendable (SeerrItem, String) async -> String?) async -> [SeerrItem] {
         guard restrictsContent else { return items }
         guard policy.allowedTags.isEmpty else { return [] }
         let candidates = items.filter { !$0.isAdult }
-        let region = Locale.current.region?.identifier ?? "US"
 
         let missing = candidates.filter { certifications[key($0)] == nil }
         if !missing.isEmpty {

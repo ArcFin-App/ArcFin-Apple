@@ -72,6 +72,7 @@ final class SeerrRepository {
         client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
                                       authMethod: authMethod)
         authFailed = false
+        cachedRegion = nil
         trending = []; popularMovies = []; popularTV = []; requests = []
         upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
     }
@@ -361,7 +362,7 @@ final class SeerrRepository {
 
     func relatedInfo(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrRelatedInfo? {
         guard let client else { return nil }
-        return try? await client.related(mediaType: mediaType, tmdbId: tmdbId, region: Self.region)
+        return try? await client.related(mediaType: mediaType, tmdbId: tmdbId, region: await region())
     }
 
     func ratings(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrRatings? {
@@ -369,23 +370,36 @@ final class SeerrRepository {
         return try? await client.ratings(mediaType: mediaType, tmdbId: tmdbId)
     }
 
-    /// This device's country, which streaming availability depends on.
-    static var region: String { Locale.current.region?.identifier ?? "US" }
+    /// The country used for streaming availability and age ratings: the one set in Seerr
+    /// (the signed-in user's, else the server's), as Seerr's own pages use; the device's
+    /// region only when Seerr has none. Fetched once per Seerr connection.
+    @ObservationIgnored private var cachedRegion: String?
 
-    /// Streaming services available in this country, for picking which get a Home row.
-    func streamingServices() async -> [SeerrWatchProvider] {
+    func region() async -> String {
+        if let cachedRegion { return cachedRegion }
+        let resolved = await client?.preferredRegion() ?? Locale.current.region?.identifier ?? "US"
+        cachedRegion = resolved
+        return resolved
+    }
+
+    /// Streaming services available in Seerr's country, for picking which get a Home row.
+    /// Throws with the reason when Seerr can't be reached or signed in to.
+    func streamingServices() async throws -> [SeerrWatchProvider] {
         guard let client else { return [] }
-        async let movies = (try? await client.watchProviders(mediaType: .movie, region: Self.region)) ?? []
-        async let shows = (try? await client.watchProviders(mediaType: .tv, region: Self.region)) ?? []
+        let region = await region()
+        async let movies = client.watchProviders(mediaType: .movie, region: region)
+        async let shows = client.watchProviders(mediaType: .tv, region: region)
+        let (m, t) = try await (movies, shows)
         var seen = Set<Int>()
-        return await (movies + shows).filter { seen.insert($0.id).inserted }
+        return (m + t).filter { seen.insert($0.id).inserted }
     }
 
     /// Popular movies and shows on a streaming service here, alternating.
     func popularOn(_ providerId: Int) async -> [SeerrItem] {
         guard let client else { return [] }
-        async let movies = (try? await client.discoverByWatchProvider(providerId, mediaType: .movie, region: Self.region)) ?? []
-        async let shows = (try? await client.discoverByWatchProvider(providerId, mediaType: .tv, region: Self.region)) ?? []
+        let region = await region()
+        async let movies = (try? await client.discoverByWatchProvider(providerId, mediaType: .movie, region: region)) ?? []
+        async let shows = (try? await client.discoverByWatchProvider(providerId, mediaType: .tv, region: region)) ?? []
         let (m, t) = await (movies, shows)
         var mixed: [SeerrItem] = []
         for index in 0..<max(m.count, t.count) {
@@ -399,7 +413,7 @@ final class SeerrRepository {
     func certification(for item: SeerrItem) async -> String? {
         if let known = ProfileRules.shared.certification(for: item) { return known }
         guard let client else { return nil }
-        return try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: Self.region)
+        return try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: await region())
     }
 
     // MARK: - Parental controls
@@ -407,7 +421,7 @@ final class SeerrRepository {
     /// What the signed-in profile may see of a Seerr list, by its parental controls.
     private func visible(_ items: [SeerrItem]) async -> [SeerrItem] {
         guard let client else { return items }
-        return await ProfileRules.shared.visible(items) { item, region in
+        return await ProfileRules.shared.visible(items, region: await region()) { item, region in
             let rating = try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region)
             return rating ?? nil
         }

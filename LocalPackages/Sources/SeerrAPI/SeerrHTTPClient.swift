@@ -499,6 +499,33 @@ public actor SeerrHTTPClient {
         )
     }
 
+    /// The country Seerr uses for streaming availability (and Discover): the signed-in user's
+    /// own setting, else the server's, as set in Seerr's settings. nil when neither is set,
+    /// or set to "all".
+    public func preferredRegion() async -> String? {
+        struct Settings: Decodable {
+            let streamingRegion: String?
+            let discoverRegion: String?
+            let region: String?
+            var best: String? {
+                [streamingRegion, discoverRegion, region]
+                    .compactMap { $0 }
+                    .first { $0.count == 2 && $0.lowercased() != "all" }
+            }
+        }
+        struct Me: Decodable { let settings: Settings? }
+        if (try? await ensureAuthenticated()) != nil,
+           let data = try? await fetch(baseURL.appendingPathComponent("api/v1/auth/me")),
+           let region = (try? JSONDecoder().decode(Me.self, from: data))?.settings?.best {
+            return region.uppercased()
+        }
+        if let data = try? await fetch(baseURL.appendingPathComponent("api/v1/settings/public")),
+           let region = (try? JSONDecoder().decode(Settings.self, from: data))?.best {
+            return region.uppercased()
+        }
+        return nil
+    }
+
     /// The signed-in Seerr user's id and permission bitmask — needed to read their own
     /// request quota and to tell whether their requests auto-approve.
     public func currentUser() async throws -> SeerrCurrentUser {
@@ -644,16 +671,23 @@ public actor SeerrHTTPClient {
             retryReq.timeoutInterval = 15
             applyXSRF(to: &retryReq)
             let (retryData, retryResp) = try await session.data(for: retryReq)
-            guard let retryHttp = retryResp as? HTTPURLResponse,
-                  (200...299).contains(retryHttp.statusCode) else {
-                throw URLError(.badServerResponse)
-            }
+            try Self.check(retryResp, data: retryData)
             return retryData
         }
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
+        try Self.check(response, data: data)
         return data
+    }
+
+    /// A failed request says which: the status and Seerr's own message, so an empty list
+    /// can explain itself instead of a generic "bad server response".
+    private static func check(_ response: URLResponse, data: Data) throws {
+        guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        guard (200...299).contains(http.statusCode) else {
+            struct Message: Decodable { let message: String? }
+            let message = (try? JSONDecoder().decode(Message.self, from: data))?.message
+                ?? String(data: data.prefix(200), encoding: .utf8) ?? ""
+            throw SeerrError.requestFailed(status: http.statusCode, body: message)
+        }
     }
 }
 
