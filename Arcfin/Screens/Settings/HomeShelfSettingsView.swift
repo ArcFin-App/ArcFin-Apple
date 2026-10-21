@@ -57,11 +57,11 @@ struct HomeShelfSettingsView: View {
                 Text(footerText)
             }
 
-            if seerrRepo.isConfigured {
+            if seerrRepo.hasCatalog {
                 Section {
                     NavigationLink("Streaming Services") { StreamingServicesView() }
                 } footer: {
-                    Text("Pick the services you use to get a row of what's popular on each, from Seerr.")
+                    Text("Pick the services you use to get a row of what's popular on each, from Seerr or TMDB.")
                 }
             }
         }

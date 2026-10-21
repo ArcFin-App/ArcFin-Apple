@@ -3,6 +3,7 @@
 import Foundation
 import Observation
 import SeerrAPI
+import AuthCore
 import Telemetry
 // Needed for the privacy-annotated string interpolation in the error logs below — Telemetry
 // wraps os.Logger, but that doesn't re-export the OSLogMessage interpolation machinery to
@@ -49,6 +50,50 @@ final class SeerrRepository {
 
     var isConfigured: Bool { client != nil }
 
+    /// TMDB, asked directly with the user's own key (Settings → Integrations). It answers
+    /// for Seerr where Seerr isn't set up and when a Seerr request fails, for everything
+    /// but requests and watchlists.
+    private var tmdb: TMDBClient?
+    @ObservationIgnored private var tmdbDetails: [String: (info: SeerrRelatedInfo, detail: SeerrMediaDetail, certification: String?)] = [:]
+
+    var hasTMDB: Bool { tmdb != nil }
+    /// Whether titles from outside the library can be shown at all: Seerr, TMDB, or both.
+    var hasCatalog: Bool { client != nil || tmdb != nil }
+
+    func reloadTMDB() {
+        tmdb = TMDBCredential.load().map(TMDBClient.init(key:))
+        tmdbDetails = [:]
+    }
+
+    /// One TMDB details request serves a title page's facts, detail and age rating.
+    private func tmdbDetail(_ mediaType: RequestMediaType, _ id: Int) async -> (info: SeerrRelatedInfo, detail: SeerrMediaDetail, certification: String?)? {
+        guard let tmdb else { return nil }
+        let region = await region()
+        let key = "\(mediaType == .tv ? "tv" : "movie"):\(id):\(region)"
+        if let cached = tmdbDetails[key] { return cached }
+        guard let fetched = try? await tmdb.details(mediaType: mediaType, id: id, region: region) else { return nil }
+        tmdbDetails[key] = fetched
+        return fetched
+    }
+
+    /// Seerr first, TMDB when Seerr isn't set up or its request fails.
+    private func fromEither(
+        seerr: (@Sendable (SeerrHTTPClient) async throws -> [SeerrItem])?,
+        tmdb tmdbFetch: (@Sendable (TMDBClient) async throws -> [SeerrItem])?
+    ) async -> ListResult {
+        var result = ListResult()
+        if let client, let seerr {
+            result = await Self.attempt { try await seerr(client) }
+            if result.error == nil { return result }
+        }
+        if let tmdb, let tmdbFetch {
+            let fallback = await Self.attempt { try await tmdbFetch(tmdb) }
+            if fallback.error == nil { return fallback }
+            if result.error == nil { result.error = fallback.error }
+        }
+        return result
+    }
+
     func configure(urlString: String, username: String, password: String,
                    authMethod: SeerrAuthMethod = .jellyfin) {
         let trimURL  = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -80,16 +125,15 @@ final class SeerrRepository {
     }
 
     func loadDiscover() async {
-        guard let client, !isFetchingDiscover else { return }
+        guard hasCatalog, !isFetchingDiscover else { return }
         isFetchingDiscover = true
         let firstLoad = trending.isEmpty
         if firstLoad { isLoadingDiscover = true }
         // Each list on its own: Seerr failing one (it returns 500 when its TMDB request for
-        // trending fails) used to blank all three.
-        async let t  = Self.attempt { try await client.trending() }
-        async let m  = Self.attempt { try await client.discoverMovies() }
-        async let tv = Self.attempt { try await client.discoverTV() }
-        let (rT, rM, rTV) = await (t, m, tv)
+        // trending fails) used to blank all three. TMDB fills in for any that fail.
+        let rT = await fromEither(seerr: { try await $0.trending() }, tmdb: { try await $0.trending() })
+        let rM = await fromEither(seerr: { try await $0.discoverMovies() }, tmdb: { try await $0.popular(mediaType: .movie) })
+        let rTV = await fromEither(seerr: { try await $0.discoverTV() }, tmdb: { try await $0.popular(mediaType: .tv) })
         let newT = await visible(rT.items), newM = await visible(rM.items), newTV = await visible(rTV.items)
         if !newT.isEmpty  || (firstLoad && rT.error == nil) { trending = newT }
         if !newM.isEmpty  || (firstLoad && rM.error == nil) { popularMovies = newM }
@@ -188,8 +232,8 @@ final class SeerrRepository {
     }
 
     func search(query: String) async -> [SeerrItem] {
-        guard let client, !query.isEmpty else { return [] }
-        return await visible((try? await client.search(query: query)) ?? [])
+        guard hasCatalog, !query.isEmpty else { return [] }
+        return await visible(await fromEither(seerr: { try await $0.search(query: query) }, tmdb: { try await $0.search(query) }).items)
     }
 
     /// Genre picker data for browse-by-genre — fetched once per session, cheap and rarely
@@ -204,20 +248,20 @@ final class SeerrRepository {
     }
 
     func loadUpcoming() async {
-        guard let client else { return }
-        async let m = try? await client.upcomingMovies()
-        async let t = try? await client.upcomingTV()
-        let (movies, tv) = await (m, t)
-        if let movies { upcomingMovies = await visible(movies) }
-        if let tv { upcomingTV = await visible(tv) }
+        guard hasCatalog else { return }
+        let movies = await fromEither(seerr: { try await $0.upcomingMovies() }, tmdb: { try await $0.upcoming(mediaType: .movie) })
+        let tv = await fromEither(seerr: { try await $0.upcomingTV() }, tmdb: { try await $0.upcoming(mediaType: .tv) })
+        // A failed fetch keeps what's shown.
+        if movies.error == nil { upcomingMovies = await visible(movies.items) }
+        if tv.error == nil { upcomingTV = await visible(tv.items) }
     }
 
     func discoverByGenre(_ genreId: Int, mediaType: RequestMediaType) async -> [SeerrItem] {
-        guard let client else { return [] }
-        if mediaType == .tv {
-            return await visible((try? await client.discoverTV(genreId: genreId)) ?? [])
-        }
-        return await visible((try? await client.discoverMovies(genreId: genreId)) ?? [])
+        guard hasCatalog else { return [] }
+        let result = await fromEither(
+            seerr: { mediaType == .tv ? try await $0.discoverTV(genreId: genreId) : try await $0.discoverMovies(genreId: genreId) },
+            tmdb: { try await $0.discover(mediaType: mediaType, filters: ["with_genres": "\(genreId)"]) })
+        return await visible(result.items)
     }
 
     func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
@@ -291,10 +335,14 @@ final class SeerrRepository {
     }
 
     func mediaDetail(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrMediaDetail? {
-        guard let client else { return nil }
-        let settings = await ensurePublicSettings()
-        return try? await client.fullDetail(mediaType: mediaType, tmdbId: tmdbId,
-                                             includeSpecials: settings?.enableSpecialEpisodes ?? false)
+        if let client {
+            let settings = await ensurePublicSettings()
+            if let detail = try? await client.fullDetail(mediaType: mediaType, tmdbId: tmdbId,
+                                                         includeSpecials: settings?.enableSpecialEpisodes ?? false) {
+                return detail
+            }
+        }
+        return await tmdbDetail(mediaType, tmdbId)?.detail
     }
 
     /// Fetched once per session and cached — same lazy pattern as `loadGenres()` above.
@@ -345,10 +393,16 @@ final class SeerrRepository {
     }
 
     func relatedMedia(mediaType: RequestMediaType, mediaId: Int) async -> [SeerrItem] {
-        guard let client else { return [] }
-        async let recommendations = (try? await client.recommendations(mediaType: mediaType, mediaId: mediaId)) ?? []
-        async let similar = (try? await client.similar(mediaType: mediaType, mediaId: mediaId)) ?? []
-        let merged = await recommendations + similar
+        guard hasCatalog else { return [] }
+        var merged: [SeerrItem] = []
+        if let client {
+            async let recommendations = (try? await client.recommendations(mediaType: mediaType, mediaId: mediaId)) ?? []
+            async let similar = (try? await client.similar(mediaType: mediaType, mediaId: mediaId)) ?? []
+            merged = await recommendations + similar
+        }
+        if merged.isEmpty, let tmdb {
+            merged = (try? await tmdb.related(mediaType: mediaType, id: mediaId)) ?? []
+        }
         var seen = Set<Int>()
         return await visible(merged.filter { item in
             seen.insert(item.id).inserted
@@ -359,24 +413,29 @@ final class SeerrRepository {
 
     /// Popular titles first made in a language (ISO 639-1).
     func discoverByLanguage(_ language: String, mediaType: RequestMediaType) async -> [SeerrItem] {
-        guard let client else { return [] }
-        return await visible((try? await client.discoverByLanguage(language, mediaType: mediaType)) ?? [])
+        await visible(await fromEither(
+            seerr: { try await $0.discoverByLanguage(language, mediaType: mediaType) },
+            tmdb: { try await $0.discover(mediaType: mediaType, filters: ["with_original_language": language]) }).items)
     }
 
     /// Movies from a studio, or shows from a network.
     func discoverByCompany(_ id: Int, mediaType: RequestMediaType) async -> [SeerrItem] {
-        guard let client else { return [] }
-        return await visible((try? await client.discoverByCompany(id, mediaType: mediaType)) ?? [])
+        await visible(await fromEither(
+            seerr: { try await $0.discoverByCompany(id, mediaType: mediaType) },
+            tmdb: { try await $0.discover(mediaType: mediaType, filters: [mediaType == .tv ? "with_networks" : "with_companies": "\(id)"]) }).items)
     }
 
     func discoverByKeyword(_ id: Int) async -> [SeerrItem] {
-        guard let client else { return [] }
-        return await visible((try? await client.discoverByKeyword(id)) ?? [])
+        await visible(await fromEither(
+            seerr: { try await $0.discoverByKeyword(id) },
+            tmdb: { try await $0.discover(mediaType: .movie, filters: ["with_keywords": "\(id)"]) }).items)
     }
 
     func relatedInfo(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrRelatedInfo? {
-        guard let client else { return nil }
-        return try? await client.related(mediaType: mediaType, tmdbId: tmdbId, region: await region())
+        if let client, let info = try? await client.related(mediaType: mediaType, tmdbId: tmdbId, region: await region()) {
+            return info
+        }
+        return await tmdbDetail(mediaType, tmdbId)?.info
     }
 
     func ratings(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrRatings? {
@@ -410,29 +469,52 @@ final class SeerrRepository {
 
     /// Countries TMDB has streaming data for, by name.
     func streamingRegions() async -> [(code: String, name: String)] {
-        guard let client, let regions = try? await client.watchRegions() else { return [] }
+        var regions = (try? await client?.watchRegions()) ?? []
+        if regions.isEmpty { regions = (try? await tmdb?.watchRegions()) ?? [] }
         return regions.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     /// Streaming services available in Seerr's country, for picking which get a Home row.
     /// Throws with the reason when Seerr can't be reached or signed in to.
     func streamingServices() async throws -> [SeerrWatchProvider] {
-        guard let client else { return [] }
         let region = await region()
-        async let movies = client.watchProviders(mediaType: .movie, region: region)
-        async let shows = client.watchProviders(mediaType: .tv, region: region)
-        let (m, t) = try await (movies, shows)
+        var seerrError: Error?
+        if let client {
+            do {
+                async let movies = client.watchProviders(mediaType: .movie, region: region)
+                async let shows = client.watchProviders(mediaType: .tv, region: region)
+                let (m, t) = try await (movies, shows)
+                return Self.unique(m + t)
+            } catch {
+                seerrError = error
+            }
+        }
+        if let tmdb {
+            async let movies = tmdb.watchProviders(mediaType: .movie, region: region)
+            async let shows = tmdb.watchProviders(mediaType: .tv, region: region)
+            let (m, t) = try await (movies, shows)
+            return Self.unique(m + t)
+        }
+        if let seerrError { throw seerrError }
+        return []
+    }
+
+    private static func unique(_ providers: [SeerrWatchProvider]) -> [SeerrWatchProvider] {
         var seen = Set<Int>()
-        return (m + t).filter { seen.insert($0.id).inserted }
+        return providers.filter { seen.insert($0.id).inserted }
     }
 
     /// Popular movies and shows on a streaming service here, alternating.
     func popularOn(_ providerId: Int) async -> [SeerrItem] {
-        guard let client else { return [] }
+        guard hasCatalog else { return [] }
         let region = await region()
-        async let movies = (try? await client.discoverByWatchProvider(providerId, mediaType: .movie, region: region)) ?? []
-        async let shows = (try? await client.discoverByWatchProvider(providerId, mediaType: .tv, region: region)) ?? []
-        let (m, t) = await (movies, shows)
+        let movies = await fromEither(
+            seerr: { try await $0.discoverByWatchProvider(providerId, mediaType: .movie, region: region) },
+            tmdb: { try await $0.discover(mediaType: .movie, filters: ["with_watch_providers": "\(providerId)", "watch_region": region]) })
+        let shows = await fromEither(
+            seerr: { try await $0.discoverByWatchProvider(providerId, mediaType: .tv, region: region) },
+            tmdb: { try await $0.discover(mediaType: .tv, filters: ["with_watch_providers": "\(providerId)", "watch_region": region]) })
+        let (m, t) = (movies.items, shows.items)
         var mixed: [SeerrItem] = []
         for index in 0..<max(m.count, t.count) {
             if index < m.count { mixed.append(m[index]) }
@@ -444,21 +526,26 @@ final class SeerrRepository {
     /// A Seerr title's age rating, for showing on its page.
     func certification(for item: SeerrItem) async -> String? {
         if let known = ProfileRules.shared.certification(for: item, region: await region()) { return known }
-        guard let client else { return nil }
-        return try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: await region())
+        if let client, let rating = try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: await region()) {
+            return rating
+        }
+        return await tmdbDetail(item.mediaType, item.id)?.certification
     }
 
     // MARK: - Parental controls
 
     /// What the signed-in profile may see of a Seerr list, by its parental controls.
     private func visible(_ items: [SeerrItem]) async -> [SeerrItem] {
-        guard let client else { return items }
+        guard hasCatalog else { return items }
+        let client = client, tmdb = tmdb
         return await ProfileRules.shared.visible(items, region: await region()) { item, region in
-            do {
-                return try await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region) ?? ""
-            } catch {
-                return nil
+            if let client, let rating = try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region) {
+                return rating
             }
+            if let tmdb, let found = try? await tmdb.details(mediaType: item.mediaType, id: item.id, region: region) {
+                return found.certification ?? ""
+            }
+            return nil
         }
     }
 }

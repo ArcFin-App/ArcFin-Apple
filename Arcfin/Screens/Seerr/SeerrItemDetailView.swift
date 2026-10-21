@@ -127,12 +127,14 @@ struct SeerrItemDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                if seerrRepo.isConfigured {
                 Button { toggleWatchlist() } label: {
                     Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
                         .foregroundStyle(.white)
                         .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
                 }
                 .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
+                }
             }
         }
         .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
@@ -165,7 +167,8 @@ struct SeerrItemDetailView: View {
     /// to open, the row simply doesn't exist instead of leaving a lone button.
     @ViewBuilder
     private var actionButtons: some View {
-        if !isAvailable && hasRequestableContent {
+        // Requesting needs Seerr; a title shown from TMDB alone still links to the library copy.
+        if seerrRepo.isConfigured && !isAvailable && hasRequestableContent {
             Group {
                 Button {
                     requestBounceTrigger += 1

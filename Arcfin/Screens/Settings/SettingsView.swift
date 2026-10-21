@@ -109,6 +109,18 @@ struct SettingsView: View {
                 }
                 .listRowBackground(Color.clear)
                 NavigationLink {
+                    TMDBSettingsView()
+                } label: {
+                    HStack {
+                        Text("TMDB")
+                        Spacer()
+                        if seerrRepo.hasTMDB {
+                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                        }
+                    }
+                }
+                .listRowBackground(Color.clear)
+                NavigationLink {
                     StreamystatsPluginView()
                 } label: {
                     HStack {

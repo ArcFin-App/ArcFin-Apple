@@ -34,7 +34,7 @@ struct TitleInsights: View {
     }
 
     private func load() async {
-        guard seerrRepo.isConfigured, let tmdbId, let mediaType else { return }
+        guard seerrRepo.hasCatalog, let tmdbId, let mediaType else { return }
         region = await seerrRepo.region()
         async let fetchedInfo = seerrRepo.relatedInfo(mediaType: mediaType, tmdbId: tmdbId)
         async let fetchedRatings = seerrRepo.ratings(mediaType: mediaType, tmdbId: tmdbId)

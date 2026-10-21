@@ -71,7 +71,7 @@ struct StreamingServicesView: View {
                     HStack { Spacer(); ProgressView(); Spacer() }
                 } else if let errorMessage {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Couldn't load services from Seerr.")
+                        Text("Couldn't load streaming services.")
                             .foregroundStyle(DT.Color.textPrimary)
                         Text(errorMessage)
                             .font(.footnote)

@@ -42,8 +42,19 @@ struct IntegrationsSettingsView: View {
                         }
                     }
                 }
+                NavigationLink {
+                    TMDBSettingsView()
+                } label: {
+                    HStack {
+                        Text("TMDB")
+                        Spacer()
+                        if seerrRepo.hasTMDB {
+                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                        }
+                    }
+                }
             } footer: {
-                Text("Connect Jellyseerr for requests and Streamystats for play stats. Both are optional.")
+                Text("Connect Seerr for requests, Streamystats for play stats and TMDB for streaming and title details without Seerr. All are optional.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

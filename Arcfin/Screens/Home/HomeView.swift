@@ -425,7 +425,7 @@ struct HomeView: View {
                 }
             }
         case .streamingServices:
-            if seerrRepo.isConfigured {
+            if seerrRepo.hasCatalog {
                 ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
                     if let items = serviceRows[provider.id], !items.isEmpty {
                         seerrShelf(title: "Popular on \(provider.name)", items: items)
@@ -437,15 +437,15 @@ struct HomeView: View {
                 seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
             }
         case .seerrTrending:
-            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
                 seerrShelf(title: "Trending", items: seerrRepo.trending)
             }
         case .seerrPopularMovies:
-            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
                 seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
             }
         case .seerrPopularSeries:
-            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
                 seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
             }
         }
@@ -759,7 +759,7 @@ struct HomeView: View {
             guard !Task.isCancelled, mediaRepo.isLoading, !mediaRepo.hasAnyContent else { return }
             withAnimation(DT.Animation.fast) { isSlowFirstLoad = true }
         }
-        .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.isConfigured)-\(seerrRegionOverride)") {
+        .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
             await loadServiceRows()
         }
         .task(id: recentlyAvailableRequests.map(\.id)) {
@@ -810,7 +810,7 @@ struct HomeView: View {
     }
 
     private func loadServiceRows() async {
-        guard seerrRepo.isConfigured else { return }
+        guard seerrRepo.hasCatalog else { return }
         let providers = StreamingServicePrefs.decode(streamingServicesData)
         var rows: [Int: [SeerrItem]] = [:]
         await withTaskGroup(of: (Int, [SeerrItem]).self) { group in
@@ -980,7 +980,7 @@ struct HomeView: View {
         #if os(iOS)
         if UserDefaults.standard.bool(forKey: "arcfin.pendingResume") { resumeLatest() }
         #endif
-        if seerrRepo.isConfigured && seerrDiscoverEnabled {
+        if seerrRepo.hasCatalog && seerrDiscoverEnabled {
             await seerrRepo.loadDiscover()
             await seerrRepo.loadWatchlist()
             let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
@@ -1048,7 +1048,8 @@ struct HomeView: View {
         ShelfRow(title: title, onSeeAll: nil) {
             ForEach(items) { item in
                 Button {
-                    seerrRequestItem = item
+                    // Without Seerr there's nothing to request; the title's page is shown instead.
+                    if seerrRepo.isConfigured { seerrRequestItem = item } else { seerrDeepLinkItem = item }
                 } label: {
                     PosterCard(
                         title: item.title,

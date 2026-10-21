@@ -262,6 +262,7 @@ struct ContentView: View {
             #endif
         }
         .task { authManager.startNetworkMonitoring() }
+        .task { seerrRepo.reloadTMDB() }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
