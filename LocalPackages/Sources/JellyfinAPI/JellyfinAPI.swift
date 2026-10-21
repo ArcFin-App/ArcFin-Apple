@@ -225,14 +225,19 @@ public struct MediaItemDetail: Sendable, Identifiable {
         return t.contains("hdr") || t.contains("dolby vision") || t.contains(" dv")
     }
 
+    /// Critics' score out of 100 (the OMDb plugin fills it from Rotten Tomatoes).
+    public var criticRating: Double?
+
     public init(item: MediaItem, people: [MediaPerson] = [], mediaStreams: [MediaStream] = [],
                 genres: [String] = [], studios: [String] = [], officialRating: String? = nil,
                 runTimeTicks: Int64? = nil, taglines: [String] = [], chapters: [MediaChapter] = [],
-                trickplay: [String: JellyfinTrickplayInfo] = [:], remoteTrailers: [RemoteTrailer] = []) {
+                trickplay: [String: JellyfinTrickplayInfo] = [:], remoteTrailers: [RemoteTrailer] = [],
+                criticRating: Double? = nil) {
         self.item = item; self.people = people; self.mediaStreams = mediaStreams
         self.genres = genres; self.studios = studios; self.officialRating = officialRating
         self.runTimeTicks = runTimeTicks; self.taglines = taglines; self.chapters = chapters
         self.trickplay = trickplay; self.remoteTrailers = remoteTrailers
+        self.criticRating = criticRating
     }
 }
 

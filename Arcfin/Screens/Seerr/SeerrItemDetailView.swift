@@ -20,6 +20,8 @@ struct SeerrItemDetailView: View {
     @State private var libraryItem: MediaItem?
     @State private var openLibraryItem: MediaItem?
     @State private var detail: SeerrMediaDetail?
+    /// The title's age rating for this region, e.g. "PG-13".
+    @State private var certification: String?
     @State private var isLoadingDetail = false
     @State private var requestingItem: SeerrItem? = nil
     @State private var requestBounceTrigger = 0
@@ -127,6 +129,7 @@ struct SeerrItemDetailView: View {
             isLoadingDetail = false
         }
         .task { await loadLibraryItem() }
+        .task { certification = await seerrRepo.certification(for: item) }
     }
 
     private func loadLibraryItem() async {
@@ -374,6 +377,15 @@ struct SeerrItemDetailView: View {
                         Text(year)
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    if let certification, !certification.isEmpty {
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
+                        Text(certification)
+                            .font(.system(.caption2, design: .default, weight: .semibold))
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
+                            .accessibilityLabel("Rated \(certification)")
                     }
                     if let runtime = detail?.runtimeMinutes {
                         Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))

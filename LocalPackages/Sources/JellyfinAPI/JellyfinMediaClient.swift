@@ -1229,8 +1229,10 @@ private struct ItemDetailResponse: Decodable {
     /// item-detail endpoint is the one that actually carries this.
     let trickplay: [String: [String: TrickplayInfoResponse]]?
     let remoteTrailers: [RemoteTrailerResponse]?
+    let criticRating: Double?
 
     enum CodingKeys: String, CodingKey {
+        case criticRating = "CriticRating"
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
         case imageTags = "ImageTags", backdropImageTags = "BackdropImageTags"
         case userData = "UserData", productionYear = "ProductionYear"
@@ -1288,7 +1290,8 @@ private struct ItemDetailResponse: Decodable {
             trickplay: trickplay?.compactMapValues { $0.preferred } ?? [:],
             remoteTrailers: remoteTrailers?.compactMap { t in
                 t.url.flatMap { URL(string: $0) }.map { RemoteTrailer(url: $0, name: t.name) }
-            } ?? []
+            } ?? [],
+            criticRating: criticRating
         )
     }
 }
