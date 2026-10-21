@@ -80,12 +80,47 @@ struct DownloadsView: View {
                     }
 
                     if !downloadManager.activeItemTitles.isEmpty {
-                        Section("Downloading") {
-                            ForEach(Array(downloadManager.activeItemTitles.keys).sorted(), id: \.self) { itemId in
+                        Section {
+                            ForEach(downloadManager.orderedInProgressIds, id: \.self) { itemId in
                                 inProgressRow(itemId)
+                                    .contextMenu {
+                                        if downloadManager.queuedItemIds.first != itemId,
+                                           downloadManager.queuedItemIds.contains(itemId) {
+                                            Button { downloadManager.moveToFront(itemId: itemId) } label: {
+                                                Label("Download Next", systemImage: "arrow.up.to.line")
+                                            }
+                                        }
+                                        Button(role: .destructive) { downloadManager.cancelDownload(itemId: itemId) } label: {
+                                            Label("Cancel Download", systemImage: "xmark.circle")
+                                        }
+                                    }
                                     #if os(iOS)
                                     .listRowSeparator(.hidden)
                                     #endif
+                            }
+                        } header: {
+                            HStack {
+                                Text("Downloading")
+                                Spacer()
+                                Menu {
+                                    if downloadManager.isQueuePaused {
+                                        Button { downloadManager.resumeQueue() } label: {
+                                            Label("Resume Queue", systemImage: "play.fill")
+                                        }
+                                    } else if !downloadManager.queuedItemIds.isEmpty {
+                                        Button { downloadManager.pauseQueue() } label: {
+                                            Label("Pause Queue", systemImage: "pause.fill")
+                                        }
+                                    }
+                                    Button(role: .destructive) { downloadManager.cancelAllDownloads() } label: {
+                                        Label("Cancel All", systemImage: "xmark.circle")
+                                    }
+                                } label: {
+                                    Image(systemName: "ellipsis.circle")
+                                        .frame(minWidth: 44, minHeight: 44)
+                                        .contentShape(Rectangle())
+                                }
+                                .accessibilityLabel("Download queue options")
                             }
                         }
                     }
@@ -390,6 +425,8 @@ struct DownloadsView: View {
                     Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: stats.totalBytes, countStyle: .file))")
                 } else if let stats, stats.bytesWritten > 0 {
                     Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) downloaded")
+                } else if downloadManager.queuedItemIds.contains(itemId) {
+                    Text(downloadManager.isQueuePaused ? "Paused" : "Waiting in queue")
                 } else {
                     Text("Preparing…")
                 }
