@@ -716,11 +716,23 @@ struct PlayerView: View {
     // MARK: - Playback speed
 
     static let rateOptions: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    static let lastRateKey = "lastPlaybackRate"
+
+    /// Applies the last picked speed to a freshly loaded stream when Settings → Playback →
+    /// Remember Playback Speed is on. The key is written on every pick so turning the
+    /// setting on later starts from the speed last used.
+    private func applyRememberedRate() async {
+        guard UserDefaults.standard.bool(forKey: "rememberPlaybackSpeed") else { return }
+        let saved = UserDefaults.standard.float(forKey: Self.lastRateKey)
+        guard saved > 0, saved != 1 else { return }
+        await player.setRate(saved)
+    }
 
     @ViewBuilder
     private var rateMenuButtons: some View {
         ForEach(Self.rateOptions, id: \.self) { rate in
             Button(rateLabel(rate) + (rate == player.playbackRate ? " ✓" : "")) {
+                UserDefaults.standard.set(rate, forKey: Self.lastRateKey)
                 Task { await player.setRate(rate) }
             }
         }
@@ -874,6 +886,7 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
             }
             await player.play()
+            await applyRememberedRate()
             // A cast that was already running when this screen opened (autoplay moved on to
             // the next episode) never produces an isConnected change to trigger this.
             if CastManager.shared.isConnected { startCasting() }
@@ -1435,6 +1448,7 @@ struct PlayerView: View {
                 lastLoadStartedAt = Date()
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
+                await applyRememberedRate()
                 #if !os(tvOS)
                 #if !os(macOS)
                 if let avPlayer = player as? AVFoundationPlayer {
