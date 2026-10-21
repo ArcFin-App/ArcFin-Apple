@@ -13,7 +13,7 @@ import JellyfinAPI
 /// AuthManager. They read the active profile straight from the Keychain instead — and refuse
 /// when that profile has an app-lock PIN, so Siri and Spotlight can't be used to browse a
 /// library the lock screen is meant to protect.
-enum IntentSession {
+nonisolated enum IntentSession {
     static func credential() -> ServerCredential? {
         let store = KeychainStore()
         guard let all = try? store.allServers(), !all.isEmpty else { return nil }
