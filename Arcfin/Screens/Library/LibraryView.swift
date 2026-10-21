@@ -126,11 +126,6 @@ struct LibraryView: View {
                     librariesSection
                 }
 
-                // ── Playlists ───────────────────────────────────────────
-                #if !os(tvOS)
-                PlaylistsSection()
-                #endif
-
                 // ── Your Requests ───────────────────────────────────────
                 if seerrRepo.isConfigured {
                     requestsSection
@@ -156,7 +151,15 @@ struct LibraryView: View {
     /// UI) — hide them from the library list rather than showing a section that just
     /// leads to a dead end.
     private var supportedLibraries: [JellyfinLibrary] {
-        mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
+        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
+        #if os(tvOS)
+        return libraries
+        #else
+        // The server only lists a Playlists library once a playlist exists; the tile is
+        // always there so the first one can be made from it.
+        guard !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) else { return libraries }
+        return libraries + [JellyfinLibrary(id: "arcfin.playlists", name: "Playlists", collectionType: .playlists)]
+        #endif
     }
 
     private var librariesSection: some View {

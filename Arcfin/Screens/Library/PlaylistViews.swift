@@ -4,52 +4,57 @@ import SwiftUI
 import AuthCore
 import JellyfinAPI
 
-// MARK: - Browse section
+// MARK: - Playlists grid
 
-/// The Browse tab's row of playlists, with a card to start a new one.
-struct PlaylistsSection: View {
+/// Every playlist as a grid, with a card to start a new one: what the Browse tab's
+/// Playlists tile opens.
+struct PlaylistsGridView: View {
+    var title = "Playlists"
+
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
 
     private var store: PlaylistStore { .shared }
     @State private var showNewPlaylist = false
     @State private var newPlaylistName = ""
+    @State private var createdPlaylist: MediaPlaylist?
+    private let columns = [GridItem(.adaptive(minimum: PlaylistCard.size), spacing: 16)]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Playlists")
-                .font(DT.Font.cardTitle)
-                .foregroundStyle(DT.Color.textPrimary)
-                .tracking(-0.2)
-                .accessibilityAddTraits(.isHeader)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(store.playlists) { playlist in
-                        NavigationLink {
-                            PlaylistDetailView(playlist: playlist)
-                        } label: {
-                            PlaylistCard(playlist: playlist, imageURL: playlistImageURL(playlist, mediaRepo: mediaRepo))
-                        }
-                        .buttonStyle(PressableButtonStyle())
+        ScrollView(showsIndicators: false) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 20) {
+                Button { showNewPlaylist = true } label: { newPlaylistCard }
+                    .buttonStyle(PressableButtonStyle())
+                ForEach(store.playlists) { playlist in
+                    NavigationLink {
+                        PlaylistDetailView(playlist: playlist)
+                    } label: {
+                        PlaylistCard(playlist: playlist, imageURL: playlistImageURL(playlist, mediaRepo: mediaRepo))
                     }
-                    Button { showNewPlaylist = true } label: { newPlaylistCard }
-                        .buttonStyle(PressableButtonStyle())
+                    .buttonStyle(PressableButtonStyle())
                 }
             }
-            .padding(.horizontal, -DT.Spacing.pagePad)
-            .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
+            .padding(DT.Spacing.pagePad)
         }
-        .task { await reload() }
+        .screenBackground()
+        .navigationTitle(title)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showNewPlaylist = true } label: { Image(systemName: "plus") }
+                    .accessibilityLabel("New Playlist")
+            }
+        }
         .alert("New Playlist", isPresented: $showNewPlaylist) {
             TextField("Name", text: $newPlaylistName)
             Button("Cancel", role: .cancel) { newPlaylistName = "" }
             Button("Create") { create() }
         }
+        .navigationDestination(item: $createdPlaylist) { PlaylistDetailView(playlist: $0, startsAddingTitles: true) }
+        .task { await reload() }
     }
 
     private var newPlaylistCard: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Image(systemName: "plus")
                 .font(.system(.title2, weight: .light))
                 .foregroundStyle(DT.Color.accent)
@@ -60,9 +65,7 @@ struct PlaylistsSection: View {
                 )
             Text("New Playlist")
                 .font(.system(.caption, weight: .semibold))
-                .foregroundStyle(DT.Color.textSecondary)
-                .frame(width: PlaylistCard.size, alignment: .leading)
-            Text(" ").font(.system(.caption2))
+                .foregroundStyle(DT.Color.textPrimary)
         }
     }
 
@@ -71,52 +74,16 @@ struct PlaylistsSection: View {
         await store.load(credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken))
     }
 
+    /// Creates it empty, then opens it straight into picking titles.
     private func create() {
         let name = newPlaylistName.trimmingCharacters(in: .whitespacesAndNewlines)
         newPlaylistName = ""
         guard !name.isEmpty, let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
         Task {
-            try? await store.create(named: name, with: [], credential: cred,
-                                    authHeader: authManager.authClient.authHeader(token: cred.accessToken))
-        }
-    }
-}
-
-/// Every playlist as a grid — what the Browse tab's Playlists tile opens.
-struct PlaylistsGridView: View {
-    var title = "Playlists"
-
-    @Environment(AuthManager.self) private var authManager
-    @Environment(MediaRepository.self) private var mediaRepo
-
-    private var store: PlaylistStore { .shared }
-    private let columns = [GridItem(.adaptive(minimum: PlaylistCard.size), spacing: 16)]
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            if store.playlists.isEmpty && store.hasLoaded {
-                ContentUnavailableView("No Playlists", systemImage: "list.and.film",
-                                       description: Text("Long-press any movie or episode and choose Add to Playlist."))
-                    .padding(.top, 80)
-            } else {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 20) {
-                    ForEach(store.playlists) { playlist in
-                        NavigationLink {
-                            PlaylistDetailView(playlist: playlist)
-                        } label: {
-                            PlaylistCard(playlist: playlist, imageURL: playlistImageURL(playlist, mediaRepo: mediaRepo))
-                        }
-                        .buttonStyle(PressableButtonStyle())
-                    }
-                }
-                .padding(DT.Spacing.pagePad)
-            }
-        }
-        .screenBackground()
-        .navigationTitle(title)
-        .task {
-            guard let cred = authManager.state.credential else { return }
-            await store.load(credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken))
+            guard let id = try? await JellyfinMediaClient().createPlaylist(credential: cred, authHeader: header, name: name, itemIds: []) else { return }
+            await store.load(credential: cred, authHeader: header)
+            createdPlaylist = store.playlists.first { $0.id == id } ?? MediaPlaylist(id: id, name: name, itemCount: 0)
         }
     }
 }
@@ -190,12 +157,15 @@ struct PlaylistDetailView: View {
     @State private var renameText = ""
     @State private var confirmDelete = false
     @State private var errorMessage: String?
+    @State private var showAddTitles = false
 
     private let client = JellyfinMediaClient()
 
-    init(playlist: MediaPlaylist) {
+    /// `startsAddingTitles` opens the title picker straight away, for a playlist just created.
+    init(playlist: MediaPlaylist, startsAddingTitles: Bool = false) {
         self.playlist = playlist
         _name = State(initialValue: playlist.name)
+        _showAddTitles = State(initialValue: startsAddingTitles)
     }
 
     private var credential: ServerCredential? { authManager.state.credential }
@@ -216,11 +186,20 @@ struct PlaylistDetailView: View {
                     .frame(maxWidth: .infinity, minHeight: 160)
                     .listRowBackground(Color.clear)
             } else if entries.isEmpty {
-                ContentUnavailableView(
-                    "Empty Playlist",
-                    systemImage: "list.and.film",
-                    description: Text("Long-press any movie or episode and choose Add to Playlist."))
-                    .listRowBackground(Color.clear)
+                VStack(spacing: 12) {
+                    ContentUnavailableView(
+                        "Empty Playlist",
+                        systemImage: "list.and.film",
+                        description: Text("Add movies, shows and episodes, or long-press any title and choose Add to Playlist."))
+                    Button { showAddTitles = true } label: {
+                        Label("Add Titles", systemImage: "plus")
+                            .font(.system(.subheadline, weight: .semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(DT.Color.accent)
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
             } else {
                 Section {
                     ForEach(entries) { entry in
@@ -249,6 +228,10 @@ struct PlaylistDetailView: View {
             }
             #endif
             ToolbarItem(placement: .primaryAction) {
+                Button { showAddTitles = true } label: { Image(systemName: "plus") }
+                    .accessibilityLabel("Add Titles")
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button { renameText = name; showRename = true } label: { Label("Rename", systemImage: "pencil") }
                     Button(role: .destructive) { confirmDelete = true } label: { Label("Delete Playlist", systemImage: "trash") }
@@ -272,6 +255,11 @@ struct PlaylistDetailView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
+        }
+        .sheet(isPresented: $showAddTitles) {
+            AddTitlesToPlaylistSheet(playlistId: playlist.id, existingIds: Set(entries.map(\.item.id))) {
+                Task { await load() }
+            }
         }
         .task { await load() }
         .refreshable { await load() }
@@ -564,6 +552,156 @@ struct AddToPlaylistSheet: View {
                 errorMessage = error.localizedDescription
             }
             busy = false
+        }
+    }
+}
+
+// MARK: - Add titles from inside a playlist
+
+/// Pick any number of movies, shows and episodes to add at once: suggestions from Home
+/// while the search field is empty, search results once something is typed.
+struct AddTitlesToPlaylistSheet: View {
+    let playlistId: String
+    let existingIds: Set<String>
+    let onAdded: () -> Void
+
+    @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var query = ""
+    @State private var results: [MediaItem] = []
+    /// In the order they were picked, which is the order they're added in.
+    @State private var selectedIDs: [String] = []
+    @State private var isSearching = false
+    @State private var isAdding = false
+    @State private var errorMessage: String?
+
+    private let client = JellyfinMediaClient()
+
+    private var suggestions: [MediaItem] {
+        var seen = Set<String>()
+        return (mediaRepo.continueWatching + mediaRepo.recentlyAddedMovies + mediaRepo.recentlyAddedShows + mediaRepo.favorites)
+            .filter { [.movie, .series, .episode].contains($0.type) && seen.insert($0.id).inserted }
+    }
+
+    private var shown: [MediaItem] { query.isEmpty ? suggestions : results }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if isSearching && results.isEmpty {
+                    HStack { Spacer(); ProgressView(); Spacer() }.listRowBackground(Color.clear)
+                } else if !query.isEmpty && results.isEmpty {
+                    ContentUnavailableView.search(text: query).listRowBackground(Color.clear)
+                } else {
+                    Section(query.isEmpty ? "Suggestions" : "Results") {
+                        ForEach(shown) { item in
+                            Button { toggle(item) } label: { row(item) }
+                                .disabled(existingIds.contains(item.id))
+                        }
+                    }
+                }
+                if let errorMessage {
+                    Text(errorMessage).font(.footnote).foregroundStyle(.red)
+                }
+            }
+            #if os(iOS)
+            .listStyle(.insetGrouped)
+            #endif
+            .scrollContentBackground(.hidden)
+            .screenBackground()
+            .searchable(text: $query, prompt: "Movies, shows, episodes")
+            .navigationTitle("Add Titles")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(selectedIDs.isEmpty ? "Add" : "Add \(selectedIDs.count)") { add() }
+                        .disabled(selectedIDs.isEmpty || isAdding)
+                }
+            }
+            .task(id: query) { await search() }
+        }
+    }
+
+    private func row(_ item: MediaItem) -> some View {
+        let isIn = existingIds.contains(item.id)
+        let isSelected = selectedIDs.contains(item.id)
+        return HStack(spacing: 12) {
+            CachedAsyncImage(url: mediaRepo.imageURL(for: item, type: .primary, fillWidth: 120)) { phase in
+                switch phase {
+                case .success(let image): image.resizable().scaledToFill()
+                default: DT.Color.backgroundSecondary
+                }
+            }
+            .frame(width: 40, height: 60)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                Text(detail(for: item, isIn: isIn))
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: isIn || isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(isIn ? DT.Color.textSecondary : (isSelected ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5)))
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func detail(for item: MediaItem, isIn: Bool) -> String {
+        if isIn { return "Already in this playlist" }
+        switch item.type {
+        case .series: return "Show · every episode"
+        case .episode:
+            let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }].compactMap { $0 }.joined(separator: " · ")
+            return [code, item.name].filter { !$0.isEmpty }.joined(separator: " · ")
+        default: return item.productionYear.map { "Movie · \($0)" } ?? "Movie"
+        }
+    }
+
+    private func toggle(_ item: MediaItem) {
+        if let index = selectedIDs.firstIndex(of: item.id) { selectedIDs.remove(at: index) } else { selectedIDs.append(item.id) }
+        HapticManager.impact(.light)
+    }
+
+    private func search() async {
+        let term = query.trimmingCharacters(in: .whitespaces)
+        guard !term.isEmpty else { results = []; return }
+        try? await Task.sleep(for: .milliseconds(300))
+        guard !Task.isCancelled, let cred = authManager.state.credential else { return }
+        isSearching = true
+        let found = (try? await client.search(credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken), query: term, limit: 40)) ?? []
+        guard !Task.isCancelled else { return }
+        results = found.filter { [.movie, .series, .episode].contains($0.type) }
+        isSearching = false
+    }
+
+    private func add() {
+        guard let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let ordered = selectedIDs
+        isAdding = true
+        Task {
+            do {
+                try await client.addToPlaylist(credential: cred, authHeader: header, playlistId: playlistId, itemIds: ordered)
+                await PlaylistStore.shared.load(credential: cred, authHeader: header)
+                onAdded()
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isAdding = false
         }
     }
 }
