@@ -37,6 +37,7 @@ struct MediaDetailView: View {
     @State private var detail: MediaItemDetail?
     @State private var awards: [WikidataAward] = []
     @State private var isFavorite = false
+    @State private var likes: Bool?
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
     /// Jellyfin-native fallback for the "Recommended" row when Seerr isn't configured —
@@ -139,6 +140,7 @@ struct MediaDetailView: View {
         #if os(iOS)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { ratingMenu }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
@@ -165,6 +167,7 @@ struct MediaDetailView: View {
         // Downloads are iOS-only (DownloadManager isn't wired up on macOS elsewhere in
         // the app), but Favorite has no other entry point here without this toolbar.
         .toolbar {
+            ToolbarItem(placement: .primaryAction) { ratingMenu }
             ToolbarItem(placement: .primaryAction) {
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
@@ -372,6 +375,7 @@ struct MediaDetailView: View {
         let fetchedDetail = try? await detailTask
         detail = fetchedDetail
         isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
+        likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
 
         if let fetchedDetail, let mediaType = seerrMediaType(for: fetchedDetail.item),
            let tmdbId = fetchedDetail.item.tmdbId {
@@ -1213,6 +1217,33 @@ struct MediaDetailView: View {
             )
     }
 
+    private var ratingMenu: some View {
+        Menu {
+            Button { setRating(true) } label: {
+                Label(likes == true ? "Remove Like" : "Like", systemImage: likes == true ? "hand.thumbsup.fill" : "hand.thumbsup")
+            }
+            Button { setRating(false) } label: {
+                Label(likes == false ? "Remove Dislike" : "Dislike", systemImage: likes == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+            }
+        } label: {
+            Image(systemName: likes == true ? "hand.thumbsup.fill" : likes == false ? "hand.thumbsdown.fill" : "hand.thumbsup")
+                .foregroundStyle(.white)
+        }
+        .accessibilityLabel("Rate")
+        .accessibilityValue(likes == true ? "Liked" : likes == false ? "Disliked" : "Not rated")
+    }
+
+    /// Tapping the current rating again clears it.
+    private func setRating(_ value: Bool) {
+        guard let cred = credential, let header = authHeader else { return }
+        let newValue: Bool? = likes == value ? nil : value
+        likes = newValue
+        HapticManager.impact(.light)
+        Task {
+            try? await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue)
+        }
+    }
+
     private func toggleFavorite() {
         guard let cred = credential, let header = authHeader else { return }
         let newValue = !isFavorite
@@ -1241,7 +1272,8 @@ struct MediaDetailView: View {
             playCount: watched ? old.playCount + 1 : max(0, old.playCount - 1),
             isFavorite: old.isFavorite,
             played: watched,
-            playedPercentage: watched ? nil : old.playedPercentage
+            playedPercentage: watched ? nil : old.playedPercentage,
+            likes: old.likes
         )
         return updated
     }

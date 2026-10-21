@@ -104,19 +104,23 @@ public struct UserData: Sendable, Equatable, Hashable {
     public var isFavorite: Bool
     public var played: Bool
     public var playedPercentage: Double?
+    /// Thumbs rating: true = liked, false = disliked, nil = not rated.
+    public var likes: Bool?
 
     public init(
         playbackPositionTicks: Int64 = 0,
         playCount: Int = 0,
         isFavorite: Bool = false,
         played: Bool = false,
-        playedPercentage: Double? = nil
+        playedPercentage: Double? = nil,
+        likes: Bool? = nil
     ) {
         self.playbackPositionTicks = playbackPositionTicks
         self.playCount = playCount
         self.isFavorite = isFavorite
         self.played = played
         self.playedPercentage = playedPercentage
+        self.likes = likes
     }
 }
 

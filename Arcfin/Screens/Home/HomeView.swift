@@ -313,6 +313,15 @@ struct HomeView: View {
                     mediaShelfContent(shelf.items)
                 }
             }
+        case .becauseYouWatched:
+            if let recommendation = mediaRepo.becauseYouWatched {
+                let title = "Because You Watched \(recommendation.source.name)"
+                ShelfRow(title: title, onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: title, items: recommendation.items)
+                }) {
+                    mediaShelfContent(recommendation.items)
+                }
+            }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
                 seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)

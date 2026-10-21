@@ -60,6 +60,8 @@ final class MediaRepository {
     var watchAgain: [MediaItem] = []
     /// A few random genres, each with unwatched titles — refreshed on every Home load.
     var genreShelves: [(genre: String, items: [MediaItem])] = []
+    /// The most recently finished title and unwatched titles similar to it.
+    var becauseYouWatched: (source: MediaItem, items: [MediaItem])?
     var libraries: [JellyfinLibrary] = []
     var topMovies: [MediaItem] = []
     var topShows: [MediaItem] = []
@@ -125,6 +127,16 @@ final class MediaRepository {
         }
     }
 
+    /// Seeded from the latest finished title; unwatched results only, since a "recommendation"
+    /// the user has already seen isn't one.
+    private func loadBecauseYouWatched(credential: ServerCredential, header: String) async -> (source: MediaItem, items: [MediaItem])? {
+        guard let source = watchAgain.first,
+              let similar = try? await client.getSimilar(credential: credential, authHeader: header, itemId: source.id)
+        else { return nil }
+        let items = similar.filter { $0.id != source.id && $0.userData?.played != true }
+        return items.isEmpty ? nil : (source, items)
+    }
+
     private static func waitForNetworkPath(timeoutSeconds: Double = 6) async {
         await withCheckedContinuation { continuation in
             PathWait(continuation: continuation).start(timeoutSeconds: timeoutSeconds)
@@ -180,6 +192,7 @@ final class MediaRepository {
         recentlyAiredEpisodes   = (try? await raEp)   ?? []
         watchAgain              = (try? await wAgain) ?? []
         genreShelves            = (try? await genres) ?? []
+        becauseYouWatched       = await loadBecauseYouWatched(credential: credential, header: header)
 
         return succeeded
     }
