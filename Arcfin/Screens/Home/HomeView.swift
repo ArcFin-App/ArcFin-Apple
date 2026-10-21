@@ -102,9 +102,7 @@ struct MainTabView: View {
             .tabViewStyle(.sidebarAdaptable)
             .preferredColorScheme(.dark)
             #if os(iOS)
-            .tabViewBottomAccessory(isEnabled: CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil) {
-                CastMiniController()
-            }
+            .modifier(CastMiniControllerAccessory())
             #endif
             // arcfin://downloads — from the download Live Activity's tap target.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
@@ -121,6 +119,24 @@ struct MainTabView: View {
 #endif
     }
 }
+
+#if os(iOS)
+/// `isEnabled:` arrived in iOS 26.1; the older overload can't hide the bar, so on 26.0
+/// there is no mini controller rather than a permanently empty accessory.
+private struct CastMiniControllerAccessory: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.1, *) {
+            content.tabViewBottomAccessory(
+                isEnabled: CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil
+            ) {
+                CastMiniController()
+            }
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 // MARK: - Home screen
 
