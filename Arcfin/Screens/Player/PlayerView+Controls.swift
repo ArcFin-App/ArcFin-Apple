@@ -283,6 +283,9 @@ extension PlayerView {
             }
             #endif
 
+            Button { withAnimation { audioOnly.toggle() } } label: {
+                Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
+            }
             Button { showTrackMenu = true } label: {
                 Label("Subtitles & Audio", systemImage: "captions.bubble")
             }

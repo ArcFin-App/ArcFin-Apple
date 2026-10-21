@@ -115,6 +115,7 @@ struct PlayerView: View {
     @State var networkToast: String?
     @State var chapters: [MediaChapter] = []
     @State var castMembers: [MediaPerson] = []
+    @State var audioOnly = false
     @State var nextEpisode: MediaItem?
     @State var showUpNext = false
     @State var upNextDismissed = false
@@ -216,6 +217,10 @@ struct PlayerView: View {
             #else
             videoSurfaceLayer
             #endif
+
+            if audioOnly {
+                audioOnlyCover
+            }
 
             if let seekFeedback {
                 seekFeedbackView(seekFeedback)
@@ -444,6 +449,29 @@ struct PlayerView: View {
     // counts overall but still didn't compile: each #if region has to be independently
     // well-formed on its own, and an incomplete if-statement inside one region isn't, even
     // when a later, separate #if with the identical condition supplies the rest of it.
+    /// Covers the video with a plain screen for listening. Playback is untouched, and taps
+    /// still reach the surface underneath so the controls behave as usual.
+    var audioOnlyCover: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 10) {
+                Image(systemName: "waveform")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
+                    .font(.system(.title3, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                Text("Audio Only")
+                    .font(.system(.footnote))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            .padding(.horizontal, 32)
+        }
+        .allowsHitTesting(false)
+        .transition(.opacity)
+    }
+
     var videoSurfaceLayer: some View {
         GeometryReader { proxy in
             videoSurface
