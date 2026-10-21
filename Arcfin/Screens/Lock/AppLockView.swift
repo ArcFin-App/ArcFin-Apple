@@ -7,7 +7,7 @@ import AuthCore
 import JellyfinAPI
 
 /// Full-screen gate shown when the active profile has a PIN set and the app just launched or
-/// returned from the background. Netflix-style: leads with a profile picker across every
+/// returned from the background. Leads with a profile picker across every
 /// saved profile (not just the active one), same as switching profiles from Settings — so
 /// unlocking and switching who you are are the same screen instead of two. No cancel button
 /// on the PIN pad itself — there's no bypass, only unlock or pick a different profile.
