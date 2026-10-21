@@ -59,6 +59,20 @@ struct SettingsView: View {
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow
+                NavigationLink {
+                    ProfileAccessView()
+                } label: {
+                    HStack {
+                        Text("Your Profile")
+                        Spacer()
+                        if ProfileRules.shared.restrictsContent {
+                            Label("Parental Controls", systemImage: "lock.shield")
+                                .font(.caption2)
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                    }
+                }
+                .listRowBackground(Color.clear)
                 if let activeID = authManager.state.credential?.id {
                     NavigationLink {
                         ServerSettingsView(profileID: activeID)
