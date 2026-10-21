@@ -573,8 +573,9 @@ struct HomeView: View {
             let first = mediaRepo.continueWatching.first
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
         }
-        .onChange(of: mediaRepo.continueWatching.map(\.id), initial: true) { _, _ in
-            let items = mediaRepo.continueWatching
+        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp).map(\.id), initial: true) { _, _ in
+            var seen = Set<String>()
+            let items = (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
             Task {
                 await WidgetSnapshotUpdater.update(items: items) { item in
                     if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }

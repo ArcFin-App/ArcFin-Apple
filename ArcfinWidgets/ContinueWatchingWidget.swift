@@ -198,15 +198,14 @@ struct ContinueWatchingWidgetView: View {
                     HeroCard(item: hero)
                         .clipShape(ContainerRelativeShape())
                 }
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(entry.items.dropFirst().prefix(2)) { item in
-                        Link(destination: playURL(item)) { CompactRow(item: item) }
+                if entry.items.count > 1 {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(entry.items.dropFirst().prefix(2)) { item in
+                            Link(destination: playURL(item)) { CompactRow(item: item) }
+                        }
                     }
-                    if entry.items.count == 1 {
-                        Text("Up next appears here").font(.caption).foregroundStyle(.secondary)
-                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .containerBackground(.fill.tertiary, for: .widget)
         } else {
