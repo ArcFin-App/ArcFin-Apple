@@ -1190,7 +1190,7 @@ struct LibraryDetailView: View {
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
         #if os(iOS)
         .sheet(item: $trailerPreviewItem) { item in
-            TrailerPreviewSheet(item: item) { randomPick = $0 }
+            TrailerPreviewSheet(item: item, onDetails: { randomPick = $0 }) { quickLookMenu(item) }
         }
         #endif
         .navigationDestination(item: $randomPick) { pick in

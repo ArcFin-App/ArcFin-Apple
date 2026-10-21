@@ -12,13 +12,15 @@ import YouTubePlayerKit
 struct YouTubeTrailerPlayerView: View {
     let videoID: String
     let title: String
+    let startSeconds: Double?
 
     @Environment(\.dismiss) private var dismiss
     @State private var player: YouTubePlayer
 
-    init(videoID: String, title: String) {
+    init(videoID: String, title: String, startSeconds: Double? = nil) {
         self.videoID = videoID
         self.title = title
+        self.startSeconds = startSeconds
         _player = State(initialValue: YouTubePlayer(
             source: .video(id: videoID),
             parameters: .init(autoPlay: true, showControls: true),
@@ -40,7 +42,14 @@ struct YouTubeTrailerPlayerView: View {
                 case .idle:
                     ProgressView().tint(.white)
                 case .ready:
-                    EmptyView()
+                    Color.clear.task {
+                        // Jump to where an inline preview left off.
+                        if let startSeconds, startSeconds > 1 {
+                            try? await player.load(
+                                source: .video(id: videoID),
+                                startTime: Measurement(value: startSeconds, unit: .seconds))
+                        }
+                    }
                 case .error:
                     VStack(spacing: 8) {
                         Image(systemName: "exclamationmark.triangle")

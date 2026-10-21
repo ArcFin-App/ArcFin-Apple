@@ -685,7 +685,7 @@ struct HomeView: View {
         }
         #if os(iOS)
         .sheet(item: $trailerPreviewItem) { item in
-            TrailerPreviewSheet(item: item) { heroDetailItem = $0 }
+            TrailerPreviewSheet(item: item, onDetails: { heroDetailItem = $0 }) { quickLookMenu(item) }
         }
         #endif
         .sheet(item: $seerrRequestItem) { item in
