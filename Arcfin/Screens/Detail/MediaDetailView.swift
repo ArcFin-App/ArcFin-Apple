@@ -85,7 +85,10 @@ struct MediaDetailView: View {
     #endif
 
     struct PlaybackRequest: Identifiable, Equatable {
-        let id = UUID()
+        // One constant identity, so handing over to the next title updates the open player
+        // cover in place instead of dismissing and re-presenting it (which dropped the
+        // rotation and flashed the detail screen in between).
+        var id: String { "player" }
         let item: MediaItem
         let startTicks: Int64
     }
@@ -259,8 +262,10 @@ struct MediaDetailView: View {
 #if os(iOS)
         .fullScreenCover(item: $playbackRequest, onDismiss: { Task { await refreshAfterPlayback() } }) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
+            .id(request.item.id)
         }
         .fullScreenCover(item: $youTubeTrailer) { trailer in
             if let videoID = trailer.youTubeVideoID {

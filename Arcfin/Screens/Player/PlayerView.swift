@@ -116,6 +116,9 @@ struct PlayerView: View {
     @State var chapters: [MediaChapter] = []
     @State var castMembers: [MediaPerson] = []
     @State var audioOnly = false
+    /// Set when the player is about to be replaced by the next title in the same cover, so
+    /// the outgoing instance doesn't unlock the orientation the viewer had chosen.
+    static var keepOrientationOnNextDisappear = false
     @State var moreLikeThis: [MediaItem] = []
     @State var currentLikes: Bool?
     @State var showMoreLikeThis = false
@@ -337,7 +340,11 @@ struct PlayerView: View {
         .onDisappear {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)
-            resetPlayerOrientation()
+            if Self.keepOrientationOnNextDisappear {
+                Self.keepOrientationOnNextDisappear = false
+            } else {
+                resetPlayerOrientation()
+            }
             #elseif os(macOS)
             macVolumeHUDTask?.cancel()
             #endif
