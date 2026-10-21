@@ -14,5 +14,6 @@ import SwiftUI
 struct ArcfinWidgetsBundle: WidgetBundle {
     var body: some Widget {
         DownloadLiveActivity()
+        ContinueWatchingWidget()
     }
 }
