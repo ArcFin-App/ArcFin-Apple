@@ -298,26 +298,57 @@ extension JellyfinMediaClient {
 
     // MARK: - Intro/credits skip markers (community "Intro Skipper" plugin — optional)
 
-    public func getSkipSegments(credential: ServerCredential, authHeader: String, itemId: String) async -> (introEnd: Double?, creditsStart: Double?, recapEnd: Double?) {
-        async let intro = fetchSegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Introduction")
-        async let credits = fetchSegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Credits")
-        // The Intro Skipper plugin's IntroTimestamps endpoint only ever documented
-        // Introduction/Credits — Recap isn't a kind it's known to serve, but this reuses
-        // the exact same endpoint/parsing shape (rather than a separate network call) on
-        // the chance a server-side segment provider does return one; an unsupported kind
-        // just 404s and fetchSegment already treats that as nil, same as any other miss.
-        async let recap = fetchSegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Recap")
-        return (await intro, await credits, await recap)
+    /// Intro, recap, credits and preview spans for an item, in seconds. Read from Jellyfin's
+    /// Media Segments API (10.10+), which the Intro Skipper, Chapter Segments Provider and
+    /// SkipMe.db plugins all publish to; servers with only an older Intro Skipper fall back to
+    /// its own IntroTimestamps endpoint.
+    public func getSkipSegments(credential: ServerCredential, authHeader: String, itemId: String) async -> SkipSegments {
+        if let segments = await fetchMediaSegments(credential: credential, authHeader: authHeader, itemId: itemId),
+           !segments.isEmpty {
+            return segments
+        }
+        async let intro = fetchLegacySegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Introduction")
+        async let credits = fetchLegacySegment(credential: credential, authHeader: authHeader, itemId: itemId, kind: "Credits")
+        return SkipSegments(intro: await intro, credits: await credits)
     }
 
-    private func fetchSegment(credential: ServerCredential, authHeader: String, itemId: String, kind: String) async -> Double? {
+    private func fetchMediaSegments(credential: ServerCredential, authHeader: String, itemId: String) async -> SkipSegments? {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("MediaSegments/\(itemId)"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [.init(name: "includeSegmentTypes", value: "Intro,Outro,Recap,Preview")]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 6
+        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
+              let http = resp as? HTTPURLResponse, http.statusCode == 200,
+              let page = try? JSONDecoder().decode(MediaSegmentsPage.self, from: data)
+        else { return nil }
+        var result = SkipSegments()
+        for segment in page.items {
+            let span = Double(segment.startTicks) / 10_000_000 ... Double(max(segment.endTicks, segment.startTicks)) / 10_000_000
+            // A provider can report more than one of a kind; the first one is the one to skip.
+            switch segment.type {
+            case "Intro": result.intro = result.intro ?? span
+            case "Recap": result.recap = result.recap ?? span
+            case "Outro": result.credits = result.credits ?? span
+            case "Preview": result.preview = result.preview ?? span
+            default: break
+            }
+        }
+        return result
+    }
+
+    private func fetchLegacySegment(credential: ServerCredential, authHeader: String, itemId: String, kind: String) async -> ClosedRange<Double>? {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Episode/\(itemId)/IntroTimestamps/\(kind)"))
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 6
         guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
-              let http = resp as? HTTPURLResponse, http.statusCode == 200 else { return nil }
-        struct Segment: Decodable { let end: Double? }
-        return (try? JSONDecoder().decode(Segment.self, from: data))?.end
+              let http = resp as? HTTPURLResponse, http.statusCode == 200,
+              let segment = try? JSONDecoder().decode(LegacySegment.self, from: data),
+              segment.valid != false, let end = segment.end, end > 0
+        else { return nil }
+        return min(segment.start ?? 0, end)...end
     }
 
     // MARK: - Active sessions (admin)
@@ -564,4 +595,39 @@ private struct MediaStreamStreamResponse: Decodable {
             bitRate: bitRate, profile: profile, bitDepth: bitDepth, level: level
         )
     }
+}
+
+public struct SkipSegments: Sendable, Equatable {
+    public var intro: ClosedRange<Double>?
+    public var recap: ClosedRange<Double>?
+    public var credits: ClosedRange<Double>?
+    /// A "next time on" preview, usually after the credits.
+    public var preview: ClosedRange<Double>?
+
+    public init(intro: ClosedRange<Double>? = nil, recap: ClosedRange<Double>? = nil,
+                credits: ClosedRange<Double>? = nil, preview: ClosedRange<Double>? = nil) {
+        self.intro = intro; self.recap = recap; self.credits = credits; self.preview = preview
+    }
+
+    public var isEmpty: Bool { intro == nil && recap == nil && credits == nil && preview == nil }
+}
+
+private struct MediaSegmentsPage: Decodable {
+    struct Segment: Decodable {
+        let type: String
+        let startTicks: Int64
+        let endTicks: Int64
+        enum CodingKeys: String, CodingKey { case type = "Type", startTicks = "StartTicks", endTicks = "EndTicks" }
+    }
+    let items: [Segment]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+/// The older Intro Skipper response: `IntroStart`/`IntroEnd` (seconds) for whichever kind
+/// was asked for, with `Valid` false when nothing was detected.
+private struct LegacySegment: Decodable {
+    let start: Double?
+    let end: Double?
+    let valid: Bool?
+    enum CodingKeys: String, CodingKey { case start = "IntroStart", end = "IntroEnd", valid = "Valid" }
 }

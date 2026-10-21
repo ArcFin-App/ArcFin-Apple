@@ -1136,25 +1136,23 @@ extension PlayerView {
         }
     }
 
-    private var skipButtonLabel: String? {
-        guard UserDefaults.standard.bool(forKey: "skipIntro") || UserDefaults.standard.bool(forKey: "skipCredits") || UserDefaults.standard.bool(forKey: "skipRecap") else { return nil }
-        let currentSeconds = Double(player.positionTicks) / 10_000_000
-        // Recap ("previously on") is the cold open, ahead of the intro/title sequence —
-        // checked first so both can coexist without one's button hiding the other's.
-          if UserDefaults.standard.bool(forKey: "skipRecap"),
-              let recapEnd = recapEnd, currentSeconds < recapEnd, currentSeconds > 0.5 {
-            return "Skip Recap"
+    /// The segment playback is in right now, if any, with its button label.
+    private var currentSkippable: (kind: String, label: String, span: ClosedRange<Double>)? {
+        let seconds = Double(player.positionTicks) / 10_000_000
+        guard seconds > 0.5 else { return nil }
+        // Recap ("previously on") is the cold open ahead of the intro, so it's checked first.
+        if let span = segments.recap, span.contains(seconds) { return ("recap", "Skip Recap", span) }
+        if let span = segments.intro, span.contains(seconds) { return ("intro", "Skip Intro", span) }
+        if let span = segments.credits, span.contains(seconds) {
+            // Up Next and the suggestions panel already offer a way on from the credits.
+            guard !showUpNext, !showMoreLikeThis else { return nil }
+            return ("credits", "Skip Credits", span)
         }
-          if UserDefaults.standard.bool(forKey: "skipIntro"),
-              let introEnd = introEnd, currentSeconds < introEnd, currentSeconds > 0.5 {
-            return "Skip Intro"
-        }
-          if UserDefaults.standard.bool(forKey: "skipCredits"),
-              let creditsStart = creditsStart, currentSeconds >= creditsStart {
-            return "Skip Credits"
-        }
+        if let span = segments.preview, span.contains(seconds) { return ("preview", "Skip Preview", span) }
         return nil
     }
+
+    private var skipButtonLabel: String? { currentSkippable?.label }
 
     // MARK: - Up Next
 
@@ -1706,14 +1704,8 @@ extension PlayerView {
     #endif
 
     private func skipToSegmentEnd() {
-        let currentSeconds = Double(player.positionTicks) / 10_000_000
-        if let recapEnd = recapEnd, currentSeconds < recapEnd {
-            Task { await player.seek(to: Int64(recapEnd * 10_000_000)) }
-        } else if let introEnd = introEnd, currentSeconds < introEnd {
-            Task { await player.seek(to: Int64(introEnd * 10_000_000)) }
-        } else if let creditsStart = creditsStart, currentSeconds >= creditsStart {
-            Task { await finishPlayback() }
-        }
+        guard let current = currentSkippable else { return }
+        skip(kind: current.kind, span: current.span)
     }
 
     // MARK: - Playback actions

@@ -555,13 +555,9 @@ final class DownloadManager: NSObject {
             }
 
             // Skip intro/credits — small, and completes the offline playback feature set.
-            var introEnd: Double?
-            var creditsStart: Double?
-            if detail.item.type == .episode {
-                let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
-                introEnd = segments.introEnd
-                creditsStart = segments.creditsStart
-            }
+            let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
+            let introEnd = segments.intro?.upperBound
+            let creditsStart = segments.credits?.lowerBound
 
             let fileSize = (try? FileManager.default.attributesOfItem(atPath: dir.appendingPathComponent(videoFileName).path)[.size] as? Int64) ?? 0
 

@@ -134,7 +134,7 @@ struct PlaybackSettingsView: View {
                 .tvListRow()
                 .syncLocked("rememberPlaybackSpeed", authManager)
             } footer: {
-                Text("Starts new videos at the speed you last picked instead of 1×.")
+                Text("Starts new videos at the speed you last picked instead of 1×. Skip buttons appear whenever your server knows where a recap, intro, credits or preview is (from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins); the Skip toggles do it for you.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

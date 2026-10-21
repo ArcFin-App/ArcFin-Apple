@@ -95,9 +95,10 @@ struct PlayerView: View {
     @State var trickplayLoader: TrickplayLoader?
     @State var scrubThumbnail: PlatformImage?
     @State var lastThumbnailBucket: Int?
-    @State var introEnd: Double?
-    @State var creditsStart: Double?
-    @State var recapEnd: Double?
+    /// Intro, recap, credits and preview spans from the server's segment plugins.
+    @State var segments = SkipSegments()
+    /// Segments already skipped automatically, so seeking back into one lets it play.
+    @State var autoSkipped: Set<String> = []
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
     /// Optimistic target of the most recent seek request — player.positionTicks only
@@ -358,6 +359,7 @@ struct PlayerView: View {
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
             checkMoreLikeThisThreshold(positionTicks: newValue)
+            autoSkipIfNeeded(positionTicks: newValue)
             #if !os(tvOS)
             updateNowPlayingInfo()
             #endif
@@ -1027,12 +1029,10 @@ struct PlayerView: View {
             errorMessage = "Couldn't start playback: \(error.localizedDescription)"
         }
 
-        if item.type == .episode {
-            let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
-            introEnd = segments.introEnd
-            creditsStart = segments.creditsStart
-            recapEnd = segments.recapEnd
+        segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
+        autoSkipped = []
 
+        if item.type == .episode {
             if !PlayQueue.contains(item.id), let seriesId = item.seriesId {
                 let upNext = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: 1)
                 nextEpisode = upNext?.first
@@ -1374,7 +1374,10 @@ struct PlayerView: View {
     private func checkUpNextThreshold(positionTicks: Int64) {
         guard nextEpisode != nil, !upNextDismissed, player.durationTicks > 0 else { return }
         let remainingSeconds = Double(player.durationTicks - positionTicks) / 10_000_000
-        let withinWindow = remainingSeconds <= 30 && remainingSeconds > 0
+        let seconds = Double(positionTicks) / 10_000_000
+        // From the moment the credits start when the server knows it, else the last 30s.
+        let withinWindow = remainingSeconds > 0
+            && (segments.credits.map { seconds >= $0.lowerBound } ?? (remainingSeconds <= 30))
         if withinWindow, !showUpNext {
             showUpNext = true
             if UserDefaults.standard.bool(forKey: "autoPlayNext") {
@@ -1392,11 +1395,40 @@ struct PlayerView: View {
         guard nextEpisode == nil, !moreLikeThis.isEmpty, !moreLikeThisDismissed, player.durationTicks > 0 else { return }
         let duration = Double(player.durationTicks) / 10_000_000
         let seconds = Double(positionTicks) / 10_000_000
-        let start = creditsStart ?? max(duration - 240, 0)
+        let start = segments.credits?.lowerBound ?? max(duration - 240, 0)
         let inCredits = seconds >= start && seconds < duration
         if inCredits != showMoreLikeThis {
             withAnimation(DT.Animation.fast) { showMoreLikeThis = inCredits }
         }
+    }
+
+    /// The Skip … Automatically settings: jumps past a segment once as playback enters it.
+    private func autoSkipIfNeeded(positionTicks: Int64) {
+        let seconds = Double(positionTicks) / 10_000_000
+        let defaults = UserDefaults.standard
+        for (kind, span, enabled) in [
+            ("recap", segments.recap, defaults.bool(forKey: "skipRecap")),
+            ("intro", segments.intro, defaults.bool(forKey: "skipIntro")),
+            ("credits", segments.credits, defaults.bool(forKey: "skipCredits")),
+        ] {
+            guard enabled, let span, span.contains(seconds), !autoSkipped.contains(kind) else { continue }
+            autoSkipped.insert(kind)
+            skip(kind: kind, span: span)
+            return
+        }
+    }
+
+    /// Past the end of a segment. Credits and previews at the very end move on to the next
+    /// title, or finish; credits followed by more of the film (a mid-credits scene) seek to it.
+    func skip(kind: String, span: ClosedRange<Double>) {
+        let duration = Double(player.durationTicks) / 10_000_000
+        let endsTitle = (kind == "credits" || kind == "preview") && (duration == 0 || span.upperBound >= duration - 5)
+        if endsTitle {
+            if nextEpisode != nil { playNextEpisode() } else { Task { await finishPlayback() } }
+        } else {
+            Task { await player.seek(to: Int64(span.upperBound * 10_000_000)) }
+        }
+        HapticManager.impact(.light)
     }
 
     /// Thumbs rating for what's playing, set from the credits panel; choosing the current
