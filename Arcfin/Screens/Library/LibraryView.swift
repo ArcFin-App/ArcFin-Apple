@@ -1265,6 +1265,7 @@ struct LibraryDetailView: View {
         ItemQuickActions(item: item)
         if statsRepo.isConfigured {
             Button {
+                HapticManager.impact(.light)
                 Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
             } label: {
                 Label("Add to Watchlist", systemImage: "bookmark")

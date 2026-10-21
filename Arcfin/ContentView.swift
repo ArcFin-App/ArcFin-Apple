@@ -28,6 +28,8 @@ extension Notification.Name {
     static let arcfinShowDiscover = Notification.Name("arcfinShowDiscover")
     /// Posted with a "term" in userInfo to show in-app search results (Siri / Shortcuts).
     static let arcfinSearch = Notification.Name("arcfinSearch")
+    /// Posted with an "id" (Seerr entry id) to open that title's Seerr page.
+    static let arcfinOpenSeerrTitle = Notification.Name("arcfinOpenSeerrTitle")
     /// Posted when the user switches away from the Home tab, so a shuffled Home can reorder
     /// itself while it is off-screen.
     static let arcfinHomeTabLeft = Notification.Name("arcfinHomeTabLeft")

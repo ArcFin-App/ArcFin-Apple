@@ -225,6 +225,16 @@ enum ArcfinRouting {
         NotificationCenter.default.post(name: .arcfinPlayItem, object: nil, userInfo: ["itemID": id])
     }
 
+    /// Opens a Seerr watchlist/request title found through Spotlight or Siri.
+    @MainActor
+    static func openSeerrTitle(id: String) {
+        UserDefaults.standard.set(id, forKey: "arcfin.pendingSeerrTitle")
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            NotificationCenter.default.post(name: .arcfinOpenSeerrTitle, object: nil, userInfo: ["id": id])
+        }
+    }
+
     @MainActor
     static func showDiscover() {
         Task {
@@ -351,19 +361,20 @@ struct ArcfinVisualSearchQuery: IntentValueQuery {
 
     /// The most prominent text first: poster titles are the largest lettering in the shot.
     nonisolated private static func recognizedTitles(in pixelBuffer: CVReadOnlyPixelBuffer) -> [String] {
-        let context = CIContext()
-        let image = CIImage(cvPixelBuffer: pixelBuffer)
-        guard let cgImage = context.createCGImage(image, from: image.extent) else { return [] }
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
-        guard (try? VNImageRequestHandler(cgImage: cgImage).perform([request])) != nil else { return [] }
-        return (request.results ?? [])
-            .sorted { $0.boundingBox.height > $1.boundingBox.height }
-            .compactMap { $0.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { $0.count >= 3 && $0.contains(where: \.isLetter) }
-            .prefix(3)
-            .map { $0 }
+        pixelBuffer.withUnsafeBuffer { buffer -> [String] in
+            let image = CIImage(cvPixelBuffer: buffer)
+            guard let cgImage = CIContext().createCGImage(image, from: image.extent) else { return [] }
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+            guard (try? VNImageRequestHandler(cgImage: cgImage).perform([request])) != nil else { return [] }
+            return (request.results ?? [])
+                .sorted { $0.boundingBox.height > $1.boundingBox.height }
+                .compactMap { $0.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { $0.count >= 3 && $0.contains(where: \.isLetter) }
+                .prefix(3)
+                .map { $0 }
+        }
     }
 }
 #endif

@@ -203,6 +203,9 @@ struct HomeView: View {
         var isLandscape: Bool = false
     }
     @State private var seerrRequestItem: SeerrItem? = nil
+    #if os(iOS)
+    @State private var seerrDeepLinkItem: SeerrItem?
+    #endif
     @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 8, on: .main, in: .common).autoconnect()
 
@@ -707,6 +710,17 @@ struct HomeView: View {
         #if os(iOS)
         .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
         #endif
+        #if os(iOS)
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenSeerrTitle)) { note in
+            if let id = note.userInfo?["id"] as? String { openSeerrDeepLink(id: id) }
+        }
+        .onAppear {
+            if let id = UserDefaults.standard.string(forKey: "arcfin.pendingSeerrTitle") { openSeerrDeepLink(id: id) }
+        }
+        .sheet(item: $seerrDeepLinkItem) { item in
+            NavigationStack { SeerrItemDetailView(item: item) }
+        }
+        #endif
         .sheet(item: $seerrRequestItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $seerrRequestItem)
                 .presentationDetents([.medium, .large])
@@ -1205,6 +1219,13 @@ struct HomeView: View {
         }
     }
 
+    #if os(iOS)
+    private func openSeerrDeepLink(id: String) {
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingSeerrTitle")
+        if let entry = SeerrSpotlightStore.entry(id: id), let item = entry.seerrItem { seerrDeepLinkItem = item }
+    }
+    #endif
+
     /// The poster long-press menu: the usual quick actions, with Play Trailer on top on iOS.
     @ViewBuilder
     private func longPressMenu(_ item: MediaItem) -> some View {
@@ -1221,6 +1242,7 @@ struct HomeView: View {
         ItemQuickActions(item: item)
         if statsRepo.isConfigured {
             Button {
+                HapticManager.impact(.light)
                 Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
             } label: {
                 Label("Add to Watchlist", systemImage: "bookmark")

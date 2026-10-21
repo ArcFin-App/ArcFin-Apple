@@ -112,6 +112,15 @@ final class SeerrRepository {
     func loadWatchlist() async {
         guard let client else { return }
         watchlist = (try? await client.watchlist()) ?? []
+        indexForSpotlight()
+    }
+
+    /// Keeps Spotlight's copy of the personal Seerr slice (watchlist + requests) current.
+    private func indexForSpotlight() {
+        #if os(iOS)
+        let watchlist = watchlist, requests = requests
+        Task { await SeerrSpotlightIndexer.index(watchlist: watchlist, requests: requests) }
+        #endif
     }
 
     func loadRequests() async {
@@ -149,6 +158,7 @@ final class SeerrRepository {
                 }
             }
             authFailed = false
+            indexForSpotlight()
         } catch SeerrError.authFailed {
             authFailed = true
         } catch {
@@ -220,13 +230,25 @@ final class SeerrRepository {
 
     func addToWatchlist(_ item: SeerrItem) async throws {
         guard let client else { throw URLError(.badURL) }
-        try await client.addToWatchlist(tmdbId: item.id, mediaType: item.mediaType, title: item.title)
+        do {
+            try await client.addToWatchlist(tmdbId: item.id, mediaType: item.mediaType, title: item.title)
+        } catch {
+            Telemetry.logger(category: "SeerrRepository").error(
+                "addToWatchlist failed for \(item.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
         if !isInWatchlist(item) { watchlist.append(item) }
     }
 
     func removeFromWatchlist(_ item: SeerrItem) async throws {
         guard let client else { throw URLError(.badURL) }
-        try await client.removeFromWatchlist(tmdbId: item.id, mediaType: item.mediaType)
+        do {
+            try await client.removeFromWatchlist(tmdbId: item.id, mediaType: item.mediaType)
+        } catch {
+            Telemetry.logger(category: "SeerrRepository").error(
+                "removeFromWatchlist failed for \(item.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
         watchlist.removeAll { $0.id == item.id && $0.mediaType == item.mediaType }
     }
 

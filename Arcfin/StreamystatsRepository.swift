@@ -4,6 +4,8 @@ import Foundation
 import Observation
 import StreamystatsAPI
 import AuthCore
+import Telemetry
+import os
 
 @Observable
 @MainActor
@@ -49,13 +51,22 @@ final class StreamystatsRepository {
 
     func addToWatchlist(itemId: String) async throws {
         guard let client else { throw StreamystatsError.requestFailed }
-        let watchlistId: String
-        if let first = promotedWatchlists.first?.id {
-            watchlistId = first
-        } else {
-            watchlistId = try await client.getWatchlists().first?.id ?? ""
+        do {
+            // The user's own list first: a promoted list may belong to someone else, and
+            // adding to it is refused.
+            let watchlistId: String
+            if let own = try await client.getWatchlists().first?.id {
+                watchlistId = own
+            } else if let promoted = promotedWatchlists.first?.id {
+                watchlistId = promoted
+            } else {
+                throw StreamystatsError.requestFailed
+            }
+            try await client.addToWatchlist(watchlistId: watchlistId, jellyfinItemId: itemId)
+        } catch {
+            Telemetry.logger(category: "StreamystatsRepository").error(
+                "addToWatchlist failed for \(itemId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            throw error
         }
-        guard !watchlistId.isEmpty else { throw StreamystatsError.requestFailed }
-        try await client.addToWatchlist(watchlistId: watchlistId, jellyfinItemId: itemId)
     }
 }

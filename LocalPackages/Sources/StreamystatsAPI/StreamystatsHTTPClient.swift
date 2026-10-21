@@ -69,10 +69,9 @@ public actor StreamystatsHTTPClient {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("MediaBrowser Token=\"\(jellyfinToken)\"", forHTTPHeaderField: "Authorization")
-        req.httpBody = try JSONSerialization.data(withJSONObject: [
-            "jellyfinServerId": jellyfinServerId,
-            "jellyfinId": jellyfinItemId,
-        ])
+        // Streamystats takes just the Jellyfin item id here; the old jellyfinId /
+        // jellyfinServerId body was rejected with a 400 on every add.
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["itemId": jellyfinItemId])
         req.timeoutInterval = 15
         let (_, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {

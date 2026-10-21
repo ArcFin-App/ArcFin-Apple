@@ -436,7 +436,9 @@ public actor SeerrHTTPClient {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         applyXSRF(to: &req)
-        let body: [String: Any] = ["tmdbId": tmdbId, "type": mediaType.rawValue, "title": title]
+        // Seerr's watchlist schema requires `mediaType`; the old `type` key was rejected with a
+        // 400 on every add, which the callers' try? swallowed.
+        let body: [String: Any] = ["tmdbId": tmdbId, "mediaType": mediaType.rawValue, "title": title]
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
         let (data, response) = try await session.data(for: req)
