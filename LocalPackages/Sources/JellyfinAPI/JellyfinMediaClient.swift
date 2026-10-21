@@ -676,6 +676,26 @@ public struct JellyfinMediaClient: Sendable {
         _ = try await URLSession.arcfin.data(for: req)
     }
 
+    /// Thumbs rating: `true` likes, `false` dislikes, `nil` clears it.
+    public func setRating(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String,
+        likes: Bool?
+    ) async throws {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)/Rating"),
+            resolvingAgainstBaseURL: false)!
+        if let likes {
+            comps.queryItems = [.init(name: "likes", value: likes ? "true" : "false")]
+        }
+        var req = URLRequest(url: comps.url!)
+        req.httpMethod = likes == nil ? "DELETE" : "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        _ = try await URLSession.arcfin.data(for: req)
+    }
+
     public func getLibraryItems(
         credential: ServerCredential,
         authHeader: String,
@@ -967,7 +987,8 @@ private struct JellyfinItemResponse: Decodable {
                     playCount: $0.playCount ?? 0,
                     isFavorite: $0.isFavorite ?? false,
                     played: $0.played ?? false,
-                    playedPercentage: $0.playedPercentage
+                    playedPercentage: $0.playedPercentage,
+                    likes: $0.likes
                 )
             },
             productionYear: productionYear,
@@ -990,8 +1011,10 @@ private struct UserDataResponse: Decodable {
     let isFavorite: Bool?
     let played: Bool?
     let playedPercentage: Double?
+    let likes: Bool?
 
     enum CodingKeys: String, CodingKey {
+        case likes = "Likes"
         case playbackPositionTicks = "PlaybackPositionTicks"
         case playCount = "PlayCount"
         case isFavorite = "IsFavorite"
@@ -1057,7 +1080,8 @@ private struct ItemDetailResponse: Decodable {
                          playCount: ud.playCount ?? 0,
                          isFavorite: ud.isFavorite ?? false,
                          played: ud.played ?? false,
-                         playedPercentage: ud.playedPercentage)
+                         playedPercentage: ud.playedPercentage,
+                         likes: ud.likes)
             },
             productionYear: productionYear,
             communityRating: communityRating,
