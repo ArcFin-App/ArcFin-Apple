@@ -3,9 +3,9 @@
 import SwiftUI
 
 /// Launch animation: behind everything, a tilted wall of the library's recently added posters
-/// drifts into view (when someone has signed in before); in front, a ring draws itself around
-/// the mark, the logo resolves out of a blur inside it, a highlight sweeps across the logo,
-/// and the wordmark tightens into place.
+/// drifts into view (when someone has signed in before); in front, the logo resolves out of a
+/// blur as a backlight glows up behind it, a highlight sweeps across it, and the name spells
+/// itself out.
 struct SplashView: View {
     /// Reflects real work still happening (e.g. auth check) — not just a fixed timer. The
     /// exit animation waits for this to go false in addition to the minimum presentation time.
@@ -19,9 +19,8 @@ struct SplashView: View {
     @State private var mosaicScale: CGFloat = 1.08
     @State private var glowOpacity: Double = 0
     @State private var glowScale: CGFloat = 0.8
-    @State private var ringTrim: CGFloat = 0
-    @State private var ringRotation: Double = -90
-    @State private var ringOpacity: Double = 1
+    @State private var backlightOpacity: Double = 0
+    @State private var backlightScale: CGFloat = 0.6
     @State private var logoScale: CGFloat = 0.78
     @State private var logoOpacity: Double = 0
     @State private var logoBlur: CGFloat = 16
@@ -75,29 +74,18 @@ struct SplashView: View {
 
             VStack(spacing: 30) {
                 ZStack {
-                    // The "arc": a bright head trailing a fading tail
-                    Circle()
-                        .trim(from: 0, to: ringTrim)
-                        .stroke(
-                            AngularGradient(
-                                colors: [DT.Color.accent.opacity(0), DT.Color.accent, .white],
-                                center: .center),
-                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                        )
-                        .frame(width: logoSize * 1.42, height: logoSize * 1.42)
-                        .rotationEffect(.degrees(ringRotation))
-                        .opacity(ringOpacity)
-                        .shadow(color: DT.Color.accent.opacity(0.7), radius: 10)
-
-                    // The glowing head of the arc, riding the end of the stroke as it draws.
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 9, height: 9)
-                        .shadow(color: .white, radius: 4)
-                        .shadow(color: DT.Color.accent, radius: 14)
-                        .offset(x: logoSize * 0.71)
-                        .rotationEffect(.degrees(ringRotation + Double(ringTrim) * 360))
-                        .opacity(ringOpacity * (ringTrim > 0 ? 1 : 0))
+                    // Backlight: a heavily blurred copy of the logo itself, so the glow takes
+                    // the mark's own colours and seems to shine from behind it.
+                    Image("ArcfinLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: logoSize, height: logoSize)
+                        .saturation(1.6)
+                        .blur(radius: 34)
+                        .scaleEffect(backlightScale * (breathing ? 1.1 : 1))
+                        .opacity(backlightOpacity * (breathing ? 0.85 : 1))
+                        .blendMode(.plusLighter)
+                        .allowsHitTesting(false)
 
                     logo
                 }
@@ -172,7 +160,8 @@ struct SplashView: View {
                 mosaicReveal = 1; mosaicScale = 1
                 glowOpacity = 1; glowScale = 1
                 logoScale = 1; logoOpacity = 1; logoBlur = 0
-                lettersShown = name.count; wordSpacing = 1; ringOpacity = 0
+                lettersShown = name.count; wordSpacing = 1
+                backlightOpacity = 1; backlightScale = 1.35
             }
             schedule(after: 0.5) { withAnimation(.easeIn(duration: 0.3)) { creditOpacity = 1 } }
             scheduleSpinnerAndExit()
@@ -183,13 +172,15 @@ struct SplashView: View {
         withAnimation(.easeOut(duration: 1.2)) { mosaicReveal = 1 }
         withAnimation(.easeOut(duration: 2.2)) { mosaicScale = 1 }
 
-        // 1. Light blooms and the ring starts drawing, turning as it goes
+        // 1. Light blooms in the background
         withAnimation(.easeOut(duration: 0.7)) { glowOpacity = 1; glowScale = 1 }
-        withAnimation(.easeInOut(duration: 1.0)) { ringTrim = 1 }
-        withAnimation(.easeInOut(duration: 1.0)) { ringRotation = 270 }
 
-        // 2. The logo resolves out of a blur inside the ring
+        // 2. The logo resolves out of a blur while its backlight swells up behind it
         schedule(after: 0.3) {
+            withAnimation(.easeOut(duration: 0.9)) {
+                backlightOpacity = 1
+                backlightScale = 1.35
+            }
             withAnimation(.spring(response: 0.6, dampingFraction: 0.72)) {
                 logoScale = 1
                 logoOpacity = 1
@@ -202,10 +193,9 @@ struct SplashView: View {
             withAnimation(.easeInOut(duration: 0.7)) { shineOffset = 1.4 }
         }
 
-        // 4. The ring dissolves into a slow breathing glow, and the name spells itself out
-        //    while its letters draw together.
+        // 4. The backlight settles into a slow breathe, and the name spells itself out while
+        //    its letters draw together.
         schedule(after: 1.05) {
-            withAnimation(.easeOut(duration: 0.45)) { ringOpacity = 0 }
             withAnimation(.easeOut(duration: 0.7)) { wordSpacing = 1 }
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { breathing = true }
         }
