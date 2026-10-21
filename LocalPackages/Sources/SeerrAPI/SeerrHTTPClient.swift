@@ -464,6 +464,18 @@ public actor SeerrHTTPClient {
         return result
     }
 
+    /// Countries TMDB has streaming availability for, as (ISO code, English name).
+    public func watchRegions() async throws -> [(code: String, name: String)] {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/watchproviders/regions"))
+        struct Region: Decodable {
+            let code: String
+            let name: String?
+            enum CodingKeys: String, CodingKey { case code = "iso_3166_1", name = "english_name" }
+        }
+        return try JSONDecoder().decode([Region].self, from: data).map { ($0.code, $0.name ?? $0.code) }
+    }
+
     /// The streaming services TMDB lists for a country, most popular first.
     public func watchProviders(mediaType: RequestMediaType, region: String) async throws -> [SeerrWatchProvider] {
         try await ensureAuthenticated()

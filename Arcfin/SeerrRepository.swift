@@ -84,36 +84,43 @@ final class SeerrRepository {
         isFetchingDiscover = true
         let firstLoad = trending.isEmpty
         if firstLoad { isLoadingDiscover = true }
-        do {
-            async let t  = client.trending()
-            async let m  = client.discoverMovies()
-            async let tv = client.discoverTV()
-            let (rawT, rawM, rawTV) = try await (t, m, tv)
-            let newT = await visible(rawT), newM = await visible(rawM), newTV = await visible(rawTV)
-            if !newT.isEmpty  || firstLoad { trending = newT }
-            if !newM.isEmpty  || firstLoad { popularMovies = newM }
-            if !newTV.isEmpty || firstLoad { popularTV = newTV }
-            authFailed = false
-            discoverError = nil
-        } catch SeerrError.authFailed {
-            authFailed = true
-            discoverError = SeerrError.authFailed.localizedDescription
-        } catch {
-            discoverError = error.localizedDescription
-            // isConfigured only means a client exists (valid URL/credentials entered) — it
-            // says nothing about whether the fetch itself actually succeeds. This used to
-            // swallow any other failure (network, timeout, decode) completely silently,
-            // leaving trending/popularMovies/popularTV empty with zero trace — "Seerr is
-            // configured but the discover shelves don't show" was undiagnosable from this
-            // alone, the same silently-swallowed-error shape already found and fixed for
-            // MediaRepository/LibraryView/JellyfinAuthClient elsewhere this session.
-            let nsError = error as NSError
-            Telemetry.logger(category: "SeerrRepository").error(
-                "loadDiscover failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
-            )
+        // Each list on its own: Seerr failing one (it returns 500 when its TMDB request for
+        // trending fails) used to blank all three.
+        async let t  = Self.attempt { try await client.trending() }
+        async let m  = Self.attempt { try await client.discoverMovies() }
+        async let tv = Self.attempt { try await client.discoverTV() }
+        let (rT, rM, rTV) = await (t, m, tv)
+        let newT = await visible(rT.items), newM = await visible(rM.items), newTV = await visible(rTV.items)
+        if !newT.isEmpty  || (firstLoad && rT.error == nil) { trending = newT }
+        if !newM.isEmpty  || (firstLoad && rM.error == nil) { popularMovies = newM }
+        if !newTV.isEmpty || (firstLoad && rTV.error == nil) { popularTV = newTV }
+
+        let results = [rT, rM, rTV]
+        let errors = results.compactMap(\.error)
+        authFailed = results.contains(where: \.isAuthFailure)
+        // Only worth showing when nothing at all came back.
+        discoverError = errors.count == results.count ? errors.first : nil
+        for error in errors {
+            Telemetry.logger(category: "SeerrRepository").error("loadDiscover failed: \(error, privacy: .public)")
         }
         if firstLoad { isLoadingDiscover = false }
         isFetchingDiscover = false
+    }
+
+    private struct ListResult: Sendable {
+        var items: [SeerrItem] = []
+        var error: String?
+        var isAuthFailure = false
+    }
+
+    private static func attempt(_ fetch: @Sendable () async throws -> [SeerrItem]) async -> ListResult {
+        do {
+            return ListResult(items: try await fetch())
+        } catch SeerrError.authFailed {
+            return ListResult(error: SeerrError.authFailed.localizedDescription, isAuthFailure: true)
+        } catch {
+            return ListResult(error: error.localizedDescription)
+        }
     }
 
     func loadWatchlist() async {
@@ -381,10 +388,28 @@ final class SeerrRepository {
     @ObservationIgnored private var cachedRegion: String?
 
     func region() async -> String {
+        if let chosen = UserDefaults.standard.string(forKey: Self.regionOverrideKey), !chosen.isEmpty { return chosen }
         if let cachedRegion { return cachedRegion }
         let resolved = await client?.preferredRegion() ?? Locale.current.region?.identifier ?? "US"
         cachedRegion = resolved
         return resolved
+    }
+
+    /// A country picked in Streaming Services, over Seerr's own; empty for automatic.
+    static let regionOverrideKey = "seerrRegionOverride"
+
+    /// The country automatic would use, for labelling that choice.
+    func automaticRegion() async -> String {
+        if let cachedRegion { return cachedRegion }
+        let resolved = await client?.preferredRegion() ?? Locale.current.region?.identifier ?? "US"
+        cachedRegion = resolved
+        return resolved
+    }
+
+    /// Countries TMDB has streaming data for, by name.
+    func streamingRegions() async -> [(code: String, name: String)] {
+        guard let client, let regions = try? await client.watchRegions() else { return [] }
+        return regions.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     /// Streaming services available in Seerr's country, for picking which get a Home row.

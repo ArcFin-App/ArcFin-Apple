@@ -23,8 +23,13 @@ struct SeerrView: View {
     }
 
     private var trendingForType: [SeerrItem] {
-        seerrRepo.trending.filter { $0.mediaType == mediaType }
+        let trending = seerrRepo.trending.filter { $0.mediaType == mediaType }
+        // Seerr can fail trending on its own (500 when its TMDB request fails); popular
+        // titles stand in rather than an empty page.
+        return trending.isEmpty ? (mediaType == .tv ? seerrRepo.popularTV : seerrRepo.popularMovies) : trending
     }
+
+    private var showsTrending: Bool { seerrRepo.trending.contains { $0.mediaType == mediaType } }
 
     private var upcomingForType: [SeerrItem] {
         mediaType == .tv ? seerrRepo.upcomingTV : seerrRepo.upcomingMovies
@@ -222,7 +227,7 @@ struct SeerrView: View {
     }
 
     private var trendingSection: some View {
-        itemGrid(title: "Trending Now", items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
+        itemGrid(title: showsTrending ? "Trending Now" : "Popular", items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
     }
 
     private var upcomingSection: some View {

@@ -192,6 +192,7 @@ struct HomeView: View {
     /// Titles the user requested through Seerr that have since arrived in the library.
     @State private var nowAvailable: [MediaItem] = []
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
+    @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
     /// "Popular on …" rows, by streaming service id.
     @State private var serviceRows: [Int: [SeerrItem]] = [:]
     /// The first load has been trying for a while with nothing to show yet; offers a way
@@ -758,7 +759,7 @@ struct HomeView: View {
             guard !Task.isCancelled, mediaRepo.isLoading, !mediaRepo.hasAnyContent else { return }
             withAnimation(DT.Animation.fast) { isSlowFirstLoad = true }
         }
-        .task(id: StreamingServicePrefs.decode(streamingServicesData).map(\.id) + [seerrRepo.isConfigured ? 1 : 0]) {
+        .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.isConfigured)-\(seerrRegionOverride)") {
             await loadServiceRows()
         }
         .task(id: recentlyAvailableRequests.map(\.id)) {

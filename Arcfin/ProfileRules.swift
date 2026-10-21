@@ -92,15 +92,11 @@ final class ProfileRules {
     /// outside the library, so a profile limited to tagged media sees none of Seerr's
     /// catalogue, the same as an untagged title in the library.
     func visible(_ items: [SeerrItem], region: String, lookUp: @escaping @Sendable (SeerrItem, String) async -> String?) async -> [SeerrItem] {
-        guard restrictsContent else { return items }
-        guard policy.allowedTags.isEmpty else { return [] }
+        // Seerr's titles are only filtered when the profile has a maximum rating: that's the
+        // limit that can be checked against a title outside the library. Tags only exist in
+        // the library, and the unrated rule applies alongside the maximum.
+        guard policy.maxParentalRating != nil else { return items }
         let candidates = items.filter { !$0.isAdult }
-        // Only a maximum rating, or hiding unrated movies or shows, depends on a title's
-        // rating; other limits (blocked tags, unrated books…) can't apply to Seerr's titles,
-        // so those lists aren't held up looking ratings up.
-        let needsRatings = policy.maxParentalRating != nil
-            || policy.blockUnratedItems.contains("Movie") || policy.blockUnratedItems.contains("Series")
-        guard needsRatings else { return candidates }
 
         loadSavedCertifications(region: region)
         let missing = candidates.filter { certifications[key($0, region)] == nil }

@@ -25,6 +25,9 @@ struct StreamingServicesView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var region = ""
+    @State private var automaticRegion = ""
+    @State private var regions: [(code: String, name: String)] = []
+    @AppStorage(SeerrRepository.regionOverrideKey) private var regionOverride = ""
     @State private var query = ""
 
     private var selected: [SeerrWatchProvider] { StreamingServicePrefs.decode(selectedData) }
@@ -37,6 +40,18 @@ struct StreamingServicesView: View {
 
     var body: some View {
         List {
+            if query.isEmpty {
+                Section {
+                    Picker("Country", selection: $regionOverride) {
+                        Text("Automatic (\(regionName(automaticRegion)))").tag("")
+                        ForEach(regions, id: \.code) { region in
+                            Text(region.name).tag(region.code)
+                        }
+                    }
+                } footer: {
+                    Text("Automatic uses the region set in Seerr, the same one its own pages use. Choose a country to see what streams there instead.")
+                }
+            }
             if !selected.isEmpty && query.isEmpty {
                 Section {
                     ForEach(selected) { provider in row(provider) }
@@ -74,8 +89,6 @@ struct StreamingServicesView: View {
                 if !region.isEmpty {
                     Text("Available in \(Locale.current.localizedString(forRegionCode: region) ?? region)")
                 }
-            } footer: {
-                Text("The country comes from your region setting in Seerr, the same one its own pages use.")
             }
         }
         .arcfinListStyle()
@@ -83,18 +96,34 @@ struct StreamingServicesView: View {
         .arcfinNavTitleLarge("Streaming Services")
         .searchable(text: $query, prompt: "Search services")
         .task { await load() }
+        .onChange(of: regionOverride) { Task { await load() } }
     }
 
     private func load() async {
         isLoading = true
         errorMessage = nil
+        automaticRegion = await seerrRepo.automaticRegion()
         region = await seerrRepo.region()
+        if regions.isEmpty {
+            regions = await seerrRepo.streamingRegions()
+            // Seerr gets this list from TMDB too; the system's countries stand in if it can't.
+            if regions.isEmpty {
+                regions = Locale.Region.isoRegions
+                    .filter { $0.identifier.count == 2 }
+                    .map { ($0.identifier, Locale.current.localizedString(forRegionCode: $0.identifier) ?? $0.identifier) }
+                    .sorted { $0.1.localizedCaseInsensitiveCompare($1.1) == .orderedAscending }
+            }
+        }
         do {
             available = try await seerrRepo.streamingServices()
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func regionName(_ code: String) -> String {
+        code.isEmpty ? "…" : (Locale.current.localizedString(forRegionCode: code) ?? code)
     }
 
     private func row(_ provider: SeerrWatchProvider) -> some View {
