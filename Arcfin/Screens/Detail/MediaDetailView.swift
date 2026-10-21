@@ -38,6 +38,7 @@ struct MediaDetailView: View {
     @State private var awards: [WikidataAward] = []
     @State private var isFavorite = false
     @State private var likes: Bool?
+    @State private var showSubtitleSearch = false
     @State private var heroTint: Color?
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
@@ -185,6 +186,15 @@ struct MediaDetailView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) { moreMenu }
+        }
+        .sheet(isPresented: $showSubtitleSearch) {
+            NavigationStack {
+                SubtitleSearchView(itemId: item.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("Done") { showSubtitleSearch = false } }
+                    }
+            }
+            .presentationDetents([.medium, .large])
         }
         #elseif os(macOS)
         // Downloads are iOS-only (DownloadManager isn't wired up on macOS elsewhere in
@@ -1319,6 +1329,11 @@ struct MediaDetailView: View {
         Menu {
             Button { PlaylistStore.shared.addingItem = item } label: {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
+            }
+            if item.type == .movie || item.type == .episode {
+                Button { showSubtitleSearch = true } label: {
+                    Label("Search for Subtitles…", systemImage: "captions.bubble")
+                }
             }
         } label: {
             Image(systemName: "ellipsis")

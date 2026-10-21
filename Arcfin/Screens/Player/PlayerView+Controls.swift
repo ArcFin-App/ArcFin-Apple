@@ -1920,6 +1920,9 @@ struct TrackSelectionSheet: View {
     let selectedSubtitleIndex: Int?
     let onSelectAudio: (Int) -> Void
     let onSelectSubtitle: (Int?) -> Void
+    /// Set to offer a search of the server's subtitle providers for this item.
+    var subtitleSearchItemId: String? = nil
+    var onSubtitleDownloaded: () -> Void = {}
 
     var body: some View {
         List {
@@ -1940,6 +1943,15 @@ struct TrackSelectionSheet: View {
                     trackRow(label(for: stream), isSelected: stream.index == selectedSubtitleIndex) {
                         onSelectSubtitle(stream.index)
                     }
+                }
+                if let subtitleSearchItemId {
+                    NavigationLink {
+                        SubtitleSearchView(itemId: subtitleSearchItemId, onDownloaded: onSubtitleDownloaded)
+                    } label: {
+                        Label("Search for Subtitles…", systemImage: "magnifyingglass")
+                            .foregroundStyle(DT.Color.accent)
+                    }
+                    .listRowBackground(DT.Color.backgroundSecondary)
                 }
             }
         }

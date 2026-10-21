@@ -722,6 +722,11 @@ struct PlayerView: View {
                 onSelectSubtitle: { index in
                     showTrackMenu = false
                     changeTrack(subtitleIndex: .some(index))
+                },
+                subtitleSearchItemId: item.id,
+                onSubtitleDownloaded: {
+                    showTrackMenu = false
+                    adoptDownloadedSubtitle()
                 }
             )
             .navigationTitle("Subtitles & Audio")
@@ -1508,6 +1513,31 @@ struct PlayerView: View {
         if let subtitleIndex { selectedSubtitleIndex = subtitleIndex }
         rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil)
         reload(errorContext: "switch track")
+    }
+
+    /// Switches to a subtitle the server just fetched from a provider. The server adds it to
+    /// the item in the background, so the new track can take a few seconds to be listed.
+    func adoptDownloadedSubtitle() {
+        guard let credential, let authHeader else { return }
+        let known = Set(playbackInfo?.subtitleStreams.map(\.index) ?? [])
+        networkToast = "Adding subtitles…"
+        Task {
+            for _ in 0..<5 {
+                if let info = try? await client.getPlaybackInfo(
+                    credential: credential, authHeader: authHeader, itemId: item.id,
+                    quality: qualityCap(for: quality),
+                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex),
+                   let added = info.subtitleStreams.first(where: { !known.contains($0.index) }) {
+                    networkToast = nil
+                    changeTrack(subtitleIndex: .some(added.index))
+                    return
+                }
+                try? await Task.sleep(for: .seconds(2))
+            }
+            networkToast = "Subtitles were saved on the server. Reopen the title to use them."
+            try? await Task.sleep(for: .seconds(4))
+            networkToast = nil
+        }
     }
 
     /// Stores the language of a track the viewer just picked, for the rest of the show.
