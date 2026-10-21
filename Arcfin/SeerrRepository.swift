@@ -25,6 +25,8 @@ final class SeerrRepository {
     var isLoadingDiscover = false
     var isLoadingRequests = false
     var authFailed = false
+    /// Why the last Discover load failed, for Discover to show instead of an empty grid.
+    var discoverError: String?
     /// The signed-in Seerr user's id/permission bitmask and the server's request settings —
     /// both fetched once per session and cached, same lifetime as `movieGenres`/`tvGenres`
     /// above. Used by the season picker (quota, auto-approve banner, whether specials/partial
@@ -92,9 +94,12 @@ final class SeerrRepository {
             if !newM.isEmpty  || firstLoad { popularMovies = newM }
             if !newTV.isEmpty || firstLoad { popularTV = newTV }
             authFailed = false
+            discoverError = nil
         } catch SeerrError.authFailed {
             authFailed = true
+            discoverError = SeerrError.authFailed.localizedDescription
         } catch {
+            discoverError = error.localizedDescription
             // isConfigured only means a client exists (valid URL/credentials entered) — it
             // says nothing about whether the fetch itself actually succeeds. This used to
             // swallow any other failure (network, timeout, decode) completely silently,
@@ -411,7 +416,7 @@ final class SeerrRepository {
 
     /// A Seerr title's age rating, for showing on its page.
     func certification(for item: SeerrItem) async -> String? {
-        if let known = ProfileRules.shared.certification(for: item) { return known }
+        if let known = ProfileRules.shared.certification(for: item, region: await region()) { return known }
         guard let client else { return nil }
         return try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: await region())
     }
@@ -422,8 +427,11 @@ final class SeerrRepository {
     private func visible(_ items: [SeerrItem]) async -> [SeerrItem] {
         guard let client else { return items }
         return await ProfileRules.shared.visible(items, region: await region()) { item, region in
-            let rating = try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region)
-            return rating ?? nil
+            do {
+                return try await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region) ?? ""
+            } catch {
+                return nil
+            }
         }
     }
 }

@@ -5,6 +5,8 @@ import Observation
 import AuthCore
 import JellyfinAPI
 import SeerrAPI
+import Telemetry
+import os
 
 /// The signed-in profile's parental controls and permissions, as set on the Jellyfin server.
 ///
@@ -40,10 +42,7 @@ final class ProfileRules {
         let (newProfile, newRatings) = await (fetchedProfile, fetchedRatings)
         // A failed fetch keeps the previous profile's rules rather than dropping them, so a
         // restricted profile never briefly sees everything over a flaky connection.
-        if let newProfile {
-            if newProfile.policy != profile?.policy { certifications = [:] }
-            profile = newProfile
-        }
+        if let newProfile { profile = newProfile }
         if let newRatings, !newRatings.isEmpty { ratings = newRatings }
     }
 
@@ -96,39 +95,77 @@ final class ProfileRules {
         guard restrictsContent else { return items }
         guard policy.allowedTags.isEmpty else { return [] }
         let candidates = items.filter { !$0.isAdult }
+        // Only a maximum rating, or hiding unrated movies or shows, depends on a title's
+        // rating; other limits (blocked tags, unrated books…) can't apply to Seerr's titles,
+        // so those lists aren't held up looking ratings up.
+        let needsRatings = policy.maxParentalRating != nil
+            || policy.blockUnratedItems.contains("Movie") || policy.blockUnratedItems.contains("Series")
+        guard needsRatings else { return candidates }
 
-        let missing = candidates.filter { certifications[key($0)] == nil }
+        loadSavedCertifications(region: region)
+        let missing = candidates.filter { certifications[key($0, region)] == nil }
         if !missing.isEmpty {
-            // A handful at a time: each is a detail request to the Seerr server.
-            var index = 0
-            while index < missing.count {
-                let batch = missing[index..<min(index + 8, missing.count)]
-                let found = await withTaskGroup(of: (String, String?).self) { group in
-                    for item in batch {
-                        let itemKey = key(item)
+            // All at once, up to 16 in flight: each is a detail request to the Seerr server.
+            let found = await withTaskGroup(of: (String, String?).self) { group in
+                var results: [(String, String?)] = []
+                var iterator = missing.makeIterator()
+                for _ in 0..<16 {
+                    guard let item = iterator.next() else { break }
+                    let itemKey = key(item, region)
+                    group.addTask { (itemKey, await lookUp(item, region)) }
+                }
+                while let result = await group.next() {
+                    results.append(result)
+                    if let item = iterator.next() {
+                        let itemKey = key(item, region)
                         group.addTask { (itemKey, await lookUp(item, region)) }
                     }
-                    var results: [(String, String?)] = []
-                    for await result in group { results.append(result) }
-                    return results
                 }
-                for (itemKey, rating) in found { certifications[itemKey] = .some(rating) }
-                index += 8
+                return results
             }
+            // The lookup answers "" for a title with no rating and nil when it couldn't ask;
+            // only real answers are remembered, so a failed lookup is tried again next time.
+            for (itemKey, rating) in found {
+                guard let rating else { continue }
+                certifications[itemKey] = .some(rating.isEmpty ? nil : rating)
+            }
+            saveCertifications()
         }
-        return candidates.filter { item in
-            let rating = certifications[key(item)] ?? nil
+        let kept = candidates.filter { item in
+            let rating = certifications[key(item, region)] ?? nil
             return allows(rating: rating, kind: item.mediaType == .tv ? "Series" : "Movie")
         }
+        Self.log.info("Seerr list filtered for parental controls: kept \(kept.count, privacy: .public) of \(items.count, privacy: .public)")
+        return kept
+    }
+
+    private static let log = Telemetry.logger(category: "ProfileRules")
+    private static let savedCertificationsKey = "arcfin.seerrCertifications"
+    @ObservationIgnored private var loadedSavedCertifications = false
+
+    /// Ratings rarely change, so they're kept between launches (as "" for none known).
+    private func loadSavedCertifications(region: String) {
+        guard !loadedSavedCertifications else { return }
+        loadedSavedCertifications = true
+        let saved = UserDefaults.standard.dictionary(forKey: Self.savedCertificationsKey) as? [String: String] ?? [:]
+        for (itemKey, rating) in saved where certifications[itemKey] == nil {
+            certifications[itemKey] = .some(rating.isEmpty ? nil : rating)
+        }
+    }
+
+    private func saveCertifications() {
+        var saved: [String: String] = [:]
+        for (itemKey, rating) in certifications.suffix(4000) { saved[itemKey] = rating ?? "" }
+        UserDefaults.standard.set(saved, forKey: Self.savedCertificationsKey)
     }
 
     /// A Seerr title's rating, if it has been looked up.
-    func certification(for item: SeerrItem) -> String? {
-        certifications[key(item)] ?? nil
+    func certification(for item: SeerrItem, region: String) -> String? {
+        certifications[key(item, region)] ?? nil
     }
 
-    private func key(_ item: SeerrItem) -> String {
-        "\(item.mediaType == .tv ? "tv" : "movie"):\(item.id)"
+    private func key(_ item: SeerrItem, _ region: String) -> String {
+        "\(region):\(item.mediaType == .tv ? "tv" : "movie"):\(item.id)"
     }
 
     // MARK: - Access schedule

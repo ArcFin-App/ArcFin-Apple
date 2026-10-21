@@ -107,6 +107,8 @@ struct SeerrView: View {
                 } else {
                     if seerrRepo.isLoadingDiscover && trendingForType.isEmpty {
                         loadingGrid
+                    } else if trendingForType.isEmpty, let error = seerrRepo.discoverError {
+                        discoverErrorCard(error)
                     } else {
                         trendingSection
                     }
@@ -192,6 +194,31 @@ struct SeerrView: View {
     private func loadLanguageItems() async {
         guard let deviceLanguage else { return }
         languageItems = await seerrRepo.discoverByLanguage(deviceLanguage, mediaType: mediaType)
+    }
+
+    private func discoverErrorCard(_ message: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.title2)
+                .foregroundStyle(Color(hex: "f59e0b"))
+            Text("Couldn't load Discover from Seerr")
+                .font(.headline)
+                .foregroundStyle(DT.Color.textPrimary)
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(DT.Color.textSecondary)
+                .multilineTextAlignment(.center)
+            Button("Try Again") {
+                seerrRepo.clearAuthFailure()
+                Task { await seerrRepo.loadDiscover() }
+            }
+            .buttonStyle(.bordered)
+            .tint(DT.Color.accent)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(20)
+        .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .padding(.horizontal, DT.Spacing.pagePad)
     }
 
     private var trendingSection: some View {
