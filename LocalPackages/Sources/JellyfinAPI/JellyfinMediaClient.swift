@@ -142,6 +142,56 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// Random genres that actually have movies or shows, each with some unwatched titles —
+    /// the "Comedy", "Thrillers" rows on Home. Genres with nothing unwatched are dropped.
+    public func getGenreShelves(
+        credential: ServerCredential,
+        authHeader: String,
+        genreCount: Int = 3,
+        itemsPerGenre: Int = 16
+    ) async throws -> [(genre: String, items: [MediaItem])] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Genres"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "SortBy", value: "Random"),
+            .init(name: "Limit", value: "\(genreCount + 2)"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let names = try JSONDecoder().decode(ItemsPage.self, from: data).items.map(\.name)
+
+        var shelves: [(genre: String, items: [MediaItem])] = []
+        for name in names where shelves.count < genreCount {
+            var itemComps = URLComponents(
+                url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+                resolvingAgainstBaseURL: false)!
+            itemComps.queryItems = [
+                .init(name: "Genres", value: name),
+                .init(name: "IncludeItemTypes", value: "Movie,Series"),
+                .init(name: "Recursive", value: "true"),
+                .init(name: "Filters", value: "IsUnplayed"),
+                .init(name: "SortBy", value: "Random"),
+                .init(name: "Limit", value: "\(itemsPerGenre)"),
+                .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear"),
+                .init(name: "EnableUserData", value: "true"),
+            ]
+            var itemReq = URLRequest(url: itemComps.url!)
+            itemReq.setValue(authHeader, forHTTPHeaderField: "Authorization")
+            itemReq.timeoutInterval = 15
+            guard let (itemData, _) = try? await URLSession.arcfin.data(for: itemReq),
+                  let page = try? JSONDecoder().decode(ItemsPage.self, from: itemData),
+                  page.items.count >= 4
+            else { continue }
+            shelves.append((name, page.items.map { $0.toMediaItem() }))
+        }
+        return shelves
+    }
+
     public func getContinueWatching(
         credential: ServerCredential,
         authHeader: String,

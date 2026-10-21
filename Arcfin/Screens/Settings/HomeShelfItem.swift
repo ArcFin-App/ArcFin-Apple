@@ -4,7 +4,7 @@ import Foundation
 
 enum HomeShelf: String, CaseIterable, Identifiable {
     case continueWatching, nextUp, recentlyAddedMovies, recentlyAddedShows
-    case recentlyReleasedMovies, recentlyAiredEpisodes, watchAgain
+    case recentlyReleasedMovies, recentlyAiredEpisodes, watchAgain, genreShelves
     case seerrWatchlist, seerrTrending, seerrPopularMovies, seerrPopularSeries
 
     var id: String { rawValue }
@@ -18,6 +18,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         case .recentlyReleasedMovies: "Recently Released Movies"
         case .recentlyAiredEpisodes:  "Recently Aired Episodes"
         case .watchAgain:             "Watch Again"
+        case .genreShelves:           "Genre Picks"
         case .seerrWatchlist:         "Watchlist"
         case .seerrTrending:          "Trending"
         case .seerrPopularMovies:     "Popular Movies"
@@ -34,6 +35,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         case .recentlyReleasedMovies: "sparkles"
         case .recentlyAiredEpisodes:  "calendar"
         case .watchAgain:             "arrow.counterclockwise"
+        case .genreShelves:           "theatermasks"
         case .seerrWatchlist:         "bookmark"
         case .seerrTrending:          "chart.line.uptrend.xyaxis"
         case .seerrPopularMovies:     "star"

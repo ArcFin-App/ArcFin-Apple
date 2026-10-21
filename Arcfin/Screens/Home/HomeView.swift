@@ -304,6 +304,15 @@ struct HomeView: View {
                     mediaShelfContent(mediaRepo.watchAgain)
                 }
             }
+        case .genreShelves:
+            ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
+                let title = "More \(shelf.genre)"
+                ShelfRow(title: title, onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: title, items: shelf.items)
+                }) {
+                    mediaShelfContent(shelf.items)
+                }
+            }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
                 seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
