@@ -952,6 +952,15 @@ struct HomeView: View {
     }
 #endif
 
+    /// Warms the URL cache with every hero logo, so flipping between slides shows each one
+    /// straight away instead of waiting on a fresh request.
+    private func prefetchHeroLogos() async {
+        for item in heroItems {
+            guard let url = mediaRepo.logoURL(for: item) else { continue }
+            _ = try? await URLSession.shared.data(from: url)
+        }
+    }
+
     private func heroGradient(for index: Int) -> some View {
         let p: [[Color]] = [
             [Color(hex: "1a0a2e"), Color(hex: "0a1628")],
@@ -972,6 +981,10 @@ struct HomeView: View {
                         img.resizable().scaledToFit()
                             .frame(maxWidth: 240 * DT.Scale.font, maxHeight: 76 * DT.Scale.font)
                             .shadow(color: .black.opacity(0.7), radius: 12)
+                    } else if case .empty = phase {
+                        // Still loading: reserve the logo's space but show nothing, so the
+                        // plain-text title doesn't flash up and then swap for the logo.
+                        Color.clear.frame(height: 76 * DT.Scale.font)
                     } else {
                         Text(item.name)
                             .scaledFont(size: 28, weight: .heavy)
@@ -985,6 +998,7 @@ struct HomeView: View {
                 .id(heroIndex)
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.3), value: heroIndex)
+                .task(id: heroItems.map(\.id)) { await prefetchHeroLogos() }
 
                 HStack(spacing: 8) {
                     if let rating = item.communityRating, rating > 0 {
