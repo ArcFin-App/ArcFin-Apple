@@ -434,8 +434,18 @@ struct MediaDetailView: View {
         jellyfinRecommended = nil
         if seerrRelatedItems.isEmpty, item.type == .movie {
             let categories = (try? await client.getMovieRecommendations(credential: cred, authHeader: header)) ?? []
-            jellyfinRecommended = categories.first {
+            let shown = Set(similarItems.map(\.id))
+            // "Because you watched <this title>" is built from the same similarity data as
+            // More Like This above, so only what that row doesn't already show is kept.
+            if let match = categories.first(where: {
                 $0.baselineItemName?.caseInsensitiveCompare(item.name) == .orderedSame
+            }) {
+                let fresh = match.items.filter { !shown.contains($0.id) && $0.id != item.id }
+                if fresh.count >= 3 {
+                    jellyfinRecommended = MovieRecommendationCategory(
+                        id: match.id, recommendationType: match.recommendationType,
+                        baselineItemName: match.baselineItemName, items: fresh)
+                }
             }
         }
 
