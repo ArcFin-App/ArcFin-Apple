@@ -704,6 +704,10 @@ struct HomeView: View {
         .onAppear {
             isHomeVisible = true
             loadHeroVideoBackdrop()
+            #if os(iOS)
+            // Back from any player, however it closed: never leave Home locked in landscape.
+            resetPlayerOrientation()
+            #endif
         }
         .onDisappear { isHomeVisible = false }
         // The order only ever changes while Home is off-screen (tab switch, app backgrounded)

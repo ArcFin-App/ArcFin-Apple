@@ -12,6 +12,8 @@ struct NoConnectionView: View {
     @Environment(MediaRepository.self) private var mediaRepo
 
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
+    @State private var showSwitchServer = false
+    @State private var confirmSignOut = false
 
     private let tips = [
         "Check that Wi-Fi or Mobile Data is turned on",
@@ -89,11 +91,41 @@ struct NoConnectionView: View {
                                 .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.md))
                         }
                         #endif
+
+                        // A way out when the server is gone for good: another saved server,
+                        // or back to sign-in.
+                        #if !os(tvOS)
+                        Button { showSwitchServer = true } label: {
+                            Text("Switch Server")
+                                .font(.system(.subheadline, weight: .semibold))
+                                .foregroundStyle(DT.Color.accent)
+                                .frame(minHeight: 44)
+                        }
+                        #endif
+                        Button("Sign Out", role: .destructive) { confirmSignOut = true }
+                            .font(.system(.subheadline, weight: .semibold))
+                            .frame(minHeight: 44)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, 40)
             }
+        }
+        #if os(iOS)
+        // This screen can replace the app while a landscape player was open.
+        .onAppear { resetPlayerOrientation() }
+        #endif
+        #if !os(tvOS)
+        .sheet(isPresented: $showSwitchServer) {
+            NavigationStack { SwitchServerView() }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        #endif
+        .confirmationDialog("Sign out of this server?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+            Button("Sign Out", role: .destructive) { authManager.signOut() }
+        } message: {
+            Text("You'll need to sign in again to use it. Downloads stay on this device.")
         }
     }
 

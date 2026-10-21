@@ -98,8 +98,11 @@ extension PlayerView {
 
             Spacer()
 
-            #if !os(tvOS)
+            // Portrait has no room beside the title; X-Ray is in the More menu there.
+            #if os(macOS)
             if !castMembers.isEmpty { xRayButton }
+            #elseif !os(tvOS)
+            if !castMembers.isEmpty, isLandscape { xRayButton }
             #endif
 
             #if canImport(UIKit) && !os(tvOS)
@@ -283,6 +286,14 @@ extension PlayerView {
             if syncPlayEnabled {
                 Button { showSyncPlayMenu = true } label: {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
+                }
+            }
+            #endif
+
+            #if !os(tvOS)
+            if !castMembers.isEmpty {
+                Button { openXRay() } label: {
+                    Label("X-Ray: Cast", systemImage: "person.2")
                 }
             }
             #endif
@@ -756,13 +767,15 @@ extension PlayerView {
     // MARK: - X-Ray
 
     #if !os(tvOS)
+    func openXRay() {
+        withAnimation(DT.Animation.fast) {
+            showXRay = true
+            isControlsVisible = false
+        }
+    }
+
     private var xRayButton: some View {
-        Button {
-            withAnimation(DT.Animation.fast) {
-                showXRay = true
-                isControlsVisible = false
-            }
-        } label: {
+        Button { openXRay() } label: {
             Label("X-Ray", systemImage: "person.2.fill")
                 .labelStyle(.titleAndIcon)
                 .font(.system(.caption, weight: .bold))

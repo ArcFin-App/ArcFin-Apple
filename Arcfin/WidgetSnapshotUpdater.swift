@@ -31,13 +31,13 @@ enum WidgetSnapshotUpdater {
         var entries: [WidgetSnapshot.Item] = []
         for item in items.prefix(maxItems) {
             let fileName = await storeImage(prefix: "cw", item: item, url: artworkURL(item))
-            fileName.map { keep.insert($0) }
+            if let fileName { keep.insert(fileName) }
             entries.append(entry(for: item, fileName: fileName))
         }
         var added: [WidgetSnapshot.Item] = []
         for item in recentlyAdded.prefix(maxRecentlyAdded) {
             let fileName = await storeImage(prefix: "ra", item: item, url: posterURL(item))
-            fileName.map { keep.insert($0) }
+            if let fileName { keep.insert(fileName) }
             added.append(entry(for: item, fileName: fileName))
         }
 

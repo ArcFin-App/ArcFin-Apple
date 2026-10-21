@@ -90,7 +90,13 @@ final class MediaRepository {
     private var lastLoadedAt: Date?
     private var lastLoadedUserID: String?
 
+    /// Runs in its own task, so a caller being cancelled (pull to refresh ending, a view
+    /// going away) can't cancel the requests halfway and leave a half-finished load.
     func load(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool = false) async {
+        await Task { await performLoad(credential: credential, authClient: authClient, force: force) }.value
+    }
+
+    private func performLoad(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool) async {
         // Skip if already loaded within the last 60 s for the SAME profile — prevents
         // repeated API bursts when the view re-appears (tab switch, background/foreground).
         // A profile switch always reloads regardless of the cooldown. An explicit
@@ -168,37 +174,60 @@ final class MediaRepository {
         async let favs    = client.getFavorites(credential: credential, authHeader: header)
         async let topUnw  = client.getTopRatedUnwatched(credential: credential, authHeader: header)
 
-        continueWatching       = (try? await cw)     ?? []
-        recentlyAdded          = (try? await la)     ?? []
-        libraries               = (try? await libs)  ?? []
-        topMovies               = (try? await tMov)  ?? []
-        topShows                = (try? await tShow) ?? []
-        playedMovieCount        = (try? await cMov)  ?? 0
-        playedEpisodeCount      = (try? await cEp)   ?? 0
+        // Every result is gathered first and only shown if the server answered: a failed or
+        // cancelled attempt used to replace every shelf with an empty list, which with
+        // nothing left to show swapped the whole app for the "Can't reach your server"
+        // screen, tearing down even a player that was open on top.
         let succeeded: Bool
         do {
-            serverID = try await srvID
+            let id = try await srvID
             succeeded = true
+            serverID = id
         } catch {
             succeeded = false
             // getServerID is the pass/fail gate for the whole load — logged here (rather than
-            // silently swallowed like the other calls above) because "can't reach server" has
+            // silently swallowed like the other calls) because "can't reach server" has
             // recurred across several rounds of fixes without a concrete error to point at.
             let nsError = error as NSError
             Telemetry.logger(category: "MediaRepository").error(
                 "Home load attempt \(attempt, privacy: .public) failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
             )
         }
-        nextUp                  = (try? await nUp)    ?? []
-        recentlyAddedMovies     = (try? await raMov)  ?? []
-        recentlyAddedShows      = (try? await raShow) ?? []
-        recentlyReleasedMovies  = (try? await rrMov)  ?? []
-        recentlyAiredEpisodes   = (try? await raEp)   ?? []
-        watchAgain              = (try? await wAgain) ?? []
-        genreShelves            = (try? await genres) ?? []
-        becauseYouWatched       = await loadBecauseYouWatched(credential: credential, header: header)
-        favorites               = (try? await favs)   ?? []
-        topRatedUnwatched       = (try? await topUnw) ?? []
+        let cwResult = (try? await cw) ?? []
+        let laResult = (try? await la) ?? []
+        let libsResult = (try? await libs) ?? []
+        let tMovResult = (try? await tMov) ?? []
+        let tShowResult = (try? await tShow) ?? []
+        let cMovResult = (try? await cMov) ?? 0
+        let cEpResult = (try? await cEp) ?? 0
+        let nUpResult = (try? await nUp) ?? []
+        let raMovResult = (try? await raMov) ?? []
+        let raShowResult = (try? await raShow) ?? []
+        let rrMovResult = (try? await rrMov) ?? []
+        let raEpResult = (try? await raEp) ?? []
+        let wAgainResult = (try? await wAgain) ?? []
+        let genresResult = (try? await genres) ?? []
+        let favsResult = (try? await favs) ?? []
+        let topUnwResult = (try? await topUnw) ?? []
+        guard succeeded else { return false }
+
+        continueWatching       = cwResult
+        recentlyAdded          = laResult
+        libraries              = libsResult
+        topMovies              = tMovResult
+        topShows               = tShowResult
+        playedMovieCount       = cMovResult
+        playedEpisodeCount     = cEpResult
+        nextUp                 = nUpResult
+        recentlyAddedMovies    = raMovResult
+        recentlyAddedShows     = raShowResult
+        recentlyReleasedMovies = rrMovResult
+        recentlyAiredEpisodes  = raEpResult
+        watchAgain             = wAgainResult
+        genreShelves           = genresResult
+        becauseYouWatched      = await loadBecauseYouWatched(credential: credential, header: header)
+        favorites              = favsResult
+        topRatedUnwatched      = topUnwResult
 
         return succeeded
     }
