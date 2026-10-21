@@ -293,6 +293,14 @@ extension PlayerView {
             Button { showTrackMenu = true } label: {
                 Label("Subtitles & Audio", systemImage: "captions.bubble")
             }
+            if let info = playbackInfo, info.versions.count > 1 {
+                Picker(selection: Binding(get: { info.mediaSourceId }, set: { changeVersion($0) })) {
+                    ForEach(info.versions) { Text($0.name).tag($0.id) }
+                } label: {
+                    Label("Version", systemImage: "square.stack")
+                }
+                .pickerStyle(.menu)
+            }
             Button { showRateMenu = true } label: {
                 Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
             }

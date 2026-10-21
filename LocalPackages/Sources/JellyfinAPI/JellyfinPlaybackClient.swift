@@ -58,6 +58,11 @@ public enum JellyfinPlayMethod: String, Sendable {
     case transcode = "Transcoding"
 }
 
+public struct MediaVersion: Sendable, Identifiable, Equatable, Hashable {
+    public let id: String
+    public let name: String
+}
+
 public struct JellyfinPlaybackInfo: Sendable {
     public let mediaSourceId: String
     public let playURL: URL
@@ -74,6 +79,9 @@ public struct JellyfinPlaybackInfo: Sendable {
     /// forced remux download close to source quality instead of Jellyfin's low default
     /// transcode bitrate when none is specified.
     public let bitrate: Int?
+    /// Every version of the item (e.g. 4K and 1080p files merged into one title), in the
+    /// server's order; one entry when there's only one.
+    public let versions: [MediaVersion]
 
     public var isTranscoding: Bool { playMethod == .transcode }
     public var isDolbyVision: Bool { (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby") }
@@ -121,6 +129,7 @@ extension JellyfinMediaClient {
         credential: ServerCredential,
         authHeader: String,
         itemId: String,
+        mediaSourceId: String? = nil,
         quality: StreamQualityCap = .auto,
         audioStreamIndex: Int? = nil,
         subtitleStreamIndex: Int? = nil,
@@ -153,6 +162,7 @@ extension JellyfinMediaClient {
         }
         if let audioStreamIndex { body["AudioStreamIndex"] = audioStreamIndex }
         if let subtitleStreamIndex { body["SubtitleStreamIndex"] = subtitleStreamIndex }
+        if let mediaSourceId { body["MediaSourceId"] = mediaSourceId }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, resp) = try await URLSession.arcfin.data(for: req)
@@ -161,7 +171,8 @@ extension JellyfinMediaClient {
         }
 
         let decoded = try JSONDecoder().decode(PlaybackInfoResponse.self, from: data)
-        guard let source = decoded.mediaSources.first else { throw URLError(.cannotParseResponse) }
+        guard let source = decoded.mediaSources.first(where: { $0.id == mediaSourceId }) ?? decoded.mediaSources.first
+        else { throw URLError(.cannotParseResponse) }
 
         let playURL: URL
         let playMethod: JellyfinPlayMethod
@@ -219,7 +230,8 @@ extension JellyfinMediaClient {
             defaultSubtitleStreamIndex: subtitleStreams.first(where: \.isDefault)?.index,
             trickplay: source.trickplayInfo?.preferred(),
             videoStream: videoStream,
-            bitrate: source.bitrate ?? videoStream?.bitRate
+            bitrate: source.bitrate ?? videoStream?.bitRate,
+            versions: decoded.mediaSources.map { MediaVersion(id: $0.id, name: $0.name ?? "Version") }
         )
     }
 
@@ -520,9 +532,10 @@ private struct MediaSourceResponse: Decodable {
     let mediaStreams: [MediaStreamStreamResponse]?
     let trickplayInfo: [String: TrickplayResponse]?
     let bitrate: Int?
+    let name: String?
 
     enum CodingKeys: String, CodingKey {
-        case id = "Id", container = "Container", runTimeTicks = "RunTimeTicks"
+        case id = "Id", name = "Name", container = "Container", runTimeTicks = "RunTimeTicks"
         case transcodingUrl = "TranscodingUrl", transcodeReasons = "TranscodeReasons"
         case mediaStreams = "MediaStreams"
         case trickplayInfo = "TrickplayInfo"

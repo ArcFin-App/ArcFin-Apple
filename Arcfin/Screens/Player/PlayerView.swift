@@ -116,6 +116,8 @@ struct PlayerView: View {
     @State var networkToast: String?
     @State var chapters: [MediaChapter] = []
     @State var castMembers: [MediaPerson] = []
+    /// The version picked for a title with several (Merge Versions); nil plays the server's first.
+    @State var selectedMediaSourceId: String?
     @State var showXRay = false
     /// A cast member picked in X-Ray; their page opens over the paused player.
     @State var xRayPerson: MediaPerson?
@@ -865,7 +867,7 @@ struct PlayerView: View {
         }
         do {
             var info = try await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id,
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality)
             )
             // .choose always resolves Auto down to a concrete engine — three outcomes here.
@@ -947,7 +949,7 @@ struct PlayerView: View {
             // a language default that actually changed the pick needs the same re-fetch
             // with explicit indices before the very first play, not just a local index change.
             if languagePreferenceApplied, let reInfo = try? await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id,
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality),
                 audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
             ) {
@@ -1094,7 +1096,7 @@ struct PlayerView: View {
         let posterURL = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
         castLoadTask = Task {
             let info = try? await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id,
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality),
                 audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
                 forCast: true
@@ -1561,6 +1563,15 @@ struct PlayerView: View {
         reload(errorContext: "switch track")
     }
 
+    func changeVersion(_ id: String) {
+        guard id != playbackInfo?.mediaSourceId else { return }
+        selectedMediaSourceId = id
+        // Track indexes belong to a version; the new one picks its own defaults.
+        selectedAudioIndex = nil
+        selectedSubtitleIndex = nil
+        reload(errorContext: "switch version")
+    }
+
     /// Switches to a subtitle the server just fetched from a provider. The server adds it to
     /// the item in the background, so the new track can take a few seconds to be listed.
     func adoptDownloadedSubtitle() {
@@ -1570,7 +1581,7 @@ struct PlayerView: View {
         Task {
             for _ in 0..<5 {
                 if let info = try? await client.getPlaybackInfo(
-                    credential: credential, authHeader: authHeader, itemId: item.id,
+                    credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                     quality: qualityCap(for: quality),
                     audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex),
                    let added = info.subtitleStreams.first(where: { !known.contains($0.index) }) {
@@ -1648,7 +1659,7 @@ struct PlayerView: View {
         Task {
             do {
                 let info = try await client.getPlaybackInfo(
-                    credential: credential, authHeader: authHeader, itemId: item.id,
+                    credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                     quality: qualityCap(for: quality),
                     audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
                 )
