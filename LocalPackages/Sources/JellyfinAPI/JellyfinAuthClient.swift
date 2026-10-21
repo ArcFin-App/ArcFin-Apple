@@ -153,7 +153,16 @@ public struct JellyfinAuthClient: Sendable {
         }
         let rawName: String
         #if os(iOS) || os(tvOS)
-        rawName = MainActor.assumeIsolated { UIDevice.current.name }
+        // UIDevice is main-actor only, and assumeIsolated traps anywhere else. This client is
+        // also created by Siri / Spotlight intents on a background thread, so the name is
+        // remembered whenever it can be read and reused when it can't.
+        let cachedNameKey = "arcfin.cachedDeviceName"
+        if Thread.isMainThread {
+            rawName = MainActor.assumeIsolated { UIDevice.current.name }
+            UserDefaults.standard.set(rawName, forKey: cachedNameKey)
+        } else {
+            rawName = UserDefaults.standard.string(forKey: cachedNameKey) ?? "Arcfin"
+        }
         #elseif os(macOS)
         // Host.current().localizedName is the user-editable "Computer Name" from System
         // Settings > Sharing — unlike UIDevice's iOS device name, this can contain
