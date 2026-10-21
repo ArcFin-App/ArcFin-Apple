@@ -468,34 +468,40 @@ private struct LibraryItemCard: View {
     @State private var hovered = false
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            if let imageURL {
-                CachedAsyncImage(url: imageURL) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: Color(DT.Color.backgroundSecondary)
+        // The card's shape comes from the grid, not the image: a square cover (a playlist's)
+        // filled to the image's own size made the card wider than its column.
+        Color.clear
+            .aspectRatio(2/3, contentMode: .fit)
+            .overlay {
+                if let imageURL {
+                    CachedAsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: Color(DT.Color.backgroundSecondary)
+                        }
                     }
-                }
-                .clipped()
-            } else {
-                DT.Color.backgroundSecondary
-            }
-            LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .top)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(.caption2, design: .default, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                if let year {
-                    Text(year)
-                        .font(.system(.caption2))
-                        .foregroundStyle(.white.opacity(0.6))
+                } else {
+                    DT.Color.backgroundSecondary
                 }
             }
-            .padding(8)
-        }
-        .aspectRatio(2/3, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(alignment: .bottomLeading) {
+                ZStack(alignment: .bottomLeading) {
+                    LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .top)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.system(.caption2, design: .default, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(2)
+                        if let year {
+                            Text(year)
+                                .font(.system(.caption2))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+                    .padding(8)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
                 .stroke(hovered ? DT.Color.accent.opacity(0.4) : Color.white.opacity(0.06), lineWidth: 1)

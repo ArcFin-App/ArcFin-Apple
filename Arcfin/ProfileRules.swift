@@ -194,7 +194,7 @@ final class ProfileRules {
 /// boot (through sleep) and that changing the device's date and time doesn't touch — so the
 /// access schedule can't be dodged by setting the clock back. Falls back to the device clock
 /// only before the server has been reached since the device last restarted.
-enum TrustedClock {
+nonisolated enum TrustedClock {
     private static let serverDateKey = "arcfin.trustedClock.serverDate"
     private static let monotonicKey = "arcfin.trustedClock.monotonic"
 
