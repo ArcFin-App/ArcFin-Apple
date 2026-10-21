@@ -973,7 +973,7 @@ struct LibraryDetailView: View {
     @State private var favoritesOnly = false
     @State private var sortOption: LibrarySortOption = .nameAsc
     @State private var randomPick: MediaItem?
-    @State private var trailerPreviewItem: MediaItem?
+    @State private var trailerLaunchItem: MediaItem?
     @State private var isPickingRandom = false
     /// Set while load() restores the saved sort, so the resulting onChange doesn't fire a
     /// second fetch on top of the initial one.
@@ -1061,16 +1061,7 @@ struct LibraryDetailView: View {
                             .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
 #else
                             .buttonStyle(PressableButtonStyle())
-#if os(iOS)
-                            .highPriorityGesture(
-                                LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                                    HapticManager.impact(.medium)
-                                    trailerPreviewItem = item
-                                }
-                            )
-#else
-                            .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
-#endif
+                            .contextMenu(menuItems: { libraryMenu(item) }, preview: { libraryItemPreview(item) })
 #endif
                             .onAppear {
                                 if shouldLoadMore(after: item) {
@@ -1191,9 +1182,7 @@ struct LibraryDetailView: View {
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
         #if os(iOS)
-        .sheet(item: $trailerPreviewItem) { item in
-            TrailerPreviewSheet(item: item, onDetails: { randomPick = $0 }) { quickLookMenu(item) }
-        }
+        .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
         #endif
         .navigationDestination(item: $randomPick) { pick in
             if pick.type == .boxSet {
@@ -1250,6 +1239,16 @@ struct LibraryDetailView: View {
                 .frame(width: 200, alignment: .leading)
         }
         .padding(DT.Spacing.sm)
+    }
+
+    @ViewBuilder
+    private func libraryMenu(_ item: MediaItem) -> some View {
+        #if os(iOS)
+        Button { trailerLaunchItem = item } label: {
+            Label("Play Trailer", systemImage: "play.rectangle")
+        }
+        #endif
+        quickLookMenu(item)
     }
 
     @ViewBuilder

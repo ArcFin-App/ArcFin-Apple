@@ -166,7 +166,7 @@ struct HomeView: View {
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
     @State private var heroDetailItem: MediaItem?
-    @State private var trailerPreviewItem: MediaItem?
+    @State private var trailerLaunchItem: MediaItem?
     #if !os(tvOS)
     @Namespace private var zoomNamespace
     #endif
@@ -386,16 +386,11 @@ struct HomeView: View {
         .contextMenu { quickLookMenu(item) }
 #else
         .buttonStyle(PressableButtonStyle())
-        // Long press opens the trailer preview sheet (which carries the quick actions in its
-        // ••• menu). A context-menu preview isn't interactive, and a custom-sized one
-        // confused UIKit about which tightly-packed shelf card was actually touched.
-        #if os(iOS)
-        .highPriorityGesture(
-            LongPressGesture(minimumDuration: 0.4).onEnded { _ in showTrailerPreview(item) }
-        )
-        #else
-        .contextMenu { quickLookMenu(item) }
-        #endif
+        // No custom preview: — a preview whose size doesn't match the tiny source card
+        // confuses UIKit's context-menu interaction proxy about which cell was actually
+        // touched in a tightly-packed horizontal shelf, causing taps to land on the
+        // neighboring card instead of the one under your finger.
+        .contextMenu { longPressMenu(item) }
         .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
     }
@@ -686,9 +681,7 @@ struct HomeView: View {
             }
         }
         #if os(iOS)
-        .sheet(item: $trailerPreviewItem) { item in
-            TrailerPreviewSheet(item: item, onDetails: { heroDetailItem = $0 }) { quickLookMenu(item) }
-        }
+        .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
         #endif
         .sheet(item: $seerrRequestItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $seerrRequestItem)
@@ -1184,11 +1177,15 @@ struct HomeView: View {
         }
     }
 
-    private func showTrailerPreview(_ item: MediaItem) {
+    /// The poster long-press menu: the usual quick actions, with Play Trailer on top on iOS.
+    @ViewBuilder
+    private func longPressMenu(_ item: MediaItem) -> some View {
         #if os(iOS)
-        HapticManager.impact(.medium)
-        trailerPreviewItem = item
+        Button { trailerLaunchItem = item } label: {
+            Label("Play Trailer", systemImage: "play.rectangle")
+        }
         #endif
+        quickLookMenu(item)
     }
 
     @ViewBuilder
@@ -1251,13 +1248,7 @@ struct HomeView: View {
                 .contextMenu { quickLookMenu(item) }
 #else
                 .buttonStyle(PressableButtonStyle())
-                #if os(iOS)
-                .highPriorityGesture(
-            LongPressGesture(minimumDuration: 0.4).onEnded { _ in showTrailerPreview(item) }
-        )
-                #else
-                .contextMenu { quickLookMenu(item) }
-                #endif
+                .contextMenu { longPressMenu(item) }
                 .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
             }
