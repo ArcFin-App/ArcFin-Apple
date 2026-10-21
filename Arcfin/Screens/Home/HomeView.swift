@@ -708,6 +708,36 @@ struct HomeView: View {
         }
     }
 
+    /// Opens a title from a widget, Spotlight, Siri or the Top Shelf. Titles that aren't on
+    /// one of Home's shelves (an Up Next episode, a Spotlight result) are fetched by id.
+    private func openDeepLinkItem(id: String) {
+        deepLinkItemID = nil
+        let known = mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded
+        if let local = known.first(where: { $0.id == id }) {
+            heroDetailItem = local
+            return
+        }
+        guard let cred = authManager.state.credential else {
+            deepLinkItemID = id
+            return
+        }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            if let detail = try? await JellyfinMediaClient().getItemDetail(credential: cred, authHeader: header, itemId: id) {
+                heroDetailItem = detail.item
+            }
+        }
+    }
+
+    #if os(iOS)
+    /// The Resume Watching control: plays the most recent title straight away.
+    private func resumeLatest() {
+        guard let item = mediaRepo.continueWatching.first ?? mediaRepo.nextUp.first else { return }
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingResume")
+        quickPlayRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+    }
+    #endif
+
     /// Requests from the last two months whose title has arrived, newest first.
     private var recentlyAvailableRequests: [SeerrRequestItem] {
         let cutoff = Date().addingTimeInterval(-60 * 86_400)
@@ -778,11 +808,14 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-                deepLinkItemID = id
-                heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
-                    ?? mediaRepo.recentlyAdded.first { $0.id == id }
+                openDeepLinkItem(id: id)
             }
         }
+        #if os(iOS)
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
+            resumeLatest()
+        }
+        #endif
         #if os(iOS)
         .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
         .fullScreenCover(item: $quickPlayRequest, onDismiss: { Task { await loadHome(force: true) } }) { request in
@@ -851,10 +884,11 @@ struct HomeView: View {
             ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
         if let id = pendingID {
             UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-            deepLinkItemID = nil
-            heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
-                ?? mediaRepo.recentlyAdded.first { $0.id == id }
+            openDeepLinkItem(id: id)
         }
+        #if os(iOS)
+        if UserDefaults.standard.bool(forKey: "arcfin.pendingResume") { resumeLatest() }
+        #endif
         if seerrRepo.isConfigured && seerrDiscoverEnabled {
             await seerrRepo.loadDiscover()
             await seerrRepo.loadWatchlist()

@@ -24,6 +24,8 @@ extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
     /// Posted by onOpenURL for arcfin://downloads — tapping the download Live Activity.
     static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
+    /// Posted by onOpenURL for arcfin://resume — the Resume Watching control.
+    static let arcfinResume = Notification.Name("arcfinResume")
     /// Posted when a notification about a Seerr request or watchlist item is tapped.
     static let arcfinShowDiscover = Notification.Name("arcfinShowDiscover")
     /// Posted with a "term" in userInfo to show in-app search results (Siri / Shortcuts).
@@ -204,6 +206,16 @@ struct ContentView: View {
             case "downloads":
                 // arcfin://downloads — tapping the download Live Activity.
                 NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
+            case "resume":
+                // Buffered like play: Home reads it once its shelves have loaded.
+                UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
+                NotificationCenter.default.post(name: .arcfinResume, object: nil)
+            #if os(iOS)
+            case "discover":
+                ArcfinRouting.showDiscover()
+            case "search":
+                ArcfinRouting.search(url.pathComponents.dropFirst().first ?? "")
+            #endif
             default:
                 break
             }
