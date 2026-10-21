@@ -2,6 +2,7 @@
 
 #if canImport(UIKit) && !os(tvOS)
 import CoreImage
+import JellyfinAPI
 import SwiftUI
 import UIKit
 
