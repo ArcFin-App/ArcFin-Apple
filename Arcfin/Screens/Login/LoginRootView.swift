@@ -16,17 +16,6 @@ struct LoginRootView: View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
-            VStack {
-                RadialGradient(
-                    colors: [DT.Color.accent.opacity(0.07), .clear],
-                    center: .center, startRadius: 0, endRadius: 200
-                )
-                .frame(height: 300)
-                .blur(radius: 40)
-                Spacer()
-            }
-            .ignoresSafeArea()
-
             switch step {
             case .serverURL:
                 ServerURLView(onConnected: { url, name in
