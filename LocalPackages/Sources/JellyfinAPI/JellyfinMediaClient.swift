@@ -475,6 +475,15 @@ public struct JellyfinMediaClient: Sendable {
         authHeader: String,
         itemId: String
     ) async throws -> MediaItemDetail {
+        try Self.decodeItemDetail(await getItemDetailData(credential: credential, authHeader: authHeader, itemId: itemId))
+    }
+
+    /// The server's response as is, so a download can keep it and show the full page offline.
+    public func getItemDetailData(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String
+    ) async throws -> Data {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"),
             resolvingAgainstBaseURL: false)!
@@ -485,7 +494,11 @@ public struct JellyfinMediaClient: Sendable {
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
-        return try JSONDecoder().decode(ItemDetailResponse.self, from: data).toDetail()
+        return data
+    }
+
+    public static func decodeItemDetail(_ data: Data) throws -> MediaItemDetail {
+        try JSONDecoder().decode(ItemDetailResponse.self, from: data).toDetail()
     }
 
     public func getSimilarItems(

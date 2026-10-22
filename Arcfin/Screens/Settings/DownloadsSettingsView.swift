@@ -13,6 +13,7 @@ struct DownloadsSettingsView: View {
     @AppStorage("smartDownloadsEnabled")       private var smartDownloadsEnabled       = false
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
     @AppStorage("smartDownloadsStorageBudgetGB") private var smartDownloadsStorageBudgetGB = 10
+    @AppStorage("smartDownloadsAllowMobileData") private var smartDownloadsAllowMobileData = false
     @Environment(AuthManager.self) private var authManager
     @Environment(DownloadManager.self) private var downloadManager
     @State private var imageCacheBytes = ImageCache.diskCacheSize
@@ -35,9 +36,7 @@ struct DownloadsSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
-            .onChange(of: wifiOnly) { _, isOn in
-                if !isOn { downloadManager.allowMobileData() }
-            }
+            .onChange(of: wifiOnly) { downloadManager.recheckWiFiHold() }
 
             Section {
                 Toggle("Delete After Watching", isOn: $deleteAfterWatching)
@@ -80,9 +79,15 @@ struct DownloadsSettingsView: View {
                         }
                     }
                     .syncLocked("smartDownloadsStorageBudgetGB", authManager)
+                    Toggle("Use Mobile Data", isOn: $smartDownloadsAllowMobileData)
+                        .syncLocked("smartDownloadsAllowMobileData", authManager)
+                        .onChange(of: smartDownloadsAllowMobileData) { _, isOn in
+                            downloadManager.recheckWiFiHold()
+                            if isOn { downloadManager.refreshSmartDownloads() }
+                        }
                 }
             } footer: {
-                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing watched ones to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, and when you close the player. It never uses mobile data unless Download on Mobile Data is on.")
+                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing watched ones to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, and when you close the player. It only uses mobile data with Use Mobile Data on; charges may apply.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

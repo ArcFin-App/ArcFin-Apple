@@ -2,6 +2,7 @@
 
 import SwiftUI
 import Persistence
+import JellyfinAPI
 
 /// A downloaded movie or episode, laid out like its page online (hero, poster and title,
 /// play, overview, details, cast) from what was saved with the download, so it reads the
@@ -15,6 +16,8 @@ struct DownloadedItemDetailView: View {
     @State private var startOverride: Int64?
     @State private var showDeleteConfirm = false
     @State private var heroTint: Color?
+    /// The server's full page, kept with the download.
+    @State private var saved: MediaItemDetail?
 
     private var isResumable: Bool { item.playbackPositionTicks > 0 && !item.played }
     private var isEpisode: Bool { item.seriesId != nil }
@@ -81,6 +84,7 @@ struct DownloadedItemDetailView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         #endif
         .task(id: item.itemId) {
+            saved = downloadManager.savedDetail(itemId: item.itemId)
             if let url = heroURL { heroTint = await AverageColor.load(from: url) }
         }
         #if os(iOS)
@@ -252,7 +256,20 @@ struct DownloadedItemDetailView: View {
                 .foregroundStyle(DT.Color.textPrimary)
             VStack(spacing: 0) {
                 if !item.genres.isEmpty { detailRow("Genres", item.genres.joined(separator: ", ")) }
+                if let original = saved?.originalTitle, !original.isEmpty, original != item.name {
+                    detailRow("Original Title", original)
+                }
+                if let premiere = saved?.premiereDate ?? saved?.item.premiereDate {
+                    detailRow("Released", premiere.formatted(date: .long, time: .omitted))
+                }
+                if let critics = saved?.criticRating { detailRow("Critics", "\(Int(critics))%") }
                 if !item.directors.isEmpty { detailRow("Director", item.directors.joined(separator: ", ")) }
+                if let writers = saved?.writers, !writers.isEmpty {
+                    detailRow("Writers", writers.map(\.name).joined(separator: ", "))
+                }
+                if let countries = saved?.productionLocations, !countries.isEmpty {
+                    detailRow("Country", countries.joined(separator: ", "))
+                }
                 if !item.studios.isEmpty { detailRow("Studio", item.studios.prefix(2).joined(separator: ", ")) }
                 if let video = item.videoSummary { detailRow("Video", video) }
                 if let audio = item.audioSummary { detailRow("Audio", audio) }

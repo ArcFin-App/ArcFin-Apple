@@ -180,6 +180,7 @@ public enum SettingsSyncRegistry {
         .init("smartDownloadsEnabled", .bool),
         .init("smartDownloadsEpisodeCount", .int),
         .init("smartDownloadsStorageBudgetGB", .int),
+        .init("smartDownloadsAllowMobileData", .bool),
         // Appearance
         .init("reduceMotion", .bool),
         .init("hapticsEnabled", .bool),

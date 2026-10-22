@@ -87,7 +87,12 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private var mobileDataApproved = false
 
     private var isWiFiOnly: Bool { UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true }
-    private var isMobileDataBlocked: Bool { isWiFiOnly && isOnMobileData && !mobileDataApproved }
+    private var smartDownloadsAllowMobileData: Bool { UserDefaults.standard.bool(forKey: "smartDownloadsAllowMobileData") }
+
+    /// Smart Downloads has its own mobile data setting, separate from downloads people start.
+    private func isHeldForWiFi(viaSmart: Bool) -> Bool {
+        isOnMobileData && !mobileDataApproved && (viaSmart ? !smartDownloadsAllowMobileData : isWiFiOnly)
+    }
     /// True background session on iOS — transfer keeps going, managed by nsurlsessiond,
     /// even if the app is suspended or killed; iOS relaunches the app to redeliver the
     /// delegate callback via AppDelegate's handleEventsForBackgroundURLSession. tvOS/macOS
@@ -164,7 +169,12 @@ final class DownloadManager: NSObject {
 
     private func networkChanged(onMobileData: Bool) {
         isOnMobileData = onMobileData
-        guard isWaitingForWiFi, !isMobileDataBlocked else { return }
+        recheckWiFiHold()
+    }
+
+    /// Starts a held queue once the network or the mobile data settings allow it.
+    func recheckWiFiHold() {
+        guard isWaitingForWiFi, let first = pendingQueue.first, !isHeldForWiFi(viaSmart: first.viaSmart) else { return }
         isWaitingForWiFi = false
         Task { await processQueue() }
     }
@@ -340,8 +350,9 @@ final class DownloadManager: NSObject {
     /// Lower-quality downloads need the server's playback info first, so they keep their turn.
     func handOffQueue() {
         #if canImport(UIKit) && !os(tvOS)
-        guard !isQueuePaused, !isMobileDataBlocked else { return }
+        guard !isQueuePaused else { return }
         for entry in pendingQueue where entry.bitrateCap == nil {
+            if isHeldForWiFi(viaSmart: entry.viaSmart) { break }
             let itemId = entry.item.id
             guard !handedOffItemIds.contains(itemId), !isDownloaded(itemId),
                   let dir = try? DownloadStore.ensureDirectory(for: itemId) else { continue }
@@ -452,7 +463,7 @@ final class DownloadManager: NSObject {
 
     // MARK: - Start download
 
-    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?)] = [] {
+    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool)] = [] {
         // pendingQueue itself isn't observed (a tuple array), so the UI reads this mirror.
         didSet { queuedItemIds = pendingQueue.map(\.item.id) }
     }
@@ -526,13 +537,13 @@ final class DownloadManager: NSObject {
     /// time; the rest wait their turn here. `bitrateCap` (bits/sec), when set, forces a
     /// remux even for an otherwise direct-downloadable source — that's the only way to
     /// actually reduce a download's bitrate below the source's own.
-    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil) async {
+    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil, viaSmart: Bool = false) async {
         guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
               !pendingQueue.contains(where: { $0.item.id == item.id })
         else { return }
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
-        pendingQueue.append((item, credential, authHeader, bitrateCap))
+        pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
         if isFreshQueue {
             queueCompletedCount = 0
@@ -552,7 +563,7 @@ final class DownloadManager: NSObject {
         var downloadedEpisode = false
         while !pendingQueue.isEmpty, !isQueuePaused {
             // A title already handed to the background session is transferring regardless.
-            if isMobileDataBlocked, let first = pendingQueue.first, !handedOffItemIds.contains(first.item.id) {
+            if let first = pendingQueue.first, isHeldForWiFi(viaSmart: first.viaSmart), !handedOffItemIds.contains(first.item.id) {
                 isWaitingForWiFi = true
                 #if canImport(ActivityKit) && os(iOS)
                 refreshLiveActivity()
@@ -588,9 +599,10 @@ final class DownloadManager: NSObject {
         #endif
 
         do {
-            async let detailTask = client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
+            async let detailTask = client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: item.id)
             async let playbackTask = client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id)
-            let detail = try await detailTask
+            let detailData = try await detailTask
+            let detail = try JellyfinMediaClient.decodeItemDetail(detailData)
             let info = try await playbackTask
 
             #if canImport(ActivityKit) && os(iOS)
@@ -603,6 +615,7 @@ final class DownloadManager: NSObject {
             #endif
 
             let dir = try DownloadStore.ensureDirectory(for: item.id)
+            try? detailData.write(to: dir.appendingPathComponent(Self.savedDetailFileName))
 
             // Playback is always VLC for downloads, which plays the original file's container/
             // codec natively — no remux needed for compatibility. Only an explicit bitrateCap
@@ -778,9 +791,11 @@ final class DownloadManager: NSObject {
         guard let modelContext else { return }
         let descriptor = FetchDescriptor<DownloadedSeries>(predicate: #Predicate { $0.seriesId == seriesId })
         guard ((try? modelContext.fetchCount(descriptor)) ?? 0) == 0 else { return }
-        guard let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: seriesId),
+        guard let detailData = try? await client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: seriesId),
+              let detail = try? JellyfinMediaClient.decodeItemDetail(detailData),
               let dir = try? DownloadStore.ensureDirectory(for: seriesId)
         else { return }
+        try? detailData.write(to: dir.appendingPathComponent(Self.savedDetailFileName))
 
         var posterFileName: String?
         if let tag = detail.item.primaryImageTag {
@@ -806,6 +821,35 @@ final class DownloadManager: NSObject {
         )
         modelContext.insert(series)
         try? modelContext.save()
+    }
+
+    // MARK: - Saved title pages
+
+    private static let savedDetailFileName = "detail.json"
+
+    /// The title's full page as the server sent it when it was downloaded.
+    func savedDetail(itemId: String) -> MediaItemDetail? {
+        let url = DownloadStore.directory(for: itemId).appendingPathComponent(Self.savedDetailFileName)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JellyfinMediaClient.decodeItemDetail(data)
+    }
+
+    /// Downloads made before the full page was kept with them get it the next time
+    /// Downloads is open with a connection.
+    func saveMissingDetails() async {
+        guard let modelContext, let authManager, let credential = authManager.state.credential else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        let items = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+        let ids = Set(items.map(\.itemId) + items.compactMap(\.seriesId))
+        for id in ids {
+            let url = DownloadStore.directory(for: id).appendingPathComponent(Self.savedDetailFileName)
+            guard !FileManager.default.fileExists(atPath: url.path),
+                  let data = try? await client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: id),
+                  (try? JellyfinMediaClient.decodeItemDetail(data)) != nil,
+                  (try? DownloadStore.ensureDirectory(for: id)) != nil
+            else { continue }
+            try? data.write(to: url)
+        }
     }
 
     func cancelDownload(itemId: String) {
@@ -1015,8 +1059,7 @@ final class DownloadManager: NSObject {
         let globalOn = UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false
         let kept = Self.keptShows
         guard globalOn || !kept.isEmpty else { return }
-        // Never on mobile data with Wi-Fi Only on, even after the queue was allowed it once.
-        guard !(isWiFiOnly && isOnMobileData) else { return }
+        guard !isOnMobileData || smartDownloadsAllowMobileData else { return }
         guard !isRunningSmartDownloads else { return }
         isRunningSmartDownloads = true
         defer { isRunningSmartDownloads = false }
@@ -1063,7 +1106,7 @@ final class DownloadManager: NSObject {
             for episode in nextUp {
                 guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
                 guard totalDownloadedBytes() < budgetBytes else { return }
-                await startDownload(item: episode, credential: credential, authHeader: authHeader)
+                await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
             }
         }
     }

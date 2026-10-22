@@ -463,7 +463,8 @@ struct MediaDetailView: View {
         async let detailTask = client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
         trailers = []
         
-        let fetchedDetail = try? await detailTask
+        // Without a connection, a downloaded title still has its full page from when it was saved.
+        let fetchedDetail = (try? await detailTask) ?? downloadManager.savedDetail(itemId: item.id)
         detail = fetchedDetail
         isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
         likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
@@ -628,11 +629,31 @@ struct MediaDetailView: View {
     }
 
     private var fallbackHero: some View {
-        LinearGradient(
-            colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
+        ZStack {
+            LinearGradient(
+                colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+            #if !os(tvOS)
+            savedArtwork("backdrop.jpg")
+            #endif
+        }
     }
+
+    #if !os(tvOS)
+    /// Artwork kept with a download, for when the server's can't be reached.
+    @ViewBuilder
+    private func savedArtwork(_ fileName: String) -> some View {
+        let url = [item.id, item.seriesId].compactMap { $0 }
+            .map { DownloadStore.directory(for: $0).appendingPathComponent(fileName) }
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+        if let url {
+            CachedAsyncImage(url: url) { phase in
+                if case .success(let image) = phase { image.resizable().scaledToFill() }
+            }
+        }
+    }
+    #endif
 
     // MARK: - Title block
 
@@ -645,7 +666,14 @@ struct MediaDetailView: View {
                     logCategory: "MediaDetailView",
                     logContext: "poster item=\(item.name)",
                     content: { img in img.resizable().scaledToFill() },
-                    placeholder: { RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary) }
+                    placeholder: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
+                            #if !os(tvOS)
+                            savedArtwork("poster.jpg")
+                            #endif
+                        }
+                    }
                 )
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
