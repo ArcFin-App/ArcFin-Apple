@@ -60,7 +60,9 @@ struct SeerrView: View {
             async let discover: Void = seerrRepo.loadDiscover()
             async let genres: Void = seerrRepo.loadGenres()
             async let upcoming: Void = seerrRepo.loadUpcoming()
-            _ = await (discover, genres, upcoming)
+            // The bookmarks on every card read it.
+            async let watchlist: Void = seerrRepo.loadWatchlist()
+            _ = await (discover, genres, upcoming, watchlist)
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)
@@ -130,7 +132,8 @@ struct SeerrView: View {
         .refreshable {
             async let discover: Void = seerrRepo.loadDiscover()
             async let upcoming: Void = seerrRepo.loadUpcoming()
-            _ = await (discover, upcoming)
+            async let watchlist: Void = seerrRepo.loadWatchlist()
+            _ = await (discover, upcoming, watchlist)
             await loadLanguageItems()
         }
         .task(id: mediaType) { await loadLanguageItems() }

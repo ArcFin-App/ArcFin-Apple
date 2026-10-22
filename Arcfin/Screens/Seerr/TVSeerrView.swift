@@ -48,7 +48,8 @@ struct TVSeerrView: View {
             async let discover: Void = seerrRepo.loadDiscover()
             async let genres: Void = seerrRepo.loadGenres()
             async let upcoming: Void = seerrRepo.loadUpcoming()
-            _ = await (discover, genres, upcoming)
+            async let watchlist: Void = seerrRepo.loadWatchlist()
+            _ = await (discover, genres, upcoming, watchlist)
             await seerrRepo.loadRequests()
         }
         .task(id: mediaType) {

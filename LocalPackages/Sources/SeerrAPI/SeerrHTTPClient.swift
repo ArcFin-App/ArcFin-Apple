@@ -261,14 +261,21 @@ public actor SeerrHTTPClient {
 
     /// The user's Seerr watchlist. Only carries tmdbId/mediaType, so each entry is
     /// enriched with title/poster via the same detail lookup used for requests.
-    public func watchlist(limit: Int = 20) async throws -> [SeerrItem] {
+    /// Every page of it: Seerr serves the watchlist 20 at a time and ignores any page size.
+    public func watchlist() async throws -> [SeerrItem] {
         try await ensureAuthenticated()
-        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/discover/watchlist"),
-                                  resolvingAgainstBaseURL: false)!
-        comps.queryItems = [URLQueryItem(name: "take", value: "\(limit)")]
-        let data = try await fetch(comps.url!)
-        struct Page: Decodable { let results: [SeerrWatchlistItemResponse] }
-        let raw = try JSONDecoder().decode(Page.self, from: data).results
+        struct Page: Decodable { let totalPages: Int?; let results: [SeerrWatchlistItemResponse] }
+        var raw: [SeerrWatchlistItemResponse] = []
+        var page = 1
+        while true {
+            var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/discover/watchlist"),
+                                      resolvingAgainstBaseURL: false)!
+            comps.queryItems = [URLQueryItem(name: "page", value: "\(page)")]
+            let decoded = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!))
+            raw += decoded.results
+            guard page < (decoded.totalPages ?? 1), page < 25, !decoded.results.isEmpty else { break }
+            page += 1
+        }
 
         var items = [SeerrItem?](repeating: nil, count: raw.count)
         await withTaskGroup(of: (Int, SeerrItem?).self) { group in
@@ -606,9 +613,9 @@ public actor SeerrHTTPClient {
         let body: [String: Any] = ["tmdbId": tmdbId, "mediaType": mediaType.rawValue, "title": title]
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
-        let (data, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, status) = try await sendWrite(req)
+        // 409: it's already on the watchlist (added on the web, or from another device).
+        guard (200...299).contains(status) || status == 409 else {
             throw SeerrError.requestFailed(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
     }
@@ -622,11 +629,24 @@ public actor SeerrHTTPClient {
         req.httpMethod = "DELETE"
         applyXSRF(to: &req)
         req.timeoutInterval = 15
-        let (data, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, status) = try await sendWrite(req)
+        // 404: it was already taken off.
+        guard (200...299).contains(status) || status == 404 else {
             throw SeerrError.requestFailed(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
+    }
+
+    /// Sends a change, signing in again once if the session has expired, as `fetch` does.
+    private func sendWrite(_ request: URLRequest) async throws -> (Data, Int) {
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        guard http.statusCode == 401 else { return (data, http.statusCode) }
+        isAuthenticated = false
+        try await ensureAuthenticated()
+        var retry = request
+        applyXSRF(to: &retry)
+        let (retryData, retryResponse) = try await session.data(for: retry)
+        return (retryData, (retryResponse as? HTTPURLResponse)?.statusCode ?? -1)
     }
 
     /// Cancels a pending request, or removes a declined/available one from the list —

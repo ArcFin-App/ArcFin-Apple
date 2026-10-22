@@ -6,7 +6,7 @@ import SeerrAPI
 struct WatchlistView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @State private var isLoading = false
-    @State private var requestingItem: SeerrItem? = nil
+    @State private var openedItem: SeerrItem?
 
     private var columns: [GridItem] {
         #if os(macOS)
@@ -45,7 +45,7 @@ struct WatchlistView: View {
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
 #else
-                            Button { requestingItem = item } label: {
+                            Button { openedItem = item } label: {
                                 watchlistCard(item)
                             }
                             .buttonStyle(.plain)
@@ -65,16 +65,12 @@ struct WatchlistView: View {
             isLoading = false
         }
         .refreshable { await seerrRepo.loadWatchlist() }
-        .sheet(item: $requestingItem) { item in
-            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
-                // presentationDetents is an iPhone/iPad card-sheet concept — see the same fix
-                // on the player and Search sheets.
-                #if !os(tvOS)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(.ultraThinMaterial)
-                #endif
+        #if !os(tvOS)
+        // The title's page, as from Discover, where it can be requested or played.
+        .navigationDestination(item: $openedItem) { item in
+            SeerrItemDetailView(item: item)
         }
+        #endif
     }
 
     private func watchlistCard(_ item: SeerrItem) -> some View {
