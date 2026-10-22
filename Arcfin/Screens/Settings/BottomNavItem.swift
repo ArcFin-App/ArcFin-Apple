@@ -49,9 +49,8 @@ enum BottomNavPrefs {
         items.map(\.rawValue).joined(separator: ",")
     }
 
-    /// Defaults to every tab active except Stats (a niche, plugin-dependent screen most
-    /// users won't have configured — visible via Bottom Navigation settings if wanted)
-    /// until the user opts to trim the list themselves.
+    /// Every tab except Stats until the user chooses; Stats is opt-in, from Navigation
+    /// settings (or Appearance on Apple TV).
     static func active(from raw: String) -> Set<BottomNavItem> {
         guard !raw.isEmpty else { return Set(BottomNavItem.allCases).subtracting([.stats]) }
         return Set(raw.split(separator: ",").compactMap { BottomNavItem(rawValue: String($0)) })

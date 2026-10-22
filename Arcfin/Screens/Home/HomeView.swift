@@ -20,6 +20,7 @@ struct MainTabView: View {
     @Bindable private var playlistStore = PlaylistStore.shared
     #if os(tvOS)
     @State private var searchQuery = ""
+    @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     #else
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
@@ -80,8 +81,10 @@ struct MainTabView: View {
                 Tab("Requests", systemImage: "clock") {
                     TVSeerrView()
                 }
-                Tab("Stats", systemImage: "chart.xyaxis.line") {
-                    StatsView()
+                if BottomNavPrefs.active(from: activeString).contains(.stats) {
+                    Tab("Stats", systemImage: "chart.xyaxis.line") {
+                        StatsView()
+                    }
                 }
                 Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                     NavigationStack { SettingsView() }

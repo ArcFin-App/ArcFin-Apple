@@ -15,6 +15,7 @@ struct AppearanceView: View {
     #if os(tvOS)
     @AppStorage("libraryScreensaverEnabled") private var screensaverEnabled = true
     @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
+    @AppStorage(BottomNavPrefs.activeKey) private var activeTabs = ""
     #endif
     @Environment(AuthManager.self) private var authManager
     #if canImport(UIKit) && !os(tvOS)
@@ -123,6 +124,29 @@ struct AppearanceView: View {
                     .textCase(nil)
             } footer: {
                 Text("Shows artwork from your library when the remote hasn't been used for a while, except while something is playing. Press any button to go back. After 30 minutes the Apple TV's own screensaver and sleep settings take over; set Start After shorter than those to see it.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle(isOn: Binding(
+                    get: { BottomNavPrefs.active(from: activeTabs).contains(.stats) },
+                    set: { isOn in
+                        var active = BottomNavPrefs.active(from: activeTabs)
+                        if isOn { active.insert(.stats) } else { active.remove(.stats) }
+                        activeTabs = BottomNavPrefs.encode(active)
+                    }
+                )) {
+                    TVRowLabelText(title: "Stats")
+                }
+                .tvListRow()
+            } header: {
+                Text("Tabs")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Adds a Stats tab with your watch time, habits and favourites, worked out from your Jellyfin watch history.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
