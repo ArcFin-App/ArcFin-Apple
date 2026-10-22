@@ -255,7 +255,7 @@ struct LibraryView: View {
             .background(
                 RoundedRectangle(cornerRadius: DT.Radius.card)
                     .fill(DT.Color.backgroundSecondary)
-                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(Color.white.opacity(0.06), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
             )
         }
         .buttonStyle(.plain)
@@ -298,7 +298,7 @@ struct LibraryView: View {
                         .fill(DT.Color.backgroundSecondary)
                         .overlay(
                             RoundedRectangle(cornerRadius: DT.Radius.card)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                .stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
                         )
                 )
             }
@@ -523,7 +523,7 @@ private struct LibraryItemCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(hovered ? DT.Color.accent.opacity(0.4) : Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(hovered ? DT.Color.accent.opacity(0.4) : DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
         )
         .scaleEffect(hovered ? 1.03 : 1)
         .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
@@ -563,6 +563,11 @@ struct LocalPlayerView: View {
     #endif
 
     var body: some View {
+        bodyContent.alwaysDarkPlayer()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
@@ -1150,6 +1155,7 @@ struct LibraryDetailView: View {
                     }
                     .buttonStyle(.glassProminent)
                     .tint(DT.Color.accent)
+                    .foregroundStyle(DT.Color.onAccent)
                     Spacer()
                 }
                 .screenBackground()
@@ -1163,6 +1169,7 @@ struct LibraryDetailView: View {
                     }
                     .buttonStyle(.glassProminent)
                     .tint(DT.Color.accent)
+                    .foregroundStyle(DT.Color.onAccent)
                     Spacer()
                 }
                 .screenBackground()
@@ -1332,7 +1339,7 @@ struct LibraryDetailView: View {
                     }
                     .frame(width: 380, height: 480)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.1), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                     .shadow(color: .black.opacity(0.3), radius: 30)
                 }
                 .transition(.opacity)
@@ -1522,7 +1529,7 @@ struct LibraryDetailView: View {
 
     private func tvActionLabel(_ title: String, systemImage: String) -> some View {
         TVHeroButtonLabel(icon: systemImage, text: title)
-            .background(Capsule().fill(Color.white.opacity(0.06)))
+            .background(Capsule().fill(DT.Color.textPrimary.opacity(0.06)))
     }
     #endif
 
@@ -1540,6 +1547,7 @@ struct LibraryDetailView: View {
             }
             .buttonStyle(.glassProminent)
             .tint(DT.Color.accent)
+            .foregroundStyle(DT.Color.onAccent)
             Button { shufflePlaylist() } label: {
                 Label("Shuffle", systemImage: "shuffle")
                     .font(.headline)

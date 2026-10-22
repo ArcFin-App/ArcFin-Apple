@@ -38,7 +38,7 @@ struct IntegrationsSettingsView: View {
                         Text("Streamystats")
                         Spacer()
                         if !streamystatsURL.isEmpty {
-                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
                         }
                     }
                 }
@@ -49,7 +49,7 @@ struct IntegrationsSettingsView: View {
                         Text("TMDB")
                         Spacer()
                         if seerrRepo.hasTMDB {
-                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
                         }
                     }
                 }
@@ -67,9 +67,9 @@ struct IntegrationsSettingsView: View {
     @ViewBuilder
     private var seerrStatusPill: some View {
         if seerrRepo.authFailed {
-            Text("Auth Failed").font(.caption2).foregroundStyle(Color(hex: "EF4444"))
+            Text("Auth Failed").font(.caption2).foregroundStyle(DT.Color.palette("EF4444"))
         } else if !seerrURL.isEmpty {
-            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
         }
     }
 }

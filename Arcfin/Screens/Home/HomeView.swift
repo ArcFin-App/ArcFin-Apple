@@ -53,7 +53,6 @@ struct MainTabView: View {
 #if os(tvOS)
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
             NoConnectionView()
-                .preferredColorScheme(.dark)
         } else {
             TabView {
                 Tab("Home", systemImage: "house") {
@@ -92,7 +91,6 @@ struct MainTabView: View {
             // The focus ENGINE still works (remote nav, isFocused env); only
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
-            .preferredColorScheme(.dark)
             .sheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
             }
@@ -100,7 +98,6 @@ struct MainTabView: View {
 #else
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
             NoConnectionView()
-                .preferredColorScheme(.dark)
         } else {
             TabView(selection: $selectedTab) {
                 ForEach(visibleTabs) { tab in
@@ -110,7 +107,6 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
-            .preferredColorScheme(.dark)
             .sheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
                     .presentationDetents([.medium, .large])
@@ -524,7 +520,7 @@ struct HomeView: View {
     private var initialsView: some View {
         Text(authManager.state.displayInitials)
             .font(.system(.caption2, design: .default, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(DT.Color.onAccent)
     }
 
     /// Pulled out of the GeometryReader closure in body — inline ternary + if/else there
@@ -972,7 +968,7 @@ struct HomeView: View {
             HStack(spacing: 12) {
                 Image(systemName: "wifi.slash")
                     .font(.system(.title3))
-                    .foregroundStyle(Color(hex: "f59e0b"))
+                    .foregroundStyle(DT.Color.palette("f59e0b"))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(mediaRepo.isLoading ? "Still trying to reach your server" : "Can't reach your server")
                         .font(.system(.footnote, design: .default, weight: .semibold))
@@ -1009,9 +1005,9 @@ struct HomeView: View {
             #endif
         }
         .padding(12)
-        .background(Color(hex: "f59e0b").opacity(0.1))
+        .background(DT.Color.palette("f59e0b").opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(Color(hex: "f59e0b").opacity(0.25), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.palette("f59e0b").opacity(0.25), lineWidth: 1))
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1233,7 +1229,7 @@ struct HomeView: View {
                             Image(systemName: "star.fill").scaledFont(size: 10)
                             Text(String(format: "%.1f", rating)).scaledFont(size: 12, weight: .semibold)
                         }
-                        .foregroundStyle(Color(hex: "f59e0b"))
+                        .foregroundStyle(DT.Color.palette("f59e0b"))
                     }
                     Text(heroMeta(item))
                         .scaledFont(size: 12)
@@ -1292,7 +1288,7 @@ struct HomeView: View {
                                     .opacity(0.85)
                             }
                         }
-                        .foregroundStyle(.white)
+                        .foregroundStyle(DT.Color.onAccent)
                         .padding(.horizontal, 28).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))

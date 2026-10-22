@@ -114,10 +114,10 @@ struct StatsView: View {
                             .font(.system(.caption2, design: .default, weight: .semibold))
                             .foregroundStyle(selectedPeriod == p ? DT.Color.accent : DT.Color.textSecondary)
                             .padding(.horizontal, 10).padding(.vertical, 4)
-                            .background(selectedPeriod == p ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
+                            .background(selectedPeriod == p ? DT.Color.accent.opacity(0.15) : DT.Color.textPrimary.opacity(0.05))
                             .clipShape(Capsule())
                             .overlay(Capsule().stroke(
-                                selectedPeriod == p ? DT.Color.accent.opacity(0.4) : Color.white.opacity(0.08),
+                                selectedPeriod == p ? DT.Color.accent.opacity(0.4) : DT.Color.textPrimary.opacity(0.08),
                                 lineWidth: 1))
                     }
                     #if os(tvOS)
@@ -184,16 +184,16 @@ struct StatsView: View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.system(.body, design: .default, weight: .heavy))
-                .foregroundStyle(Color(hex: hex))
+                .foregroundStyle(DT.Color.palette(hex))
             Text(label)
                 .font(.system(.caption2, design: .default, weight: .semibold))
                 .tracking(0.3)
                 .foregroundStyle(DT.Color.textSecondary)
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
-        .background(Color(hex: hex).opacity(0.08))
+        .background(DT.Color.palette(hex).opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: hex).opacity(0.15), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.Color.palette(hex).opacity(0.15), lineWidth: 1))
     }
 
     // MARK: - Activity rings
@@ -220,7 +220,7 @@ struct StatsView: View {
     }
 
     private func ringCard(value: Int, label: String, sublabel: String, fraction: Double, hex: String) -> some View {
-        let color = Color(hex: hex)
+        let color = DT.Color.palette(hex)
         return HStack(spacing: 14) {
             ZStack {
                 Circle()
@@ -288,7 +288,7 @@ struct StatsView: View {
             ZStack {
                 Text("\(rank)")
                     .font(.system(.largeTitle, design: .default, weight: .heavy))
-                    .foregroundStyle(.white.opacity(0.06))
+                    .foregroundStyle(DT.Color.textPrimary.opacity(0.06))
                 Text("\(rank)")
                     .font(.system(.caption, design: .default, weight: .heavy))
                     .foregroundStyle(rank == 1 ? DT.Color.accent : DT.Color.textSecondary)
@@ -331,10 +331,10 @@ struct StatsView: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(rank == 1 ? DT.Color.accent.opacity(0.06) : .white.opacity(0.03))
+        .background(rank == 1 ? DT.Color.accent.opacity(0.06) : DT.Color.textPrimary.opacity(0.03))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(
-            rank == 1 ? DT.Color.accent.opacity(0.2) : .white.opacity(0.05), lineWidth: 1))
+            rank == 1 ? DT.Color.accent.opacity(0.2) : DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
         .tvFocusable(cornerRadius: 14)
     }
 
@@ -392,19 +392,19 @@ struct StatsView: View {
                 }
                 Text(movie.name)
                     .font(.system(.caption2, design: .default, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(2)
                 if let year = movie.productionYear {
                     Text(String(year))
                         .font(.system(.caption2))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(DT.Color.textSecondary)
                 }
             }
             .padding(10)
         }
         .frame(width: 120 * cardScale, height: 175 * cardScale)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.07), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.Color.textPrimary.opacity(0.07), lineWidth: 1))
         .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
         .tvFocusable(cornerRadius: 12)
     }

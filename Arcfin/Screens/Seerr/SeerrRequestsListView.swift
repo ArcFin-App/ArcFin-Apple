@@ -159,7 +159,7 @@ struct SeerrRequestsListView: View {
                         .foregroundStyle(DT.Color.textSecondary)
                     Text("·").accessibilityHidden(true)
                         .font(DT.Font.caption2)
-                        .foregroundStyle(.white.opacity(0.2))
+                        .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                     Text(req.requestedAt, style: .date)
                         .font(DT.Font.caption2)
                         .foregroundStyle(DT.Color.textSecondary)
@@ -173,9 +173,9 @@ struct SeerrRequestsListView: View {
             Spacer()
         }
         .padding(.horizontal, 12).padding(.vertical, 11)
-        .background(.white.opacity(0.03))
+        .background(DT.Color.textPrimary.opacity(0.03))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
     private func requestRowPreview(_ req: SeerrRequestItem) -> some View {
@@ -209,7 +209,7 @@ struct SeerrRequestsListView: View {
             .fill(LinearGradient(
                 colors: [DT.Color.accent.opacity(0.08), Color(hex: "0a0a14")],
                 startPoint: .top, endPoint: .bottom))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.06), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
     private func requestStatusPill(_ status: RequestStatus) -> some View {
@@ -226,6 +226,6 @@ struct SeerrRequestsListView: View {
     }
 
     private func statusPillView(label: String, hex: String) -> some View {
-        StatusPill(label: label, color: Color(hex: hex))
+        StatusPill(label: label, color: DT.Color.palette(hex))
     }
 }

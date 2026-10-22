@@ -80,6 +80,7 @@ struct SeerrSetupPromptView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
 
                 Button {
                     onDismiss()
@@ -131,7 +132,7 @@ struct SeerrSetupPromptView: View {
             VStack(spacing: 12) {
                 Button(action: testPassword) {
                     if step == .testing {
-                        ProgressView().tint(.white)
+                        ProgressView().tint(DT.Color.onAccent)
                             .frame(maxWidth: .infinity)
                     } else {
                         Text("Connect")
@@ -142,6 +143,7 @@ struct SeerrSetupPromptView: View {
                 .padding(.vertical, 12)
                 .buttonStyle(.borderedProminent)
                 .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
                 .disabled(password.isEmpty || step == .testing)
 
                 Button {

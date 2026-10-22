@@ -109,7 +109,7 @@ struct SettingsView: View {
                         Text("TMDB")
                         Spacer()
                         if seerrRepo.hasTMDB {
-                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
                         }
                     }
                 }
@@ -121,7 +121,7 @@ struct SettingsView: View {
                         Text("Streamystats")
                         Spacer()
                         if !streamystatsURL.isEmpty {
-                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
                         }
                     }
                 }
@@ -253,7 +253,6 @@ struct SettingsView: View {
             // frame(minWidth: 900) used to force content wider than tvOS's own sheet
             // container, clipping the text on both edges — letting it size naturally fits.
             NavigationStack { TVUsersView() }
-                .preferredColorScheme(.dark)
         }
 #else
         .navigationTitle(authManager.state.credential?.displayName ?? "Settings")
@@ -265,7 +264,6 @@ struct SettingsView: View {
             NavigationStack { UsersView(onExpand: { usersDetent = .large }) }
                 .presentationDetents([.medium, .large], selection: $usersDetent)
                 .presentationDragIndicator(.visible)
-                .preferredColorScheme(.dark)
         }
 #endif
     }
@@ -297,7 +295,7 @@ struct SettingsView: View {
     private func initialsLabel(_ initials: String) -> some View {
         Text(initials)
             .font(.system(.body, design: .rounded, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(DT.Color.onAccent)
     }
 
     private func settingsRow(_ title: String, icon: String) -> some View {
@@ -391,9 +389,9 @@ struct SettingsView: View {
     @ViewBuilder
     private var seerrStatusPill: some View {
         if seerrRepo.authFailed {
-            Text("Auth Failed").font(.caption2).foregroundStyle(Color(hex: "EF4444"))
+            Text("Auth Failed").font(.caption2).foregroundStyle(DT.Color.palette("EF4444"))
         } else if !seerrURL.isEmpty {
-            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
         }
     }
 
@@ -632,7 +630,7 @@ struct SeerrPluginView: View {
             if let result = testResult {
                 Text(result)
                     .font(.caption)
-                    .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                    .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }
@@ -748,7 +746,7 @@ struct StreamystatsPluginView: View {
                 if let result = testResult {
                     Text(result)
                         .font(.caption)
-                        .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                        .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
@@ -897,7 +895,7 @@ struct TVUsersView: View {
                     .shadow(color: isActive ? DT.Color.accent.opacity(0.4) : .clear, radius: 8)
                 Text(initials)
                     .scaledFont(size: 18, weight: .bold, design: .rounded)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
             }
 
             VStack(alignment: .leading, spacing: 4) {

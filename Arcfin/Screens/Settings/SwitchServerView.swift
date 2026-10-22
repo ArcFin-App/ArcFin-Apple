@@ -108,7 +108,7 @@ struct SwitchServerView: View {
                     .frame(width: 42, height: 42)
                 Image(systemName: "server.rack")
                     .font(.system(.body, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.host)

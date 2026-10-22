@@ -64,7 +64,7 @@ struct SeerrRequestDetailView: View {
                     if let error = errorMessage {
                         Text(error)
                             .font(.system(.caption))
-                            .foregroundStyle(Color(hex: "EF4444"))
+                            .foregroundStyle(DT.Color.palette("EF4444"))
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -115,7 +115,7 @@ struct SeerrRequestDetailView: View {
                             }
                         }
                         .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(.white.opacity(0.04))
+                        .background(DT.Color.textPrimary.opacity(0.04))
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
                     }
                 }
@@ -216,7 +216,7 @@ struct SeerrRequestDetailView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(Color(hex: "EF4444").opacity(0.85))
+            .background(DT.Color.palette("EF4444").opacity(0.85))
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
         }
         .disabled(isCancelling)
@@ -240,7 +240,7 @@ struct SeerrRequestDetailView: View {
                 .padding(.vertical, 12)
                 .background(DT.Color.backgroundSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -272,7 +272,7 @@ struct SeerrRequestDetailView: View {
                 }
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
             } else {
                 RoundedRectangle(cornerRadius: 10)
@@ -292,26 +292,26 @@ struct SeerrRequestDetailView: View {
                         .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                     Text("·").accessibilityHidden(true)
-                        .foregroundStyle(.white.opacity(0.2))
+                        .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                     Text(request.requestedAt, style: .date)
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                     if let runtime = detail?.runtimeMinutes {
                         Text("·").accessibilityHidden(true)
-                            .foregroundStyle(.white.opacity(0.2))
+                            .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         Text("\(runtime) min")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let rating = detail?.voteAverage, rating > 0 {
                         Text("·").accessibilityHidden(true)
-                            .foregroundStyle(.white.opacity(0.2))
+                            .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(.caption2))
                             Text(String(format: "%.1f", rating))
                         }
                         .font(.system(.caption2))
-                        .foregroundStyle(Color(hex: "f59e0b"))
+                        .foregroundStyle(DT.Color.palette("f59e0b"))
                     }
                 }
                 // Lets HStack compress/truncate these Text children when every optional
@@ -346,7 +346,7 @@ struct SeerrRequestDetailView: View {
             }
         }
         .padding(12)
-        .background(.white.opacity(0.04))
+        .background(DT.Color.textPrimary.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
     }
 
@@ -366,11 +366,11 @@ struct SeerrRequestDetailView: View {
     private func statusPillView(label: String, hex: String) -> some View {
         Text(label)
             .font(.system(.caption2, design: .default, weight: .bold))
-            .foregroundStyle(Color(hex: hex))
+            .foregroundStyle(DT.Color.palette(hex))
             .padding(.horizontal, 10).padding(.vertical, 4)
-            .background(Color(hex: hex).opacity(0.15))
+            .background(DT.Color.palette(hex).opacity(0.15))
             .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+            .overlay(Capsule().stroke(DT.Color.palette(hex).opacity(0.3), lineWidth: 1))
     }
 
     private func cancel() {

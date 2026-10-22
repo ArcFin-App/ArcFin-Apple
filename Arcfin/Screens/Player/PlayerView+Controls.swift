@@ -80,7 +80,7 @@ extension PlayerView {
                             .foregroundStyle(hdrIsToneMapped ? .black : .white)
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .background(
-                                hdrIsToneMapped ? Color(hex: "F59E0B") : Color.clear,
+                                hdrIsToneMapped ? DT.Color.palette("F59E0B") : Color.clear,
                                 in: Capsule()
                             )
                             .overlay(
@@ -2074,7 +2074,7 @@ extension PlayerView {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(.largeTitle))
-                .foregroundStyle(Color(hex: "EF4444"))
+                .foregroundStyle(DT.Color.palette("EF4444"))
             Text(message)
                 .font(.system(.footnote))
                 .foregroundStyle(.white)

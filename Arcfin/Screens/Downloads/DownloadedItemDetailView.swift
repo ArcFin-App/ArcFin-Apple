@@ -120,7 +120,7 @@ struct DownloadedItemDetailView: View {
             }
             .frame(width: isEpisode ? 150 : 90, height: isEpisode ? 84 : 132)
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
             .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
 
             VStack(alignment: .leading, spacing: 5) {
@@ -176,6 +176,7 @@ struct DownloadedItemDetailView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
 
                 if isResumable {
                     Button {

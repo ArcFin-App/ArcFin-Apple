@@ -208,9 +208,9 @@ struct CollectionDetailView: View {
             Button { playThrough() } label: {
                 Label(playLabel, systemImage: "play.fill")
                     .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(DT.Color.backgroundPrimary)
                     .frame(maxWidth: .infinity, minHeight: 46)
-                    .background(.white, in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                    .background(DT.Color.textPrimary, in: RoundedRectangle(cornerRadius: DT.Radius.md))
             }
             .buttonStyle(PressableButtonStyle())
             Button { shuffle() } label: {
@@ -218,7 +218,7 @@ struct CollectionDetailView: View {
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .frame(maxWidth: .infinity, minHeight: 46)
-                    .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                    .background(DT.Color.textPrimary.opacity(0.1), in: RoundedRectangle(cornerRadius: DT.Radius.md))
             }
             .buttonStyle(PressableButtonStyle())
         }

@@ -142,7 +142,7 @@ struct TVSeerrItemDetailView: View {
                     Image(systemName: "star.fill").font(.system(size: 16))
                     Text(String(format: "%.1f", rating)).font(.system(size: 23, weight: .bold))
                 }
-                .foregroundStyle(Color(hex: "f59e0b"))
+                .foregroundStyle(DT.Color.palette("f59e0b"))
             }
             if let statusLabel {
                 Text(statusLabel.label)

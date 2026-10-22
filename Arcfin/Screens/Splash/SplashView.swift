@@ -35,6 +35,11 @@ struct SplashView: View {
     private let logoSize: CGFloat = 132
 
     var body: some View {
+        bodyContent.alwaysDark()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 

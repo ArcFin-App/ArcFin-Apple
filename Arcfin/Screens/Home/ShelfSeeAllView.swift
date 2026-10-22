@@ -105,7 +105,7 @@ private struct ShelfSeeAllCard: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(
                 RoundedRectangle(cornerRadius: DT.Radius.card)
-                    .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(hovered ? DT.Color.accent.opacity(0.35) : DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
             )
             .scaleEffect(hovered ? 1.03 : 1)
             .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)

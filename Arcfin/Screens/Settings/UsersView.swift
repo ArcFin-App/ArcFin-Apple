@@ -238,7 +238,7 @@ struct ProfileRowContent: View {
                     .shadow(color: isActive ? DT.Color.accent.opacity(0.35) : .clear, radius: 8)
                 Text(initials)
                     .font(.system(.body, design: .rounded, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
             }
 
             // Info

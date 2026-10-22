@@ -66,11 +66,11 @@ struct NoConnectionView: View {
                             retry()
                         } label: {
                             HStack(spacing: 8) {
-                                if mediaRepo.isLoading { ProgressView().tint(.white) }
+                                if mediaRepo.isLoading { ProgressView().tint(DT.Color.onAccent) }
                                 Text(mediaRepo.isLoading ? "Retrying…" : "Retry")
                             }
                             .font(.system(.subheadline, design: .default, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DT.Color.onAccent)
                             .frame(maxWidth: 340)
                             .frame(height: 48)
                             .background(DT.Color.accent, in: RoundedRectangle(cornerRadius: DT.Radius.md))

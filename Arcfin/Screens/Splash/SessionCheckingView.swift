@@ -19,6 +19,11 @@ struct SessionCheckingView: View {
     @State private var isOffline = false
 
     var body: some View {
+        bodyContent.alwaysDark()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
@@ -42,6 +47,7 @@ struct SessionCheckingView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(DT.Color.accent)
+                        .foregroundStyle(DT.Color.onAccent)
                         Button(action: onSignInManually) {
                             Text("Sign In Instead")
                                 .font(.system(.subheadline, design: .default, weight: .medium))

@@ -179,7 +179,7 @@ struct MediaDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
+                        .foregroundStyle(isFavorite ? DT.Color.palette("EF4444") : DT.Color.textPrimary)
                 }
                 .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
@@ -192,7 +192,7 @@ struct MediaDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
                         Image(systemName: "square.and.arrow.up")
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DT.Color.textPrimary)
                     }
                     .accessibilityLabel("Share")
                 }
@@ -221,7 +221,7 @@ struct MediaDetailView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
+                        .foregroundStyle(isFavorite ? DT.Color.palette("EF4444") : DT.Color.textPrimary)
                 }
                 .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
                 .help(isFavorite ? "Remove from Favorites" : "Add to Favorites")
@@ -684,7 +684,7 @@ struct MediaDetailView: View {
                 )
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
             } else {
                 RoundedRectangle(cornerRadius: 10)
@@ -723,7 +723,7 @@ struct MediaDetailView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
                 Text(rating)
                     .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
@@ -731,13 +731,13 @@ struct MediaDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
                 Text("\(mins)m")
                     .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
                         .font(.system(.caption2))
@@ -748,7 +748,7 @@ struct MediaDetailView: View {
                 }
             }
             if let critics = detail?.criticRating {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     // Positive at 60% and up, the usual critics threshold.
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill")
@@ -756,7 +756,7 @@ struct MediaDetailView: View {
                     Text("\(Int(critics.rounded()))%")
                         .font(.system(.caption2, design: .default, weight: .bold))
                 }
-                .foregroundStyle(critics >= 60 ? Color(hex: "10b981") : Color(hex: "f59e0b"))
+                .foregroundStyle(critics >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Critics score \(Int(critics.rounded())) percent")
             }
@@ -777,10 +777,10 @@ struct MediaDetailView: View {
 
     private var qualityRow: some View {
         HStack(spacing: 6) {
-            if detail?.is4K == true { qualityBadge("4K", color: Color(hex: "06B6D4")) }
-            if detail?.isHDR == true { qualityBadge("HDR", color: Color(hex: "F59E0B")) }
+            if detail?.is4K == true { qualityBadge("4K", color: DT.Color.palette("06B6D4")) }
+            if detail?.isHDR == true { qualityBadge("HDR", color: DT.Color.palette("F59E0B")) }
             if let codec = detail?.videoStream?.codec?.uppercased() {
-                qualityBadge(codec, color: Color(hex: "8B5CF6"))
+                qualityBadge(codec, color: DT.Color.palette("8B5CF6"))
             }
         }
     }
@@ -804,7 +804,7 @@ struct MediaDetailView: View {
                 .font(.system(.caption2, design: .default, weight: .semibold))
                 .lineLimit(1)
         }
-        .foregroundStyle(Color(hex: "f59e0b"))
+        .foregroundStyle(DT.Color.palette("f59e0b"))
     }
 
     private func qualityBadge(_ label: String, color: Color) -> some View {
@@ -914,7 +914,7 @@ struct MediaDetailView: View {
                         }
                     }
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(DT.Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, playDetailLine == nil ? 14 : 10)
                 .background(LinearGradient(
@@ -935,7 +935,7 @@ struct MediaDetailView: View {
                         .frame(width: 48, height: 48)
                         .background(DT.Color.backgroundSecondary)
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
                 }
                 .accessibilityLabel("Start over")
                 .buttonStyle(.plain)
@@ -974,7 +974,7 @@ struct MediaDetailView: View {
                 .padding(.vertical, 12)
                 .background(DT.Color.backgroundSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -1013,9 +1013,9 @@ struct MediaDetailView: View {
                             .font(.system(.caption2, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                             .padding(.horizontal, 12).padding(.vertical, 5)
-                            .background(.white.opacity(0.05))
+                            .background(DT.Color.textPrimary.opacity(0.05))
                             .clipShape(Capsule())
-                            .overlay(Capsule().stroke(.white.opacity(0.08), lineWidth: 1))
+                            .overlay(Capsule().stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -1281,9 +1281,9 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(.white.opacity(0.03))
+                .background(DT.Color.textPrimary.opacity(0.03))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
             }
 #if os(tvOS)
             .buttonStyle(TVCardButtonStyle())
@@ -1322,7 +1322,7 @@ struct MediaDetailView: View {
                             Color.black.opacity(0.45)
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(.title2))
-                                .foregroundStyle(Color(hex: "10b981"))
+                                .foregroundStyle(DT.Color.palette("10b981"))
                         } else if pct > 0 {
                             VStack(spacing: 0) {
                                 Spacer()
@@ -1378,9 +1378,9 @@ struct MediaDetailView: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(.white.opacity(0.03))
+            .background(DT.Color.textPrimary.opacity(0.03))
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .contextMenu(menuItems: {
@@ -1473,7 +1473,7 @@ struct MediaDetailView: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .foregroundStyle(.white)
+                .foregroundStyle(DT.Color.textPrimary)
         }
         .accessibilityLabel("More")
     }
@@ -1488,7 +1488,7 @@ struct MediaDetailView: View {
             }
         } label: {
             Image(systemName: likes == true ? "hand.thumbsup.fill" : likes == false ? "hand.thumbsdown.fill" : "hand.thumbsup")
-                .foregroundStyle(.white)
+                .foregroundStyle(DT.Color.textPrimary)
         }
         .accessibilityLabel("Rate")
         .accessibilityValue(likes == true ? "Liked" : likes == false ? "Disliked" : "Not rated")
@@ -1733,7 +1733,7 @@ struct CastPersonCard<Placeholder: View>: View {
             }
             .frame(width: 60, height: 60)
             .clipShape(Circle())
-            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : Color.white.opacity(0.1), lineWidth: hovered ? 2 : 1))
+            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : DT.Color.textPrimary.opacity(0.1), lineWidth: hovered ? 2 : 1))
             .scaleEffect(hovered ? 1.06 : 1)
 
             Text(name)

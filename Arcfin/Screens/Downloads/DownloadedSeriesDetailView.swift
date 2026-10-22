@@ -63,7 +63,7 @@ struct DownloadedSeriesDetailView: View {
                                     Text(String(format: "%.1f", rating))
                                 }
                                 .font(.system(.caption2))
-                                .foregroundStyle(Color(hex: "f59e0b"))
+                                .foregroundStyle(DT.Color.palette("f59e0b"))
                             }
                         }
 
@@ -211,7 +211,7 @@ struct DownloadedSeriesDetailView: View {
                 }
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
 
                 VStack(alignment: .leading, spacing: 5) {
@@ -246,7 +246,7 @@ struct DownloadedSeriesDetailView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(Color.white.opacity(0.08), in: Capsule())
+            .background(DT.Color.textPrimary.opacity(0.08), in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -343,7 +343,7 @@ struct DownloadedSeriesDetailView: View {
             Spacer()
             Image(systemName: episode.played ? "checkmark.circle.fill" : "play.circle")
                 .font(.system(.title3))
-                .foregroundStyle(episode.played ? Color(hex: "10b981") : DT.Color.textSecondary)
+                .foregroundStyle(episode.played ? DT.Color.palette("10b981") : DT.Color.textSecondary)
         }
     }
 
@@ -402,7 +402,7 @@ struct DownloadedSeriesDetailView: View {
         }
         .frame(width: 80, height: 46)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.06), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
     private func episodeLabel(_ episode: DownloadedItem) -> String {

@@ -54,7 +54,7 @@ struct TMDBSettingsView: View {
                 if let result = testResult {
                     Text(result)
                         .font(.caption)
-                        .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                        .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }

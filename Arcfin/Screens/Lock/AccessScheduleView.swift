@@ -50,6 +50,7 @@ struct AccessScheduleView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
                 .controlSize(.large)
             }
         }

@@ -21,7 +21,7 @@ struct ShelfRow<Content: View>: View {
                     Text(badge)
                         .font(.system(.caption2, design: .default, weight: .bold))
                         .tracking(0.5)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(DT.Color.textPrimary)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 2)
 #if os(tvOS)
@@ -45,7 +45,7 @@ struct ShelfRow<Content: View>: View {
 #else
                     Button("See All", action: onSeeAll)
                         .font(.system(.caption2, design: .default, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(DT.Color.textPrimary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         // Untinted: tint is kept for the page's main action, not every shelf's.

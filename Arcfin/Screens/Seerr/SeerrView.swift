@@ -178,11 +178,11 @@ struct SeerrView: View {
                 .font(.system(.caption2, design: .default, weight: isSelected ? .bold : .regular))
                 .foregroundStyle(isSelected ? DT.Color.accent : DT.Color.textSecondary)
                 .padding(.horizontal, 14).padding(.vertical, 5)
-                .background(isSelected ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
+                .background(isSelected ? DT.Color.accent.opacity(0.15) : DT.Color.textPrimary.opacity(0.05))
                 .background(.ultraThinMaterial)
                 .clipShape(Capsule())
                 .overlay(Capsule().stroke(
-                    isSelected ? DT.Color.accent.opacity(0.45) : Color.white.opacity(0.08),
+                    isSelected ? DT.Color.accent.opacity(0.45) : DT.Color.textPrimary.opacity(0.08),
                     lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -208,7 +208,7 @@ struct SeerrView: View {
         VStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.title2)
-                .foregroundStyle(Color(hex: "f59e0b"))
+                .foregroundStyle(DT.Color.palette("f59e0b"))
             Text("Couldn't load Discover from Seerr")
                 .font(.headline)
                 .foregroundStyle(DT.Color.textPrimary)
@@ -465,7 +465,7 @@ struct SeerrView: View {
         }
         .aspectRatio(2/3, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
     private func posterPlaceholder(item: SeerrItem) -> some View {
@@ -475,7 +475,7 @@ struct SeerrView: View {
     }
 
     private func availabilityPill(label: String, hex: String) -> some View {
-        StatusPill(label: label, color: Color(hex: hex))
+        StatusPill(label: label, color: DT.Color.palette(hex))
     }
 
     // MARK: - Loading skeleton

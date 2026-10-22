@@ -286,7 +286,7 @@ private struct SearchResultCard: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(
                 RoundedRectangle(cornerRadius: DT.Radius.card)
-                    .stroke(isFocused ? DT.Color.accent : (hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06)),
+                    .stroke(isFocused ? DT.Color.accent : (hovered ? DT.Color.accent.opacity(0.35) : DT.Color.textPrimary.opacity(0.06)),
                             lineWidth: isFocused ? 3 : 1)
             )
             .scaleEffect(isFocused ? 1.06 : (hovered ? 1.03 : 1))

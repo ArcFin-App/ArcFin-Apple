@@ -80,7 +80,7 @@ struct FannedPosters: View {
                 }
                 .frame(width: 92, height: 138)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.12), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.12), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 10, y: 4)
                 .rotationEffect(.degrees(Double(index) * 6))
                 .offset(x: CGFloat(index) * 14, y: CGFloat(index) * -4)

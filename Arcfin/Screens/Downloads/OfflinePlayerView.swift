@@ -76,6 +76,11 @@ struct OfflinePlayerView: View {
     private var dir: URL { DownloadStore.directory(for: downloadedItem.itemId) }
 
     var body: some View {
+        bodyContent.alwaysDarkPlayer()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 

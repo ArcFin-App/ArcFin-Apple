@@ -90,7 +90,7 @@ struct LoginTextField: View {
             .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(error != nil ? Color.red.opacity(0.6) : Color.white.opacity(0.08), lineWidth: 1)
+                    .stroke(error != nil ? Color.red.opacity(0.6) : DT.Color.textPrimary.opacity(0.08), lineWidth: 1)
             )
             .animation(DT.Animation.fast, value: isValid)
 
@@ -137,7 +137,7 @@ struct LoginRowGroup<Content: View>: View {
                 Group(subviews: content) { subviews in
                     ForEach(Array(subviews.enumerated()), id: \.offset) { index, subview in
                         if index > 0 {
-                            Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 56)
+                            Divider().overlay(DT.Color.textPrimary.opacity(0.06)).padding(.leading, 56)
                         }
                         subview
                     }
@@ -197,7 +197,7 @@ struct LoginPrimaryButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                if isBusy { ProgressView().tint(.white) }
+                if isBusy { ProgressView().tint(DT.Color.onAccent) }
                 Text(isBusy ? (busyTitle ?? title) : title)
                     .font(.headline)
             }
@@ -206,6 +206,7 @@ struct LoginPrimaryButton: View {
         }
         .buttonStyle(.glassProminent)
         .tint(DT.Color.accent)
+        .foregroundStyle(DT.Color.onAccent)
         .controlSize(.large)
         .disabled(isBusy || isDisabled)
     }

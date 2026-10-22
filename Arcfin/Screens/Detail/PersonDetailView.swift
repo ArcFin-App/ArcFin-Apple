@@ -167,7 +167,7 @@ struct PersonDetailView: View {
             }
             .frame(width: 140, height: 140)
             .clipShape(Circle())
-            .overlay(Circle().stroke(.white.opacity(0.1), lineWidth: 1))
+            .overlay(Circle().stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
             .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
 
             Text(person.name)

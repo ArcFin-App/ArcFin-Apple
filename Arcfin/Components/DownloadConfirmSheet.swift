@@ -75,7 +75,7 @@ struct DownloadConfirmSheet: View {
     }
 
     private var divider: some View {
-        Divider().overlay(.white.opacity(0.06))
+        Divider().overlay(DT.Color.textPrimary.opacity(0.06))
     }
 
     var body: some View {
@@ -127,7 +127,7 @@ struct DownloadConfirmSheet: View {
                                 row(label: "Converted", value: "Yes — offline quality change")
                             }
                         }
-                        .background(.white.opacity(0.04))
+                        .background(DT.Color.textPrimary.opacity(0.04))
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
 
                         if preview.willRemux || selectedOption.bitrate != nil {
@@ -145,7 +145,7 @@ struct DownloadConfirmSheet: View {
                 } label: {
                     Text("Download")
                         .font(.system(.subheadline, design: .default, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(DT.Color.onAccent)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent], startPoint: .topLeading, endPoint: .bottomTrailing))

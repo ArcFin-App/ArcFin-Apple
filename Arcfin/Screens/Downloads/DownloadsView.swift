@@ -305,7 +305,7 @@ struct DownloadsView: View {
     private var cardBackground: some View {
         RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous)
             .fill(DT.Color.backgroundSecondary)
-            .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous).stroke(.white.opacity(0.06), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
     private func sectionHeader(_ title: String, count: Int? = nil) -> some View {
@@ -344,6 +344,7 @@ struct DownloadsView: View {
             Button("Start") { showMobileDataConfirm = true }
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
                 .accessibilityHint("Starts the downloads now")
         }
         .padding(16)
@@ -668,7 +669,7 @@ private struct PosterTile: View {
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous)
-                        .stroke(selection == true ? DT.Color.accent : .white.opacity(0.08), lineWidth: selection == true ? 2 : 1)
+                        .stroke(selection == true ? DT.Color.accent : DT.Color.textPrimary.opacity(0.08), lineWidth: selection == true ? 2 : 1)
                 )
                 .opacity(selection == false ? 0.7 : 1)
             Text(title)
@@ -757,7 +758,7 @@ private struct ContinueCard: View {
         }
         .frame(width: DT.Size.backdropCard.width, height: DT.Size.backdropCard.height)
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous).stroke(.white.opacity(0.08), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Resume \(item.seriesName.map { "\($0), \(item.name)" } ?? item.name)")

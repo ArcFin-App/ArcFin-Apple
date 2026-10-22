@@ -32,6 +32,11 @@ struct YouTubeTrailerPlayerView: View {
     }
 
     var body: some View {
+        bodyContent.alwaysDarkPlayer()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
 

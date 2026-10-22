@@ -47,9 +47,9 @@ struct DownloadButton: View {
         } label: {
             ZStack {
                 if isLoadingPreview {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(DT.Color.textPrimary)
                 } else if let progress {
-                    Circle().stroke(.white.opacity(0.2), lineWidth: 2)
+                    Circle().stroke(DT.Color.textPrimary.opacity(0.2), lineWidth: 2)
                     Circle()
                         .trim(from: 0, to: max(progress, 0.02))
                         .stroke(DT.Color.accent, style: StrokeStyle(lineWidth: 2, lineCap: .round))
@@ -59,11 +59,11 @@ struct DownloadButton: View {
                 } else if isQueued {
                     Image(systemName: "clock")
                         .font(.system(.body, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(DT.Color.textPrimary.opacity(0.7))
                 } else {
                     Image(systemName: isDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
                         .font(.system(.title3, weight: .semibold))
-                        .foregroundStyle(isDownloaded ? Color(hex: "10b981") : .white)
+                        .foregroundStyle(isDownloaded ? DT.Color.palette("10b981") : DT.Color.textPrimary)
                 }
             }
             .frame(width: 30, height: 30)

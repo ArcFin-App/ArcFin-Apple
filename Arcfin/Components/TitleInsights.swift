@@ -68,18 +68,18 @@ struct TitleInsights: View {
                 if let score = ratings.criticsScore {
                     scoreChip(
                         systemImage: score >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill",
-                        tint: score >= 60 ? Color(hex: "10b981") : Color(hex: "f59e0b"),
+                        tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
                         value: "\(score)%", label: ratings.criticsRating ?? "Critics",
                         url: ratings.rottenTomatoesURL)
                 }
                 if let score = ratings.audienceScore {
                     scoreChip(
                         systemImage: "person.3.fill",
-                        tint: score >= 60 ? Color(hex: "10b981") : Color(hex: "f59e0b"),
+                        tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
                         value: "\(score)%", label: "Audience", url: ratings.rottenTomatoesURL)
                 }
                 if let imdb = ratings.imdbScore {
-                    scoreChip(systemImage: "star.fill", tint: Color(hex: "f5c518"),
+                    scoreChip(systemImage: "star.fill", tint: DT.Color.palette("f5c518"),
                               value: String(format: "%.1f", imdb), label: "IMDb", url: ratings.imdbURL)
                 }
             }
@@ -181,7 +181,7 @@ struct TitleInsights: View {
                                 }
                                 .frame(width: logoSize, height: logoSize)
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.white.opacity(0.08), lineWidth: 1))
+                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
                                 Text(provider.name)
                                     .font(.caption2)
                                     .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
@@ -250,7 +250,7 @@ struct TitleInsights: View {
                 .foregroundStyle(DT.Color.textPrimary)
             VStack(spacing: 0) {
                 ForEach(Array(detailRows.enumerated()), id: \.offset) { index, row in
-                    if index > 0 { Divider().overlay(Color.white.opacity(0.05)).padding(.leading, 14) }
+                    if index > 0 { Divider().overlay(DT.Color.textPrimary.opacity(0.05)).padding(.leading, 14) }
                     HStack(alignment: .firstTextBaseline) {
                         Text(row.0)
                             .font(.system(.footnote, weight: .semibold))
@@ -294,7 +294,7 @@ struct TitleInsights: View {
                             .font(.footnote.weight(.semibold))
                             .padding(.horizontal, 12)
                             .frame(minHeight: 36)
-                            .background(Color.white.opacity(0.08), in: Capsule())
+                            .background(DT.Color.textPrimary.opacity(0.08), in: Capsule())
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(DT.Color.textPrimary)

@@ -53,7 +53,7 @@ struct ServerSettingsView: View {
                 } else if let infoError {
                     Text(infoError)
                         .font(.caption)
-                        .foregroundStyle(Color(hex: "EF4444"))
+                        .foregroundStyle(DT.Color.palette("EF4444"))
                 }
             } header: {
                 Label("Public Server Info", systemImage: "server.rack")

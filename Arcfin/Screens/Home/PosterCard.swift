@@ -154,7 +154,7 @@ struct PosterCard: View {
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
         .overlay(
             RoundedRectangle(cornerRadius: DT.Radius.card)
-                .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(hovered ? DT.Color.accent.opacity(0.35) : DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
         )
         .scaleEffect(hovered ? 1.04 : 1)
         .shadow(
@@ -260,7 +260,7 @@ struct RequestCard: View {
         }
         .frame(width: 140, height: 80)
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 }
 
@@ -271,8 +271,8 @@ enum CardRequestStatus: String {
 
     var color: Color {
         switch self {
-        case .approved, .available: Color(hex: "10b981")
-        case .pending:              Color(hex: "f59e0b")
+        case .approved, .available: DT.Color.palette("10b981")
+        case .pending:              DT.Color.palette("f59e0b")
         case .downloading:          DT.Color.accent
         }
     }

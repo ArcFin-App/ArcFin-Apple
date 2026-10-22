@@ -253,9 +253,10 @@ struct ContentView: View {
         }
         .animation(DT.Animation.standard, value: phase)
         .animation(DT.Animation.standard, value: isAppLocked)
-        .preferredColorScheme(.dark)
 #if os(tvOS)
         .focusEffectDisabled()
+        // Apple TV stays dark: its screens are full-bleed artwork, like the system TV app.
+        .preferredColorScheme(.dark)
 #endif
         .environment(authManager)
         .environment(mediaRepo)

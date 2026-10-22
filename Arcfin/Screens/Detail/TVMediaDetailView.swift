@@ -220,19 +220,19 @@ struct TVMediaDetailView: View {
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill").font(.system(size: 16))
                     Text("\(Int(critics.rounded()))%").font(.system(size: 23, weight: .bold))
                 }
-                .foregroundStyle(critics >= 60 ? Color(hex: "10b981") : Color(hex: "f59e0b"))
+                .foregroundStyle(critics >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Critics score \(Int(critics.rounded())) percent")
             }
             if detail?.is4K == true { qualityBadge("4K", color: DT.Color.accent) }
-            if detail?.isHDR == true { qualityBadge("HDR", color: Color(hex: "F59E0B")) }
+            if detail?.isHDR == true { qualityBadge("HDR", color: DT.Color.palette("F59E0B")) }
             if !awards.isEmpty {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "trophy.fill").font(.system(size: 16))
                     Text(awardsLabel).font(.system(size: 23, weight: .semibold)).lineLimit(1)
                 }
-                .foregroundStyle(Color(hex: "f59e0b"))
+                .foregroundStyle(DT.Color.palette("f59e0b"))
             }
         }
     }
@@ -932,7 +932,7 @@ private struct TVEpisodeCard: View {
                         Color.black.opacity(0.45)
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 40))
-                            .foregroundStyle(Color(hex: "10b981"))
+                            .foregroundStyle(DT.Color.palette("10b981"))
                     }
                 }
             }

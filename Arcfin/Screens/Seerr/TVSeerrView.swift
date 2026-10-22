@@ -64,7 +64,7 @@ struct TVSeerrView: View {
         VStack(spacing: 20) {
             Image(systemName: "lock.slash.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(Color(hex: "EF4444"))
+                .foregroundStyle(DT.Color.palette("EF4444"))
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
@@ -533,11 +533,11 @@ private struct TVRequestRow: View {
     private func pillView(label: String, hex: String) -> some View {
         Text(label)
             .font(.system(size: 23, weight: .bold))
-            .foregroundStyle(Color(hex: hex))
+            .foregroundStyle(DT.Color.palette(hex))
             .padding(.horizontal, 12).padding(.vertical, 4)
-            .background(Color(hex: hex).opacity(0.15))
+            .background(DT.Color.palette(hex).opacity(0.15))
             .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+            .overlay(Capsule().stroke(DT.Color.palette(hex).opacity(0.3), lineWidth: 1))
     }
 }
 #endif
