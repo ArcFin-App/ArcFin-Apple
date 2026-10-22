@@ -295,10 +295,8 @@ struct PlayerView: View {
                 upNextCard(nextEpisode)
             }
 
-            #if !os(tvOS)
             moreLikeThisOverlay
             xRayOverlay
-            #endif
 
             if showStillWatchingPrompt {
                 stillWatchingOverlay
@@ -435,7 +433,6 @@ struct PlayerView: View {
             chapterListSheet
         }
         #endif
-        #if !os(tvOS)
         .sheet(item: $xRayPerson, onDismiss: { Task { await player.play() } }) { person in
             NavigationStack {
                 PersonDetailView(person: person)
@@ -444,11 +441,9 @@ struct PlayerView: View {
                     }
             }
         }
-        #endif
         .sheet(isPresented: $showInfoSheet) {
             mediaInfoSheet
         }
-        #if !os(tvOS)
         .onChange(of: showSyncPlayMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .sheet(isPresented: $showSyncPlayMenu) {
             syncPlaySheet
@@ -457,7 +452,6 @@ struct PlayerView: View {
             guard let command else { return }
             applySyncPlayCommand(command)
         }
-        #endif
         #if canImport(GoogleCast)
         .onChange(of: CastManager.shared.playbackFinishedCount) { _, _ in
             // Local playback is paused for the whole cast, so the Up Next countdown (which
@@ -1058,7 +1052,6 @@ struct PlayerView: View {
 
     // MARK: - SyncPlay
 
-    #if !os(tvOS)
     /// Applies a command that came back over the WebSocket — the one and only place local
     /// playback state actually changes in response to SyncPlay, whether this client sent
     /// the original request or another group member did.
@@ -1074,7 +1067,6 @@ struct PlayerView: View {
             }
         }
     }
-    #endif
 
     // MARK: - Chromecast
 
@@ -1189,14 +1181,12 @@ struct PlayerView: View {
         // it would stay hidden on whatever screen is underneath once the player closes.
         setMacWindowToolbarVisible(macWindow, true)
         #endif
-        #if !os(tvOS)
         // Closing the player closes the group too — an orphaned WebSocket connection with
         // nobody watching isn't useful, and simpler than trying to keep it alive across
         // whatever the user navigates to next.
         if syncPlayManager.isInGroup, let credential = authManager.state.credential {
             syncPlayManager.leaveGroup(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
         }
-        #endif
         #if canImport(UIKit) && !os(tvOS)
         volumeController?.teardown()
         volumeObservation?.invalidate()

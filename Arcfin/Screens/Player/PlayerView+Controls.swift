@@ -315,36 +315,11 @@ extension PlayerView {
             Button { showRateMenu = true } label: {
                 Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
             }
-            if !subtitleCues.isEmpty {
-                Menu {
-                    Button("Later by 0.5 s") { subtitleDelay += 0.5 }
-                    Button("Earlier by 0.5 s") { subtitleDelay -= 0.5 }
-                    Button("Later by 0.1 s") { subtitleDelay += 0.1 }
-                    Button("Earlier by 0.1 s") { subtitleDelay -= 0.1 }
-                    Button("Reset", role: .destructive) { subtitleDelay = 0 }
-                        .disabled(subtitleDelay == 0)
-                } label: {
-                    Label(
-                        subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", subtitleDelay)) s)",
-                        systemImage: "clock.arrow.2.circlepath")
-                }
-            }
+            subtitleTimingMenu
             Button { showQualityMenu = true } label: {
                 Label("Quality", systemImage: "slider.horizontal.3")
             }
-            Menu {
-                Button("Off") { setSleepTimer(minutes: nil) }
-                ForEach([15, 30, 45, 60], id: \.self) { minutes in
-                    Button("\(minutes) minutes") { setSleepTimer(minutes: minutes) }
-                }
-                if item.type == .episode {
-                    Button("End of episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
-                }
-            } label: {
-                Label(
-                    sleepTimerEndsAt != nil || sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
-                    systemImage: "moon.zzz")
-            }
+            sleepTimerMenu
             Button { showInfoSheet = true } label: {
                 Label("Media Info", systemImage: "info.circle")
             }
@@ -360,6 +335,40 @@ extension PlayerView {
         .focusEffectDisabled()
         .tvFocusRing(cornerRadius: 16)
         #endif
+    }
+
+    @ViewBuilder
+    private var subtitleTimingMenu: some View {
+        if !subtitleCues.isEmpty {
+            Menu {
+                Button("Later by 0.5 s") { subtitleDelay += 0.5 }
+                Button("Earlier by 0.5 s") { subtitleDelay -= 0.5 }
+                Button("Later by 0.1 s") { subtitleDelay += 0.1 }
+                Button("Earlier by 0.1 s") { subtitleDelay -= 0.1 }
+                Button("Reset", role: .destructive) { subtitleDelay = 0 }
+                    .disabled(subtitleDelay == 0)
+            } label: {
+                Label(
+                    subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", subtitleDelay)) s)",
+                    systemImage: "clock.arrow.2.circlepath")
+            }
+        }
+    }
+
+    private var sleepTimerMenu: some View {
+        Menu {
+            Button("Off") { setSleepTimer(minutes: nil) }
+            ForEach([15, 30, 45, 60], id: \.self) { minutes in
+                Button("\(minutes) minutes") { setSleepTimer(minutes: minutes) }
+            }
+            if item.type == .episode {
+                Button("End of episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
+            }
+        } label: {
+            Label(
+                sleepTimerEndsAt != nil || sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
+                systemImage: "moon.zzz")
+        }
     }
 
     var episodeSubtitle: String? {
@@ -512,10 +521,44 @@ extension PlayerView {
             Button { showInfoSheet = true } label: {
                 TVPlayerControlLabel(systemImage: "info.circle", size: 14, diameter: 32)
             }
+            Menu {
+                tvMoreMenuContent
+            } label: {
+                TVPlayerControlLabel(systemImage: "ellipsis", size: 14, diameter: 32)
+            }
+            .accessibilityLabel("More options")
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
         .focusSection()
+    }
+
+    /// What the touch and Mac players keep in their More menu and have no button of their own here.
+    @ViewBuilder
+    private var tvMoreMenuContent: some View {
+        if !castMembers.isEmpty {
+            Button { openXRay() } label: {
+                Label("X-Ray: Cast", systemImage: "person.2")
+            }
+        }
+        if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
+            Button { showSyncPlayMenu = true } label: {
+                Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
+            }
+        }
+        Button { withAnimation { audioOnly.toggle() } } label: {
+            Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
+        }
+        if let info = playbackInfo, info.versions.count > 1 {
+            Picker(selection: Binding(get: { info.mediaSourceId }, set: { changeVersion($0) })) {
+                ForEach(info.versions) { Text($0.name).tag($0.id) }
+            } label: {
+                Label("Version", systemImage: "square.stack")
+            }
+            .pickerStyle(.menu)
+        }
+        subtitleTimingMenu
+        sleepTimerMenu
     }
     #endif
 
@@ -766,7 +809,6 @@ extension PlayerView {
 
     // MARK: - X-Ray
 
-    #if !os(tvOS)
     func openXRay() {
         withAnimation(DT.Animation.fast) {
             showXRay = true
@@ -801,7 +843,9 @@ extension PlayerView {
                 ZStack(alignment: landscape ? .trailing : .bottom) {
                     Color.black.opacity(0.25)
                         .ignoresSafeArea()
+                        #if !os(tvOS)
                         .onTapGesture { withAnimation(DT.Animation.fast) { showXRay = false } }
+                        #endif
 
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
@@ -826,7 +870,7 @@ extension PlayerView {
                                     .frame(width: 44, height: 44)
                                     .contentShape(Rectangle())
                             }
-                            .buttonStyle(.plain)
+                            .playerOverlayButton(cornerRadius: 22)
                             .accessibilityLabel("Close X-Ray")
                         }
                         ScrollView(landscape ? .vertical : .horizontal, showsIndicators: false) {
@@ -838,7 +882,7 @@ extension PlayerView {
                                     Button { openXRayPerson(person) } label: {
                                         xRayRow(person, compact: !landscape)
                                     }
-                                    .buttonStyle(.plain)
+                                    .playerOverlayButton(cornerRadius: DT.Radius.md)
                                 }
                             }
                         }
@@ -850,8 +894,14 @@ extension PlayerView {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
                     .padding(landscape ? 12 : 10)
                     .transition(.move(edge: landscape ? .trailing : .bottom).combined(with: .opacity))
+                    #if os(tvOS)
+                    .focusSection()
+                    #endif
                 }
             }
+            #if os(tvOS)
+            .onExitCommand { withAnimation(DT.Animation.fast) { showXRay = false } }
+            #endif
         }
     }
 
@@ -914,7 +964,6 @@ extension PlayerView {
         Task { await player.pause() }
         xRayPerson = person
     }
-    #endif
 
     // MARK: - Media info
 
@@ -1011,7 +1060,6 @@ extension PlayerView {
 
     // MARK: - SyncPlay
 
-    #if !os(tvOS)
     var syncPlaySheet: some View {
         NavigationStack {
             Group {
@@ -1127,7 +1175,6 @@ extension PlayerView {
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         syncPlayManager.leaveGroup(credential: credential, authHeader: authHeader)
     }
-    #endif
 
     // MARK: - Skip intro/credits
 
@@ -1280,6 +1327,7 @@ extension PlayerView {
                                 .frame(width: 34, height: 34)
                                 .background(.white.opacity(0.18), in: Circle())
                         }
+                        .playerOverlayButton(cornerRadius: 17)
                         .accessibilityLabel("Dismiss suggestions")
                     }
 
@@ -1294,14 +1342,14 @@ extension PlayerView {
                             HStack(spacing: 14) {
                                 ForEach(top) { suggestion in
                                     Button { playSuggestion(suggestion) } label: { suggestionCard(suggestion) }
-                                        .buttonStyle(.plain)
+                                        .playerOverlayButton(cornerRadius: DT.Radius.sm)
                                 }
                             }
                         } else {
                             VStack(spacing: 10) {
                                 ForEach(top) { suggestion in
                                     Button { playSuggestion(suggestion) } label: { suggestionRow(suggestion) }
-                                        .buttonStyle(.plain)
+                                        .playerOverlayButton(cornerRadius: DT.Radius.sm)
                                 }
                             }
                         }
@@ -1322,9 +1370,18 @@ extension PlayerView {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.vertical, 20)
+                #if os(tvOS)
+                .focusSection()
+                #endif
             }
             .transition(.opacity)
             .animation(DT.Animation.fast, value: isControlsVisible)
+            #if os(tvOS)
+            .onExitCommand {
+                moreLikeThisDismissed = true
+                withAnimation(DT.Animation.fast) { showMoreLikeThis = false }
+            }
+            #endif
         }
     }
 
@@ -1348,7 +1405,7 @@ extension PlayerView {
                     in: RoundedRectangle(cornerRadius: DT.Radius.md))
                 .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(.white.opacity(0.3), lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .playerOverlayButton(cornerRadius: DT.Radius.md)
         .accessibilityLabel(title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -1356,10 +1413,10 @@ extension PlayerView {
     /// Landscape (and the always-wide Mac window) lays suggestions out in a row; portrait
     /// stacks them in a list.
     private var suggestionsAreHorizontal: Bool {
-        #if os(macOS)
-        true
-        #else
+        #if os(iOS)
         isLandscape
+        #else
+        true
         #endif
     }
 
@@ -2131,5 +2188,20 @@ struct TrackSelectionSheet: View {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
         return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+    }
+}
+
+private extension View {
+    /// A button on the player's own overlays (suggestions, X-Ray): plain where it's pointed or
+    /// tapped at, a focus ring on tvOS where the remote moves between them.
+    @ViewBuilder
+    func playerOverlayButton(cornerRadius: CGFloat) -> some View {
+        #if os(tvOS)
+        buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: cornerRadius, prominent: true)
+        #else
+        buttonStyle(.plain)
+        #endif
     }
 }
