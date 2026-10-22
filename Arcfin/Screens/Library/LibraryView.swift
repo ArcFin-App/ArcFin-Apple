@@ -78,6 +78,12 @@ struct LibraryView: View {
                     navigateToLocalPlayer = true
                 }
             }
+#elseif os(macOS)
+            .fileImporter(isPresented: $showDocPicker, allowedContentTypes: UTType.playableVideo) { result in
+                guard case .success(let url) = result else { return }
+                pickedURL = url
+                navigateToLocalPlayer = true
+            }
 #endif
             .navigationDestination(isPresented: $navigateToLocalPlayer) {
                 if let url = pickedURL {
@@ -2205,5 +2211,15 @@ import UniformTypeIdentifiers
 private extension UTType {
     static let avi = UTType(filenameExtension: "avi") ?? .movie
     static let matroska = UTType(filenameExtension: "mkv") ?? .movie
+}
+#endif
+
+#if os(macOS)
+import UniformTypeIdentifiers
+
+extension UTType {
+    /// What the Mac's file picker offers for local playback: VLC opens containers AVFoundation can't, mkv and avi among them.
+    static let playableVideo: [UTType] = [.movie, .video, .mpeg4Movie, .quickTimeMovie]
+        + ["avi", "mkv"].compactMap { UTType(filenameExtension: $0) }
 }
 #endif

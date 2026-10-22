@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(iOS)
+#if !os(tvOS)
 import SwiftUI
 import Network
 
-/// Shown on iOS/iPadOS in place of the Login screen while AuthManager.checkStoredAuth() is
+/// Shown in place of the Login screen while AuthManager.checkStoredAuth() is
 /// still validating a stored session — SplashView always exits after its own fixed minimum
 /// presentation time regardless of whether that check has concluded, so without this a slow
 /// network previously meant the app dropped straight to Login while an already-valid session

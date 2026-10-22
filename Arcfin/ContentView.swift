@@ -7,10 +7,13 @@ import JellyfinAPI
 import Persistence
 import SeerrAPI
 import SyncEngine
+#if os(macOS)
+import UniformTypeIdentifiers
+#endif
 
 private enum AppPhase: Equatable {
     case splash, login, main, offline
-    #if os(iOS)
+    #if !os(tvOS)
     // SplashView always exits after its own fixed minimum presentation time regardless of
     // whether checkStoredAuth() has concluded, so a slow network previously meant the app
     // dropped straight to the Login screen while an already-valid session was still being
@@ -63,7 +66,7 @@ struct ContentView: View {
     @State private var activeProfileHasPIN = false
     @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
     #endif
-    #if os(iOS)
+    #if !os(tvOS)
     @State private var showOfflineDocPicker = false
     @State private var offlinePickedURL: URL?
     @State private var navigateToOfflineLocalPlayer = false
@@ -129,7 +132,7 @@ struct ContentView: View {
     private var phase: AppPhase {
         guard splashDone else { return .splash }
         if offlineModeEnabled { return .offline }
-        #if os(iOS)
+        #if !os(tvOS)
         if !bypassSessionCheck, authManager.isChecking, authManager.state == .unauthenticated {
             return .checkingSession
         }
@@ -153,7 +156,7 @@ struct ContentView: View {
         case .login:
             LoginRootView()
                 .transition(.opacity)
-        #if os(iOS)
+        #if !os(tvOS)
         case .checkingSession:
             SessionCheckingView(
                 onSignInManually: { bypassSessionCheck = true },
@@ -199,6 +202,24 @@ struct ContentView: View {
                             LocalPlayerView(url: url)
                                 .toolbar(.hidden, for: .tabBar)
                         }
+                    }
+                    #elseif os(macOS)
+                    .toolbar {
+                        ToolbarItem(placement: .navigation) {
+                            Button { showOfflineDocPicker = true } label: {
+                                Image(systemName: "folder")
+                            }
+                            .accessibilityLabel("Open local file")
+                            .help("Open a video file")
+                        }
+                    }
+                    .fileImporter(isPresented: $showOfflineDocPicker, allowedContentTypes: UTType.playableVideo) { result in
+                        guard case .success(let url) = result else { return }
+                        offlinePickedURL = url
+                        navigateToOfflineLocalPlayer = true
+                    }
+                    .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
+                        if let url = offlinePickedURL { LocalPlayerView(url: url) }
                     }
                     #endif
             }
