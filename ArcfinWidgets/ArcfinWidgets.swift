@@ -79,18 +79,25 @@ private struct Poster: View {
     }
 }
 
-/// A ring that fills as the title downloads; a checkmark once everything is done.
+/// A ring that fills as the title downloads (on its own, from the estimate, while the app is
+/// suspended); a checkmark once everything is done.
 private struct ProgressRing: View {
     let state: DownloadState
     var lineWidth: CGFloat = 3
 
     var body: some View {
         ZStack {
-            Circle().stroke(statusColor(state).opacity(0.25), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: state.isFinished ? 1 : max(state.fractionComplete, 0.02))
-                .stroke(statusColor(state), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
+            if let estimate = state.estimate {
+                ProgressView(timerInterval: estimate, countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+                    .progressViewStyle(.circular)
+                    .tint(statusColor(state))
+            } else {
+                Circle().stroke(statusColor(state).opacity(0.25), lineWidth: lineWidth)
+                Circle()
+                    .trim(from: 0, to: state.isFinished ? 1 : max(state.fractionComplete, 0.02))
+                    .stroke(statusColor(state), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
             Image(systemName: state.isFinished ? "checkmark" : (state.isPaused == true ? "pause.fill" : "arrow.down"))
                 .font(.system(size: 9, weight: .heavy))
                 .foregroundStyle(statusColor(state))
@@ -101,41 +108,63 @@ private struct ProgressRing: View {
     }
 }
 
+/// Runs off the estimate while there is one, so it keeps moving with the app suspended.
 private struct ProgressBar: View {
     let state: DownloadState
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.15))
-                Capsule()
-                    .fill(state.isPaused == true
-                          ? AnyShapeStyle(WidgetDT.paused)
-                          : AnyShapeStyle(LinearGradient(colors: [WidgetDT.accentDeep, WidgetDT.accent],
-                                                         startPoint: .leading, endPoint: .trailing)))
-                    .frame(width: max(geo.size.width * state.fractionComplete, 6))
+        Group {
+            if let estimate = state.estimate {
+                ProgressView(timerInterval: estimate, countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+            } else {
+                ProgressView(value: state.fractionComplete)
             }
         }
-        .frame(height: 6)
+        .progressViewStyle(.linear)
+        .tint(statusColor(state))
         .accessibilityHidden(true)
     }
 }
 
-/// Size so far and, while moving, the speed and time left; why it's stopped when paused.
+/// The headline figure: time left while it's moving (it counts down on its own), the
+/// percentage otherwise, Done at the end.
+private struct HeadlineFigure: View {
+    let state: DownloadState
+    let font: Font
+
+    var body: some View {
+        Group {
+            if state.isFinished {
+                Text("Done")
+            } else if let estimate = state.estimate {
+                Text(timerInterval: estimate, countsDown: true)
+            } else {
+                Text(percent(state)).contentTransition(.numericText())
+            }
+        }
+        .font(font)
+        .monospacedDigit()
+        .multilineTextAlignment(.trailing)
+    }
+}
+
+/// The title's size and when it'll finish while it's moving; why it's stopped when paused.
 private struct TransferLine: View {
     let state: DownloadState
 
     var body: some View {
         HStack(spacing: 6) {
-            if state.totalBytes > 0 {
+            if state.estimate != nil, state.totalBytes > 0 {
+                Text(formattedBytes(state.totalBytes))
+            } else if state.totalBytes > 0 {
                 Text("\(formattedBytes(state.bytesWritten)) of \(formattedBytes(state.totalBytes))")
                     .contentTransition(.numericText())
             }
             Spacer(minLength: 4)
             if state.isPaused == true {
                 Text("Open Arcfin to resume")
-            } else if let seconds = state.secondsRemaining {
-                Text(timeLeft(seconds))
+            } else if let estimate = state.estimate {
+                Text("Done by \(estimate.upperBound, style: .time)")
             } else if state.bytesPerSecond > 0 {
                 Text(formattedSpeed(state.bytesPerSecond))
             }
@@ -160,11 +189,9 @@ private struct CompactTrailing: View {
     }
 
     fileprivate var label: some View {
-        Text(state.isFinished ? "Done" : percent(state))
-            .font(.system(.footnote, design: .rounded, weight: .bold))
-            .monospacedDigit()
-            .contentTransition(.numericText())
+        HeadlineFigure(state: state, font: .system(.footnote, design: .rounded, weight: .bold))
             .foregroundStyle(statusColor(state))
+            .frame(maxWidth: 52)
     }
 
     @available(iOS 27.0, *)
@@ -195,11 +222,9 @@ struct DownloadLiveActivity: Widget {
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(state.isFinished ? "Done" : percent(state))
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
+                    HeadlineFigure(state: state, font: .system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(statusColor(state))
+                        .frame(maxWidth: 80, alignment: .trailing)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
@@ -270,11 +295,9 @@ private struct LockScreenView: View {
                 }
                 Spacer(minLength: 8)
                 if !state.isFinished {
-                    Text(percent(state))
-                        .font(.system(.title, design: .rounded, weight: .bold))
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
+                    HeadlineFigure(state: state, font: .system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
+                        .frame(maxWidth: 96, alignment: .trailing)
                 }
             }
             if !state.isFinished {

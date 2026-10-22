@@ -304,6 +304,9 @@ struct ContentView: View {
             // back to the foreground is exactly when the network is most likely to have
             // actually changed (left/rejoined home Wi-Fi, Wi-Fi toggled off entirely) without
             // Arcfin having noticed yet.
+            // Leaving the app still counts as the foreground at .inactive, which a download
+            // needs to start at full priority (see DownloadManager.handOffQueue).
+            if newPhase == .inactive { downloadManager.handOffQueue() }
             if newPhase == .active {
                 Task { await authManager.reresolveBaseURLIfNeeded() }
                 downloadManager.refreshSmartDownloads()

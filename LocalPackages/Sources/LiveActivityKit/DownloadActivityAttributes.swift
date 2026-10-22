@@ -32,12 +32,17 @@ public struct DownloadActivityAttributes: ActivityAttributes {
         public var isPaused: Bool?
         /// The next title waiting in the queue, if any.
         public var nextItemTitle: String?
+        /// The current title's progress as a span of time at the last known speed, so the
+        /// bar and countdown keep moving while iOS has the app suspended and it can't update.
+        public var estimateStart: Date?
+        public var estimatedFinish: Date?
 
         public init(
             currentItemTitle: String, bytesWritten: Int64, totalBytes: Int64, bytesPerSecond: Double,
             completedCount: Int, totalCount: Int, isFinished: Bool = false,
             posterImageData: Data? = nil, seasonNumber: Int? = nil, episodeNumber: Int? = nil,
-            isPaused: Bool = false, nextItemTitle: String? = nil
+            isPaused: Bool = false, nextItemTitle: String? = nil,
+            estimateStart: Date? = nil, estimatedFinish: Date? = nil
         ) {
             self.currentItemTitle = currentItemTitle
             self.bytesWritten = bytesWritten
@@ -51,6 +56,15 @@ public struct DownloadActivityAttributes: ActivityAttributes {
             self.episodeNumber = episodeNumber
             self.isPaused = isPaused
             self.nextItemTitle = nextItemTitle
+            self.estimateStart = estimateStart
+            self.estimatedFinish = estimatedFinish
+        }
+
+        /// The estimated span, when the transfer is moving.
+        public var estimate: ClosedRange<Date>? {
+            guard isPaused != true, !isFinished, let estimateStart, let estimatedFinish, estimateStart < estimatedFinish
+            else { return nil }
+            return estimateStart...estimatedFinish
         }
 
         /// Seconds left on the current title at the present speed, when it's moving.

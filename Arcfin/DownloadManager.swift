@@ -54,6 +54,12 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private let client = JellyfinMediaClient()
     @ObservationIgnored private var downloadTasks: [String: URLSessionDownloadTask] = [:]
     @ObservationIgnored private var taskItemIds: [Int: String] = [:]
+    /// Queued titles whose video transfer was handed to the background session ahead of its
+    /// turn, and how each ended if it did before its turn came.
+    @ObservationIgnored private var handedOffItemIds: Set<String> = []
+    @ObservationIgnored private var handedOffResults: [String: Result<Void, Error>] = [:]
+    /// Where a handed-off transfer lands; renamed once the title's container is known.
+    private static let stagedVideoFileName = "video.download"
     @ObservationIgnored private var speedSamples: [String: (time: Date, bytes: Int64)] = [:]
     #if canImport(UIKit) && !os(tvOS)
     @ObservationIgnored private var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
@@ -87,6 +93,9 @@ final class DownloadManager: NSObject {
         let config = URLSessionConfiguration.background(withIdentifier: Self.backgroundSessionIdentifier)
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false
+        // Titles handed over ahead of their turn (handOffQueue) wait here for a connection
+        // instead of all transferring at once.
+        config.httpMaximumConnectionsPerHost = 2
         #else
         let config = URLSessionConfiguration.default
         #endif
@@ -201,6 +210,15 @@ final class DownloadManager: NSObject {
         let stat = itemId.flatMap { stats[$0] }
         let meta = isFinished ? finishedMeta : itemId.flatMap { liveActivityItemMeta[$0] }
         let title = isFinished ? (finishedTitle ?? "") : (itemId.flatMap { activeItemTitles[$0] } ?? "")
+        // Spread the current title over time at the present speed: starting where it would
+        // have to have begun to be this far along, ending when the rest arrives.
+        var estimate: (start: Date, finish: Date)?
+        if let stat, stat.bytesPerSecond > 0, stat.totalBytes > stat.bytesWritten {
+            let remaining = Double(stat.totalBytes - stat.bytesWritten) / stat.bytesPerSecond
+            let fraction = Double(stat.bytesWritten) / Double(stat.totalBytes)
+            let now = Date()
+            estimate = (now.addingTimeInterval(-remaining / (1 - fraction) * fraction), now.addingTimeInterval(remaining))
+        }
         let state = DownloadActivityAttributes.ContentState(
             currentItemTitle: title,
             bytesWritten: stat?.bytesWritten ?? 0, totalBytes: stat?.totalBytes ?? 0,
@@ -208,7 +226,8 @@ final class DownloadManager: NSObject {
             completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished,
             posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode,
             isPaused: !isFinished && (isQueuePaused || itemId.map(pausedItemIds.contains) == true),
-            nextItemTitle: isFinished ? nil : pendingQueue.first?.item.name
+            nextItemTitle: isFinished ? nil : pendingQueue.first?.item.name,
+            estimateStart: estimate?.start, estimatedFinish: estimate?.finish
         )
         Task { await liveActivity.update(ActivityContent(state: state, staleDate: nil)) }
     }
@@ -286,6 +305,53 @@ final class DownloadManager: NSObject {
         Task { await liveActivity.end(nil, dismissalPolicy: .immediate) }
     }
     #endif
+
+    /// Hands every waiting title's video transfer to the background session as the app
+    /// leaves the foreground. iOS treats a transfer the app starts once it's already in the
+    /// background as discretionary and can hold it off until the app is next opened, which
+    /// stalled a queue the moment its current title finished out of sight. Started here,
+    /// they carry on without the app; the queue picks up each finished file in turn.
+    /// Lower-quality downloads need the server's playback info first, so they keep their turn.
+    func handOffQueue() {
+        #if canImport(UIKit) && !os(tvOS)
+        guard !isQueuePaused else { return }
+        for entry in pendingQueue where entry.bitrateCap == nil {
+            let itemId = entry.item.id
+            guard !handedOffItemIds.contains(itemId), !isDownloaded(itemId),
+                  let dir = try? DownloadStore.ensureDirectory(for: itemId) else { continue }
+            var req = URLRequest(url: JellyfinMediaClient.originalFileDownloadURL(
+                baseURL: entry.credential.baseURL, itemID: itemId, token: entry.credential.accessToken))
+            for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+            req.setValue(entry.authHeader, forHTTPHeaderField: "Authorization")
+            req.timeoutInterval = 60 * 60
+            let task = session.downloadTask(with: req)
+            task.taskDescription = dir.appendingPathComponent(Self.stagedVideoFileName).path
+            taskItemIds[task.taskIdentifier] = itemId
+            downloadTasks[itemId] = task
+            handedOffItemIds.insert(itemId)
+            // Lets a relaunch after the app was ended finish the title from the file alone.
+            savePendingDescriptor(itemId: itemId, credentialId: entry.credential.id.uuidString, bitrateCap: nil)
+            task.resume()
+        }
+        #endif
+        #if canImport(ActivityKit) && os(iOS)
+        // The last update before the app is suspended; the estimate carries it from here.
+        refreshLiveActivity()
+        #endif
+    }
+
+    /// Waits for a handed-off transfer, or takes its result if it already ended.
+    private func awaitHandedOff(itemId: String) async throws {
+        defer {
+            handedOffItemIds.remove(itemId)
+            handedOffResults[itemId] = nil
+        }
+        if let result = handedOffResults[itemId] { return try result.get() }
+        guard let task = downloadTasks[itemId] else { throw URLError(.cancelled) }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            continuations[task.taskIdentifier] = continuation
+        }
+    }
 
     func isDownloaded(_ itemId: String) -> Bool {
         guard let modelContext else { return false }
@@ -513,8 +579,16 @@ final class DownloadManager: NSObject {
             let videoURL = needsRemux
                 ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, videoBitRate: min(bitrateCap!, info.bitrate ?? bitrateCap!), token: credential.accessToken)
                 : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
-            if !skipVideoDownload {
+            if handedOffItemIds.contains(item.id) {
+                try await awaitHandedOff(itemId: item.id)
+            } else if !skipVideoDownload {
                 try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
+            }
+            let staged = dir.appendingPathComponent(Self.stagedVideoFileName)
+            if FileManager.default.fileExists(atPath: staged.path) {
+                let final = dir.appendingPathComponent(videoFileName)
+                try? FileManager.default.removeItem(at: final)
+                try FileManager.default.moveItem(at: staged, to: final)
             }
 
             // Subtitles — external tracks only (embedded ones travel with the video file itself).
@@ -704,6 +778,8 @@ final class DownloadManager: NSObject {
         pendingQueue.removeAll { $0.item.id == itemId }
         downloadTasks[itemId]?.cancel()
         downloadTasks[itemId] = nil
+        handedOffItemIds.remove(itemId)
+        handedOffResults[itemId] = nil
         pausedItemIds.remove(itemId)
         activeItemIds.remove(itemId)
         activeItemTitles[itemId] = nil
@@ -1082,6 +1158,11 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 if let capturedMoveError { continuation.resume(throwing: capturedMoveError) } else { continuation.resume() }
                 return
             }
+            // Handed off ahead of its turn and done before it came: the queue picks it up.
+            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+                self.handedOffResults[itemId] = capturedMoveError.map { .failure($0) } ?? .success(())
+                return
+            }
             // No continuation means this app instance didn't originate the transfer — most
             // likely relaunched specifically to receive this exact redelivered event. The
             // file's already safely moved above; finish the rest of the pipeline for it.
@@ -1099,6 +1180,10 @@ extension DownloadManager: URLSessionDownloadDelegate {
             if let continuation = self.continuations[taskId] {
                 self.continuations[taskId] = nil
                 continuation.resume(throwing: error)
+                return
+            }
+            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+                self.handedOffResults[itemId] = .failure(error)
                 return
             }
             // Orphaned and it failed outright — there'll never be a video file to trigger
