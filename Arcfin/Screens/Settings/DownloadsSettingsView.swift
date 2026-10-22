@@ -6,7 +6,7 @@ import ImageCache
 struct DownloadsSettingsView: View {
     @AppStorage("wifiOnly")        private var wifiOnly        = true
     @AppStorage("downloadQuality") private var downloadQuality = VideoQuality.max
-    #if os(iOS)
+    #if !os(tvOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     #endif
     @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
@@ -101,7 +101,7 @@ struct DownloadsSettingsView: View {
                 }
             }
 
-            #if os(iOS)
+            #if !os(tvOS)
             Section {
                 Toggle("Offline Mode", isOn: $offlineModeEnabled)
                     .syncLocked("offlineModeEnabled", authManager)

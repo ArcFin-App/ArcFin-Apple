@@ -89,7 +89,7 @@ struct LibraryView: View {
 #endif
                 }
             }
-            #if os(iOS)
+            #if !os(tvOS)
             .navigationDestination(isPresented: $navigateToDownloadsDeepLink) {
                 DownloadsView()
             }
@@ -130,7 +130,7 @@ struct LibraryView: View {
                 }
 
                 // ── Downloads ───────────────────────────────────────────
-                #if os(iOS)
+                #if !os(tvOS)
                 jellyfinDownloadsSection
                 #endif
 
@@ -208,7 +208,7 @@ struct LibraryView: View {
 
     // MARK: - Jellyfin downloads section
 
-    #if os(iOS)
+    #if !os(tvOS)
     @ViewBuilder
     private var jellyfinDownloadsSection: some View {
         NavigationLink {
@@ -1320,13 +1320,8 @@ struct LibraryDetailView: View {
         .onChange(of: extraFilters) { _, _ in Task { await reload() } }
         .onChange(of: watchedFilter) { _, _ in Task { await reload() } }
         .onChange(of: favoritesOnly) { _, _ in Task { await reload() } }
-        #if os(iOS)
-        .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
-        .fullScreenCover(item: $quickPlayRequest) { request in
-            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                quickPlayRequest = PlaybackRequest(item: next, startTicks: 0)
-            }
-        }
+        #if !os(tvOS)
+        .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem)
         #endif
         #if !os(macOS)
         .fullScreenCover(item: $playlistPlayback, onDismiss: {
@@ -1652,7 +1647,7 @@ struct LibraryDetailView: View {
                 Label("Remove from Playlist", systemImage: "minus.circle")
             }
         }
-        #if os(iOS)
+        #if !os(tvOS)
         if item.type == .movie || item.type == .episode {
             let ticks = (item.userData?.played == true) ? 0 : (item.userData?.playbackPositionTicks ?? 0)
             Button { quickPlayRequest = PlaybackRequest(item: item, startTicks: ticks) } label: {

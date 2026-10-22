@@ -22,7 +22,7 @@ struct NotificationsSettingsView: View {
                 Toggle("Watchlist Available", isOn: $notifyWatchlistAvailable)
                     .syncLocked("notifyWatchlistAvailable", authManager)
                 // No downloads on macOS — nothing would ever trigger this notification there.
-                #if os(iOS)
+                #if !os(tvOS)
                 Toggle("Download Complete", isOn: $notifyDownload)
                     .syncLocked("notifyDownload", authManager)
                 #endif

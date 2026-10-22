@@ -7,7 +7,7 @@ import AppIntents
 #endif
 import SeerrAPI
 import AuthCore
-#if os(iOS)
+#if !os(tvOS)
 import SwiftData
 import Persistence
 #endif
@@ -26,7 +26,7 @@ struct MediaDetailView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
     @Environment(DownloadManager.self) private var downloadManager
-    #if os(iOS)
+    #if !os(tvOS)
     @Environment(\.modelContext) private var modelContext
     #endif
     #if os(macOS)
@@ -69,7 +69,7 @@ struct MediaDetailView: View {
     @State private var isLoading = true
     @State private var requestingSeerrItem: SeerrItem?
     @State private var playbackRequest: PlaybackRequest?
-    #if os(iOS)
+    #if !os(tvOS)
     @State private var seasonDownloadPreview: DownloadManager.DownloadPreview?
     @State private var isLoadingSeasonPreview = false
     /// Set when the target is already downloaded — offers a choice instead of always
@@ -142,10 +142,6 @@ struct MediaDetailView: View {
             .animation(.easeInOut(duration: 0.4), value: heroTint)
         }
         .ignoresSafeArea(edges: .top)
-        #if os(iOS)
-        // Pull down to pick up changes made elsewhere (another device, the web UI): watched
-        // state, resume position, the next episode and the season's progress.
-        .refreshable { await refreshAfterPlayback(waitForReport: false) }
         .task(id: item.id) {
             if let seriesId = seasonSeriesId {
                 keptEpisodeCount = DownloadManager.keptShows[seriesId]?.episodeCount ?? 0
@@ -153,6 +149,10 @@ struct MediaDetailView: View {
             guard let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 120) else { return }
             heroTint = await AverageColor.load(from: url)
         }
+        #if os(iOS)
+        // Pull down to pick up changes made elsewhere (another device, the web UI): watched
+        // state, resume position, the next episode and the season's progress.
+        .refreshable { await refreshAfterPlayback(waitForReport: false) }
         // Handoff to another device, Spotlight, and on-screen awareness: Siri and Apple
         // Intelligence can resolve "this movie" to the MediaEntity for what's on screen.
         .userActivity(ArcfinActivity.viewTitle) { activity in
@@ -202,9 +202,14 @@ struct MediaDetailView: View {
             .presentationDetents([.medium, .large])
         }
         #elseif os(macOS)
-        // Downloads are iOS-only (DownloadManager isn't wired up on macOS elsewhere in
-        // the app), but Favorite has no other entry point here without this toolbar.
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { Task { await refreshAfterPlayback(waitForReport: false) } } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .accessibilityLabel("Refresh")
+                .help("Refresh")
+            }
             ToolbarItem(placement: .primaryAction) { ratingMenu }
             ToolbarItem(placement: .primaryAction) {
                 Button { toggleFavorite() } label: {
@@ -213,6 +218,29 @@ struct MediaDetailView: View {
                 }
                 .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
+            if item.type == .movie || item.type == .episode {
+                ToolbarItem(placement: .primaryAction) {
+                    DownloadButton(item: item)
+                }
+            }
+            if let shareURL {
+                ToolbarItem(placement: .primaryAction) {
+                    ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Share")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) { moreMenu }
+        }
+        .sheet(isPresented: $showSubtitleSearch) {
+            NavigationStack {
+                SubtitleSearchView(itemId: item.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("Done") { showSubtitleSearch = false } }
+                    }
+            }
+            .frame(minWidth: 480, minHeight: 520)
         }
         #endif
         .navigationDestination(item: $selectedEpisode) { ep in
@@ -231,7 +259,7 @@ struct MediaDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
-        #if os(iOS)
+        #if !os(tvOS)
         .sheet(item: $seasonDownloadPreview) { preview in
             DownloadConfirmSheet(item: selectedSeason ?? item, preview: preview) { bitrateCap in
                 downloadSeason(bitrateCap: bitrateCap)
@@ -259,9 +287,17 @@ struct MediaDetailView: View {
             }
             Button("Cancel", role: .cancel) { pendingPlaybackChoice = nil }
         }
+        #if os(iOS)
         .fullScreenCover(item: $offlinePlaybackTarget, onDismiss: { Task { await refreshAfterPlayback() } }) { downloaded in
             OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: offlineStartOverride)
         }
+        #else
+        // fullScreenCover is unavailable on macOS; the offline player sizes itself in a sheet,
+        // as on the downloaded titles' own pages.
+        .sheet(item: $offlinePlaybackTarget, onDismiss: { Task { await refreshAfterPlayback() } }) { downloaded in
+            OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: offlineStartOverride)
+        }
+        #endif
         .alert("Download Failed", isPresented: Binding(
             get: { seasonDownloadErrorMessage != nil }, set: { if !$0 { seasonDownloadErrorMessage = nil } }
         )) {
@@ -297,16 +333,19 @@ struct MediaDetailView: View {
 #elseif os(macOS)
         // A .sheet on macOS can't fill/fullscreen a window — PlayerView is rendered as a
         // full-window overlay by ContentView instead, driven by the shared PlaybackPresenter.
-        // (YouTubeTrailerPlayerView itself is UIKit-only — the "Play Trailer" button for a
-        // title with no local trailer, only a remote one, is a known gap on macOS until
-        // that view grows an AppKit path.)
         .onChange(of: playbackRequest) { _, request in
             guard let request else { return }
-            playbackPresenter.present(request.item, startTicks: request.startTicks)
+            playbackPresenter.present(request.item, startTicks: request.startTicks) { lastPlayedItem = $0 }
             playbackRequest = nil
         }
         .onChange(of: playbackPresenter.request == nil) { _, closed in
-            if closed { Task { await refreshAfterPlayback() } }
+            if closed { playerDismissed() }
+        }
+        .sheet(item: $youTubeTrailer) { trailer in
+            if let videoID = trailer.youTubeVideoID {
+                YouTubeTrailerPlayerView(videoID: videoID, title: trailer.name ?? item.name)
+                    .frame(minWidth: 800, minHeight: 450)
+            }
         }
 #endif
         .task { await load() }
@@ -330,7 +369,7 @@ struct MediaDetailView: View {
 
     // MARK: - Load
 
-    #if os(iOS)
+    #if !os(tvOS)
     /// Every episode in the current season already downloaded — the "Download Season"
     /// button should be inert then, not just silently no-op every episode it loops over.
     private var isSeasonFullyDownloaded: Bool {
@@ -799,14 +838,7 @@ struct MediaDetailView: View {
 #else
         HStack(spacing: 10) {
             Button {
-                #if os(iOS)
                 requestPlayback(startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0)
-                #else
-                playbackRequest = PlaybackRequest(
-                    item: playTargetItem,
-                    startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
-                )
-                #endif
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill").font(.system(.subheadline))
@@ -852,11 +884,7 @@ struct MediaDetailView: View {
 
             if isResumable {
                 Button {
-                    #if os(iOS)
                     requestPlayback(startTicks: 0, isExplicitStartOver: true)
-                    #else
-                    playbackRequest = PlaybackRequest(item: playTargetItem, startTicks: 0)
-                    #endif
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(.body, weight: .semibold))
@@ -1146,7 +1174,7 @@ struct MediaDetailView: View {
 
                 Spacer()
 
-                #if os(iOS)
+                #if !os(tvOS)
                 Button {
                     if isLoadingSeasonPreview { return }
                     loadSeasonPreview()
@@ -1290,7 +1318,7 @@ struct MediaDetailView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    #if os(iOS)
+                    #if !os(tvOS)
                     DownloadButton(item: ep)
                     #endif
                 }

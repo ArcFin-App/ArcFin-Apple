@@ -77,9 +77,7 @@ struct NoConnectionView: View {
                         }
                         .disabled(mediaRepo.isLoading)
 
-                        // Downloads/offline playback aren't wired up on macOS — see
-                        // SettingsView/NotificationsSettingsView, which hide the same feature.
-                        #if os(iOS)
+                        #if !os(tvOS)
                         Button {
                             offlineModeEnabled = true
                         } label: {

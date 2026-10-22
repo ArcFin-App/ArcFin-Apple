@@ -185,7 +185,7 @@ struct HomeView: View {
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
     @State private var shuffledShelves = HomeShelfPrefs.shuffledOrder()
     @Environment(\.scenePhase) private var scenePhase
-    #if os(iOS)
+    #if !os(tvOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @Query private var downloadedItems: [DownloadedItem]
     #endif
@@ -688,7 +688,7 @@ struct HomeView: View {
             if shuffleHomeShelves { reshuffleShelves() }
             await loadHome(force: true)
         }
-        #if os(iOS)
+        #if !os(tvOS)
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
             if isFailed && !wasFailed { showOfflinePrompt = true }
         }
@@ -863,13 +863,8 @@ struct HomeView: View {
             resumeLatest()
         }
         #endif
-        #if os(iOS)
-        .fullScreenCover(item: $trailerLaunchItem) { TrailerLauncher(item: $0) }
-        .fullScreenCover(item: $quickPlayRequest, onDismiss: { Task { await loadHome(force: true) } }) { request in
-            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                quickPlayRequest = PlaybackRequest(item: next, startTicks: 0)
-            }
-        }
+        #if !os(tvOS)
+        .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem) { Task { await loadHome(force: true) } }
         #endif
         #if os(iOS)
         .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenSeerrTitle)) { note in
@@ -976,7 +971,7 @@ struct HomeView: View {
                     .foregroundStyle(DT.Color.accent)
                 }
             }
-            #if os(iOS)
+            #if !os(tvOS)
             Button {
                 offlineModeEnabled = true
             } label: {
@@ -1397,10 +1392,10 @@ struct HomeView: View {
     }
     #endif
 
-    /// The poster long-press menu: the usual quick actions, with Play Trailer on top on iOS.
+    /// The poster long-press menu: the usual quick actions, with Play and Play Trailer on top.
     @ViewBuilder
     private func longPressMenu(_ item: MediaItem) -> some View {
-        #if os(iOS)
+        #if !os(tvOS)
         if item.type == .movie || item.type == .episode {
             let ticks = (item.userData?.played == true) ? 0 : (item.userData?.playbackPositionTicks ?? 0)
             Button { quickPlayRequest = PlaybackRequest(item: item, startTicks: ticks) } label: {
