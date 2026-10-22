@@ -17,13 +17,13 @@ struct MainTabView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
+    @Bindable private var playlistStore = PlaylistStore.shared
     #if os(tvOS)
     @State private var searchQuery = ""
     #else
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     @State private var selectedTab: BottomNavItem = .home
-    @Bindable private var playlistStore = PlaylistStore.shared
     #endif
 
     #if !os(tvOS)
@@ -87,6 +87,9 @@ struct MainTabView: View {
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
             .preferredColorScheme(.dark)
+            .sheet(item: $playlistStore.addingItem) { item in
+                AddToPlaylistSheet(item: item)
+            }
         }
 #else
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {

@@ -31,8 +31,15 @@ struct TVMediaDetailView: View {
     @State private var initialEpisodeID: String?
     @State private var nextEpisode: MediaItem?
     @State private var playbackRequest: PlaybackRequest?
-    @State private var requestingSeerrItem: SeerrItem?
+    @State private var openSeerrItem: SeerrItem?
     @State private var sectionOffsets: [CGFloat] = []
+    @State private var isFavorite = false
+    @State private var likes: Bool?
+    @State private var isWatched = false
+    @State private var showSubtitleSearch = false
+    @State private var seriesItem: MediaItem?
+    @State private var jellyfinRecommended: MovieRecommendationCategory?
+    @State private var loadedSeasonId: String?
 
     private let client = JellyfinMediaClient()
 
@@ -81,9 +88,10 @@ struct TVMediaDetailView: View {
             )
         }
         .onChange(of: selectedSeason) { _, season in
-            guard let season, let seriesId = seasonSeriesId,
+            guard let season, season.id != loadedSeasonId, let seriesId = seasonSeriesId,
                   let cred = credential, let header = authHeader else { return }
             Task {
+                loadedSeasonId = season.id
                 episodes = (try? await client.getEpisodes(
                     credential: cred, authHeader: header,
                     seriesId: seriesId, seasonId: season.id)) ?? []
@@ -98,13 +106,19 @@ struct TVMediaDetailView: View {
         .fullScreenCover(isPresented: $showFullDescription) {
             fullDescriptionCover
         }
-        .fullScreenCover(item: $playbackRequest) { request in
+        .fullScreenCover(item: $playbackRequest, onDismiss: { Task { await refreshAfterPlayback() } }) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
         }
-        .sheet(item: $requestingSeerrItem) { item in
-            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
+        .navigationDestination(item: $openSeerrItem) { TVSeerrItemDetailView(item: $0) }
+        .sheet(isPresented: $showSubtitleSearch) {
+            NavigationStack {
+                SubtitleSearchView(itemId: item.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("Done") { showSubtitleSearch = false } }
+                    }
+            }
         }
     }
 
@@ -198,6 +212,16 @@ struct TVMediaDetailView: View {
                         .font(.system(size: 22, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
+            if let critics = detail?.criticRating {
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
+                HStack(spacing: 5) {
+                    Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill").font(.system(size: 16))
+                    Text("\(Int(critics.rounded()))%").font(.system(size: 22, weight: .bold))
+                }
+                .foregroundStyle(critics >= 60 ? Color(hex: "10b981") : Color(hex: "f59e0b"))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Critics score \(Int(critics.rounded())) percent")
+            }
             if detail?.is4K == true { qualityBadge("4K", color: DT.Color.accent) }
             if detail?.isHDR == true { qualityBadge("HDR", color: Color(hex: "F59E0B")) }
             if !awards.isEmpty {
@@ -227,34 +251,169 @@ struct TVMediaDetailView: View {
         }
     }
 
+    /// A series itself isn't playable; Play on its page starts the episode the server says is next.
+    private var playTarget: MediaItem {
+        item.type == .series ? (nextEpisode ?? item) : (detail?.item ?? item)
+    }
+
+    private var isResumable: Bool {
+        guard let ud = playTarget.userData else { return false }
+        return ud.playbackPositionTicks > 0 && !ud.played
+    }
+
     private var playLabel: String {
-        if let ep = nextEpisode ?? (item.type == .episode ? item : nil),
-           let num = ep.indexNumber {
-            return "Play E\(num)"
+        let episode = playTarget.type == .episode ? playTarget.indexNumber.map { "E\($0)" } : nil
+        if isResumable {
+            if let total = item.type == .series ? nil : detail?.runTimeTicks,
+               let position = playTarget.userData?.playbackPositionTicks, total > position {
+                let minutes = Int(Double(total - position) / 10_000_000 / 60)
+                let left = minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
+                return "Resume · \(left) left"
+            }
+            return episode.map { "Resume \($0)" } ?? "Resume"
         }
-        return "Play"
+        return episode.map { "Play \($0)" } ?? "Play"
     }
 
     private var actionColumn: some View {
         VStack(spacing: 14) {
             Button {
-                let target = nextEpisode ?? item
-                playbackRequest = PlaybackRequest(item: target, startTicks: target.userData?.playbackPositionTicks ?? 0)
+                playbackRequest = PlaybackRequest(item: playTarget, startTicks: isResumable ? (playTarget.userData?.playbackPositionTicks ?? 0) : 0)
             } label: {
                 TVDetailButtonLabel(icon: "play.fill", text: playLabel, isPrimary: true)
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
 
-            Button {
-                if statsRepo.isConfigured {
-                    Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
+            if isResumable {
+                Button {
+                    playbackRequest = PlaybackRequest(item: playTarget, startTicks: 0)
+                } label: {
+                    TVDetailButtonLabel(icon: "arrow.counterclockwise", text: "Start Over")
                 }
-            } label: {
-                TVDetailButtonLabel(icon: "bookmark", text: "Watchlist")
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+            }
+
+            HStack(spacing: 14) {
+                Button { toggleFavorite() } label: {
+                    TVDetailButtonLabel(icon: isFavorite ? "heart.fill" : "heart", text: "")
+                }
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                Menu {
+                    moreMenuContent
+                } label: {
+                    TVDetailButtonLabel(icon: "ellipsis", text: "")
+                }
+                .accessibilityLabel("More")
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
+        }
+    }
+
+    @ViewBuilder
+    private var moreMenuContent: some View {
+        Button { setRating(true) } label: {
+            Label(likes == true ? "Remove Like" : "Like", systemImage: likes == true ? "hand.thumbsup.fill" : "hand.thumbsup")
+        }
+        Button { setRating(false) } label: {
+            Label(likes == false ? "Remove Dislike" : "Dislike", systemImage: likes == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+        }
+        if item.type == .movie || item.type == .episode {
+            Button { markWatched(!isWatched) } label: {
+                Label(isWatched ? "Mark as Unwatched" : "Mark as Watched", systemImage: isWatched ? "eye.slash" : "checkmark")
+            }
+        }
+        Button { PlaylistStore.shared.addingItem = item } label: {
+            Label("Add to Playlist…", systemImage: "text.badge.plus")
+        }
+        if (item.type == .movie || item.type == .episode) && ProfileRules.shared.canManageSubtitles {
+            Button { showSubtitleSearch = true } label: {
+                Label("Search for Subtitles…", systemImage: "captions.bubble")
+            }
+        }
+        if statsRepo.isConfigured {
+            Button {
+                Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
+            } label: {
+                Label("Add to Streamystats Watchlist", systemImage: "bookmark")
+            }
+        }
+    }
+
+    private func setRating(_ value: Bool) {
+        guard let cred = credential, let header = authHeader else { return }
+        let newValue: Bool? = likes == value ? nil : value
+        likes = newValue
+        Task { try? await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue) }
+    }
+
+    private func toggleFavorite() {
+        guard let cred = credential, let header = authHeader else { return }
+        isFavorite.toggle()
+        let newValue = isFavorite
+        Task { try? await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: newValue) }
+    }
+
+    private func markWatched(_ watched: Bool) {
+        guard let cred = credential, let header = authHeader else { return }
+        isWatched = watched
+        Task {
+            try? await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: watched)
+            await refreshAfterPlayback(waitForReport: false)
+        }
+    }
+
+    private func markEpisodeWatched(_ ep: MediaItem, watched: Bool) {
+        guard let cred = credential, let header = authHeader else { return }
+        Task {
+            try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
+            await refreshAfterPlayback(waitForReport: false)
+        }
+    }
+
+    private enum WatchScope { case season, series }
+
+    private func markScopeWatched(_ scope: WatchScope, watched: Bool) {
+        guard let cred = credential, let header = authHeader, let seriesId = seasonSeriesId else { return }
+        let seasonEpisodes = episodes
+        let allSeasons = seasons
+        Task {
+            switch scope {
+            case .season:
+                for ep in seasonEpisodes {
+                    try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
+                }
+            case .series:
+                for season in allSeasons {
+                    let eps = (try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: season.id)) ?? []
+                    for ep in eps {
+                        try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
+                    }
+                }
+            }
+            await refreshAfterPlayback(waitForReport: false)
+        }
+    }
+
+    /// Re-reads progress after the player closes, so Play becomes Resume and the episodes show
+    /// what was watched.
+    private func refreshAfterPlayback(waitForReport: Bool = true) async {
+        guard let cred = credential, let header = authHeader else { return }
+        if waitForReport { try? await Task.sleep(for: .milliseconds(700)) }
+        if let fresh = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id) {
+            detail = fresh
+            isWatched = fresh.item.userData?.played ?? false
+        }
+        guard let seriesId = seasonSeriesId else { return }
+        if item.type == .series,
+           let next = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
+            nextEpisode = next
+        }
+        if let seasonId = loadedSeasonId,
+           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId) {
+            episodes = fresh
         }
     }
 
@@ -316,13 +475,57 @@ struct TVMediaDetailView: View {
     @ViewBuilder
     private var belowFoldSection: some View {
         if !seasons.isEmpty { seriesSection.trackSectionOffset().focusSection() }
+        if let seriesItem, item.type == .episode {
+            itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
+        }
         if !trailers.isEmpty { trailersSection.trackSectionOffset().focusSection() }
+        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings)
+            .padding(.horizontal, 80)
+            .padding(.bottom, 56)
+            .focusSection()
         if let d = detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
         if !seerrRelatedItems.isEmpty {
             seerrRelatedSection.trackSectionOffset().focusSection()
         } else if !similarItems.isEmpty {
             similarSection.trackSectionOffset().focusSection()
         }
+        if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
+            itemRow(jellyfinRecommended.title, jellyfinRecommended.items).trackSectionOffset().focusSection()
+        }
+        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
+            .padding(.horizontal, 80)
+            .focusSection()
+    }
+
+    /// An episode's TMDB id is the episode's own, which the title lookups don't take.
+    private var insightsTmdbId: Int? {
+        item.type == .episode ? nil : (detail?.item.tmdbId ?? item.tmdbId)
+    }
+
+    private func itemRow(_ title: String, _ items: [MediaItem]) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle(title).padding(.horizontal, 80)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(items) { rec in
+                        NavigationLink(value: rec) {
+                            PosterCard(
+                                title: rec.name,
+                                subtitle: rec.productionYear.map { String($0) },
+                                imageURL: mediaRepo.tvImageURL(for: rec, fillWidth: 640)
+                            )
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+                .padding(.horizontal, 80)
+                .padding(.top, 20)
+                .focusSection()
+            }
+            .scrollClipDisabled()
+        }
+        .padding(.bottom, 56)
     }
 
     private var seriesSection: some View {
@@ -330,6 +533,16 @@ struct TVMediaDetailView: View {
             HStack {
                 sectionTitle("Episodes")
                 Spacer()
+                Menu {
+                    Button("Mark Season Watched") { markScopeWatched(.season, watched: true) }
+                    Button("Mark Season Unwatched") { markScopeWatched(.season, watched: false) }
+                    Button("Mark Series Watched") { markScopeWatched(.series, watched: true) }
+                    Button("Mark Series Unwatched") { markScopeWatched(.series, watched: false) }
+                } label: {
+                    TVSeasonPickerLabel(name: "Watched", systemImage: "checkmark.circle")
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
                 Menu {
                     ForEach(seasons) { season in
                         Button(season.name) { selectedSeason = season }
@@ -346,11 +559,22 @@ struct TVMediaDetailView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(episodes) { ep in
+                            let watched = ep.userData?.played == true
                             Button { selectedEpisode = ep } label: {
-                                TVEpisodeCard(ep: ep)
+                                TVEpisodeCard(ep: ep, badge: episodeBadge(ep))
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
+                            .contextMenu {
+                                Button {
+                                    playbackRequest = PlaybackRequest(item: ep, startTicks: ep.userData?.playbackPositionTicks ?? 0)
+                                } label: {
+                                    Label("Play", systemImage: "play.fill")
+                                }
+                                Button { markEpisodeWatched(ep, watched: !watched) } label: {
+                                    Label(watched ? "Mark as Unwatched" : "Mark as Watched", systemImage: watched ? "eye.slash" : "checkmark")
+                                }
+                            }
                             .id(ep.id)
                         }
                     }
@@ -466,7 +690,7 @@ struct TVMediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(seerrRelatedItems) { sim in
-                        Button { requestingSeerrItem = sim } label: {
+                        Button { openSeerrItem = sim } label: {
                             PosterCard(
                                 title: sim.title,
                                 subtitle: sim.year,
@@ -522,6 +746,12 @@ struct TVMediaDetailView: View {
 
         let fetchedDetail = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
         detail = fetchedDetail
+        isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
+        likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
+        isWatched = fetchedDetail?.item.userData?.played ?? item.userData?.played ?? false
+        if item.type == .episode, let seriesId = item.seriesId {
+            seriesItem = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
+        }
 
         if let fetchedDetail, let mediaType = seerrMediaType(for: fetchedDetail.item),
            let tmdbId = fetchedDetail.item.tmdbId {
@@ -529,6 +759,18 @@ struct TVMediaDetailView: View {
         }
         if seerrRelatedItems.isEmpty {
             similarItems = (try? await client.getSimilarItems(credential: cred, authHeader: header, itemId: item.id)) ?? []
+        }
+        if seerrRelatedItems.isEmpty, item.type == .movie {
+            let categories = (try? await client.getMovieRecommendations(credential: cred, authHeader: header)) ?? []
+            let shown = Set(similarItems.map(\.id))
+            if let match = categories.first(where: { $0.baselineItemName?.caseInsensitiveCompare(item.name) == .orderedSame }) {
+                let fresh = match.items.filter { !shown.contains($0.id) && $0.id != item.id }
+                if fresh.count >= 3 {
+                    jellyfinRecommended = MovieRecommendationCategory(
+                        id: match.id, recommendationType: match.recommendationType,
+                        baselineItemName: match.baselineItemName, items: fresh)
+                }
+            }
         }
 
         // Awaited like every other section's fetch above — a detached Task here let the
@@ -564,6 +806,7 @@ struct TVMediaDetailView: View {
             }
 
             selectedSeason = target
+            loadedSeasonId = target.id
             episodes = (try? await client.getEpisodes(
                 credential: cred, authHeader: header,
                 seriesId: seriesId, seasonId: target.id)) ?? []
@@ -592,6 +835,16 @@ struct TVMediaDetailView: View {
         Text(title)
             .font(.system(size: 28, weight: .bold))
             .foregroundStyle(DT.Color.textPrimary)
+    }
+
+    /// "NEW" for an unwatched episode out in the last two weeks; "FINALE" for the season's last.
+    private func episodeBadge(_ ep: MediaItem) -> String? {
+        if ep.userData?.played != true, let premiere = ep.premiereDate,
+           premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
+            return "NEW"
+        }
+        if episodes.count > 1, ep.id == episodes.last?.id { return "FINALE" }
+        return nil
     }
 
     private func seerrMediaType(for item: MediaItem) -> RequestMediaType? {
@@ -625,6 +878,7 @@ struct TVMediaDetailView: View {
 
 private struct TVSeasonPickerLabel: View {
     let name: String
+    var systemImage = "chevron.down"
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
@@ -632,7 +886,7 @@ private struct TVSeasonPickerLabel: View {
             Text(name)
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(isFocused ? .white : DT.Color.accent)
-            Image(systemName: "chevron.down")
+            Image(systemName: systemImage)
                 .font(.system(size: 18))
                 .foregroundStyle(isFocused ? .white : DT.Color.accent)
         }
@@ -647,6 +901,7 @@ private struct TVSeasonPickerLabel: View {
 
 private struct TVEpisodeCard: View {
     let ep: MediaItem
+    var badge: String? = nil
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(\.isFocused) private var isFocused
 
@@ -661,6 +916,27 @@ private struct TVEpisodeCard: View {
                 }
             }
             .frame(width: 320, height: 180)
+            .overlay {
+                if ep.userData?.played == true {
+                    ZStack {
+                        Color.black.opacity(0.45)
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(Color(hex: "10b981"))
+                    }
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let pct = ep.userData?.playedPercentage, pct > 0, ep.userData?.played != true {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Rectangle().fill(.white.opacity(0.25))
+                            Rectangle().fill(DT.Color.accent).frame(width: geo.size.width * min(pct / 100, 1))
+                        }
+                    }
+                    .frame(height: 5)
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(
                 RoundedRectangle(cornerRadius: DT.Radius.card)
@@ -671,10 +947,19 @@ private struct TVEpisodeCard: View {
             .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
 
             VStack(alignment: .leading, spacing: 3) {
-                if let epNum = ep.indexNumber {
-                    Text("Ep \(epNum)")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(DT.Color.accent)
+                HStack(spacing: 8) {
+                    if let epNum = ep.indexNumber {
+                        Text("Ep \(epNum)")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(DT.Color.accent)
+                    }
+                    if let badge {
+                        Text(badge)
+                            .font(.system(size: 14, weight: .bold))
+                            .padding(.horizontal, 8).padding(.vertical, 2)
+                            .background(DT.Color.accent.opacity(0.18), in: Capsule())
+                            .foregroundStyle(DT.Color.accent)
+                    }
                 }
                 Text(ep.name)
                     .font(.system(size: 20, weight: .semibold))

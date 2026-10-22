@@ -3,6 +3,7 @@
 #if os(tvOS)
 import SwiftUI
 import SeerrAPI
+import JellyfinAPI
 
 struct TVSeerrView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -35,6 +36,7 @@ struct TVSeerrView: View {
             }
             .screenBackground()
             .navigationDestination(for: SeerrItem.self) { TVSeerrItemDetailView(item: $0) }
+            .navigationDestination(for: MediaItem.self) { TVMediaDetailView(item: $0) }
             .navigationDestination(for: SeerrGenre.self) { genre in
                 TVSeerrGridView(title: genre.name) {
                     await seerrRepo.discoverByGenre(genre.id, mediaType: mediaType)
