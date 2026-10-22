@@ -616,6 +616,16 @@ struct TVHomeView: View {
 
     @ViewBuilder
     private func cwContextMenu(_ item: MediaItem) -> some View {
+        if item.type == .movie || item.type == .episode {
+            let ticks = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+            Button {
+                focusedItemID = nil
+                playbackRequest = PlaybackRequest(item: item, startTicks: ticks)
+            } label: {
+                Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+            }
+        }
+        ItemQuickActions(item: item)
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear { Label(String(year), systemImage: "calendar") }
         if let rating = item.communityRating {

@@ -38,13 +38,16 @@ struct WatchlistView: View {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(seerrRepo.watchlist) { item in
-                            Button { requestingItem = item } label: {
+#if os(tvOS)
+                            NavigationLink(value: item) {
                                 watchlistCard(item)
                             }
-#if os(tvOS)
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
 #else
+                            Button { requestingItem = item } label: {
+                                watchlistCard(item)
+                            }
                             .buttonStyle(.plain)
 #endif
                         }
