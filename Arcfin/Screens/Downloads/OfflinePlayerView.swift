@@ -394,6 +394,7 @@ struct OfflinePlayerView: View {
         // Picked up by OfflineProgressSync once the app's back online — this is the only
         // record that playback happened at all while offline.
         downloadedItem.needsSync = true
+        downloadedItem.progressChangedAt = Date()
         try? modelContext.save()
         if final {
             progressSaveTask?.cancel()

@@ -850,6 +850,33 @@ public struct JellyfinMediaClient: Sendable {
         }
     }
 
+    /// Position and watched state for many items in a few requests, keyed by item id.
+    public func getUserData(credential: ServerCredential, authHeader: String, itemIds: [String]) async throws -> [String: UserData] {
+        var result: [String: UserData] = [:]
+        for start in stride(from: 0, to: itemIds.count, by: 100) {
+            let ids = itemIds[start..<min(start + 100, itemIds.count)]
+            var comps = URLComponents(
+                url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+                resolvingAgainstBaseURL: false)!
+            comps.queryItems = [
+                .init(name: "Ids", value: ids.joined(separator: ",")),
+                .init(name: "EnableUserData", value: "true"),
+                .init(name: "EnableImages", value: "false"),
+            ]
+            var req = URLRequest(url: comps.url!)
+            req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+            req.timeoutInterval = 15
+            let (data, response) = try await URLSession.arcfin.data(for: req)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                throw URLError(.badServerResponse)
+            }
+            for item in try JSONDecoder().decode(ItemsPage.self, from: data).items {
+                if let userData = item.toMediaItem().userData { result[item.id] = userData }
+            }
+        }
+        return result
+    }
+
     /// An item's resume position and watched state for this user, if the server answers.
     public func getUserData(credential: ServerCredential, authHeader: String, itemId: String) async throws -> UserData? {
         let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)")
@@ -1188,7 +1215,8 @@ struct JellyfinItemResponse: Decodable {
                     isFavorite: $0.isFavorite ?? false,
                     played: $0.played ?? false,
                     playedPercentage: $0.playedPercentage,
-                    likes: $0.likes
+                    likes: $0.likes,
+                    lastPlayedDate: $0.lastPlayed
                 )
             },
             productionYear: productionYear,
@@ -1221,9 +1249,23 @@ struct UserDataResponse: Decodable {
     let played: Bool?
     let playedPercentage: Double?
     let likes: Bool?
+    let lastPlayedDate: String?
+
+    /// Jellyfin writes seven fractional digits, which ISO8601DateFormatter won't read.
+    var lastPlayed: Date? {
+        guard var text = lastPlayedDate else { return nil }
+        if let dot = text.firstIndex(of: "."), let end = text[dot...].firstIndex(where: { !$0.isNumber && $0 != "." }) {
+            let fraction = text[text.index(after: dot)..<end]
+            text.replaceSubrange(dot..<end, with: "." + fraction.prefix(3))
+        }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+    }
 
     enum CodingKeys: String, CodingKey {
         case likes = "Likes"
+        case lastPlayedDate = "LastPlayedDate"
         case playbackPositionTicks = "PlaybackPositionTicks"
         case playCount = "PlayCount"
         case isFavorite = "IsFavorite"
@@ -1320,7 +1362,8 @@ private struct ItemDetailResponse: Decodable {
                          isFavorite: ud.isFavorite ?? false,
                          played: ud.played ?? false,
                          playedPercentage: ud.playedPercentage,
-                         likes: ud.likes)
+                         likes: ud.likes,
+                         lastPlayedDate: ud.lastPlayed)
             },
             productionYear: productionYear,
             communityRating: communityRating,

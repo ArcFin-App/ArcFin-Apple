@@ -52,6 +52,9 @@ public final class DownloadedItem {
     /// Set whenever position/played changes from offline playback — cleared once
     /// OfflineProgressSync (SyncEngine) has successfully reported it back to the server.
     public var needsSync: Bool = false
+    /// When playback here last moved the position or watched state, to weigh it against the
+    /// server's own last-played time. nil on downloads from before this was kept.
+    public var progressChangedAt: Date?
 
     // Richer page details, saved at download time so the downloaded page reads like the
     // online one. Defaults keep older downloads (made before these existed) loading as-is.

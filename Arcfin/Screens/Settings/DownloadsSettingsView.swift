@@ -92,7 +92,7 @@ struct DownloadsSettingsView: View {
                 Toggle("Remove Watched When Low on Space", isOn: $removeWatchedWhenLow)
                     .syncLocked("removeWatchedWhenLowOnSpace", authManager)
             } footer: {
-                Text("Delete After Watching removes a movie or episode once you finish it. Remove Downloads After counts from the day it downloaded, watched or not. When the device has under 2 GB free, the oldest watched downloads go first.")
+                Text("Delete After Watching removes a movie or episode once you finish it, here or on another device. Remove Downloads After counts from the day it downloaded, watched or not. When the device has under 2 GB free, the oldest watched downloads go first.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -137,7 +137,7 @@ struct DownloadsSettingsView: View {
                         }
                 }
             } footer: {
-                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing watched ones to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, and when you close the player. It only uses mobile data with Use Mobile Data on; charges may apply.")
+                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing ones watched here or anywhere else to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, when the connection returns, and when you close the player. It only uses mobile data with Use Mobile Data on; charges may apply.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

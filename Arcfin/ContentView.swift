@@ -340,7 +340,11 @@ struct ContentView: View {
         }
         // The explicit "I'm back online" moment — items played while offline sync then too,
         // not just at next cold launch.
-        .onChange(of: authManager.networkChanges) { syncOfflineProgress() }
+        .onChange(of: authManager.networkChanges) {
+            syncOfflineProgress()
+            // Back online: catch downloads up on what was watched elsewhere meanwhile.
+            downloadManager.refreshSmartDownloads()
+        }
         // The profile's parental controls and permissions, from the server: on sign-in, a
         // profile switch, and each return to the app (an admin may have changed them).
         .task(id: authManager.state.credential?.id) { await loadProfileRules() }

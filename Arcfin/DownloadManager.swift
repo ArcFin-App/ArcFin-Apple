@@ -8,6 +8,7 @@ import AuthCore
 import JellyfinAPI
 import LiveActivityKit
 import Persistence
+import SyncEngine
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 #endif
@@ -217,9 +218,41 @@ final class DownloadManager: NSObject {
     /// can be holding one of the queued rows.
     func purgeWatchedDownloads() {
         let ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
-        guard !ids.isEmpty else { return }
-        UserDefaults.standard.removeObject(forKey: Self.pendingWatchedDeleteKey)
-        for id in ids { deleteDownload(itemId: id) }
+        guard !ids.isEmpty, let modelContext else { return }
+        // A download whose watching here hasn't reached the server yet stays until it has:
+        // deleting it would lose that for good.
+        let unsynced = Set(((try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.needsSync }))) ?? []).map(\.itemId))
+        UserDefaults.standard.set(ids.filter(unsynced.contains), forKey: Self.pendingWatchedDeleteKey)
+        for id in ids where !unsynced.contains(id) { deleteDownload(itemId: id) }
+    }
+
+    /// Brings each download's watched state and position in line with the server, after first
+    /// sending what was watched here. Watching on another device or on the web otherwise never
+    /// reaches a downloaded copy, so Smart Downloads and Delete After Watching couldn't act on it.
+    func reconcileWatchedState() async {
+        guard let modelContext, let authManager else { return }
+        let profiles = authManager.profiles
+        let authClient = authManager.authClient
+        await OfflineProgressSync.syncPending(modelContext: modelContext, profiles: profiles,
+                                              authHeader: { authClient.authHeader(token: $0.accessToken) })
+        let settled = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { !$0.needsSync }))) ?? []
+        let deletesWatched = UserDefaults.standard.bool(forKey: "deleteDownloadsAfterWatching")
+        for items in Dictionary(grouping: settled, by: { "\($0.serverId)|\($0.userId)" }).values {
+            guard let first = items.first,
+                  let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId }),
+                  let server = try? await client.getUserData(credential: credential, authHeader: authClient.authHeader(token: credential.accessToken),
+                                                             itemIds: items.map(\.itemId))
+            else { continue }
+            for item in items {
+                guard let remote = server[item.itemId] else { continue }
+                let newlyWatched = remote.played && !item.played
+                item.played = remote.played
+                item.playbackPositionTicks = remote.played ? 0 : remote.playbackPositionTicks
+                // Delete After Watching counts finishing it anywhere, not only here.
+                if newlyWatched && deletesWatched { markForDeletionAfterWatching(itemId: item.itemId) }
+            }
+        }
+        try? modelContext.save()
     }
 
     private func startWiFiMonitoringIfNeeded() {
@@ -269,6 +302,7 @@ final class DownloadManager: NSObject {
             try? await Task.sleep(for: .seconds(5))
             guard let authManager, let credential = authManager.state.credential else { return }
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+            await reconcileWatchedState()
             await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
             purgeWatchedDownloads()
         }
@@ -1234,12 +1268,16 @@ final class DownloadManager: NSObject {
         if episodeCount != nil { refreshSmartDownloads() }
     }
 
-    /// Re-checks kept shows from places other than launch: the app coming to the foreground,
+    /// Catches downloads up with the server's watched state, then re-checks kept shows, from
+    /// places other than launch: the app coming to the foreground, the connection coming back,
     /// the player closing, or a show being switched on.
     func refreshSmartDownloads() {
         guard let authManager, let credential = authManager.state.credential else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        Task { await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader) }
+        Task {
+            await reconcileWatchedState()
+            await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
+        }
     }
 
     /// Keeps the next few unwatched episodes downloaded, for every show with downloads when

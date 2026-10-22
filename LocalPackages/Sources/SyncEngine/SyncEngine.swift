@@ -29,31 +29,54 @@ public enum OfflineProgressSync {
 
         let client = JellyfinMediaClient()
         var syncedCount = 0
-        for item in pending {
-            // serverId is the ServerCredential's own id (see DownloadManager, where it's
-            // stored as credential.id.uuidString) — matched against currently saved profiles
-            // rather than requiring the item's original server to still be the active one.
-            guard let credential = profiles.first(where: {
-                $0.id.uuidString == item.serverId && $0.userID == item.userId
-            }) else { continue }
-
+        // serverId is the ServerCredential's own id (see DownloadManager, where it's stored as
+        // credential.id.uuidString) — matched against currently saved profiles rather than
+        // requiring the item's original server to still be the active one.
+        let byProfile = Dictionary(grouping: pending) { "\($0.serverId)|\($0.userId)" }
+        for items in byProfile.values {
+            guard let first = items.first,
+                  let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId })
+            else { continue }
             let header = authHeader(credential)
-            do {
-                try await client.updateUserData(
-                    credential: credential, authHeader: header, itemId: item.itemId,
-                    positionTicks: item.playbackPositionTicks, played: item.played
-                )
-            } catch {
-                // Left marked, so the next sync tries again.
-                continue
+            // The server's state first: the title may have been watched elsewhere meanwhile,
+            // and sending this device's older "part-way through" would mark it unwatched.
+            guard let server = try? await client.getUserData(
+                credential: credential, authHeader: header, itemIds: items.map(\.itemId))
+            else { continue }
+            for item in items {
+                if let remote = server[item.itemId], serverIsNewer(remote, than: item) {
+                    item.played = remote.played
+                    item.playbackPositionTicks = remote.played ? 0 : remote.playbackPositionTicks
+                    item.needsSync = false
+                    continue
+                }
+                do {
+                    try await client.updateUserData(
+                        credential: credential, authHeader: header, itemId: item.itemId,
+                        positionTicks: item.playbackPositionTicks, played: item.played,
+                        lastPlayed: item.progressChangedAt ?? Date()
+                    )
+                } catch {
+                    // Left marked, so the next sync tries again.
+                    continue
+                }
+                item.needsSync = false
+                syncedCount += 1
             }
-            item.needsSync = false
-            syncedCount += 1
         }
         try? modelContext.save()
         if syncedCount > 0 {
             log.info("Synced \(syncedCount) offline-played item(s) back to their server")
         }
+    }
+
+    /// Watched anywhere is never undone by a position from here; otherwise whichever was
+    /// played last wins. A download from before change times were kept defers to a watch.
+    @MainActor
+    static func serverIsNewer(_ remote: UserData, than item: DownloadedItem) -> Bool {
+        if remote.played && !item.played { return true }
+        guard !item.played, let serverTime = remote.lastPlayedDate, let localTime = item.progressChangedAt else { return false }
+        return serverTime > localTime
     }
 }
 

@@ -110,6 +110,8 @@ public struct UserData: Sendable, Equatable, Hashable {
     public var playedPercentage: Double?
     /// Thumbs rating: true = liked, false = disliked, nil = not rated.
     public var likes: Bool?
+    /// When it was last played anywhere, as the server records it.
+    public var lastPlayedDate: Date?
 
     public init(
         playbackPositionTicks: Int64 = 0,
@@ -117,7 +119,8 @@ public struct UserData: Sendable, Equatable, Hashable {
         isFavorite: Bool = false,
         played: Bool = false,
         playedPercentage: Double? = nil,
-        likes: Bool? = nil
+        likes: Bool? = nil,
+        lastPlayedDate: Date? = nil
     ) {
         self.playbackPositionTicks = playbackPositionTicks
         self.playCount = playCount
@@ -125,6 +128,7 @@ public struct UserData: Sendable, Equatable, Hashable {
         self.played = played
         self.playedPercentage = playedPercentage
         self.likes = likes
+        self.lastPlayedDate = lastPlayedDate
     }
 }
 
