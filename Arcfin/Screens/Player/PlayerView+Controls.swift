@@ -813,7 +813,7 @@ extension PlayerView {
         "-" + timeLabel(ticks: remainingTicks)
     }
 
-    private func timeLabel(ticks: Int64) -> String {
+    func timeLabel(ticks: Int64) -> String {
         let totalSeconds = Int(Double(ticks) / 10_000_000)
         let h = totalSeconds / 3600
         let m = (totalSeconds % 3600) / 60

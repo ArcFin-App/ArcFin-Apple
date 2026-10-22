@@ -171,8 +171,12 @@ final class DownloadManager: NSObject {
         wifiPathMonitor = monitor
     }
 
+    /// For the player's Quality on Mobile Data, read as it opens.
+    static private(set) var isOnMobileDataNow = false
+
     private func networkChanged(onMobileData: Bool) {
         isOnMobileData = onMobileData
+        Self.isOnMobileDataNow = onMobileData
         recheckWiFiHold()
     }
 

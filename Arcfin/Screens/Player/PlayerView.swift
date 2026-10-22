@@ -135,6 +135,12 @@ struct PlayerView: View {
     @State var showUpNext = false
     @State var upNextDismissed = false
     @State var upNextCountdown: Task<Void, Never>?
+    @AppStorage("doubleTapToSkip") var doubleTapToSkip = true
+    /// Where playback starts: the resume point, or the beginning under Start Over.
+    @State var resumeFrom: Int64 = 0
+    /// Settings › Playback › When Resuming is Ask, and the answer isn't in yet.
+    @State var isAskingToResume = false
+    @State var resumeAnswered = false
     @State var showStillWatchingPrompt = false
     @State var pendingAutoAdvanceEpisode: MediaItem?
     @State var stillWatchingTimeoutTask: Task<Void, Never>?
@@ -161,6 +167,7 @@ struct PlayerView: View {
     @State var volumeEchoSuppressTask: Task<Void, Never>?
     @State var displayCriteriaMatcher = DisplayCriteriaMatcher()
     @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
+    @AppStorage("swipeGesturesEnabled") var swipeGesturesEnabled = true
     @State var routeBridge = RouteButtonBridge()
     @State var isLandscape = false
     #endif
@@ -208,7 +215,13 @@ struct PlayerView: View {
         self.item = item
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
-        _quality = State(initialValue: VideoQuality(rawValue: UserDefaults.standard.string(forKey: "videoQuality") ?? "") ?? .max)
+        let defaults = UserDefaults.standard
+        let mobileQuality = DownloadManager.isOnMobileDataNow
+            ? defaults.string(forKey: "mobileVideoQuality").flatMap(VideoQuality.init(rawValue:)) : nil
+        _quality = State(initialValue: mobileQuality ?? VideoQuality(rawValue: defaults.string(forKey: "videoQuality") ?? "") ?? .max)
+        let behavior = ResumeBehavior.current
+        _resumeFrom = State(initialValue: behavior == .startOver ? 0 : startPositionTicks)
+        _isAskingToResume = State(initialValue: behavior == .ask && startPositionTicks > 0)
     }
 
     private var credential: ServerCredential? { authManager.state.credential }
@@ -355,7 +368,21 @@ struct PlayerView: View {
             }
         }
         #endif
-        .task { await setup() }
+        .task { if !isAskingToResume { await setup() } }
+        .confirmationDialog("Resume Playback?", isPresented: $isAskingToResume, titleVisibility: .visible) {
+            Button("Resume from \(timeLabel(ticks: startPositionTicks))") {
+                resumeFrom = startPositionTicks
+                resumeAnswered = true
+            }
+            Button("Start from Beginning") {
+                resumeFrom = 0
+                resumeAnswered = true
+            }
+            Button("Cancel", role: .cancel) { closePlayer() }
+        }
+        .onChange(of: isAskingToResume) { _, asking in
+            if !asking, resumeAnswered { Task { await setup() } }
+        }
         .onDisappear {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)
@@ -803,10 +830,13 @@ struct PlayerView: View {
     /// Remember Playback Speed is on. The key is written on every pick so turning the
     /// setting on later starts from the speed last used.
     private func applyRememberedRate() async {
-        guard UserDefaults.standard.bool(forKey: "rememberPlaybackSpeed") else { return }
-        let saved = UserDefaults.standard.float(forKey: Self.lastRateKey)
-        guard saved > 0, saved != 1 else { return }
-        await player.setRate(saved)
+        let defaults = UserDefaults.standard
+        // Otherwise Settings › Playback › Default Speed.
+        let rate = defaults.bool(forKey: "rememberPlaybackSpeed")
+            ? defaults.float(forKey: Self.lastRateKey)
+            : Float(defaults.object(forKey: "defaultPlaybackSpeed") as? Double ?? 1)
+        guard rate > 0, rate != 1 else { return }
+        await player.setRate(rate)
     }
 
     @ViewBuilder
@@ -984,10 +1014,10 @@ struct PlayerView: View {
             // the same AVFoundation/VLC split Auto used before Aether existed, rather than
             // surfacing a hard error over an engine that can't serve this specific source.
             do {
-                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+                try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
                 player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
-                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+                try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             await player.play()
             await applyRememberedRate()
@@ -1035,7 +1065,7 @@ struct PlayerView: View {
             Task { await fetchAndApplyNowPlayingArtwork() }
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                             positionTicks: startPositionTicks)
+                                             positionTicks: resumeFrom)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
         } catch {
             errorMessage = "Couldn't start playback: \(error.localizedDescription)"
@@ -1219,9 +1249,15 @@ struct PlayerView: View {
         nowPlayingManager.clear()
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
+            let stoppedAt = player.positionTicks
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
                                                itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                               positionTicks: player.positionTicks)
+                                               positionTicks: stoppedAt)
+            if WatchedThreshold.current.isReached(seconds: Double(stoppedAt) / 10_000_000,
+                                                  duration: Double(player.durationTicks) / 10_000_000,
+                                                  creditsStart: segments.credits?.lowerBound) {
+                _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
+            }
         }
         await player.stop()
         #if canImport(UIKit) && !os(tvOS)
@@ -1458,7 +1494,7 @@ struct PlayerView: View {
     private func startUpNextCountdown() {
         upNextCountdown?.cancel()
         upNextCountdown = Task {
-            try? await Task.sleep(for: .seconds(8))
+            try? await Task.sleep(for: .seconds(UserDefaults.standard.object(forKey: "upNextCountdownSeconds") as? Int ?? 8))
             guard !Task.isCancelled else { return }
             playNextEpisode(isAutomatic: true)
         }

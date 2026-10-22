@@ -21,6 +21,11 @@ struct PlaybackSettingsView: View {
     @State private var rememberedShowCount = ShowTrackMemory.rememberedShowCount
     @AppStorage("skipForwardSeconds")  private var skipForwardSeconds  = 10
     @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
+    @AppStorage("mobileVideoQuality") private var mobileVideoQuality = ""
+    @AppStorage("upNextCountdownSeconds") private var upNextCountdownSeconds = 8
+    @AppStorage(ResumeBehavior.key) private var resumeBehavior = ResumeBehavior.resume
+    @AppStorage(WatchedThreshold.key) private var watchedThreshold = WatchedThreshold.server
+    @AppStorage("defaultPlaybackSpeed") private var defaultPlaybackSpeed = 1.0
 
     private static let audioLanguageOptions: [(code: String, name: String)] = [
         ("", "None"),
@@ -61,6 +66,17 @@ struct PlaybackSettingsView: View {
                 }
                 .tvListRow()
                 .syncLocked("videoQuality", authManager)
+                #if os(iOS)
+                Picker(selection: $mobileVideoQuality) {
+                    Text("Same as Wi-Fi").tag("")
+                    ForEach(VideoQuality.allCases) { q in
+                        Text(q.label).tag(q.rawValue)
+                    }
+                } label: {
+                    TVRowLabelText(title: "Quality on Mobile Data")
+                }
+                .syncLocked("mobileVideoQuality", authManager)
+                #endif
                 VStack(alignment: .leading, spacing: 4) {
                     Picker(selection: $playbackEngine) {
                         ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
@@ -108,6 +124,17 @@ struct PlaybackSettingsView: View {
                 }
                 .tvListRow()
                 .syncLocked("autoPlayNext", authManager)
+                if autoPlayNext {
+                    Picker(selection: $upNextCountdownSeconds) {
+                        ForEach([5, 8, 10, 15], id: \.self) { seconds in
+                            Text("\(seconds)s").tag(seconds)
+                        }
+                    } label: {
+                        TVRowLabelText(title: "Up Next Countdown")
+                    }
+                    .tvListRow()
+                    .syncLocked("upNextCountdownSeconds", authManager)
+                }
                 Toggle(isOn: $skipRecap) {
                     TVRowLabelText(title: "Skip Recap Automatically")
                 }
@@ -133,8 +160,44 @@ struct PlaybackSettingsView: View {
                 }
                 .tvListRow()
                 .syncLocked("rememberPlaybackSpeed", authManager)
+                if !rememberPlaybackSpeed {
+                    Picker(selection: $defaultPlaybackSpeed) {
+                        ForEach([0.75, 1.0, 1.25, 1.5, 1.75, 2.0], id: \.self) { rate in
+                            Text(rate == 1 ? "Normal" : "\(rate.formatted())×").tag(rate)
+                        }
+                    } label: {
+                        TVRowLabelText(title: "Default Speed")
+                    }
+                    .tvListRow()
+                    .syncLocked("defaultPlaybackSpeed", authManager)
+                }
             } footer: {
-                Text("Starts new videos at the speed you last picked instead of 1×. Skip buttons appear whenever your server knows where a recap, intro, credits or preview is (from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins); the Skip toggles do it for you.")
+                Text("Remember Playback Speed starts new videos at the speed you last picked; otherwise they start at the default speed. Skip buttons appear whenever your server knows where a recap, intro, credits or preview is (from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins); the Skip toggles do it for you.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Picker(selection: $resumeBehavior) {
+                    ForEach(ResumeBehavior.allCases) { option in
+                        Text(option.label).tag(option)
+                    }
+                } label: {
+                    TVRowLabelText(title: "When Resuming")
+                }
+                .tvListRow()
+                .syncLocked(ResumeBehavior.key, authManager)
+                Picker(selection: $watchedThreshold) {
+                    ForEach(WatchedThreshold.allCases) { option in
+                        Text(option.label).tag(option)
+                    }
+                } label: {
+                    TVRowLabelText(title: "Mark as Watched")
+                }
+                .tvListRow()
+                .syncLocked(WatchedThreshold.key, authManager)
+            } footer: {
+                Text("When Resuming applies to titles you've started. Mark as Watched is when closing the player counts a title as watched; Server Default leaves it to your Jellyfin server (usually 90%).")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -238,6 +301,52 @@ struct PlaybackSettingsView: View {
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Playback")
+    }
+}
+
+/// Settings › Playback › When Resuming: what Play does for a title that's part-watched.
+enum ResumeBehavior: String, CaseIterable, Identifiable {
+    case ask, resume, startOver
+    static let key = "resumeBehavior"
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .ask: "Ask"
+        case .resume: "Resume"
+        case .startOver: "Start Over"
+        }
+    }
+    static var current: ResumeBehavior {
+        ResumeBehavior(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .resume
+    }
+}
+
+/// Settings › Playback › Mark as Watched: how far in closing the player counts as finished.
+enum WatchedThreshold: String, CaseIterable, Identifiable {
+    case server, credits, eighty, eightyFive
+    static let key = "markWatchedAt"
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .server: "Server Default"
+        case .credits: "When Credits Start"
+        case .eighty: "At 80%"
+        case .eightyFive: "At 85%"
+        }
+    }
+    static var current: WatchedThreshold {
+        WatchedThreshold(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .server
+    }
+
+    /// Whether stopping at `seconds` of `duration` counts, given where the credits start.
+    func isReached(seconds: Double, duration: Double, creditsStart: Double?) -> Bool {
+        guard duration > 0 else { return false }
+        switch self {
+        case .server: return false
+        case .credits: return seconds >= (creditsStart ?? duration * 0.95)
+        case .eighty: return seconds / duration >= 0.8
+        case .eightyFive: return seconds / duration >= 0.85
+        }
     }
 }
 
