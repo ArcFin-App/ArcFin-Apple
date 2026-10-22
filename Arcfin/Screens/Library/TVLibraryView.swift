@@ -79,6 +79,7 @@ struct TVCollectionDetailView: View {
     @State private var selectedItem: MediaItem?
     @State private var selectedPerson: MediaPerson?
     @State private var showFullDescription = false
+    @Namespace private var focusNamespace
     @State private var playbackRequest: PlaybackRequest?
 
     @State private var availableGenres: [String] = []
@@ -119,6 +120,7 @@ struct TVCollectionDetailView: View {
                 }
                 .focusSection()
             }
+            .focusScope(focusNamespace)
             .ignoresSafeArea()
         }
         .screenBackground()
@@ -222,6 +224,7 @@ struct TVCollectionDetailView: View {
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    .prefersDefaultFocus(true, in: focusNamespace)
                     .disabled(playable.isEmpty)
 
                     Button { shuffle() } label: {
@@ -327,6 +330,7 @@ struct TVCollectionDetailView: View {
                     Button("Close") { showFullDescription = false }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: DT.Radius.md)
                 }
                 .padding(80)
             }

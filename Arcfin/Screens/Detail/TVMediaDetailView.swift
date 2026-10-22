@@ -40,6 +40,7 @@ struct TVMediaDetailView: View {
     @State private var seriesItem: MediaItem?
     @State private var jellyfinRecommended: MovieRecommendationCategory?
     @State private var loadedSeasonId: String?
+    @Namespace private var focusNamespace
 
     private let client = JellyfinMediaClient()
 
@@ -63,6 +64,7 @@ struct TVMediaDetailView: View {
                 }
                 .focusSection()
             }
+            .focusScope(focusNamespace)
             .coordinateSpace(name: Self.scrollSpace)
             // TVFoldSnappingBehavior (shared with TVHomeView) only dampens the single
             // hero/shelf fold boundary — it intentionally leaves every target further down
@@ -284,6 +286,7 @@ struct TVMediaDetailView: View {
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
+            .prefersDefaultFocus(true, in: focusNamespace)
 
             if isResumable {
                 Button {
@@ -630,7 +633,7 @@ struct TVMediaDetailView: View {
                         Button { selectedPerson = person } label: {
                             TVCastPersonCard(
                                 imageURL: person.primaryImageTag.flatMap {
-                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120)
+                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 240)
                                 },
                                 name: person.name,
                                 role: person.role,
@@ -654,7 +657,7 @@ struct TVMediaDetailView: View {
         Circle()
             .fill(DT.Color.backgroundSecondary)
             .overlay(Image(systemName: "person.fill")
-                .font(.system(size: 22))
+                .font(.system(size: 44))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
     }
 
@@ -730,6 +733,7 @@ struct TVMediaDetailView: View {
                     Button("Close") { showFullDescription = false }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: DT.Radius.md)
                         .padding(.top, 8)
                 }
                 .padding(80)
@@ -981,10 +985,10 @@ private struct TVCastPersonCard<Placeholder: View>: View {
     let role: String?
     @ViewBuilder let placeholder: () -> Placeholder
 
-    @State private var hovered = false
+    @Environment(\.isFocused) private var isFocused
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             Group {
                 if let imageURL {
                     CachedAsyncImage(url: imageURL) { phase in
@@ -997,26 +1001,27 @@ private struct TVCastPersonCard<Placeholder: View>: View {
                     placeholder()
                 }
             }
-            .frame(width: 60, height: 60)
+            .frame(width: 120, height: 120)
             .clipShape(Circle())
-            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : Color.white.opacity(0.1), lineWidth: hovered ? 2 : 1))
-            .scaleEffect(hovered ? 1.06 : 1)
+            .overlay(Circle().stroke(isFocused ? DT.Color.accent : Color.white.opacity(0.1), lineWidth: isFocused ? 4 : 1))
+            .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 12)
+            .scaleEffect(isFocused ? 1.08 : 1)
 
             Text(name)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(DT.Color.textPrimary)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
             if let role, !role.isEmpty {
                 Text(role)
-                    .font(.system(size: 9))
+                    .font(.system(size: 17))
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
             }
         }
-        .frame(width: 70, alignment: .top)
-        .animation(DT.Animation.fast, value: hovered)
+        .frame(width: 160, alignment: .top)
+        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
     }
 }
 

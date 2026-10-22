@@ -24,6 +24,7 @@ struct TVSeerrItemDetailView: View {
     @State private var openSeerrItem: SeerrItem?
     @State private var requestingItem: SeerrItem?
     @State private var showFullDescription = false
+    @Namespace private var focusNamespace
 
     private var hasRequestableContent: Bool {
         guard item.mediaType == .tv, let rows = detail?.seasonRows else { return seerrRepo.matchingRequest(for: item) == nil }
@@ -50,6 +51,7 @@ struct TVSeerrItemDetailView: View {
                 }
                 .focusSection()
             }
+            .focusScope(focusNamespace)
             .ignoresSafeArea()
         }
         .screenBackground()
@@ -166,12 +168,14 @@ struct TVSeerrItemDetailView: View {
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
+                .prefersDefaultFocus(true, in: focusNamespace)
             } else if let libraryItem {
                 Button { openLibraryItem = libraryItem } label: {
                     TVDetailButtonLabel(icon: "play.rectangle.fill", text: "View in Library", isPrimary: true)
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
+                .prefersDefaultFocus(true, in: focusNamespace)
             }
             if seerrRepo.isConfigured {
                 let inWatchlist = seerrRepo.isInWatchlist(item)
@@ -356,6 +360,7 @@ struct TVSeerrItemDetailView: View {
                     Button("Close") { showFullDescription = false }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: DT.Radius.md)
                 }
                 .padding(80)
             }
