@@ -13,6 +13,7 @@ import JellyfinAPI
 import MediaEngine
 import SwiftVLC
 import CastKit
+import GroupActivities
 
 struct PlayerView: View {
     let item: MediaItem
@@ -22,14 +23,29 @@ struct PlayerView: View {
     @Environment(AuthManager.self) var authManager
     @Environment(MediaRepository.self) var mediaRepo
     @Environment(SyncPlayManager.self) var syncPlayManager
+    @Environment(SharePlayManager.self) var sharePlay
+    /// Whether a FaceTime call is going, so SharePlay can start straight from the menu.
+    @StateObject var groupState = GroupStateObserver()
     @Environment(PlaybackPresenter.self) var playbackPresenter
     @Environment(\.dismiss) var dismiss
+    #if !os(tvOS)
+    @Environment(\.isPlayerWindow) var isPlayerWindow
+    @Environment(\.dismissWindow) var dismissWindow
+    @Environment(\.openWindow) var openWindow
+    @Environment(\.supportsMultipleWindows) var supportsMultipleWindows
+    #endif
 
     /// SwiftUI's own dismiss only does anything for a real .sheet/.fullScreenCover
     /// presentation — on macOS this view is a plain full-window ZStack overlay in
     /// ContentView instead (see PlaybackPresenter's own doc comment for why), so closing it
     /// there means clearing the shared presenter's request, not calling dismiss at all.
     func closePlayer() {
+        #if !os(tvOS)
+        if isPlayerWindow {
+            dismissWindow()
+            return
+        }
+        #endif
         #if os(macOS)
         playbackPresenter.dismiss()
         #else
@@ -81,6 +97,7 @@ struct PlayerView: View {
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
+    @State var lastSubtitleIndex: Int?
     /// Seconds subtitles are shifted later (+) or earlier (-) — for sources whose subtitle
     /// timing doesn't match the cut being played. Not persisted: it's per-viewing.
     @State var subtitleDelay: Double = 0
@@ -95,9 +112,10 @@ struct PlayerView: View {
     @State var trickplayLoader: TrickplayLoader?
     @State var scrubThumbnail: PlatformImage?
     @State var lastThumbnailBucket: Int?
-    @State var introEnd: Double?
-    @State var creditsStart: Double?
-    @State var recapEnd: Double?
+    /// Intro, recap, credits and preview spans from the server's segment plugins.
+    @State var segments = SkipSegments()
+    /// Segments already skipped automatically, so seeking back into one lets it play.
+    @State var autoSkipped: Set<String> = []
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
     /// Optimistic target of the most recent seek request — player.positionTicks only
@@ -114,10 +132,32 @@ struct PlayerView: View {
     @State var lastLoadStartedAt: Date?
     @State var networkToast: String?
     @State var chapters: [MediaChapter] = []
+    @State var castMembers: [MediaPerson] = []
+    /// The version picked for a title with several (Merge Versions); nil plays the server's first.
+    @State var selectedMediaSourceId: String?
+    @State var showXRay = false
+    /// A cast member picked in X-Ray; their page opens over the paused player.
+    @State var xRayPerson: MediaPerson?
+    @State var audioOnly = false
+    /// Set when the player is about to be replaced by the next title in the same cover, so
+    /// the outgoing instance doesn't unlock the orientation the viewer had chosen.
+    static var keepOrientationOnNextDisappear = false
+    @State var moreLikeThis: [MediaItem] = []
+    @State var currentLikes: Bool?
+    @State var showMoreLikeThis = false
+    @State var moreLikeThisDismissed = false
     @State var nextEpisode: MediaItem?
+    /// The title before this one in the queue or the series, for the Previous button.
+    @State var previousItem: MediaItem?
     @State var showUpNext = false
     @State var upNextDismissed = false
     @State var upNextCountdown: Task<Void, Never>?
+    @AppStorage("doubleTapToSkip") var doubleTapToSkip = true
+    /// Where playback starts: the resume point, or the beginning under Start Over.
+    @State var resumeFrom: Int64 = 0
+    /// Settings › Playback › When Resuming is Ask, and the answer isn't in yet.
+    @State var isAskingToResume = false
+    @State var resumeAnswered = false
     @State var showStillWatchingPrompt = false
     @State var pendingAutoAdvanceEpisode: MediaItem?
     @State var stillWatchingTimeoutTask: Task<Void, Never>?
@@ -125,9 +165,8 @@ struct PlayerView: View {
     #if !os(tvOS)
     @StateObject var pip = PiPCoordinator()
     @State var vlcPipController: SwiftVLC.PiPController?
-    @State var isPiPSupported = AVPictureInPictureController.isPictureInPictureSupported()
-    @State var nowPlayingManager = NowPlayingManager()
     #endif
+    @State var nowPlayingManager = NowPlayingManager()
     // Not PiP-specific — used by videoSurface's own aspect-fill toggle, which is
     // meaningful on tvOS too even though PiP itself isn't available there.
     @State var isFillScreen = false
@@ -144,6 +183,7 @@ struct PlayerView: View {
     @State var volumeEchoSuppressTask: Task<Void, Never>?
     @State var displayCriteriaMatcher = DisplayCriteriaMatcher()
     @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
+    @AppStorage("swipeGesturesEnabled") var swipeGesturesEnabled = true
     @State var routeBridge = RouteButtonBridge()
     @State var isLandscape = false
     #endif
@@ -152,6 +192,7 @@ struct PlayerView: View {
     @State var isMacFullScreen = false
     @State var macVolume: Double = 1.0
     @State var macVolumeHUD: Double?
+    @State var macVolumeBeforeMute: Double?
     @State var macVolumeHUDTask: Task<Void, Never>?
     @FocusState var isPlayerFocused: Bool
     @State var lastMacHoverLocation: CGPoint?
@@ -169,6 +210,7 @@ struct PlayerView: View {
     // tvOS focus APIs are actually built for, so the system handles the landing itself instead
     // of this code guessing at timing.
     @Namespace var tvFocusNamespace
+    @Environment(\.resetFocus) var resetFocus
     #endif
 
     let client = JellyfinMediaClient()
@@ -190,7 +232,13 @@ struct PlayerView: View {
         self.item = item
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
-        _quality = State(initialValue: VideoQuality(rawValue: UserDefaults.standard.string(forKey: "videoQuality") ?? "") ?? .max)
+        let defaults = UserDefaults.standard
+        let mobileQuality = DownloadManager.isOnMobileDataNow
+            ? defaults.string(forKey: "mobileVideoQuality").flatMap(VideoQuality.init(rawValue:)) : nil
+        _quality = State(initialValue: mobileQuality ?? VideoQuality(rawValue: defaults.string(forKey: "videoQuality") ?? "") ?? .max)
+        let behavior = ResumeBehavior.current
+        _resumeFrom = State(initialValue: behavior == .startOver ? 0 : startPositionTicks)
+        _isAskingToResume = State(initialValue: behavior == .ask && startPositionTicks > 0)
     }
 
     private var credential: ServerCredential? { authManager.state.credential }
@@ -199,6 +247,11 @@ struct PlayerView: View {
     }
 
     var body: some View {
+        bodyContent.alwaysDarkPlayer()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
@@ -215,6 +268,10 @@ struct PlayerView: View {
             #else
             videoSurfaceLayer
             #endif
+
+            if audioOnly {
+                audioOnlyCover
+            }
 
             if let seekFeedback {
                 seekFeedbackView(seekFeedback)
@@ -265,16 +322,26 @@ struct PlayerView: View {
             controlsOverlay
                 #if os(tvOS)
                 .opacity(tvControlsHidden ? 0 : 1)
+                .disabled(tvControlsHidden)
                 #else
                 .opacity(isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
                 #endif
                 .allowsHitTesting(isControlsVisible && !CastManager.shared.isConnected)
+
+            #if os(tvOS)
+            if tvCatcherActive {
+                tvRemoteCatcher
+            }
+            #endif
 
             skipButton
 
             if showUpNext, let nextEpisode {
                 upNextCard(nextEpisode)
             }
+
+            moreLikeThisOverlay
+            xRayOverlay
 
             if showStillWatchingPrompt {
                 stillWatchingOverlay
@@ -302,8 +369,14 @@ struct PlayerView: View {
         .persistentSystemOverlays(.hidden)
         #endif
         #if os(tvOS)
+        .onAppear { ScreensaverHold.count += 1 }
+        .onDisappear { ScreensaverHold.count -= 1 }
         .focusScope(tvFocusNamespace)
         .onPlayPauseCommand { togglePlayPause() }
+        .onExitCommand { handleTVExit() }
+        // Hands focus to whichever control should have it now (the catcher, play/pause, Skip,
+        // Up Next) instead of leaving it on something that just disappeared.
+        .onChange(of: tvFocusContext) { _, _ in resetFocus(in: tvFocusNamespace) }
         // A fallback for when the currently-focused control has no further focusable
         // neighbor in that direction (e.g. focus sitting on the leftmost/rightmost transport
         // button, or on nothing in particular right after .prefersDefaultFocus lands) — the
@@ -319,11 +392,29 @@ struct PlayerView: View {
             }
         }
         #endif
-        .task { await setup() }
+        .task { if !isAskingToResume { await setup() } }
+        .confirmationDialog("Resume Playback?", isPresented: $isAskingToResume, titleVisibility: .visible) {
+            Button("Resume from \(timeLabel(ticks: startPositionTicks))") {
+                resumeFrom = startPositionTicks
+                resumeAnswered = true
+            }
+            Button("Start from Beginning") {
+                resumeFrom = 0
+                resumeAnswered = true
+            }
+            Button("Cancel", role: .cancel) { closePlayer() }
+        }
+        .onChange(of: isAskingToResume) { _, asking in
+            if !asking, resumeAnswered { Task { await setup() } }
+        }
         .onDisappear {
             Task { await teardown() }
             #if canImport(UIKit) && !os(tvOS)
-            resetPlayerOrientation()
+            if Self.keepOrientationOnNextDisappear {
+                Self.keepOrientationOnNextDisappear = false
+            } else {
+                resetPlayerOrientation()
+            }
             #elseif os(macOS)
             macVolumeHUDTask?.cancel()
             #endif
@@ -332,9 +423,9 @@ struct PlayerView: View {
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
-            #if !os(tvOS)
+            checkMoreLikeThisThreshold(positionTicks: newValue)
+            autoSkipIfNeeded(positionTicks: newValue)
             updateNowPlayingInfo()
-            #endif
         }
         .onChange(of: player.status) { _, newStatus in
             // The receiver is the one playing — any local resume (a load finishing, a seek
@@ -343,9 +434,7 @@ struct PlayerView: View {
                 Task { await player.pause() }
             }
             handleStatusChange(newStatus)
-            #if !os(tvOS)
             updateNowPlayingInfo()
-            #endif
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
@@ -380,6 +469,27 @@ struct PlayerView: View {
             }
             return .handled
         }
+        .focusedSceneValue(\.playerCommands, PlayerCommands(
+            isPlaying: playPauseIconIsPlaying,
+            togglePlay: { togglePlayPause() },
+            skip: { seek(by: $0 > 0 ? skipForwardSeconds : -skipBackwardSeconds) },
+            volume: { adjustMacVolume(by: $0) },
+            toggleFullScreen: { toggleMacWindowFullScreen(macWindow) },
+            close: { closePlayer() },
+            isMuted: macVolume == 0,
+            toggleMute: { toggleMacMute() },
+            hasSubtitles: !(playbackInfo?.subtitleStreams.isEmpty ?? true),
+            subtitlesOn: selectedSubtitleIndex != nil,
+            toggleSubtitles: { toggleSubtitles() },
+            showTracks: { showTrackMenu = true },
+            showInfo: { showInfoSheet = true },
+            stepSpeed: { stepPlaybackRate($0) },
+            resetSpeed: { choosePlaybackRate(1) },
+            skipSegmentLabel: currentSkippable?.label,
+            skipSegment: { skipToSegmentEnd() },
+            next: nextEpisode == nil ? nil : { playNextEpisode() },
+            previous: previousItem == nil ? nil : { playPrevious() }
+        ))
         #endif
         // These must live on a view that's always mounted, not inside the conditionally
         // -shown controlsOverlay — auto-hide removing that view from the tree while a
@@ -405,10 +515,17 @@ struct PlayerView: View {
             chapterListSheet
         }
         #endif
+        .sheet(item: $xRayPerson, onDismiss: { Task { await player.play() } }) { person in
+            NavigationStack {
+                PersonDetailView(person: person)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") { xRayPerson = nil } }
+                    }
+            }
+        }
         .sheet(isPresented: $showInfoSheet) {
             mediaInfoSheet
         }
-        #if !os(tvOS)
         .onChange(of: showSyncPlayMenu) { _, isOpen in handleMenuVisibilityChange(isOpen) }
         .sheet(isPresented: $showSyncPlayMenu) {
             syncPlaySheet
@@ -417,7 +534,23 @@ struct PlayerView: View {
             guard let command else { return }
             applySyncPlayCommand(command)
         }
-        #endif
+        .onChange(of: sharePlay.incomingCommand) { _, command in
+            guard let command else { return }
+            applySharePlayCommand(command)
+        }
+        .onChange(of: sharePlay.activityItemId) { _, id in
+            guard let id, id != item.id else { return }
+            followSharePlay(to: id)
+        }
+        .onChange(of: sharePlay.notice) { _, notice in
+            guard let notice else { return }
+            sharePlay.notice = nil
+            networkToast = notice
+            Task {
+                try? await Task.sleep(for: .seconds(4))
+                if networkToast == notice { networkToast = nil }
+            }
+        }
         #if canImport(GoogleCast)
         .onChange(of: CastManager.shared.playbackFinishedCount) { _, _ in
             // Local playback is paused for the whole cast, so the Up Next countdown (which
@@ -443,6 +576,29 @@ struct PlayerView: View {
     // counts overall but still didn't compile: each #if region has to be independently
     // well-formed on its own, and an incomplete if-statement inside one region isn't, even
     // when a later, separate #if with the identical condition supplies the rest of it.
+    /// Covers the video with a plain screen for listening. Playback is untouched, and taps
+    /// still reach the surface underneath so the controls behave as usual.
+    var audioOnlyCover: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 10) {
+                Image(systemName: "waveform")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
+                    .font(.system(.title3, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                Text("Audio Only")
+                    .font(.system(.footnote))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            .padding(.horizontal, 32)
+        }
+        .allowsHitTesting(false)
+        .transition(.opacity)
+    }
+
     var videoSurfaceLayer: some View {
         GeometryReader { proxy in
             videoSurface
@@ -515,7 +671,9 @@ struct PlayerView: View {
             // them (single tap was toggling play/pause instead of the controls overlay).
             // PiP is driven entirely through our own button, not by touching the video, so
             // hit-testing on the surface itself is safe to turn off.
-            PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+            PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController,
+                         startsAutomaticallyFromInline: UserDefaults.standard.bool(forKey: "autoPictureInPicture"),
+                         managesAudioSession: false)
                 .allowsHitTesting(false)
             #endif
         } else if let aetherEngine = player as? AetherEnginePlayer {
@@ -553,6 +711,12 @@ struct PlayerView: View {
     }
 
     #if !os(tvOS)
+    /// Only where it works: VLC's own PiP, or AVFoundation/Aether through an AVPlayerLayer
+    /// (not Aether's software route).
+    var canPictureInPicture: Bool {
+        player is VLCEnginePlayer ? vlcPipController != nil : pip.isSupported
+    }
+
     func togglePiP() {
         if player is VLCEnginePlayer {
             vlcPipController?.toggle()
@@ -569,7 +733,6 @@ struct PlayerView: View {
 
     // MARK: - Now Playing / AirPlay metadata
 
-    #if !os(tvOS)
     /// Reflects Cast state too — the local player stays paused for the whole cast session
     /// (see startCasting), so its own `.status` alone would show "paused" the entire time.
     var isEffectivelyPlaying: Bool {
@@ -626,6 +789,9 @@ struct PlayerView: View {
               let (data, _) = try? await URLSession.arcfin.data(from: url),
               let image = PlatformImage(data: data)
         else { return }
+        // Only the current title's artwork is ever read, so a long session of back-to-back
+        // episodes shouldn't keep every previous 600px poster alive in memory.
+        if Self.artworkCache.count >= 8 { Self.artworkCache.removeAll() }
         Self.artworkCache[item.id] = image
         updateNowPlayingInfo()
     }
@@ -649,7 +815,6 @@ struct PlayerView: View {
         }
         return items
     }
-    #endif
 
     private func handleMenuVisibilityChange(_ isOpen: Bool) {
         if isOpen {
@@ -674,6 +839,11 @@ struct PlayerView: View {
                 onSelectSubtitle: { index in
                     showTrackMenu = false
                     changeTrack(subtitleIndex: .some(index))
+                },
+                subtitleSearchItemId: ProfileRules.shared.canManageSubtitles ? item.id : nil,
+                onSubtitleDownloaded: {
+                    showTrackMenu = false
+                    adoptDownloadedSubtitle()
                 }
             )
             .navigationTitle("Subtitles & Audio")
@@ -716,15 +886,51 @@ struct PlayerView: View {
     // MARK: - Playback speed
 
     static let rateOptions: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    static let lastRateKey = "lastPlaybackRate"
+
+    /// Applies the last picked speed to a freshly loaded stream when Settings → Playback →
+    /// Remember Playback Speed is on. The key is written on every pick so turning the
+    /// setting on later starts from the speed last used.
+    private func applyRememberedRate() async {
+        let defaults = UserDefaults.standard
+        // Otherwise Settings › Playback › Default Speed.
+        let rate = defaults.bool(forKey: "rememberPlaybackSpeed")
+            ? defaults.float(forKey: Self.lastRateKey)
+            : Float(defaults.object(forKey: "defaultPlaybackSpeed") as? Double ?? 1)
+        guard rate > 0, rate != 1 else { return }
+        await player.setRate(rate)
+    }
 
     @ViewBuilder
     private var rateMenuButtons: some View {
         ForEach(Self.rateOptions, id: \.self) { rate in
             Button(rateLabel(rate) + (rate == player.playbackRate ? " ✓" : "")) {
-                Task { await player.setRate(rate) }
+                choosePlaybackRate(rate)
             }
         }
         Button("Cancel", role: .cancel) {}
+    }
+
+    func choosePlaybackRate(_ rate: Float) {
+        UserDefaults.standard.set(rate, forKey: Self.lastRateKey)
+        Task { await player.setRate(rate) }
+    }
+
+    /// One step along the speed menu's options, from whichever is closest to the current speed.
+    func stepPlaybackRate(_ direction: Int) {
+        let options = Self.rateOptions
+        let current = options.indices.min { abs(options[$0] - player.playbackRate) < abs(options[$1] - player.playbackRate) } ?? 2
+        choosePlaybackRate(options[min(max(current + direction, 0), options.count - 1)])
+    }
+
+    /// Off, or back to the last subtitle shown (the first one when none has been yet).
+    func toggleSubtitles() {
+        if let current = selectedSubtitleIndex {
+            lastSubtitleIndex = current
+            changeTrack(subtitleIndex: .some(nil))
+        } else if let index = lastSubtitleIndex ?? playbackInfo?.subtitleStreams.first?.index {
+            changeTrack(subtitleIndex: .some(index))
+        }
     }
 
     private func rateLabel(_ rate: Float) -> String {
@@ -784,7 +990,7 @@ struct PlayerView: View {
         }
         do {
             var info = try await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id,
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality)
             )
             // .choose always resolves Auto down to a concrete engine — three outcomes here.
@@ -841,11 +1047,32 @@ struct PlayerView: View {
                 selectedSubtitleIndex = match.index
                 languagePreferenceApplied = true
             }
+            // A show's own remembered choice beats the global defaults above.
+            if ShowTrackMemory.isEnabled, item.type == .episode, let seriesId = item.seriesId,
+               let memory = ShowTrackMemory.load(seriesID: seriesId) {
+                if let language = memory.audio,
+                   let match = info.audioStreams.first(where: { $0.language == language }),
+                   match.index != selectedAudioIndex {
+                    selectedAudioIndex = match.index
+                    languagePreferenceApplied = true
+                }
+                if memory.subtitlesOff {
+                    if selectedSubtitleIndex != nil {
+                        selectedSubtitleIndex = nil
+                        languagePreferenceApplied = true
+                    }
+                } else if let language = memory.subtitle,
+                          let match = info.subtitleStreams.first(where: { $0.language == language }),
+                          match.index != selectedSubtitleIndex {
+                    selectedSubtitleIndex = match.index
+                    languagePreferenceApplied = true
+                }
+            }
             // Jellyfin negotiates audio/subtitle selection server-side (see changeTrack) —
             // a language default that actually changed the pick needs the same re-fetch
             // with explicit indices before the very first play, not just a local index change.
             if languagePreferenceApplied, let reInfo = try? await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id,
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality),
                 audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
             ) {
@@ -860,6 +1087,8 @@ struct PlayerView: View {
                 trickplayLoader = TrickplayLoader(credential: credential, authHeader: authHeader, client: client, itemId: item.id, info: trickplay)
             }
             chapters = detail?.chapters ?? []
+            castMembers = detail?.cast ?? []
+            currentLikes = detail?.item.userData?.likes
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
             // Auto's pre-flight pick can't catch everything — a runtime load failure on
@@ -868,12 +1097,16 @@ struct PlayerView: View {
             // the same AVFoundation/VLC split Auto used before Aether existed, rather than
             // surfacing a hard error over an engine that can't serve this specific source.
             do {
-                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+                try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
                 player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
-                try await player.load(url: info.playURL, startPositionTicks: startPositionTicks)
+                try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             await player.play()
+            await applyRememberedRate()
+            sharePlay.playerOpened(item)
+            // The preferred or remembered audio language, which a file played as is ignores.
+            if selectedAudioIndex != nil { await selectAudioInEngine() }
             // A cast that was already running when this screen opened (autoplay moved on to
             // the next episode) never produces an isConnected change to trigger this.
             if CastManager.shared.isConnected { startCasting() }
@@ -912,34 +1145,52 @@ struct PlayerView: View {
                     pip.activateIfNeeded()
                 }
             }
+            #endif
             setUpNowPlayingCommandsIfNeeded()
             updateNowPlayingInfo()
             Task { await fetchAndApplyNowPlayingArtwork() }
-            #endif
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                             positionTicks: startPositionTicks)
+                                             positionTicks: resumeFrom)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
         } catch {
             errorMessage = "Couldn't start playback: \(error.localizedDescription)"
         }
 
-        if item.type == .episode {
-            let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
-            introEnd = segments.introEnd
-            creditsStart = segments.creditsStart
-            recapEnd = segments.recapEnd
+        segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
+        autoSkipped = []
 
-            if let seriesId = item.seriesId {
-                let upNext = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: 1)
-                nextEpisode = upNext?.first
+        // A playlist or collection playing through goes by its own order; an episode by the
+        // series' order. Next Up wasn't usable here: part-way through an episode it answers
+        // with that same episode.
+        if PlayQueue.contains(item.id) {
+            nextEpisode = PlayQueue.item(after: item.id)
+            previousItem = PlayQueue.item(before: item.id)
+        } else if item.type == .episode, let seriesId = item.seriesId,
+                  let episodes = try? await client.getEpisodes(
+                    credential: credential, authHeader: authHeader, seriesId: seriesId, seasonId: nil) {
+            // Specials sit outside the run of the show unless one is what's playing.
+            let run = item.parentIndexNumber == 0 ? episodes : episodes.filter { $0.parentIndexNumber != 0 }
+            if let index = run.firstIndex(where: { $0.id == item.id }) {
+                nextEpisode = run.indices.contains(index + 1) ? run[index + 1] : nil
+                previousItem = index > 0 ? run[index - 1] : nil
             }
+        }
+
+        // Anything with an Up Next card already has something to watch next; the rest (movies,
+        // a series finale) get suggestions instead once the credits start.
+        moreLikeThis = []
+        showMoreLikeThis = false
+        moreLikeThisDismissed = false
+        if nextEpisode == nil {
+            moreLikeThis = ((try? await client.getSimilarItems(
+                credential: credential, authHeader: authHeader, itemId: item.id, limit: 12)) ?? [])
+                .filter { $0.id != item.id }
         }
     }
 
     // MARK: - SyncPlay
 
-    #if !os(tvOS)
     /// Applies a command that came back over the WebSocket — the one and only place local
     /// playback state actually changes in response to SyncPlay, whether this client sent
     /// the original request or another group member did.
@@ -955,7 +1206,38 @@ struct PlayerView: View {
             }
         }
     }
-    #endif
+
+    // MARK: - SharePlay
+
+    /// A command from someone else in the call. Applied straight to the player, so it isn't
+    /// sent on again.
+    private func applySharePlayCommand(_ command: SharePlayCommand) {
+        guard command.itemId == item.id else { return }
+        switch command.kind {
+        case .hello:
+            sharePlay.send(player.status == .playing ? .play : .pause, itemId: item.id, positionTicks: player.positionTicks)
+        case .seek:
+            Task { await player.seek(to: command.positionTicks) }
+        case .play, .pause:
+            Task {
+                // Within two seconds is close enough; seeking for less only stutters.
+                if abs(player.positionTicks - command.positionTicks) > 20_000_000 {
+                    await player.seek(to: command.positionTicks)
+                }
+                if command.kind == .play { await player.play() } else { await player.pause() }
+            }
+        }
+    }
+
+    /// Someone in the call picked another title.
+    private func followSharePlay(to itemId: String) {
+        guard let credential, let authHeader else { return }
+        Task {
+            if let next = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: itemId).item {
+                onPlayNext(next)
+            }
+        }
+    }
 
     // MARK: - Chromecast
 
@@ -977,7 +1259,7 @@ struct PlayerView: View {
         let posterURL = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
         castLoadTask = Task {
             let info = try? await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id,
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality),
                 audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
                 forCast: true
@@ -1061,6 +1343,7 @@ struct PlayerView: View {
     }
 
     private func teardown() async {
+        sharePlay.playerClosed(item.id)
         progressReportTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
@@ -1070,28 +1353,30 @@ struct PlayerView: View {
         // it would stay hidden on whatever screen is underneath once the player closes.
         setMacWindowToolbarVisible(macWindow, true)
         #endif
-        #if !os(tvOS)
         // Closing the player closes the group too — an orphaned WebSocket connection with
         // nobody watching isn't useful, and simpler than trying to keep it alive across
         // whatever the user navigates to next.
         if syncPlayManager.isInGroup, let credential = authManager.state.credential {
             syncPlayManager.leaveGroup(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
         }
-        #endif
         #if canImport(UIKit) && !os(tvOS)
         volumeController?.teardown()
         volumeObservation?.invalidate()
         volumeEchoSuppressTask?.cancel()
         displayCriteriaMatcher.detach()
         #endif
-        #if !os(tvOS)
         nowPlayingManager.clear()
-        #endif
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
+            let stoppedAt = player.positionTicks
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
                                                itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                               positionTicks: player.positionTicks)
+                                               positionTicks: stoppedAt)
+            if WatchedThreshold.current.isReached(seconds: Double(stoppedAt) / 10_000_000,
+                                                  duration: Double(player.durationTicks) / 10_000_000,
+                                                  creditsStart: segments.credits?.lowerBound) {
+                _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
+            }
         }
         await player.stop()
         #if canImport(UIKit) && !os(tvOS)
@@ -1257,7 +1542,10 @@ struct PlayerView: View {
     private func checkUpNextThreshold(positionTicks: Int64) {
         guard nextEpisode != nil, !upNextDismissed, player.durationTicks > 0 else { return }
         let remainingSeconds = Double(player.durationTicks - positionTicks) / 10_000_000
-        let withinWindow = remainingSeconds <= 30 && remainingSeconds > 0
+        let seconds = Double(positionTicks) / 10_000_000
+        // From the moment the credits start when the server knows it, else the last 30s.
+        let withinWindow = remainingSeconds > 0
+            && (segments.credits.map { seconds >= $0.lowerBound } ?? (remainingSeconds <= 30))
         if withinWindow, !showUpNext {
             showUpNext = true
             if UserDefaults.standard.bool(forKey: "autoPlayNext") {
@@ -1269,10 +1557,63 @@ struct PlayerView: View {
         }
     }
 
+    /// Shows the suggestions from the credits start (when the server knows it) or, failing
+    /// that, the last four minutes; seeking back out of the credits hides them again.
+    private func checkMoreLikeThisThreshold(positionTicks: Int64) {
+        guard nextEpisode == nil, !moreLikeThis.isEmpty, !moreLikeThisDismissed, player.durationTicks > 0 else { return }
+        let duration = Double(player.durationTicks) / 10_000_000
+        let seconds = Double(positionTicks) / 10_000_000
+        let start = segments.credits?.lowerBound ?? max(duration - 240, 0)
+        let inCredits = seconds >= start && seconds < duration
+        if inCredits != showMoreLikeThis {
+            withAnimation(DT.Animation.fast) { showMoreLikeThis = inCredits }
+        }
+    }
+
+    /// The Skip … Automatically settings: jumps past a segment once as playback enters it.
+    private func autoSkipIfNeeded(positionTicks: Int64) {
+        let seconds = Double(positionTicks) / 10_000_000
+        let defaults = UserDefaults.standard
+        for (kind, span, enabled) in [
+            ("recap", segments.recap, defaults.bool(forKey: "skipRecap")),
+            ("intro", segments.intro, defaults.bool(forKey: "skipIntro")),
+            ("credits", segments.credits, defaults.bool(forKey: "skipCredits")),
+        ] {
+            guard enabled, let span, span.contains(seconds), !autoSkipped.contains(kind) else { continue }
+            autoSkipped.insert(kind)
+            skip(kind: kind, span: span)
+            return
+        }
+    }
+
+    /// Past the end of a segment. Credits and previews at the very end move on to the next
+    /// title, or finish; credits followed by more of the film (a mid-credits scene) seek to it.
+    func skip(kind: String, span: ClosedRange<Double>) {
+        let duration = Double(player.durationTicks) / 10_000_000
+        let endsTitle = (kind == "credits" || kind == "preview") && (duration == 0 || span.upperBound >= duration - 5)
+        if endsTitle {
+            if nextEpisode != nil { playNextEpisode() } else { Task { await finishPlayback() } }
+        } else {
+            Task { await player.seek(to: Int64(span.upperBound * 10_000_000)) }
+        }
+        HapticManager.impact(.light)
+    }
+
+    /// Thumbs rating for what's playing, set from the credits panel; choosing the current
+    /// rating again clears it.
+    func rateCurrentItem(_ value: Bool) {
+        guard let credential, let authHeader else { return }
+        let newValue: Bool? = currentLikes == value ? nil : value
+        currentLikes = newValue
+        HapticManager.impact(.light)
+        let id = item.id
+        Task { try? await client.setRating(credential: credential, authHeader: authHeader, itemId: id, likes: newValue) }
+    }
+
     private func startUpNextCountdown() {
         upNextCountdown?.cancel()
         upNextCountdown = Task {
-            try? await Task.sleep(for: .seconds(8))
+            try? await Task.sleep(for: .seconds(UserDefaults.standard.object(forKey: "upNextCountdownSeconds") as? Int ?? 8))
             guard !Task.isCancelled else { return }
             playNextEpisode(isAutomatic: true)
         }
@@ -1369,6 +1710,13 @@ struct PlayerView: View {
         closePlayer()
     }
 
+    func playPrevious() {
+        guard let previousItem else { return }
+        upNextCountdown?.cancel()
+        UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
+        onPlayNext(previousItem)
+    }
+
     func dismissUpNext() {
         upNextDismissed = true
         showUpNext = false
@@ -1382,9 +1730,111 @@ struct PlayerView: View {
     /// AVMediaSelectionGroup on the local asset can't reflect that, so a track change reloads
     /// via a fresh PlaybackInfo call with the new stream index, same as a quality change.
     func changeTrack(audioIndex: Int? = nil, subtitleIndex: Int?? = nil) {
+        let previousSubtitle = selectedSubtitleIndex
         if let audioIndex { selectedAudioIndex = audioIndex }
         if let subtitleIndex { selectedSubtitleIndex = subtitleIndex }
+        rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil)
+        if audioIndex != nil, subtitleIndex == nil, !CastManager.shared.isConnected,
+           playbackInfo?.playMethod == .directPlay {
+            Task {
+                if await !selectAudioInEngine() { reload(errorContext: "switch track") }
+            }
+            return
+        }
+        if audioIndex == nil, let subtitleIndex, !CastManager.shared.isConnected,
+           drawsSubtitleHere(previousSubtitle), drawsSubtitleHere(subtitleIndex),
+           let credential, let info = playbackInfo {
+            Task {
+                await loadSubtitleCues(from: info, credential: credential)
+                updateSubtitleText(forTicks: player.positionTicks)
+            }
+            return
+        }
         reload(errorContext: "switch track")
+    }
+
+    /// A file played as is carries every audio track: the server's audio choice only shapes a
+    /// transcode, so here the engine switches tracks itself, without a new stream. Jellyfin's
+    /// embedded audio streams and the engine's tracks are both in the file's order; when the
+    /// counts don't line up it's left to a reload. Returns whether it was done.
+    @discardableResult
+    private func selectAudioInEngine() async -> Bool {
+        guard let info = playbackInfo, info.playMethod == .directPlay, let index = selectedAudioIndex else { return false }
+        let embedded = info.audioStreams.filter { !$0.isExternal }.sorted { $0.index < $1.index }
+        guard let ordinal = embedded.firstIndex(where: { $0.index == index }) else { return false }
+        // Engines list tracks a moment after the file opens.
+        for _ in 0..<20 where player.availableAudioTracks.isEmpty {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        guard player.availableAudioTracks.count == embedded.count else { return false }
+        let track = player.availableAudioTracks[ordinal]
+        if track.id != player.selectedAudioTrackIndex { await player.setAudioTrack(index: track.id) }
+        return true
+    }
+
+    /// Text subtitles come as their own file (WebVTT) the app draws over the video, so moving
+    /// between them, or turning them off, leaves the stream as it is. Only one the server has
+    /// to burn into the picture (an image format being transcoded) needs a new stream.
+    private func drawsSubtitleHere(_ index: Int?) -> Bool {
+        guard let index else { return true }
+        return playbackInfo?.subtitleStreams.first(where: { $0.index == index })?.deliveryUrl != nil
+    }
+
+    func changeVersion(_ id: String) {
+        guard id != playbackInfo?.mediaSourceId else { return }
+        selectedMediaSourceId = id
+        // Track indexes belong to a version; the new one picks its own defaults.
+        selectedAudioIndex = nil
+        selectedSubtitleIndex = nil
+        reload(errorContext: "switch version")
+    }
+
+    /// Switches to a subtitle the server just fetched from a provider. The server adds it to
+    /// the item in the background, so the new track can take a few seconds to be listed.
+    func adoptDownloadedSubtitle() {
+        guard let credential, let authHeader else { return }
+        let known = Set(playbackInfo?.subtitleStreams.map(\.index) ?? [])
+        networkToast = "Adding subtitles…"
+        Task {
+            for _ in 0..<5 {
+                if let info = try? await client.getPlaybackInfo(
+                    credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
+                    quality: qualityCap(for: quality),
+                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex),
+                   let added = info.subtitleStreams.first(where: { !known.contains($0.index) }) {
+                    networkToast = nil
+                    changeTrack(subtitleIndex: .some(added.index))
+                    return
+                }
+                try? await Task.sleep(for: .seconds(2))
+            }
+            networkToast = "Subtitles were saved on the server. Reopen the title to use them."
+            try? await Task.sleep(for: .seconds(4))
+            networkToast = nil
+        }
+    }
+
+    /// Stores the language of a track the viewer just picked, for the rest of the show.
+    private func rememberTracks(audioChanged: Bool, subtitleChanged: Bool) {
+        guard ShowTrackMemory.isEnabled, item.type == .episode, let seriesId = item.seriesId,
+              let info = playbackInfo
+        else { return }
+        var entry = ShowTrackMemory.load(seriesID: seriesId) ?? .init()
+        if audioChanged, let index = selectedAudioIndex,
+           let language = info.audioStreams.first(where: { $0.index == index })?.language {
+            entry.audio = language
+        }
+        if subtitleChanged {
+            if let index = selectedSubtitleIndex {
+                if let language = info.subtitleStreams.first(where: { $0.index == index })?.language {
+                    entry.subtitle = language
+                    entry.subtitlesOff = false
+                }
+            } else {
+                entry.subtitlesOff = true
+            }
+        }
+        ShowTrackMemory.save(entry, seriesID: seriesId)
     }
 
     private func loadSubtitleCues(from info: JellyfinPlaybackInfo, credential: ServerCredential) async {
@@ -1426,7 +1876,7 @@ struct PlayerView: View {
         Task {
             do {
                 let info = try await client.getPlaybackInfo(
-                    credential: credential, authHeader: authHeader, itemId: item.id,
+                    credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                     quality: qualityCap(for: quality),
                     audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
                 )
@@ -1435,14 +1885,14 @@ struct PlayerView: View {
                 lastLoadStartedAt = Date()
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
-                #if !os(tvOS)
-                #if !os(macOS)
+                if selectedAudioIndex != nil { await selectAudioInEngine() }
+                await applyRememberedRate()
+                #if !os(tvOS) && !os(macOS)
                 if let avPlayer = player as? AVFoundationPlayer {
                     avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
                 }
                 #endif
                 updateNowPlayingInfo()
-                #endif
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
             } catch {
                 errorMessage = "Couldn't \(errorContext): \(error.localizedDescription)"

@@ -62,11 +62,14 @@ final class MediaRepository {
     var genreShelves: [(genre: String, items: [MediaItem])] = []
     /// The most recently finished title and unwatched titles similar to it.
     var becauseYouWatched: (source: MediaItem, items: [MediaItem])?
+    var favorites: [MediaItem] = []
+    var topRatedUnwatched: [MediaItem] = []
+    /// The server's picks for this user.
+    var suggestions: [MediaItem] = []
+    /// The server's recommendation rows: because you watched or liked something, its
+    /// director, its cast.
+    var recommendations: [MovieRecommendationCategory] = []
     var libraries: [JellyfinLibrary] = []
-    var topMovies: [MediaItem] = []
-    var topShows: [MediaItem] = []
-    var playedMovieCount: Int = 0
-    var playedEpisodeCount: Int = 0
     var serverID: String = ""
     var isLoading: Bool = false
     /// True when the last load couldn't reach the server at all (vs. a genuinely empty
@@ -88,7 +91,13 @@ final class MediaRepository {
     private var lastLoadedAt: Date?
     private var lastLoadedUserID: String?
 
+    /// Runs in its own task, so a caller being cancelled (pull to refresh ending, a view
+    /// going away) can't cancel the requests halfway and leave a half-finished load.
     func load(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool = false) async {
+        await Task { await performLoad(credential: credential, authClient: authClient, force: force) }.value
+    }
+
+    private func performLoad(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool) async {
         // Skip if already loaded within the last 60 s for the SAME profile — prevents
         // repeated API bursts when the view re-appears (tab switch, background/foreground).
         // A profile switch always reloads regardless of the cooldown. An explicit
@@ -151,10 +160,6 @@ final class MediaRepository {
         async let cw      = client.getContinueWatching(credential: credential, authHeader: header)
         async let la      = client.getLatestMedia(credential: credential, authHeader: header)
         async let libs    = client.getLibraries(credential: credential, authHeader: header)
-        async let tMov    = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Movie")
-        async let tShow   = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Series")
-        async let cMov    = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Movie")
-        async let cEp     = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Episode")
         async let srvID   = client.getServerID(credential: credential)
         async let nUp     = client.getNextUp(credential: credential, authHeader: header)
         async let raMov   = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")
@@ -163,36 +168,61 @@ final class MediaRepository {
         async let raEp    = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Episode")
         async let wAgain  = client.getWatchAgain(credential: credential, authHeader: header)
         async let genres  = client.getGenreShelves(credential: credential, authHeader: header)
+        async let favs    = client.getFavorites(credential: credential, authHeader: header)
+        async let topUnw  = client.getTopRatedUnwatched(credential: credential, authHeader: header)
+        async let sugg    = client.getSuggestions(credential: credential, authHeader: header)
+        async let recs    = client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)
 
-        continueWatching       = (try? await cw)     ?? []
-        recentlyAdded          = (try? await la)     ?? []
-        libraries               = (try? await libs)  ?? []
-        topMovies               = (try? await tMov)  ?? []
-        topShows                = (try? await tShow) ?? []
-        playedMovieCount        = (try? await cMov)  ?? 0
-        playedEpisodeCount      = (try? await cEp)   ?? 0
+        // Every result is gathered first and only shown if the server answered: a failed or
+        // cancelled attempt used to replace every shelf with an empty list, which with
+        // nothing left to show swapped the whole app for the "Can't reach your server"
+        // screen, tearing down even a player that was open on top.
         let succeeded: Bool
         do {
-            serverID = try await srvID
+            let id = try await srvID
             succeeded = true
+            serverID = id
         } catch {
             succeeded = false
             // getServerID is the pass/fail gate for the whole load — logged here (rather than
-            // silently swallowed like the other calls above) because "can't reach server" has
+            // silently swallowed like the other calls) because "can't reach server" has
             // recurred across several rounds of fixes without a concrete error to point at.
             let nsError = error as NSError
             Telemetry.logger(category: "MediaRepository").error(
                 "Home load attempt \(attempt, privacy: .public) failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
             )
         }
-        nextUp                  = (try? await nUp)    ?? []
-        recentlyAddedMovies     = (try? await raMov)  ?? []
-        recentlyAddedShows      = (try? await raShow) ?? []
-        recentlyReleasedMovies  = (try? await rrMov)  ?? []
-        recentlyAiredEpisodes   = (try? await raEp)   ?? []
-        watchAgain              = (try? await wAgain) ?? []
-        genreShelves            = (try? await genres) ?? []
-        becauseYouWatched       = await loadBecauseYouWatched(credential: credential, header: header)
+        let cwResult = (try? await cw) ?? []
+        let laResult = (try? await la) ?? []
+        let libsResult = (try? await libs) ?? []
+        let nUpResult = (try? await nUp) ?? []
+        let raMovResult = (try? await raMov) ?? []
+        let raShowResult = (try? await raShow) ?? []
+        let rrMovResult = (try? await rrMov) ?? []
+        let raEpResult = (try? await raEp) ?? []
+        let wAgainResult = (try? await wAgain) ?? []
+        let genresResult = (try? await genres) ?? []
+        let favsResult = (try? await favs) ?? []
+        let topUnwResult = (try? await topUnw) ?? []
+        let suggResult = (try? await sugg) ?? []
+        let recsResult = (try? await recs) ?? []
+        guard succeeded else { return false }
+
+        continueWatching       = cwResult
+        recentlyAdded          = laResult
+        libraries              = libsResult
+        nextUp                 = nUpResult
+        recentlyAddedMovies    = raMovResult
+        recentlyAddedShows     = raShowResult
+        recentlyReleasedMovies = rrMovResult
+        recentlyAiredEpisodes  = raEpResult
+        watchAgain             = wAgainResult
+        genreShelves           = genresResult
+        becauseYouWatched      = await loadBecauseYouWatched(credential: credential, header: header)
+        favorites              = favsResult
+        topRatedUnwatched      = topUnwResult
+        suggestions            = suggResult
+        recommendations        = recsResult.filter { $0.items.count >= 3 }
 
         return succeeded
     }

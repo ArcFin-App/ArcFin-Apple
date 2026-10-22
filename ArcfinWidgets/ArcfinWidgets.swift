@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+#if os(iOS)
 import WidgetKit
 import SwiftUI
 import UIKit
@@ -8,146 +9,369 @@ import ActivityKit
 
 private enum WidgetDT {
     static let accent = Color(red: 0x06 / 255, green: 0xB6 / 255, blue: 0xD4 / 255)
-    static let textSecondary = Color(white: 1, opacity: 0.6)
+    static let accentDeep = Color(red: 0x03 / 255, green: 0x7C / 255, blue: 0x93 / 255)
+    static let success = Color(red: 0x10 / 255, green: 0xB9 / 255, blue: 0x81 / 255)
+    static let paused = Color(red: 0xF5 / 255, green: 0x9E / 255, blue: 0x0B / 255)
+    static let background = Color(red: 0x0A / 255, green: 0x0A / 255, blue: 0x0F / 255)
+    static let textSecondary = Color(white: 1, opacity: 0.7)
 }
+
+private typealias DownloadState = DownloadActivityAttributes.ContentState
 
 private func formattedBytes(_ bytes: Int64) -> String {
     ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
 }
 
 private func formattedSpeed(_ bytesPerSecond: Double) -> String {
-    guard bytesPerSecond > 0 else { return "" }
-    return ByteCountFormatter.string(fromByteCount: Int64(bytesPerSecond), countStyle: .file) + "/s"
+    ByteCountFormatter.string(fromByteCount: Int64(bytesPerSecond), countStyle: .file) + "/s"
 }
 
-@ViewBuilder
-private func posterOrIcon(_ state: DownloadActivityAttributes.ContentState, size: CGFloat) -> some View {
-    if let data = state.posterImageData, let uiImage = UIImage(data: data) {
-        Image(uiImage: uiImage)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: size, height: size * 1.5)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-    } else {
-        Image(systemName: "arrow.down.circle.fill")
-            .foregroundStyle(WidgetDT.accent)
-            .font(.system(size: size * 0.8))
-            .frame(width: size, height: size * 1.5)
+/// "About 4 min left", rounded the way people say it.
+private func timeLeft(_ seconds: Double) -> String {
+    if seconds < 60 { return "Less than a minute left" }
+    let minutes = Int((seconds / 60).rounded())
+    if minutes < 60 { return "About \(minutes) min left" }
+    let hours = minutes / 60, rest = minutes % 60
+    return rest == 0 ? "About \(hours) hr left" : "About \(hours) hr \(rest) min left"
+}
+
+private func percent(_ state: DownloadState) -> String {
+    "\(Int((state.fractionComplete * 100).rounded(.down)))%"
+}
+
+private func statusColor(_ state: DownloadState) -> Color {
+    if state.isFinished { return WidgetDT.success }
+    return state.isPaused == true || state.isWaitingForWiFi == true ? WidgetDT.paused : WidgetDT.accent
+}
+
+/// What's happening, in one short line: "Downloading 2 of 6", "Paused", "Ready to Watch".
+private func statusLine(_ state: DownloadState) -> String {
+    if state.isFinished {
+        return state.totalCount > 1 ? "\(state.totalCount) Ready to Watch" : "Ready to Watch"
+    }
+    if state.isWaitingForWiFi == true { return "Waiting for Wi-Fi" }
+    let base = state.isPaused == true ? "Paused" : "Downloading"
+    return state.totalCount > 1 ? "\(base) · \(state.position) of \(state.totalCount)" : base
+}
+
+// MARK: - Pieces
+
+private struct Poster: View {
+    let state: DownloadState
+    let width: CGFloat
+
+    var body: some View {
+        Group {
+            if let data = state.posterImageData, let image = UIImage(data: data) {
+                Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
+            } else {
+                ZStack {
+                    LinearGradient(colors: [WidgetDT.accentDeep, WidgetDT.accent],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    Image(systemName: "film")
+                        .font(.system(size: width * 0.4, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .frame(width: width, height: width * 1.5)
+        .clipShape(RoundedRectangle(cornerRadius: width * 0.16, style: .continuous))
+        .accessibilityHidden(true)
     }
 }
+
+/// A ring that fills as the title downloads (on its own, from the estimate, while the app is
+/// suspended); a checkmark once everything is done.
+private struct ProgressRing: View {
+    let state: DownloadState
+    var lineWidth: CGFloat = 3
+
+    var body: some View {
+        ZStack {
+            if let estimate = state.estimate {
+                ProgressView(timerInterval: estimate, countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+                    .progressViewStyle(.circular)
+                    .tint(statusColor(state))
+            } else {
+                Circle().stroke(statusColor(state).opacity(0.25), lineWidth: lineWidth)
+                Circle()
+                    .trim(from: 0, to: state.isFinished ? 1 : max(state.fractionComplete, 0.02))
+                    .stroke(statusColor(state), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
+            Image(systemName: state.isFinished ? "checkmark"
+                  : state.isWaitingForWiFi == true ? "wifi"
+                  : (state.isPaused == true ? "pause.fill" : "arrow.down"))
+                .font(.system(size: 9, weight: .heavy))
+                .foregroundStyle(statusColor(state))
+        }
+        .accessibilityElement()
+        .accessibilityLabel(statusLine(state))
+        .accessibilityValue(state.isFinished ? "" : percent(state))
+    }
+}
+
+/// Runs off the estimate while there is one, so it keeps moving with the app suspended.
+private struct ProgressBar: View {
+    let state: DownloadState
+
+    var body: some View {
+        Group {
+            if let estimate = state.estimate {
+                ProgressView(timerInterval: estimate, countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+            } else {
+                ProgressView(value: state.fractionComplete)
+            }
+        }
+        .progressViewStyle(.linear)
+        .tint(statusColor(state))
+        .accessibilityHidden(true)
+    }
+}
+
+/// The headline figure: time left while it's moving (it counts down on its own), the
+/// percentage otherwise, Done at the end.
+private struct HeadlineFigure: View {
+    let state: DownloadState
+    let font: Font
+
+    var body: some View {
+        Group {
+            if state.isFinished {
+                Text("Done")
+            } else if let estimate = state.estimate {
+                Text(timerInterval: estimate, countsDown: true)
+            } else {
+                Text(percent(state)).contentTransition(.numericText())
+            }
+        }
+        .font(font)
+        .monospacedDigit()
+        .multilineTextAlignment(.trailing)
+    }
+}
+
+/// The title's size and when it'll finish while it's moving; why it's stopped when paused.
+private struct TransferLine: View {
+    let state: DownloadState
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if state.estimate != nil, state.totalBytes > 0 {
+                Text(formattedBytes(state.totalBytes))
+            } else if state.totalBytes > 0 {
+                Text("\(formattedBytes(state.bytesWritten)) of \(formattedBytes(state.totalBytes))")
+                    .contentTransition(.numericText())
+            }
+            Spacer(minLength: 4)
+            if state.isWaitingForWiFi == true {
+                Text("Open Arcfin to use mobile data")
+            } else if state.isPaused == true {
+                Text("Open Arcfin to resume")
+            } else if let estimate = state.estimate {
+                Text("Done by \(estimate.upperBound, style: .time)")
+            } else if state.bytesPerSecond > 0 {
+                Text(formattedSpeed(state.bytesPerSecond))
+            }
+        }
+        .font(.system(.footnote, weight: .medium))
+        .foregroundStyle(WidgetDT.textSecondary)
+        .lineLimit(1)
+    }
+}
+
+/// The compact trailing side: the percentage, or nothing where the Dynamic Island is
+/// narrow, leaving the ring alone on the leading side.
+private struct CompactTrailing: View {
+    let state: DownloadState
+
+    var body: some View {
+        if #available(iOS 27.0, *) {
+            LimitedWidthAware(state: state)
+        } else {
+            label
+        }
+    }
+
+    fileprivate var label: some View {
+        HeadlineFigure(state: state, font: .system(.footnote, design: .rounded, weight: .bold))
+            .foregroundStyle(statusColor(state))
+            .frame(maxWidth: 52)
+    }
+
+    @available(iOS 27.0, *)
+    private struct LimitedWidthAware: View {
+        let state: DownloadState
+        @Environment(\.isDynamicIslandLimitedInWidth) private var isLimited
+
+        var body: some View {
+            if !isLimited { CompactTrailing(state: state).label }
+        }
+    }
+}
+
+// MARK: - Live Activity
 
 struct DownloadLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: DownloadActivityAttributes.self) { context in
-            lockScreenView(context.state)
-                .activityBackgroundTint(Color(red: 0x0A / 255, green: 0x0A / 255, blue: 0x0F / 255))
+            LockScreenView(state: context.state)
+                .activityBackgroundTint(WidgetDT.background)
                 .activitySystemActionForegroundColor(.white)
                 .widgetURL(URL(string: "arcfin://downloads"))
         } dynamicIsland: { context in
-            DynamicIsland {
+            let state = context.state
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    posterOrIcon(context.state, size: 26)
+                    Poster(state: state, width: 44)
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("\(context.state.completedCount + 1)/\(context.state.totalCount)")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
+                    HeadlineFigure(state: state, font: .system(.title3, design: .rounded, weight: .bold))
+                        .foregroundStyle(statusColor(state))
+                        .frame(maxWidth: 80, alignment: .trailing)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(context.state.currentItemTitle)
-                            .font(.system(size: 13, weight: .semibold))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(statusLine(state))
+                            .font(.system(.caption, weight: .semibold))
+                            .foregroundStyle(statusColor(state))
+                        Text(state.currentItemTitle)
+                            .font(.system(.headline, weight: .semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
-                        if let episodeLabel = context.state.episodeLabel {
-                            Text(episodeLabel)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(WidgetDT.accent)
+                        if let episode = state.episodeLabel {
+                            Text(episode)
+                                .font(.system(.footnote, weight: .medium))
+                                .foregroundStyle(WidgetDT.textSecondary)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        ProgressView(value: context.state.fractionComplete)
-                            .tint(WidgetDT.accent)
-                        HStack {
-                            Text(formattedBytes(context.state.bytesWritten) + " of " + formattedBytes(context.state.totalBytes))
-                            Spacer()
-                            Text(formattedSpeed(context.state.bytesPerSecond))
+                    if !state.isFinished {
+                        VStack(spacing: 6) {
+                            ProgressBar(state: state)
+                            TransferLine(state: state)
                         }
-                        .font(.system(size: 11))
-                        .foregroundStyle(WidgetDT.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.top, 4)
                     }
-                    // Matches the Dynamic Island's own rounded silhouette — content flush to
-                    // the region's edge otherwise reads as clipped against the curve.
-                    .padding(.horizontal, 6)
-                    .padding(.bottom, 2)
                 }
             } compactLeading: {
-                posterOrIcon(context.state, size: 16)
+                ProgressRing(state: state)
+                    .frame(width: 20, height: 20)
             } compactTrailing: {
-                Text("\(Int(context.state.fractionComplete * 100))%")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                CompactTrailing(state: state)
             } minimal: {
-                Image(systemName: "arrow.down.circle.fill")
-                    .foregroundStyle(WidgetDT.accent)
+                ProgressRing(state: state, lineWidth: 2.5)
+                    .frame(width: 20, height: 20)
             }
+            .keylineTint(WidgetDT.accent)
             .widgetURL(URL(string: "arcfin://downloads"))
         }
     }
+}
 
-    @ViewBuilder
-    private func lockScreenView(_ state: DownloadActivityAttributes.ContentState) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            posterOrIcon(state, size: 40)
+/// The Lock Screen and StandBy banner, laid out like the expanded Dynamic Island so the two
+/// read as one design: poster, status, title and percentage, then the bar and what's left.
+private struct LockScreenView: View {
+    let state: DownloadState
 
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text(state.isFinished ? "Download Complete" : "Downloading")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Spacer()
-                    Text("\(min(state.completedCount + (state.isFinished ? 0 : 1), state.totalCount))/\(state.totalCount)")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(WidgetDT.textSecondary)
-                }
-
-                HStack(spacing: 6) {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                Poster(state: state, width: 48)
+                VStack(alignment: .leading, spacing: 3) {
+                    Label {
+                        Text(statusLine(state))
+                    } icon: {
+                        Image(systemName: state.isFinished ? "checkmark.circle.fill"
+                              : state.isWaitingForWiFi == true ? "wifi"
+                              : (state.isPaused == true ? "pause.circle.fill" : "arrow.down.circle.fill"))
+                    }
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(statusColor(state))
                     Text(state.currentItemTitle)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(.headline, weight: .semibold))
                         .foregroundStyle(.white)
-                        .lineLimit(1)
-                    if let episodeLabel = state.episodeLabel {
-                        Text(episodeLabel)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(WidgetDT.accent)
-                    }
+                        .lineLimit(2)
+                    subtitle
                 }
-
+                Spacer(minLength: 8)
                 if !state.isFinished {
-                    ProgressView(value: state.fractionComplete)
-                        .tint(WidgetDT.accent)
-                    HStack {
-                        Text(formattedBytes(state.bytesWritten) + " of " + formattedBytes(state.totalBytes))
-                        Spacer()
-                        Text(formattedSpeed(state.bytesPerSecond))
-                    }
-                    .font(.system(size: 11))
-                    .foregroundStyle(WidgetDT.textSecondary)
-                } else {
-                    HStack(spacing: 5) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(Color(red: 0x10 / 255, green: 0xB9 / 255, blue: 0x81 / 255))
-                        Text(state.totalCount > 1 ? "\(state.totalCount) items ready to watch offline" : "Ready to watch offline")
-                    }
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(WidgetDT.textSecondary)
+                    HeadlineFigure(state: state, font: .system(.title2, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: 96, alignment: .trailing)
                 }
+            }
+            if !state.isFinished {
+                ProgressBar(state: state)
+                TransferLine(state: state)
             }
         }
         .padding(14)
     }
+
+    @ViewBuilder
+    private var subtitle: some View {
+        let parts = [state.episodeLabel,
+                     state.isFinished ? "Ready to watch offline" : state.nextItemTitle.map { "Up next: \($0)" }]
+            .compactMap { $0 }
+        if !parts.isEmpty {
+            Text(parts.joined(separator: " · "))
+                .font(.system(.footnote, weight: .medium))
+                .foregroundStyle(WidgetDT.textSecondary)
+                .lineLimit(1)
+        }
+    }
 }
+
+// MARK: - Previews
+
+private extension DownloadState {
+    static let downloading = DownloadState(
+        currentItemTitle: "The Long Way Home", bytesWritten: 1_240_000_000, totalBytes: 3_400_000_000,
+        bytesPerSecond: 12_600_000, completedCount: 1, totalCount: 6, seasonNumber: 2, episodeNumber: 5,
+        nextItemTitle: "Crossing Over")
+    static let paused = DownloadState(
+        currentItemTitle: "The Long Way Home", bytesWritten: 1_240_000_000, totalBytes: 3_400_000_000,
+        bytesPerSecond: 0, completedCount: 1, totalCount: 6, seasonNumber: 2, episodeNumber: 5, isPaused: true)
+    static let waitingForWiFi = DownloadState(
+        currentItemTitle: "The Long Way Home", bytesWritten: 0, totalBytes: 0,
+        bytesPerSecond: 0, completedCount: 0, totalCount: 3, seasonNumber: 2, episodeNumber: 5,
+        nextItemTitle: "Crossing Over", isWaitingForWiFi: true)
+    static let finished = DownloadState(
+        currentItemTitle: "Crossing Over", bytesWritten: 3_400_000_000, totalBytes: 3_400_000_000,
+        bytesPerSecond: 0, completedCount: 6, totalCount: 6, isFinished: true, seasonNumber: 2, episodeNumber: 6)
+}
+
+#Preview("Lock Screen", as: .content, using: DownloadActivityAttributes()) {
+    DownloadLiveActivity()
+} contentStates: {
+    DownloadState.downloading
+    DownloadState.paused
+    DownloadState.waitingForWiFi
+    DownloadState.finished
+}
+
+#Preview("Expanded", as: .dynamicIsland(.expanded), using: DownloadActivityAttributes()) {
+    DownloadLiveActivity()
+} contentStates: {
+    DownloadState.downloading
+    DownloadState.paused
+}
+
+#Preview("Compact", as: .dynamicIsland(.compact), using: DownloadActivityAttributes()) {
+    DownloadLiveActivity()
+} contentStates: {
+    DownloadState.downloading
+}
+
+#Preview("Minimal", as: .dynamicIsland(.minimal), using: DownloadActivityAttributes()) {
+    DownloadLiveActivity()
+} contentStates: {
+    DownloadState.downloading
+}
+#endif

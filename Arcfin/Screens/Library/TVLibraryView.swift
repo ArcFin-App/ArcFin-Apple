@@ -11,11 +11,20 @@ struct TVLibraryView: View {
 
     private let columns = [GridItem(.adaptive(minimum: 400), spacing: 20)]
 
+    /// Live TV and Music have no player here. The Playlists tile is always there so the first
+    /// playlist can be made from it, before the server lists a Playlists library of its own.
+    private var libraries: [JellyfinLibrary] {
+        let hidden = LibraryVisibility.hiddenIDs
+        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && !hidden.contains($0.id) }
+        guard !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) else { return libraries }
+        return libraries + [JellyfinLibrary(id: LibraryDetailView.allPlaylistsID, name: "Playlists", collectionType: .playlists)]
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    if mediaRepo.libraries.isEmpty {
+                    if libraries.isEmpty {
                         ContentUnavailableView(
                             "No Libraries",
                             systemImage: "square.grid.2x2",
@@ -24,7 +33,7 @@ struct TVLibraryView: View {
                         .frame(maxWidth: .infinity, minHeight: 400)
                     } else {
                         LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(mediaRepo.libraries) { library in
+                            ForEach(libraries) { library in
                                 NavigationLink(value: library) {
                                     TVBigLibraryCard(library: library)
                                 }
@@ -39,7 +48,7 @@ struct TVLibraryView: View {
                     }
                 }
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 LibraryDetailView(library: library)
             }
@@ -50,6 +59,7 @@ struct TVLibraryView: View {
                 switch target {
                 case .media(let item):       TVMediaDetailView(item: item)
                 case .collection(let item):  TVCollectionDetailView(item: item)
+                case .playlist(let item):    LibraryDetailView(playlistItem: item)
                 }
             }
         }
@@ -63,10 +73,13 @@ struct TVCollectionDetailView: View {
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(AuthManager.self) private var authManager
-    @Environment(StreamystatsRepository.self) private var statsRepo
 
     @State private var items: [MediaItem] = []
+    @State private var detail: MediaItemDetail?
     @State private var selectedItem: MediaItem?
+    @State private var selectedPerson: MediaPerson?
+    @State private var showFullDescription = false
+    @Namespace private var focusNamespace
     @State private var playbackRequest: PlaybackRequest?
 
     @State private var availableGenres: [String] = []
@@ -107,13 +120,19 @@ struct TVCollectionDetailView: View {
                 }
                 .focusSection()
             }
+            .focusScope(focusNamespace)
             .ignoresSafeArea()
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationDestination(item: $selectedItem) { i in
             TVMediaDetailView(item: i)
         }
-        .fullScreenCover(item: $playbackRequest) { request in
+        .navigationDestination(item: $selectedPerson) { PersonDetailView(person: $0) }
+        .fullScreenCover(isPresented: $showFullDescription) { fullDescription }
+        .fullScreenCover(item: $playbackRequest, onDismiss: {
+            PlayQueue.clear()
+            Task { await load() }
+        }) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
@@ -151,7 +170,7 @@ struct TVCollectionDetailView: View {
             let heroURL = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920)
                 ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 1200)
             if let url = heroURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFill()
                     } else { fallbackGradient }
@@ -184,30 +203,36 @@ struct TVCollectionDetailView: View {
                     .shadow(color: .black.opacity(0.9), radius: 12)
 
                 if !items.isEmpty {
-                    Text("\(items.count) \(items.count == 1 ? "item" : "items")")
-                        .font(.system(size: 22))
+                    Text(metaLine)
+                        .font(.system(size: 23))
                         .foregroundStyle(.white.opacity(0.65))
+                    progressBar
+                }
+
+                if let overview = detail?.item.overview ?? item.overview, !overview.isEmpty {
+                    Button { showFullDescription = true } label: {
+                        TVDescriptionLabel(text: overview)
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .frame(maxWidth: 900, alignment: .leading)
                 }
 
                 HStack(spacing: 20) {
-                    Button {
-                        guard let first = items.first else { return }
-                        playbackRequest = PlaybackRequest(item: first, startTicks: first.userData?.playbackPositionTicks ?? 0)
-                    } label: {
-                        TVDetailButtonLabel(icon: "play.fill", text: "Play All", isPrimary: true)
+                    Button { playThrough() } label: {
+                        TVDetailButtonLabel(icon: "play.fill", text: playLabel, isPrimary: true)
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    .prefersDefaultFocus(true, in: focusNamespace)
+                    .disabled(playable.isEmpty)
 
-                    Button {
-                        if statsRepo.isConfigured {
-                            Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
-                        }
-                    } label: {
-                        TVDetailButtonLabel(icon: "bookmark", text: "Watchlist")
+                    Button { shuffle() } label: {
+                        TVDetailButtonLabel(icon: "shuffle", text: "Shuffle")
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    .disabled(playable.isEmpty)
 
                     Button {
                         showFilterSheet = true
@@ -234,6 +259,74 @@ struct TVCollectionDetailView: View {
         )
     }
 
+    private var playable: [MediaItem] { items.filter { $0.type == .movie || $0.type == .episode } }
+    private var watchedCount: Int { items.filter { $0.userData?.played == true }.count }
+    private var nextToPlay: MediaItem? { playable.first { $0.userData?.played != true } }
+
+    private var metaLine: String {
+        var parts = ["\(items.count) title\(items.count == 1 ? "" : "s")"]
+        let years = items.compactMap(\.productionYear)
+        if let first = years.min(), let last = years.max() { parts.append(first == last ? "\(first)" : "\(first)–\(last)") }
+        parts.append(watchedCount == items.count ? "All watched" : "\(watchedCount) of \(items.count) watched")
+        return parts.joined(separator: " · ")
+    }
+
+    private var progressBar: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(DT.Color.progressTrack)
+                Capsule().fill(DT.Color.accent)
+                    .frame(width: geo.size.width * CGFloat(watchedCount) / CGFloat(max(items.count, 1)))
+            }
+        }
+        .frame(width: 420, height: 6)
+        .accessibilityHidden(true)
+    }
+
+    private var playLabel: String {
+        guard let next = nextToPlay else { return "Play from Start" }
+        if (next.userData?.playbackPositionTicks ?? 0) > 0 { return "Resume \(next.name)" }
+        return watchedCount == 0 ? "Play" : "Continue with \(next.name)"
+    }
+
+    /// Through the collection in order, from the first title not yet watched.
+    private func playThrough() {
+        guard let start = nextToPlay ?? playable.first, let index = playable.firstIndex(of: start) else { return }
+        PlayQueue.start(Array(playable[index...]))
+        let resume = start.userData?.played == true ? 0 : (start.userData?.playbackPositionTicks ?? 0)
+        playbackRequest = PlaybackRequest(item: start, startTicks: resume)
+    }
+
+    private func shuffle() {
+        let shuffled = playable.shuffled()
+        guard let first = shuffled.first else { return }
+        PlayQueue.start(shuffled)
+        playbackRequest = PlaybackRequest(item: first, startTicks: 0)
+    }
+
+    private var fullDescription: some View {
+        ZStack {
+            DT.Color.backgroundPrimary.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    Text(item.name)
+                        .font(.system(size: 40, weight: .heavy))
+                        .foregroundStyle(.white)
+                    Text(detail?.item.overview ?? item.overview ?? "")
+                        .font(.system(size: 26))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineSpacing(8)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Close") { showFullDescription = false }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: DT.Radius.md)
+                }
+                .padding(80)
+            }
+        }
+    }
+
     // MARK: - Below fold
 
     @ViewBuilder
@@ -241,6 +334,51 @@ struct TVCollectionDetailView: View {
         if !items.isEmpty {
             itemsSection.focusSection()
         }
+        if let people = detail?.people, !people.isEmpty {
+            castSection(people).focusSection()
+        }
+    }
+
+    private func castSection(_ people: [MediaPerson]) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Cast")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .padding(.horizontal, 80)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 24) {
+                    ForEach(people) { person in
+                        Button { selectedPerson = person } label: {
+                            VStack(spacing: 8) {
+                                CachedAsyncImage(url: person.primaryImageTag.flatMap {
+                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 240)
+                                }) { phase in
+                                    switch phase {
+                                    case .success(let img): img.resizable().scaledToFill()
+                                    default: DT.Color.backgroundSecondary
+                                    }
+                                }
+                                .frame(width: 120, height: 120)
+                                .clipShape(Circle())
+                                Text(person.name)
+                                    .font(.system(size: 23, weight: .semibold))
+                                    .foregroundStyle(DT.Color.textPrimary)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(width: 150)
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: DT.Radius.md)
+                    }
+                }
+                .padding(.horizontal, 80)
+                .padding(.vertical, 12)
+            }
+            .scrollClipDisabled()
+        }
+        .padding(.bottom, 40)
     }
 
     private var itemsSection: some View {
@@ -273,6 +411,9 @@ struct TVCollectionDetailView: View {
 
     private func load() async {
         guard let cred = credential, let header = authHeader else { return }
+        if detail == nil {
+            detail = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
+        }
         fetchGeneration += 1
         let generation = fetchGeneration
         let fetched = try? await client.getLibraryItems(
@@ -316,7 +457,7 @@ private struct TVLibraryFilterList: View {
     var body: some View {
         List {
             Section("Sort By") {
-                ForEach(LibrarySortOption.allCases) { option in
+                ForEach(LibrarySortOption.standard) { option in
                     filterRow(option.rawValue, isSelected: sortOption == option) {
                         sortOption = option
                     }
@@ -393,7 +534,7 @@ private struct TVCollectionItemCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: imageURL) { phase in
+            CachedAsyncImage(url: imageURL) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default:
@@ -402,6 +543,25 @@ private struct TVCollectionItemCard: View {
                 }
             }
             .frame(width: 200, height: 300)
+            .overlay(alignment: .topTrailing) {
+                if item.userData?.played == true {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.white, DT.Color.accent)
+                        .padding(8)
+                        .accessibilityLabel("Watched")
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let pct = item.userData?.playedPercentage, pct > 0, pct < 100 {
+                    GeometryReader { geo in
+                        Capsule().fill(DT.Color.accent)
+                            .frame(width: geo.size.width * pct / 100, height: 5)
+                            .frame(maxHeight: .infinity, alignment: .bottom)
+                    }
+                    .padding(8)
+                }
+            }
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card)
@@ -409,7 +569,7 @@ private struct TVCollectionItemCard: View {
             .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 12)
             .compositingGroup()
             .scaleEffect(isFocused ? 1.05 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
 
             VStack(alignment: .leading, spacing: 2) {
                 if let year = item.productionYear {
@@ -474,7 +634,7 @@ private struct TVBigLibraryCard: View {
         .frame(height: 225)
         .scaleEffect(isFocused ? 1.04 : 1.0)
         .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 14)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
         .contentShape(Rectangle())
     }
 }

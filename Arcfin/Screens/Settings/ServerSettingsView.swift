@@ -53,7 +53,7 @@ struct ServerSettingsView: View {
                 } else if let infoError {
                     Text(infoError)
                         .font(.caption)
-                        .foregroundStyle(Color(hex: "EF4444"))
+                        .foregroundStyle(DT.Color.palette("EF4444"))
                 }
             } header: {
                 Label("Public Server Info", systemImage: "server.rack")
@@ -156,6 +156,14 @@ struct ServerSettingsView: View {
             }
 
             Section {
+                NavigationLink("Custom Headers") { CustomHeadersView() }
+            } footer: {
+                Text("Extra headers for a server behind an access gateway, such as Cloudflare Access.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
                 LabeledContent("Currently Using", value: currentlyUsing)
             } footer: {
                 Text("Close and reopen the app for URL or Wi-Fi network changes to take effect.")
@@ -164,7 +172,7 @@ struct ServerSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Server Settings")
         .task {
             guard let base = activeBaseURL else { isLoadingInfo = false; return }

@@ -3,6 +3,7 @@
 import Foundation
 import SwiftUI
 import Nuke
+import AuthCore
 import Telemetry
 
 // MARK: - Pipeline
@@ -11,11 +12,32 @@ public enum ImageCache: Sendable {
 
     private static let log = Telemetry.logger(category: "ImageCache")
 
-    public static let shared: ImagePipeline = {
-        var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
-        config.dataCachePolicy = .automatic
-        return ImagePipeline(configuration: config)
-    }()
+    /// Rebuilt when the custom headers change, keeping the same on-disk cache.
+    public static var shared: ImagePipeline {
+        PipelineBox.pipeline(for: CustomHTTPHeaders.current)
+    }
+
+    private enum PipelineBox {
+        private static let lock = NSLock()
+        nonisolated(unsafe) private static var cached: (headers: [String: String], pipeline: ImagePipeline)?
+
+        static func pipeline(for headers: [String: String]) -> ImagePipeline {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached, cached.headers == headers { return cached.pipeline }
+            var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
+            config.dataCachePolicy = .automatic
+            if !headers.isEmpty {
+                let session = URLSessionConfiguration.default
+                session.httpAdditionalHeaders = headers
+                session.urlCache = nil
+                config.dataLoader = DataLoader(configuration: session)
+            }
+            let pipeline = ImagePipeline(configuration: config)
+            cached = (headers, pipeline)
+            return pipeline
+        }
+    }
 
     /// Bytes the on-disk image cache currently holds.
     public static var diskCacheSize: Int {
@@ -27,6 +49,24 @@ public enum ImageCache: Sendable {
     public static func clear() {
         shared.cache.removeAll()
         (shared.configuration.dataCache as? DataCache)?.removeAll()
+    }
+
+    #if canImport(UIKit)
+    public typealias PlatformImage = UIImage
+    #elseif canImport(AppKit)
+    public typealias PlatformImage = NSImage
+    #endif
+
+    /// An already decoded image from the in-memory cache, if there is one: lets a view show
+    /// it on its very first frame instead of flashing a placeholder.
+    public static func memoryImage(for url: URL) -> PlatformImage? {
+        shared.cache[ImageRequest(url: url)]?.image
+    }
+
+    /// Loads through the shared pipeline: memory cache, then disk cache, then network, with
+    /// decoding off the main thread and duplicate in-flight requests coalesced.
+    public static func load(_ url: URL) async throws -> PlatformImage {
+        try await shared.image(for: url)
     }
 
     /// Loads all URLs into the Nuke decoded cache concurrently so images render

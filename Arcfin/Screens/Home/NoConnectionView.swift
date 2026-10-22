@@ -12,6 +12,8 @@ struct NoConnectionView: View {
     @Environment(MediaRepository.self) private var mediaRepo
 
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
+    @State private var showSwitchServer = false
+    @State private var confirmSignOut = false
 
     private let tips = [
         "Check that Wi-Fi or Mobile Data is turned on",
@@ -64,20 +66,18 @@ struct NoConnectionView: View {
                             retry()
                         } label: {
                             HStack(spacing: 8) {
-                                if mediaRepo.isLoading { ProgressView().tint(.white) }
+                                if mediaRepo.isLoading { ProgressView().tint(DT.Color.onAccent) }
                                 Text(mediaRepo.isLoading ? "Retrying…" : "Retry")
                             }
                             .font(.system(.subheadline, design: .default, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DT.Color.onAccent)
                             .frame(maxWidth: 340)
                             .frame(height: 48)
                             .background(DT.Color.accent, in: RoundedRectangle(cornerRadius: DT.Radius.md))
                         }
                         .disabled(mediaRepo.isLoading)
 
-                        // Downloads/offline playback aren't wired up on macOS — see
-                        // SettingsView/NotificationsSettingsView, which hide the same feature.
-                        #if os(iOS)
+                        #if !os(tvOS)
                         Button {
                             offlineModeEnabled = true
                         } label: {
@@ -89,11 +89,41 @@ struct NoConnectionView: View {
                                 .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.md))
                         }
                         #endif
+
+                        // A way out when the server is gone for good: another saved server,
+                        // or back to sign-in.
+                        #if !os(tvOS)
+                        Button { showSwitchServer = true } label: {
+                            Text("Switch Server")
+                                .font(.system(.subheadline, weight: .semibold))
+                                .foregroundStyle(DT.Color.accent)
+                                .frame(minHeight: 44)
+                        }
+                        #endif
+                        Button("Sign Out", role: .destructive) { confirmSignOut = true }
+                            .font(.system(.subheadline, weight: .semibold))
+                            .frame(minHeight: 44)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, 40)
             }
+        }
+        #if os(iOS)
+        // This screen can replace the app while a landscape player was open.
+        .onAppear { resetPlayerOrientation() }
+        #endif
+        #if !os(tvOS)
+        .sheet(isPresented: $showSwitchServer) {
+            NavigationStack { SwitchServerView() }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        #endif
+        .confirmationDialog("Sign out of this server?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+            Button("Sign Out", role: .destructive) { authManager.signOut() }
+        } message: {
+            Text("You'll need to sign in again to use it. Downloads stay on this device.")
         }
     }
 

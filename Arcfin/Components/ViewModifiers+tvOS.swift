@@ -53,6 +53,21 @@ extension View {
 #endif
     }
 
+    /// Shows the view only when `isShown`, e.g. a control the profile isn't allowed to use.
+    @ViewBuilder
+    func shown(_ isShown: Bool) -> some View {
+        if isShown { self }
+    }
+
+    /// A screen's background, always filling the whole screen. Applied straight to content
+    /// that sizes itself (a spinner, an empty state, a short stack while results load), the
+    /// colour only covered that content's narrow frame and the rest showed the system black
+    /// until the full results arrived.
+    func screenBackground() -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background { DT.Color.backgroundPrimary.ignoresSafeArea() }
+    }
+
     @ViewBuilder
     func arcfinRowSeparatorHidden() -> some View {
 #if os(tvOS)
@@ -83,6 +98,23 @@ extension View {
 #else
         self
 #endif
+    }
+
+    /// A button with no chrome of its own: plain (or pressable) for touch and pointer, and on
+    /// tvOS, where the app turns off the system focus effect, a focus ring so it shows focus.
+    @ViewBuilder
+    func arcfinPlainButton(cornerRadius: CGFloat = DT.Radius.md, pressable: Bool = false) -> some View {
+        #if os(tvOS)
+        buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: cornerRadius, prominent: true)
+        #else
+        if pressable {
+            buttonStyle(PressableButtonStyle())
+        } else {
+            buttonStyle(.plain)
+        }
+        #endif
     }
 
     func tvListRow() -> some View {
@@ -126,7 +158,7 @@ private struct TVFocusRingModifier: ViewModifier {
                     .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: prominent ? 4 : 2)
             )
             .shadow(color: isFocused ? DT.Color.accent.opacity(prominent ? 0.6 : 0.45) : .clear, radius: prominent ? 16 : 10)
-            .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
 
@@ -154,7 +186,7 @@ struct TVPlayerControlLabel: View {
             .frame(width: diameter * DT.Scale.font, height: diameter * DT.Scale.font)
             .background(Circle().fill(isFocused ? DT.Color.accent : Color.white.opacity(0.16)))
             .scaleEffect(isFocused ? 1.15 : 1.0)
-            .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
 
@@ -171,7 +203,7 @@ struct TVFocusButtonLabel: View {
             .padding(.horizontal, 10 * DT.Scale.font)
             .padding(.vertical, 4 * DT.Scale.font)
             .background(Capsule().fill(isFocused ? DT.Color.accent : Color.clear))
-            .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
 
@@ -200,7 +232,7 @@ struct TVHeroButtonLabel: View {
                     : AnyShapeStyle(Color.clear))
         )
         .scaleEffect(isFocused ? 1.04 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
     }
 }
 
@@ -219,7 +251,7 @@ struct TVFocusRowLabel<Content: View>: View {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(isFocused ? Color.white.opacity(0.92) : Color.clear)
             )
-            .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
 
@@ -252,7 +284,7 @@ struct TVDetailButtonLabel: View {
                     : AnyShapeStyle(Color.white.opacity(isPrimary ? 0.15 : 0.08)))
         )
         .scaleEffect(isFocused ? 1.02 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
     }
 }
 
@@ -271,7 +303,7 @@ struct TVDescriptionLabel: View {
                 .lineSpacing(5)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Read more")
+            Text("Read More")
                 .scaledFont(size: 10, weight: .semibold)
                 .foregroundStyle(DT.Color.accent)
                 .opacity(isFocused ? 1 : 0)
@@ -281,7 +313,7 @@ struct TVDescriptionLabel: View {
             RoundedRectangle(cornerRadius: DT.Radius.md)
                 .fill(isFocused ? Color.white.opacity(0.08) : Color.clear)
         )
-        .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
 

@@ -34,7 +34,7 @@ struct CodecProfileSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Codec Compatibility")
     }
 }

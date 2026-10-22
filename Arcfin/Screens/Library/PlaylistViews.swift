@@ -1,0 +1,249 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import SwiftUI
+import AuthCore
+import JellyfinAPI
+
+// MARK: - Add to Playlist
+
+struct AddToPlaylistSheet: View {
+    let item: MediaItem
+
+    @Environment(AuthManager.self) private var authManager
+    @Environment(\.dismiss) private var dismiss
+
+    private var store: PlaylistStore { .shared }
+    @State private var newName = ""
+    @State private var busy = false
+    @State private var errorMessage: String?
+
+    private var credential: ServerCredential? { authManager.state.credential }
+    private var authHeader: String? { credential.map { authManager.authClient.authHeader(token: $0.accessToken) } }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        TextField("New playlist", text: $newName)
+                            .submitLabel(.done)
+                            .onSubmit(createWithItem)
+                        Button("Create", action: createWithItem)
+                            .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty || busy)
+                    }
+                }
+                if !store.playlists.isEmpty {
+                    Section("Your Playlists") {
+                        ForEach(store.playlists) { playlist in
+                            Button { add(to: playlist) } label: {
+                                HStack {
+                                    Label(playlist.name, systemImage: "list.and.film")
+                                        .foregroundStyle(DT.Color.textPrimary)
+                                    Spacer()
+                                    Text("\(playlist.itemCount)")
+                                        .foregroundStyle(DT.Color.textSecondary)
+                                }
+                            }
+                            .disabled(busy)
+                        }
+                    }
+                }
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Add to Playlist")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+            }
+            .task {
+                guard let credential, let authHeader else { return }
+                await store.load(credential: credential, authHeader: authHeader)
+            }
+        }
+    }
+
+    private func add(to playlist: MediaPlaylist) {
+        guard let credential, let authHeader else { return }
+        busy = true
+        Task {
+            do {
+                try await store.add(item, to: playlist, credential: credential, authHeader: authHeader)
+                HapticManager.impact(.light)
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            busy = false
+        }
+    }
+
+    private func createWithItem() {
+        let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, let credential, let authHeader else { return }
+        busy = true
+        Task {
+            do {
+                try await store.create(named: name, with: [item], credential: credential, authHeader: authHeader)
+                HapticManager.impact(.light)
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            busy = false
+        }
+    }
+}
+
+// MARK: - Add titles from inside a playlist
+
+/// Pick any number of movies, shows and episodes to add at once: suggestions from Home
+/// while the search field is empty, search results once something is typed.
+struct AddTitlesToPlaylistSheet: View {
+    let playlistId: String
+    let existingIds: Set<String>
+    let onAdded: () -> Void
+
+    @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var query = ""
+    @State private var results: [MediaItem] = []
+    /// In the order they were picked, which is the order they're added in.
+    @State private var selectedIDs: [String] = []
+    @State private var isSearching = false
+    @State private var isAdding = false
+    @State private var errorMessage: String?
+
+    private let client = JellyfinMediaClient()
+
+    private var suggestions: [MediaItem] {
+        var seen = Set<String>()
+        return (mediaRepo.continueWatching + mediaRepo.recentlyAddedMovies + mediaRepo.recentlyAddedShows + mediaRepo.favorites)
+            .filter { [.movie, .series, .episode].contains($0.type) && seen.insert($0.id).inserted }
+    }
+
+    private var shown: [MediaItem] { query.isEmpty ? suggestions : results }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if isSearching && results.isEmpty {
+                    HStack { Spacer(); ProgressView(); Spacer() }.listRowBackground(Color.clear)
+                } else if !query.isEmpty && results.isEmpty {
+                    ContentUnavailableView.search(text: query).listRowBackground(Color.clear)
+                } else {
+                    Section(query.isEmpty ? "Suggestions" : "Results") {
+                        ForEach(shown) { item in
+                            Button { toggle(item) } label: { row(item) }
+                                .disabled(existingIds.contains(item.id))
+                        }
+                    }
+                }
+                if let errorMessage {
+                    Text(errorMessage).font(.footnote).foregroundStyle(.red)
+                }
+            }
+            .arcfinListStyle()
+            .screenBackground()
+            .searchable(text: $query, prompt: "Movies, shows, episodes")
+            .navigationTitle("Add Titles")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(selectedIDs.isEmpty ? "Add" : "Add \(selectedIDs.count)") { add() }
+                        .disabled(selectedIDs.isEmpty || isAdding)
+                }
+            }
+            .task(id: query) { await search() }
+        }
+    }
+
+    private func row(_ item: MediaItem) -> some View {
+        let isIn = existingIds.contains(item.id)
+        let isSelected = selectedIDs.contains(item.id)
+        return HStack(spacing: 12) {
+            CachedAsyncImage(url: mediaRepo.imageURL(for: item, type: .primary, fillWidth: 120)) { phase in
+                switch phase {
+                case .success(let image): image.resizable().scaledToFill()
+                default: DT.Color.backgroundSecondary
+                }
+            }
+            .frame(width: 40, height: 60)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                Text(detail(for: item, isIn: isIn))
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: isIn || isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(isIn ? DT.Color.textSecondary : (isSelected ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5)))
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func detail(for item: MediaItem, isIn: Bool) -> String {
+        if isIn { return "Already in this playlist" }
+        switch item.type {
+        case .series: return "Show · every episode"
+        case .episode:
+            let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }].compactMap { $0 }.joined(separator: " · ")
+            return [code, item.name].filter { !$0.isEmpty }.joined(separator: " · ")
+        default: return item.productionYear.map { "Movie · \($0)" } ?? "Movie"
+        }
+    }
+
+    private func toggle(_ item: MediaItem) {
+        if let index = selectedIDs.firstIndex(of: item.id) { selectedIDs.remove(at: index) } else { selectedIDs.append(item.id) }
+        HapticManager.impact(.light)
+    }
+
+    private func search() async {
+        let term = query.trimmingCharacters(in: .whitespaces)
+        guard !term.isEmpty else { results = []; return }
+        try? await Task.sleep(for: .milliseconds(300))
+        guard !Task.isCancelled, let cred = authManager.state.credential else { return }
+        isSearching = true
+        let found = (try? await client.search(credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken), query: term, limit: 40)) ?? []
+        guard !Task.isCancelled else { return }
+        results = found.filter { [.movie, .series, .episode].contains($0.type) }
+        isSearching = false
+    }
+
+    private func add() {
+        guard let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let ordered = selectedIDs
+        isAdding = true
+        Task {
+            do {
+                try await client.addToPlaylist(credential: cred, authHeader: header, playlistId: playlistId, itemIds: ordered)
+                ContainingSets.shared.invalidate()
+                await PlaylistStore.shared.load(credential: cred, authHeader: header)
+                onAdded()
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isAdding = false
+        }
+    }
+}

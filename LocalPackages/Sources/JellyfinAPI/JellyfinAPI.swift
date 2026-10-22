@@ -45,6 +45,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public var parentBackdropItemId: String?
     public var parentBackdropImageTags: [String]
     public var tmdbId: Int?
+    public var premiereDate: Date?
 
     public init(
         id: String,
@@ -64,7 +65,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         seriesPrimaryImageTag: String? = nil,
         parentBackdropItemId: String? = nil,
         parentBackdropImageTags: [String] = [],
-        tmdbId: Int? = nil
+        tmdbId: Int? = nil,
+        premiereDate: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -84,6 +86,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         self.parentBackdropItemId = parentBackdropItemId
         self.parentBackdropImageTags = parentBackdropImageTags
         self.tmdbId = tmdbId
+        self.premiereDate = premiereDate
     }
 }
 
@@ -95,6 +98,7 @@ public enum MediaType: String, Sendable, Equatable {
     case audio = "Audio"
     case musicAlbum = "MusicAlbum"
     case boxSet = "BoxSet"
+    case playlist = "Playlist"
     case unknown
 }
 
@@ -106,6 +110,8 @@ public struct UserData: Sendable, Equatable, Hashable {
     public var playedPercentage: Double?
     /// Thumbs rating: true = liked, false = disliked, nil = not rated.
     public var likes: Bool?
+    /// When it was last played anywhere, as the server records it.
+    public var lastPlayedDate: Date?
 
     public init(
         playbackPositionTicks: Int64 = 0,
@@ -113,7 +119,8 @@ public struct UserData: Sendable, Equatable, Hashable {
         isFavorite: Bool = false,
         played: Bool = false,
         playedPercentage: Double? = nil,
-        likes: Bool? = nil
+        likes: Bool? = nil,
+        lastPlayedDate: Date? = nil
     ) {
         self.playbackPositionTicks = playbackPositionTicks
         self.playCount = playCount
@@ -121,6 +128,7 @@ public struct UserData: Sendable, Equatable, Hashable {
         self.played = played
         self.playedPercentage = playedPercentage
         self.likes = likes
+        self.lastPlayedDate = lastPlayedDate
     }
 }
 
@@ -221,14 +229,51 @@ public struct MediaItemDetail: Sendable, Identifiable {
         return t.contains("hdr") || t.contains("dolby vision") || t.contains(" dv")
     }
 
+    /// Critics' score out of 100 (the OMDb plugin fills it from Rotten Tomatoes).
+    public var criticRating: Double?
+    // For the title page's details section.
+    public var originalTitle: String?
+    public var productionLocations: [String] = []
+    public var tags: [String] = []
+    /// "Continuing" or "Ended", for shows.
+    public var status: String?
+    public var airDays: [String] = []
+    public var airTime: String?
+    public var premiereDate: Date?
+    public var endDate: Date?
+    public var externalLinks: [ExternalLink] = []
+    public var files: [MediaFileInfo] = []
+
     public init(item: MediaItem, people: [MediaPerson] = [], mediaStreams: [MediaStream] = [],
                 genres: [String] = [], studios: [String] = [], officialRating: String? = nil,
                 runTimeTicks: Int64? = nil, taglines: [String] = [], chapters: [MediaChapter] = [],
-                trickplay: [String: JellyfinTrickplayInfo] = [:], remoteTrailers: [RemoteTrailer] = []) {
+                trickplay: [String: JellyfinTrickplayInfo] = [:], remoteTrailers: [RemoteTrailer] = [],
+                criticRating: Double? = nil) {
         self.item = item; self.people = people; self.mediaStreams = mediaStreams
         self.genres = genres; self.studios = studios; self.officialRating = officialRating
         self.runTimeTicks = runTimeTicks; self.taglines = taglines; self.chapters = chapters
         self.trickplay = trickplay; self.remoteTrailers = remoteTrailers
+        self.criticRating = criticRating
+    }
+}
+
+/// A page about the title elsewhere (IMDb, TMDB, TheTVDB…).
+public struct ExternalLink: Sendable, Identifiable, Equatable {
+    public var id: String { url.absoluteString }
+    public let name: String
+    public let url: URL
+    public init(name: String, url: URL) { self.name = name; self.url = url }
+}
+
+/// One version of the title on the server.
+public struct MediaFileInfo: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let name: String?
+    public let container: String?
+    public let sizeBytes: Int64?
+    public let bitrate: Int?
+    public init(id: String, name: String?, container: String?, sizeBytes: Int64?, bitrate: Int?) {
+        self.id = id; self.name = name; self.container = container; self.sizeBytes = sizeBytes; self.bitrate = bitrate
     }
 }
 
@@ -331,7 +376,7 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
             case .photos:     "photo"
             case .books:      "books.vertical"
             case .livetv:     "antenna.radiowaves.left.and.right"
-            case .playlists:  "music.note.list"
+            case .playlists:  "list.and.film"
             case .boxsets:    "rectangle.stack"
             case .unknown:    "folder"
             }

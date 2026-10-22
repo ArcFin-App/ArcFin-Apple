@@ -52,7 +52,7 @@ struct SwitchServerView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Switch Server")
     #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -67,7 +67,7 @@ struct SwitchServerView: View {
                 }
             }
             .arcfinListStyle()
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationTitle(group.host)
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -108,7 +108,7 @@ struct SwitchServerView: View {
                     .frame(width: 42, height: 42)
                 Image(systemName: "server.rack")
                     .font(.system(.body, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.host)

@@ -3,12 +3,25 @@
 #if os(tvOS)
 import SwiftUI
 import SeerrAPI
+import JellyfinAPI
 
 struct TVSeerrView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
-    @State private var requestingItem: SeerrItem? = nil
-    @State private var showRequestAlert = false
+    @State private var mediaType: RequestMediaType = .movie
+    @State private var languageItems: [SeerrItem] = []
+
+    private var trendingForType: [SeerrItem] {
+        let trending = seerrRepo.trending.filter { $0.mediaType == mediaType }
+        return trending.isEmpty ? (mediaType == .tv ? seerrRepo.popularTV : seerrRepo.popularMovies) : trending
+    }
+
+    private var showsTrending: Bool { seerrRepo.trending.contains { $0.mediaType == mediaType } }
+
+    private var deviceLanguage: String? {
+        guard let code = Locale.current.language.languageCode?.identifier, code != "en" else { return nil }
+        return code
+    }
 
     var body: some View {
         NavigationStack {
@@ -21,26 +34,27 @@ struct TVSeerrView: View {
                     mainContent
                 }
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
+            .navigationDestination(for: SeerrItem.self) { TVSeerrItemDetailView(item: $0) }
+            .navigationDestination(for: MediaItem.self) { TVMediaDetailView(item: $0) }
+            .navigationDestination(for: SeerrGenre.self) { genre in
+                TVSeerrGridView(title: genre.name) {
+                    await seerrRepo.discoverByGenre(genre.id, mediaType: mediaType)
+                }
+            }
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
-            await seerrRepo.loadDiscover()
+            async let discover: Void = seerrRepo.loadDiscover()
+            async let genres: Void = seerrRepo.loadGenres()
+            async let upcoming: Void = seerrRepo.loadUpcoming()
+            async let watchlist: Void = seerrRepo.loadWatchlist()
+            _ = await (discover, genres, upcoming, watchlist)
             await seerrRepo.loadRequests()
         }
-        .alert(
-            requestingItem.map { "Request \($0.title)" } ?? "Request",
-            isPresented: $showRequestAlert,
-            presenting: requestingItem
-        ) { item in
-            Button("Send Request") {
-                Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: { item in
-            let year = item.year.map { " (\($0))" } ?? ""
-            let type = item.mediaType == .tv ? "Series" : "Movie"
-            return Text("\(type)\(year)")
+        .task(id: mediaType) {
+            guard let deviceLanguage else { return }
+            languageItems = await seerrRepo.discoverByLanguage(deviceLanguage, mediaType: mediaType)
         }
     }
 
@@ -50,15 +64,19 @@ struct TVSeerrView: View {
         VStack(spacing: 20) {
             Image(systemName: "lock.slash.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(Color(hex: "EF4444"))
+                .foregroundStyle(DT.Color.palette("EF4444"))
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Check your Seerr credentials in Profile → Plugins → Seerr.")
-                .font(.system(size: 22))
+            Text("Check your Seerr credentials in Settings → Plugins → Seerr.")
+                .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
+            Button("Try Again") {
+                seerrRepo.clearAuthFailure()
+                Task { await seerrRepo.loadDiscover() }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -73,8 +91,8 @@ struct TVSeerrView: View {
             Text("Seerr Not Connected")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Add your Seerr server in Profile → Plugins → Seerr.")
-                .font(.system(size: 22))
+            Text("Add your Seerr server in Settings → Plugins → Seerr.")
+                .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
@@ -87,20 +105,31 @@ struct TVSeerrView: View {
     private var mainContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                watchlistLink
+                topRow
                     .padding(.horizontal, 80)
                     .padding(.bottom, 40)
                     .focusSection()
 
-                if !seerrRepo.trending.isEmpty {
-                    tvShelf(title: "Trending", items: seerrRepo.trending)
+                if trendingForType.isEmpty, !seerrRepo.isLoadingDiscover, let error = seerrRepo.discoverError {
+                    errorCard(error)
+                        .padding(.horizontal, 80)
+                        .padding(.bottom, 40)
+                } else if !trendingForType.isEmpty {
+                    tvShelf(title: showsTrending ? "Trending Now" : "Popular", items: trendingForType)
                 }
-                if !seerrRepo.popularMovies.isEmpty {
-                    tvShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
+                let upcoming = mediaType == .tv ? seerrRepo.upcomingTV : seerrRepo.upcomingMovies
+                if !upcoming.isEmpty {
+                    tvShelf(title: "Upcoming", items: upcoming)
                 }
-                if !seerrRepo.popularTV.isEmpty {
-                    tvShelf(title: "Popular Series", items: seerrRepo.popularTV)
+                let popular = mediaType == .tv ? seerrRepo.popularTV : seerrRepo.popularMovies
+                if showsTrending, !popular.isEmpty {
+                    tvShelf(title: mediaType == .tv ? "Popular Series" : "Popular Movies", items: popular)
                 }
+                if !languageItems.isEmpty, let deviceLanguage,
+                   let name = Locale.current.localizedString(forLanguageCode: deviceLanguage) {
+                    tvShelf(title: "Popular in \(name)", items: languageItems)
+                }
+                genreRow
 
                 requestsSection
                     .padding(.top, 16)
@@ -110,27 +139,98 @@ struct TVSeerrView: View {
         }
     }
 
-    // MARK: - Watchlist entry
+    // MARK: - Top row
 
-    private var watchlistLink: some View {
-        NavigationLink {
-            WatchlistView()
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "bookmark.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                Text("Watchlist")
-                    .font(.system(size: 20, weight: .semibold))
+    private var topRow: some View {
+        HStack(spacing: 20) {
+            Picker("Media Type", selection: $mediaType) {
+                Text("Movies").tag(RequestMediaType.movie)
+                Text("Series").tag(RequestMediaType.tv)
             }
-            .foregroundStyle(DT.Color.textPrimary)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .background(Capsule().fill(Color.white.opacity(0.08)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+            .pickerStyle(.segmented)
+            .frame(width: 420)
+
+            NavigationLink {
+                TVSeerrSearchView()
+            } label: {
+                pillLabel("Search", systemImage: "magnifyingglass")
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: DT.Radius.pill)
+
+            NavigationLink {
+                WatchlistView()
+            } label: {
+                pillLabel("Watchlist", systemImage: "bookmark.fill")
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: DT.Radius.pill)
         }
-        .buttonStyle(TVCardButtonStyle())
-        .focusEffectDisabled()
-        .tvFocusRing(cornerRadius: DT.Radius.pill)
+    }
+
+    private func pillLabel(_ title: String, systemImage: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+            Text(title)
+        }
+        .font(.system(size: 23, weight: .semibold))
+        .foregroundStyle(DT.Color.textPrimary)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(Capsule().fill(Color.white.opacity(0.08)))
+        .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+    }
+
+    private func errorCard(_ message: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Couldn't load Discover from Seerr", systemImage: "exclamationmark.triangle")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+            Text(message)
+                .font(.system(size: 23))
+                .foregroundStyle(DT.Color.textSecondary)
+            Button("Try Again") {
+                seerrRepo.clearAuthFailure()
+                Task { await seerrRepo.loadDiscover() }
+            }
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+    }
+
+    // MARK: - Genres
+
+    @ViewBuilder
+    private var genreRow: some View {
+        let genres = mediaType == .tv ? seerrRepo.tvGenres : seerrRepo.movieGenres
+        if !genres.isEmpty {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Genres")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .padding(.horizontal, 80)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(genres) { genre in
+                            NavigationLink(value: genre) {
+                                pillLabel(genre.name, systemImage: "theatermasks")
+                            }
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                            .tvFocusRing(cornerRadius: DT.Radius.pill)
+                        }
+                    }
+                    .padding(.horizontal, 80)
+                    .padding(.vertical, 12)
+                }
+                .scrollClipDisabled()
+            }
+            .padding(.bottom, 40)
+            .focusSection()
+        }
     }
 
     // MARK: - Discover shelf
@@ -145,10 +245,7 @@ struct TVSeerrView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(items) { item in
-                        Button {
-                            requestingItem = item
-                            showRequestAlert = true
-                        } label: {
+                        NavigationLink(value: item) {
                             TVSeerrCard(item: item)
                         }
                         .buttonStyle(TVCardButtonStyle())
@@ -177,7 +274,7 @@ struct TVSeerrView: View {
                     ProgressView().padding(.leading, 8)
                 } else if !seerrRepo.requests.isEmpty {
                     Text("\(seerrRepo.requests.count)")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 23, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12).padding(.vertical, 4)
                         .background(Capsule().fill(DT.Color.accent.opacity(0.3)))
@@ -196,12 +293,97 @@ struct TVSeerrView: View {
             } else {
                 VStack(spacing: 12) {
                     ForEach(seerrRepo.requests) { req in
-                        TVRequestRow(req: req)
+                        if let tmdbId = req.tmdbId {
+                            NavigationLink(value: SeerrItem(
+                                id: tmdbId, title: req.mediaTitle, mediaType: req.mediaType,
+                                posterPath: req.posterPath, backdropPath: req.backdropPath,
+                                availabilityStatus: req.mediaStatus)) {
+                                TVRequestRow(req: req)
+                            }
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                        } else {
+                            TVRequestRow(req: req).focusable()
+                        }
                     }
                 }
                 .padding(.horizontal, 80)
                 .focusSection()
             }
+        }
+    }
+}
+
+// MARK: - Search
+
+/// Seerr's search, with the system's tvOS search keyboard.
+struct TVSeerrSearchView: View {
+    @Environment(SeerrRepository.self) private var seerrRepo
+    @State private var query = ""
+    @State private var results: [SeerrItem] = []
+
+    var body: some View {
+        TVSeerrResultsGrid(items: results)
+            .searchable(text: $query, prompt: "Movies and series")
+            .screenBackground()
+            .task(id: query) {
+                let trimmed = query.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { results = []; return }
+                try? await Task.sleep(for: .milliseconds(350))
+                guard !Task.isCancelled else { return }
+                let found = await seerrRepo.search(query: trimmed)
+                guard !Task.isCancelled else { return }
+                results = found
+            }
+    }
+}
+
+/// Titles from one Seerr list, in a grid — a genre, for now.
+struct TVSeerrGridView: View {
+    let title: String
+    let load: () async -> [SeerrItem]
+    @State private var items: [SeerrItem] = []
+    @State private var isLoading = true
+
+    var body: some View {
+        Group {
+            if isLoading && items.isEmpty {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                TVSeerrResultsGrid(items: items, title: title)
+            }
+        }
+        .screenBackground()
+        .task {
+            items = await load()
+            isLoading = false
+        }
+    }
+}
+
+private struct TVSeerrResultsGrid: View {
+    let items: [SeerrItem]
+    var title: String? = nil
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                if let title {
+                    Text(title)
+                        .font(.system(size: 40, weight: .heavy))
+                        .foregroundStyle(DT.Color.textPrimary)
+                }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: 40)], spacing: 48) {
+                    ForEach(items) { item in
+                        NavigationLink(value: item) {
+                            TVSeerrCard(item: item)
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+            }
+            .padding(80)
         }
     }
 }
@@ -226,7 +408,7 @@ private struct TVSeerrCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             ZStack(alignment: .topLeading) {
-                AsyncImage(url: item.backdropURL ?? item.posterURL) { phase in
+                CachedAsyncImage(url: item.backdropURL ?? item.posterURL) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default:
@@ -245,12 +427,12 @@ private struct TVSeerrCard: View {
                 )
                 .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
                 .scaleEffect(isFocused ? 1.05 : 1.0)
-                .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+                .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
 
                 if let badge {
                     let color = Color(hex: badge.colorHex)
                     Text(badge.label)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 23, weight: .bold))
                         .foregroundStyle(color)
                         .padding(.horizontal, 10).padding(.vertical, 4)
                         .background(color.opacity(0.2))
@@ -286,7 +468,7 @@ private struct TVRequestRow: View {
 
     var body: some View {
         HStack(spacing: 20) {
-            AsyncImage(url: req.backdropURL ?? req.posterURL) { phase in
+            CachedAsyncImage(url: req.backdropURL ?? req.posterURL) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default:
@@ -305,13 +487,13 @@ private struct TVRequestRow: View {
 
                 HStack(spacing: 10) {
                     Text(req.mediaType == .tv ? "Series" : "Movie")
-                        .font(.system(size: 18))
+                        .font(.system(size: 23))
                         .foregroundStyle(DT.Color.textSecondary)
 
                     Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
 
                     Text(req.requestedAt, style: .date)
-                        .font(.system(size: 18))
+                        .font(.system(size: 23))
                         .foregroundStyle(DT.Color.textSecondary)
 
                     statusPill(req.status)
@@ -332,7 +514,7 @@ private struct TVRequestRow: View {
             RoundedRectangle(cornerRadius: DT.Radius.md)
                 .stroke(isFocused ? DT.Color.accent.opacity(0.4) : Color.white.opacity(0.05), lineWidth: 1)
         )
-        .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 
     private func statusPill(_ status: RequestStatus) -> some View {
@@ -350,12 +532,12 @@ private struct TVRequestRow: View {
 
     private func pillView(label: String, hex: String) -> some View {
         Text(label)
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(Color(hex: hex))
+            .font(.system(size: 23, weight: .bold))
+            .foregroundStyle(DT.Color.palette(hex))
             .padding(.horizontal, 12).padding(.vertical, 4)
-            .background(Color(hex: hex).opacity(0.15))
+            .background(DT.Color.palette(hex).opacity(0.15))
             .clipShape(Capsule())
-            .overlay(Capsule().stroke(Color(hex: hex).opacity(0.3), lineWidth: 1))
+            .overlay(Capsule().stroke(DT.Color.palette(hex).opacity(0.3), lineWidth: 1))
     }
 }
 #endif

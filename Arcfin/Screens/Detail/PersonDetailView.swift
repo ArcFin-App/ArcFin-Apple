@@ -21,6 +21,12 @@ struct PersonDetailView: View {
     @State private var detail: MediaPersonDetail?
     @State private var seerrCredits: [SeerrPersonCredit] = []
     @State private var requestingCredit: SeerrItem?
+    #if os(tvOS)
+    @State private var openCredit: SeerrItem?
+    private let creditScale: CGFloat = 1.8
+    #else
+    private let creditScale: CGFloat = 1
+    #endif
 
     private let client = JellyfinMediaClient()
 
@@ -49,6 +55,8 @@ struct PersonDetailView: View {
         // Fixed 3-up stretches cards absurdly wide on a resizable Mac window — adaptive
         // reflows the grid as the window resizes instead.
         [GridItem(.adaptive(minimum: 130), spacing: 12)]
+#elseif os(tvOS)
+        [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: 40)]
 #else
         Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
 #endif
@@ -60,9 +68,11 @@ struct PersonDetailView: View {
                 header
 
                 if isLoading {
+                    // Full width and a fixed height, so the page is already its final size
+                    // while loading instead of starting narrow and widening once data lands.
                     ProgressView()
                         .tint(DT.Color.accent)
-                        .padding(.top, 40)
+                        .frame(maxWidth: .infinity, minHeight: 240)
                 } else {
                     if let overview = detail?.overview, !overview.isEmpty {
                         Text(overview)
@@ -105,13 +115,16 @@ struct PersonDetailView: View {
                                 }
                             }
                             .padding(.horizontal, DT.Spacing.pagePad)
+                            .padding(.vertical, 12)
                         }
+                        .scrollClipDisabled()
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding(.bottom, DT.Spacing.md)
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle(person.name)
         .sheet(item: $requestingCredit) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingCredit)
@@ -124,12 +137,15 @@ struct PersonDetailView: View {
         #endif
         .navigationDestination(item: $selectedItem) { item in
 #if os(tvOS)
-            MediaDetailView(item: item)
+            TVMediaDetailView(item: item)
 #else
             MediaDetailView(item: item, zoomNamespace: zoomNamespace)
-                .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+                .zoomNavigationTransition(id: item.id, in: zoomNamespace)
 #endif
         }
+        #if os(tvOS)
+        .navigationDestination(item: $openCredit) { TVSeerrItemDetailView(item: $0) }
+        #endif
         .task { await load() }
     }
 
@@ -151,7 +167,7 @@ struct PersonDetailView: View {
             }
             .frame(width: 140, height: 140)
             .clipShape(Circle())
-            .overlay(Circle().stroke(.white.opacity(0.1), lineWidth: 1))
+            .overlay(Circle().stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
             .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
 
             Text(person.name)
@@ -186,7 +202,13 @@ struct PersonDetailView: View {
     }
 
     private func creditCard(_ credit: SeerrPersonCredit) -> some View {
-        Button { requestingCredit = credit.asSeerrItem } label: {
+        Button {
+            #if os(tvOS)
+            openCredit = credit.asSeerrItem
+            #else
+            requestingCredit = credit.asSeerrItem
+            #endif
+        } label: {
             VStack(alignment: .leading, spacing: 4) {
                 ZStack(alignment: .bottomTrailing) {
                     Group {
@@ -202,7 +224,7 @@ struct PersonDetailView: View {
                             DT.Color.backgroundSecondary
                         }
                     }
-                    .frame(width: 110, height: 165)
+                    .frame(width: 110 * creditScale, height: 165 * creditScale)
                     .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
 
                     Image(systemName: "plus.circle.fill")
@@ -222,9 +244,15 @@ struct PersonDetailView: View {
                         .lineLimit(1)
                 }
             }
-            .frame(width: 110)
+            .frame(width: 110 * creditScale)
         }
+        #if os(tvOS)
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .tvFocusRing(cornerRadius: DT.Radius.md)
+        #else
         .buttonStyle(PressableButtonStyle())
+        #endif
     }
 
     private func load() async {

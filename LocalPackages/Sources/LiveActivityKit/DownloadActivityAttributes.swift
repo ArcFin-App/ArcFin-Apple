@@ -28,11 +28,24 @@ public struct DownloadActivityAttributes: ActivityAttributes {
         public var posterImageData: Data?
         public var seasonNumber: Int?
         public var episodeNumber: Int?
+        /// The transfer is suspended (Pause in Downloads).
+        public var isPaused: Bool?
+        /// The next title waiting in the queue, if any.
+        public var nextItemTitle: String?
+        /// The current title's progress as a span of time at the last known speed, so the
+        /// bar and countdown keep moving while iOS has the app suspended and it can't update.
+        public var estimateStart: Date?
+        public var estimatedFinish: Date?
+        /// Held because Wi-Fi Only is on and the connection is mobile data.
+        public var isWaitingForWiFi: Bool?
 
         public init(
             currentItemTitle: String, bytesWritten: Int64, totalBytes: Int64, bytesPerSecond: Double,
             completedCount: Int, totalCount: Int, isFinished: Bool = false,
-            posterImageData: Data? = nil, seasonNumber: Int? = nil, episodeNumber: Int? = nil
+            posterImageData: Data? = nil, seasonNumber: Int? = nil, episodeNumber: Int? = nil,
+            isPaused: Bool = false, nextItemTitle: String? = nil,
+            estimateStart: Date? = nil, estimatedFinish: Date? = nil,
+            isWaitingForWiFi: Bool = false
         ) {
             self.currentItemTitle = currentItemTitle
             self.bytesWritten = bytesWritten
@@ -44,7 +57,28 @@ public struct DownloadActivityAttributes: ActivityAttributes {
             self.posterImageData = posterImageData
             self.seasonNumber = seasonNumber
             self.episodeNumber = episodeNumber
+            self.isPaused = isPaused
+            self.nextItemTitle = nextItemTitle
+            self.estimateStart = estimateStart
+            self.estimatedFinish = estimatedFinish
+            self.isWaitingForWiFi = isWaitingForWiFi
         }
+
+        /// The estimated span, when the transfer is moving.
+        public var estimate: ClosedRange<Date>? {
+            guard isPaused != true, !isFinished, let estimateStart, let estimatedFinish, estimateStart < estimatedFinish
+            else { return nil }
+            return estimateStart...estimatedFinish
+        }
+
+        /// Seconds left on the current title at the present speed, when it's moving.
+        public var secondsRemaining: Double? {
+            guard bytesPerSecond > 0, totalBytes > bytesWritten, isPaused != true else { return nil }
+            return Double(totalBytes - bytesWritten) / bytesPerSecond
+        }
+
+        /// The title being downloaded now, counting from one.
+        public var position: Int { min(completedCount + (isFinished ? 0 : 1), max(totalCount, 1)) }
 
         public var fractionComplete: Double {
             guard totalBytes > 0 else { return 0 }
@@ -54,7 +88,7 @@ public struct DownloadActivityAttributes: ActivityAttributes {
         public var episodeLabel: String? {
             guard let seasonNumber else { return nil }
             let s = "S\(seasonNumber)"
-            let e = episodeNumber.map { "E\($0)" } ?? ""
+            let e = episodeNumber.map { " E\($0)" } ?? ""
             return s + e
         }
     }

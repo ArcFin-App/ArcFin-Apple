@@ -45,7 +45,7 @@ struct PosterCard: View {
                 .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
                 .compositingGroup()
                 .scaleEffect(isFocused ? 1.05 : 1.0)
-                .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+                .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -55,7 +55,7 @@ struct PosterCard: View {
                     .animation(DT.Animation.fast, value: isFocused)
                 if let subtitle {
                     Text(subtitle)
-                        .scaledFont(size: 10, weight: .medium)
+                        .scaledFont(size: 11, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
@@ -154,7 +154,7 @@ struct PosterCard: View {
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
         .overlay(
             RoundedRectangle(cornerRadius: DT.Radius.card)
-                .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(hovered ? DT.Color.accent.opacity(0.35) : DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
         )
         .scaleEffect(hovered ? 1.04 : 1)
         .shadow(
@@ -213,6 +213,15 @@ extension View {
             self
         }
     }
+
+    /// The destination half of the zoom; macOS has no zoom navigation transition.
+    func zoomNavigationTransition(id: String, in namespace: Namespace.ID) -> some View {
+        #if os(iOS)
+        navigationTransition(.zoom(sourceID: id, in: namespace))
+        #else
+        self
+        #endif
+    }
 }
 #endif
 
@@ -251,7 +260,7 @@ struct RequestCard: View {
         }
         .frame(width: 140, height: 80)
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 }
 
@@ -262,8 +271,8 @@ enum CardRequestStatus: String {
 
     var color: Color {
         switch self {
-        case .approved, .available: Color(hex: "10b981")
-        case .pending:              Color(hex: "f59e0b")
+        case .approved, .available: DT.Color.palette("10b981")
+        case .pending:              DT.Color.palette("f59e0b")
         case .downloading:          DT.Color.accent
         }
     }

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if !os(tvOS)
 import SwiftUI
+#if !os(tvOS)
 import LocalAuthentication
+#endif
 import AuthCore
 import JellyfinAPI
 
 /// Full-screen gate shown when the active profile has a PIN set and the app just launched or
-/// returned from the background. Netflix-style: leads with a profile picker across every
+/// returned from the background. Leads with a profile picker across every
 /// saved profile (not just the active one), same as switching profiles from Settings — so
 /// unlocking and switching who you are are the same screen instead of two. No cancel button
 /// on the PIN pad itself — there's no bypass, only unlock or pick a different profile.
@@ -30,8 +31,13 @@ struct AppLockView: View {
     // across layout passes, which is what caused the picker to visibly jump from left-packed
     // to centered right after appearing. A size-class-driven fixed count never has to guess.
     private var columnCount: Int { sizeClass == .compact ? 2 : 3 }
+    #if os(tvOS)
+    private let tileWidth: CGFloat = 220
+    private let avatarSize: CGFloat = 180
+    #else
     private let tileWidth: CGFloat = 116
     private let avatarSize: CGFloat = 100
+    #endif
     private let gridSpacing: CGFloat = 24
     private var gridColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: gridSpacing), count: columnCount)
@@ -41,6 +47,11 @@ struct AppLockView: View {
     }
 
     var body: some View {
+        bodyContent.alwaysDark()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
@@ -90,7 +101,13 @@ struct AppLockView: View {
                     Button { selectProfile(profile) } label: {
                         profileTile(profile)
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
+                    #else
                     .buttonStyle(.plain)
+                    #endif
                 }
             }
             .frame(maxWidth: gridMaxWidth)
@@ -112,7 +129,7 @@ struct AppLockView: View {
     private func avatarContent(_ profile: ServerCredential) -> some View {
         if let tag = profile.userImageTag {
             let url = JellyfinMediaClient.userImageURL(baseURL: profile.baseURL, userID: profile.userID, tag: tag, fillWidth: 200, token: profile.accessToken)
-            AsyncImage(url: url) { phase in
+            CachedAsyncImage(url: url) { phase in
                 if case .success(let img) = phase {
                     img.resizable().scaledToFill()
                 } else {
@@ -207,6 +224,7 @@ struct AppLockView: View {
         // enrolled on this device authenticate the device owner, not a specific Jellyfin
         // profile, so auto-prompting for a DIFFERENT profile the moment it's tapped would
         // let Face ID silently switch identities without the PIN ever being the real gate.
+        #if !os(tvOS)
         guard useFaceID, profile.id == activeID, didAttemptBiometricsFor != profile.id else { return }
         didAttemptBiometricsFor = profile.id
         let context = LAContext()
@@ -216,6 +234,6 @@ struct AppLockView: View {
             localizedReason: "Unlock Arcfin"
         ), success else { return }
         unlock(as: profile)
+        #endif
     }
 }
-#endif

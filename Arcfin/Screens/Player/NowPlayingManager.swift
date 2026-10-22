@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
-#if !os(tvOS)
 import MediaPlayer
 #if os(macOS)
 import AppKit
@@ -102,4 +101,3 @@ final class NowPlayingManager {
         isConfigured = false
     }
 }
-#endif

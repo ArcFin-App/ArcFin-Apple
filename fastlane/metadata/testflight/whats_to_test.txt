@@ -1,4 +1,4 @@
-Test the whole app experience, not just one feature — sign in, browse your library, play something (try a few titles/formats if you can), downloads, casting, profiles, and any integrations you have configured (Seerr, Streamystats, SyncPlay).
+Test the whole app experience, not just one feature — sign in, browse your library, play something (try a few titles/formats if you can), downloads, casting, profiles, and any integrations you have configured (Seerr, SyncPlay).
 
 For what's changed and what's currently being worked on, check the repo instead of a changelog here:
 https://git.psmattas.com/ArcFin/Arcfin-iOS

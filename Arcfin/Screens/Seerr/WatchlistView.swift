@@ -6,7 +6,7 @@ import SeerrAPI
 struct WatchlistView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @State private var isLoading = false
-    @State private var requestingItem: SeerrItem? = nil
+    @State private var openedItem: SeerrItem?
 
     private var columns: [GridItem] {
         #if os(macOS)
@@ -38,13 +38,16 @@ struct WatchlistView: View {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(seerrRepo.watchlist) { item in
-                            Button { requestingItem = item } label: {
+#if os(tvOS)
+                            NavigationLink(value: item) {
                                 watchlistCard(item)
                             }
-#if os(tvOS)
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
 #else
+                            Button { openedItem = item } label: {
+                                watchlistCard(item)
+                            }
                             .buttonStyle(.plain)
 #endif
                         }
@@ -53,7 +56,7 @@ struct WatchlistView: View {
                 }
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Watchlist")
         .arcfinNavTitleLarge("Watchlist")
         .task {
@@ -62,23 +65,19 @@ struct WatchlistView: View {
             isLoading = false
         }
         .refreshable { await seerrRepo.loadWatchlist() }
-        .sheet(item: $requestingItem) { item in
-            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
-                // presentationDetents is an iPhone/iPad card-sheet concept — see the same fix
-                // on the player and Search sheets.
-                #if !os(tvOS)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(.ultraThinMaterial)
-                #endif
+        #if !os(tvOS)
+        // The title's page, as from Discover, where it can be requested or played.
+        .navigationDestination(item: $openedItem) { item in
+            SeerrItemDetailView(item: item)
         }
+        #endif
     }
 
     private func watchlistCard(_ item: SeerrItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             ZStack(alignment: .topTrailing) {
                 if let url = item.posterURL {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: DT.Color.backgroundSecondary
@@ -102,6 +101,8 @@ struct WatchlistView: View {
                         .background(.black.opacity(0.5))
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
+                        .frame(width: 44, height: 44, alignment: .topTrailing)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Remove from watchlist")
                 .buttonStyle(.plain)
@@ -110,7 +111,7 @@ struct WatchlistView: View {
             }
             .aspectRatio(2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(.white.opacity(0.06), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
             .tvFocusRing(cornerRadius: DT.Radius.card)
             .contextMenu(menuItems: {
                 Button(role: .destructive) {
@@ -138,7 +139,7 @@ struct WatchlistView: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let url = item.posterURL {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: DT.Color.backgroundSecondary

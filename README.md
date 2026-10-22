@@ -4,149 +4,187 @@
 
 [<img src="assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)
 
-> **Not yet on the App Store.** Arcfin is currently available via [TestFlight](https://testflight.apple.com/join/kkC58n2w) only — v0.1.0 is uploaded to App Store Connect and pending Apple's review.
+> **Not yet on the App Store.** Arcfin is available through [TestFlight](https://testflight.apple.com/join/kkC58n2w). Version 0.1.0 is with Apple for review; 0.1.1 is in testing.
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/version-0.1.1-blue)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS-lightgrey?logo=apple&logoColor=white)
 ![Minimum OS](https://img.shields.io/badge/OS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
-A premium native Jellyfin media client for the Apple ecosystem.
+A native Jellyfin client for iPhone, iPad, Mac and Apple TV.
 
 ---
 
 ## What is Arcfin?
 
-A ground-up SwiftUI client for Jellyfin — direct play and transcoded streaming (AVFoundation, with a VLC fallback for containers AVFoundation can't open), downloads for offline playback, AirPlay/Chromecast/Picture in Picture, a Netflix-style profile picker with per-profile Face ID/PIN lock, and optional Seerr (content requests) and Streamystats (watch stats) integrations. Built around iOS 26/iPadOS 26's Liquid Glass design on iPhone/iPad, a native AppKit sidebar UI with full feature parity on Mac, and a native focus/remote-driven UI with full feature parity on Apple TV.
+Arcfin is a SwiftUI client for your own Jellyfin server. It plays almost anything the server has, downloads titles for offline viewing, and works with the rest of the Apple ecosystem: AirPlay, Picture in Picture, SharePlay, Siri, widgets, Live Activities and the Top Shelf. Seerr (requests) and TMDB (scores and where to watch) are optional add-ons.
 
-### Features
+Each platform gets its own interface rather than a stretched phone app: Liquid Glass on iPhone and iPad, a sidebar, menu bar and keyboard shortcuts on Mac, and a focus-driven layout built for the Siri Remote on Apple TV.
 
-- **Home** — Continue Watching, Next Up, Recently Added, and recommended shelves
-- **Library** — browse, filter, search, sort (including by genre)
-- **Player** — direct play/transcode with automatic quality stepping, AirPlay, Chromecast, Picture in Picture, Now Playing/Control Center integration, chapters, skip intro/credits/recap, custom subtitle styling, playback speed, Up Next with an "are you still watching" check, SyncPlay
-- **Downloads** — offline playback with Wi-Fi-only/quality controls and a Live Activity for progress
-- **Trailers** — local trailers, with an in-app YouTube fallback when a title has none
-- **Requests** — Seerr browse/request, right alongside the library
-- **Stats** — Streamystats dashboard
-- **Profiles** — Netflix-style picker, per-profile Face ID/PIN app lock
-- **Settings** — grouped hub (Playback, Downloads, Appearance, Notifications, Server, Integrations), Privacy Policy/Terms/Data Protection links
+## Features
 
-### Platform Targets
+### Watching
+- **Three playback engines:** Aether (FFmpeg demuxing with VideoToolbox decoding, the default), AVFoundation and VLC. Auto picks Aether and falls back to the others if a file won't open.
+- **Formats:** direct play or server transcoding, HDR, surround and Atmos audio, text and image subtitles with custom styling.
+- **In the player:** skip intro, recap and credits; chapters; scrubbing previews; playback speed; audio and subtitle switching without reloading; Previous and Next; Up Next with a countdown; "Are you still watching?"; X-Ray cast info.
+- **Around the player:** AirPlay, Chromecast (iPhone and iPad), Picture in Picture, Now Playing and Control Center.
+- **Watching together:** SharePlay over FaceTime, and Jellyfin's SyncPlay.
+- **Player in its own window** on iPad and Mac, so you can keep browsing beside it.
+
+### Browsing
+- **Home:** Continue Watching, Next Up, Recently Added, recommendations, collections, Seerr and streaming-service shelves. You choose and order the shelves.
+- **Library:** filters, sorting, genres, playlists, collections, Surprise Me and Hide Watched.
+- **Title pages:** cast, scores, age ratings, where to watch, trailers (local, or YouTube when there's none), More Like This, and the collections and playlists a title is in.
+- **Search** across the server, with optional search history.
+- **Spoiler Protection** for episode thumbnails and descriptions.
+
+### Stats
+An optional tab, off until you turn it on in Settings › Appearance (Navigation on iPhone, iPad and Mac), worked out entirely from your Jellyfin watch history:
+- **This week, this month, this year or all time**, each named ("October 2026"), with arrows to step back to earlier ones: time watched, and how many movies, episodes and shows.
+- **Activity** over the period, your busiest day, current and longest streaks, and when you watch: by weekday and time of day.
+- **Top shows** with how far through each you are, **top movies**, and what you've watched on repeat.
+- **Your taste:** genres, decades, studios and networks, age ratings, and the actors and directors you've seen most.
+- **Highlights:** average and highest rating, longest and oldest movie, and how long you've been watching.
+- **Your library:** how much of it you've watched, shows finished, titles in progress and favourites.
+- **Share:** a story- or post-sized card of your stats, made by Arcfin, ready for social media (iPhone, iPad and Mac).
+
+### Downloads
+- **Offline playback** on iPhone, iPad and Mac, with your watch progress synced back when you're online.
+- **Fast:** large files download in parallel ranges, several titles at once, and keep going in the background.
+- **Live Activity** with progress, time left and a paused or waiting-for-Wi-Fi state.
+- **Smart Downloads** keeps the next episodes of your shows downloaded and removes watched ones, within a storage budget. **Keep Downloaded** does the same for one show from its page.
+- **Control:** quality, mobile data, Low Power and Low Data Mode pauses, subtitles, and automatic clean-up.
+
+### Profiles and settings
+- **Profiles** with a picker, Face ID, Touch ID or PIN lock, and the server's parental controls and access schedule.
+- **Settings sync** across devices with the Arcfin Sync server plugin, including settings an admin can lock.
+- **Settings** grouped into Playback, Player Features, Downloads, Browsing, Appearance, Notifications, Server and Integrations.
+
+### Across the system
+- **Siri and Shortcuts:** play a title, play a random movie, download the next episode of a show, open Discover.
+- **Widgets** for Continue Watching and Recently Added, Control Center controls, Spotlight, Handoff and notifications for new episodes, with Quiet Hours.
+- **Apple TV:** Top Shelf, and a library screensaver made from your artwork.
+- **Mac:** every player control in the menu bar with a keyboard shortcut.
+
+### Add-ons
+- **Seerr:** browse, request and keep a watchlist, signed in per profile.
+- **TMDB:** an optional key for scores and where-to-watch information.
+
+## Platforms
 
 | Platform | Status |
 |---|---|
-| iOS 26 + iPadOS 26 | Primary — v0.1.0 uploaded to App Store Connect, processing |
-| macOS | Full feature parity with iOS — native AppKit video surface, sidebar navigation, mouse/keyboard controls, Touch ID, AirPlay/PiP. A few gaps documented inline: judder-free frame matching (no public API on macOS), AirPlay from the offline/VLC-engine player (needs a real AVPlayer to route, which VLC playback doesn't have) |
-| tvOS 26 | Full feature parity — playback, focus/remote navigation, library filters, Settings, Seerr, casting links all wired up. Newest of the four platforms |
+| iOS 26 and iPadOS 26 | The main platform. 0.1.1 in testing |
+| macOS 26 | Feature parity with iPhone and iPad, with a native AppKit video surface, sidebar, menu bar commands and Touch ID |
+| tvOS 26 | Feature parity apart from downloads, with remote and focus navigation throughout |
+
+Some features aren't possible on every platform:
+- **Chromecast** is iPhone and iPad only, because Google's SDK is.
+- **Live Activities and Lock Screen widgets** are iPhone only.
+- **Downloads** aren't available on Apple TV, which has no lasting storage.
+- **Face ID and Touch ID** aren't available on Apple TV.
+- **The screensaver** runs inside Arcfin, because Apple TV doesn't let apps provide a system screensaver.
 
 ---
 
 ## Architecture
 
-SPM monorepo under `LocalPackages/` — single `Package.swift`, all targets inside.
+An SPM monorepo under `LocalPackages/`, with every target in one `Package.swift`. The app target (`Arcfin/`) holds the screens, plus the widget (`ArcfinWidgets/`) and Top Shelf (`ArcfinTopShelf/`) extensions.
 
 ```
 LocalPackages/Sources/
-├── Core Services
-│   ├── Telemetry        — OSLog wrapper (no analytics/crash SDK)
-│   ├── AuthCore         — Keychain, multi-server/multi-profile auth
+├── Core services
+│   ├── Telemetry        — OSLog wrapper (no analytics or crash SDK)
+│   ├── AuthCore         — Keychain, multiple servers and profiles
 │   ├── Persistence      — SwiftData models
-│   ├── ImageCache       — Nuke disk + memory cache
-│   ├── BackgroundKit    — BGTask scheduling (smart downloads)
-│   ├── LiveActivityKit  — Download progress Live Activity (shared with the widget extension)
-│   ├── JellyfinAPI      — Jellyfin REST + WebSocket client
-│   ├── StreamystatsAPI  — Streamystats REST client
-│   └── SeerrAPI         — Seerr REST client
-└── Feature Packages
-    ├── AppState         — thin scaffold; not currently used by any shipping feature
-    ├── MediaEngine       — AVFoundation (default) + VLC (SwiftVLC) player engines behind one protocol
-    ├── SyncEngine        — offline progress sync
-    ├── SearchKit         — server search
-    └── CastKit           — Chromecast (Google Cast SDK) sender wrapper
+│   ├── ImageCache       — Nuke memory and disk cache
+│   ├── BackgroundKit    — background task scheduling
+│   ├── LiveActivityKit  — download Live Activity, shared with the widget extension
+│   ├── JellyfinAPI      — Jellyfin REST and WebSocket client
+│   └── SeerrAPI         — Seerr client
+└── Features
+    ├── MediaEngine      — Aether, AVFoundation and VLC behind one player protocol
+    ├── SyncEngine       — offline progress sync and settings sync
+    ├── SearchKit        — server search
+    ├── CastKit          — Chromecast sender
+    └── AppState         — unused scaffold
 ```
 
 ### Stack
 
 | Concern | Choice |
 |---|---|
-| Language | Swift 6 (strict concurrency) |
-| UI | SwiftUI + iOS 26 Liquid Glass |
-| State | Plain `@Observable` classes + `@State`/`@Environment` — **not** TCA. TCA is a dependency and exists in one unused `AppState` scaffold file, but no shipping feature uses it; every real feature (auth, media, downloads, casting, sync play, etc.) is a plain `@Observable` class. Docs previously claimed TCA as the locked choice — this reflects what's actually shipping instead. |
-| Storage | SwiftData (models in `Persistence`) |
+| Language | Swift 6, strict concurrency |
+| UI | SwiftUI, with Liquid Glass on iOS 26 |
+| State | Plain `@Observable` classes with `@State` and `@Environment`. TCA is a dependency, used only by the unused `AppState` scaffold |
+| Storage | SwiftData |
 | Images | Nuke |
-| Player | AVFoundation (default) / VLC via SwiftVLC (selectable in Settings; downloads always use VLC) — both behind `MediaPlayerProtocol` |
-| API clients | Manual clients (JellyfinAPI, StreamystatsAPI, SeerrAPI) — not OpenAPI-generated despite the dependency being present |
-| Testing | Swift Testing (not XCTest) |
-| Sync | Offline playback-progress sync (`SyncEngine`); no CloudKit sync shipped yet |
+| Playback | [AetherEngine](https://github.com/superuser404notfound/AetherEngine), AVFoundation and [SwiftVLC](https://github.com/harflabs/SwiftVLC), behind `MediaPlayerProtocol` |
+| API clients | Hand-written for Jellyfin and Seerr |
+| Tests | Swift Testing |
+
+## Design system
+
+Tokens live under `DT` in `Arcfin/DesignTokens.swift`. iPhone, iPad and Mac follow the system's light or dark appearance. The players, splash and lock screens, and all of Apple TV, stay dark.
+
+| Token | Dark | Light |
+|---|---|---|
+| Background primary | `#0A0A0F` | Light equivalent with matching contrast |
+| Background secondary | `#12121A` | 〃 |
+| Background tertiary | `#1C1C26` | 〃 |
+| Accent | `#06B6D4` cyan | `#0E7490` deeper cyan |
+| Text primary | `#FFFFFF` | Dark equivalent |
+| Text secondary | `#8E8E93` | 〃 |
+
+Labels on accent fills use `DT.Color.onAccent`. Hero titles use SF Pro Display; body text and labels use SF Pro Text.
 
 ---
 
-## Design System
+## Building
 
-Token namespace: `DT` (`Arcfin/DesignTokens.swift`)
+1. Use Xcode 26 or later.
+2. Open `Arcfin.xcodeproj` and pick the **Arcfin** scheme.
+3. Choose an iPhone, iPad, Mac or Apple TV destination.
+4. Set your own team and bundle identifier to sign.
 
-| Token | Value |
-|---|---|
-| Background primary | `#0A0A0F` — deep cinematic black |
-| Background secondary | `#12121A` — midnight navy |
-| Background tertiary | `#1C1C26` |
-| Accent | `#06B6D4` — cyan / ice |
-| Text primary | `#FFFFFF` |
-| Text secondary | `#8E8E93` |
+Swift packages resolve on the first build. To run the package tests:
 
-Typography uses SF Pro Display for hero titles and SF Pro Text for body and labels. Liquid Glass throughout — nav bars, tab bar, player overlay, modal sheets.
+```sh
+cd LocalPackages && swift test
+```
 
----
+## External services
 
-## External Services
+- [Jellyfin](https://jellyfin.org): the media server (REST and WebSocket)
+- [Seerr](https://github.com/Fallenbagel/jellyseerr): content requests (formerly Jellyseerr)
+- [TMDB](https://www.themoviedb.org): optional metadata
 
-- [Jellyfin](https://jellyfin.org) — media server (REST + WebSocket)
-- [Streamystats](https://github.com/fredrikburmester/streamystats) — self-hosted play stats
-- [Seerr](https://github.com/Fallenbagel/jellyseerr) — content requests (formerly Jellyseerr)
-
-None of these are servers Arcfin operates — the app connects directly from the device to a server you already run or have access to. See [arcfin.psmattas.com/privacy](https://arcfin.psmattas.com/privacy).
+Arcfin runs none of these. The app connects straight from your device to servers you run or have access to. See [arcfin.psmattas.com/privacy](https://arcfin.psmattas.com/privacy).
 
 ---
 
-## AI-Assisted Development
+## AI-assisted development
 
-This project uses AI tooling (Claude Code) as a coding assistant. AI assistance speeds up implementation — it does not replace engineering judgement.
+This project uses AI tooling (Claude Code) as a coding assistant. It speeds up implementation; it doesn't replace engineering judgement.
 
 All AI-generated code is:
-- Written to a spec I defined
-- Reviewed by me before it lands
-- Held to the same quality bar as hand-written code
+- written to a spec I defined
+- reviewed by me before it lands
+- held to the same bar as hand-written code
 
-I am a software engineer. AI makes certain tasks faster and easier, but the architecture, design decisions, and code review are mine. I take responsibility for everything that ships.
-
----
-
-## Project Status
-
-Feature-complete for an initial release — playback, library, downloads, casting, profiles, and Settings are all built. v0.1.0 is on [TestFlight](https://testflight.apple.com/join/kkC58n2w) now; the same build is uploaded to App Store Connect and pending Apple's review (see `fastlane/metadata/`).
-
----
+I'm a software engineer. AI makes some tasks faster, but the architecture, design decisions and code review are mine, and I take responsibility for everything that ships.
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the DCO
-sign-off process and coding standards.
-
-## Code of Conduct
-
-See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the DCO sign-off (`git commit -s`) and coding standards. Please also read the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
-
----
+See [SECURITY.md](SECURITY.md) to report a vulnerability privately.
 
 ## License
 
-Licensed under the [GNU Affero General Public License v3.0 or later](LICENSE)
-(AGPL-3.0-or-later).
+Licensed under the [GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later).
 
-The "Arcfin" name and logo are **not** covered by this license — see
-[TRADEMARK.md](TRADEMARK.md).
+The "Arcfin" name and logo are **not** covered by this license. See [TRADEMARK.md](TRADEMARK.md).

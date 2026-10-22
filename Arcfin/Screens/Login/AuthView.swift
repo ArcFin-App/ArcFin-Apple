@@ -19,7 +19,6 @@ struct AuthView: View {
     // Credentials
     @State private var username: String = ""
     @State private var password: String = ""
-    @State private var passwordVisible: Bool = false
     @State private var signingIn: Bool = false
     @State private var signedIn: Bool = false
     @State private var authError: String? = nil
@@ -34,64 +33,44 @@ struct AuthView: View {
         if signedIn {
             successView
         } else {
-            ScrollView {
-                VStack(spacing: 0) {
-                    stepIndicator
+            VStack(alignment: .leading, spacing: 28) {
+                LoginBackButton(title: serverName, action: onBack)
 
-                    ArcfinLogoView(size: 52).padding(.top, 24)
+                LoginHeader(
+                    title: "Sign In",
+                    message: mode == .quickConnect
+                        ? "Approve this device from Jellyfin on a phone, computer or TV where you're already signed in."
+                        : "Use your Jellyfin username and password for \(serverName)."
+                )
 
-                    VStack(alignment: .leading, spacing: 0) {
-                        Button(action: onBack) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "chevron.left")
-                                    .scaledFont(size: 12, weight: .semibold)
-                                Text(serverName).font(DT.Font.caption)
-                            }
-                            .foregroundStyle(DT.Color.textSecondary)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.bottom, 18)
+                Picker("Sign-in method", selection: $mode) {
+                    Text("Quick Connect").tag(AuthMode.quickConnect)
+                    Text("Password").tag(AuthMode.credentials)
+                }
+                .pickerStyle(.segmented)
 
-                        Text("Sign In")
-                            .font(DT.Font.sectionTitle)
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .tracking(-0.6)
+                if mode == .quickConnect {
+                    quickConnectView
+                } else {
+                    credentialsView
+                }
 
-                        Text(mode == .quickConnect
-                             ? "Approve the code on your Jellyfin server"
-                             : "Enter your Jellyfin credentials")
-                            .font(DT.Font.caption)
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .padding(.top, 4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 20)
-                    .padding(.horizontal, DT.Spacing.pagePad)
-
-                    if mode == .quickConnect {
-                        quickConnectView
-                    } else {
-                        credentialsView
-                    }
-
-                    if let err = authError {
-                        Text(err)
-                            .font(DT.Font.caption2)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, DT.Spacing.pagePad)
-                            .padding(.top, DT.Spacing.sm)
+                if let err = authError {
+                    Label(err, systemImage: "exclamationmark.circle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .loginLayout {
+                if mode == .credentials {
+                    LoginPrimaryButton(title: "Sign In", busyTitle: "Signing In…", isBusy: signingIn,
+                                       // Password is deliberately optional: Jellyfin allows accounts
+                                       // with no password (common for kids' and demo profiles).
+                                       isDisabled: username.isEmpty) {
+                        Task { await handleSignIn() }
                     }
                 }
-                .padding(.top, 52)
-                .padding(.bottom, DT.Spacing.xxxl)
-                #if os(macOS)
-                // Same fix as ServerURLView — nothing capped content width, so the sign-in
-                // form stretched to the full default window width instead of staying a
-                // narrow, centered panel the way a real macOS sign-in screen would.
-                .frame(maxWidth: 440)
-                .frame(maxWidth: .infinity)
-                #endif
             }
             .animation(DT.Animation.standard, value: mode)
             .task(id: mode) {
@@ -109,226 +88,78 @@ struct AuthView: View {
         }
     }
 
-    // MARK: - Step indicator
-
-    private var stepIndicator: some View {
-        HStack(spacing: 6) {
-            Capsule().fill(DT.Color.accent.opacity(0.4)).frame(width: 6, height: 6)
-            Capsule().fill(DT.Color.accent).frame(width: 20, height: 6)
-        }
-    }
-
     // MARK: - Quick Connect (default)
 
     private var quickConnectView: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("How to sign in")
-                    .scaledFont(size: 11, weight: .bold)
-                    .foregroundStyle(DT.Color.accent)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("1. Open Jellyfin on your browser or another device")
-                    Text("2. Go to **Dashboard → Quick Connect**")
-                    Text("3. Enter the code below to approve sign-in")
-                }
-                .font(DT.Font.caption)
-                .foregroundStyle(.white.opacity(0.55))
-                .lineSpacing(4)
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(DT.Color.accent.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
-            .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(DT.Color.accent.opacity(0.15), lineWidth: 1))
-            .padding(.top, DT.Spacing.md)
-            .padding(.horizontal, DT.Spacing.pagePad)
-
-            VStack(spacing: 12) {
-                Text("Your Quick Connect Code")
-                    .scaledFont(size: 10, weight: .bold)
-                    .tracking(0.5)
-                    .textCase(.uppercase)
+        VStack(spacing: 18) {
+            VStack(spacing: 10) {
+                Text("Your Code")
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(DT.Color.textSecondary)
-
-                if qcLoading {
-                    ProgressView().tint(DT.Color.accent).padding(.vertical, 10)
-                } else if qcCode.isEmpty {
-                    Text("—")
-                        .scaledFont(size: 22, weight: .heavy, design: .monospaced)
-                        .foregroundStyle(DT.Color.textSecondary)
+                if qcLoading || qcCode.isEmpty {
+                    ProgressView().frame(height: 56)
                 } else {
-                    codeDisplay(qcCode)
-                    if qcPolling {
-                        HStack(spacing: 6) {
-                            ProgressView().scaleEffect(0.7).tint(DT.Color.accent)
-                            Text("Waiting for approval…")
-                                .font(DT.Font.caption2)
-                                .foregroundStyle(DT.Color.textSecondary)
-                        }
+                    Text(qcCode)
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .monospacedDigit()
+                        .tracking(6)
+                        .foregroundStyle(DT.Color.textPrimary)
+                        #if !os(tvOS)
+                        .textSelection(.enabled)
+                        #endif
+                        .accessibilityLabel("Code \(qcCode.map(String.init).joined(separator: " "))")
+                }
+                if qcPolling {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Waiting for approval")
+                            .font(.footnote)
+                            .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
             }
-            .padding(.top, DT.Spacing.lg)
-            .padding(.bottom, DT.Spacing.lg)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 22)
+            .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            Button {
-                withAnimation(DT.Animation.fast) { mode = .credentials }
-            } label: {
-                Text("Sign in with username & password")
-                    .font(DT.Font.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .underline()
+            VStack(alignment: .leading, spacing: 12) {
+                step(1, "Open Jellyfin where you're already signed in.")
+                step(2, "Go to your profile, then Quick Connect.")
+                step(3, "Enter the code above.")
             }
-            .buttonStyle(.plain)
-            .tvFocusRing(cornerRadius: DT.Radius.pill)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !qcPolling && !qcLoading {
+                Button("Get a New Code") { Task { await initiateQC() } }
+                    .font(.subheadline)
+                    .foregroundStyle(DT.Color.accent)
+                    .arcfinPlainButton(cornerRadius: DT.Radius.pill)
+            }
+        }
+    }
+
+    private func step(_ number: Int, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text("\(number)")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(DT.Color.accent)
+                .frame(width: 24, height: 24)
+                .background(DT.Color.accent.opacity(0.15), in: Circle())
+            Text(text)
+                .font(.callout)
+                .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     // MARK: - Credentials
 
     private var credentialsView: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                fieldLabel("Username")
-                glassField(icon: "person", placeholder: "jellyfin_user", text: $username, isSecure: false, onSubmit: submitCredentials)
-            }
-            .padding(.top, DT.Spacing.md)
-            .padding(.horizontal, DT.Spacing.pagePad)
-
-            VStack(alignment: .leading, spacing: 6) {
-                fieldLabel("Password")
-                ZStack(alignment: .trailing) {
-                    glassField(icon: "lock", placeholder: "••••••••", text: $password, isSecure: !passwordVisible, onSubmit: submitCredentials)
-                    Button { passwordVisible.toggle() } label: {
-                        Image(systemName: passwordVisible ? "eye.slash" : "eye")
-                            .font(.system(.footnote))
-                            .foregroundStyle(.white.opacity(0.5))
-                    }
-                    .accessibilityLabel(passwordVisible ? "Hide password" : "Show password")
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 14)
-                }
-            }
-            .padding(.top, DT.Spacing.sm)
-            .padding(.horizontal, DT.Spacing.pagePad)
-
-            signInButton(
-                label: "Sign In",
-                loadingLabel: "Signing in…",
-                // Password is deliberately not required here — Jellyfin allows accounts
-                // with no password set at all (common for demo/kid profiles), and this
-                // button used to block signing into one of those entirely.
-                disabled: username.isEmpty
-            ) { Task { await handleSignIn() } }
-            .padding(.top, DT.Spacing.lg)
-            .padding(.horizontal, DT.Spacing.pagePad)
-
-            Button {
-                withAnimation(DT.Animation.fast) { mode = .quickConnect }
-            } label: {
-                Text("Use Quick Connect instead")
-                    .font(DT.Font.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .underline()
-            }
-            .buttonStyle(.plain)
-            .tvFocusRing(cornerRadius: DT.Radius.pill)
-            .padding(.top, DT.Spacing.md)
+        VStack(spacing: 18) {
+            LoginTextField(title: "Username", prompt: "Username", text: $username, kind: .username)
+            LoginTextField(title: "Password", prompt: "Password", text: $password, kind: .password,
+                           onSubmit: submitCredentials)
         }
-    }
-
-    // MARK: - Code display
-
-    private func codeDisplay(_ code: String) -> some View {
-        HStack(spacing: 6) {
-            ForEach(Array(code.enumerated()), id: \.offset) { _, ch in
-                if ch == " " {
-                    Spacer().frame(width: 8)
-                } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(DT.Color.accent.opacity(0.08))
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.accent.opacity(0.3), lineWidth: 1.5))
-                            .frame(width: 36 * DT.Scale.font, height: 46 * DT.Scale.font)
-                            .shadow(color: DT.Color.accent.opacity(0.08), radius: 8)
-                        Text(String(ch))
-                            .scaledFont(size: 22, weight: .heavy, design: .monospaced)
-                            .foregroundStyle(DT.Color.accent)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Shared sign-in button
-
-    private func signInButton(label: String, loadingLabel: String, disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            ZStack {
-                if signingIn {
-                    HStack(spacing: 8) {
-                        ProgressView().tint(.white).scaleEffect(0.85)
-                        Text(loadingLabel).font(DT.Font.button).foregroundStyle(.white.opacity(0.8))
-                    }
-                } else {
-                    Text(label)
-                        .font(DT.Font.button)
-                        .foregroundStyle(disabled ? .white.opacity(0.4) : .white)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(
-                disabled
-                    ? AnyShapeStyle(DT.Color.accent.opacity(0.2))
-                    : AnyShapeStyle(LinearGradient(
-                        colors: [DT.Color.accentDeep, DT.Color.accent],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                      ))
-            )
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-            .shadow(color: disabled ? .clear : DT.Color.accent.opacity(0.3), radius: 16)
-        }
-        .buttonStyle(.plain)
-        .disabled(signingIn || disabled)
-        .tvFocusRing(cornerRadius: DT.Radius.lg)
-    }
-
-    private func fieldLabel(_ text: String) -> some View {
-        Text(text)
-            .scaledFont(size: 10, weight: .bold)
-            .tracking(0.5)
-            .textCase(.uppercase)
-            .foregroundStyle(DT.Color.textSecondary)
-    }
-
-    private func glassField(icon: String, placeholder: String, text: Binding<String>, isSecure: Bool, onSubmit: (() -> Void)? = nil) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(.footnote)).foregroundStyle(DT.Color.textSecondary)
-            if isSecure {
-                SecureField(placeholder, text: text)
-                    .textFieldStyle(.plain)
-                    .font(DT.Font.caption).foregroundStyle(DT.Color.textPrimary).autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    #endif
-                    .onSubmit { onSubmit?() }
-            } else {
-                TextField(placeholder, text: text)
-                    .textFieldStyle(.plain)
-                    .font(DT.Font.caption).foregroundStyle(DT.Color.textPrimary).autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    #endif
-                    .onSubmit { onSubmit?() }
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .arcfinFieldBackground()
-        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
-        .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(.white.opacity(0.1), lineWidth: 1))
-        .tvFocusRing(cornerRadius: DT.Radius.md)
     }
 
     // MARK: - Success screen

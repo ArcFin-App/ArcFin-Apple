@@ -13,7 +13,13 @@ import SwiftUI
 @main
 struct ArcfinWidgetsBundle: WidgetBundle {
     var body: some Widget {
+        #if os(iOS)
         DownloadLiveActivity()
+        #endif
         ContinueWatchingWidget()
+        RecentlyAddedWidget()
+        ResumeWatchingControl()
+        DownloadsControl()
+        DiscoverControl()
     }
 }

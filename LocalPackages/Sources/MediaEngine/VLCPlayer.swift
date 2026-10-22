@@ -49,7 +49,14 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
 
     public func load(url: URL, startPositionTicks: Int64) async throws {
         do throws(VLCError) {
-            try vlcPlayer.play(url: url)
+            let media = try Media(url: url)
+            // A 3 s starting cushion, and libVLC's prefetch filter (off unless asked for) with a
+            // 256 MB read-ahead that keeps filling while paused, so scrubbing nearby and a dip in
+            // bandwidth play from memory. The filter steps aside for local files on its own.
+            media.addOption(":network-caching=3000")
+            media.addOption(":stream-filter=prefetch")
+            media.addOption(":prefetch-buffer-size=262144")
+            try vlcPlayer.play(media)
         } catch {
             log.error("VLC play(url:) failed: \(error.localizedDescription)")
             throw error

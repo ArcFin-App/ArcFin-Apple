@@ -32,11 +32,16 @@ public struct WidgetSnapshot: Codable, Sendable, Equatable {
         }
     }
 
+    /// Continue Watching, then Up Next.
     public var items: [Item]
+    /// Newest titles in the library, for the Recently Added widget. Optional so a snapshot
+    /// written before this existed still decodes.
+    public var recentlyAdded: [Item]?
     public var updatedAt: Date
 
-    public init(items: [Item], updatedAt: Date = Date()) {
+    public init(items: [Item], recentlyAdded: [Item] = [], updatedAt: Date = Date()) {
         self.items = items
+        self.recentlyAdded = recentlyAdded
         self.updatedAt = updatedAt
     }
 }
@@ -68,10 +73,22 @@ public enum WidgetSnapshotStore {
         }
     }
 
+    public static func hasPoster(fileName: String) -> Bool {
+        guard let url = posterURL(fileName: fileName) else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
     public static func writePoster(_ data: Data, fileName: String) {
         guard let directory, let url = posterURL(fileName: fileName) else { return }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try? data.write(to: url, options: .atomic)
+    }
+
+    /// Removes everything the widgets show: used on sign-out so a Lock Screen or Home Screen
+    /// widget doesn't keep displaying the previous account's titles.
+    public static func clear() {
+        guard let directory else { return }
+        try? FileManager.default.removeItem(at: directory)
     }
 
     /// Deletes poster files the current snapshot no longer references so the container

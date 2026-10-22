@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(iOS)
+#if !os(tvOS)
 import AppIntents
 import AuthCore
+import CoreImage
 import CoreSpotlight
 import Foundation
 import JellyfinAPI
+import Vision
+import VisualIntelligence
 
 // MARK: - Session for intents
 
@@ -49,6 +52,11 @@ struct MediaEntity: AppEntity, IndexedEntity {
     @Property(title: "Year")
     var year: Int?
 
+    /// Not exposed as properties — they only enrich how the entity is presented and indexed.
+    var overview: String?
+    var rating: Double?
+    var thumbnailData: Data?
+
     var subtitle: String? {
         [kind, year.map(String.init)].compactMap { $0 }.joined(separator: " · ")
     }
@@ -56,7 +64,19 @@ struct MediaEntity: AppEntity, IndexedEntity {
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(title)",
-            subtitle: subtitle.map { LocalizedStringResource(stringLiteral: $0) })
+            subtitle: subtitle.map { LocalizedStringResource(stringLiteral: $0) },
+            image: thumbnailData.map { DisplayRepresentation.Image(data: $0) })
+    }
+
+    /// What Spotlight shows and matches on: a description, a poster, and the kind of title as
+    /// keywords so "movie" or "series" in a search finds it.
+    var attributeSet: CSSearchableItemAttributeSet {
+        let set = defaultAttributeSet
+        set.contentDescription = overview
+        set.thumbnailData = thumbnailData
+        set.rating = rating.map { NSNumber(value: $0) }
+        set.keywords = [kind, kind == "Series" ? "show" : "film"]
+        return set
     }
 
     init(item: MediaItem) {
@@ -69,6 +89,8 @@ struct MediaEntity: AppEntity, IndexedEntity {
         default: self.kind = "Title"
         }
         self.year = item.productionYear
+        self.overview = item.overview
+        self.rating = item.communityRating
     }
 }
 
@@ -154,6 +176,79 @@ struct ShowDownloadsIntent: AppIntent {
     }
 }
 
+struct PlayTitleIntent: AppIntent {
+    static let title: LocalizedStringResource = "Play Title"
+    static let description = IntentDescription("Plays a movie or episode from where you left off, or a series from its next episode.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Title")
+    var target: MediaEntity
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        WatchRoute.open(id: target.id)
+        return .result()
+    }
+}
+
+struct PlayRandomMovieIntent: AppIntent {
+    static let title: LocalizedStringResource = "Play a Random Movie"
+    static let description = IntentDescription("Plays a movie you haven't watched yet, picked at random.")
+    static let openAppWhenRun = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let credential = IntentSession.credential() else {
+            return .result(dialog: "Open Arcfin and sign in first.")
+        }
+        let page = try await JellyfinMediaClient().getLibraryItems(
+            credential: credential, authHeader: IntentSession.authHeader(for: credential), libraryId: "",
+            limit: 1, includeItemTypes: "Movie", isPlayed: false, sortBy: "Random")
+        guard let movie = page.items.first else {
+            return .result(dialog: "You've watched every movie in your library.")
+        }
+        WatchRoute.open(id: movie.id)
+        return .result(dialog: "Playing \(movie.name).")
+    }
+}
+
+struct DownloadNextEpisodeIntent: AppIntent {
+    static let title: LocalizedStringResource = "Download Next Episode"
+    static let description = IntentDescription("Downloads the next episode of a series to watch.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Series")
+    var target: MediaEntity
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let credential = IntentSession.credential() else {
+            return .result(dialog: "Open Arcfin and sign in first.")
+        }
+        let header = IntentSession.authHeader(for: credential)
+        let client = JellyfinMediaClient()
+        let detail = try await client.getItemDetail(credential: credential, authHeader: header, itemId: target.id).item
+        let seriesId = detail.type == .episode ? detail.seriesId : detail.id
+        guard let seriesId, let next = try await client.getNextEpisode(credential: credential, authHeader: header, seriesId: seriesId) else {
+            return .result(dialog: "There's no next episode of \(target.title) to download.")
+        }
+        DownloadRoute.open(id: next.id)
+        return .result(dialog: "Downloading \(next.name).")
+    }
+}
+
+struct ShowDiscoverIntent: AppIntent {
+    static let title: LocalizedStringResource = "Show Discover"
+    static let description = IntentDescription("Opens Discover, to find something new to request.")
+    static let openAppWhenRun = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        ArcfinRouting.showDiscover()
+        return .result()
+    }
+}
+
 // MARK: - Shortcuts
 
 struct ArcfinShortcuts: AppShortcutsProvider {
@@ -167,6 +262,32 @@ struct ArcfinShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Continue Watching",
             systemImageName: "play.circle")
+        AppShortcut(
+            intent: PlayTitleIntent(),
+            phrases: [
+                "Play \(\.$target) in \(.applicationName)",
+                "Watch \(\.$target) in \(.applicationName)",
+                "Put on \(\.$target) in \(.applicationName)",
+            ],
+            shortTitle: "Play Title",
+            systemImageName: "play.fill")
+        AppShortcut(
+            intent: PlayRandomMovieIntent(),
+            phrases: [
+                "Play a random movie in \(.applicationName)",
+                "Surprise me in \(.applicationName)",
+                "Pick a movie in \(.applicationName)",
+            ],
+            shortTitle: "Random Movie",
+            systemImageName: "shuffle")
+        AppShortcut(
+            intent: DownloadNextEpisodeIntent(),
+            phrases: [
+                "Download the next episode of \(\.$target) in \(.applicationName)",
+                "Download \(\.$target) in \(.applicationName)",
+            ],
+            shortTitle: "Download Next Episode",
+            systemImageName: "arrow.down.to.line")
         AppShortcut(
             intent: OpenTitleIntent(),
             phrases: [
@@ -183,6 +304,14 @@ struct ArcfinShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Downloads",
             systemImageName: "arrow.down.circle")
+        AppShortcut(
+            intent: ShowDiscoverIntent(),
+            phrases: [
+                "Open Discover in \(.applicationName)",
+                "What's new to request in \(.applicationName)",
+            ],
+            shortTitle: "Discover",
+            systemImageName: "sparkles")
     }
 }
 
@@ -203,6 +332,37 @@ enum ArcfinRouting {
         NotificationCenter.default.post(name: .arcfinPlayItem, object: nil, userInfo: ["itemID": id])
     }
 
+    /// Opens a Seerr watchlist/request title found through Spotlight or Siri.
+    @MainActor
+    static func openSeerrTitle(id: String) {
+        UserDefaults.standard.set(id, forKey: "arcfin.pendingSeerrTitle")
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            NotificationCenter.default.post(name: .arcfinOpenSeerrTitle, object: nil, userInfo: ["id": id])
+        }
+    }
+
+    @MainActor
+    static func showDiscover() {
+        // Read by the tab bar when it first appears, for a cold launch.
+        UserDefaults.standard.set(true, forKey: "arcfin.pendingDiscover")
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            NotificationCenter.default.post(name: .arcfinShowDiscover, object: nil)
+        }
+    }
+
+    /// Shows in-app search results for `term`. The term is also buffered, because the Browse
+    /// tab that owns the search field isn't mounted yet on a cold launch.
+    @MainActor
+    static func search(_ term: String) {
+        UserDefaults.standard.set(term, forKey: "arcfin.pendingSearch")
+        Task {
+            try? await Task.sleep(for: .seconds(0.4))
+            NotificationCenter.default.post(name: .arcfinSearch, object: nil, userInfo: ["term": term])
+        }
+    }
+
     @MainActor
     static func showDownloads() {
         // Views listening for this aren't mounted yet on a cold launch.
@@ -219,20 +379,118 @@ enum ArcfinRouting {
 /// Siri and Spotlight can find them by description and hand them to OpenTitleIntent.
 enum SpotlightIndexer {
     private static let maxEntities = 60
+    /// What was last handed to Spotlight; Home reloads often and usually nothing changed.
+    private static var lastIndexed: [String] = []
 
     static func index(_ items: [MediaItem]) async {
-        guard IntentSession.credential() != nil else { return }
-        let entities = items
+        guard let credential = IntentSession.credential() else { return }
+        var seen = Set<String>()
+        let wanted = items
             .filter { $0.type == .movie || $0.type == .series || $0.type == .episode }
+            .filter { seen.insert($0.id).inserted }
             .prefix(maxEntities)
-            .map(MediaEntity.init(item:))
+        let ids = wanted.map(\.id)
+        guard ids != lastIndexed else { return }
+        lastIndexed = ids
+        let thumbnails = await Thumbnails.fetch(for: Array(wanted), credential: credential)
+        let entities = wanted.map { item -> MediaEntity in
+            var entity = MediaEntity(item: item)
+            entity.thumbnailData = thumbnails[item.id]
+            return entity
+        }
         guard !entities.isEmpty else { return }
         try? await CSSearchableIndex.default().indexAppEntities(Array(entities))
     }
 
     /// Called on sign-out / profile switch so another user's titles don't linger.
     static func clear() async {
+        lastIndexed = []
         try? await CSSearchableIndex.default().deleteAllSearchableItems()
+    }
+}
+
+// MARK: - Poster thumbnails
+
+/// Small poster images for Spotlight and visual search results. Cached for the session so
+/// re-indexing on every Home load doesn't download the same posters again.
+enum Thumbnails {
+    private actor Store {
+        var cache: [String: Data] = [:]
+        func data(for id: String) -> Data? { cache[id] }
+        func set(_ data: Data, for id: String) { cache[id] = data }
+    }
+
+    private static let store = Store()
+
+    static func fetch(for items: [MediaItem], credential: ServerCredential) async -> [String: Data] {
+        await withTaskGroup(of: (String, Data?).self) { group in
+            for item in items {
+                group.addTask {
+                    if let cached = await store.data(for: item.id) { return (item.id, cached) }
+                    guard let tag = item.primaryImageTag else { return (item.id, nil) }
+                    let url = JellyfinMediaClient.imageURL(
+                        baseURL: credential.baseURL, itemID: item.id, tag: tag,
+                        type: .primary, fillWidth: 240, token: credential.accessToken)
+                    guard let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty
+                    else { return (item.id, nil) }
+                    await store.set(data, for: item.id)
+                    return (item.id, data)
+                }
+            }
+            var result: [String: Data] = [:]
+            for await (id, data) in group { if let data { result[id] = data } }
+            return result
+        }
+    }
+}
+
+// MARK: - Visual intelligence
+
+/// Point the camera at a movie poster, a DVD case or a screenshot and the titles it spells out
+/// are looked up in the library. Visual intelligence only supplies generic labels ("poster",
+/// "book"), never a title, so the text in the picture is read instead and searched.
+@available(macOS 27.0, *)
+struct ArcfinVisualSearchQuery: IntentValueQuery {
+    func values(for input: SemanticContentDescriptor) async throws -> [MediaEntity] {
+        guard let credential = IntentSession.credential(), let pixelBuffer = input.pixelBuffer else { return [] }
+        let terms = Self.recognizedTitles(in: pixelBuffer)
+        guard !terms.isEmpty else { return [] }
+
+        let header = IntentSession.authHeader(for: credential)
+        let client = JellyfinMediaClient()
+        var found: [MediaItem] = []
+        var seen = Set<String>()
+        for term in terms {
+            let hits = (try? await client.search(credential: credential, authHeader: header, query: term, limit: 5)) ?? []
+            for hit in hits where hit.type == .movie || hit.type == .series {
+                if seen.insert(hit.id).inserted { found.append(hit) }
+            }
+            if found.count >= 10 { break }
+        }
+        let thumbnails = await Thumbnails.fetch(for: found, credential: credential)
+        return found.prefix(10).map { item in
+            var entity = MediaEntity(item: item)
+            entity.thumbnailData = thumbnails[item.id]
+            return entity
+        }
+    }
+
+    /// The most prominent text first: poster titles are the largest lettering in the shot.
+    nonisolated private static func recognizedTitles(in pixelBuffer: CVReadOnlyPixelBuffer) -> [String] {
+        pixelBuffer.withUnsafeBuffer { buffer -> [String] in
+            let image = CIImage(cvPixelBuffer: buffer)
+            guard let cgImage = CIContext().createCGImage(image, from: image.extent) else { return [] }
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+            guard (try? VNImageRequestHandler(cgImage: cgImage).perform([request])) != nil else { return [] }
+            return (request.results ?? [])
+                .sorted { $0.boundingBox.height > $1.boundingBox.height }
+                .compactMap { $0.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { $0.count >= 3 && $0.contains(where: \.isLetter) }
+                .prefix(3)
+                .map { $0 }
+        }
     }
 }
 #endif

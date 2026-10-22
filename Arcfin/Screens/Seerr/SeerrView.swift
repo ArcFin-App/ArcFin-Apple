@@ -13,15 +13,23 @@ struct SeerrView: View {
     @State private var searchText = ""
     @State private var searchResults: [SeerrItem] = []
     @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>?
     @State private var requestingItem: SeerrItem? = nil
+    /// Popular titles first made in this device's language, when it isn't English.
+    @State private var languageItems: [SeerrItem] = []
 
     private var genresForType: [SeerrGenre] {
         mediaType == .tv ? seerrRepo.tvGenres : seerrRepo.movieGenres
     }
 
     private var trendingForType: [SeerrItem] {
-        seerrRepo.trending.filter { $0.mediaType == mediaType }
+        let trending = seerrRepo.trending.filter { $0.mediaType == mediaType }
+        // Seerr can fail trending on its own (500 when its TMDB request fails); popular
+        // titles stand in rather than an empty page.
+        return trending.isEmpty ? (mediaType == .tv ? seerrRepo.popularTV : seerrRepo.popularMovies) : trending
     }
+
+    private var showsTrending: Bool { seerrRepo.trending.contains { $0.mediaType == mediaType } }
 
     private var upcomingForType: [SeerrItem] {
         mediaType == .tv ? seerrRepo.upcomingTV : seerrRepo.upcomingMovies
@@ -36,7 +44,7 @@ struct SeerrView: View {
                     mainContent
                 }
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationTitle("Discover")
             .arcfinNavTitleLarge("Discover")
             .searchable(text: $searchText, prompt: "Movies, series, people…")
@@ -52,7 +60,9 @@ struct SeerrView: View {
             async let discover: Void = seerrRepo.loadDiscover()
             async let genres: Void = seerrRepo.loadGenres()
             async let upcoming: Void = seerrRepo.loadUpcoming()
-            _ = await (discover, genres, upcoming)
+            // The bookmarks on every card read it.
+            async let watchlist: Void = seerrRepo.loadWatchlist()
+            _ = await (discover, genres, upcoming, watchlist)
         }
         .onChange(of: searchText) { _, query in
             performSearch(query: query)
@@ -104,11 +114,16 @@ struct SeerrView: View {
                 } else {
                     if seerrRepo.isLoadingDiscover && trendingForType.isEmpty {
                         loadingGrid
+                    } else if trendingForType.isEmpty, let error = seerrRepo.discoverError {
+                        discoverErrorCard(error)
                     } else {
                         trendingSection
                     }
                     if !upcomingForType.isEmpty {
                         upcomingSection
+                    }
+                    if !languageItems.isEmpty, let languageName {
+                        itemGrid(title: "Popular in \(languageName)", items: Array(languageItems.prefix(10)), isLoading: false)
                     }
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
@@ -117,8 +132,11 @@ struct SeerrView: View {
         .refreshable {
             async let discover: Void = seerrRepo.loadDiscover()
             async let upcoming: Void = seerrRepo.loadUpcoming()
-            _ = await (discover, upcoming)
+            async let watchlist: Void = seerrRepo.loadWatchlist()
+            _ = await (discover, upcoming, watchlist)
+            await loadLanguageItems()
         }
+        .task(id: mediaType) { await loadLanguageItems() }
     }
 
     // MARK: - Header
@@ -160,11 +178,11 @@ struct SeerrView: View {
                 .font(.system(.caption2, design: .default, weight: isSelected ? .bold : .regular))
                 .foregroundStyle(isSelected ? DT.Color.accent : DT.Color.textSecondary)
                 .padding(.horizontal, 14).padding(.vertical, 5)
-                .background(isSelected ? DT.Color.accent.opacity(0.15) : Color.white.opacity(0.05))
+                .background(isSelected ? DT.Color.accent.opacity(0.15) : DT.Color.textPrimary.opacity(0.05))
                 .background(.ultraThinMaterial)
                 .clipShape(Capsule())
                 .overlay(Capsule().stroke(
-                    isSelected ? DT.Color.accent.opacity(0.45) : Color.white.opacity(0.08),
+                    isSelected ? DT.Color.accent.opacity(0.45) : DT.Color.textPrimary.opacity(0.08),
                     lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -172,8 +190,47 @@ struct SeerrView: View {
 
     // MARK: - Trending / Upcoming / Genre sections
 
+    private var deviceLanguage: String? {
+        guard let code = Locale.current.language.languageCode?.identifier, code != "en" else { return nil }
+        return code
+    }
+
+    private var languageName: String? {
+        deviceLanguage.flatMap { Locale.current.localizedString(forLanguageCode: $0) }
+    }
+
+    private func loadLanguageItems() async {
+        guard let deviceLanguage else { return }
+        languageItems = await seerrRepo.discoverByLanguage(deviceLanguage, mediaType: mediaType)
+    }
+
+    private func discoverErrorCard(_ message: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.title2)
+                .foregroundStyle(DT.Color.palette("f59e0b"))
+            Text("Couldn't load Discover from Seerr")
+                .font(.headline)
+                .foregroundStyle(DT.Color.textPrimary)
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(DT.Color.textSecondary)
+                .multilineTextAlignment(.center)
+            Button("Try Again") {
+                seerrRepo.clearAuthFailure()
+                Task { await seerrRepo.loadDiscover() }
+            }
+            .buttonStyle(.bordered)
+            .tint(DT.Color.accent)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(20)
+        .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .padding(.horizontal, DT.Spacing.pagePad)
+    }
+
     private var trendingSection: some View {
-        itemGrid(title: "Trending Now", items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
+        itemGrid(title: showsTrending ? "Trending Now" : "Popular", items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
     }
 
     private var upcomingSection: some View {
@@ -292,7 +349,7 @@ struct SeerrView: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let url = item.posterURL {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: posterPlaceholder(item: item)
@@ -322,7 +379,7 @@ struct SeerrView: View {
         return ZStack(alignment: .bottomLeading) {
             // Poster
             if let url = item.posterURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: posterPlaceholder(item: item)
@@ -353,6 +410,8 @@ struct SeerrView: View {
                             .background(.black.opacity(0.5))
                             .background(.ultraThinMaterial)
                             .clipShape(Circle())
+                            .frame(width: 44, height: 44, alignment: .topTrailing)
+                            .contentShape(Rectangle())
                     }
                     .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
                     .buttonStyle(.plain)
@@ -406,7 +465,7 @@ struct SeerrView: View {
         }
         .aspectRatio(2/3, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.06), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
     private func posterPlaceholder(item: SeerrItem) -> some View {
@@ -416,7 +475,7 @@ struct SeerrView: View {
     }
 
     private func availabilityPill(label: String, hex: String) -> some View {
-        StatusPill(label: label, color: Color(hex: hex))
+        StatusPill(label: label, color: DT.Color.palette(hex))
     }
 
     // MARK: - Loading skeleton
@@ -438,11 +497,17 @@ struct SeerrView: View {
 
     // MARK: - Search
 
+    /// Debounced, and a response for an older query never replaces a newer one's results.
     private func performSearch(query: String) {
+        searchTask?.cancel()
         guard !query.isEmpty else { searchResults = []; isSearching = false; return }
         isSearching = true
-        Task {
-            searchResults = await seerrRepo.search(query: query)
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            let results = await seerrRepo.search(query: query)
+            guard !Task.isCancelled else { return }
+            searchResults = results
             isSearching = false
         }
     }

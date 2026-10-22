@@ -66,7 +66,7 @@ struct ServerAccountSettingsView: View {
                 if let quickConnectResult {
                     Text(quickConnectResult)
                         .font(.caption)
-                        .foregroundStyle(quickConnectResult.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                        .foregroundStyle(quickConnectResult.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
                 }
             } header: {
                 Text("Quick Connect")
@@ -77,14 +77,13 @@ struct ServerAccountSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Server")
         #if !os(tvOS)
         .sheet(isPresented: $showSwitchServerSheet) {
             NavigationStack { SwitchServerView() }
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-                .preferredColorScheme(.dark)
         }
         #endif
     }

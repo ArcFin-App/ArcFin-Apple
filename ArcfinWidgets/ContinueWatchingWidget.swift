@@ -43,11 +43,11 @@ struct ContinueWatchingProvider: TimelineProvider {
 
 // MARK: - Shared pieces
 
-private func playURL(_ item: WidgetSnapshot.Item) -> URL {
+func playURL(_ item: WidgetSnapshot.Item) -> URL {
     URL(string: "arcfin://play/\(item.id)") ?? URL(string: "arcfin://downloads")!
 }
 
-private func artwork(_ fileName: String?) -> Image? {
+func artwork(_ fileName: String?) -> Image? {
     guard let fileName, let url = WidgetSnapshotStore.posterURL(fileName: fileName) else { return nil }
     #if canImport(UIKit)
     guard let image = UIImage(contentsOfFile: url.path) else { return nil }
@@ -172,6 +172,7 @@ struct ContinueWatchingWidgetView: View {
         switch family {
         case .systemSmall: small
         case .systemMedium: medium
+        case .systemLarge, .systemExtraLarge: large
         case .accessoryRectangular: rectangular
         case .accessoryCircular: circular
         case .accessoryInline: inline
@@ -205,6 +206,34 @@ struct ContinueWatchingWidgetView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .containerBackground(.fill.tertiary, for: .widget)
+        } else {
+            EmptyState().containerBackground(.fill.tertiary, for: .widget)
+        }
+    }
+
+    /// The latest title large across the top, the next three listed underneath.
+    @ViewBuilder
+    private var large: some View {
+        if let hero = entry.items.first {
+            VStack(alignment: .leading, spacing: 12) {
+                Link(destination: playURL(hero)) {
+                    HeroCard(item: hero)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .frame(maxHeight: .infinity)
+                if entry.items.count > 1 {
+                    Text("Up Next")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(entry.items.dropFirst().prefix(3)) { item in
+                            Link(destination: playURL(item)) { CompactRow(item: item) }
+                        }
+                    }
                 }
             }
             .containerBackground(.fill.tertiary, for: .widget)
@@ -271,6 +300,16 @@ struct ContinueWatchingWidget: Widget {
         }
         .configurationDisplayName("Continue Watching")
         .description("Pick up where you left off.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryCircular, .accessoryInline])
+        .supportedFamilies(families)
+    }
+
+    /// The Lock Screen sizes exist on iOS only.
+    private var families: [WidgetFamily] {
+        #if os(iOS)
+        [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge,
+         .accessoryRectangular, .accessoryCircular, .accessoryInline]
+        #else
+        [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge]
+        #endif
     }
 }

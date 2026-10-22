@@ -215,6 +215,57 @@ public struct JellyfinMediaClient: Sendable {
         return shelves
     }
 
+    /// Movies and series the user has favorited, for Home's Favorites shelf.
+    public func getFavorites(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 20
+    ) async throws -> [MediaItem] {
+        try await getHomeShelfItems(
+            credential: credential, authHeader: authHeader, limit: limit,
+            extra: [.init(name: "Filters", value: "IsFavorite"),
+                    .init(name: "SortBy", value: "SortName"),
+                    .init(name: "SortOrder", value: "Ascending")])
+    }
+
+    /// Highly rated titles the user hasn't watched — "what should I watch tonight" picks.
+    public func getTopRatedUnwatched(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 16
+    ) async throws -> [MediaItem] {
+        try await getHomeShelfItems(
+            credential: credential, authHeader: authHeader, limit: limit,
+            extra: [.init(name: "IsPlayed", value: "false"),
+                    .init(name: "MinCommunityRating", value: "7"),
+                    .init(name: "SortBy", value: "CommunityRating"),
+                    .init(name: "SortOrder", value: "Descending")])
+    }
+
+    private func getHomeShelfItems(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int,
+        extra: [URLQueryItem]
+    ) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating"),
+            .init(name: "EnableUserData", value: "true"),
+        ] + extra
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+
     public func getContinueWatching(
         credential: ServerCredential,
         authHeader: String,
@@ -342,7 +393,7 @@ public struct JellyfinMediaClient: Sendable {
         }
     }
 
-    /// Fetch the Jellyfin server UUID (needed for Streamystats jellyfinServerId param).
+    /// The Jellyfin server's UUID, from its public info.
     public func getServerID(credential: ServerCredential) async throws -> String {
         try await getPublicInfo(baseURL: credential.baseURL).id
     }
@@ -357,84 +408,35 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(JellyfinPublicServerInfo.self, from: data)
     }
 
-    public func getTopPlayed(
-        credential: ServerCredential,
-        authHeader: String,
-        itemType: String,
-        limit: Int = 6,
-        since: Date? = nil
-    ) async throws -> [MediaItem] {
-        var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
-            resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            .init(name: "SortBy", value: "PlayCount"),
-            .init(name: "SortOrder", value: "Descending"),
-            .init(name: "Filters", value: "IsPlayed"),
-            .init(name: "IncludeItemTypes", value: itemType),
-            .init(name: "Recursive", value: "true"),
-            .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear"),
-        ]
-        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
-        var req = URLRequest(url: comps.url!)
-        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 15
-        let (data, _) = try await URLSession.arcfin.data(for: req)
-        let page = try JSONDecoder().decode(ItemsPage.self, from: data)
-        return page.items.map { $0.toMediaItem() }
-    }
-
-    /// "Played since" for Stats' 7D/30D ranges: Jellyfin has no last-played-date filter on
-    /// the items query, but minDateLastSavedForUser matches items whose per-user data (which
-    /// playback updates) changed since — a close stand-in, and it also catches favoriting.
-    private static func sinceQueryItem(_ date: Date) -> URLQueryItem {
-        .init(name: "MinDateLastSavedForUser", value: ISO8601DateFormatter().string(from: date))
-    }
-
-    public func getPlayedCount(
-        credential: ServerCredential,
-        authHeader: String,
-        itemType: String,
-        since: Date? = nil
-    ) async throws -> Int {
-        var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
-            resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            .init(name: "Filters", value: "IsPlayed"),
-            .init(name: "IncludeItemTypes", value: itemType),
-            .init(name: "Recursive", value: "true"),
-            .init(name: "Limit", value: "1"),
-        ]
-        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
-        var req = URLRequest(url: comps.url!)
-        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 15
-        let (data, _) = try await URLSession.arcfin.data(for: req)
-        struct CountPage: Decodable {
-            let totalRecordCount: Int
-            enum CodingKeys: String, CodingKey { case totalRecordCount = "TotalRecordCount" }
-        }
-        return (try? JSONDecoder().decode(CountPage.self, from: data).totalRecordCount) ?? 0
-    }
-
     public func getItemDetail(
         credential: ServerCredential,
         authHeader: String,
         itemId: String
     ) async throws -> MediaItemDetail {
+        try Self.decodeItemDetail(await getItemDetailData(credential: credential, authHeader: authHeader, itemId: itemId))
+    }
+
+    /// The server's response as is, so a download can keep it and show the full page offline.
+    public func getItemDetailData(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String
+    ) async throws -> Data {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters,Trickplay,RemoteTrailers"),
+            .init(name: "Fields", value: "Overview,People,MediaStreams,Genres,Studios,OfficialRating,RunTimeTicks,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear,CommunityRating,SeriesName,SeriesId,SeriesPrimaryImageTag,Taglines,ProviderIds,Chapters,Trickplay,RemoteTrailers,OriginalTitle,ProductionLocations,ExternalUrls,Tags,MediaSources,AirTime"),
         ]
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
-        return try JSONDecoder().decode(ItemDetailResponse.self, from: data).toDetail()
+        return data
+    }
+
+    public static func decodeItemDetail(_ data: Data) throws -> MediaItemDetail {
+        try JSONDecoder().decode(ItemDetailResponse.self, from: data).toDetail()
     }
 
     public func getSimilarItems(
@@ -482,6 +484,24 @@ public struct JellyfinMediaClient: Sendable {
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode([MovieRecommendationResponse].self, from: data).map { $0.toCategory() }
+    }
+
+    /// The server's own picks for this user, from what they've watched and liked.
+    public func getSuggestions(credential: ServerCredential, authHeader: String, limit: Int = 20) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Items/Suggestions"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "userId", value: credential.userID),
+            .init(name: "type", value: "Movie"),
+            .init(name: "type", value: "Series"),
+            .init(name: "limit", value: "\(limit)"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
     /// Other titles credited to a person (actor/director/writer), in the user's library.
@@ -638,24 +658,59 @@ public struct JellyfinMediaClient: Sendable {
         credential: ServerCredential,
         authHeader: String,
         seriesId: String,
-        seasonId: String
+        seasonId: String?
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Episodes"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
-            .init(name: "SeasonId", value: seasonId),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,PremiereDate,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableImages", value: "true"),
             .init(name: "ImageTypeLimit", value: "1"),
         ]
+        // Without a season, every episode of the series in season and episode order.
+        if let seasonId { comps.queryItems?.append(.init(name: "SeasonId", value: seasonId)) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
         let (data, _) = try await URLSession.arcfin.data(for: req)
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    /// The series' next episode to watch and the ones after it, in order. Next Up itself only
+    /// ever returns one episode per series, whatever the limit.
+    public func getUpcomingEpisodes(
+        credential: ServerCredential,
+        authHeader: String,
+        seriesId: String,
+        count: Int
+    ) async throws -> [MediaItem] {
+        guard let next = try await getNextEpisode(credential: credential, authHeader: authHeader, seriesId: seriesId) else {
+            // Next Up leaves out shows past the server's Next Up cutoff, and on some versions
+            // shows with nothing watched yet, so work it out from the episode list instead:
+            // the first unwatched episode after the last watched one.
+            let all = try await getEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, seasonId: nil)
+            let start = all.lastIndex { $0.userData?.played == true }.map { $0 + 1 } ?? 0
+            return Array(all.dropFirst(start).filter { $0.userData?.played != true }.prefix(count))
+        }
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Episodes"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "UserId", value: credential.userID),
+            .init(name: "StartItemId", value: next.id),
+            .init(name: "Limit", value: "\(count)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let episodes = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        return episodes.isEmpty ? [next] : episodes.filter { $0.userData?.played != true }
     }
 
     public func getNextEpisode(
@@ -710,6 +765,71 @@ public struct JellyfinMediaClient: Sendable {
         req.httpBody = try JSONSerialization.data(withJSONObject: ["PlaybackPositionTicks": 0])
         req.timeoutInterval = 15
         _ = try await URLSession.arcfin.data(for: req)
+    }
+
+    /// Writes a resume position and watched state straight to the user's data for an item —
+    /// how progress recorded offline is handed back, since a late "playback stopped" report
+    /// isn't reliably applied to an item that has no session playing it.
+    public func updateUserData(
+        credential: ServerCredential,
+        authHeader: String,
+        itemId: String,
+        positionTicks: Int64,
+        played: Bool,
+        lastPlayed: Date = Date()
+    ) async throws {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)/UserData")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "PlaybackPositionTicks": played ? 0 : positionTicks,
+            "Played": played,
+            "LastPlayedDate": ISO8601DateFormatter().string(from: lastPlayed),
+        ])
+        req.timeoutInterval = 15
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    /// Position and watched state for many items in a few requests, keyed by item id.
+    public func getUserData(credential: ServerCredential, authHeader: String, itemIds: [String]) async throws -> [String: UserData] {
+        var result: [String: UserData] = [:]
+        for start in stride(from: 0, to: itemIds.count, by: 100) {
+            let ids = itemIds[start..<min(start + 100, itemIds.count)]
+            var comps = URLComponents(
+                url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+                resolvingAgainstBaseURL: false)!
+            comps.queryItems = [
+                .init(name: "Ids", value: ids.joined(separator: ",")),
+                .init(name: "EnableUserData", value: "true"),
+                .init(name: "EnableImages", value: "false"),
+            ]
+            var req = URLRequest(url: comps.url!)
+            req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+            req.timeoutInterval = 15
+            let (data, response) = try await URLSession.arcfin.data(for: req)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                throw URLError(.badServerResponse)
+            }
+            for item in try JSONDecoder().decode(ItemsPage.self, from: data).items {
+                if let userData = item.toMediaItem().userData { result[item.id] = userData }
+            }
+        }
+        return result
+    }
+
+    /// An item's resume position and watched state for this user, if the server answers.
+    public func getUserData(credential: ServerCredential, authHeader: String, itemId: String) async throws -> UserData? {
+        let url = credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)")
+        var req = URLRequest(url: url)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 4
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(JellyfinItemResponse.self, from: data).toMediaItem().userData
     }
 
     public func markFavorite(
@@ -771,8 +891,8 @@ public struct JellyfinMediaClient: Sendable {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
             resolvingAgainstBaseURL: false)!
-        var queryItems: [URLQueryItem] = [
-            .init(name: "ParentId", value: libraryId),
+        // An empty libraryId searches everything the user can see (e.g. every playlist).
+        var queryItems: [URLQueryItem] = (libraryId.isEmpty ? [] : [.init(name: "ParentId", value: libraryId)]) + [
             .init(name: "Recursive", value: recursive ? "true" : "false"),
             .init(name: "SortBy", value: sortBy),
             .init(name: "SortOrder", value: sortOrder),
@@ -840,7 +960,7 @@ public struct JellyfinMediaClient: Sendable {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/Filters2"),
             resolvingAgainstBaseURL: false)!
-        var queryItems: [URLQueryItem] = [.init(name: "ParentId", value: libraryId)]
+        var queryItems: [URLQueryItem] = libraryId.isEmpty ? [] : [.init(name: "ParentId", value: libraryId)]
         if let types = includeItemTypes {
             queryItems.append(.init(name: "IncludeItemTypes", value: types))
         }
@@ -939,7 +1059,7 @@ public struct JellyfinMediaClient: Sendable {
 
 // MARK: - Private response types
 
-private struct ItemsPage: Decodable {
+struct ItemsPage: Decodable {
     let items: [JellyfinItemResponse]
     let totalRecordCount: Int?
     enum CodingKeys: String, CodingKey {
@@ -981,7 +1101,7 @@ private struct LibraryFiltersResponse: Decodable {
     }
 }
 
-private struct JellyfinItemResponse: Decodable {
+struct JellyfinItemResponse: Decodable {
     let id: String
     let name: String
     let type: String
@@ -1000,8 +1120,10 @@ private struct JellyfinItemResponse: Decodable {
     let parentBackdropImageTags: [String]?
     let providerIds: [String: String]?
     let genres: [String]?
+    let premiereDate: String?
 
     enum CodingKeys: String, CodingKey {
+        case premiereDate = "PremiereDate"
         case genres = "Genres"
         case id = "Id"
         case name = "Name"
@@ -1038,7 +1160,8 @@ private struct JellyfinItemResponse: Decodable {
                     isFavorite: $0.isFavorite ?? false,
                     played: $0.played ?? false,
                     playedPercentage: $0.playedPercentage,
-                    likes: $0.likes
+                    likes: $0.likes,
+                    lastPlayedDate: $0.lastPlayed
                 )
             },
             productionYear: productionYear,
@@ -1050,21 +1173,44 @@ private struct JellyfinItemResponse: Decodable {
             seriesPrimaryImageTag: seriesPrimaryImageTag,
             parentBackdropItemId: parentBackdropItemId,
             parentBackdropImageTags: parentBackdropImageTags ?? [],
-            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
+            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            premiereDate: premiereDate.flatMap(Self.parseDay)
         )
+    }
+
+    /// Jellyfin sends 7-digit fractional seconds that ISO8601DateFormatter is unreliable
+    /// with; only the calendar day matters here, so just that prefix is parsed.
+    private static func parseDay(_ raw: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter.date(from: String(raw.prefix(10)))
     }
 }
 
-private struct UserDataResponse: Decodable {
+struct UserDataResponse: Decodable {
     let playbackPositionTicks: Int64?
     let playCount: Int?
     let isFavorite: Bool?
     let played: Bool?
     let playedPercentage: Double?
     let likes: Bool?
+    let lastPlayedDate: String?
+
+    /// Jellyfin writes seven fractional digits, which ISO8601DateFormatter won't read.
+    var lastPlayed: Date? {
+        guard var text = lastPlayedDate else { return nil }
+        if let dot = text.firstIndex(of: "."), let end = text[dot...].firstIndex(where: { !$0.isNumber && $0 != "." }) {
+            let fraction = text[text.index(after: dot)..<end]
+            text.replaceSubrange(dot..<end, with: "." + fraction.prefix(3))
+        }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+    }
 
     enum CodingKeys: String, CodingKey {
         case likes = "Likes"
+        case lastPlayedDate = "LastPlayedDate"
         case playbackPositionTicks = "PlaybackPositionTicks"
         case playCount = "PlayCount"
         case isFavorite = "IsFavorite"
@@ -1102,8 +1248,38 @@ private struct ItemDetailResponse: Decodable {
     /// item-detail endpoint is the one that actually carries this.
     let trickplay: [String: [String: TrickplayInfoResponse]]?
     let remoteTrailers: [RemoteTrailerResponse]?
+    let criticRating: Double?
+    let originalTitle: String?
+    let productionLocations: [String]?
+    let tags: [String]?
+    let status: String?
+    let airDays: [String]?
+    let airTime: String?
+    let premiereDate: String?
+    let endDate: String?
+    let externalUrls: [ExternalUrlResponse]?
+    let mediaSources: [MediaSourceSummary]?
+
+    struct ExternalUrlResponse: Decodable {
+        let name: String?
+        let url: String?
+        enum CodingKeys: String, CodingKey { case name = "Name", url = "Url" }
+    }
+
+    struct MediaSourceSummary: Decodable {
+        let id: String
+        let name: String?
+        let container: String?
+        let size: Int64?
+        let bitrate: Int?
+        enum CodingKeys: String, CodingKey { case id = "Id", name = "Name", container = "Container", size = "Size", bitrate = "Bitrate" }
+    }
 
     enum CodingKeys: String, CodingKey {
+        case criticRating = "CriticRating", originalTitle = "OriginalTitle"
+        case productionLocations = "ProductionLocations", tags = "Tags", status = "Status"
+        case airDays = "AirDays", airTime = "AirTime", premiereDate = "PremiereDate", endDate = "EndDate"
+        case externalUrls = "ExternalUrls", mediaSources = "MediaSources"
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
         case imageTags = "ImageTags", backdropImageTags = "BackdropImageTags"
         case userData = "UserData", productionYear = "ProductionYear"
@@ -1131,7 +1307,8 @@ private struct ItemDetailResponse: Decodable {
                          isFavorite: ud.isFavorite ?? false,
                          played: ud.played ?? false,
                          playedPercentage: ud.playedPercentage,
-                         likes: ud.likes)
+                         likes: ud.likes,
+                         lastPlayedDate: ud.lastPlayed)
             },
             productionYear: productionYear,
             communityRating: communityRating,
@@ -1142,7 +1319,7 @@ private struct ItemDetailResponse: Decodable {
             seriesPrimaryImageTag: seriesPrimaryImageTag,
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
         )
-        return MediaItemDetail(
+        var detail = MediaItemDetail(
             item: mediaItem,
             people: people?.compactMap { p in
                 MediaPerson(id: p.id, name: p.name, role: p.role,
@@ -1161,8 +1338,31 @@ private struct ItemDetailResponse: Decodable {
             trickplay: trickplay?.compactMapValues { $0.preferred } ?? [:],
             remoteTrailers: remoteTrailers?.compactMap { t in
                 t.url.flatMap { URL(string: $0) }.map { RemoteTrailer(url: $0, name: t.name) }
-            } ?? []
+            } ?? [],
+            criticRating: criticRating
         )
+        detail.originalTitle = originalTitle
+        detail.productionLocations = productionLocations ?? []
+        detail.tags = tags ?? []
+        detail.status = status
+        detail.airDays = airDays ?? []
+        detail.airTime = airTime
+        detail.premiereDate = premiereDate.flatMap(Self.parseDay)
+        detail.endDate = endDate.flatMap(Self.parseDay)
+        detail.externalLinks = (externalUrls ?? []).compactMap { link in
+            guard let name = link.name, let url = link.url.flatMap(URL.init(string:)) else { return nil }
+            return ExternalLink(name: name, url: url)
+        }
+        detail.files = (mediaSources ?? []).map {
+            MediaFileInfo(id: $0.id, name: $0.name, container: $0.container, sizeBytes: $0.size, bitrate: $0.bitrate)
+        }
+        return detail
+    }
+
+    private static func parseDay(_ raw: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter.date(from: String(raw.prefix(10)))
     }
 }
 

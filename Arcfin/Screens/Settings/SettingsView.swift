@@ -25,7 +25,6 @@ struct SettingsView: View {
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
 #endif
     @AppStorage("seerrURL")            private var seerrURL             = ""
-    @AppStorage("streamystatsURL")     private var streamystatsURL      = ""
 
     var body: some View {
         List {
@@ -46,12 +45,6 @@ struct SettingsView: View {
                     settingsRow("Appearance", icon: "paintbrush")
                 }
                 .listRowBackground(Color.clear)
-                NavigationLink {
-                    NotificationsSettingsView()
-                } label: {
-                    settingsRow("Notifications", icon: "bell")
-                }
-                .listRowBackground(Color.clear)
             } header: {
                 sectionHeader("Preferences", icon: "slider.horizontal.3")
             }
@@ -59,6 +52,20 @@ struct SettingsView: View {
             // ── Account & Server ─────────────────────────────────────────
             Section {
                 serverRow
+                NavigationLink {
+                    ProfileAccessView()
+                } label: {
+                    HStack {
+                        Text("Your Profile")
+                        Spacer()
+                        if ProfileRules.shared.restrictsContent {
+                            Label("Parental Controls", systemImage: "lock.shield")
+                                .font(.caption2)
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                    }
+                }
+                .listRowBackground(Color.clear)
                 if let activeID = authManager.state.credential?.id {
                     NavigationLink {
                         ServerSettingsView(profileID: activeID)
@@ -95,13 +102,13 @@ struct SettingsView: View {
                 }
                 .listRowBackground(Color.clear)
                 NavigationLink {
-                    StreamystatsPluginView()
+                    TMDBSettingsView()
                 } label: {
                     HStack {
-                        Text("Streamystats")
+                        Text("TMDB")
                         Spacer()
-                        if !streamystatsURL.isEmpty {
-                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                        if seerrRepo.hasTMDB {
+                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
                         }
                     }
                 }
@@ -118,15 +125,11 @@ struct SettingsView: View {
                 } label: {
                     settingsRow("Playback", icon: "play.circle")
                 }
-                // Downloads aren't wired up on macOS — DownloadManager's UI entry points are
-                // iOS-only, so this row would push to a screen with nothing it can actually do.
-                #if os(iOS)
                 NavigationLink {
                     DownloadsSettingsView()
                 } label: {
                     settingsRow("Downloads", icon: "arrow.down.circle")
                 }
-                #endif
                 NavigationLink {
                     AppearanceView()
                 } label: {
@@ -209,7 +212,7 @@ struct SettingsView: View {
                     .font(.system(.caption2, design: .default, weight: .semibold))
                     .tracking(1.5)
                     .textCase(.uppercase)
-                    .foregroundStyle(DT.Color.textSecondary.opacity(0.6))
+                    .foregroundStyle(DT.Color.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 8)
             }
@@ -229,7 +232,7 @@ struct SettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
 #if os(tvOS)
         .id(listID)
         .onAppear { listID = UUID() }
@@ -237,7 +240,6 @@ struct SettingsView: View {
             // frame(minWidth: 900) used to force content wider than tvOS's own sheet
             // container, clipping the text on both edges — letting it size naturally fits.
             NavigationStack { TVUsersView() }
-                .preferredColorScheme(.dark)
         }
 #else
         .navigationTitle(authManager.state.credential?.displayName ?? "Settings")
@@ -249,7 +251,6 @@ struct SettingsView: View {
             NavigationStack { UsersView(onExpand: { usersDetent = .large }) }
                 .presentationDetents([.medium, .large], selection: $usersDetent)
                 .presentationDragIndicator(.visible)
-                .preferredColorScheme(.dark)
         }
 #endif
     }
@@ -281,7 +282,7 @@ struct SettingsView: View {
     private func initialsLabel(_ initials: String) -> some View {
         Text(initials)
             .font(.system(.body, design: .rounded, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(DT.Color.onAccent)
     }
 
     private func settingsRow(_ title: String, icon: String) -> some View {
@@ -312,7 +313,7 @@ struct SettingsView: View {
                     .frame(width: 52, height: 52)
                     .shadow(color: DT.Color.accent.opacity(0.35), radius: 10, y: 3)
                 if let tag = cred.userImageTag {
-                    AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
+                    CachedAsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: initialsLabel(initials)
@@ -375,9 +376,9 @@ struct SettingsView: View {
     @ViewBuilder
     private var seerrStatusPill: some View {
         if seerrRepo.authFailed {
-            Text("Auth Failed").font(.caption2).foregroundStyle(Color(hex: "EF4444"))
+            Text("Auth Failed").font(.caption2).foregroundStyle(DT.Color.palette("EF4444"))
         } else if !seerrURL.isEmpty {
-            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
         }
     }
 
@@ -483,7 +484,7 @@ struct SeerrPluginView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Seerr")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -616,7 +617,7 @@ struct SeerrPluginView: View {
             if let result = testResult {
                 Text(result)
                     .font(.caption)
-                    .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
+                    .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }
@@ -683,94 +684,15 @@ struct SeerrPluginView: View {
     }
 }
 
-// MARK: - Streamystats plugin view
-
-struct StreamystatsPluginView: View {
-    @Environment(AuthManager.self) private var authManager
-    @AppStorage("streamystatsURL") private var streamystatsURL = ""
-    @State private var testResult: String? = nil
-    @State private var isTesting = false
-
-    var body: some View {
-        List {
-            Section {
-                TextField("https://stats.example.com", text: $streamystatsURL)
-                    .textContentType(.URL)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                    #endif
-                    .syncLocked("streamystatsURL", authManager)
-            } header: {
-                Label("Server URL", systemImage: "server.rack")
-                    .font(.system(.caption, design: .default, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            } footer: {
-                Text("Streamystats authenticates using your existing Jellyfin session — no separate credentials needed.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            Section {
-                Button {
-                    testConnection()
-                } label: {
-                    HStack {
-                        if isTesting {
-                            ProgressView().scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "network")
-                        }
-                        Text(isTesting ? "Testing…" : "Test Connection")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                }
-                .disabled(streamystatsURL.isEmpty || isTesting)
-
-                if let result = testResult {
-                    Text(result)
-                        .font(.caption)
-                        .foregroundStyle(result.hasPrefix("✓") ? Color(hex: "10b981") : Color(hex: "EF4444"))
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
-        }
-        .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
-        .arcfinNavTitleLarge("Streamystats")
-    }
-
-    private func testConnection() {
-        guard let url = URL(string: streamystatsURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            testResult = "✗ Invalid URL"; return
-        }
-        isTesting = true; testResult = nil
-        Task {
-            // Public health endpoint — no auth needed
-            let req = URLRequest(url: url.appendingPathComponent("api/health"))
-            do {
-                let (_, resp) = try await URLSession.arcfin.data(for: req)
-                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                    testResult = "✓ Server reachable"
-                } else {
-                    testResult = "✗ Server returned an error"
-                }
-            } catch {
-                testResult = "✗ \(error.localizedDescription)"
-            }
-            isTesting = false
-        }
-    }
-}
-
 // MARK: - tvOS users sheet
 
 #if os(tvOS)
 struct TVUsersView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
+
+    @State private var pinStates: [UUID: Bool] = [:]
+    @State private var pinTask: TVPINTask?
 
     private var activeID: UUID? { authManager.state.credential?.id }
 
@@ -785,15 +707,30 @@ struct TVUsersView: View {
                     tvProfileRow(active, isActive: true)
                         .listRowBackground(Color.clear)
                         .focusEffectDisabled()
-                } header: { sectionLabel("Current Profile") }
+                    if pinStates[active.id] == true {
+                        Button("Change PIN") { pinTask = TVPINTask(profile: active, kind: .change) }
+                            .tvListRow()
+                        Button("Remove PIN") { pinTask = TVPINTask(profile: active, kind: .remove) }
+                            .tvListRow()
+                    } else {
+                        Button("Set a PIN") { pinTask = TVPINTask(profile: active, kind: .set) }
+                            .tvListRow()
+                    }
+                } header: { sectionLabel("Current Profile") } footer: {
+                    Text("With a PIN, Arcfin asks for it when it opens and before switching to this profile.")
+                }
             }
 
             if !otherProfiles.isEmpty {
                 Section {
                     ForEach(otherProfiles) { profile in
                         Button {
-                            authManager.switchTo(profile)
-                            dismiss()
+                            if pinStates[profile.id] == true {
+                                pinTask = TVPINTask(profile: profile, kind: .unlock)
+                            } else {
+                                authManager.switchTo(profile)
+                                dismiss()
+                            }
                         } label: {
                             tvProfileRow(profile, isActive: false)
                         }
@@ -826,8 +763,24 @@ struct TVUsersView: View {
             }
         }
         .listStyle(.plain)
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Profiles")
+        .task { await loadPINStates() }
+        .fullScreenCover(item: $pinTask) { task in
+            TVPINFlow(task: task) { switched in
+                pinTask = nil
+                Task { await loadPINStates() }
+                if switched { dismiss() }
+            }
+        }
+    }
+
+    private func loadPINStates() async {
+        var states: [UUID: Bool] = [:]
+        for profile in authManager.profiles {
+            states[profile.id] = await authManager.pin(for: profile.id) != nil
+        }
+        pinStates = states
     }
 
     private func tvProfileRow(_ cred: ServerCredential, isActive: Bool) -> some View {
@@ -847,7 +800,7 @@ struct TVUsersView: View {
                     .shadow(color: isActive ? DT.Color.accent.opacity(0.4) : .clear, radius: 8)
                 Text(initials)
                     .scaledFont(size: 18, weight: .bold, design: .rounded)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -861,6 +814,12 @@ struct TVUsersView: View {
 
             Spacer()
 
+            if pinStates[cred.id] == true {
+                Image(systemName: "lock.fill")
+                    .scaledFont(size: 18)
+                    .opacity(0.6)
+                    .accessibilityLabel("PIN protected")
+            }
             if isActive {
                 Image(systemName: "checkmark.circle.fill")
                     .scaledFont(size: 26)
@@ -875,6 +834,86 @@ struct TVUsersView: View {
             .font(.system(.caption, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
+    }
+}
+
+// MARK: - tvOS PINs
+
+struct TVPINTask: Identifiable {
+    enum Kind { case set, change, remove, unlock }
+    let id = UUID()
+    let profile: ServerCredential
+    let kind: Kind
+}
+
+/// Setting, changing and removing a profile's PIN, and entering it to switch to that profile.
+private struct TVPINFlow: View {
+    let task: TVPINTask
+    /// True when the flow ended by switching to the profile.
+    let onDone: (Bool) -> Void
+
+    @Environment(AuthManager.self) private var authManager
+    @State private var storedPIN: String?
+    @State private var verified = false
+    @State private var firstEntry: String?
+    @State private var errorMessage: String?
+    @State private var resetToken = 0
+
+    private var title: String {
+        switch task.kind {
+        case .unlock: "Enter PIN"
+        case .remove: "Enter PIN to remove it"
+        case .change where !verified: "Enter current PIN"
+        case .set, .change: firstEntry == nil ? "Enter a new PIN" : "Confirm the PIN"
+        }
+    }
+
+    var body: some View {
+        PINPadView(
+            title: title,
+            subtitle: task.profile.displayName,
+            errorMessage: errorMessage,
+            resetToken: resetToken,
+            onCancel: { onDone(false) },
+            onComplete: handle
+        )
+        .id(title)
+        .task { storedPIN = await authManager.pin(for: task.profile.id) }
+    }
+
+    private func handle(_ entered: String) {
+        let needsCurrent = task.kind == .unlock || task.kind == .remove || (task.kind == .change && !verified)
+        if needsCurrent {
+            guard entered == storedPIN else { return fail("Incorrect PIN") }
+            errorMessage = nil
+            switch task.kind {
+            case .unlock:
+                authManager.switchTo(task.profile)
+                onDone(true)
+            case .remove:
+                authManager.removePin(for: task.profile.id)
+                onDone(false)
+            default:
+                verified = true
+            }
+            return
+        }
+        guard let first = firstEntry else {
+            firstEntry = entered
+            errorMessage = nil
+            return
+        }
+        guard entered == first else {
+            firstEntry = nil
+            return fail("PINs don't match")
+        }
+        authManager.savePin(entered, for: task.profile.id)
+        onDone(false)
+    }
+
+    private func fail(_ message: String) {
+        errorMessage = message
+        resetToken += 1
     }
 }
 

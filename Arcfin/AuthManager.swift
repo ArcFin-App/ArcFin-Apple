@@ -38,7 +38,11 @@ private final class TimeoutResult<Value: Sendable>: @unchecked Sendable {
 @MainActor
 final class AuthManager {
 
-    var state: AuthState = .unauthenticated
+    var state: AuthState = .unauthenticated {
+        didSet {
+            if let id = state.credential?.id, id != oldValue.credential?.id { activateSeerrAccount(for: id) }
+        }
+    }
     var isChecking: Bool = true
     var profiles: [ServerCredential] = []
     /// Not persisted — re-checked once per sign-in/cold launch (see checkStoredAuth/save).
@@ -64,6 +68,8 @@ final class AuthManager {
 
     let authClient = JellyfinAuthClient()
     private let syncClient = ArcfinSyncClient()
+    @ObservationIgnored private var settingsObserver: NSObjectProtocol?
+    @ObservationIgnored private var settingsPushTask: Task<Void, Never>?
     private let keychain = KeychainStore()
 
     // MARK: - Startup
@@ -124,6 +130,10 @@ final class AuthManager {
     /// Watches for network changes (leaving/joining the home Wi-Fi, Wi-Fi↔cellular) and
     /// re-resolves Local vs Remote server URL live — previously this only happened once at
     /// launch, so switching networks mid-session required force-quitting the app.
+    /// Bumped after each settled network change, for work that should retry once the
+    /// connection is back (offline progress sync).
+    private(set) var networkChanges = 0
+
     func startNetworkMonitoring() {
         #if os(iOS)
         guard pathMonitor == nil else { return }
@@ -146,6 +156,7 @@ final class AuthManager {
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
             await reresolveBaseURLIfNeeded()
+            networkChanges += 1
         }
     }
 
@@ -320,7 +331,38 @@ final class AuthManager {
             let header = self.authClient.authHeader(token: credential.accessToken)
             self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
             self.arcfinSyncLastSyncedAt = .now
+            self.watchSettingsChanges()
             Self.syncLog.info("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
+        }
+    }
+
+    /// Sends a synced setting changed here a moment after the change, rather than at the next
+    /// launch, so other devices pick it up and the next sync doesn't see it as stale.
+    private func watchSettingsChanges() {
+        guard settingsObserver == nil else { return }
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            MainActor.assumeIsolated { self.scheduleSettingsPush() }
+        }
+    }
+
+    private func scheduleSettingsPush() {
+        // A sync's own writes land here too; it's already handling them.
+        guard arcfinSyncStatus != nil, !isSyncingArcfin else { return }
+        settingsPushTask?.cancel()
+        settingsPushTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, !Task.isCancelled, !self.isSyncingArcfin,
+                  case .authenticated(let credential) = self.state,
+                  SettingsSyncEngine.hasLocalChanges()
+            else { return }
+            self.isSyncingArcfin = true
+            defer { self.isSyncingArcfin = false }
+            let header = self.authClient.authHeader(token: credential.accessToken)
+            self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
+            self.arcfinSyncLastSyncedAt = .now
         }
     }
 
@@ -333,12 +375,22 @@ final class AuthManager {
 
     func removeProfile(id: UUID) {
         let k = keychain
-        Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id) }
+        Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id); try? k.deleteSeerrPassword(profile: id) }
+        UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
         profiles.removeAll { $0.id == id }
-        #if os(iOS)
+        #if !os(tvOS)
         // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
         Task { await SpotlightIndexer.clear() }
+        // Likewise for the widgets and the background notification bookkeeping.
+        WidgetSnapshotUpdater.clear()
+        SeerrSpotlightStore.clear()
         #endif
+        #if !os(tvOS)
+        BackgroundRefresh.resetState()
+        #endif
+        SplashMosaicStore.clear()
+        PlaylistStore.shared.clear()
+        ProfileRules.shared.clear()
         if case .authenticated(let current) = state, current.id == id {
             if let next = profiles.first {
                 persist(active: next)
@@ -375,6 +427,52 @@ final class AuthManager {
     func removePin(for credentialID: UUID) {
         let k = keychain
         Task.detached { try? k.deletePin(for: credentialID) }
+    }
+
+    // MARK: - Seerr account per profile
+
+    /// Whose Seerr sign-in is in the active slot (the `seerrUsername` default and the
+    /// Keychain password everything reads). Seerr accounts are per person: before, the slot
+    /// was shared, so switching profile kept the previous person signed in to Seerr — their
+    /// watchlist and requests, and new requests made in their name.
+    private static let seerrOwnerKey = "arcfin.seerrAccountOwner"
+
+    private static func seerrUsernameKey(for id: UUID) -> String { "seerrUsername.\(id.uuidString)" }
+
+    /// Sets the outgoing profile's Seerr sign-in aside and puts the incoming one's in place
+    /// (or none, when it hasn't connected Seerr), which reconfigures Seerr through the
+    /// observers on the slot.
+    private func activateSeerrAccount(for id: UUID) {
+        let defaults = UserDefaults.standard
+        let owner = defaults.string(forKey: Self.seerrOwnerKey).flatMap(UUID.init(uuidString:))
+        guard owner != id else { return }
+        defaults.set(id.uuidString, forKey: Self.seerrOwnerKey)
+        // First run with this: what's in the slot already belongs to the active profile.
+        guard let owner else { return }
+
+        let k = keychain
+        let outgoingPassword = seerrPassword
+        // A profile that was just removed has nothing to set aside.
+        let stashOutgoing = profiles.contains { $0.id == owner }
+        if stashOutgoing {
+            defaults.set(defaults.string(forKey: "seerrUsername") ?? "", forKey: Self.seerrUsernameKey(for: owner))
+        }
+        defaults.set(defaults.string(forKey: Self.seerrUsernameKey(for: id)) ?? "", forKey: "seerrUsername")
+        seerrPassword = ""
+        Task {
+            let incoming = await Task.detached(priority: .userInitiated) { () -> String in
+                if stashOutgoing {
+                    if outgoingPassword.isEmpty { try? k.deleteSeerrPassword(profile: owner) }
+                    else { try? k.saveSeerrPassword(outgoingPassword, profile: owner) }
+                }
+                let password = (try? k.loadSeerrPassword(profile: id)) ?? ""
+                if password.isEmpty { try? k.deleteSeerrPassword() } else { try? k.saveSeerrPassword(password) }
+                return password
+            }.value
+            // Another switch may have happened while the Keychain was read.
+            guard self.state.credential?.id == id else { return }
+            self.seerrPassword = incoming
+        }
     }
 
     // MARK: - Seerr password (Keychain — see seerrPassword's own doc comment)

@@ -17,12 +17,14 @@ struct MainTabView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
+    @Bindable private var playlistStore = PlaylistStore.shared
     #if os(tvOS)
     @State private var searchQuery = ""
+    @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     #else
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
-    @State private var selectedTab: BottomNavItem = .home
+    @State private var selectedTab = BottomNavItem(rawValue: UserDefaults.standard.string(forKey: BottomNavPrefs.launchTabKey) ?? "") ?? .home
     #endif
 
     #if !os(tvOS)
@@ -52,7 +54,6 @@ struct MainTabView: View {
 #if os(tvOS)
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
             NoConnectionView()
-                .preferredColorScheme(.dark)
         } else {
             TabView {
                 Tab("Home", systemImage: "house") {
@@ -68,14 +69,22 @@ struct MainTabView: View {
                     NavigationStack {
                         SearchView(query: $searchQuery)
                             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
-                            .background(DT.Color.backgroundPrimary)
+                            .screenBackground()
                             .navigationDestination(for: MediaItem.self) { item in
                                 TVMediaDetailView(item: item)
+                            }
+                            .navigationDestination(for: SeerrItem.self) { item in
+                                TVSeerrItemDetailView(item: item)
                             }
                     }
                 }
                 Tab("Requests", systemImage: "clock") {
                     TVSeerrView()
+                }
+                if BottomNavPrefs.active(from: activeString).contains(.stats) {
+                    Tab("Stats", systemImage: "chart.xyaxis.line") {
+                        StatsView()
+                    }
                 }
                 Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                     NavigationStack { SettingsView() }
@@ -85,12 +94,13 @@ struct MainTabView: View {
             // The focus ENGINE still works (remote nav, isFocused env); only
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
-            .preferredColorScheme(.dark)
+            .sheet(item: $playlistStore.addingItem) { item in
+                AddToPlaylistSheet(item: item)
+            }
         }
 #else
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
             NoConnectionView()
-                .preferredColorScheme(.dark)
         } else {
             TabView(selection: $selectedTab) {
                 ForEach(visibleTabs) { tab in
@@ -100,9 +110,16 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
-            .preferredColorScheme(.dark)
+            .sheet(item: $playlistStore.addingItem) { item in
+                AddToPlaylistSheet(item: item)
+                    .presentationDetents([.medium, .large])
+            }
             .onChange(of: selectedTab) { old, _ in
                 if old == .home { NotificationCenter.default.post(name: .arcfinHomeTabLeft, object: nil) }
+            }
+            // The launch tab can be one that's since been turned off, or needs Seerr.
+            .onAppear {
+                if !visibleTabs.contains(selectedTab) { selectedTab = .home }
             }
             #if os(iOS)
             .modifier(CastMiniControllerAccessory())
@@ -111,11 +128,42 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 selectedTab = .browse
             }
+            // A Seerr notification tap: Discover when that tab is on, otherwise Browse.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDiscover)) { _ in
+                UserDefaults.standard.removeObject(forKey: "arcfin.pendingDiscover")
+                selectedTab = visibleTabs.contains(.requests) ? .requests : .browse
+            }
+            .onAppear {
+                if UserDefaults.standard.bool(forKey: "arcfin.pendingDiscover") {
+                    UserDefaults.standard.removeObject(forKey: "arcfin.pendingDiscover")
+                    selectedTab = visibleTabs.contains(.requests) ? .requests : .browse
+                }
+            }
+            // Siri / Shortcuts search: results are shown by the Browse tab.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { _ in
+                selectedTab = .browse
+            }
+            // The Resume Watching control plays from Home.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
+                selectedTab = .home
+            }
+            .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+                selectedTab = .home
+            }
             #if os(macOS)
             // Cmd+, / Arcfin > Settings… — switches to Home so its own
             // arcfinShowSettings listener (below) can actually present it.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
                 selectedTab = .home
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinSelectTab)) { note in
+                guard let raw = note.userInfo?["tab"] as? String, let tab = BottomNavItem(rawValue: raw),
+                      visibleTabs.contains(tab) else { return }
+                selectedTab = tab
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenFile)) { _ in
+                UserDefaults.standard.set(true, forKey: "arcfin.pendingOpenFile")
+                selectedTab = .browse
             }
             #endif
         }
@@ -147,7 +195,6 @@ struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
-    @Environment(StreamystatsRepository.self) private var statsRepo
     @Environment(PlaybackPresenter.self) private var playbackPresenter
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -158,14 +205,26 @@ struct HomeView: View {
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
     @State private var shuffledShelves = HomeShelfPrefs.shuffledOrder()
     @Environment(\.scenePhase) private var scenePhase
-    #if os(iOS)
+    #if !os(tvOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @Query private var downloadedItems: [DownloadedItem]
     #endif
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
+    /// Titles the user requested through Seerr that have since arrived in the library.
+    @State private var nowAvailable: [MediaItem] = []
+    @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
+    @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
+    /// "Popular on …" rows, by streaming service id.
+    @State private var serviceRows: [Int: [SeerrItem]] = [:]
+    /// The first load has been trying for a while with nothing to show yet; offers a way
+    /// out instead of leaving the placeholder shelves up for the whole retry cycle.
+    @State private var isSlowFirstLoad = false
     @State private var heroDetailItem: MediaItem?
+    @State private var trailerLaunchItem: MediaItem?
+    /// Play / Resume straight from a poster's long-press menu, without opening its page.
+    @State private var quickPlayRequest: PlaybackRequest?
     #if !os(tvOS)
     @Namespace private var zoomNamespace
     #endif
@@ -194,8 +253,13 @@ struct HomeView: View {
         var isLandscape: Bool = false
     }
     @State private var seerrRequestItem: SeerrItem? = nil
+    @State private var seerrDeepLinkItem: SeerrItem?
     @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 8, on: .main, in: .common).autoconnect()
+    /// The rotation (and the trailer fetch each new slide starts) only runs while Home is
+    /// actually on screen: the timer kept firing behind other tabs, pushed screens and a
+    /// backgrounded app, loading hero trailers nobody could see.
+    @State private var isHomeVisible = false
 
     /// 2 Continue Watching + 2 Up Next + 6 Recently Added — deduped in case the same item
     /// shows up in more than one list. TabView's page style only instantiates the current
@@ -340,20 +404,69 @@ struct HomeView: View {
                     mediaShelfContent(recommendation.items)
                 }
             }
+        case .favorites:
+            if !mediaRepo.favorites.isEmpty {
+                ShelfRow(title: "Favorites", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Favorites", items: mediaRepo.favorites)
+                }) {
+                    mediaShelfContent(mediaRepo.favorites)
+                }
+            }
+        case .topRatedUnwatched:
+            if !mediaRepo.topRatedUnwatched.isEmpty {
+                ShelfRow(title: "Top Rated, Unwatched", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
+                }) {
+                    mediaShelfContent(mediaRepo.topRatedUnwatched)
+                }
+            }
+        case .suggested:
+            if !mediaRepo.suggestions.isEmpty {
+                ShelfRow(title: "Suggested for You", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Suggested for You", items: mediaRepo.suggestions)
+                }) {
+                    mediaShelfContent(mediaRepo.suggestions)
+                }
+            }
+        case .recommendations:
+            ForEach(mediaRepo.recommendations) { category in
+                let title = recommendationTitle(category)
+                ShelfRow(title: title, onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: title, items: category.items)
+                }) {
+                    mediaShelfContent(category.items)
+                }
+            }
+        case .nowAvailable:
+            if seerrRepo.isConfigured, !nowAvailable.isEmpty {
+                ShelfRow(title: "Now Available", onSeeAll: {
+                    seeAllShelf = SeeAllShelf(title: "Now Available", items: nowAvailable)
+                }) {
+                    mediaShelfContent(nowAvailable)
+                }
+            }
+        case .streamingServices:
+            if seerrRepo.hasCatalog {
+                ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
+                    if let items = serviceRows[provider.id], !items.isEmpty {
+                        seerrShelf(title: "Popular on \(provider.name)", items: items)
+                    }
+                }
+            }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
                 seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
             }
         case .seerrTrending:
-            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
                 seerrShelf(title: "Trending", items: seerrRepo.trending)
             }
         case .seerrPopularMovies:
-            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
                 seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
             }
         case .seerrPopularSeries:
-            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
                 seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
             }
         }
@@ -389,7 +502,7 @@ struct HomeView: View {
         // confuses UIKit's context-menu interaction proxy about which cell was actually
         // touched in a tightly-packed horizontal shelf, causing taps to land on the
         // neighboring card instead of the one under your finger.
-        .contextMenu { quickLookMenu(item) }
+        .contextMenu { longPressMenu(item) }
         .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
     }
@@ -397,7 +510,7 @@ struct HomeView: View {
     @ViewBuilder
     private var avatarView: some View {
         if let cred = authManager.state.credential, let tag = cred.userImageTag {
-            AsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, token: cred.accessToken)) { phase in
+            CachedAsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, token: cred.accessToken)) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default: initialsView
@@ -412,7 +525,7 @@ struct HomeView: View {
     private var initialsView: some View {
         Text(authManager.state.displayInitials)
             .font(.system(.caption2, design: .default, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(DT.Color.onAccent)
     }
 
     /// Pulled out of the GeometryReader closure in body — inline ternary + if/else there
@@ -440,7 +553,9 @@ struct HomeView: View {
 #endif
     }
 
-    var body: some View {
+    // The modifier chain below is split across three properties: as one expression it grew
+    // past what the type checker can solve in reasonable time.
+    private var homeNavigation: some View {
         NavigationStack {
             GeometryReader { proxy in
                 let screenW = proxy.size.width
@@ -462,7 +577,7 @@ struct HomeView: View {
                         .frame(height: heroH)
 
                         VStack(spacing: 0) {
-                            if mediaRepo.connectionFailed && !mediaRepo.isLoading {
+                            if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || isSlowFirstLoad {
                                 connectionFailedBanner
                             }
                             ForEach(orderedVisibleShelves) { shelf in
@@ -480,7 +595,7 @@ struct HomeView: View {
                     }
                 }
                 .coordinateSpace(name: "homeScroll")
-                .background(DT.Color.backgroundPrimary)
+                .screenBackground()
                 .ignoresSafeArea(edges: .top)
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
@@ -489,13 +604,16 @@ struct HomeView: View {
                 .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
                     showSettings = true
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .arcfinRefresh)) { _ in
+                    Task { await loadHome(force: true) }
+                }
                 #endif
                 .navigationDestination(for: MediaItem.self) { item in
 #if os(tvOS)
                     MediaDetailView(item: item)
 #else
                     MediaDetailView(item: item, zoomNamespace: zoomNamespace)
-                        .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+                        .zoomNavigationTransition(id: item.id, in: zoomNamespace)
 #endif
                 }
                 .navigationDestination(item: $heroDetailItem) { item in
@@ -593,7 +711,7 @@ struct HomeView: View {
             if shuffleHomeShelves { reshuffleShelves() }
             await loadHome(force: true)
         }
-        #if os(iOS)
+        #if !os(tvOS)
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
             if isFailed && !wasFailed { showOfflinePrompt = true }
         }
@@ -613,7 +731,7 @@ struct HomeView: View {
         }
         #endif
         .onReceive(heroTimer) { _ in
-            guard heroItems.count > 1 else { return }
+            guard heroItems.count > 1, isHomeVisible, scenePhase == .active else { return }
             // A trailer is actively showing for this slide — let loadHeroVideoBackdrop's own
             // 15s timeout advance instead of jumping away mid-playback just because the
             // regular rotation interval happened to land first.
@@ -632,9 +750,19 @@ struct HomeView: View {
             // still non-empty" — 0 is an inert, always-valid value to sit at either way.
             heroIndex = max(0, newCount - 1)
         }
+    }
+
+    private var homeObservers: some View {
+        homeNavigation
         .onAppear {
+            isHomeVisible = true
             loadHeroVideoBackdrop()
+            #if os(iOS)
+            // Back from any player, however it closed: never leave Home locked in landscape.
+            resetPlayerOrientation()
+            #endif
         }
+        .onDisappear { isHomeVisible = false }
         // The order only ever changes while Home is off-screen (tab switch, app backgrounded)
         // or when the user pulls to refresh, so what's on screen never rearranges itself.
         .onReceive(NotificationCenter.default.publisher(for: .arcfinHomeTabLeft)) { _ in
@@ -646,25 +774,114 @@ struct HomeView: View {
         .onChange(of: shuffleHomeShelves) { _, isOn in
             if isOn { reshuffleShelves() }
         }
-        #if canImport(UIKit) && !os(tvOS)
+        .task(id: mediaRepo.isLoading) {
+            guard mediaRepo.isLoading, !mediaRepo.hasAnyContent else {
+                isSlowFirstLoad = false
+                return
+            }
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, mediaRepo.isLoading, !mediaRepo.hasAnyContent else { return }
+            withAnimation(DT.Animation.fast) { isSlowFirstLoad = true }
+        }
+        .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
+            await loadServiceRows()
+        }
+        .task(id: recentlyAvailableRequests.map(\.id)) {
+            await loadNowAvailable(recentlyAvailableRequests)
+        }
+    }
+
+    /// Opens a title from a widget, Spotlight, Siri or the Top Shelf. Titles that aren't on
+    /// one of Home's shelves (an Up Next episode, a Spotlight result) are fetched by id.
+    private func openDeepLinkItem(id: String) {
+        deepLinkItemID = nil
+        let known = mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded
+        if let local = known.first(where: { $0.id == id }) {
+            heroDetailItem = local
+            return
+        }
+        guard let cred = authManager.state.credential else {
+            deepLinkItemID = id
+            return
+        }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            if let detail = try? await JellyfinMediaClient().getItemDetail(credential: cred, authHeader: header, itemId: id) {
+                heroDetailItem = detail.item
+            }
+        }
+    }
+
+    #if !os(tvOS)
+    /// The Resume Watching control: plays the most recent title straight away.
+    private func resumeLatest() {
+        guard let item = mediaRepo.continueWatching.first ?? mediaRepo.nextUp.first else { return }
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingResume")
+        quickPlayRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+    }
+
+    /// Siri's Play and a SharePlay title: straight into the player.
+    private func playPendingWatch() {
+        guard let cred = authManager.state.credential, let id = WatchRoute.takePending() else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            if let request = await WatchRoute.resolve(id: id, credential: cred, authHeader: header) {
+                quickPlayRequest = request
+            }
+        }
+    }
+    #endif
+
+    private func recommendationTitle(_ category: MovieRecommendationCategory) -> String {
+        HomeShelfLoader.recommendationTitle(category)
+    }
+
+    private func loadServiceRows() async {
+        serviceRows = await HomeShelfLoader.serviceRows(seerrRepo: seerrRepo, previous: serviceRows)
+    }
+
+    private var recentlyAvailableRequests: [SeerrRequestItem] {
+        HomeShelfLoader.recentlyAvailable(seerrRepo.requests)
+    }
+
+    private func loadNowAvailable(_ requests: [SeerrRequestItem]) async {
+        guard !requests.isEmpty, let cred = authManager.state.credential else {
+            nowAvailable = []
+            return
+        }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let found = await HomeShelfLoader.nowAvailable(requests, credential: cred, authHeader: header)
+        guard !Task.isCancelled, found != nil || nowAvailable.isEmpty else { return }
+        nowAvailable = found ?? []
+    }
+
+    var body: some View {
+        homeObservers
+        #if os(iOS)
         .onChange(of: mediaRepo.continueWatching.first?.id, initial: true) { _, _ in
             let first = mediaRepo.continueWatching.first
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
         }
-        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp).map(\.id), initial: true) { _, _ in
+        #endif
+        #if !os(tvOS)
+        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).map(\.id), initial: true) { _, _ in
             var seen = Set<String>()
             let items = (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
             Task {
-                await WidgetSnapshotUpdater.update(items: items) { item in
-                    if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }
-                    return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 600)
-                        ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600)
-                        ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600)
-                }
+                await WidgetSnapshotUpdater.update(
+                    items: items,
+                    recentlyAdded: mediaRepo.recentlyAdded,
+                    artworkURL: { item in
+                        if item.type == .episode { return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600) }
+                        return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 600)
+                            ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 600)
+                            ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600)
+                    },
+                    posterURL: { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 300) })
             }
         }
         #endif
-        #if os(iOS)
+        #if !os(tvOS)
         .onContinueUserActivity(ArcfinActivity.viewTitle) { activity in
             if let id = activity.userInfo?["itemID"] as? String {
                 ArcfinRouting.openItem(id: id)
@@ -674,10 +891,30 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-                deepLinkItemID = id
-                heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
-                    ?? mediaRepo.recentlyAdded.first { $0.id == id }
+                openDeepLinkItem(id: id)
             }
+        }
+        #if !os(tvOS)
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
+            resumeLatest()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+            playPendingWatch()
+        }
+        #endif
+        #if !os(tvOS)
+        .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem) { Task { await loadHome(force: true) } }
+        #endif
+        #if !os(tvOS)
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenSeerrTitle)) { note in
+            if let id = note.userInfo?["id"] as? String { openSeerrDeepLink(id: id) }
+        }
+        .onAppear {
+            if let id = UserDefaults.standard.string(forKey: "arcfin.pendingSeerrTitle") { openSeerrDeepLink(id: id) }
+        }
+        #endif
+        .sheet(item: $seerrDeepLinkItem) { item in
+            NavigationStack { SeerrItemDetailView(item: item) }
         }
         .sheet(item: $seerrRequestItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $seerrRequestItem)
@@ -693,10 +930,18 @@ struct HomeView: View {
         guard case .authenticated(let cred) = authManager.state else { return }
         await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: force)
         mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
-        #if os(iOS)
-        let indexable = mediaRepo.continueWatching + mediaRepo.recentlyAdded
+        #if !os(tvOS)
+        // Everything the shelves already hold: titles in progress or queued up, favorites,
+        // recent additions and what was watched lately, so search covers more than "latest".
+        let indexable = mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.favorites
+            + mediaRepo.recentlyAdded + mediaRepo.recentlyAddedMovies + mediaRepo.recentlyAddedShows
+            + mediaRepo.watchAgain
         Task { await SpotlightIndexer.index(indexable) }
         #endif
+        let splashPicks = mediaRepo.recentlyAddedMovies + mediaRepo.recentlyAddedShows + mediaRepo.recentlyAdded
+        Task {
+            await SplashMosaicStore.save(splashPicks) { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 180) }
+        }
         TopShelfBridge.save(
             continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
                 TopShelfMediaItem(
@@ -720,11 +965,13 @@ struct HomeView: View {
             ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
         if let id = pendingID {
             UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-            deepLinkItemID = nil
-            heroDetailItem = mediaRepo.continueWatching.first { $0.id == id }
-                ?? mediaRepo.recentlyAdded.first { $0.id == id }
+            openDeepLinkItem(id: id)
         }
-        if seerrRepo.isConfigured && seerrDiscoverEnabled {
+        #if !os(tvOS)
+        if UserDefaults.standard.bool(forKey: "arcfin.pendingResume") { resumeLatest() }
+        playPendingWatch()
+        #endif
+        if seerrRepo.hasCatalog && seerrDiscoverEnabled {
             await seerrRepo.loadDiscover()
             await seerrRepo.loadWatchlist()
             let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
@@ -741,42 +988,46 @@ struct HomeView: View {
             HStack(spacing: 12) {
                 Image(systemName: "wifi.slash")
                     .font(.system(.title3))
-                    .foregroundStyle(Color(hex: "f59e0b"))
+                    .foregroundStyle(DT.Color.palette("f59e0b"))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Can't reach your server")
+                    Text(mediaRepo.isLoading ? "Still trying to reach your server" : "Can't reach your server")
                         .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text("Check your connection or Server Settings, then retry.")
+                    Text(mediaRepo.isLoading
+                         ? "This is taking longer than usual. Your downloads work without a connection."
+                         : "Check your connection or Server Settings, then retry.")
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
-                Button("Retry") {
-                    guard case .authenticated(let cred) = authManager.state else { return }
-                    Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
-                }
-                .font(.system(.footnote, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.accent)
-            }
-            #if os(iOS)
-            if !downloadedItems.isEmpty {
-                Button {
-                    offlineModeEnabled = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.down.circle.fill")
-                        Text("Watch Downloads Instead")
+                if mediaRepo.isLoading {
+                    ProgressView().tint(DT.Color.accent)
+                } else {
+                    Button("Retry") {
+                        guard case .authenticated(let cred) = authManager.state else { return }
+                        Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: true) }
                     }
-                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.accent)
                 }
+            }
+            #if !os(tvOS)
+            Button {
+                offlineModeEnabled = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.circle.fill")
+                    Text(downloadedItems.isEmpty ? "Turn On Offline Mode" : "Watch Downloads Instead")
+                }
+                .font(.system(.caption, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.accent)
             }
             #endif
         }
         .padding(12)
-        .background(Color(hex: "f59e0b").opacity(0.1))
+        .background(DT.Color.palette("f59e0b").opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(Color(hex: "f59e0b").opacity(0.25), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.palette("f59e0b").opacity(0.25), lineWidth: 1))
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
     }
@@ -788,7 +1039,8 @@ struct HomeView: View {
         ShelfRow(title: title, onSeeAll: nil) {
             ForEach(items) { item in
                 Button {
-                    seerrRequestItem = item
+                    // Without Seerr there's nothing to request; the title's page is shown instead.
+                    if seerrRepo.isConfigured { seerrRequestItem = item } else { seerrDeepLinkItem = item }
                 } label: {
                     PosterCard(
                         title: item.title,
@@ -871,7 +1123,7 @@ struct HomeView: View {
         ZStack {
             if let item = heroItems[safe: heroIndex],
                let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img):
                         img
@@ -917,7 +1169,7 @@ struct HomeView: View {
         return ZStack {
             Group {
                 if let url = mediaRepo.imageURL(for: item, type: imageType, fillWidth: fillW) {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img):
                             img.resizable().scaledToFill()
@@ -943,6 +1195,15 @@ struct HomeView: View {
     }
 #endif
 
+    /// Warms the URL cache with every hero logo, so flipping between slides shows each one
+    /// straight away instead of waiting on a fresh request.
+    private func prefetchHeroLogos() async {
+        for item in heroItems {
+            guard let url = mediaRepo.logoURL(for: item) else { continue }
+            _ = try? await URLSession.shared.data(from: url)
+        }
+    }
+
     private func heroGradient(for index: Int) -> some View {
         let p: [[Color]] = [
             [Color(hex: "1a0a2e"), Color(hex: "0a1628")],
@@ -958,11 +1219,15 @@ struct HomeView: View {
     private var heroContent: some View {
         VStack(spacing: 0) {
             if let item = heroItems[safe: heroIndex] {
-                AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFit()
                             .frame(maxWidth: 240 * DT.Scale.font, maxHeight: 76 * DT.Scale.font)
                             .shadow(color: .black.opacity(0.7), radius: 12)
+                    } else if case .empty = phase {
+                        // Still loading: reserve the logo's space but show nothing, so the
+                        // plain-text title doesn't flash up and then swap for the logo.
+                        Color.clear.frame(height: 76 * DT.Scale.font)
                     } else {
                         Text(item.name)
                             .scaledFont(size: 28, weight: .heavy)
@@ -975,7 +1240,8 @@ struct HomeView: View {
                 }
                 .id(heroIndex)
                 .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: heroIndex)
+                .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: heroIndex)
+                .task(id: heroItems.map(\.id)) { await prefetchHeroLogos() }
 
                 HStack(spacing: 8) {
                     if let rating = item.communityRating, rating > 0 {
@@ -983,7 +1249,7 @@ struct HomeView: View {
                             Image(systemName: "star.fill").scaledFont(size: 10)
                             Text(String(format: "%.1f", rating)).scaledFont(size: 12, weight: .semibold)
                         }
-                        .foregroundStyle(Color(hex: "f59e0b"))
+                        .foregroundStyle(DT.Color.palette("f59e0b"))
                     }
                     Text(heroMeta(item))
                         .scaledFont(size: 12)
@@ -1042,7 +1308,7 @@ struct HomeView: View {
                                     .opacity(0.85)
                             }
                         }
-                        .foregroundStyle(.white)
+                        .foregroundStyle(DT.Color.onAccent)
                         .padding(.horizontal, 28).padding(.vertical, 11)
                     }
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))
@@ -1137,7 +1403,7 @@ struct HomeView: View {
                 return
             }
             guard !Task.isCancelled, heroIndex == index else { return }
-            withAnimation(.easeIn(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeIn(duration: 0.6))) {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropIndex = index
             }
@@ -1145,7 +1411,7 @@ struct HomeView: View {
             // short preview instead, same idea as tvOS's own featured-app hero rotators.
             try? await Task.sleep(for: .seconds(15))
             guard !Task.isCancelled, heroIndex == index else { return }
-            withAnimation(.easeOut(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
                 heroVideoBackdropURL = nil
                 heroVideoBackdropIndex = nil
             }
@@ -1159,16 +1425,33 @@ struct HomeView: View {
         }
     }
 
+    #if !os(tvOS)
+    private func openSeerrDeepLink(id: String) {
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingSeerrTitle")
+        if let entry = SeerrSpotlightStore.entry(id: id), let item = entry.seerrItem { seerrDeepLinkItem = item }
+    }
+    #endif
+
+    /// The poster long-press menu: the usual quick actions, with Play and Play Trailer on top.
+    @ViewBuilder
+    private func longPressMenu(_ item: MediaItem) -> some View {
+        #if !os(tvOS)
+        if item.type == .movie || item.type == .episode {
+            let ticks = (item.userData?.played == true) ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+            Button { quickPlayRequest = PlaybackRequest(item: item, startTicks: ticks) } label: {
+                Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+            }
+        }
+        Button { trailerLaunchItem = item } label: {
+            Label("Play Trailer", systemImage: "play.rectangle")
+        }
+        #endif
+        quickLookMenu(item)
+    }
+
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {
         ItemQuickActions(item: item)
-        if statsRepo.isConfigured {
-            Button {
-                Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
-            } label: {
-                Label("Add to Watchlist", systemImage: "bookmark")
-            }
-        }
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear {
             Label(String(year), systemImage: "calendar")
@@ -1219,7 +1502,7 @@ struct HomeView: View {
                 .contextMenu { quickLookMenu(item) }
 #else
                 .buttonStyle(PressableButtonStyle())
-                .contextMenu { quickLookMenu(item) }
+                .contextMenu { longPressMenu(item) }
                 .zoomTransitionSource(id: item.id, in: zoomNamespace)
 #endif
             }

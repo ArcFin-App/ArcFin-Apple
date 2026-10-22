@@ -8,6 +8,9 @@ import AuthCore
 import JellyfinAPI
 import LiveActivityKit
 import Persistence
+import SyncEngine
+import Telemetry
+import os
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 #endif
@@ -53,7 +56,17 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private let client = JellyfinMediaClient()
     @ObservationIgnored private var downloadTasks: [String: URLSessionDownloadTask] = [:]
+    /// A title downloading as several byte ranges at once (see downloadInParts).
+    @ObservationIgnored private var partTasks: [String: [URLSessionDownloadTask]] = [:]
+    @ObservationIgnored private var partBytes: [Int: Int64] = [:]
+    @ObservationIgnored private var partTotals: [String: Int64] = [:]
     @ObservationIgnored private var taskItemIds: [Int: String] = [:]
+    /// Queued titles whose video transfer was handed to the background session ahead of its
+    /// turn, and how each ended if it did before its turn came.
+    @ObservationIgnored private var handedOffItemIds: Set<String> = []
+    @ObservationIgnored private var handedOffResults: [String: Result<Void, Error>] = [:]
+    /// Where a handed-off transfer lands; renamed once the title's container is known.
+    private nonisolated static let stagedVideoFileName = "video.download"
     @ObservationIgnored private var speedSamples: [String: (time: Date, bytes: Int64)] = [:]
     #if canImport(UIKit) && !os(tvOS)
     @ObservationIgnored private var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
@@ -73,8 +86,52 @@ final class DownloadManager: NSObject {
     /// server URL and doesn't expose its current path) — kept running for the app's
     /// lifetime, same pattern as AuthManager's own monitor.
     @ObservationIgnored private var wifiPathMonitor: NWPathMonitor?
-    @ObservationIgnored private var isOnWiFi = true
+    @ObservationIgnored private var isOnMobileData = false
+    @ObservationIgnored private var isOnLowDataMode = false
     @ObservationIgnored private var isRunningSmartDownloads = false
+    @ObservationIgnored private var smartDownloadsRerunRequested = false
+
+    /// Why the queue is waiting instead of starting the next title.
+    enum QueueHold: Equatable {
+        case mobileData, lowDataMode, lowPowerMode
+
+        var title: String {
+            switch self {
+            case .mobileData: "Waiting for Wi-Fi"
+            case .lowDataMode: "Low Data Mode Is On"
+            case .lowPowerMode: "Low Power Mode Is On"
+            }
+        }
+        var detail: String {
+            switch self {
+            case .mobileData: "Downloads start when you're on Wi-Fi."
+            case .lowDataMode: "Downloads start when Low Data Mode is off."
+            case .lowPowerMode: "Downloads start when Low Power Mode is off."
+            }
+        }
+    }
+
+    private(set) var queueHold: QueueHold?
+    /// Given from Downloads with Start; lasts until the queue drains.
+    @ObservationIgnored private var holdOverridden = false
+
+    private var isWiFiOnly: Bool { UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true }
+    private var smartDownloadsAllowMobileData: Bool { UserDefaults.standard.bool(forKey: "smartDownloadsAllowMobileData") }
+
+    /// Smart Downloads has its own mobile data setting, separate from downloads people start.
+    private func hold(viaSmart: Bool) -> QueueHold? {
+        guard !holdOverridden else { return nil }
+        let defaults = UserDefaults.standard
+        if isOnMobileData, viaSmart ? !smartDownloadsAllowMobileData : isWiFiOnly { return .mobileData }
+        if isOnLowDataMode, defaults.bool(forKey: "pauseDownloadsInLowDataMode") { return .lowDataMode }
+        if ProcessInfo.processInfo.isLowPowerModeEnabled, defaults.bool(forKey: "pauseDownloadsInLowPowerMode") { return .lowPowerMode }
+        return nil
+    }
+
+    /// Settings › Downloads › Downloads at Once.
+    private var concurrentDownloadLimit: Int {
+        max(1, min(3, UserDefaults.standard.object(forKey: "concurrentDownloads") as? Int ?? 1))
+    }
     /// True background session on iOS — transfer keeps going, managed by nsurlsessiond,
     /// even if the app is suspended or killed; iOS relaunches the app to redeliver the
     /// delegate callback via AppDelegate's handleEventsForBackgroundURLSession. tvOS/macOS
@@ -87,13 +144,19 @@ final class DownloadManager: NSObject {
         let config = URLSessionConfiguration.background(withIdentifier: Self.backgroundSessionIdentifier)
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false
+        // Room for a title's parallel ranges (downloadInParts) next to another title's; titles
+        // handed over ahead of their turn (handOffQueue) still wait here past that.
+        config.httpMaximumConnectionsPerHost = 8
         #else
         let config = URLSessionConfiguration.default
+        config.httpMaximumConnectionsPerHost = 8
         #endif
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
 
     func configure(modelContext: ModelContext, authManager: AuthManager) {
+        // Every window shares this manager; only the first one sets it up.
+        guard self.modelContext == nil else { return }
         self.modelContext = modelContext
         self.authManager = authManager
         // `session` was only ever touched lazily, on the first actual download action —
@@ -104,13 +167,45 @@ final class DownloadManager: NSObject {
         // the point the OS still had its temp file around. Touching it here forces that
         // registration immediately at launch instead.
         _ = session
+        // Smart Downloads used to follow Wi-Fi Only; carry that over the first time.
+        if UserDefaults.standard.object(forKey: "smartDownloadsAllowMobileData") == nil {
+            UserDefaults.standard.set(!isWiFiOnly, forKey: "smartDownloadsAllowMobileData")
+        }
         startWiFiMonitoringIfNeeded()
+        NotificationCenter.default.addObserver(forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            guard let self else { return }
+            MainActor.assumeIsolated { self.recheckQueueHold() }
+        }
         #if canImport(ActivityKit) && os(iOS)
         reconcileStaleActivitiesOnLaunch()
         #endif
         runSmartDownloadsOnLaunch()
+        removeExpiredDownloads()
         purgeWatchedDownloads()
     }
+
+    /// Settings › Downloads › Remove Downloads After, and removing watched ones when the
+    /// device is low on space. Queued, not deleted here, for the same reason as watched ones.
+    func removeExpiredDownloads() {
+        guard let modelContext else { return }
+        let items = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+        let days = UserDefaults.standard.integer(forKey: "removeDownloadsAfterDays")
+        if days > 0 {
+            let cutoff = Date().addingTimeInterval(-Double(days) * 86_400)
+            for item in items where item.downloadedAt < cutoff { markForDeletionAfterWatching(itemId: item.itemId) }
+        }
+        guard UserDefaults.standard.bool(forKey: "removeWatchedWhenLowOnSpace"),
+              let free = try? DownloadStore.rootDirectory().deletingLastPathComponent()
+                .resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity
+        else { return }
+        var shortfall = Int64(Self.lowSpaceThreshold) - Int64(free)
+        for item in items.filter(\.played).sorted(by: { $0.downloadedAt < $1.downloadedAt }) where shortfall > 0 {
+            markForDeletionAfterWatching(itemId: item.itemId)
+            shortfall -= item.fileSizeBytes
+        }
+    }
+
+    private static let lowSpaceThreshold = 2_000_000_000
 
     private static let pendingWatchedDeleteKey = "pendingWatchedDeleteIDs"
 
@@ -128,21 +223,80 @@ final class DownloadManager: NSObject {
     /// can be holding one of the queued rows.
     func purgeWatchedDownloads() {
         let ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
-        guard !ids.isEmpty else { return }
-        UserDefaults.standard.removeObject(forKey: Self.pendingWatchedDeleteKey)
-        for id in ids { deleteDownload(itemId: id) }
+        guard !ids.isEmpty, let modelContext else { return }
+        // A download whose watching here hasn't reached the server yet stays until it has:
+        // deleting it would lose that for good.
+        let unsynced = Set(((try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.needsSync }))) ?? []).map(\.itemId))
+        UserDefaults.standard.set(ids.filter(unsynced.contains), forKey: Self.pendingWatchedDeleteKey)
+        for id in ids where !unsynced.contains(id) { deleteDownload(itemId: id) }
+    }
+
+    /// Brings each download's watched state and position in line with the server, after first
+    /// sending what was watched here. Watching on another device or on the web otherwise never
+    /// reaches a downloaded copy, so Smart Downloads and Delete After Watching couldn't act on it.
+    func reconcileWatchedState() async {
+        guard let modelContext, let authManager else { return }
+        let profiles = authManager.profiles
+        let authClient = authManager.authClient
+        await OfflineProgressSync.syncPending(modelContext: modelContext, profiles: profiles,
+                                              authHeader: { authClient.authHeader(token: $0.accessToken) })
+        let settled = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { !$0.needsSync }))) ?? []
+        let deletesWatched = UserDefaults.standard.bool(forKey: "deleteDownloadsAfterWatching")
+        for items in Dictionary(grouping: settled, by: { "\($0.serverId)|\($0.userId)" }).values {
+            guard let first = items.first,
+                  let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId }),
+                  let server = try? await client.getUserData(credential: credential, authHeader: authClient.authHeader(token: credential.accessToken),
+                                                             itemIds: items.map(\.itemId))
+            else { continue }
+            for item in items {
+                guard let remote = server[item.itemId] else { continue }
+                let newlyWatched = remote.played && !item.played
+                item.played = remote.played
+                item.playbackPositionTicks = remote.played ? 0 : remote.playbackPositionTicks
+                // Delete After Watching counts finishing it anywhere, not only here.
+                if newlyWatched && deletesWatched { markForDeletionAfterWatching(itemId: item.itemId) }
+            }
+        }
+        try? modelContext.save()
     }
 
     private func startWiFiMonitoringIfNeeded() {
         guard wifiPathMonitor == nil else { return }
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
-            let onWiFi = path.usesInterfaceType(.wifi)
+            // isExpensive covers a personal hotspot too, which bills the same mobile data.
+            let onMobileData = path.status == .satisfied && path.isExpensive
+            let lowDataMode = path.status == .satisfied && path.isConstrained
             guard let self else { return }
-            Task { @MainActor in self.isOnWiFi = onWiFi }
+            Task { @MainActor in self.networkChanged(onMobileData: onMobileData, lowDataMode: lowDataMode) }
         }
         monitor.start(queue: DispatchQueue(label: "arcfin.downloads.pathMonitor"))
         wifiPathMonitor = monitor
+    }
+
+    /// For the player's Quality on Mobile Data, read as it opens.
+    static private(set) var isOnMobileDataNow = false
+
+    private func networkChanged(onMobileData: Bool, lowDataMode: Bool) {
+        isOnMobileData = onMobileData
+        isOnLowDataMode = lowDataMode
+        Self.isOnMobileDataNow = onMobileData
+        recheckQueueHold()
+    }
+
+    /// Starts a held queue once the network, power state or settings allow it.
+    func recheckQueueHold() {
+        guard queueHold != nil, let first = pendingQueue.first, hold(viaSmart: first.viaSmart) == nil else { return }
+        queueHold = nil
+        Task { await processQueue() }
+    }
+
+    /// Starts a held queue anyway, once the person has accepted the cost.
+    func startHeldDownloads() {
+        holdOverridden = true
+        guard queueHold != nil else { return }
+        queueHold = nil
+        Task { await processQueue() }
     }
 
     /// Mirrors reconcileStaleActivitiesOnLaunch's own delay — authManager.checkStoredAuth()
@@ -153,7 +307,9 @@ final class DownloadManager: NSObject {
             try? await Task.sleep(for: .seconds(5))
             guard let authManager, let credential = authManager.state.credential else { return }
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+            await reconcileWatchedState()
             await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
+            purgeWatchedDownloads()
         }
     }
 
@@ -199,13 +355,29 @@ final class DownloadManager: NSObject {
         let itemId = activeItemIds.first
         let stat = itemId.flatMap { stats[$0] }
         let meta = isFinished ? finishedMeta : itemId.flatMap { liveActivityItemMeta[$0] }
-        let title = isFinished ? (finishedTitle ?? "") : (itemId.flatMap { activeItemTitles[$0] } ?? "")
+        // Held for Wi-Fi, nothing has started yet: show the first title waiting.
+        let waiting = itemId == nil ? pendingQueue.first?.item : nil
+        let title = isFinished ? (finishedTitle ?? "") : (itemId.flatMap { activeItemTitles[$0] } ?? waiting?.name ?? "")
+        // Spread the current title over time at the present speed: starting where it would
+        // have to have begun to be this far along, ending when the rest arrives.
+        var estimate: (start: Date, finish: Date)?
+        if let stat, stat.bytesPerSecond > 0, stat.totalBytes > stat.bytesWritten {
+            let remaining = Double(stat.totalBytes - stat.bytesWritten) / stat.bytesPerSecond
+            let fraction = Double(stat.bytesWritten) / Double(stat.totalBytes)
+            let now = Date()
+            estimate = (now.addingTimeInterval(-remaining / (1 - fraction) * fraction), now.addingTimeInterval(remaining))
+        }
         let state = DownloadActivityAttributes.ContentState(
             currentItemTitle: title,
             bytesWritten: stat?.bytesWritten ?? 0, totalBytes: stat?.totalBytes ?? 0,
             bytesPerSecond: stat?.bytesPerSecond ?? 0,
             completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished,
-            posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode
+            posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode,
+            isPaused: !isFinished && (isQueuePaused || itemId.map(pausedItemIds.contains) == true
+                || (queueHold != nil && queueHold != .mobileData)),
+            nextItemTitle: isFinished ? nil : pendingQueue.first { $0.item.id != waiting?.id }?.item.name,
+            estimateStart: estimate?.start, estimatedFinish: estimate?.finish,
+            isWaitingForWiFi: !isFinished && queueHold == .mobileData
         )
         Task { await liveActivity.update(ActivityContent(state: state, staleDate: nil)) }
     }
@@ -284,6 +456,54 @@ final class DownloadManager: NSObject {
     }
     #endif
 
+    /// Hands every waiting title's video transfer to the background session as the app
+    /// leaves the foreground. iOS treats a transfer the app starts once it's already in the
+    /// background as discretionary and can hold it off until the app is next opened, which
+    /// stalled a queue the moment its current title finished out of sight. Started here,
+    /// they carry on without the app; the queue picks up each finished file in turn.
+    /// Lower-quality downloads need the server's playback info first, so they keep their turn.
+    func handOffQueue() {
+        #if canImport(UIKit) && !os(tvOS)
+        guard !isQueuePaused else { return }
+        for entry in pendingQueue where entry.bitrateCap == nil {
+            if hold(viaSmart: entry.viaSmart) != nil { break }
+            let itemId = entry.item.id
+            guard !handedOffItemIds.contains(itemId), !isDownloaded(itemId),
+                  let dir = try? DownloadStore.ensureDirectory(for: itemId) else { continue }
+            var req = URLRequest(url: JellyfinMediaClient.originalFileDownloadURL(
+                baseURL: entry.credential.baseURL, itemID: itemId, token: entry.credential.accessToken))
+            for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+            req.setValue(entry.authHeader, forHTTPHeaderField: "Authorization")
+            req.timeoutInterval = 60 * 60
+            let task = session.downloadTask(with: req)
+            task.taskDescription = dir.appendingPathComponent(Self.stagedVideoFileName).path
+            taskItemIds[task.taskIdentifier] = itemId
+            downloadTasks[itemId] = task
+            handedOffItemIds.insert(itemId)
+            // Lets a relaunch after the app was ended finish the title from the file alone.
+            savePendingDescriptor(itemId: itemId, credentialId: entry.credential.id.uuidString, bitrateCap: nil)
+            task.resume()
+        }
+        #endif
+        #if canImport(ActivityKit) && os(iOS)
+        // The last update before the app is suspended; the estimate carries it from here.
+        refreshLiveActivity()
+        #endif
+    }
+
+    /// Waits for a handed-off transfer, or takes its result if it already ended.
+    private func awaitHandedOff(itemId: String) async throws {
+        defer {
+            handedOffItemIds.remove(itemId)
+            handedOffResults[itemId] = nil
+        }
+        if let result = handedOffResults[itemId] { return try result.get() }
+        guard let task = downloadTasks[itemId] else { throw URLError(.cancelled) }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            continuations[task.taskIdentifier] = continuation
+        }
+    }
+
     func isDownloaded(_ itemId: String) -> Bool {
         guard let modelContext else { return false }
         let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
@@ -357,7 +577,9 @@ final class DownloadManager: NSObject {
 
     // MARK: - Start download
 
-    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?)] = [] {
+    private typealias PendingEntry = (item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool)
+
+    @ObservationIgnored private var pendingQueue: [PendingEntry] = [] {
         // pendingQueue itself isn't observed (a tuple array), so the UI reads this mirror.
         didSet { queuedItemIds = pendingQueue.map(\.item.id) }
     }
@@ -376,10 +598,48 @@ final class DownloadManager: NSObject {
         return active + queuedItemIds
     }
 
-    func pauseQueue() { isQueuePaused = true }
+    /// Items whose transfer is suspended mid-download: the bytes already received are kept and
+    /// the transfer carries on from there when resumed.
+    private(set) var pausedItemIds: Set<String> = []
+
+    /// Every transfer carrying a title: one, or one per range.
+    private func transfers(for itemId: String) -> [URLSessionDownloadTask] {
+        (partTasks[itemId] ?? []) + (downloadTasks[itemId].map { [$0] } ?? [])
+    }
+
+    func pauseDownload(itemId: String) {
+        let running = transfers(for: itemId).filter { $0.state == .running }
+        guard !running.isEmpty else { return }
+        running.forEach { $0.suspend() }
+        pausedItemIds.insert(itemId)
+        stats[itemId]?.bytesPerSecond = 0
+        speedSamples[itemId] = nil
+        #if canImport(ActivityKit) && os(iOS)
+        refreshLiveActivity()
+        #endif
+    }
+
+    func resumeDownload(itemId: String) {
+        guard pausedItemIds.remove(itemId) != nil else { return }
+        transfers(for: itemId).forEach { $0.resume() }
+        #if canImport(ActivityKit) && os(iOS)
+        refreshLiveActivity()
+        #endif
+    }
+
+    /// Stops new items starting and suspends the transfer already in flight.
+    func pauseQueue() {
+        isQueuePaused = true
+        for id in Set(downloadTasks.keys).union(partTasks.keys) { pauseDownload(itemId: id) }
+    }
 
     func resumeQueue() {
         isQueuePaused = false
+        for id in pausedItemIds { transfers(for: id).forEach { $0.resume() } }
+        pausedItemIds = []
+        #if canImport(ActivityKit) && os(iOS)
+        refreshLiveActivity()
+        #endif
         Task { await processQueue() }
     }
 
@@ -399,13 +659,20 @@ final class DownloadManager: NSObject {
     /// time; the rest wait their turn here. `bitrateCap` (bits/sec), when set, forces a
     /// remux even for an otherwise direct-downloadable source — that's the only way to
     /// actually reduce a download's bitrate below the source's own.
-    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil) async {
+    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil, viaSmart: Bool = false) async {
+        guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap, viaSmart: viaSmart) else { return }
+        await processQueue()
+    }
+
+    /// Queues without waiting for the queue to run. False when it's already downloaded or queued.
+    @discardableResult
+    private func addToQueue(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool) -> Bool {
         guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
               !pendingQueue.contains(where: { $0.item.id == item.id })
-        else { return }
+        else { return false }
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
-        pendingQueue.append((item, credential, authHeader, bitrateCap))
+        pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
         if isFreshQueue {
             queueCompletedCount = 0
@@ -416,18 +683,90 @@ final class DownloadManager: NSObject {
             refreshLiveActivity()
         }
         #endif
-        await processQueue()
+        return true
     }
 
-    private func processQueue() async {
-        guard !isProcessingQueue else { return }
-        isProcessingQueue = true
+    private enum QueueEvent: Sendable {
+        case finished(isEpisode: Bool)
+        case woken
+    }
+
+    @ObservationIgnored private var queueWake: CheckedContinuation<Void, Never>?
+    @ObservationIgnored private var isQueueClosing = false
+
+    /// Lets a running queue start a title added after it began, when a slot is free.
+    private func wakeQueue() {
+        queueWake?.resume()
+        queueWake = nil
+    }
+
+    private func nextToStart() -> PendingEntry? {
         while !pendingQueue.isEmpty, !isQueuePaused {
+            // A title already handed to the background session is transferring regardless.
+            if let first = pendingQueue.first, !handedOffItemIds.contains(first.item.id),
+               let reason = hold(viaSmart: first.viaSmart) {
+                queueHold = reason
+                #if canImport(ActivityKit) && os(iOS)
+                refreshLiveActivity()
+                #endif
+                return nil
+            }
             let next = pendingQueue.removeFirst()
-            guard !isDownloaded(next.item.id) else { continue }
-            await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
+            if !isDownloaded(next.item.id) { return next }
+        }
+        return nil
+    }
+
+    /// Runs up to Downloads at Once titles side by side until the queue drains, pauses or
+    /// is held. Returns only then, which Smart Downloads relies on for its storage budget.
+    private func processQueue() async {
+        guard !isProcessingQueue else {
+            wakeQueue()
+            return
+        }
+        isProcessingQueue = true
+        isQueueClosing = false
+        var downloadedEpisode = false
+        await withTaskGroup(of: QueueEvent.self) { group in
+            var running = 0
+            var listening = false
+            loop: while true {
+                while running < concurrentDownloadLimit, let next = nextToStart() {
+                    running += 1
+                    group.addTask { @MainActor in
+                        await self.performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
+                        return .finished(isEpisode: next.item.type == .episode)
+                    }
+                }
+                guard running > 0 else { break }
+                if !listening {
+                    listening = true
+                    group.addTask { @MainActor in
+                        await withCheckedContinuation { continuation in
+                            if self.isQueueClosing { continuation.resume() } else { self.queueWake = continuation }
+                        }
+                        return .woken
+                    }
+                }
+                switch await group.next() {
+                case .finished(let isEpisode)?:
+                    running -= 1
+                    if isEpisode { downloadedEpisode = true }
+                case .woken?:
+                    listening = false
+                case nil:
+                    break loop
+                }
+            }
+            isQueueClosing = true
+            wakeQueue()
         }
         isProcessingQueue = false
+        if pendingQueue.isEmpty { holdOverridden = false }
+        // A show just got a downloaded episode, so Smart Downloads can line up the ones after
+        // it. Only once the queue has drained: running it mid-queue would reenter this loop
+        // (see runSmartDownloadsIfNeeded), and a run already in progress ignores this.
+        if downloadedEpisode, !isQueuePaused { refreshSmartDownloads() }
     }
 
     /// `skipVideoDownload` is set only by orphan recovery (see recoverOrphanedDownload) —
@@ -446,9 +785,10 @@ final class DownloadManager: NSObject {
         #endif
 
         do {
-            async let detailTask = client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
+            async let detailTask = client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: item.id)
             async let playbackTask = client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id)
-            let detail = try await detailTask
+            let detailData = try await detailTask
+            let detail = try JellyfinMediaClient.decodeItemDetail(detailData)
             let info = try await playbackTask
 
             #if canImport(ActivityKit) && os(iOS)
@@ -461,6 +801,15 @@ final class DownloadManager: NSObject {
             #endif
 
             let dir = try DownloadStore.ensureDirectory(for: item.id)
+            try? detailData.write(to: dir.appendingPathComponent(Self.savedDetailFileName))
+
+            let savesPreviews = UserDefaults.standard.object(forKey: "downloadTrickplay") as? Bool ?? true
+            let trickplay = detail.trickplay[info.mediaSourceId] ?? detail.trickplay.values.first
+            let savedTrickplay = savesPreviews ? trickplay : nil
+            // Everything besides the video, fetched side by side while the video comes down
+            // rather than one request at a time after it.
+            async let extras = fetchExtras(itemId: item.id, detail: detail, info: info, trickplay: savedTrickplay,
+                                           credential: credential, authHeader: authHeader, dir: dir)
 
             // Playback is always VLC for downloads, which plays the original file's container/
             // codec natively — no remux needed for compatibility. Only an explicit bitrateCap
@@ -472,72 +821,20 @@ final class DownloadManager: NSObject {
             let videoURL = needsRemux
                 ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, videoBitRate: min(bitrateCap!, info.bitrate ?? bitrateCap!), token: credential.accessToken)
                 : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
-            if !skipVideoDownload {
-                try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
+            if handedOffItemIds.contains(item.id) {
+                try await awaitHandedOff(itemId: item.id)
+            } else if !skipVideoDownload {
+                try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName),
+                                       itemId: item.id, allowsParts: !needsRemux)
+            }
+            let staged = dir.appendingPathComponent(Self.stagedVideoFileName)
+            if FileManager.default.fileExists(atPath: staged.path) {
+                let final = dir.appendingPathComponent(videoFileName)
+                try? FileManager.default.removeItem(at: final)
+                try FileManager.default.moveItem(at: staged, to: final)
             }
 
-            // Subtitles — external tracks only (embedded ones travel with the video file itself).
-            var subtitleFileNames: [String] = []
-            var subtitleLanguages: [String] = []
-            for stream in info.subtitleStreams where stream.deliveryUrl != nil {
-                guard let deliveryUrl = stream.deliveryUrl,
-                      let data = await SubtitleLoader.fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential)
-                else { continue }
-                let fileName = "sub-\(stream.index).vtt"
-                try? data.write(to: dir.appendingPathComponent(fileName))
-                subtitleFileNames.append(fileName)
-                subtitleLanguages.append(stream.language ?? stream.displayTitle ?? "Unknown")
-            }
-
-            // Trickplay — every tile for the preferred (smallest) width. Array position
-            // must equal tileIndex (that's how playback looks tiles up), so a failed tile
-            // still gets an empty-string placeholder rather than shifting every index after it.
-            var trickplayFileNames: [String] = []
-            let trickplay = detail.trickplay[info.mediaSourceId] ?? detail.trickplay.values.first
-            if let trickplay, trickplay.tileWidth > 0, trickplay.tileHeight > 0, trickplay.thumbnailCount > 0 {
-                let tileCount = Int(ceil(Double(trickplay.thumbnailCount) / Double(trickplay.tileWidth * trickplay.tileHeight)))
-                for tileIndex in 0..<max(tileCount, 1) {
-                    let tileURL = client.trickplayTileURL(credential: credential, itemId: item.id, width: trickplay.width, tileIndex: tileIndex)
-                    var req = URLRequest(url: tileURL)
-                    req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-                    guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
-                          (resp as? HTTPURLResponse)?.statusCode == 200
-                    else {
-                        trickplayFileNames.append("")
-                        continue
-                    }
-                    let fileName = "tile-\(tileIndex).jpg"
-                    try? data.write(to: dir.appendingPathComponent(fileName))
-                    trickplayFileNames.append(fileName)
-                }
-            }
-
-            // Poster / backdrop, for the Downloads list and player UI while offline.
-            var posterFileName: String?
-            if let tag = detail.item.primaryImageTag {
-                let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
-                    posterFileName = "poster.jpg"
-                    try? data.write(to: dir.appendingPathComponent("poster.jpg"))
-                }
-            }
-            var backdropFileName: String?
-            if let tag = detail.item.backdropImageTags.first {
-                let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
-                    backdropFileName = "backdrop.jpg"
-                    try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
-                }
-            }
-
-            // Skip intro/credits — small, and completes the offline playback feature set.
-            var introEnd: Double?
-            var creditsStart: Double?
-            if detail.item.type == .episode {
-                let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
-                introEnd = segments.introEnd
-                creditsStart = segments.creditsStart
-            }
+            let fetched = await extras
 
             let fileSize = (try? FileManager.default.attributesOfItem(atPath: dir.appendingPathComponent(videoFileName).path)[.size] as? Int64) ?? 0
 
@@ -549,15 +846,24 @@ final class DownloadManager: NSObject {
                 seriesId: detail.item.seriesId, seriesName: detail.item.seriesName,
                 seasonNumber: detail.item.parentIndexNumber, episodeNumber: detail.item.indexNumber,
                 serverId: credential.id.uuidString, serverBaseURL: credential.baseURL.absoluteString, userId: credential.userID,
-                videoFileName: videoFileName, posterFileName: posterFileName, backdropFileName: backdropFileName,
-                subtitleFileNames: subtitleFileNames, subtitleLanguages: subtitleLanguages,
-                trickplayFileNames: trickplayFileNames,
-                trickplayWidth: trickplay?.width, trickplayHeight: trickplay?.height,
-                trickplayTileWidth: trickplay?.tileWidth, trickplayTileHeight: trickplay?.tileHeight,
-                trickplayIntervalMs: trickplay?.intervalMs, trickplayThumbnailCount: trickplay?.thumbnailCount,
-                introEndSeconds: introEnd, creditsStartSeconds: creditsStart,
+                videoFileName: videoFileName, posterFileName: fetched.posterFileName, backdropFileName: fetched.backdropFileName,
+                subtitleFileNames: fetched.subtitleFileNames, subtitleLanguages: fetched.subtitleLanguages,
+                trickplayFileNames: fetched.trickplayFileNames,
+                trickplayWidth: savedTrickplay?.width, trickplayHeight: savedTrickplay?.height,
+                trickplayTileWidth: savedTrickplay?.tileWidth, trickplayTileHeight: savedTrickplay?.tileHeight,
+                trickplayIntervalMs: savedTrickplay?.intervalMs, trickplayThumbnailCount: savedTrickplay?.thumbnailCount,
+                introEndSeconds: fetched.introEnd, creditsStartSeconds: fetched.creditsStart,
                 fileSizeBytes: fileSize
             )
+            downloaded.tagline = detail.taglines.first
+            downloaded.studios = detail.studios
+            downloaded.directors = detail.directors.map(\.name)
+            downloaded.videoSummary = detail.videoStream?.displayTitle
+            downloaded.audioSummary = detail.audioStreams.first(where: \.isDefault)?.displayTitle ?? detail.audioStreams.first?.displayTitle
+            let cast = Array(detail.cast.prefix(10))
+            downloaded.castNames = cast.map(\.name)
+            downloaded.castRoles = cast.map { $0.role ?? "" }
+            downloaded.castPhotoFileNames = fetched.castPhotoFileNames
             modelContext.insert(downloaded)
             try? modelContext.save()
             Task { await NotificationManager.notifyDownloadComplete(title: detail.item.name) }
@@ -584,12 +890,137 @@ final class DownloadManager: NSObject {
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = nil
         queueCompletedCount += 1
-        if pendingQueue.isEmpty {
+        // Another title can still be transferring alongside (Downloads at Once).
+        if pendingQueue.isEmpty && activeItemIds.isEmpty {
             endLiveActivity(lastTitle: finishedTitle, lastMeta: finishedMeta)
         } else {
             refreshLiveActivity()
         }
         #endif
+    }
+
+    private struct DownloadExtras: Sendable {
+        var subtitleFileNames: [String] = []
+        var subtitleLanguages: [String] = []
+        var trickplayFileNames: [String] = []
+        var posterFileName: String?
+        var backdropFileName: String?
+        var introEnd: Double?
+        var creditsStart: Double?
+        var castPhotoFileNames: [String] = []
+    }
+
+    /// Subtitles, preview tiles, artwork, cast photos and skip markers, all at once.
+    private func fetchExtras(itemId: String, detail: MediaItemDetail, info: JellyfinPlaybackInfo, trickplay: JellyfinTrickplayInfo?,
+                             credential: ServerCredential, authHeader: String, dir: URL) async -> DownloadExtras {
+        let client = client
+        async let subtitles = Self.saveSubtitles(info: info, credential: credential, to: dir)
+        async let tiles = Self.saveTrickplayTiles(itemId: itemId, trickplay: trickplay, client: client,
+                                                  credential: credential, authHeader: authHeader, to: dir)
+        async let poster = Self.saveImage(itemId: itemId, tag: detail.item.primaryImageTag, type: .primary, width: 400,
+                                          credential: credential, as: "poster.jpg", in: dir)
+        async let backdrop = Self.saveImage(itemId: itemId, tag: detail.item.backdropImageTags.first, type: .backdrop, width: 800,
+                                            credential: credential, as: "backdrop.jpg", in: dir)
+        async let segments = client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: itemId)
+        async let castPhotos = Self.saveCastPhotos(Array(detail.cast.prefix(10)), credential: credential, to: dir)
+        let (subs, tileNames, posterName, backdropName, skips, cast) = await (subtitles, tiles, poster, backdrop, segments, castPhotos)
+        return DownloadExtras(
+            subtitleFileNames: subs.map(\.fileName), subtitleLanguages: subs.map(\.language),
+            trickplayFileNames: tileNames, posterFileName: posterName, backdropFileName: backdropName,
+            introEnd: skips.intro?.upperBound, creditsStart: skips.credits?.lowerBound,
+            castPhotoFileNames: cast)
+    }
+
+    /// External tracks only (embedded ones travel with the video file itself), per Settings ›
+    /// Downloads › Subtitles: all, only the preferred language, or none.
+    private static func saveSubtitles(info: JellyfinPlaybackInfo, credential: ServerCredential, to dir: URL) async -> [(fileName: String, language: String)] {
+        let choice = UserDefaults.standard.string(forKey: "downloadSubtitles") ?? "all"
+        let preferred = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
+        let wanted = info.subtitleStreams.filter { stream in
+            guard stream.deliveryUrl != nil else { return false }
+            switch choice {
+            case "none": return false
+            case "preferred" where !preferred.isEmpty: return stream.language == preferred
+            default: return true
+            }
+        }
+        return await withTaskGroup(of: (Int, String, String)?.self) { group in
+            for (order, stream) in wanted.enumerated() {
+                guard let deliveryUrl = stream.deliveryUrl else { continue }
+                let fileName = "sub-\(stream.index).vtt", language = stream.language ?? stream.displayTitle ?? "Unknown"
+                group.addTask {
+                    guard let data = await SubtitleLoader.fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential),
+                          (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+                    else { return nil }
+                    return (order, fileName, language)
+                }
+            }
+            var saved: [(Int, String, String)] = []
+            for await result in group { if let result { saved.append(result) } }
+            return saved.sorted { $0.0 < $1.0 }.map { ($0.1, $0.2) }
+        }
+    }
+
+    /// Every tile for the preferred (smallest) width. Array position must equal tileIndex
+    /// (that's how playback looks tiles up), so a failed tile keeps an empty placeholder.
+    private static func saveTrickplayTiles(itemId: String, trickplay: JellyfinTrickplayInfo?, client: JellyfinMediaClient,
+                                           credential: ServerCredential, authHeader: String, to dir: URL) async -> [String] {
+        guard let trickplay, trickplay.tileWidth > 0, trickplay.tileHeight > 0, trickplay.thumbnailCount > 0 else { return [] }
+        let tileCount = max(Int(ceil(Double(trickplay.thumbnailCount) / Double(trickplay.tileWidth * trickplay.tileHeight))), 1)
+        var names = Array(repeating: "", count: tileCount)
+        await withTaskGroup(of: (Int, String).self) { group in
+            for tileIndex in 0..<tileCount {
+                let tileURL = client.trickplayTileURL(credential: credential, itemId: itemId, width: trickplay.width, tileIndex: tileIndex)
+                group.addTask {
+                    var req = URLRequest(url: tileURL)
+                    req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+                    let fileName = "tile-\(tileIndex).jpg"
+                    guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
+                          (resp as? HTTPURLResponse)?.statusCode == 200,
+                          (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+                    else { return (tileIndex, "") }
+                    return (tileIndex, fileName)
+                }
+            }
+            for await (index, name) in group { names[index] = name }
+        }
+        return names
+    }
+
+    private static func saveImage(itemId: String, tag: String?, type: JellyfinImageType, width: Int,
+                                  credential: ServerCredential, as fileName: String, in dir: URL) async -> String? {
+        guard let tag else { return nil }
+        let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: itemId, tag: tag, type: type, fillWidth: width, token: credential.accessToken)
+        guard let (data, _) = try? await URLSession.arcfin.data(from: url),
+              (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+        else { return nil }
+        return fileName
+    }
+
+    /// Small photos of the billed cast, so the downloaded page can show faces offline. An
+    /// empty name keeps the arrays aligned for someone without a photo.
+    private static func saveCastPhotos(_ cast: [MediaPerson], credential: ServerCredential, to dir: URL) async -> [String] {
+        var names = Array(repeating: "", count: cast.count)
+        await withTaskGroup(of: (Int, String).self) { group in
+            for (index, person) in cast.enumerated() {
+                guard let tag = person.primaryImageTag else { continue }
+                var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Items/\(person.id)/Images/Primary"), resolvingAgainstBaseURL: false)!
+                comps.queryItems = [
+                    .init(name: "tag", value: tag), .init(name: "fillWidth", value: "160"),
+                    .init(name: "quality", value: "85"), .init(name: "api_key", value: credential.accessToken),
+                ]
+                let fileName = "cast-\(person.id).jpg"
+                guard let url = comps.url else { continue }
+                group.addTask {
+                    guard let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty,
+                          (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+                    else { return (index, "") }
+                    return (index, fileName)
+                }
+            }
+            for await (index, name) in group { names[index] = name }
+        }
+        return names
     }
 
     /// Fetches and saves series-level metadata (poster, backdrop, overview) the first time
@@ -601,9 +1032,11 @@ final class DownloadManager: NSObject {
         guard let modelContext else { return }
         let descriptor = FetchDescriptor<DownloadedSeries>(predicate: #Predicate { $0.seriesId == seriesId })
         guard ((try? modelContext.fetchCount(descriptor)) ?? 0) == 0 else { return }
-        guard let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: seriesId),
+        guard let detailData = try? await client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: seriesId),
+              let detail = try? JellyfinMediaClient.decodeItemDetail(detailData),
               let dir = try? DownloadStore.ensureDirectory(for: seriesId)
         else { return }
+        try? detailData.write(to: dir.appendingPathComponent(Self.savedDetailFileName))
 
         var posterFileName: String?
         if let tag = detail.item.primaryImageTag {
@@ -631,11 +1064,45 @@ final class DownloadManager: NSObject {
         try? modelContext.save()
     }
 
+    // MARK: - Saved title pages
+
+    private static let savedDetailFileName = "detail.json"
+
+    /// The title's full page as the server sent it when it was downloaded.
+    func savedDetail(itemId: String) -> MediaItemDetail? {
+        let url = DownloadStore.directory(for: itemId).appendingPathComponent(Self.savedDetailFileName)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JellyfinMediaClient.decodeItemDetail(data)
+    }
+
+    /// Downloads made before the full page was kept with them get it the next time
+    /// Downloads is open with a connection.
+    func saveMissingDetails() async {
+        guard let modelContext, let authManager, let credential = authManager.state.credential else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        let items = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+        let ids = Set(items.map(\.itemId) + items.compactMap(\.seriesId))
+        for id in ids {
+            let url = DownloadStore.directory(for: id).appendingPathComponent(Self.savedDetailFileName)
+            guard !FileManager.default.fileExists(atPath: url.path),
+                  let data = try? await client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: id),
+                  (try? JellyfinMediaClient.decodeItemDetail(data)) != nil,
+                  (try? DownloadStore.ensureDirectory(for: id)) != nil
+            else { continue }
+            try? data.write(to: url)
+        }
+    }
+
     func cancelDownload(itemId: String) {
         let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
-        downloadTasks[itemId]?.cancel()
+        if pendingQueue.isEmpty { queueHold = nil }
+        transfers(for: itemId).forEach { $0.cancel() }
         downloadTasks[itemId] = nil
+        clearParts(itemId: itemId)
+        handedOffItemIds.remove(itemId)
+        handedOffResults[itemId] = nil
+        pausedItemIds.remove(itemId)
         activeItemIds.remove(itemId)
         activeItemTitles[itemId] = nil
         progress[itemId] = nil
@@ -787,54 +1254,175 @@ final class DownloadManager: NSObject {
 
     // MARK: - Smart Downloads
 
+    private static let smartLog = Telemetry.logger(category: "SmartDownloads")
     private static let smartDownloadsEnabledKey = "smartDownloadsEnabled"
     private static let smartDownloadsEpisodeCountKey = "smartDownloadsEpisodeCount"
     private static let smartDownloadsStorageBudgetGBKey = "smartDownloadsStorageBudgetGB"
 
-    /// Netflix-style auto-management for shows the user already has downloads/progress in:
-    /// tops up the next few unwatched episodes per show and clears out watched ones to make
-    /// room, all capped by a hard storage budget. Only wired to run at launch (see
-    /// runSmartDownloadsOnLaunch) — deliberately NOT called from performDownload's own
-    /// completion path: that would reenter this same queue (pendingQueue/isProcessingQueue)
-    /// while its own while-loop is still mid-iteration, so startDownload would just append
-    /// and return immediately instead of actually awaiting the download, which would make
-    /// the budget check below (totalDownloadedBytes) race against downloads that haven't
-    /// happened yet. isRunningSmartDownloads still guards reentrancy generally.
+    /// Shows the user asked to keep topped up from the show's own page, with how many
+    /// upcoming episodes to keep. Works with or without the global Smart Downloads toggle.
+    struct KeptShow: Codable, Equatable {
+        var name: String
+        var episodeCount: Int
+    }
+
+    private static let keptShowsKey = "smartDownloadsKeptShows"
+
+    static var keptShows: [String: KeptShow] {
+        guard let data = UserDefaults.standard.data(forKey: keptShowsKey) else { return [:] }
+        return (try? JSONDecoder().decode([String: KeptShow].self, from: data)) ?? [:]
+    }
+
+    /// nil `episodeCount` stops keeping that show; its downloads stay until watched or removed.
+    func setKeptShow(seriesId: String, name: String, episodeCount: Int?) {
+        var shows = Self.keptShows
+        shows[seriesId] = episodeCount.map { KeptShow(name: name, episodeCount: $0) }
+        UserDefaults.standard.set(try? JSONEncoder().encode(shows), forKey: Self.keptShowsKey)
+        if episodeCount != nil { refreshSmartDownloads() }
+    }
+
+    /// Catches downloads up with the server's watched state, then re-checks kept shows, from
+    /// places other than launch: the app coming to the foreground, the connection coming back,
+    /// the player closing, or a show being switched on.
+    func refreshSmartDownloads() {
+        guard let authManager, let credential = authManager.state.credential else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        Task {
+            await reconcileWatchedState()
+            await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
+        }
+    }
+
+    /// Keeps the next few unwatched episodes downloaded, for every show with downloads when
+    /// Smart Downloads is on and for each show kept from its own page, and clears out watched
+    /// ones to make room, all capped by a hard storage budget. Deliberately NOT called from
+    /// performDownload's own completion path: that would reenter this same queue
+    /// (pendingQueue/isProcessingQueue) while its own while-loop is still mid-iteration, so
+    /// startDownload would just append and return immediately instead of actually awaiting the
+    /// download, which would make the budget check below (totalDownloadedBytes) race against
+    /// downloads that haven't happened yet. isRunningSmartDownloads guards reentrancy.
     func runSmartDownloadsIfNeeded(credential: ServerCredential, authHeader: String) async {
-        guard let modelContext else { return }
-        guard UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false else { return }
-        let wifiOnly = UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true
-        guard !wifiOnly || isOnWiFi else { return }
-        guard !isRunningSmartDownloads else { return }
+        guard let modelContext, ProfileRules.shared.canDownload else {
+            Self.smartLog.info("Smart Downloads skipped: downloads not allowed for this profile")
+            return
+        }
+        let globalOn = UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false
+        let kept = Self.keptShows
+        guard globalOn || !kept.isEmpty else {
+            Self.smartLog.info("Smart Downloads skipped: off, and no show set to Keep Downloaded")
+            return
+        }
+        guard !isOnMobileData || smartDownloadsAllowMobileData else {
+            Self.smartLog.info("Smart Downloads skipped: on mobile data with Use Mobile Data off")
+            return
+        }
+        // A check already running read the kept shows before this one was asked for (a show
+        // just switched on, say), so it runs once more when it's done instead of dropping it.
+        guard !isRunningSmartDownloads else {
+            Self.smartLog.info("Smart Downloads: check already running, will run again after it")
+            smartDownloadsRerunRequested = true
+            return
+        }
         isRunningSmartDownloads = true
-        defer { isRunningSmartDownloads = false }
+        defer {
+            isRunningSmartDownloads = false
+            if smartDownloadsRerunRequested {
+                smartDownloadsRerunRequested = false
+                Task { await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader) }
+            }
+        }
 
         let episodeCount = max(1, min(5, UserDefaults.standard.object(forKey: Self.smartDownloadsEpisodeCountKey) as? Int ?? 2))
         let budgetGB = UserDefaults.standard.object(forKey: Self.smartDownloadsStorageBudgetGBKey) as? Int ?? 10
         let budgetBytes = Int64(budgetGB) * 1_000_000_000
 
         let allDownloaded = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
-        let seriesIds = Set(allDownloaded.compactMap { $0.seriesId })
-        guard !seriesIds.isEmpty else { return }
+        var targets: [String: Int] = [:]
+        if globalOn {
+            for seriesId in Set(allDownloaded.compactMap(\.seriesId)) { targets[seriesId] = episodeCount }
+        }
+        for (seriesId, show) in kept { targets[seriesId] = show.episodeCount }
+        Self.smartLog.info("Smart Downloads check: \(targets.count, privacy: .public) show(s), keep \(episodeCount, privacy: .public), budget \(budgetGB, privacy: .public) GB")
+        guard !targets.isEmpty else { return }
 
-        // Clear fully watched episodes first, freeing space for whatever's next up.
-        for item in allDownloaded where item.seriesId != nil && item.played {
-            deleteDownload(item)
+        // Watched episodes are queued for removal rather than deleted here: this also runs
+        // while a downloads screen may be showing those rows (see markForDeletionAfterWatching).
+        for item in allDownloaded where item.played {
+            guard let seriesId = item.seriesId, targets[seriesId] != nil else { continue }
+            markForDeletionAfterWatching(itemId: item.itemId)
         }
 
+        // Only the shows it looks after: movies and other downloads someone started themselves
+        // would otherwise use up the budget and quietly stop every show.
         func totalDownloadedBytes() -> Int64 {
             let current = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
-            return current.reduce(0) { $0 + $1.fileSizeBytes }
+            return current.filter { $0.seriesId.map { targets[$0] != nil } ?? false }.reduce(0) { $0 + $1.fileSizeBytes }
         }
 
-        for seriesId in seriesIds {
-            guard let nextUp = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: episodeCount) else { continue }
+        for (seriesId, count) in targets {
+            // The episode up next plus the `count` after it: the one you're on doesn't use
+            // up the allowance.
+            guard var nextUp = try? await client.getUpcomingEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, count: count + 1) else {
+                Self.smartLog.error("Smart Downloads: couldn't get upcoming episodes for \(seriesId, privacy: .public)")
+                continue
+            }
+            let fromWatchHistory = !nextUp.isEmpty
+            if nextUp.isEmpty {
+                nextUp = await episodesAfterDownloads(seriesId: seriesId, downloaded: allDownloaded, count: count + 1,
+                                                      credential: credential, authHeader: authHeader)
+            }
+            Self.smartLog.info("Smart Downloads: \(seriesId, privacy: .public) up next \(nextUp.map { "S\($0.parentIndexNumber ?? 0)E\($0.indexNumber ?? 0)" }.joined(separator: " "), privacy: .public)")
+            // Episodes before the next one up were watched, possibly streamed on another
+            // device, which the downloaded copy's own played flag never hears about.
+            if fromWatchHistory, kept[seriesId] != nil, let first = nextUp.first,
+               let season = first.parentIndexNumber, let episode = first.indexNumber {
+                for item in allDownloaded where item.seriesId == seriesId {
+                    let s = item.seasonNumber ?? 0, e = item.episodeNumber ?? 0
+                    if s < season || (s == season && e < episode) {
+                        markForDeletionAfterWatching(itemId: item.itemId)
+                    }
+                }
+            }
+            if kept[seriesId] != nil {
+                // Asked for by name on the show's page, so Smart Downloads' budget (a setting
+                // only shown with Smart Downloads on) doesn't hold it back; the device's own
+                // free space still does. Queued together, so they show in Downloads at once.
+                for episode in nextUp where Self.freeSpace().map({ $0 > Int64(Self.lowSpaceThreshold) }) ?? true {
+                    addToQueue(item: episode, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true)
+                }
+                Task { await processQueue() }
+                continue
+            }
             for episode in nextUp {
                 guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
-                guard totalDownloadedBytes() < budgetBytes else { return }
-                await startDownload(item: episode, credential: credential, authHeader: authHeader)
+                guard totalDownloadedBytes() < budgetBytes else {
+                    Self.smartLog.info("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
+                    return
+                }
+                Self.smartLog.info("Smart Downloads queuing \(episode.name, privacy: .public)")
+                await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
             }
         }
+    }
+
+    /// When watch history gives no next episode (a later episode is marked watched, say), the
+    /// episodes from the first unwatched one downloaded here, or after the last one downloaded.
+    private func episodesAfterDownloads(seriesId: String, downloaded: [DownloadedItem], count: Int,
+                                        credential: ServerCredential, authHeader: String) async -> [MediaItem] {
+        guard let all = try? await client.getEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, seasonId: nil) else {
+            Self.smartLog.error("Smart Downloads: couldn't list episodes for \(seriesId, privacy: .public)")
+            return []
+        }
+        let downloadedIds = Set(downloaded.filter { $0.seriesId == seriesId }.map(\.itemId))
+        let positions = all.indices.filter { downloadedIds.contains(all[$0].id) }
+        let start = positions.first { all[$0].userData?.played != true } ?? positions.last.map { $0 + 1 } ?? 0
+        Self.smartLog.info("Smart Downloads: \(seriesId, privacy: .public) has \(all.count, privacy: .public) episodes, \(all.filter { $0.userData?.played == true }.count, privacy: .public) watched, downloaded at \(positions.map(String.init).joined(separator: ","), privacy: .public); starting at \(start, privacy: .public)")
+        return Array(all.dropFirst(start).filter { $0.userData?.played != true }.prefix(count))
+    }
+
+    private static func freeSpace() -> Int64? {
+        (try? DownloadStore.rootDirectory().deletingLastPathComponent()
+            .resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity).map(Int64.init)
     }
 
     // MARK: - Video download with progress
@@ -847,7 +1435,8 @@ final class DownloadManager: NSObject {
     /// (-1017) failures and prolonging the beginBackgroundTaskIfNeeded() window past its
     /// grace period. tvOS/macOS use a plain .default session (see `session`'s config above),
     /// which does need this manual retry since it has no automatic resumption of its own.
-    private func downloadFile(from url: URL, authHeader: String, to destination: URL, itemId: String) async throws {
+    private func downloadFile(from url: URL, authHeader: String, to destination: URL, itemId: String, allowsParts: Bool) async throws {
+        if allowsParts, try await downloadInParts(from: url, authHeader: authHeader, to: destination, itemId: itemId) { return }
         #if canImport(UIKit) && !os(tvOS)
         try await attemptDownload(url: url, authHeader: authHeader, destination: destination, itemId: itemId, resumeData: nil)
         #else
@@ -881,6 +1470,7 @@ final class DownloadManager: NSObject {
                 task = session.downloadTask(withResumeData: resumeData)
             } else {
                 var req = URLRequest(url: url)
+                for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
                 req.setValue(authHeader, forHTTPHeaderField: "Authorization")
                 req.timeoutInterval = 60 * 60
                 task = session.downloadTask(with: req)
@@ -897,6 +1487,128 @@ final class DownloadManager: NSObject {
     }
 
     @ObservationIgnored private var continuations: [Int: CheckedContinuation<Void, Error>] = [:]
+
+    // MARK: - Parallel ranges
+
+    private static let partCount = 4
+    /// Under this, a single connection finishes about as fast as setting up four would.
+    private static let minimumSizeForParts: Int64 = 128 * 1_000_000
+
+    private nonisolated static func partFileName(_ index: Int, of count: Int) -> String { "video.part-\(index)-of-\(count)" }
+
+    /// Brings a large original file down as several byte ranges at once and joins them. One
+    /// connection is often held well under the line's speed (a reverse proxy, TLS, distance);
+    /// a few side by side fill it. Returns false, having downloaded nothing, when the server
+    /// doesn't serve ranges or the file is small, so the caller uses a single transfer.
+    private func downloadInParts(from url: URL, authHeader: String, to destination: URL, itemId: String) async throws -> Bool {
+        guard let total = await Self.rangeSupportedSize(of: url, authHeader: authHeader),
+              total >= Self.minimumSizeForParts
+        else { return false }
+        let count = Self.partCount
+        let chunk = total / Int64(count)
+        let ranges = (0..<count).map { index -> ClosedRange<Int64> in
+            let start = Int64(index) * chunk
+            return start...(index == count - 1 ? total - 1 : start + chunk - 1)
+        }
+        let dir = destination.deletingLastPathComponent()
+        let partURLs = (0..<count).map { dir.appendingPathComponent(Self.partFileName($0 + 1, of: count)) }
+        partTotals[itemId] = total
+        defer { clearParts(itemId: itemId) }
+        do {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for (index, range) in ranges.enumerated() {
+                    group.addTask { @MainActor in
+                        try await self.downloadPart(url: url, authHeader: authHeader, range: range, to: partURLs[index], itemId: itemId)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        } catch {
+            transfers(for: itemId).forEach { $0.cancel() }
+            partURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+            throw error
+        }
+        // A server that answered a range with the whole file: start over as one transfer.
+        for (index, range) in ranges.enumerated() {
+            let size = (try? FileManager.default.attributesOfItem(atPath: partURLs[index].path)[.size] as? Int64) ?? -1
+            if size != Int64(range.count) {
+                partURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+                return false
+            }
+        }
+        try await Task.detached(priority: .utility) { try Self.join(partURLs, into: destination) }.value
+        return true
+    }
+
+    private func downloadPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            var req = URLRequest(url: url)
+            for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+            req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+            req.setValue("bytes=\(range.lowerBound)-\(range.upperBound)", forHTTPHeaderField: "Range")
+            req.timeoutInterval = 60 * 60
+            let task = session.downloadTask(with: req)
+            task.taskDescription = partURL.path
+            taskItemIds[task.taskIdentifier] = itemId
+            partTasks[itemId, default: []].append(task)
+            continuations[task.taskIdentifier] = continuation
+            task.resume()
+        }
+    }
+
+    private func clearParts(itemId: String) {
+        for task in partTasks[itemId] ?? [] { partBytes[task.taskIdentifier] = nil }
+        partTasks[itemId] = nil
+        partTotals[itemId] = nil
+    }
+
+    /// The file's size, when the server answers a one-byte range request with 206.
+    private nonisolated static func rangeSupportedSize(of url: URL, authHeader: String) async -> Int64? {
+        var req = URLRequest(url: url)
+        for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("bytes=0-0", forHTTPHeaderField: "Range")
+        req.timeoutInterval = 15
+        guard let (_, response) = try? await URLSession.arcfin.data(for: req),
+              let http = response as? HTTPURLResponse, http.statusCode == 206,
+              let contentRange = http.value(forHTTPHeaderField: "Content-Range"),
+              let total = contentRange.split(separator: "/").last.flatMap({ Int64($0) })
+        else { return nil }
+        return total
+    }
+
+    /// Appends the later parts onto the first, 8 MB at a time, and removes them.
+    private nonisolated static func join(_ parts: [URL], into destination: URL) throws {
+        try? FileManager.default.removeItem(at: destination)
+        try FileManager.default.moveItem(at: parts[0], to: destination)
+        let output = try FileHandle(forWritingTo: destination)
+        defer { try? output.close() }
+        try output.seekToEnd()
+        for part in parts.dropFirst() {
+            let input = try FileHandle(forReadingFrom: part)
+            while let data = try input.read(upToCount: 8 * 1_048_576), !data.isEmpty {
+                try output.write(contentsOf: data)
+            }
+            try input.close()
+            try FileManager.default.removeItem(at: part)
+        }
+    }
+
+    /// After a relaunch, each range arrives on its own; once all of a title's are on disk they're
+    /// joined into the staged file the rest of the download picks up. Nil until then.
+    private nonisolated static func joinOrphanedParts(at partPath: String) throws -> String? {
+        let partURL = URL(fileURLWithPath: partPath)
+        let name = partURL.lastPathComponent
+        guard name.hasPrefix("video.part-"),
+              let count = name.split(separator: "-").last.flatMap({ Int($0) })
+        else { return partPath }
+        let dir = partURL.deletingLastPathComponent()
+        let parts = (1...count).map { dir.appendingPathComponent(partFileName($0, of: count)) }
+        guard parts.allSatisfy({ FileManager.default.fileExists(atPath: $0.path) }) else { return nil }
+        let staged = dir.appendingPathComponent(stagedVideoFileName)
+        try join(parts, into: staged)
+        return staged.path
+    }
 }
 
 // MARK: - URLSessionDownloadDelegate
@@ -907,6 +1619,13 @@ extension DownloadManager: URLSessionDownloadDelegate {
         let now = Date()
         Task { @MainActor in
             guard let itemId = self.taskItemIds[taskId] else { return }
+            var totalBytesWritten = totalBytesWritten
+            var totalBytesExpectedToWrite = totalBytesExpectedToWrite
+            if let total = self.partTotals[itemId] {
+                self.partBytes[taskId] = totalBytesWritten
+                totalBytesWritten = (self.partTasks[itemId] ?? []).reduce(0) { $0 + (self.partBytes[$1.taskIdentifier] ?? 0) }
+                totalBytesExpectedToWrite = total
+            }
             if totalBytesExpectedToWrite > 0 {
                 self.progress[itemId] = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
             }
@@ -962,11 +1681,17 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 if let capturedMoveError { continuation.resume(throwing: capturedMoveError) } else { continuation.resume() }
                 return
             }
+            // Handed off ahead of its turn and done before it came: the queue picks it up.
+            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+                self.handedOffResults[itemId] = capturedMoveError.map { .failure($0) } ?? .success(())
+                return
+            }
             // No continuation means this app instance didn't originate the transfer — most
             // likely relaunched specifically to receive this exact redelivered event. The
             // file's already safely moved above; finish the rest of the pipeline for it.
-            if capturedMoveError == nil, let capturedPath {
-                await self.recoverOrphanedDownload(destinationPath: capturedPath)
+            if capturedMoveError == nil, let capturedPath,
+               let videoPath = try? await Task.detached(priority: .utility, operation: { try Self.joinOrphanedParts(at: capturedPath) }).value {
+                await self.recoverOrphanedDownload(destinationPath: videoPath)
             }
         }
     }
@@ -979,6 +1704,10 @@ extension DownloadManager: URLSessionDownloadDelegate {
             if let continuation = self.continuations[taskId] {
                 self.continuations[taskId] = nil
                 continuation.resume(throwing: error)
+                return
+            }
+            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+                self.handedOffResults[itemId] = .failure(error)
                 return
             }
             // Orphaned and it failed outright — there'll never be a video file to trigger

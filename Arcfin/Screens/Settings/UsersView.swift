@@ -111,7 +111,7 @@ struct UsersView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Profiles")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -238,7 +238,7 @@ struct ProfileRowContent: View {
                     .shadow(color: isActive ? DT.Color.accent.opacity(0.35) : .clear, radius: 8)
                 Text(initials)
                     .font(.system(.body, design: .rounded, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
             }
 
             // Info
@@ -334,7 +334,7 @@ struct ProfileDetailView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle(profile.displayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
