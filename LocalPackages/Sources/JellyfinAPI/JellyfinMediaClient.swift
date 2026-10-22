@@ -749,7 +749,14 @@ public struct JellyfinMediaClient: Sendable {
         seriesId: String,
         count: Int
     ) async throws -> [MediaItem] {
-        guard let next = try await getNextEpisode(credential: credential, authHeader: authHeader, seriesId: seriesId) else { return [] }
+        guard let next = try await getNextEpisode(credential: credential, authHeader: authHeader, seriesId: seriesId) else {
+            // Next Up leaves out shows past the server's Next Up cutoff, and on some versions
+            // shows with nothing watched yet, so work it out from the episode list instead:
+            // the first unwatched episode after the last watched one.
+            let all = try await getEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, seasonId: nil)
+            let start = all.lastIndex { $0.userData?.played == true }.map { $0 + 1 } ?? 0
+            return Array(all.dropFirst(start).filter { $0.userData?.played != true }.prefix(count))
+        }
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Episodes"),
             resolvingAgainstBaseURL: false)!
