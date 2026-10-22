@@ -53,13 +53,17 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private let client = JellyfinMediaClient()
     @ObservationIgnored private var downloadTasks: [String: URLSessionDownloadTask] = [:]
+    /// A title downloading as several byte ranges at once (see downloadInParts).
+    @ObservationIgnored private var partTasks: [String: [URLSessionDownloadTask]] = [:]
+    @ObservationIgnored private var partBytes: [Int: Int64] = [:]
+    @ObservationIgnored private var partTotals: [String: Int64] = [:]
     @ObservationIgnored private var taskItemIds: [Int: String] = [:]
     /// Queued titles whose video transfer was handed to the background session ahead of its
     /// turn, and how each ended if it did before its turn came.
     @ObservationIgnored private var handedOffItemIds: Set<String> = []
     @ObservationIgnored private var handedOffResults: [String: Result<Void, Error>] = [:]
     /// Where a handed-off transfer lands; renamed once the title's container is known.
-    private static let stagedVideoFileName = "video.download"
+    private nonisolated static let stagedVideoFileName = "video.download"
     @ObservationIgnored private var speedSamples: [String: (time: Date, bytes: Int64)] = [:]
     #if canImport(UIKit) && !os(tvOS)
     @ObservationIgnored private var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
@@ -136,11 +140,12 @@ final class DownloadManager: NSObject {
         let config = URLSessionConfiguration.background(withIdentifier: Self.backgroundSessionIdentifier)
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false
-        // Titles handed over ahead of their turn (handOffQueue) wait here for a connection
-        // instead of all transferring at once.
-        config.httpMaximumConnectionsPerHost = 3
+        // Room for a title's parallel ranges (downloadInParts) next to another title's; titles
+        // handed over ahead of their turn (handOffQueue) still wait here past that.
+        config.httpMaximumConnectionsPerHost = 8
         #else
         let config = URLSessionConfiguration.default
+        config.httpMaximumConnectionsPerHost = 8
         #endif
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
@@ -162,7 +167,8 @@ final class DownloadManager: NSObject {
         }
         startWiFiMonitoringIfNeeded()
         NotificationCenter.default.addObserver(forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.recheckQueueHold() }
+            guard let self else { return }
+            MainActor.assumeIsolated { self.recheckQueueHold() }
         }
         #if canImport(ActivityKit) && os(iOS)
         reconcileStaleActivitiesOnLaunch()
@@ -557,9 +563,15 @@ final class DownloadManager: NSObject {
     /// the transfer carries on from there when resumed.
     private(set) var pausedItemIds: Set<String> = []
 
+    /// Every transfer carrying a title: one, or one per range.
+    private func transfers(for itemId: String) -> [URLSessionDownloadTask] {
+        (partTasks[itemId] ?? []) + (downloadTasks[itemId].map { [$0] } ?? [])
+    }
+
     func pauseDownload(itemId: String) {
-        guard let task = downloadTasks[itemId], task.state == .running else { return }
-        task.suspend()
+        let running = transfers(for: itemId).filter { $0.state == .running }
+        guard !running.isEmpty else { return }
+        running.forEach { $0.suspend() }
         pausedItemIds.insert(itemId)
         stats[itemId]?.bytesPerSecond = 0
         speedSamples[itemId] = nil
@@ -570,7 +582,7 @@ final class DownloadManager: NSObject {
 
     func resumeDownload(itemId: String) {
         guard pausedItemIds.remove(itemId) != nil else { return }
-        downloadTasks[itemId]?.resume()
+        transfers(for: itemId).forEach { $0.resume() }
         #if canImport(ActivityKit) && os(iOS)
         refreshLiveActivity()
         #endif
@@ -579,12 +591,12 @@ final class DownloadManager: NSObject {
     /// Stops new items starting and suspends the transfer already in flight.
     func pauseQueue() {
         isQueuePaused = true
-        for id in Array(downloadTasks.keys) { pauseDownload(itemId: id) }
+        for id in Set(downloadTasks.keys).union(partTasks.keys) { pauseDownload(itemId: id) }
     }
 
     func resumeQueue() {
         isQueuePaused = false
-        for id in pausedItemIds { downloadTasks[id]?.resume() }
+        for id in pausedItemIds { transfers(for: id).forEach { $0.resume() } }
         pausedItemIds = []
         #if canImport(ActivityKit) && os(iOS)
         refreshLiveActivity()
@@ -745,6 +757,14 @@ final class DownloadManager: NSObject {
             let dir = try DownloadStore.ensureDirectory(for: item.id)
             try? detailData.write(to: dir.appendingPathComponent(Self.savedDetailFileName))
 
+            let savesPreviews = UserDefaults.standard.object(forKey: "downloadTrickplay") as? Bool ?? true
+            let trickplay = detail.trickplay[info.mediaSourceId] ?? detail.trickplay.values.first
+            let savedTrickplay = savesPreviews ? trickplay : nil
+            // Everything besides the video, fetched side by side while the video comes down
+            // rather than one request at a time after it.
+            async let extras = fetchExtras(itemId: item.id, detail: detail, info: info, trickplay: savedTrickplay,
+                                           credential: credential, authHeader: authHeader, dir: dir)
+
             // Playback is always VLC for downloads, which plays the original file's container/
             // codec natively — no remux needed for compatibility. Only an explicit bitrateCap
             // (the user picking a lower quality tier) still forces one, since that's the only
@@ -758,7 +778,8 @@ final class DownloadManager: NSObject {
             if handedOffItemIds.contains(item.id) {
                 try await awaitHandedOff(itemId: item.id)
             } else if !skipVideoDownload {
-                try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName), itemId: item.id)
+                try await downloadFile(from: videoURL, authHeader: authHeader, to: dir.appendingPathComponent(videoFileName),
+                                       itemId: item.id, allowsParts: !needsRemux)
             }
             let staged = dir.appendingPathComponent(Self.stagedVideoFileName)
             if FileManager.default.fileExists(atPath: staged.path) {
@@ -767,76 +788,7 @@ final class DownloadManager: NSObject {
                 try FileManager.default.moveItem(at: staged, to: final)
             }
 
-            // Subtitles — external tracks only (embedded ones travel with the video file itself).
-            var subtitleFileNames: [String] = []
-            var subtitleLanguages: [String] = []
-            // Settings › Downloads › Subtitles: all, only the preferred language, or none.
-            let subtitleChoice = UserDefaults.standard.string(forKey: "downloadSubtitles") ?? "all"
-            let preferredLanguage = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
-            let wantedSubtitles = info.subtitleStreams.filter { stream in
-                switch subtitleChoice {
-                case "none": return false
-                case "preferred" where !preferredLanguage.isEmpty: return stream.language == preferredLanguage
-                default: return true
-                }
-            }
-            for stream in wantedSubtitles where stream.deliveryUrl != nil {
-                guard let deliveryUrl = stream.deliveryUrl,
-                      let data = await SubtitleLoader.fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential)
-                else { continue }
-                let fileName = "sub-\(stream.index).vtt"
-                try? data.write(to: dir.appendingPathComponent(fileName))
-                subtitleFileNames.append(fileName)
-                subtitleLanguages.append(stream.language ?? stream.displayTitle ?? "Unknown")
-            }
-
-            // Trickplay — every tile for the preferred (smallest) width. Array position
-            // must equal tileIndex (that's how playback looks tiles up), so a failed tile
-            // still gets an empty-string placeholder rather than shifting every index after it.
-            var trickplayFileNames: [String] = []
-            let savesPreviews = UserDefaults.standard.object(forKey: "downloadTrickplay") as? Bool ?? true
-            let trickplay = detail.trickplay[info.mediaSourceId] ?? detail.trickplay.values.first
-            let savedTrickplay = savesPreviews ? trickplay : nil
-            if let trickplay = savedTrickplay, trickplay.tileWidth > 0, trickplay.tileHeight > 0, trickplay.thumbnailCount > 0 {
-                let tileCount = Int(ceil(Double(trickplay.thumbnailCount) / Double(trickplay.tileWidth * trickplay.tileHeight)))
-                for tileIndex in 0..<max(tileCount, 1) {
-                    let tileURL = client.trickplayTileURL(credential: credential, itemId: item.id, width: trickplay.width, tileIndex: tileIndex)
-                    var req = URLRequest(url: tileURL)
-                    req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-                    guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
-                          (resp as? HTTPURLResponse)?.statusCode == 200
-                    else {
-                        trickplayFileNames.append("")
-                        continue
-                    }
-                    let fileName = "tile-\(tileIndex).jpg"
-                    try? data.write(to: dir.appendingPathComponent(fileName))
-                    trickplayFileNames.append(fileName)
-                }
-            }
-
-            // Poster / backdrop, for the Downloads list and player UI while offline.
-            var posterFileName: String?
-            if let tag = detail.item.primaryImageTag {
-                let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
-                    posterFileName = "poster.jpg"
-                    try? data.write(to: dir.appendingPathComponent("poster.jpg"))
-                }
-            }
-            var backdropFileName: String?
-            if let tag = detail.item.backdropImageTags.first {
-                let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: item.id, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
-                if let (data, _) = try? await URLSession.arcfin.data(from: url) {
-                    backdropFileName = "backdrop.jpg"
-                    try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
-                }
-            }
-
-            // Skip intro/credits — small, and completes the offline playback feature set.
-            let segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
-            let introEnd = segments.intro?.upperBound
-            let creditsStart = segments.credits?.lowerBound
+            let fetched = await extras
 
             let fileSize = (try? FileManager.default.attributesOfItem(atPath: dir.appendingPathComponent(videoFileName).path)[.size] as? Int64) ?? 0
 
@@ -848,13 +800,13 @@ final class DownloadManager: NSObject {
                 seriesId: detail.item.seriesId, seriesName: detail.item.seriesName,
                 seasonNumber: detail.item.parentIndexNumber, episodeNumber: detail.item.indexNumber,
                 serverId: credential.id.uuidString, serverBaseURL: credential.baseURL.absoluteString, userId: credential.userID,
-                videoFileName: videoFileName, posterFileName: posterFileName, backdropFileName: backdropFileName,
-                subtitleFileNames: subtitleFileNames, subtitleLanguages: subtitleLanguages,
-                trickplayFileNames: trickplayFileNames,
+                videoFileName: videoFileName, posterFileName: fetched.posterFileName, backdropFileName: fetched.backdropFileName,
+                subtitleFileNames: fetched.subtitleFileNames, subtitleLanguages: fetched.subtitleLanguages,
+                trickplayFileNames: fetched.trickplayFileNames,
                 trickplayWidth: savedTrickplay?.width, trickplayHeight: savedTrickplay?.height,
                 trickplayTileWidth: savedTrickplay?.tileWidth, trickplayTileHeight: savedTrickplay?.tileHeight,
                 trickplayIntervalMs: savedTrickplay?.intervalMs, trickplayThumbnailCount: savedTrickplay?.thumbnailCount,
-                introEndSeconds: introEnd, creditsStartSeconds: creditsStart,
+                introEndSeconds: fetched.introEnd, creditsStartSeconds: fetched.creditsStart,
                 fileSizeBytes: fileSize
             )
             downloaded.tagline = detail.taglines.first
@@ -865,7 +817,7 @@ final class DownloadManager: NSObject {
             let cast = Array(detail.cast.prefix(10))
             downloaded.castNames = cast.map(\.name)
             downloaded.castRoles = cast.map { $0.role ?? "" }
-            downloaded.castPhotoFileNames = await saveCastPhotos(cast, credential: credential, to: dir)
+            downloaded.castPhotoFileNames = fetched.castPhotoFileNames
             modelContext.insert(downloaded)
             try? modelContext.save()
             Task { await NotificationManager.notifyDownloadComplete(title: detail.item.name) }
@@ -901,33 +853,135 @@ final class DownloadManager: NSObject {
         #endif
     }
 
+    private struct DownloadExtras: Sendable {
+        var subtitleFileNames: [String] = []
+        var subtitleLanguages: [String] = []
+        var trickplayFileNames: [String] = []
+        var posterFileName: String?
+        var backdropFileName: String?
+        var introEnd: Double?
+        var creditsStart: Double?
+        var castPhotoFileNames: [String] = []
+    }
+
+    /// Subtitles, preview tiles, artwork, cast photos and skip markers, all at once.
+    private func fetchExtras(itemId: String, detail: MediaItemDetail, info: JellyfinPlaybackInfo, trickplay: JellyfinTrickplayInfo?,
+                             credential: ServerCredential, authHeader: String, dir: URL) async -> DownloadExtras {
+        let client = client
+        async let subtitles = Self.saveSubtitles(info: info, credential: credential, to: dir)
+        async let tiles = Self.saveTrickplayTiles(itemId: itemId, trickplay: trickplay, client: client,
+                                                  credential: credential, authHeader: authHeader, to: dir)
+        async let poster = Self.saveImage(itemId: itemId, tag: detail.item.primaryImageTag, type: .primary, width: 400,
+                                          credential: credential, as: "poster.jpg", in: dir)
+        async let backdrop = Self.saveImage(itemId: itemId, tag: detail.item.backdropImageTags.first, type: .backdrop, width: 800,
+                                            credential: credential, as: "backdrop.jpg", in: dir)
+        async let segments = client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: itemId)
+        async let castPhotos = Self.saveCastPhotos(Array(detail.cast.prefix(10)), credential: credential, to: dir)
+        let (subs, tileNames, posterName, backdropName, skips, cast) = await (subtitles, tiles, poster, backdrop, segments, castPhotos)
+        return DownloadExtras(
+            subtitleFileNames: subs.map(\.fileName), subtitleLanguages: subs.map(\.language),
+            trickplayFileNames: tileNames, posterFileName: posterName, backdropFileName: backdropName,
+            introEnd: skips.intro?.upperBound, creditsStart: skips.credits?.lowerBound,
+            castPhotoFileNames: cast)
+    }
+
+    /// External tracks only (embedded ones travel with the video file itself), per Settings ›
+    /// Downloads › Subtitles: all, only the preferred language, or none.
+    private static func saveSubtitles(info: JellyfinPlaybackInfo, credential: ServerCredential, to dir: URL) async -> [(fileName: String, language: String)] {
+        let choice = UserDefaults.standard.string(forKey: "downloadSubtitles") ?? "all"
+        let preferred = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
+        let wanted = info.subtitleStreams.filter { stream in
+            guard stream.deliveryUrl != nil else { return false }
+            switch choice {
+            case "none": return false
+            case "preferred" where !preferred.isEmpty: return stream.language == preferred
+            default: return true
+            }
+        }
+        return await withTaskGroup(of: (Int, String, String)?.self) { group in
+            for (order, stream) in wanted.enumerated() {
+                guard let deliveryUrl = stream.deliveryUrl else { continue }
+                let fileName = "sub-\(stream.index).vtt", language = stream.language ?? stream.displayTitle ?? "Unknown"
+                group.addTask {
+                    guard let data = await SubtitleLoader.fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential),
+                          (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+                    else { return nil }
+                    return (order, fileName, language)
+                }
+            }
+            var saved: [(Int, String, String)] = []
+            for await result in group { if let result { saved.append(result) } }
+            return saved.sorted { $0.0 < $1.0 }.map { ($0.1, $0.2) }
+        }
+    }
+
+    /// Every tile for the preferred (smallest) width. Array position must equal tileIndex
+    /// (that's how playback looks tiles up), so a failed tile keeps an empty placeholder.
+    private static func saveTrickplayTiles(itemId: String, trickplay: JellyfinTrickplayInfo?, client: JellyfinMediaClient,
+                                           credential: ServerCredential, authHeader: String, to dir: URL) async -> [String] {
+        guard let trickplay, trickplay.tileWidth > 0, trickplay.tileHeight > 0, trickplay.thumbnailCount > 0 else { return [] }
+        let tileCount = max(Int(ceil(Double(trickplay.thumbnailCount) / Double(trickplay.tileWidth * trickplay.tileHeight))), 1)
+        var names = Array(repeating: "", count: tileCount)
+        await withTaskGroup(of: (Int, String).self) { group in
+            for tileIndex in 0..<tileCount {
+                let tileURL = client.trickplayTileURL(credential: credential, itemId: itemId, width: trickplay.width, tileIndex: tileIndex)
+                group.addTask {
+                    var req = URLRequest(url: tileURL)
+                    req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+                    let fileName = "tile-\(tileIndex).jpg"
+                    guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
+                          (resp as? HTTPURLResponse)?.statusCode == 200,
+                          (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+                    else { return (tileIndex, "") }
+                    return (tileIndex, fileName)
+                }
+            }
+            for await (index, name) in group { names[index] = name }
+        }
+        return names
+    }
+
+    private static func saveImage(itemId: String, tag: String?, type: JellyfinImageType, width: Int,
+                                  credential: ServerCredential, as fileName: String, in dir: URL) async -> String? {
+        guard let tag else { return nil }
+        let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: itemId, tag: tag, type: type, fillWidth: width, token: credential.accessToken)
+        guard let (data, _) = try? await URLSession.arcfin.data(from: url),
+              (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+        else { return nil }
+        return fileName
+    }
+
+    /// Small photos of the billed cast, so the downloaded page can show faces offline. An
+    /// empty name keeps the arrays aligned for someone without a photo.
+    private static func saveCastPhotos(_ cast: [MediaPerson], credential: ServerCredential, to dir: URL) async -> [String] {
+        var names = Array(repeating: "", count: cast.count)
+        await withTaskGroup(of: (Int, String).self) { group in
+            for (index, person) in cast.enumerated() {
+                guard let tag = person.primaryImageTag else { continue }
+                var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Items/\(person.id)/Images/Primary"), resolvingAgainstBaseURL: false)!
+                comps.queryItems = [
+                    .init(name: "tag", value: tag), .init(name: "fillWidth", value: "160"),
+                    .init(name: "quality", value: "85"), .init(name: "api_key", value: credential.accessToken),
+                ]
+                let fileName = "cast-\(person.id).jpg"
+                guard let url = comps.url else { continue }
+                group.addTask {
+                    guard let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty,
+                          (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
+                    else { return (index, "") }
+                    return (index, fileName)
+                }
+            }
+            for await (index, name) in group { names[index] = name }
+        }
+        return names
+    }
+
     /// Fetches and saves series-level metadata (poster, backdrop, overview) the first time
     /// any of a series' episodes is downloaded — skipped on every later episode of the same
     /// series since the row already exists. Best-effort: a failure here doesn't fail the
     /// episode download itself, it just leaves the series container without a poster/overview
     /// until a later episode download succeeds in fetching it.
-    /// Small photos of the billed cast, so the downloaded page can show faces offline. An
-    /// empty name keeps the arrays aligned for someone without a photo.
-    private func saveCastPhotos(_ cast: [MediaPerson], credential: ServerCredential, to dir: URL) async -> [String] {
-        var names: [String] = []
-        for person in cast {
-            guard let tag = person.primaryImageTag else { names.append(""); continue }
-            var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Items/\(person.id)/Images/Primary"), resolvingAgainstBaseURL: false)!
-            comps.queryItems = [
-                .init(name: "tag", value: tag), .init(name: "fillWidth", value: "160"),
-                .init(name: "quality", value: "85"), .init(name: "api_key", value: credential.accessToken),
-            ]
-            let fileName = "cast-\(person.id).jpg"
-            if let url = comps.url, let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty,
-               (try? data.write(to: dir.appendingPathComponent(fileName))) != nil {
-                names.append(fileName)
-            } else {
-                names.append("")
-            }
-        }
-        return names
-    }
-
     private func ensureSeriesMetadata(seriesId: String, credential: ServerCredential, authHeader: String) async {
         guard let modelContext else { return }
         let descriptor = FetchDescriptor<DownloadedSeries>(predicate: #Predicate { $0.seriesId == seriesId })
@@ -997,8 +1051,9 @@ final class DownloadManager: NSObject {
         let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
         if pendingQueue.isEmpty { queueHold = nil }
-        downloadTasks[itemId]?.cancel()
+        transfers(for: itemId).forEach { $0.cancel() }
         downloadTasks[itemId] = nil
+        clearParts(itemId: itemId)
         handedOffItemIds.remove(itemId)
         handedOffResults[itemId] = nil
         pausedItemIds.remove(itemId)
@@ -1262,7 +1317,8 @@ final class DownloadManager: NSObject {
     /// (-1017) failures and prolonging the beginBackgroundTaskIfNeeded() window past its
     /// grace period. tvOS/macOS use a plain .default session (see `session`'s config above),
     /// which does need this manual retry since it has no automatic resumption of its own.
-    private func downloadFile(from url: URL, authHeader: String, to destination: URL, itemId: String) async throws {
+    private func downloadFile(from url: URL, authHeader: String, to destination: URL, itemId: String, allowsParts: Bool) async throws {
+        if allowsParts, try await downloadInParts(from: url, authHeader: authHeader, to: destination, itemId: itemId) { return }
         #if canImport(UIKit) && !os(tvOS)
         try await attemptDownload(url: url, authHeader: authHeader, destination: destination, itemId: itemId, resumeData: nil)
         #else
@@ -1313,6 +1369,128 @@ final class DownloadManager: NSObject {
     }
 
     @ObservationIgnored private var continuations: [Int: CheckedContinuation<Void, Error>] = [:]
+
+    // MARK: - Parallel ranges
+
+    private static let partCount = 4
+    /// Under this, a single connection finishes about as fast as setting up four would.
+    private static let minimumSizeForParts: Int64 = 128 * 1_000_000
+
+    private nonisolated static func partFileName(_ index: Int, of count: Int) -> String { "video.part-\(index)-of-\(count)" }
+
+    /// Brings a large original file down as several byte ranges at once and joins them. One
+    /// connection is often held well under the line's speed (a reverse proxy, TLS, distance);
+    /// a few side by side fill it. Returns false, having downloaded nothing, when the server
+    /// doesn't serve ranges or the file is small, so the caller uses a single transfer.
+    private func downloadInParts(from url: URL, authHeader: String, to destination: URL, itemId: String) async throws -> Bool {
+        guard let total = await Self.rangeSupportedSize(of: url, authHeader: authHeader),
+              total >= Self.minimumSizeForParts
+        else { return false }
+        let count = Self.partCount
+        let chunk = total / Int64(count)
+        let ranges = (0..<count).map { index -> ClosedRange<Int64> in
+            let start = Int64(index) * chunk
+            return start...(index == count - 1 ? total - 1 : start + chunk - 1)
+        }
+        let dir = destination.deletingLastPathComponent()
+        let partURLs = (0..<count).map { dir.appendingPathComponent(Self.partFileName($0 + 1, of: count)) }
+        partTotals[itemId] = total
+        defer { clearParts(itemId: itemId) }
+        do {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for (index, range) in ranges.enumerated() {
+                    group.addTask { @MainActor in
+                        try await self.downloadPart(url: url, authHeader: authHeader, range: range, to: partURLs[index], itemId: itemId)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        } catch {
+            transfers(for: itemId).forEach { $0.cancel() }
+            partURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+            throw error
+        }
+        // A server that answered a range with the whole file: start over as one transfer.
+        for (index, range) in ranges.enumerated() {
+            let size = (try? FileManager.default.attributesOfItem(atPath: partURLs[index].path)[.size] as? Int64) ?? -1
+            if size != Int64(range.count) {
+                partURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+                return false
+            }
+        }
+        try await Task.detached(priority: .utility) { try Self.join(partURLs, into: destination) }.value
+        return true
+    }
+
+    private func downloadPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            var req = URLRequest(url: url)
+            for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+            req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+            req.setValue("bytes=\(range.lowerBound)-\(range.upperBound)", forHTTPHeaderField: "Range")
+            req.timeoutInterval = 60 * 60
+            let task = session.downloadTask(with: req)
+            task.taskDescription = partURL.path
+            taskItemIds[task.taskIdentifier] = itemId
+            partTasks[itemId, default: []].append(task)
+            continuations[task.taskIdentifier] = continuation
+            task.resume()
+        }
+    }
+
+    private func clearParts(itemId: String) {
+        for task in partTasks[itemId] ?? [] { partBytes[task.taskIdentifier] = nil }
+        partTasks[itemId] = nil
+        partTotals[itemId] = nil
+    }
+
+    /// The file's size, when the server answers a one-byte range request with 206.
+    private nonisolated static func rangeSupportedSize(of url: URL, authHeader: String) async -> Int64? {
+        var req = URLRequest(url: url)
+        for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("bytes=0-0", forHTTPHeaderField: "Range")
+        req.timeoutInterval = 15
+        guard let (_, response) = try? await URLSession.arcfin.data(for: req),
+              let http = response as? HTTPURLResponse, http.statusCode == 206,
+              let contentRange = http.value(forHTTPHeaderField: "Content-Range"),
+              let total = contentRange.split(separator: "/").last.flatMap({ Int64($0) })
+        else { return nil }
+        return total
+    }
+
+    /// Appends the later parts onto the first, 8 MB at a time, and removes them.
+    private nonisolated static func join(_ parts: [URL], into destination: URL) throws {
+        try? FileManager.default.removeItem(at: destination)
+        try FileManager.default.moveItem(at: parts[0], to: destination)
+        let output = try FileHandle(forWritingTo: destination)
+        defer { try? output.close() }
+        try output.seekToEnd()
+        for part in parts.dropFirst() {
+            let input = try FileHandle(forReadingFrom: part)
+            while let data = try input.read(upToCount: 8 * 1_048_576), !data.isEmpty {
+                try output.write(contentsOf: data)
+            }
+            try input.close()
+            try FileManager.default.removeItem(at: part)
+        }
+    }
+
+    /// After a relaunch, each range arrives on its own; once all of a title's are on disk they're
+    /// joined into the staged file the rest of the download picks up. Nil until then.
+    private nonisolated static func joinOrphanedParts(at partPath: String) throws -> String? {
+        let partURL = URL(fileURLWithPath: partPath)
+        let name = partURL.lastPathComponent
+        guard name.hasPrefix("video.part-"),
+              let count = name.split(separator: "-").last.flatMap({ Int($0) })
+        else { return partPath }
+        let dir = partURL.deletingLastPathComponent()
+        let parts = (1...count).map { dir.appendingPathComponent(partFileName($0, of: count)) }
+        guard parts.allSatisfy({ FileManager.default.fileExists(atPath: $0.path) }) else { return nil }
+        let staged = dir.appendingPathComponent(stagedVideoFileName)
+        try join(parts, into: staged)
+        return staged.path
+    }
 }
 
 // MARK: - URLSessionDownloadDelegate
@@ -1323,6 +1501,13 @@ extension DownloadManager: URLSessionDownloadDelegate {
         let now = Date()
         Task { @MainActor in
             guard let itemId = self.taskItemIds[taskId] else { return }
+            var totalBytesWritten = totalBytesWritten
+            var totalBytesExpectedToWrite = totalBytesExpectedToWrite
+            if let total = self.partTotals[itemId] {
+                self.partBytes[taskId] = totalBytesWritten
+                totalBytesWritten = (self.partTasks[itemId] ?? []).reduce(0) { $0 + (self.partBytes[$1.taskIdentifier] ?? 0) }
+                totalBytesExpectedToWrite = total
+            }
             if totalBytesExpectedToWrite > 0 {
                 self.progress[itemId] = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
             }
@@ -1386,8 +1571,9 @@ extension DownloadManager: URLSessionDownloadDelegate {
             // No continuation means this app instance didn't originate the transfer — most
             // likely relaunched specifically to receive this exact redelivered event. The
             // file's already safely moved above; finish the rest of the pipeline for it.
-            if capturedMoveError == nil, let capturedPath {
-                await self.recoverOrphanedDownload(destinationPath: capturedPath)
+            if capturedMoveError == nil, let capturedPath,
+               let videoPath = try? await Task.detached(priority: .utility, operation: { try Self.joinOrphanedParts(at: capturedPath) }).value {
+                await self.recoverOrphanedDownload(destinationPath: videoPath)
             }
         }
     }
