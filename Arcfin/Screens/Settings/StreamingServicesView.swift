@@ -54,16 +54,30 @@ struct StreamingServicesView: View {
             }
             if !selected.isEmpty && query.isEmpty {
                 Section {
+                    #if os(tvOS)
+                    ForEach(Array(selected.enumerated()), id: \.element) { index, provider in
+                        row(provider)
+                            .contextMenu {
+                                Button("Move Up") { moveService(at: index, by: -1) }.disabled(index == 0)
+                                Button("Move Down") { moveService(at: index, by: 1) }.disabled(index == selected.count - 1)
+                            }
+                    }
+                    #else
                     ForEach(selected) { provider in row(provider) }
                         .onMove { from, to in
                             var list = selected
                             list.move(fromOffsets: from, toOffset: to)
                             selectedData = StreamingServicePrefs.encode(list)
                         }
+                    #endif
                 } header: {
                     Text("Your Services")
                 } footer: {
+                    #if os(tvOS)
+                    Text("Each gets a Popular on … row on Home, in this order. Press and hold one to move it.")
+                    #else
                     Text("Each gets a Popular on … row on Home, in this order.")
+                    #endif
                 }
             }
             Section {
@@ -122,6 +136,14 @@ struct StreamingServicesView: View {
         isLoading = false
     }
 
+    private func moveService(at index: Int, by offset: Int) {
+        var list = selected
+        let target = index + offset
+        guard list.indices.contains(target) else { return }
+        list.swapAt(index, target)
+        selectedData = StreamingServicePrefs.encode(list)
+    }
+
     private func regionName(_ code: String) -> String {
         code.isEmpty ? "…" : (Locale.current.localizedString(forRegionCode: code) ?? code)
     }
@@ -147,7 +169,11 @@ struct StreamingServicesView: View {
             }
             .contentShape(Rectangle())
         }
+        #if os(tvOS)
+        .tvListRow()
+        #else
         .buttonStyle(.plain)
+        #endif
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 

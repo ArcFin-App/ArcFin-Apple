@@ -46,12 +46,6 @@ struct SettingsView: View {
                     settingsRow("Appearance", icon: "paintbrush")
                 }
                 .listRowBackground(Color.clear)
-                NavigationLink {
-                    NotificationsSettingsView()
-                } label: {
-                    settingsRow("Notifications", icon: "bell")
-                }
-                .listRowBackground(Color.clear)
             } header: {
                 sectionHeader("Preferences", icon: "slider.horizontal.3")
             }

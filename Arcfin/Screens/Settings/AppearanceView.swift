@@ -57,6 +57,8 @@ struct AppearanceView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
+            // tvOS has a fixed set of tabs.
+            #if !os(tvOS)
             Section {
                 NavigationLink {
                     BottomNavSettingsView()
@@ -74,6 +76,7 @@ struct AppearanceView: View {
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
+            #endif
 
             Section {
                 Toggle(isOn: $reduceMotion) {
@@ -93,7 +96,7 @@ struct AppearanceView: View {
             }
 
 
-            #if !os(macOS)
+            #if os(iOS)
             Section {
                 Toggle(isOn: $hapticsEnabled) {
                     TVRowLabelText(title: "Haptic Feedback")

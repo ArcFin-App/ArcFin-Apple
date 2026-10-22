@@ -56,7 +56,9 @@ struct ContentView: View {
     @State private var heartbeatTask: Task<Void, Never>?
     @State private var arcfinSyncTask: Task<Void, Never>?
     @State private var seerrPollTask: Task<Void, Never>?
-    #if !os(tvOS)
+    #if os(tvOS)
+    @State private var showProfilePicker = false
+    #else
     @State private var isAppLocked = false
     @State private var activeProfileHasPIN = false
     @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
@@ -104,7 +106,9 @@ struct ContentView: View {
 
     /// Through the lock screen's profile picker, so a PIN on another profile still applies.
     private func switchProfileFromSchedule() {
-        #if !os(tvOS)
+        #if os(tvOS)
+        showProfilePicker = true
+        #else
         isAppLocked = true
         #endif
     }
@@ -291,9 +295,11 @@ struct ContentView: View {
                 Task { await authManager.reresolveBaseURLIfNeeded() }
                 downloadManager.refreshSmartDownloads()
                 syncOfflineProgress()
-                Task { await loadProfileRules() }
             }
             #endif
+            if newPhase == .active {
+                Task { await loadProfileRules() }
+            }
         }
         #if !os(tvOS)
         .onChange(of: authManager.state) { _, _ in Task { await refreshLockRequirement() } }
@@ -334,6 +340,12 @@ struct ContentView: View {
         .onChange(of: authManager.isSyncingArcfin) { _, isSyncing in
             if !isSyncing { checkSeerrSetupPrompt() }
         }
+        #if os(tvOS)
+        .sheet(isPresented: $showProfilePicker) {
+            NavigationStack { TVUsersView() }
+                .preferredColorScheme(.dark)
+        }
+        #endif
         .sheet(isPresented: $showSeerrSetupPrompt) {
             if case .authenticated(let cred) = authManager.state {
                 SeerrSetupPromptView(
