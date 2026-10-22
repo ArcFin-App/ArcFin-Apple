@@ -148,7 +148,6 @@ struct PlayerView: View {
     #if !os(tvOS)
     @StateObject var pip = PiPCoordinator()
     @State var vlcPipController: SwiftVLC.PiPController?
-    @State var isPiPSupported = AVPictureInPictureController.isPictureInPictureSupported()
     #endif
     @State var nowPlayingManager = NowPlayingManager()
     // Not PiP-specific — used by videoSurface's own aspect-fill toggle, which is
@@ -617,7 +616,9 @@ struct PlayerView: View {
             // them (single tap was toggling play/pause instead of the controls overlay).
             // PiP is driven entirely through our own button, not by touching the video, so
             // hit-testing on the surface itself is safe to turn off.
-            PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+            PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController,
+                         startsAutomaticallyFromInline: UserDefaults.standard.bool(forKey: "autoPictureInPicture"),
+                         managesAudioSession: false)
                 .allowsHitTesting(false)
             #endif
         } else if let aetherEngine = player as? AetherEnginePlayer {
@@ -655,6 +656,12 @@ struct PlayerView: View {
     }
 
     #if !os(tvOS)
+    /// Only where it works: VLC's own PiP, or AVFoundation/Aether through an AVPlayerLayer
+    /// (not Aether's software route).
+    var canPictureInPicture: Bool {
+        player is VLCEnginePlayer ? vlcPipController != nil : pip.isSupported
+    }
+
     func togglePiP() {
         if player is VLCEnginePlayer {
             vlcPipController?.toggle()

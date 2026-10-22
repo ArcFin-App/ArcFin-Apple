@@ -55,8 +55,14 @@ struct OfflinePlayerView: View {
     @State private var progressSaveTask: Task<Void, Never>?
     #if !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?
+    /// Aether's native routes play through an AVPlayerLayer, which PiP can take over.
+    @StateObject private var pip = PiPCoordinator()
     @State private var isFillScreen = false
     #endif
+    /// Settings › Playback › When Resuming is Ask, and the answer isn't in yet.
+    @State private var isAskingToResume = false
+    @State private var askedResumeTicks: Int64 = 0
+    @State private var resumeAnswer: Int64?
     #if os(macOS)
     @State private var macWindow: NSWindow?
     @State private var isMacFullScreen = false
@@ -81,7 +87,9 @@ struct OfflinePlayerView: View {
                 // itself, so disabling hit-testing on the surface can't also disable it.
                 ZStack {
                     if let vlcEngine = player as? VLCEnginePlayer {
-                        PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+                        PiPVideoView(vlcEngine.vlcPlayer, controller: $vlcPipController,
+                                     startsAutomaticallyFromInline: UserDefaults.standard.bool(forKey: "autoPictureInPicture"),
+                                     managesAudioSession: false)
                             .allowsHitTesting(false)
                     } else if let aetherEngine = player as? AetherEnginePlayer {
                         AetherEngineVideoSurface(player: aetherEngine)
@@ -151,8 +159,17 @@ struct OfflinePlayerView: View {
         .persistentSystemOverlays(.hidden)
         #endif
         .task { await setup() }
+        .confirmationDialog("Resume Playback?", isPresented: $isAskingToResume, titleVisibility: .visible) {
+            Button("Resume from \(Self.timeText(askedResumeTicks))") { resumeAnswer = askedResumeTicks }
+            Button("Start from Beginning") { resumeAnswer = 0 }
+            Button("Cancel", role: .cancel) { dismiss() }
+        }
+        .onChange(of: isAskingToResume) { _, asking in
+            if !asking, let resumeAnswer { Task { await startPlayback(from: resumeAnswer) } }
+        }
         .onDisappear {
-            savePosition(final: true)
+            // Nothing played when the resume question was cancelled.
+            if player.status != .idle { savePosition(final: true) }
             // Dismissing (back chevron, Escape) previously left VLC playing in the
             // background with no way to stop it short of killing the app — the player
             // was never actually told to stop, just visually torn down.
@@ -231,8 +248,32 @@ struct OfflinePlayerView: View {
         #if canImport(UIKit) && !os(tvOS)
         await activateAudioSession()
         #endif
-        let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
         let startTicks = await resumeTicks()
+        // Settings › Playback › When Resuming; an explicit Start Over has already decided.
+        if startPositionOverride == nil, startTicks > 0 {
+            switch ResumeBehavior.current {
+            case .startOver:
+                await startPlayback(from: 0)
+                return
+            case .ask:
+                askedResumeTicks = startTicks
+                isAskingToResume = true
+                return
+            case .resume:
+                break
+            }
+        }
+        await startPlayback(from: startTicks)
+    }
+
+    private static func timeText(_ ticks: Int64) -> String {
+        let total = Int(ticks / 10_000_000)
+        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+    }
+
+    private func startPlayback(from startTicks: Int64) async {
+        let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
         // The engine picked in Settings; Aether otherwise (AVFoundation can't open most
         // downloaded containers, so it isn't offered here).
         if playbackEnginePreference == .vlc, !(player is VLCEnginePlayer) {
@@ -251,8 +292,25 @@ struct OfflinePlayerView: View {
             // the controls overlay already reflects through player.status.
         }
         await player.play()
+        #if !os(tvOS)
+        if let aether = player as? AetherEnginePlayer, let layer = aether.nativePlayerLayer {
+            pip.stashLayer(layer)
+            pip.activateIfNeeded()
+        }
+        #endif
         startProgressSaving()
     }
+
+    #if !os(tvOS)
+    /// Only where it works: VLC's own PiP, or Aether playing through an AVPlayerLayer.
+    private var canPictureInPicture: Bool {
+        player is VLCEnginePlayer ? vlcPipController != nil : pip.isSupported
+    }
+
+    private func togglePictureInPicture() {
+        if player is VLCEnginePlayer { vlcPipController?.toggle() } else { pip.toggle() }
+    }
+    #endif
 
     #if canImport(UIKit) && !os(tvOS)
     // Off the main thread — AVAudioSession's synchronous setActive can block long enough
@@ -316,8 +374,17 @@ struct OfflinePlayerView: View {
 
     private func savePosition(final: Bool) {
         downloadedItem.playbackPositionTicks = player.positionTicks
+        // Settings › Playback › Mark as Watched, with Jellyfin's own 90% for Server Default.
+        // Only ever set here, never cleared: watching a finished title again doesn't make it
+        // unwatched, on the server either.
         if player.durationTicks > 0 {
-            downloadedItem.played = Double(player.positionTicks) / Double(player.durationTicks) >= 0.9
+            let seconds = Double(player.positionTicks) / 10_000_000
+            let duration = Double(player.durationTicks) / 10_000_000
+            let threshold = WatchedThreshold.current
+            let reached = threshold == .server
+                ? seconds / duration >= 0.9
+                : threshold.isReached(seconds: seconds, duration: duration, creditsStart: downloadedItem.creditsStartSeconds)
+            if reached { downloadedItem.played = true }
         }
         // Picked up by OfflineProgressSync once the app's back online — this is the only
         // record that playback happened at all while offline.
@@ -420,8 +487,8 @@ struct OfflinePlayerView: View {
             }
             #if canImport(UIKit) && !os(tvOS)
             Menu {
-                if AVPictureInPictureController.isPictureInPictureSupported() {
-                    Button { vlcPipController?.toggle() } label: {
+                if canPictureInPicture {
+                    Button { togglePictureInPicture() } label: {
                         Label("Picture in Picture", systemImage: "pip.enter")
                     }
                 }
@@ -457,8 +524,8 @@ struct OfflinePlayerView: View {
                 }
                 .accessibilityLabel("Toggle full screen")
                 .buttonStyle(.plain)
-                if AVPictureInPictureController.isPictureInPictureSupported() {
-                    Button { vlcPipController?.toggle() } label: {
+                if canPictureInPicture {
+                    Button { togglePictureInPicture() } label: {
                         Image(systemName: "pip.enter")
                             .font(.system(.body, weight: .semibold))
                             .foregroundStyle(.white)

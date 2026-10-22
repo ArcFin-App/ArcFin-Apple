@@ -572,7 +572,9 @@ struct LocalPlayerView: View {
                 // disabled here — PiPVideoView's native drawable is itself interactive and
                 // would otherwise swallow the tap before the toggleControls gesture sees it.
                 ZStack {
-                    PiPVideoView(player.vlcPlayer, controller: $vlcPipController, managesAudioSession: false)
+                    PiPVideoView(player.vlcPlayer, controller: $vlcPipController,
+                                 startsAutomaticallyFromInline: UserDefaults.standard.bool(forKey: "autoPictureInPicture"),
+                                 managesAudioSession: false)
                         .allowsHitTesting(false)
                 }
                 .contentShape(Rectangle())
@@ -661,7 +663,7 @@ struct LocalPlayerView: View {
             Spacer()
             #if canImport(UIKit) && !os(tvOS)
             AirPlayButton().frame(width: 44, height: 44)
-            if AVPictureInPictureController.isPictureInPictureSupported() {
+            if vlcPipController != nil {
                 Button { vlcPipController?.toggle() } label: {
                     Image(systemName: "pip.enter")
                         .font(.system(.body, weight: .semibold))

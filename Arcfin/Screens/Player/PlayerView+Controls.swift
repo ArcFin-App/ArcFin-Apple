@@ -262,7 +262,7 @@ extension PlayerView {
     private var moreMenu: some View {
         Menu {
             #if !os(tvOS)
-            if isPiPSupported {
+            if canPictureInPicture {
                 Button { togglePiP() } label: {
                     Label("Picture in Picture", systemImage: "pip.enter")
                 }
