@@ -789,7 +789,7 @@ struct HomeView: View {
         }
     }
 
-    #if os(iOS)
+    #if !os(tvOS)
     /// The Resume Watching control: plays the most recent title straight away.
     private func resumeLatest() {
         guard let item = mediaRepo.continueWatching.first ?? mediaRepo.nextUp.first else { return }
@@ -823,11 +823,13 @@ struct HomeView: View {
 
     var body: some View {
         homeObservers
-        #if canImport(UIKit) && !os(tvOS)
+        #if os(iOS)
         .onChange(of: mediaRepo.continueWatching.first?.id, initial: true) { _, _ in
             let first = mediaRepo.continueWatching.first
             QuickActions.update(resumeItemID: first?.id, title: first?.name)
         }
+        #endif
+        #if !os(tvOS)
         .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).map(\.id), initial: true) { _, _ in
             var seen = Set<String>()
             let items = (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
@@ -845,7 +847,7 @@ struct HomeView: View {
             }
         }
         #endif
-        #if os(iOS)
+        #if !os(tvOS)
         .onContinueUserActivity(ArcfinActivity.viewTitle) { activity in
             if let id = activity.userInfo?["itemID"] as? String {
                 ArcfinRouting.openItem(id: id)
@@ -858,7 +860,7 @@ struct HomeView: View {
                 openDeepLinkItem(id: id)
             }
         }
-        #if os(iOS)
+        #if !os(tvOS)
         .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
             resumeLatest()
         }
@@ -866,7 +868,7 @@ struct HomeView: View {
         #if !os(tvOS)
         .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem) { Task { await loadHome(force: true) } }
         #endif
-        #if os(iOS)
+        #if !os(tvOS)
         .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenSeerrTitle)) { note in
             if let id = note.userInfo?["id"] as? String { openSeerrDeepLink(id: id) }
         }
@@ -891,7 +893,7 @@ struct HomeView: View {
         guard case .authenticated(let cred) = authManager.state else { return }
         await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: force)
         mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
-        #if os(iOS)
+        #if !os(tvOS)
         // Everything the shelves already hold: titles in progress or queued up, favorites,
         // recent additions and what was watched lately, so search covers more than "latest".
         let indexable = mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.favorites
@@ -928,7 +930,7 @@ struct HomeView: View {
             UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
             openDeepLinkItem(id: id)
         }
-        #if os(iOS)
+        #if !os(tvOS)
         if UserDefaults.standard.bool(forKey: "arcfin.pendingResume") { resumeLatest() }
         #endif
         if seerrRepo.hasCatalog && seerrDiscoverEnabled {
@@ -1385,7 +1387,7 @@ struct HomeView: View {
         }
     }
 
-    #if os(iOS)
+    #if !os(tvOS)
     private func openSeerrDeepLink(id: String) {
         UserDefaults.standard.removeObject(forKey: "arcfin.pendingSeerrTitle")
         if let entry = SeerrSpotlightStore.entry(id: id), let item = entry.seerrItem { seerrDeepLinkItem = item }

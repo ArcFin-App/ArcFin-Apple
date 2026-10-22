@@ -177,7 +177,7 @@ final class SeerrRepository {
 
     /// Keeps Spotlight's copy of the personal Seerr slice (watchlist + requests) current.
     private func indexForSpotlight() {
-        #if os(iOS)
+        #if !os(tvOS)
         let watchlist = watchlist, requests = requests
         Task { await SeerrSpotlightIndexer.index(watchlist: watchlist, requests: requests) }
         #endif

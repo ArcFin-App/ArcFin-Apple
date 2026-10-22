@@ -87,7 +87,7 @@ enum NotificationManager {
     }
 }
 
-#if os(iOS)
+#if !os(tvOS)
 /// Receives notification taps and shows banners while the app is open.
 final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
     static let shared = NotificationRouter()

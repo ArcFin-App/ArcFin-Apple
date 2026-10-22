@@ -2,12 +2,20 @@
 
 import SwiftUI
 import SwiftData
+#if os(macOS)
+import UserNotifications
+#endif
 import Persistence
 
 @main
 struct ArcfinApp: App {
     #if canImport(UIKit) && !os(tvOS)
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    #elseif os(macOS)
+    init() {
+        // Taps on a notification open the title, Discover or Downloads, as on iOS.
+        UNUserNotificationCenter.current().delegate = NotificationRouter.shared
+    }
     #endif
 
     var sharedModelContainer: ModelContainer = {

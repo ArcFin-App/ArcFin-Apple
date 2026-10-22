@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(iOS)
+#if !os(tvOS)
 import AppIntents
 import Foundation
 
@@ -11,7 +11,7 @@ import Foundation
 /// There is no video domain among Apple's schema domains (only Audio, which is music and
 /// podcasts), so search is what a video app can adopt. Opening a title is handled by
 /// `OpenTitleIntent`, which keeps working on iOS 26.
-@available(iOS 27.0, *)
+@available(iOS 27.0, macOS 27.0, *)
 @AppIntent(schema: .system.searchInApp)
 struct SearchTitlesIntent: ShowInAppSearchResultsIntent {
     static let searchScopes: [StringSearchScope] = [.general]

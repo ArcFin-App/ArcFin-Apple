@@ -2,7 +2,7 @@
 
 import SwiftUI
 import JellyfinAPI
-#if os(iOS)
+#if !os(tvOS)
 import AppIntents
 #endif
 import SeerrAPI
@@ -153,6 +153,8 @@ struct MediaDetailView: View {
         // Pull down to pick up changes made elsewhere (another device, the web UI): watched
         // state, resume position, the next episode and the season's progress.
         .refreshable { await refreshAfterPlayback(waitForReport: false) }
+        #endif
+        #if !os(tvOS)
         // Handoff to another device, Spotlight, and on-screen awareness: Siri and Apple
         // Intelligence can resolve "this movie" to the MediaEntity for what's on screen.
         .userActivity(ArcfinActivity.viewTitle) { activity in

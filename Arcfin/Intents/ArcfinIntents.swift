@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(iOS)
+#if !os(tvOS)
 import AppIntents
 import AuthCore
 import CoreImage
@@ -342,6 +342,7 @@ enum Thumbnails {
 /// Point the camera at a movie poster, a DVD case or a screenshot and the titles it spells out
 /// are looked up in the library. Visual intelligence only supplies generic labels ("poster",
 /// "book"), never a title, so the text in the picture is read instead and searched.
+@available(macOS 27.0, *)
 struct ArcfinVisualSearchQuery: IntentValueQuery {
     func values(for input: SemanticContentDescriptor) async throws -> [MediaEntity] {
         guard let credential = IntentSession.credential(), let pixelBuffer = input.pixelBuffer else { return [] }

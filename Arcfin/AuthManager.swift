@@ -345,12 +345,14 @@ final class AuthManager {
         Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id); try? k.deleteSeerrPassword(profile: id) }
         UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
         profiles.removeAll { $0.id == id }
-        #if os(iOS)
+        #if !os(tvOS)
         // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
         Task { await SpotlightIndexer.clear() }
         // Likewise for the widgets and the background notification bookkeeping.
         WidgetSnapshotUpdater.clear()
         SeerrSpotlightStore.clear()
+        #endif
+        #if os(iOS)
         BackgroundRefresh.resetState()
         #endif
         SplashMosaicStore.clear()

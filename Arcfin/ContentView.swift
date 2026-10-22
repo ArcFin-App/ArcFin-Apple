@@ -93,7 +93,7 @@ struct ContentView: View {
         case "resume":
             UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
             NotificationCenter.default.post(name: .arcfinResume, object: nil)
-        #if os(iOS)
+        #if !os(tvOS)
         case "discover":
             ArcfinRouting.showDiscover()
         case "search":
@@ -118,7 +118,7 @@ struct ContentView: View {
         await ProfileRules.shared.load(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
     }
 
-    #if os(iOS)
+    #if !os(tvOS)
     private func consumeControlLink() {
         guard let link = UserDefaults.standard.string(forKey: ControlRoute.pendingKey), let url = URL(string: link) else { return }
         UserDefaults.standard.removeObject(forKey: ControlRoute.pendingKey)
@@ -250,7 +250,7 @@ struct ContentView: View {
         .environment(downloadManager)
         .environment(syncPlayManager)
         .onOpenURL { handleDeepLink($0) }
-        #if os(iOS)
+        #if !os(tvOS)
         .onReceive(NotificationCenter.default.publisher(for: ControlRoute.notification)) { _ in
             consumeControlLink()
         }
@@ -261,7 +261,7 @@ struct ContentView: View {
             await refreshLockRequirement()
             if activeProfileHasPIN { isAppLocked = true }
             #endif
-            #if os(iOS)
+            #if !os(tvOS)
             consumeControlLink()
             #endif
         }
