@@ -25,8 +25,8 @@ struct MediaDetailView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
-    #if os(iOS)
     @Environment(DownloadManager.self) private var downloadManager
+    #if os(iOS)
     @Environment(\.modelContext) private var modelContext
     #endif
     #if os(macOS)

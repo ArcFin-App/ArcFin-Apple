@@ -150,10 +150,7 @@ struct AddTitlesToPlaylistSheet: View {
                     Text(errorMessage).font(.footnote).foregroundStyle(.red)
                 }
             }
-            #if os(iOS)
-            .listStyle(.insetGrouped)
-            #endif
-            .scrollContentBackground(.hidden)
+            .arcfinListStyle()
             .screenBackground()
             .searchable(text: $query, prompt: "Movies, shows, episodes")
             .navigationTitle("Add Titles")

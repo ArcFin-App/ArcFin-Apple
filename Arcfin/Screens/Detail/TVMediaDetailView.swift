@@ -404,7 +404,7 @@ struct TVMediaDetailView: View {
                 HStack(alignment: .top, spacing: 16) {
                     ForEach(d.cast) { person in
                         Button { selectedPerson = person } label: {
-                            CastPersonCard(
+                            TVCastPersonCard(
                                 imageURL: person.primaryImageTag.flatMap {
                                     mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120)
                                 },
@@ -690,7 +690,7 @@ private struct TVEpisodeCard: View {
 
 // MARK: - Cast person card
 
-private struct CastPersonCard<Placeholder: View>: View {
+private struct TVCastPersonCard<Placeholder: View>: View {
     let imageURL: URL?
     let name: String
     let role: String?

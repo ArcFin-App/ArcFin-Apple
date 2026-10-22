@@ -83,12 +83,14 @@ struct DownloadsSettingsView: View {
                 Section {
                     ForEach(keptShows.sorted { $0.value.name < $1.value.name }, id: \.key) { seriesId, show in
                         LabeledContent(show.name, value: show.episodeCount == 1 ? "Next episode" : "Next \(show.episodeCount)")
+                            #if !os(tvOS)
                             .swipeActions {
                                 Button("Stop", role: .destructive) {
                                     downloadManager.setKeptShow(seriesId: seriesId, name: show.name, episodeCount: nil)
                                     keptShows = DownloadManager.keptShows
                                 }
                             }
+                            #endif
                     }
                 } header: {
                     Text("Kept Downloaded")

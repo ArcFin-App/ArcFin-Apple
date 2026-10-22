@@ -213,6 +213,15 @@ extension View {
             self
         }
     }
+
+    /// The destination half of the zoom; macOS has no zoom navigation transition.
+    func zoomNavigationTransition(id: String, in namespace: Namespace.ID) -> some View {
+        #if os(iOS)
+        navigationTransition(.zoom(sourceID: id, in: namespace))
+        #else
+        self
+        #endif
+    }
 }
 #endif
 

@@ -113,7 +113,7 @@ struct CollectionDetailView: View {
             MediaDetailView(item: item)
 #else
             MediaDetailView(item: item, zoomNamespace: zoomNamespace)
-                .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+                .zoomNavigationTransition(id: item.id, in: zoomNamespace)
 #endif
         }
         .navigationDestination(item: $selectedPerson) { person in

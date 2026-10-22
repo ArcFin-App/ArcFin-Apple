@@ -38,6 +38,8 @@ enum NotificationManager {
     }
 
     private static func send(title: String, body: String, identifier: String, route: Route? = nil) async {
+        // tvOS notifications carry only a badge, no text.
+        #if !os(tvOS)
         guard await ensureAuthorized() else { return }
         let content = UNMutableNotificationContent()
         content.title = title
@@ -46,6 +48,7 @@ enum NotificationManager {
         if let route { content.userInfo = route.userInfo }
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
         try? await UNUserNotificationCenter.current().add(request)
+        #endif
     }
 
     /// For the permission prompt when someone switches a notification toggle on — the lazy

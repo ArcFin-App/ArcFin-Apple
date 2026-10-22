@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if canImport(UIKit) && !os(tvOS)
 import CoreImage
 import JellyfinAPI
 import SwiftUI
-import UIKit
 
 /// The average color of a remote image, used to tint a detail screen from its artwork.
 enum AverageColor {
@@ -24,4 +22,3 @@ enum AverageColor {
         return Color(red: Double(pixel[0]) / 255, green: Double(pixel[1]) / 255, blue: Double(pixel[2]) / 255)
     }
 }
-#endif
