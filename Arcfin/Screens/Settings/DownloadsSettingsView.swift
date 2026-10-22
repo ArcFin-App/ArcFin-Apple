@@ -158,7 +158,7 @@ struct DownloadsSettingsView: View {
                 } header: {
                     Text("Kept Downloaded")
                 } footer: {
-                    Text("Shows set to Keep Downloaded from their page. Swipe to stop; episodes already downloaded stay until watched.")
+                    Text("Shows set to Keep Downloaded from their page. They download as soon as you choose, and the Smart Downloads storage budget doesn't apply to them; they stop when the device is under 2 GB free. Swipe to stop; episodes already downloaded stay until watched.")
                         .font(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }

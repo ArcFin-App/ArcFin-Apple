@@ -87,6 +87,7 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private var isOnMobileData = false
     @ObservationIgnored private var isOnLowDataMode = false
     @ObservationIgnored private var isRunningSmartDownloads = false
+    @ObservationIgnored private var smartDownloadsRerunRequested = false
 
     /// Why the queue is waiting instead of starting the next title.
     enum QueueHold: Equatable {
@@ -655,9 +656,16 @@ final class DownloadManager: NSObject {
     /// remux even for an otherwise direct-downloadable source — that's the only way to
     /// actually reduce a download's bitrate below the source's own.
     func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil, viaSmart: Bool = false) async {
+        guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap, viaSmart: viaSmart) else { return }
+        await processQueue()
+    }
+
+    /// Queues without waiting for the queue to run. False when it's already downloaded or queued.
+    @discardableResult
+    private func addToQueue(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool) -> Bool {
         guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
               !pendingQueue.contains(where: { $0.item.id == item.id })
-        else { return }
+        else { return false }
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
         pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
@@ -671,7 +679,7 @@ final class DownloadManager: NSObject {
             refreshLiveActivity()
         }
         #endif
-        await processQueue()
+        return true
     }
 
     private enum QueueEvent: Sendable {
@@ -1294,9 +1302,20 @@ final class DownloadManager: NSObject {
         let kept = Self.keptShows
         guard globalOn || !kept.isEmpty else { return }
         guard !isOnMobileData || smartDownloadsAllowMobileData else { return }
-        guard !isRunningSmartDownloads else { return }
+        // A check already running read the kept shows before this one was asked for (a show
+        // just switched on, say), so it runs once more when it's done instead of dropping it.
+        guard !isRunningSmartDownloads else {
+            smartDownloadsRerunRequested = true
+            return
+        }
         isRunningSmartDownloads = true
-        defer { isRunningSmartDownloads = false }
+        defer {
+            isRunningSmartDownloads = false
+            if smartDownloadsRerunRequested {
+                smartDownloadsRerunRequested = false
+                Task { await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader) }
+            }
+        }
 
         let episodeCount = max(1, min(5, UserDefaults.standard.object(forKey: Self.smartDownloadsEpisodeCountKey) as? Int ?? 2))
         let budgetGB = UserDefaults.standard.object(forKey: Self.smartDownloadsStorageBudgetGBKey) as? Int ?? 10
@@ -1337,12 +1356,27 @@ final class DownloadManager: NSObject {
                     }
                 }
             }
+            if kept[seriesId] != nil {
+                // Asked for by name on the show's page, so Smart Downloads' budget (a setting
+                // only shown with Smart Downloads on) doesn't hold it back; the device's own
+                // free space still does. Queued together, so they show in Downloads at once.
+                for episode in nextUp where Self.freeSpace().map({ $0 > Int64(Self.lowSpaceThreshold) }) ?? true {
+                    addToQueue(item: episode, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true)
+                }
+                Task { await processQueue() }
+                continue
+            }
             for episode in nextUp {
                 guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
                 guard totalDownloadedBytes() < budgetBytes else { return }
                 await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
             }
         }
+    }
+
+    private static func freeSpace() -> Int64? {
+        (try? DownloadStore.rootDirectory().deletingLastPathComponent()
+            .resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity).map(Int64.init)
     }
 
     // MARK: - Video download with progress
