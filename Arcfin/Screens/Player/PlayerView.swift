@@ -1028,6 +1028,8 @@ struct PlayerView: View {
             }
             await player.play()
             await applyRememberedRate()
+            // The preferred or remembered audio language, which a file played as is ignores.
+            if selectedAudioIndex != nil { await selectAudioInEngine() }
             // A cast that was already running when this screen opened (autoplay moved on to
             // the next episode) never produces an isConnected change to trigger this.
             if CastManager.shared.isConnected { startCasting() }
@@ -1622,6 +1624,13 @@ struct PlayerView: View {
         if let audioIndex { selectedAudioIndex = audioIndex }
         if let subtitleIndex { selectedSubtitleIndex = subtitleIndex }
         rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil)
+        if audioIndex != nil, subtitleIndex == nil, !CastManager.shared.isConnected,
+           playbackInfo?.playMethod == .directPlay {
+            Task {
+                if await !selectAudioInEngine() { reload(errorContext: "switch track") }
+            }
+            return
+        }
         if audioIndex == nil, let subtitleIndex, !CastManager.shared.isConnected,
            drawsSubtitleHere(previousSubtitle), drawsSubtitleHere(subtitleIndex),
            let credential, let info = playbackInfo {
@@ -1632,6 +1641,25 @@ struct PlayerView: View {
             return
         }
         reload(errorContext: "switch track")
+    }
+
+    /// A file played as is carries every audio track: the server's audio choice only shapes a
+    /// transcode, so here the engine switches tracks itself, without a new stream. Jellyfin's
+    /// embedded audio streams and the engine's tracks are both in the file's order; when the
+    /// counts don't line up it's left to a reload. Returns whether it was done.
+    @discardableResult
+    private func selectAudioInEngine() async -> Bool {
+        guard let info = playbackInfo, info.playMethod == .directPlay, let index = selectedAudioIndex else { return false }
+        let embedded = info.audioStreams.filter { !$0.isExternal }.sorted { $0.index < $1.index }
+        guard let ordinal = embedded.firstIndex(where: { $0.index == index }) else { return false }
+        // Engines list tracks a moment after the file opens.
+        for _ in 0..<20 where player.availableAudioTracks.isEmpty {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        guard player.availableAudioTracks.count == embedded.count else { return false }
+        let track = player.availableAudioTracks[ordinal]
+        if track.id != player.selectedAudioTrackIndex { await player.setAudioTrack(index: track.id) }
+        return true
     }
 
     /// Text subtitles come as their own file (WebVTT) the app draws over the video, so moving
@@ -1747,6 +1775,7 @@ struct PlayerView: View {
                 lastLoadStartedAt = Date()
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
+                if selectedAudioIndex != nil { await selectAudioInEngine() }
                 await applyRememberedRate()
                 #if !os(tvOS) && !os(macOS)
                 if let avPlayer = player as? AVFoundationPlayer {
