@@ -13,6 +13,7 @@ import JellyfinAPI
 import MediaEngine
 import SwiftVLC
 import CastKit
+import GroupActivities
 
 struct PlayerView: View {
     let item: MediaItem
@@ -22,6 +23,9 @@ struct PlayerView: View {
     @Environment(AuthManager.self) var authManager
     @Environment(MediaRepository.self) var mediaRepo
     @Environment(SyncPlayManager.self) var syncPlayManager
+    @Environment(SharePlayManager.self) var sharePlay
+    /// Whether a FaceTime call is going, so SharePlay can start straight from the menu.
+    @StateObject var groupState = GroupStateObserver()
     @Environment(PlaybackPresenter.self) var playbackPresenter
     @Environment(\.dismiss) var dismiss
 
@@ -515,6 +519,23 @@ struct PlayerView: View {
         .onChange(of: syncPlayManager.incomingCommand) { _, command in
             guard let command else { return }
             applySyncPlayCommand(command)
+        }
+        .onChange(of: sharePlay.incomingCommand) { _, command in
+            guard let command else { return }
+            applySharePlayCommand(command)
+        }
+        .onChange(of: sharePlay.activityItemId) { _, id in
+            guard let id, id != item.id else { return }
+            followSharePlay(to: id)
+        }
+        .onChange(of: sharePlay.notice) { _, notice in
+            guard let notice else { return }
+            sharePlay.notice = nil
+            networkToast = notice
+            Task {
+                try? await Task.sleep(for: .seconds(4))
+                if networkToast == notice { networkToast = nil }
+            }
         }
         #if canImport(GoogleCast)
         .onChange(of: CastManager.shared.playbackFinishedCount) { _, _ in
@@ -1069,6 +1090,7 @@ struct PlayerView: View {
             }
             await player.play()
             await applyRememberedRate()
+            sharePlay.playerOpened(item)
             // The preferred or remembered audio language, which a file played as is ignores.
             if selectedAudioIndex != nil { await selectAudioInEngine() }
             // A cast that was already running when this screen opened (autoplay moved on to
@@ -1167,6 +1189,38 @@ struct PlayerView: View {
         case .seek, .stop:
             if let ticks = command.positionTicks {
                 Task { await player.seek(to: ticks) }
+            }
+        }
+    }
+
+    // MARK: - SharePlay
+
+    /// A command from someone else in the call. Applied straight to the player, so it isn't
+    /// sent on again.
+    private func applySharePlayCommand(_ command: SharePlayCommand) {
+        guard command.itemId == item.id else { return }
+        switch command.kind {
+        case .hello:
+            sharePlay.send(player.status == .playing ? .play : .pause, itemId: item.id, positionTicks: player.positionTicks)
+        case .seek:
+            Task { await player.seek(to: command.positionTicks) }
+        case .play, .pause:
+            Task {
+                // Within two seconds is close enough; seeking for less only stutters.
+                if abs(player.positionTicks - command.positionTicks) > 20_000_000 {
+                    await player.seek(to: command.positionTicks)
+                }
+                if command.kind == .play { await player.play() } else { await player.pause() }
+            }
+        }
+    }
+
+    /// Someone in the call picked another title.
+    private func followSharePlay(to itemId: String) {
+        guard let credential, let authHeader else { return }
+        Task {
+            if let next = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: itemId).item {
+                onPlayNext(next)
             }
         }
     }
@@ -1275,6 +1329,7 @@ struct PlayerView: View {
     }
 
     private func teardown() async {
+        sharePlay.playerClosed(item.id)
         progressReportTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()

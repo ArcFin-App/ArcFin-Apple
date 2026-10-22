@@ -120,6 +120,9 @@ struct TVHomeView: View {
                 heroDetailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+            playPendingWatch()
+        }
         .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
             serviceRows = await HomeShelfLoader.serviceRows(seerrRepo: seerrRepo, previous: serviceRows)
         }
@@ -163,6 +166,7 @@ struct TVHomeView: View {
             deepLinkItemID = nil
             heroDetailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
         }
+        playPendingWatch()
         if seerrRepo.hasCatalog && seerrDiscoverEnabled {
             await seerrRepo.loadDiscover()
             await seerrRepo.loadWatchlist()
@@ -172,6 +176,17 @@ struct TVHomeView: View {
         }
         if focusedItemID == nil {
             focusedItemID = mediaRepo.continueWatching.first?.id
+        }
+    }
+
+    /// A SharePlay title: straight into the player.
+    private func playPendingWatch() {
+        guard let cred = authManager.state.credential, let id = WatchRoute.takePending() else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            if let request = await WatchRoute.resolve(id: id, credential: cred, authHeader: header) {
+                playbackRequest = request
+            }
         }
     }
 

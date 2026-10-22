@@ -5,6 +5,7 @@ import AuthCore
 import JellyfinAPI
 import MediaEngine
 import CastKit
+import GroupActivities
 
 extension PlayerView {
 
@@ -289,6 +290,7 @@ extension PlayerView {
                 }
             }
             #endif
+            sharePlayMenuItem
 
             #if !os(tvOS)
             if !castMembers.isEmpty {
@@ -647,6 +649,7 @@ extension PlayerView {
                 Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
             }
         }
+        sharePlayMenuItem
         Button { withAnimation { audioOnly.toggle() } } label: {
             Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
         }
@@ -1157,6 +1160,31 @@ extension PlayerView {
     private func mediaInfoBitrateLabel(_ bitrate: Int) -> String {
         let mbps = Double(bitrate) / 1_000_000
         return mbps >= 1 ? String(format: "%.1f Mb/s", mbps) : String(format: "%.0f Kb/s", Double(bitrate) / 1000)
+    }
+
+    // MARK: - SharePlay
+
+    /// In a FaceTime call SharePlay starts straight away; otherwise the share sheet offers it.
+    /// Apple TV has no share sheet, so there it only shows during a call.
+    @ViewBuilder
+    var sharePlayMenuItem: some View {
+        if sharePlay.isActive {
+            Button(role: .destructive) { sharePlay.leave() } label: {
+                Label(sharePlay.participantCount > 1 ? "Leave SharePlay (\(sharePlay.participantCount))" : "Leave SharePlay",
+                      systemImage: "shareplay.slash")
+            }
+        } else if groupState.isEligibleForGroupSession {
+            Button { sharePlay.start(item) } label: {
+                Label("SharePlay", systemImage: "shareplay")
+            }
+        } else {
+            #if !os(tvOS)
+            ShareLink(item: WatchTogetherItem(activity: sharePlay.activity(for: item)),
+                      preview: SharePreview(item.type == .episode ? (item.seriesName ?? item.name) : item.name)) {
+                Label("SharePlay", systemImage: "shareplay")
+            }
+            #endif
+        }
     }
 
     // MARK: - SyncPlay
@@ -1961,6 +1989,9 @@ extension PlayerView {
             return
         }
         #endif
+        if sharePlay.isActive {
+            sharePlay.send(player.status == .playing ? .pause : .play, itemId: item.id, positionTicks: player.positionTicks)
+        }
         Task {
             if player.status == .playing { await player.pause() } else { await player.play() }
         }
@@ -1992,6 +2023,9 @@ extension PlayerView {
             return
         }
         #endif
+        if sharePlay.isActive {
+            sharePlay.send(.seek, itemId: item.id, positionTicks: ticks)
+        }
         Task {
             await player.seek(to: ticks)
             if pendingSeekTargetTicks == ticks { pendingSeekTargetTicks = nil }

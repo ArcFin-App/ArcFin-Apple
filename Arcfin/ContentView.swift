@@ -61,6 +61,7 @@ struct ContentView: View {
     @State private var statsRepo    = StreamystatsRepository()
     @State private var downloadManager = DownloadManager()
     @State private var syncPlayManager = SyncPlayManager()
+    @State private var sharePlayManager = SharePlayManager()
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
     @State private var arcfinSyncTask: Task<Void, Never>?
@@ -278,6 +279,7 @@ struct ContentView: View {
         .environment(statsRepo)
         .environment(downloadManager)
         .environment(syncPlayManager)
+        .environment(sharePlayManager)
         .onOpenURL { handleDeepLink($0) }
         #if !os(tvOS)
         .onReceive(NotificationCenter.default.publisher(for: ControlRoute.notification)) { _ in
@@ -297,6 +299,19 @@ struct ContentView: View {
             #endif
         }
         .task { authManager.startNetworkMonitoring() }
+        .task {
+            sharePlayManager.currentServerId = { [mediaRepo] in mediaRepo.serverID }
+            await sharePlayManager.observeSessions()
+        }
+        // With a player open, it shows these itself.
+        .alert("SharePlay", isPresented: Binding(
+            get: { sharePlayManager.notice != nil && !sharePlayManager.hasOpenPlayer },
+            set: { if !$0 { sharePlayManager.notice = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(sharePlayManager.notice ?? "")
+        }
         .task { seerrRepo.reloadTMDB() }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
