@@ -81,6 +81,7 @@ struct PlayerView: View {
     @State var selectedAudioIndex: Int?
     @State var selectedSubtitleIndex: Int?
     @State var subtitleCues: [SubtitleCue] = []
+    @State var lastSubtitleIndex: Int?
     /// Seconds subtitles are shifted later (+) or earlier (-) — for sources whose subtitle
     /// timing doesn't match the cut being played. Not persisted: it's per-viewing.
     @State var subtitleDelay: Double = 0
@@ -175,6 +176,7 @@ struct PlayerView: View {
     @State var isMacFullScreen = false
     @State var macVolume: Double = 1.0
     @State var macVolumeHUD: Double?
+    @State var macVolumeBeforeMute: Double?
     @State var macVolumeHUDTask: Task<Void, Never>?
     @FocusState var isPlayerFocused: Bool
     @State var lastMacHoverLocation: CGPoint?
@@ -455,7 +457,20 @@ struct PlayerView: View {
             skip: { seek(by: $0 > 0 ? skipForwardSeconds : -skipBackwardSeconds) },
             volume: { adjustMacVolume(by: $0) },
             toggleFullScreen: { toggleMacWindowFullScreen(macWindow) },
-            close: { closePlayer() }
+            close: { closePlayer() },
+            isMuted: macVolume == 0,
+            toggleMute: { toggleMacMute() },
+            hasSubtitles: !(playbackInfo?.subtitleStreams.isEmpty ?? true),
+            subtitlesOn: selectedSubtitleIndex != nil,
+            toggleSubtitles: { toggleSubtitles() },
+            showTracks: { showTrackMenu = true },
+            showInfo: { showInfoSheet = true },
+            stepSpeed: { stepPlaybackRate($0) },
+            resetSpeed: { choosePlaybackRate(1) },
+            skipSegmentLabel: currentSkippable?.label,
+            skipSegment: { skipToSegmentEnd() },
+            next: nextEpisode == nil ? nil : { playNextEpisode() },
+            previous: previousItem == nil ? nil : { playPrevious() }
         ))
         #endif
         // These must live on a view that's always mounted, not inside the conditionally
@@ -855,11 +870,32 @@ struct PlayerView: View {
     private var rateMenuButtons: some View {
         ForEach(Self.rateOptions, id: \.self) { rate in
             Button(rateLabel(rate) + (rate == player.playbackRate ? " ✓" : "")) {
-                UserDefaults.standard.set(rate, forKey: Self.lastRateKey)
-                Task { await player.setRate(rate) }
+                choosePlaybackRate(rate)
             }
         }
         Button("Cancel", role: .cancel) {}
+    }
+
+    func choosePlaybackRate(_ rate: Float) {
+        UserDefaults.standard.set(rate, forKey: Self.lastRateKey)
+        Task { await player.setRate(rate) }
+    }
+
+    /// One step along the speed menu's options, from whichever is closest to the current speed.
+    func stepPlaybackRate(_ direction: Int) {
+        let options = Self.rateOptions
+        let current = options.indices.min { abs(options[$0] - player.playbackRate) < abs(options[$1] - player.playbackRate) } ?? 2
+        choosePlaybackRate(options[min(max(current + direction, 0), options.count - 1)])
+    }
+
+    /// Off, or back to the last subtitle shown (the first one when none has been yet).
+    func toggleSubtitles() {
+        if let current = selectedSubtitleIndex {
+            lastSubtitleIndex = current
+            changeTrack(subtitleIndex: .some(nil))
+        } else if let index = lastSubtitleIndex ?? playbackInfo?.subtitleStreams.first?.index {
+            changeTrack(subtitleIndex: .some(index))
+        }
     }
 
     private func rateLabel(_ rate: Float) -> String {

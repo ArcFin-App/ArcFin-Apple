@@ -1312,7 +1312,7 @@ extension PlayerView {
     }
 
     /// The segment playback is in right now, if any, with its button label.
-    private var currentSkippable: (kind: String, label: String, span: ClosedRange<Double>)? {
+    var currentSkippable: (kind: String, label: String, span: ClosedRange<Double>)? {
         let seconds = Double(player.positionTicks) / 10_000_000
         guard seconds > 0.5 else { return nil }
         // Recap ("previously on") is the cold open ahead of the intro, so it's checked first.
@@ -1929,7 +1929,7 @@ extension PlayerView {
     }
     #endif
 
-    private func skipToSegmentEnd() {
+    func skipToSegmentEnd() {
         guard let current = currentSkippable else { return }
         skip(kind: current.kind, span: current.span)
     }

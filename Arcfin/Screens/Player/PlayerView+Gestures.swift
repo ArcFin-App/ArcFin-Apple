@@ -149,5 +149,15 @@ extension PlayerView {
             macVolumeHUD = nil
         }
     }
+
+    func toggleMacMute() {
+        if macVolume == 0 {
+            adjustMacVolume(by: macVolumeBeforeMute ?? 1)
+            macVolumeBeforeMute = nil
+        } else {
+            macVolumeBeforeMute = macVolume
+            adjustMacVolume(by: -macVolume)
+        }
+    }
 }
 #endif
