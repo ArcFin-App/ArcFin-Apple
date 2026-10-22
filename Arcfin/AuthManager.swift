@@ -352,7 +352,7 @@ final class AuthManager {
         WidgetSnapshotUpdater.clear()
         SeerrSpotlightStore.clear()
         #endif
-        #if os(iOS)
+        #if !os(tvOS)
         BackgroundRefresh.resetState()
         #endif
         SplashMosaicStore.clear()

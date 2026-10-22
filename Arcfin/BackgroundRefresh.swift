@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(iOS)
+#if !os(tvOS)
 import AuthCore
 import BackgroundKit
+#if os(iOS)
 import BackgroundTasks
+#endif
 import Foundation
 import JellyfinAPI
 import SeerrAPI
@@ -13,7 +15,8 @@ import os
 /// Periodic background check that turns server-side changes into local notifications: new
 /// titles in the Jellyfin library, Seerr request updates, and watchlist items that became
 /// available. iOS decides when a refresh actually runs (typically a few times a day, and
-/// less if the app is rarely opened), so these are best-effort rather than instant.
+/// less if the app is rarely opened), so these are best-effort rather than instant. The Mac
+/// runs the same check every half hour or so while Arcfin is open.
 ///
 /// Each check remembers what it has already seen in UserDefaults. The first run only records
 /// the current state, so turning notifications on never announces everything that already
@@ -24,9 +27,11 @@ nonisolated enum BackgroundRefresh {
     private static let seerrStatusKey = "arcfin.notify.seerrRequestStatus"
     private static let announcedWatchlistKey = "arcfin.notify.announcedWatchlistIDs"
 
+    #if os(iOS)
     /// BGTask isn't Sendable, but it is only touched from the launch handler and the one
     /// task that finishes it.
     private struct TaskBox: @unchecked Sendable { let task: BGAppRefreshTask }
+    #endif
 
     /// Forgets what earlier checks saw, so the next account's first run only records state
     /// instead of announcing its whole library.
@@ -37,6 +42,25 @@ nonisolated enum BackgroundRefresh {
         }
     }
 
+    #if os(macOS)
+    nonisolated(unsafe) private static let activity: NSBackgroundActivityScheduler = {
+        let activity = NSBackgroundActivityScheduler(identifier: BackgroundTaskIdentifier.refresh)
+        activity.repeats = true
+        activity.interval = 30 * 60
+        activity.tolerance = 10 * 60
+        activity.qualityOfService = .utility
+        return activity
+    }()
+
+    static func register() {
+        activity.schedule { completion in
+            Task {
+                await check()
+                completion(.finished)
+            }
+        }
+    }
+    #else
     static func register() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: BackgroundTaskIdentifier.refresh, using: nil) { task in
             guard let refresh = task as? BGAppRefreshTask else {
@@ -65,6 +89,7 @@ nonisolated enum BackgroundRefresh {
         }
         box.task.expirationHandler = { work.cancel() }
     }
+    #endif
 
     static func check() async {
         let defaults = UserDefaults.standard

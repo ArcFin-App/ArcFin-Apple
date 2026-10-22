@@ -15,6 +15,7 @@ struct ArcfinApp: App {
     init() {
         // Taps on a notification open the title, Discover or Downloads, as on iOS.
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
+        BackgroundRefresh.register()
     }
     #endif
 
