@@ -30,8 +30,7 @@ struct SeerrItemDetailView: View {
     @State private var openSeerrItem: SeerrItem?
     @State private var requestingItem: SeerrItem? = nil
     @State private var requestBounceTrigger = 0
-    #if os(iOS)
-    // YouTubeTrailerPlayerView is UIKit-only — see MediaDetailView's own note on the same gap.
+    #if !os(tvOS)
     @State private var showTrailer = false
     #endif
 
@@ -225,7 +224,7 @@ struct SeerrItemDetailView: View {
 
     @ViewBuilder
     private var trailerButton: some View {
-        #if os(iOS)
+        #if !os(tvOS)
         if let key = detail?.trailerYouTubeKey {
             Button {
                 showTrailer = true
@@ -244,9 +243,16 @@ struct SeerrItemDetailView: View {
             .buttonStyle(.plain)
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.md)
+            #if os(iOS)
             .fullScreenCover(isPresented: $showTrailer) {
                 YouTubeTrailerPlayerView(videoID: key, title: item.title)
             }
+            #else
+            .sheet(isPresented: $showTrailer) {
+                YouTubeTrailerPlayerView(videoID: key, title: item.title)
+                    .frame(minWidth: 800, minHeight: 450)
+            }
+            #endif
         }
         #endif
     }
