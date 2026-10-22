@@ -70,6 +70,8 @@ struct DownloadedItemDetailView: View {
                 .padding(.top, DT.Spacing.md)
                 .padding(.bottom, DT.Spacing.xl)
             }
+            // Re-fits after the player hands the screen back in landscape (see MediaDetailView).
+            .containerRelativeFrame(.horizontal)
         }
         .detailPageBackground(tint: heroTint)
         .ignoresSafeArea(edges: .top)

@@ -100,6 +100,8 @@ struct CollectionDetailView: View {
 
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
+            // Re-fits after the player hands the screen back in landscape (see MediaDetailView).
+            .containerRelativeFrame(.horizontal)
         }
         .detailPageBackground(tint: heroTint)
         .ignoresSafeArea(edges: .top)
