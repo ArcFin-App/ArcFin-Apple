@@ -1332,8 +1332,7 @@ extension PlayerView {
     // MARK: - Up Next
 
     /// The credits of anything with a title after it (the next episode, or the next one in a
-    /// playlist or collection): what's next, and Skip Credits, Like and Dislike for what's
-    /// ending.
+    /// playlist or collection): what's next, with Play Next, Like and Dislike.
     func upNextCard(_ next: MediaItem) -> some View {
         VStack {
             Spacer()
@@ -1368,20 +1367,6 @@ extension PlayerView {
                             }
                         }
                         Spacer(minLength: 0)
-                        Button { playNextEpisode() } label: {
-                            Image(systemName: "play.fill")
-                                .font(.system(.subheadline, weight: .semibold))
-                                .foregroundStyle(.black)
-                                .frame(width: 34, height: 34)
-                                .background(.white, in: Circle())
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .accessibilityLabel("Play \(next.name)")
-                        .playerOverlayButton(cornerRadius: 22)
-                        #if os(tvOS)
-                        .prefersDefaultFocus(true, in: tvFocusNamespace)
-                        #endif
                         Button { dismissUpNext() } label: {
                             Image(systemName: "xmark")
                                 .font(.system(.caption, weight: .semibold))
@@ -1393,18 +1378,15 @@ extension PlayerView {
                         .playerOverlayButton(cornerRadius: 22)
                     }
                     HStack(spacing: 8) {
-                        // Skip Credits needs the server's credits marker; without one, the
-                        // first button moves on to what's next.
-                        if segments.credits != nil {
-                            creditsAction("Skip Credits", systemImage: "forward.end.fill", isSelected: false) {
-                                skipCredits()
-                            }
-                        } else {
-                            creditsAction(next.type == .episode ? "Next Episode" : "Play Next",
-                                          systemImage: "forward.end.fill", isSelected: false) {
-                                playNextEpisode()
-                            }
+                        // With something up next, going on to it comes before skipping the credits.
+                        creditsAction(next.type == .episode ? "Next Episode" : "Play Next",
+                                      systemImage: "play", isSelected: true) {
+                            playNextEpisode()
                         }
+                        .accessibilityLabel("Play \(next.name)")
+                        #if os(tvOS)
+                        .prefersDefaultFocus(true, in: tvFocusNamespace)
+                        #endif
                         creditsAction("Like", systemImage: "hand.thumbsup", isSelected: currentLikes == true) {
                             rateCurrentItem(true)
                         }
@@ -1445,7 +1427,7 @@ extension PlayerView {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// Past the credits: on to the next title when they run to the end, or to the scene after them.
+    /// Past the credits: to the scene after them, or the end when they run to it.
     private func skipCredits() {
         guard let credits = segments.credits else { return }
         skip(kind: "credits", span: credits)
@@ -1508,6 +1490,13 @@ extension PlayerView {
                     Spacer(minLength: 0)
 
                     HStack(spacing: 12) {
+                        // Nothing up next: Skip Credits joins Like and Dislike when the server
+                        // marks the credits.
+                        if segments.credits != nil {
+                            ratingButton(title: "Skip Credits", systemImage: "forward.end", isSelected: false) {
+                                skipCredits()
+                            }
+                        }
                         ratingButton(title: "Like", systemImage: "hand.thumbsup", isSelected: currentLikes == true) {
                             rateCurrentItem(true)
                         }
@@ -1515,7 +1504,7 @@ extension PlayerView {
                             rateCurrentItem(false)
                         }
                     }
-                    .frame(maxWidth: 420)
+                    .frame(maxWidth: segments.credits != nil ? 560 : 420)
                     .padding(.bottom, isControlsVisible ? 90 : 0)
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -1547,6 +1536,8 @@ extension PlayerView {
         Button(action: action) {
             Label(title, systemImage: isSelected ? "\(systemImage).fill" : systemImage)
                 .font(.system(.body, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
                 .foregroundStyle(isSelected ? .black : .white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
