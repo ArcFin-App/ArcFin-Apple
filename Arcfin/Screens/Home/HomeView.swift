@@ -78,6 +78,9 @@ struct MainTabView: View {
                 Tab("Requests", systemImage: "clock") {
                     TVSeerrView()
                 }
+                Tab("Stats", systemImage: "chart.xyaxis.line") {
+                    StatsView()
+                }
                 Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
                     NavigationStack { SettingsView() }
                 }

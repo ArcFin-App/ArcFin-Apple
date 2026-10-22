@@ -63,6 +63,12 @@ struct StatsView: View {
         totalWatched > 0 ? Double(displayedEpisodeCount) / Double(totalWatched) : 0
     }
 
+    #if os(tvOS)
+    private let cardScale: CGFloat = 1.8
+    #else
+    private let cardScale: CGFloat = 1
+    #endif
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
@@ -114,9 +120,18 @@ struct StatsView: View {
                                 selectedPeriod == p ? DT.Color.accent.opacity(0.4) : Color.white.opacity(0.08),
                                 lineWidth: 1))
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.pill, prominent: true)
+                    #else
                     .buttonStyle(.plain)
+                    #endif
                 }
             }
+            #if os(tvOS)
+            .focusSection()
+            #endif
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 52)
@@ -220,7 +235,7 @@ struct StatsView: View {
                     .font(.system(.caption2, design: .default, weight: .bold))
                     .foregroundStyle(color)
             }
-            .frame(width: 54, height: 54)
+            .frame(width: 54 * cardScale, height: 54 * cardScale)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(value)")
@@ -240,6 +255,7 @@ struct StatsView: View {
         .background(color.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.12), lineWidth: 1))
+        .tvFocusable(cornerRadius: 16)
     }
 
     // MARK: - Top shows
@@ -286,7 +302,7 @@ struct StatsView: View {
                     default: RoundedRectangle(cornerRadius: 6).fill(DT.Color.backgroundTertiary)
                     }
                 }
-                .frame(width: 36, height: 50)
+                .frame(width: 36 * cardScale, height: 50 * cardScale)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
@@ -319,6 +335,7 @@ struct StatsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(
             rank == 1 ? DT.Color.accent.opacity(0.2) : .white.opacity(0.05), lineWidth: 1))
+        .tvFocusable(cornerRadius: 14)
     }
 
     // MARK: - Top movies
@@ -385,10 +402,11 @@ struct StatsView: View {
             }
             .padding(10)
         }
-        .frame(width: 120, height: 175)
+        .frame(width: 120 * cardScale, height: 175 * cardScale)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.07), lineWidth: 1))
         .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
+        .tvFocusable(cornerRadius: 12)
     }
 
     // MARK: - Streamystats recommendations
@@ -421,7 +439,7 @@ struct StatsView: View {
                                     default: Rectangle().fill(DT.Color.backgroundTertiary)
                                     }
                                 }
-                                .frame(width: 90, height: 130)
+                                .frame(width: 90 * cardScale, height: 130 * cardScale)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                 .clipped()
 
@@ -429,7 +447,7 @@ struct StatsView: View {
                                     .font(.system(.caption2, design: .default, weight: .semibold))
                                     .foregroundStyle(DT.Color.textPrimary)
                                     .lineLimit(2)
-                                    .frame(width: 90, alignment: .leading)
+                                    .frame(width: 90 * cardScale, alignment: .leading)
 
                                 if let year = item.productionYear {
                                     Text(String(year))
@@ -437,6 +455,7 @@ struct StatsView: View {
                                         .foregroundStyle(DT.Color.textSecondary)
                                 }
                             }
+                            .tvFocusable(cornerRadius: 8)
                         }
                     }
                 }
@@ -444,6 +463,18 @@ struct StatsView: View {
             }
         }
         .padding(.bottom, DT.Spacing.md)
+    }
+}
+
+private extension View {
+    /// The remote can only scroll to what it can focus, so on tvOS each card takes focus.
+    @ViewBuilder
+    func tvFocusable(cornerRadius: CGFloat) -> some View {
+        #if os(tvOS)
+        focusable().tvFocusRing(cornerRadius: cornerRadius)
+        #else
+        self
+        #endif
     }
 }
 
