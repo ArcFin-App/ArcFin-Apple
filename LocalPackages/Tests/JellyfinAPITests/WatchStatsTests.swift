@@ -43,6 +43,18 @@ struct WatchStatsTests {
         #expect(StatsPeriod.allTime.name(now: now, calendar: calendar, firstPlayed: nil).isEmpty)
     }
 
+    @Test("Going back shows an earlier period, named, and knows when there's nothing before it")
+    func earlierPeriods() {
+        let all = [movie("a", minutes: 60, playedDaysAgo: 1), movie("b", minutes: 90, playedDaysAgo: 40)]
+        let lastMonth = WatchStats(all: all, details: [:], period: .month, offset: -1, now: now, calendar: calendar)
+        #expect(lastMonth.heading == "Last Month")
+        #expect(lastMonth.titles.map(\.id) == ["b"])
+        #expect(lastMonth.buckets.count == 30)
+        #expect(lastMonth.hasEarlier == false)
+        #expect(WatchStats(all: all, details: [:], period: .month, now: now, calendar: calendar).hasEarlier)
+        #expect(WatchStats(all: all, details: [:], period: .month, offset: -3, now: now, calendar: calendar).heading == "Month")
+    }
+
     @Test("A period counts only titles last played inside it, once each")
     func periodFiltering() {
         let all = [

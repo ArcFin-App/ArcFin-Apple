@@ -16,9 +16,22 @@ public enum StatsPeriod: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// For headings: "This Week", "All Time".
-    public var heading: String {
-        self == .allTime ? "All Time" : "This \(title)"
+    /// For headings: "This Week", "Last Month", "Year", "All Time".
+    public func heading(offset: Int = 0) -> String {
+        switch (self, offset) {
+        case (.allTime, _): "All Time"
+        case (_, 0): "This \(title)"
+        case (_, -1): "Last \(title)"
+        default: title
+        }
+    }
+
+    var component: Calendar.Component {
+        switch self {
+        case .week: .weekOfYear
+        case .month: .month
+        case .year, .allTime: .year
+        }
     }
 
     /// The calendar week, month or year `now` is in; nil for All Time.
@@ -94,6 +107,14 @@ public struct WatchStats: Sendable {
     }
 
     public let period: StatsPeriod
+    /// Periods back from the current one: 0 is this week, month or year, -1 the one before.
+    public let offset: Int
+    /// "This Month", "Last Week", "Year".
+    public let heading: String
+    /// "October 2026", "18–24 Oct", "Since March 2024".
+    public let name: String
+    /// Whether anything was watched before this period, so going back can find more.
+    public let hasEarlier: Bool
     public let titles: [WatchedTitle]
     public let seconds: Double
     public let movies: Int
@@ -142,15 +163,20 @@ public struct WatchStats: Sendable {
         all: [WatchedTitle],
         details: [String: StatsTitleDetails],
         period: StatsPeriod,
+        offset: Int = 0,
         now: Date = Date(),
         calendar: Calendar = .current
     ) {
         self.period = period
-        let interval = period.interval(now: now, calendar: calendar)
+        let offset = period == .allTime ? 0 : min(offset, 0)
+        self.offset = offset
+        let reference = calendar.date(byAdding: period.component, value: offset, to: now) ?? now
+        let interval = period.interval(now: reference, calendar: calendar)
         let start = interval?.start
         let titles = all.filter { title in
-            guard let start else { return true }
-            return (title.lastPlayed ?? .distantPast) >= start
+            guard let interval else { return true }
+            guard let played = title.lastPlayed else { return false }
+            return played >= interval.start && played < interval.end
         }
         .sorted { ($0.lastPlayed ?? .distantPast) > ($1.lastPlayed ?? .distantPast) }
         self.titles = titles
@@ -308,6 +334,9 @@ public struct WatchStats: Sendable {
         oldestTitle = movieTitles.filter { $0.item.productionYear != nil }
             .min { ($0.item.productionYear ?? .max) < ($1.item.productionYear ?? .max) }
         firstPlayed = dated.map(\.0).min()
+        heading = period.heading(offset: offset)
+        name = period.name(now: reference, calendar: calendar, firstPlayed: firstPlayed)
+        hasEarlier = start.map { start in all.contains { ($0.lastPlayed ?? .distantFuture) < start } } ?? false
     }
 
     static func longestRun(in days: Set<Date>, calendar: Calendar) -> Int {

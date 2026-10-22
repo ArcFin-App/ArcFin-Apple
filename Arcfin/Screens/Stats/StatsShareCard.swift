@@ -31,7 +31,7 @@ struct StatsShareSheet: View {
                             .scaledToFit()
                             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous))
                             .shadow(color: .black.opacity(0.35), radius: 20, y: 10)
-                            .accessibilityLabel("Your \(stats.period.heading.lowercased()) stats card")
+                            .accessibilityLabel("Your stats card for \(stats.name)")
                     } else {
                         ProgressView()
                     }
@@ -40,7 +40,7 @@ struct StatsShareSheet: View {
 
                 if let rendered {
                     let image = Image(decorative: rendered, scale: 1)
-                    ShareLink(item: image, preview: SharePreview("My \(stats.period.heading) on Arcfin", image: image)) {
+                    ShareLink(item: image, preview: SharePreview("My \(stats.period == .allTime ? "Stats" : stats.name) on Arcfin", image: image)) {
                         Label("Share", systemImage: "square.and.arrow.up")
                             .font(.system(.headline))
                             .frame(maxWidth: .infinity)
@@ -205,7 +205,7 @@ struct StatsShareCard: View {
                 .font(.system(size: 17, weight: .heavy))
                 .foregroundStyle(.white)
             Spacer()
-            Text((stats.period == .allTime ? stats.period.heading : stats.period.name(now: Date(), calendar: .current, firstPlayed: nil)).uppercased())
+            Text((stats.period == .allTime ? stats.heading : stats.name).uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .tracking(1.2)
                 .foregroundStyle(cyan)

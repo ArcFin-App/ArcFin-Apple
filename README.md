@@ -41,7 +41,7 @@ Each platform gets its own interface rather than a stretched phone app: Liquid G
 
 ### Stats
 An optional tab, off until you turn it on in Settings › Appearance (Navigation on iPhone, iPad and Mac), worked out entirely from your Jellyfin watch history:
-- **This week, this month, this year or all time**, each named ("October 2026"): time watched, and how many movies, episodes and shows.
+- **This week, this month, this year or all time**, each named ("October 2026"), with arrows to step back to earlier ones: time watched, and how many movies, episodes and shows.
 - **Activity** over the period, your busiest day, current and longest streaks, and when you watch: by weekday and time of day.
 - **Top shows** with how far through each you are, **top movies**, and what you've watched on repeat.
 - **Your taste:** genres, decades, studios and networks, age ratings, and the actors and directors you've seen most.

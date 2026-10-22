@@ -12,6 +12,7 @@ struct StatsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @AppStorage("statsPeriod") private var period = StatsPeriod.month
+    @State private var offset = 0
     @State private var watched: [WatchedTitle] = []
     @State private var details: [String: StatsTitleDetails] = [:]
     @State private var counts = StatsLibraryCounts()
@@ -54,11 +55,13 @@ struct StatsView: View {
                 .navigationDestination(for: MediaPerson.self) { PersonDetailView(person: $0) }
         }
         .task(id: authManager.state.credential?.id) { await load() }
-        .task(id: StatsInput(period: period, loaded: phase == .loaded, count: watched.count, details: details.count)) { await compute() }
+        .task(id: StatsInput(period: period, offset: offset, loaded: phase == .loaded, count: watched.count, details: details.count)) { await compute() }
+        .onChange(of: period) { offset = 0 }
     }
 
     private struct StatsInput: Equatable {
         let period: StatsPeriod
+        let offset: Int
         let loaded: Bool
         let count: Int
         let details: Int
@@ -84,6 +87,7 @@ struct StatsView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
                     periodPicker
+                    if period != .allTime, let stats { periodStepper(stats) }
                     if let stats {
                         if stats.isEmpty {
                             emptyPeriod
@@ -114,13 +118,53 @@ struct StatsView: View {
         #endif
     }
 
+    /// Steps back through earlier weeks, months or years, and forward again to the current one.
+    private func periodStepper(_ stats: WatchStats) -> some View {
+        HStack(spacing: 12) {
+            stepButton("chevron.left", label: "Previous \(period.title)", disabled: !stats.hasEarlier) { offset -= 1 }
+            VStack(spacing: 1) {
+                Text(stats.name)
+                    .font(.system(.headline))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .contentTransition(.numericText())
+                Text(stats.heading)
+                    .font(.system(.caption))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
+            stepButton("chevron.right", label: "Next \(period.title)", disabled: offset == 0) { offset += 1 }
+        }
+        #if os(tvOS)
+        .focusSection()
+        #endif
+    }
+
+    private func stepButton(_ icon: String, label: String, disabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(.body, weight: .semibold))
+                .frame(width: 28, height: 28)
+        }
+        #if os(tvOS)
+        .buttonStyle(.bordered)
+        #else
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        #endif
+        .disabled(disabled)
+        .accessibilityLabel(label)
+    }
+
     private var emptyPeriod: some View {
         ContentUnavailableView {
-            Label("Nothing Watched \(period.heading)", systemImage: "popcorn")
+            Label(period == .allTime ? "Nothing Watched Yet" : "Nothing Watched in \(stats?.name ?? period.title)", systemImage: "popcorn")
         } description: {
             Text(period == .allTime
                  ? "Finish a movie or an episode and your stats start here."
-                 : "Nothing finished in \(period.name(now: Date(), calendar: .current, firstPlayed: nil)) yet. Pick a longer period, or come back once you've finished something.")
+                 : offset == 0
+                    ? "Pick a longer period, go back to an earlier one, or come back once you've finished something."
+                    : "Nothing you finished was last played then. Try another \(period.title.lowercased()).")
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 40)
@@ -169,7 +213,7 @@ struct StatsView: View {
                 }
             }
             .frame(height: 170 * StatsMetrics.scale)
-            .accessibilityLabel("Watch time \(stats.period.heading.lowercased())")
+            .accessibilityLabel("Watch time, \(stats.name)")
             .accessibilityValue(activitySubtitle(stats))
         }
     }
@@ -201,7 +245,9 @@ struct StatsView: View {
     private func habitsCard(_ stats: WatchStats) -> some View {
         StatsCard(title: "Habits", subtitle: habitSummary(stats)) {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140 * StatsMetrics.scale), spacing: 12)], spacing: 12) {
-                StatTile(value: "\(stats.currentStreak)", unit: stats.currentStreak == 1 ? "day" : "days", label: "Current streak", icon: "flame.fill", hex: "F97316")
+                if stats.offset == 0 {
+                    StatTile(value: "\(stats.currentStreak)", unit: stats.currentStreak == 1 ? "day" : "days", label: "Current streak", icon: "flame.fill", hex: "F97316")
+                }
                 StatTile(value: "\(stats.longestStreak)", unit: stats.longestStreak == 1 ? "day" : "days", label: "Longest streak", icon: "trophy.fill", hex: "EAB308")
                 StatTile(value: "\(stats.activeDays)", unit: stats.activeDays == 1 ? "day" : "days", label: "Days you watched", icon: "calendar", hex: "06b6d4")
                 StatTile(value: StatsFormat.duration(stats.averagePerActiveDay), unit: nil, label: "On a watching day", icon: "clock.fill", hex: "8b5cf6")
@@ -486,9 +532,9 @@ struct StatsView: View {
 
     private func compute() async {
         guard phase == .loaded else { return }
-        let all = watched, details = details, period = period
+        let all = watched, details = details, period = period, offset = offset
         let result = await Task.detached(priority: .userInitiated) {
-            WatchStats(all: all, details: details, period: period)
+            WatchStats(all: all, details: details, period: period, offset: offset)
         }.value
         guard !Task.isCancelled else { return }
         withAnimation(reduceMotion ? nil : DT.Animation.standard) { stats = result }
@@ -654,13 +700,12 @@ private struct StatsHero: View {
         let headline = StatsFormat.headline(stats.seconds)
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(stats.period.heading.uppercased())
+                Text(stats.heading.uppercased())
                     .font(.system(.caption, weight: .bold))
                     .tracking(1.2)
                     .foregroundStyle(DT.Color.palette("06b6d4"))
-                let name = stats.period.name(now: Date(), calendar: .current, firstPlayed: stats.firstPlayed)
-                if !name.isEmpty {
-                    Text(name)
+                if !stats.name.isEmpty {
+                    Text(stats.name)
                         .font(.system(.headline))
                         .foregroundStyle(.white.opacity(0.9))
                 }
