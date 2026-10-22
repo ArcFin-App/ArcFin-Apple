@@ -9,6 +9,8 @@ import JellyfinAPI
 import LiveActivityKit
 import Persistence
 import SyncEngine
+import Telemetry
+import os
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 #endif
@@ -1252,6 +1254,7 @@ final class DownloadManager: NSObject {
 
     // MARK: - Smart Downloads
 
+    private static let smartLog = Telemetry.logger(category: "SmartDownloads")
     private static let smartDownloadsEnabledKey = "smartDownloadsEnabled"
     private static let smartDownloadsEpisodeCountKey = "smartDownloadsEpisodeCount"
     private static let smartDownloadsStorageBudgetGBKey = "smartDownloadsStorageBudgetGB"
@@ -1299,14 +1302,24 @@ final class DownloadManager: NSObject {
     /// download, which would make the budget check below (totalDownloadedBytes) race against
     /// downloads that haven't happened yet. isRunningSmartDownloads guards reentrancy.
     func runSmartDownloadsIfNeeded(credential: ServerCredential, authHeader: String) async {
-        guard let modelContext, ProfileRules.shared.canDownload else { return }
+        guard let modelContext, ProfileRules.shared.canDownload else {
+            Self.smartLog.info("Smart Downloads skipped: downloads not allowed for this profile")
+            return
+        }
         let globalOn = UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false
         let kept = Self.keptShows
-        guard globalOn || !kept.isEmpty else { return }
-        guard !isOnMobileData || smartDownloadsAllowMobileData else { return }
+        guard globalOn || !kept.isEmpty else {
+            Self.smartLog.info("Smart Downloads skipped: off, and no show set to Keep Downloaded")
+            return
+        }
+        guard !isOnMobileData || smartDownloadsAllowMobileData else {
+            Self.smartLog.info("Smart Downloads skipped: on mobile data with Use Mobile Data off")
+            return
+        }
         // A check already running read the kept shows before this one was asked for (a show
         // just switched on, say), so it runs once more when it's done instead of dropping it.
         guard !isRunningSmartDownloads else {
+            Self.smartLog.info("Smart Downloads: check already running, will run again after it")
             smartDownloadsRerunRequested = true
             return
         }
@@ -1329,6 +1342,7 @@ final class DownloadManager: NSObject {
             for seriesId in Set(allDownloaded.compactMap(\.seriesId)) { targets[seriesId] = episodeCount }
         }
         for (seriesId, show) in kept { targets[seriesId] = show.episodeCount }
+        Self.smartLog.info("Smart Downloads check: \(targets.count, privacy: .public) show(s), keep \(episodeCount, privacy: .public), budget \(budgetGB, privacy: .public) GB")
         guard !targets.isEmpty else { return }
 
         // Watched episodes are queued for removal rather than deleted here: this also runs
@@ -1348,7 +1362,11 @@ final class DownloadManager: NSObject {
         for (seriesId, count) in targets {
             // The episode up next plus the `count` after it: the one you're on doesn't use
             // up the allowance.
-            guard let nextUp = try? await client.getUpcomingEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, count: count + 1) else { continue }
+            guard let nextUp = try? await client.getUpcomingEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, count: count + 1) else {
+                Self.smartLog.error("Smart Downloads: couldn't get upcoming episodes for \(seriesId, privacy: .public)")
+                continue
+            }
+            Self.smartLog.info("Smart Downloads: \(seriesId, privacy: .public) up next \(nextUp.map { "S\($0.parentIndexNumber ?? 0)E\($0.indexNumber ?? 0)" }.joined(separator: " "), privacy: .public)")
             // Episodes before the next one up were watched, possibly streamed on another
             // device, which the downloaded copy's own played flag never hears about.
             if kept[seriesId] != nil, let first = nextUp.first,
@@ -1372,7 +1390,11 @@ final class DownloadManager: NSObject {
             }
             for episode in nextUp {
                 guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
-                guard totalDownloadedBytes() < budgetBytes else { return }
+                guard totalDownloadedBytes() < budgetBytes else {
+                    Self.smartLog.info("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
+                    return
+                }
+                Self.smartLog.info("Smart Downloads queuing \(episode.name, privacy: .public)")
                 await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
             }
         }
