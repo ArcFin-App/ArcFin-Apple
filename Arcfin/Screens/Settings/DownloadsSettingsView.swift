@@ -14,6 +14,14 @@ struct DownloadsSettingsView: View {
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
     @AppStorage("smartDownloadsStorageBudgetGB") private var smartDownloadsStorageBudgetGB = 10
     @AppStorage("smartDownloadsAllowMobileData") private var smartDownloadsAllowMobileData = false
+    @AppStorage("concurrentDownloads") private var concurrentDownloads = 1
+    @AppStorage("downloadSubtitles") private var downloadSubtitles = "all"
+    @AppStorage("downloadTrickplay") private var downloadTrickplay = true
+    @AppStorage("seasonDownloadUnwatchedOnly") private var seasonDownloadUnwatchedOnly = false
+    @AppStorage("pauseDownloadsInLowPowerMode") private var pauseInLowPowerMode = false
+    @AppStorage("pauseDownloadsInLowDataMode") private var pauseInLowDataMode = false
+    @AppStorage("removeDownloadsAfterDays") private var removeAfterDays = 0
+    @AppStorage("removeWatchedWhenLowOnSpace") private var removeWatchedWhenLow = false
     @Environment(AuthManager.self) private var authManager
     @Environment(DownloadManager.self) private var downloadManager
     @State private var imageCacheBytes = ImageCache.diskCacheSize
@@ -36,13 +44,55 @@ struct DownloadsSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
-            .onChange(of: wifiOnly) { downloadManager.recheckWiFiHold() }
+            .onChange(of: wifiOnly) { downloadManager.recheckQueueHold() }
+
+            Section {
+                Picker("Downloads at Once", selection: $concurrentDownloads) {
+                    ForEach(1...3, id: \.self) { Text("\($0)").tag($0) }
+                }
+                .syncLocked("concurrentDownloads", authManager)
+                Picker("Subtitles", selection: $downloadSubtitles) {
+                    Text("All").tag("all")
+                    Text("Preferred Language").tag("preferred")
+                    Text("None").tag("none")
+                }
+                .syncLocked("downloadSubtitles", authManager)
+                Toggle("Scrubbing Previews", isOn: $downloadTrickplay)
+                    .syncLocked("downloadTrickplay", authManager)
+                Toggle("Season Downloads Skip Watched", isOn: $seasonDownloadUnwatchedOnly)
+                    .syncLocked("seasonDownloadUnwatchedOnly", authManager)
+            } footer: {
+                Text("Preferred Language uses the subtitle language in Playback settings, or saves all when none is set. Scrubbing previews are the thumbnails shown while you scrub; leaving them out saves space.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                Toggle("Pause in Low Power Mode", isOn: $pauseInLowPowerMode)
+                    .syncLocked("pauseDownloadsInLowPowerMode", authManager)
+                    .onChange(of: pauseInLowPowerMode) { downloadManager.recheckQueueHold() }
+                Toggle("Pause in Low Data Mode", isOn: $pauseInLowDataMode)
+                    .syncLocked("pauseDownloadsInLowDataMode", authManager)
+                    .onChange(of: pauseInLowDataMode) { downloadManager.recheckQueueHold() }
+            } footer: {
+                Text("Downloads wait until the mode is off. You can still start them from Downloads.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
 
             Section {
                 Toggle("Delete After Watching", isOn: $deleteAfterWatching)
                     .syncLocked("deleteDownloadsAfterWatching", authManager)
+                Picker("Remove Downloads After", selection: $removeAfterDays) {
+                    Text("Never").tag(0)
+                    Text("7 Days").tag(7)
+                    Text("30 Days").tag(30)
+                }
+                .syncLocked("removeDownloadsAfterDays", authManager)
+                Toggle("Remove Watched When Low on Space", isOn: $removeWatchedWhenLow)
+                    .syncLocked("removeWatchedWhenLowOnSpace", authManager)
             } footer: {
-                Text("Removes a downloaded movie or episode from this device once you finish it, freeing the space.")
+                Text("Delete After Watching removes a movie or episode once you finish it. Remove Downloads After counts from the day it downloaded, watched or not. When the device has under 2 GB free, the oldest watched downloads go first.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -82,7 +132,7 @@ struct DownloadsSettingsView: View {
                     Toggle("Use Mobile Data", isOn: $smartDownloadsAllowMobileData)
                         .syncLocked("smartDownloadsAllowMobileData", authManager)
                         .onChange(of: smartDownloadsAllowMobileData) { _, isOn in
-                            downloadManager.recheckWiFiHold()
+                            downloadManager.recheckQueueHold()
                             if isOn { downloadManager.refreshSmartDownloads() }
                         }
                 }

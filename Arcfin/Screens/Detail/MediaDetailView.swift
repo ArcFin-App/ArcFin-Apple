@@ -381,7 +381,13 @@ struct MediaDetailView: View {
     /// Every episode in the current season already downloaded — the "Download Season"
     /// button should be inert then, not just silently no-op every episode it loops over.
     private var isSeasonFullyDownloaded: Bool {
-        !episodes.isEmpty && episodes.allSatisfy { downloadManager.isDownloaded($0.id) }
+        !episodes.isEmpty && seasonEpisodesToDownload.isEmpty
+    }
+
+    /// Settings › Downloads › Season Downloads can leave out episodes already watched.
+    private var seasonEpisodesToDownload: [MediaItem] {
+        let unwatchedOnly = UserDefaults.standard.bool(forKey: "seasonDownloadUnwatchedOnly")
+        return episodes.filter { !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
     }
 
     /// Fetches one representative preview (from the first not-yet-downloaded episode) to
@@ -389,7 +395,7 @@ struct MediaDetailView: View {
     /// N episodes?" text alert that gave no size/quality info at all.
     private func loadSeasonPreview() {
         guard case .authenticated(let credential) = authManager.state else { return }
-        let pending = episodes.filter { !downloadManager.isDownloaded($0.id) }
+        let pending = seasonEpisodesToDownload
         guard let firstPending = pending.first else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         isLoadingSeasonPreview = true
@@ -420,7 +426,7 @@ struct MediaDetailView: View {
     private func downloadSeason(bitrateCap: Int?) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        for episode in episodes where !downloadManager.isDownloaded(episode.id) {
+        for episode in seasonEpisodesToDownload {
             Task { await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap) }
         }
     }

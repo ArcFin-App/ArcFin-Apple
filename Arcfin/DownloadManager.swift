@@ -80,18 +80,49 @@ final class DownloadManager: NSObject {
     /// lifetime, same pattern as AuthManager's own monitor.
     @ObservationIgnored private var wifiPathMonitor: NWPathMonitor?
     @ObservationIgnored private var isOnMobileData = false
+    @ObservationIgnored private var isOnLowDataMode = false
     @ObservationIgnored private var isRunningSmartDownloads = false
-    /// The queue is holding because Wi-Fi Only is on and the connection is mobile data.
-    private(set) var isWaitingForWiFi = false
-    /// Given from Downloads after the mobile data warning; lasts until the queue drains.
-    @ObservationIgnored private var mobileDataApproved = false
+
+    /// Why the queue is waiting instead of starting the next title.
+    enum QueueHold: Equatable {
+        case mobileData, lowDataMode, lowPowerMode
+
+        var title: String {
+            switch self {
+            case .mobileData: "Waiting for Wi-Fi"
+            case .lowDataMode: "Low Data Mode Is On"
+            case .lowPowerMode: "Low Power Mode Is On"
+            }
+        }
+        var detail: String {
+            switch self {
+            case .mobileData: "Downloads start when you're on Wi-Fi."
+            case .lowDataMode: "Downloads start when Low Data Mode is off."
+            case .lowPowerMode: "Downloads start when Low Power Mode is off."
+            }
+        }
+    }
+
+    private(set) var queueHold: QueueHold?
+    /// Given from Downloads with Start; lasts until the queue drains.
+    @ObservationIgnored private var holdOverridden = false
 
     private var isWiFiOnly: Bool { UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true }
     private var smartDownloadsAllowMobileData: Bool { UserDefaults.standard.bool(forKey: "smartDownloadsAllowMobileData") }
 
     /// Smart Downloads has its own mobile data setting, separate from downloads people start.
-    private func isHeldForWiFi(viaSmart: Bool) -> Bool {
-        isOnMobileData && !mobileDataApproved && (viaSmart ? !smartDownloadsAllowMobileData : isWiFiOnly)
+    private func hold(viaSmart: Bool) -> QueueHold? {
+        guard !holdOverridden else { return nil }
+        let defaults = UserDefaults.standard
+        if isOnMobileData, viaSmart ? !smartDownloadsAllowMobileData : isWiFiOnly { return .mobileData }
+        if isOnLowDataMode, defaults.bool(forKey: "pauseDownloadsInLowDataMode") { return .lowDataMode }
+        if ProcessInfo.processInfo.isLowPowerModeEnabled, defaults.bool(forKey: "pauseDownloadsInLowPowerMode") { return .lowPowerMode }
+        return nil
+    }
+
+    /// Settings › Downloads › Downloads at Once.
+    private var concurrentDownloadLimit: Int {
+        max(1, min(3, UserDefaults.standard.object(forKey: "concurrentDownloads") as? Int ?? 1))
     }
     /// True background session on iOS — transfer keeps going, managed by nsurlsessiond,
     /// even if the app is suspended or killed; iOS relaunches the app to redeliver the
@@ -107,7 +138,7 @@ final class DownloadManager: NSObject {
         config.isDiscretionary = false
         // Titles handed over ahead of their turn (handOffQueue) wait here for a connection
         // instead of all transferring at once.
-        config.httpMaximumConnectionsPerHost = 2
+        config.httpMaximumConnectionsPerHost = 3
         #else
         let config = URLSessionConfiguration.default
         #endif
@@ -130,12 +161,39 @@ final class DownloadManager: NSObject {
             UserDefaults.standard.set(!isWiFiOnly, forKey: "smartDownloadsAllowMobileData")
         }
         startWiFiMonitoringIfNeeded()
+        NotificationCenter.default.addObserver(forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.recheckQueueHold() }
+        }
         #if canImport(ActivityKit) && os(iOS)
         reconcileStaleActivitiesOnLaunch()
         #endif
         runSmartDownloadsOnLaunch()
+        removeExpiredDownloads()
         purgeWatchedDownloads()
     }
+
+    /// Settings › Downloads › Remove Downloads After, and removing watched ones when the
+    /// device is low on space. Queued, not deleted here, for the same reason as watched ones.
+    func removeExpiredDownloads() {
+        guard let modelContext else { return }
+        let items = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+        let days = UserDefaults.standard.integer(forKey: "removeDownloadsAfterDays")
+        if days > 0 {
+            let cutoff = Date().addingTimeInterval(-Double(days) * 86_400)
+            for item in items where item.downloadedAt < cutoff { markForDeletionAfterWatching(itemId: item.itemId) }
+        }
+        guard UserDefaults.standard.bool(forKey: "removeWatchedWhenLowOnSpace"),
+              let free = try? DownloadStore.rootDirectory().deletingLastPathComponent()
+                .resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity
+        else { return }
+        var shortfall = Int64(Self.lowSpaceThreshold) - Int64(free)
+        for item in items.filter(\.played).sorted(by: { $0.downloadedAt < $1.downloadedAt }) where shortfall > 0 {
+            markForDeletionAfterWatching(itemId: item.itemId)
+            shortfall -= item.fileSizeBytes
+        }
+    }
+
+    private static let lowSpaceThreshold = 2_000_000_000
 
     private static let pendingWatchedDeleteKey = "pendingWatchedDeleteIDs"
 
@@ -164,8 +222,9 @@ final class DownloadManager: NSObject {
         monitor.pathUpdateHandler = { [weak self] path in
             // isExpensive covers a personal hotspot too, which bills the same mobile data.
             let onMobileData = path.status == .satisfied && path.isExpensive
+            let lowDataMode = path.status == .satisfied && path.isConstrained
             guard let self else { return }
-            Task { @MainActor in self.networkChanged(onMobileData: onMobileData) }
+            Task { @MainActor in self.networkChanged(onMobileData: onMobileData, lowDataMode: lowDataMode) }
         }
         monitor.start(queue: DispatchQueue(label: "arcfin.downloads.pathMonitor"))
         wifiPathMonitor = monitor
@@ -174,24 +233,25 @@ final class DownloadManager: NSObject {
     /// For the player's Quality on Mobile Data, read as it opens.
     static private(set) var isOnMobileDataNow = false
 
-    private func networkChanged(onMobileData: Bool) {
+    private func networkChanged(onMobileData: Bool, lowDataMode: Bool) {
         isOnMobileData = onMobileData
+        isOnLowDataMode = lowDataMode
         Self.isOnMobileDataNow = onMobileData
-        recheckWiFiHold()
+        recheckQueueHold()
     }
 
-    /// Starts a held queue once the network or the mobile data settings allow it.
-    func recheckWiFiHold() {
-        guard isWaitingForWiFi, let first = pendingQueue.first, !isHeldForWiFi(viaSmart: first.viaSmart) else { return }
-        isWaitingForWiFi = false
+    /// Starts a held queue once the network, power state or settings allow it.
+    func recheckQueueHold() {
+        guard queueHold != nil, let first = pendingQueue.first, hold(viaSmart: first.viaSmart) == nil else { return }
+        queueHold = nil
         Task { await processQueue() }
     }
 
-    /// Starts a queue held for Wi-Fi over mobile data, once the person has accepted the cost.
-    func allowMobileData() {
-        mobileDataApproved = true
-        guard isWaitingForWiFi else { return }
-        isWaitingForWiFi = false
+    /// Starts a held queue anyway, once the person has accepted the cost.
+    func startHeldDownloads() {
+        holdOverridden = true
+        guard queueHold != nil else { return }
+        queueHold = nil
         Task { await processQueue() }
     }
 
@@ -268,10 +328,11 @@ final class DownloadManager: NSObject {
             bytesPerSecond: stat?.bytesPerSecond ?? 0,
             completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished,
             posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode,
-            isPaused: !isFinished && (isQueuePaused || itemId.map(pausedItemIds.contains) == true),
+            isPaused: !isFinished && (isQueuePaused || itemId.map(pausedItemIds.contains) == true
+                || (queueHold != nil && queueHold != .mobileData)),
             nextItemTitle: isFinished ? nil : pendingQueue.first { $0.item.id != waiting?.id }?.item.name,
             estimateStart: estimate?.start, estimatedFinish: estimate?.finish,
-            isWaitingForWiFi: !isFinished && isWaitingForWiFi
+            isWaitingForWiFi: !isFinished && queueHold == .mobileData
         )
         Task { await liveActivity.update(ActivityContent(state: state, staleDate: nil)) }
     }
@@ -360,7 +421,7 @@ final class DownloadManager: NSObject {
         #if canImport(UIKit) && !os(tvOS)
         guard !isQueuePaused else { return }
         for entry in pendingQueue where entry.bitrateCap == nil {
-            if isHeldForWiFi(viaSmart: entry.viaSmart) { break }
+            if hold(viaSmart: entry.viaSmart) != nil { break }
             let itemId = entry.item.id
             guard !handedOffItemIds.contains(itemId), !isDownloaded(itemId),
                   let dir = try? DownloadStore.ensureDirectory(for: itemId) else { continue }
@@ -471,7 +532,9 @@ final class DownloadManager: NSObject {
 
     // MARK: - Start download
 
-    @ObservationIgnored private var pendingQueue: [(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool)] = [] {
+    private typealias PendingEntry = (item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool)
+
+    @ObservationIgnored private var pendingQueue: [PendingEntry] = [] {
         // pendingQueue itself isn't observed (a tuple array), so the UI reads this mirror.
         didSet { queuedItemIds = pendingQueue.map(\.item.id) }
     }
@@ -565,26 +628,83 @@ final class DownloadManager: NSObject {
         await processQueue()
     }
 
-    private func processQueue() async {
-        guard !isProcessingQueue else { return }
-        isProcessingQueue = true
-        var downloadedEpisode = false
+    private enum QueueEvent: Sendable {
+        case finished(isEpisode: Bool)
+        case woken
+    }
+
+    @ObservationIgnored private var queueWake: CheckedContinuation<Void, Never>?
+    @ObservationIgnored private var isQueueClosing = false
+
+    /// Lets a running queue start a title added after it began, when a slot is free.
+    private func wakeQueue() {
+        queueWake?.resume()
+        queueWake = nil
+    }
+
+    private func nextToStart() -> PendingEntry? {
         while !pendingQueue.isEmpty, !isQueuePaused {
             // A title already handed to the background session is transferring regardless.
-            if let first = pendingQueue.first, isHeldForWiFi(viaSmart: first.viaSmart), !handedOffItemIds.contains(first.item.id) {
-                isWaitingForWiFi = true
+            if let first = pendingQueue.first, !handedOffItemIds.contains(first.item.id),
+               let reason = hold(viaSmart: first.viaSmart) {
+                queueHold = reason
                 #if canImport(ActivityKit) && os(iOS)
                 refreshLiveActivity()
                 #endif
-                break
+                return nil
             }
             let next = pendingQueue.removeFirst()
-            guard !isDownloaded(next.item.id) else { continue }
-            await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
-            if next.item.type == .episode { downloadedEpisode = true }
+            if !isDownloaded(next.item.id) { return next }
+        }
+        return nil
+    }
+
+    /// Runs up to Downloads at Once titles side by side until the queue drains, pauses or
+    /// is held. Returns only then, which Smart Downloads relies on for its storage budget.
+    private func processQueue() async {
+        guard !isProcessingQueue else {
+            wakeQueue()
+            return
+        }
+        isProcessingQueue = true
+        isQueueClosing = false
+        var downloadedEpisode = false
+        await withTaskGroup(of: QueueEvent.self) { group in
+            var running = 0
+            var listening = false
+            loop: while true {
+                while running < concurrentDownloadLimit, let next = nextToStart() {
+                    running += 1
+                    group.addTask { @MainActor in
+                        await self.performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
+                        return .finished(isEpisode: next.item.type == .episode)
+                    }
+                }
+                guard running > 0 else { break }
+                if !listening {
+                    listening = true
+                    group.addTask { @MainActor in
+                        await withCheckedContinuation { continuation in
+                            if self.isQueueClosing { continuation.resume() } else { self.queueWake = continuation }
+                        }
+                        return .woken
+                    }
+                }
+                switch await group.next() {
+                case .finished(let isEpisode)?:
+                    running -= 1
+                    if isEpisode { downloadedEpisode = true }
+                case .woken?:
+                    listening = false
+                case nil:
+                    break loop
+                }
+            }
+            isQueueClosing = true
+            wakeQueue()
         }
         isProcessingQueue = false
-        if pendingQueue.isEmpty { mobileDataApproved = false }
+        if pendingQueue.isEmpty { holdOverridden = false }
         // A show just got a downloaded episode, so Smart Downloads can line up the ones after
         // it. Only once the queue has drained: running it mid-queue would reenter this loop
         // (see runSmartDownloadsIfNeeded), and a run already in progress ignores this.
@@ -650,7 +770,17 @@ final class DownloadManager: NSObject {
             // Subtitles — external tracks only (embedded ones travel with the video file itself).
             var subtitleFileNames: [String] = []
             var subtitleLanguages: [String] = []
-            for stream in info.subtitleStreams where stream.deliveryUrl != nil {
+            // Settings › Downloads › Subtitles: all, only the preferred language, or none.
+            let subtitleChoice = UserDefaults.standard.string(forKey: "downloadSubtitles") ?? "all"
+            let preferredLanguage = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
+            let wantedSubtitles = info.subtitleStreams.filter { stream in
+                switch subtitleChoice {
+                case "none": return false
+                case "preferred" where !preferredLanguage.isEmpty: return stream.language == preferredLanguage
+                default: return true
+                }
+            }
+            for stream in wantedSubtitles where stream.deliveryUrl != nil {
                 guard let deliveryUrl = stream.deliveryUrl,
                       let data = await SubtitleLoader.fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential)
                 else { continue }
@@ -664,8 +794,10 @@ final class DownloadManager: NSObject {
             // must equal tileIndex (that's how playback looks tiles up), so a failed tile
             // still gets an empty-string placeholder rather than shifting every index after it.
             var trickplayFileNames: [String] = []
+            let savesPreviews = UserDefaults.standard.object(forKey: "downloadTrickplay") as? Bool ?? true
             let trickplay = detail.trickplay[info.mediaSourceId] ?? detail.trickplay.values.first
-            if let trickplay, trickplay.tileWidth > 0, trickplay.tileHeight > 0, trickplay.thumbnailCount > 0 {
+            let savedTrickplay = savesPreviews ? trickplay : nil
+            if let trickplay = savedTrickplay, trickplay.tileWidth > 0, trickplay.tileHeight > 0, trickplay.thumbnailCount > 0 {
                 let tileCount = Int(ceil(Double(trickplay.thumbnailCount) / Double(trickplay.tileWidth * trickplay.tileHeight)))
                 for tileIndex in 0..<max(tileCount, 1) {
                     let tileURL = client.trickplayTileURL(credential: credential, itemId: item.id, width: trickplay.width, tileIndex: tileIndex)
@@ -719,9 +851,9 @@ final class DownloadManager: NSObject {
                 videoFileName: videoFileName, posterFileName: posterFileName, backdropFileName: backdropFileName,
                 subtitleFileNames: subtitleFileNames, subtitleLanguages: subtitleLanguages,
                 trickplayFileNames: trickplayFileNames,
-                trickplayWidth: trickplay?.width, trickplayHeight: trickplay?.height,
-                trickplayTileWidth: trickplay?.tileWidth, trickplayTileHeight: trickplay?.tileHeight,
-                trickplayIntervalMs: trickplay?.intervalMs, trickplayThumbnailCount: trickplay?.thumbnailCount,
+                trickplayWidth: savedTrickplay?.width, trickplayHeight: savedTrickplay?.height,
+                trickplayTileWidth: savedTrickplay?.tileWidth, trickplayTileHeight: savedTrickplay?.tileHeight,
+                trickplayIntervalMs: savedTrickplay?.intervalMs, trickplayThumbnailCount: savedTrickplay?.thumbnailCount,
                 introEndSeconds: introEnd, creditsStartSeconds: creditsStart,
                 fileSizeBytes: fileSize
             )
@@ -760,7 +892,8 @@ final class DownloadManager: NSObject {
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = nil
         queueCompletedCount += 1
-        if pendingQueue.isEmpty {
+        // Another title can still be transferring alongside (Downloads at Once).
+        if pendingQueue.isEmpty && activeItemIds.isEmpty {
             endLiveActivity(lastTitle: finishedTitle, lastMeta: finishedMeta)
         } else {
             refreshLiveActivity()
@@ -863,7 +996,7 @@ final class DownloadManager: NSObject {
     func cancelDownload(itemId: String) {
         let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
-        if pendingQueue.isEmpty { isWaitingForWiFi = false }
+        if pendingQueue.isEmpty { queueHold = nil }
         downloadTasks[itemId]?.cancel()
         downloadTasks[itemId] = nil
         handedOffItemIds.remove(itemId)

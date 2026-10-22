@@ -72,7 +72,7 @@ struct DownloadsView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 28) {
                         storageCard
-                        if downloadManager.isWaitingForWiFi { waitingForWiFiCard }
+                        if let hold = downloadManager.queueHold { heldCard(hold) }
                         if !downloadManager.activeItemTitles.isEmpty { downloadingSection }
                         if !inProgress.isEmpty, !isSelecting { continueSection }
                         if !seriesGroups.isEmpty { showsSection }
@@ -86,7 +86,10 @@ struct DownloadsView: View {
             }
         }
         .screenBackground()
-        .onAppear { downloadManager.purgeWatchedDownloads() }
+        .onAppear {
+            downloadManager.removeExpiredDownloads()
+            downloadManager.purgeWatchedDownloads()
+        }
         .task(id: items.count) { freeBytes = Self.availableBytes() }
         .task { if isOnline { await downloadManager.saveMissingDetails() } }
         .navigationTitle("Downloads")
@@ -133,11 +136,16 @@ struct DownloadsView: View {
             }
             Button("Cancel", role: .cancel) { pendingDeleteSeriesId = nil }
         }
-        .alert("Download on Mobile Data?", isPresented: $showMobileDataConfirm) {
-            Button("Download") { downloadManager.allowMobileData() }
+        .alert(downloadManager.queueHold == .mobileData ? "Download on Mobile Data?" : "Download Now?",
+               isPresented: $showMobileDataConfirm) {
+            Button("Download") { downloadManager.startHeldDownloads() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply.")
+            switch downloadManager.queueHold {
+            case .mobileData: Text("You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply.")
+            case .lowDataMode: Text("Low Data Mode is on. Downloading uses data your device is trying to save.")
+            default: Text("Low Power Mode is on. Downloading uses more battery.")
+            }
         }
         .alert("Delete \(selection.count) selected download\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) {
@@ -309,19 +317,19 @@ struct DownloadsView: View {
         .accessibilityAddTraits(.isHeader)
     }
 
-    // MARK: - Waiting for Wi-Fi
+    // MARK: - Held queue
 
-    private var waitingForWiFiCard: some View {
+    private func heldCard(_ hold: DownloadManager.QueueHold) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "wifi.exclamationmark")
+            Image(systemName: hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
                 .font(.system(.title3))
                 .foregroundStyle(.orange)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Waiting for Wi-Fi")
+                Text(hold.title)
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
-                Text("Downloads start when you're on Wi-Fi.")
+                Text(hold.detail)
                     .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -329,7 +337,7 @@ struct DownloadsView: View {
             Button("Start") { showMobileDataConfirm = true }
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
-                .accessibilityHint("Downloads over mobile data")
+                .accessibilityHint("Starts the downloads now")
         }
         .padding(16)
         .background(cardBackground)
@@ -450,7 +458,7 @@ struct DownloadsView: View {
                     Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) downloaded")
                 } else if downloadManager.queuedItemIds.contains(itemId) {
                     Text(downloadManager.isQueuePaused ? "Paused"
-                         : downloadManager.isWaitingForWiFi ? "Waiting for Wi-Fi" : "Waiting in queue")
+                         : downloadManager.queueHold?.title ?? "Waiting in queue")
                 } else {
                     Text("Preparing…")
                 }
