@@ -327,7 +327,7 @@ struct CollectionDetailView: View {
             if sort == .release {
                 Text("\(number)")
                     .font(.system(.title3, design: .rounded, weight: .heavy))
-                    .foregroundStyle(DT.Color.textSecondary.opacity(0.6))
+                    .foregroundStyle(DT.Color.textSecondary)
                     .frame(width: 26, alignment: .trailing)
                     .padding(.top, 22)
             }

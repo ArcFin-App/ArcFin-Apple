@@ -338,7 +338,7 @@ struct DownloadedSeriesDetailView: View {
                     .lineLimit(1)
                 Text(ByteCountFormatter.string(fromByteCount: episode.fileSizeBytes, countStyle: .file))
                     .font(.system(.caption2))
-                    .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
+                    .foregroundStyle(DT.Color.textSecondary)
             }
             Spacer()
             Image(systemName: episode.played ? "checkmark.circle.fill" : "play.circle")

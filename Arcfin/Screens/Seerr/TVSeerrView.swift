@@ -69,7 +69,7 @@ struct TVSeerrView: View {
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
             Text("Check your Seerr credentials in Settings → Plugins → Seerr.")
-                .font(.system(size: 22))
+                .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
@@ -92,7 +92,7 @@ struct TVSeerrView: View {
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
             Text("Add your Seerr server in Settings → Plugins → Seerr.")
-                .font(.system(size: 22))
+                .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
@@ -175,7 +175,7 @@ struct TVSeerrView: View {
             Image(systemName: systemImage)
             Text(title)
         }
-        .font(.system(size: 20, weight: .semibold))
+        .font(.system(size: 23, weight: .semibold))
         .foregroundStyle(DT.Color.textPrimary)
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
@@ -189,7 +189,7 @@ struct TVSeerrView: View {
                 .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
             Text(message)
-                .font(.system(size: 20))
+                .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
             Button("Try Again") {
                 seerrRepo.clearAuthFailure()
@@ -274,7 +274,7 @@ struct TVSeerrView: View {
                     ProgressView().padding(.leading, 8)
                 } else if !seerrRepo.requests.isEmpty {
                     Text("\(seerrRepo.requests.count)")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 23, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12).padding(.vertical, 4)
                         .background(Capsule().fill(DT.Color.accent.opacity(0.3)))
@@ -427,12 +427,12 @@ private struct TVSeerrCard: View {
                 )
                 .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
                 .scaleEffect(isFocused ? 1.05 : 1.0)
-                .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+                .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
 
                 if let badge {
                     let color = Color(hex: badge.colorHex)
                     Text(badge.label)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 23, weight: .bold))
                         .foregroundStyle(color)
                         .padding(.horizontal, 10).padding(.vertical, 4)
                         .background(color.opacity(0.2))
@@ -487,13 +487,13 @@ private struct TVRequestRow: View {
 
                 HStack(spacing: 10) {
                     Text(req.mediaType == .tv ? "Series" : "Movie")
-                        .font(.system(size: 18))
+                        .font(.system(size: 23))
                         .foregroundStyle(DT.Color.textSecondary)
 
                     Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
 
                     Text(req.requestedAt, style: .date)
-                        .font(.system(size: 18))
+                        .font(.system(size: 23))
                         .foregroundStyle(DT.Color.textSecondary)
 
                     statusPill(req.status)
@@ -514,7 +514,7 @@ private struct TVRequestRow: View {
             RoundedRectangle(cornerRadius: DT.Radius.md)
                 .stroke(isFocused ? DT.Color.accent.opacity(0.4) : Color.white.opacity(0.05), lineWidth: 1)
         )
-        .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 
     private func statusPill(_ status: RequestStatus) -> some View {
@@ -532,7 +532,7 @@ private struct TVRequestRow: View {
 
     private func pillView(label: String, hex: String) -> some View {
         Text(label)
-            .font(.system(size: 16, weight: .bold))
+            .font(.system(size: 23, weight: .bold))
             .foregroundStyle(Color(hex: hex))
             .padding(.horizontal, 12).padding(.vertical, 4)
             .background(Color(hex: hex).opacity(0.15))

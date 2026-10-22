@@ -459,6 +459,7 @@ struct OfflinePlayerView: View {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close player")
             VStack(alignment: .leading, spacing: 2) {
                 Text(downloadedItem.name)
                     .font(.system(.subheadline, design: .default, weight: .semibold))
@@ -484,6 +485,7 @@ struct OfflinePlayerView: View {
                         .foregroundStyle(.white)
                         .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel("Subtitles")
             }
             #if canImport(UIKit) && !os(tvOS)
             Menu {

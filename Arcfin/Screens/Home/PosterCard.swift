@@ -45,7 +45,7 @@ struct PosterCard: View {
                 .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
                 .compositingGroup()
                 .scaleEffect(isFocused ? 1.05 : 1.0)
-                .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+                .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -55,7 +55,7 @@ struct PosterCard: View {
                     .animation(DT.Animation.fast, value: isFocused)
                 if let subtitle {
                     Text(subtitle)
-                        .scaledFont(size: 10, weight: .medium)
+                        .scaledFont(size: 11, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }

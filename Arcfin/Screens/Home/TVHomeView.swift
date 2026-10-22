@@ -265,7 +265,7 @@ struct TVHomeView: View {
                 }
                 .id(item.id)
                 .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: focusedItemID)
+                .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
 
                 heroMetaRow(item)
 
@@ -298,7 +298,7 @@ struct TVHomeView: View {
             .frame(maxWidth: 540, alignment: .leading)
             .id(item.id)
             .transition(.opacity)
-            .animation(.easeInOut(duration: 0.3), value: focusedItemID)
+            .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
         } else {
             brandingBlock
         }
@@ -318,19 +318,19 @@ struct TVHomeView: View {
     private func heroMetaRow(_ item: MediaItem) -> some View {
         HStack(spacing: 12) {
             if let year = item.productionYear {
-                Text(String(year)).font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
+                Text(String(year)).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = item.communityRating {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
-                        .font(.system(size: 22, weight: .bold)).foregroundStyle(DT.Color.accent)
+                        .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
-            Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
+            Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
             Text(item.type == .series ? "Series" : "Movie")
-                .font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
+                .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
         }
     }
 
@@ -388,7 +388,7 @@ struct TVHomeView: View {
                 return
             }
             guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
-            withAnimation(.easeIn(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeIn(duration: 0.6))) {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropItemID = itemID
             }
@@ -396,7 +396,7 @@ struct TVHomeView: View {
             // short preview instead, same idea as tvOS's own featured-app hero rotators.
             try? await Task.sleep(for: .seconds(15))
             guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
-            withAnimation(.easeOut(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
                 heroVideoBackdropURL = nil
                 heroVideoBackdropItemID = nil
             }
@@ -411,7 +411,7 @@ struct TVHomeView: View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Continue Watching")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 23, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .padding(.horizontal, 80)
 
@@ -570,11 +570,11 @@ struct TVHomeView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Text(title)
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 23, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                 if let badge {
                     Text(badge)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 23, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10).padding(.vertical, 3)
                         .background(Capsule().fill(DT.Color.accent.opacity(0.3)))

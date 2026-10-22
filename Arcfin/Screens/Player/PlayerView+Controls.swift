@@ -362,7 +362,7 @@ extension PlayerView {
                 Button("\(minutes) minutes") { setSleepTimer(minutes: minutes) }
             }
             if item.type == .episode {
-                Button("End of episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
+                Button("End of Episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
             }
         } label: {
             Label(
@@ -1458,8 +1458,10 @@ extension PlayerView {
                                 .foregroundStyle(.white)
                                 .frame(width: 34, height: 34)
                                 .background(.white.opacity(0.18), in: Circle())
+                                .frame(width: 44, height: 44)
+                                .contentShape(Circle())
                         }
-                        .playerOverlayButton(cornerRadius: 17)
+                        .playerOverlayButton(cornerRadius: 22)
                         .accessibilityLabel("Dismiss suggestions")
                     }
 

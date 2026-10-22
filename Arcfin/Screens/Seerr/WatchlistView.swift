@@ -101,6 +101,8 @@ struct WatchlistView: View {
                         .background(.black.opacity(0.5))
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
+                        .frame(width: 44, height: 44, alignment: .topTrailing)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Remove from watchlist")
                 .buttonStyle(.plain)

@@ -46,6 +46,7 @@ struct BottomNavSettingsView: View {
                                 .font(.system(.title3))
                                 .foregroundStyle(active.contains(tab) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                         }
+                        .accessibilityLabel(active.contains(tab) ? "Hide \(tab.title)" : "Show \(tab.title)")
                         .buttonStyle(.plain)
                     }
                 }

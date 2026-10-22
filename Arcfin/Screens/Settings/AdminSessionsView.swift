@@ -87,7 +87,7 @@ struct AdminSessionsView: View {
             } else if let lastActivity = session.lastActivityDate {
                 Text("Idle · last active \(lastActivity.formatted(.relative(presentation: .named)))")
                     .font(.system(.caption2))
-                    .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
+                    .foregroundStyle(DT.Color.textSecondary)
             }
         }
         .padding(.vertical, 4)

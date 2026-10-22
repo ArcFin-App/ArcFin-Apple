@@ -71,6 +71,7 @@ struct HomeShelfSettingsView: View {
                                 .font(.system(.title3))
                                 .foregroundStyle(active.contains(shelf) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                         }
+                        .accessibilityLabel(active.contains(shelf) ? "Hide \(shelf.title)" : "Show \(shelf.title)")
                         .buttonStyle(.plain)
                     }
                 }

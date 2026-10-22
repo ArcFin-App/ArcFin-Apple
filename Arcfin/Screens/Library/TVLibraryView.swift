@@ -205,7 +205,7 @@ struct TVCollectionDetailView: View {
 
                 if !items.isEmpty {
                     Text(metaLine)
-                        .font(.system(size: 22))
+                        .font(.system(size: 23))
                         .foregroundStyle(.white.opacity(0.65))
                     progressBar
                 }
@@ -372,7 +372,7 @@ struct TVCollectionDetailView: View {
                                 .frame(width: 120, height: 120)
                                 .clipShape(Circle())
                                 Text(person.name)
-                                    .font(.system(size: 18, weight: .semibold))
+                                    .font(.system(size: 23, weight: .semibold))
                                     .foregroundStyle(DT.Color.textPrimary)
                                     .lineLimit(2)
                                     .multilineTextAlignment(.center)
@@ -580,7 +580,7 @@ private struct TVCollectionItemCard: View {
             .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 12)
             .compositingGroup()
             .scaleEffect(isFocused ? 1.05 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
 
             VStack(alignment: .leading, spacing: 2) {
                 if let year = item.productionYear {
@@ -645,7 +645,7 @@ private struct TVBigLibraryCard: View {
         .frame(height: 225)
         .scaleEffect(isFocused ? 1.04 : 1.0)
         .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 14)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
         .contentShape(Rectangle())
     }
 }

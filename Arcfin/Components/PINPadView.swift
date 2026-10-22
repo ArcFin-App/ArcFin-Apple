@@ -72,7 +72,7 @@ struct PINPadView: View {
                                         )
                                 )
                                 .frame(width: 14, height: 14)
-                                .animation(.spring(response: 0.15, dampingFraction: 0.7), value: digits.count)
+                                .animation(DT.Animation.motion(.spring(response: 0.15, dampingFraction: 0.7)), value: digits.count)
                         }
                     }
                     .offset(x: shakeOffset)
@@ -157,15 +157,15 @@ struct PINPadView: View {
     private func triggerShake() {
         digits = []
         let duration = 0.07
-        withAnimation(.easeInOut(duration: duration)) { shakeOffset = -10 }
+        withAnimation(DT.Animation.motion(.easeInOut(duration: duration))) { shakeOffset = -10 }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-            withAnimation(.easeInOut(duration: duration)) { shakeOffset = 10 }
+            withAnimation(DT.Animation.motion(.easeInOut(duration: duration))) { shakeOffset = 10 }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration * 2) {
-            withAnimation(.easeInOut(duration: duration)) { shakeOffset = -8 }
+            withAnimation(DT.Animation.motion(.easeInOut(duration: duration))) { shakeOffset = -8 }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration * 3) {
-            withAnimation(.spring(response: 0.2)) { shakeOffset = 0 }
+            withAnimation(DT.Animation.motion(.spring(response: 0.2))) { shakeOffset = 0 }
         }
     }
 }
@@ -182,7 +182,7 @@ private struct PadKey<Content: View>: View {
             .frame(width: size, height: size)
             .background(Circle().fill(isFocused ? DT.Color.accent : (filled ? DT.Color.backgroundSecondary : .clear)))
             .scaleEffect(isFocused ? 1.08 : 1)
-            .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
 

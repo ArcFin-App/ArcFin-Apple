@@ -163,6 +163,10 @@ public enum DT {
         public static var slow: SwiftUI.Animation {
             reduceMotion ? reducedFallback : .spring(response: 0.50, dampingFraction: 0.75)
         }
+        /// Any other animation, collapsed the same way under Reduce Motion.
+        public static func motion(_ animation: SwiftUI.Animation) -> SwiftUI.Animation {
+            reduceMotion ? reducedFallback : animation
+        }
         public static var playerFade: SwiftUI.Animation {
             reduceMotion ? reducedFallback : .easeInOut(duration: 0.25)
         }
@@ -221,7 +225,12 @@ private struct ScaledSystemFont: ViewModifier {
         case ..<28.5: .title
         default: .largeTitle
         }
+        #if os(tvOS)
+        // 23 pt is tvOS's smallest text style; anything under it is unreadable from the couch.
+        _size = ScaledMetric(wrappedValue: max(size * DT.Scale.font, 23), relativeTo: style)
+        #else
         _size = ScaledMetric(wrappedValue: size * DT.Scale.font, relativeTo: style)
+        #endif
         self.weight = weight
         self.design = design
     }

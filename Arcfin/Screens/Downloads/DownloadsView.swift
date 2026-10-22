@@ -37,6 +37,7 @@ struct DownloadsView: View {
     @State private var selection = Set<String>()
     @State private var showBulkDeleteConfirm = false
     @State private var showMobileDataConfirm = false
+    @State private var showCancelAllConfirm = false
     @State private var freeBytes: Int64?
 
     /// With a connection, a download opens the title's full page; offline, the saved one.
@@ -146,6 +147,12 @@ struct DownloadsView: View {
             case .lowDataMode: Text("Low Data Mode is on. Downloading uses data your device is trying to save.")
             default: Text("Low Power Mode is on. Downloading uses more battery.")
             }
+        }
+        .confirmationDialog("Cancel all downloads?", isPresented: $showCancelAllConfirm, titleVisibility: .visible) {
+            Button("Cancel All Downloads", role: .destructive) { downloadManager.cancelAllDownloads() }
+            Button("Keep Downloading", role: .cancel) {}
+        } message: {
+            Text("What's already downloaded of them is discarded.")
         }
         .alert("Delete \(selection.count) selected download\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) {
@@ -360,7 +367,7 @@ struct DownloadsView: View {
                             Label("Pause Queue", systemImage: "pause.fill")
                         }
                     }
-                    Button(role: .destructive) { downloadManager.cancelAllDownloads() } label: {
+                    Button(role: .destructive) { showCancelAllConfirm = true } label: {
                         Label("Cancel All", systemImage: "xmark.circle")
                     }
                 } label: {
@@ -423,7 +430,7 @@ struct DownloadsView: View {
                         Image(systemName: isPaused ? "play.circle.fill" : "pause.circle.fill")
                             .font(.system(.title3))
                             .foregroundStyle(DT.Color.textSecondary)
-                            .frame(minWidth: 32, minHeight: 32)
+                            .frame(minWidth: 44, minHeight: 44)
                     }
                     .accessibilityLabel(isPaused ? "Resume download" : "Pause download")
                     .buttonStyle(.plain)
@@ -432,7 +439,7 @@ struct DownloadsView: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(.title3))
                         .foregroundStyle(DT.Color.textSecondary)
-                        .frame(minWidth: 32, minHeight: 32)
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .accessibilityLabel("Cancel download")
                 .buttonStyle(.plain)

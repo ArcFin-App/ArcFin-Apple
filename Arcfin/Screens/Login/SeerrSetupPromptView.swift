@@ -95,7 +95,7 @@ struct SeerrSetupPromptView: View {
 
             Text("You can also ask your admin to connect this for you — initial sign-in is the only time it can be set up here, since this setting is locked.")
                 .font(.system(.caption))
-                .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
+                .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 12)
         }

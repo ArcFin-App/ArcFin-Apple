@@ -144,7 +144,7 @@ struct MediaDetailView: View {
                 }
             }
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.4), value: heroTint)
+            .animation(DT.Animation.motion(.easeInOut(duration: 0.4)), value: heroTint)
         }
         .ignoresSafeArea(edges: .top)
         .task(id: item.id) {
@@ -1789,7 +1789,7 @@ private struct TVPlayButtonLabel: View {
             radius: isFocused ? 18 : 6
         )
         .scaleEffect(isFocused ? 1.02 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
     }
 }
 #endif

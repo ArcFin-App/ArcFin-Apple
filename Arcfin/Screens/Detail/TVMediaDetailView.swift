@@ -192,33 +192,33 @@ struct TVMediaDetailView: View {
     private var metaRow: some View {
         HStack(spacing: 12) {
             if let year = item.productionYear {
-                Text(String(year)).font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
+                Text(String(year)).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text(rating)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 23, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.7))
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.3), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
-                Text("\(mins)m").font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
+                Text("\(mins)m").font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = item.communityRating {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
-                        .font(.system(size: 22, weight: .bold)).foregroundStyle(DT.Color.accent)
+                        .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
             if let critics = detail?.criticRating {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill").font(.system(size: 16))
-                    Text("\(Int(critics.rounded()))%").font(.system(size: 22, weight: .bold))
+                    Text("\(Int(critics.rounded()))%").font(.system(size: 23, weight: .bold))
                 }
                 .foregroundStyle(critics >= 60 ? Color(hex: "10b981") : Color(hex: "f59e0b"))
                 .accessibilityElement(children: .ignore)
@@ -230,7 +230,7 @@ struct TVMediaDetailView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "trophy.fill").font(.system(size: 16))
-                    Text(awardsLabel).font(.system(size: 18, weight: .semibold)).lineLimit(1)
+                    Text(awardsLabel).font(.system(size: 23, weight: .semibold)).lineLimit(1)
                 }
                 .foregroundStyle(Color(hex: "f59e0b"))
             }
@@ -464,10 +464,10 @@ struct TVMediaDetailView: View {
     private func infoRow(label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 23, weight: .bold))
                 .foregroundStyle(DT.Color.textSecondary)
             Text(value)
-                .font(.system(size: 20))
+                .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
         }
@@ -828,7 +828,7 @@ struct TVMediaDetailView: View {
 
     private func qualityBadge(_ label: String, color: Color) -> some View {
         Text(label)
-            .font(.system(size: 16, weight: .bold))
+            .font(.system(size: 23, weight: .bold))
             .foregroundStyle(color)
             .padding(.horizontal, 8).padding(.vertical, 4)
             .background(color.opacity(0.15))
@@ -888,7 +888,7 @@ private struct TVSeasonPickerLabel: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(name)
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: 23, weight: .semibold))
                 .foregroundStyle(isFocused ? .white : DT.Color.accent)
             Image(systemName: systemImage)
                 .font(.system(size: 18))
@@ -897,7 +897,7 @@ private struct TVSeasonPickerLabel: View {
         .padding(.horizontal, 16).padding(.vertical, 8)
         .background(Capsule().fill(isFocused ? DT.Color.accent : DT.Color.accent.opacity(0.1)))
         .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 10)
-        .animation(.spring(response: 0.18, dampingFraction: 0.8), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
 
@@ -954,25 +954,25 @@ private struct TVEpisodeCard: View {
             )
             .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
             .scaleEffect(isFocused ? 1.04 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+            .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     if let epNum = ep.indexNumber {
                         Text("Ep \(epNum)")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 23, weight: .bold))
                             .foregroundStyle(DT.Color.accent)
                     }
                     if let badge {
                         Text(badge)
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(size: 23, weight: .bold))
                             .padding(.horizontal, 8).padding(.vertical, 2)
                             .background(DT.Color.accent.opacity(0.18), in: Capsule())
                             .foregroundStyle(DT.Color.accent)
                     }
                 }
                 Text(ep.name)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 23, weight: .semibold))
                     .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                     .lineLimit(1)
                     .animation(DT.Animation.fast, value: isFocused)
@@ -1014,20 +1014,20 @@ private struct TVCastPersonCard<Placeholder: View>: View {
             .scaleEffect(isFocused ? 1.08 : 1)
 
             Text(name)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 23, weight: .semibold))
                 .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
             if let role, !role.isEmpty {
                 Text(role)
-                    .font(.system(size: 17))
+                    .font(.system(size: 23))
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
             }
         }
         .frame(width: 160, alignment: .top)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
     }
 }
 

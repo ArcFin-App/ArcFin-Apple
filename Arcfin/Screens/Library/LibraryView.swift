@@ -356,7 +356,7 @@ private struct TVLibraryCard: View {
         .frame(width: DT.Size.posterCard.width, height: DT.Size.posterCard.height)
         .scaleEffect(isFocused ? 1.05 : 1.0)
         .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 10)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
         .contentShape(Rectangle())
     }
 }
@@ -1122,11 +1122,12 @@ struct LibraryDetailView: View {
     }
 #else
     @AppStorage("libraryGridDensity") private var gridDensity = LibraryGridDensity.normal
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private var columns: [GridItem] {
-        // iPad's much larger screen stretched a fixed 3-flexible-column grid into
-        // oversized posters — the same adaptive, density-driven sizing as macOS keeps
-        // cards a sane size there instead, with iPhone left on its fixed column count.
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        // A wide window stretched a fixed 3-flexible-column grid into oversized posters —
+        // the same adaptive, density-driven sizing as macOS keeps cards a sane size there.
+        // By width, not device: an iPad in Split View or Slide Over is compact too.
+        if horizontalSizeClass == .regular {
             return [GridItem(.adaptive(minimum: gridDensity.adaptiveMinimumWidth), spacing: 12)]
         }
         return Array(repeating: GridItem(.flexible(), spacing: 12), count: gridDensity.columnCount)
@@ -1337,7 +1338,7 @@ struct LibraryDetailView: View {
                 .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.15), value: showFilterSheet)
+        .animation(DT.Animation.motion(.easeInOut(duration: 0.15)), value: showFilterSheet)
 #endif
         .onChange(of: selectedGenres) { _, _ in Task { await reload() } }
         .onChange(of: selectedYears) { _, _ in Task { await reload() } }

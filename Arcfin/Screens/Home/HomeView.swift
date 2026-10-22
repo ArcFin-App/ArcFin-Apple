@@ -1224,7 +1224,7 @@ struct HomeView: View {
                 }
                 .id(heroIndex)
                 .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: heroIndex)
+                .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: heroIndex)
                 .task(id: heroItems.map(\.id)) { await prefetchHeroLogos() }
 
                 HStack(spacing: 8) {
@@ -1387,7 +1387,7 @@ struct HomeView: View {
                 return
             }
             guard !Task.isCancelled, heroIndex == index else { return }
-            withAnimation(.easeIn(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeIn(duration: 0.6))) {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropIndex = index
             }
@@ -1395,7 +1395,7 @@ struct HomeView: View {
             // short preview instead, same idea as tvOS's own featured-app hero rotators.
             try? await Task.sleep(for: .seconds(15))
             guard !Task.isCancelled, heroIndex == index else { return }
-            withAnimation(.easeOut(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
                 heroVideoBackdropURL = nil
                 heroVideoBackdropIndex = nil
             }

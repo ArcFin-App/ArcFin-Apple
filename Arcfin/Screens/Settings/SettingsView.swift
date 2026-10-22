@@ -225,7 +225,7 @@ struct SettingsView: View {
                     .font(.system(.caption2, design: .default, weight: .semibold))
                     .tracking(1.5)
                     .textCase(.uppercase)
-                    .foregroundStyle(DT.Color.textSecondary.opacity(0.6))
+                    .foregroundStyle(DT.Color.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 8)
             }

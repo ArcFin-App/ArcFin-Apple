@@ -229,7 +229,7 @@ struct StatsView: View {
                     .trim(from: 0, to: min(fraction, 1))
                     .stroke(color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeOut(duration: 0.8), value: fraction)
+                    .animation(DT.Animation.motion(.easeOut(duration: 0.8)), value: fraction)
 
                 Text("\(Int(fraction * 100))%")
                     .font(.system(.caption2, design: .default, weight: .bold))

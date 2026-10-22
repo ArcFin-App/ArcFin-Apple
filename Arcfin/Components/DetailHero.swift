@@ -104,7 +104,7 @@ extension View {
                 }
             }
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.4), value: tint)
+            .animation(DT.Animation.motion(.easeInOut(duration: 0.4)), value: tint)
         }
     }
 }

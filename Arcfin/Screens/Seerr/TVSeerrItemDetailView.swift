@@ -127,7 +127,7 @@ struct TVSeerrItemDetailView: View {
             if let certification, !certification.isEmpty {
                 dot
                 Text(certification)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 23, weight: .semibold))
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.3), lineWidth: 1))
                     .accessibilityLabel("Rated \(certification)")
@@ -140,19 +140,19 @@ struct TVSeerrItemDetailView: View {
                 dot
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16))
-                    Text(String(format: "%.1f", rating)).font(.system(size: 22, weight: .bold))
+                    Text(String(format: "%.1f", rating)).font(.system(size: 23, weight: .bold))
                 }
                 .foregroundStyle(Color(hex: "f59e0b"))
             }
             if let statusLabel {
                 Text(statusLabel.label)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 23, weight: .bold))
                     .foregroundStyle(Color(hex: statusLabel.colorHex))
                     .padding(.horizontal, 12).padding(.vertical, 4)
                     .background(Color(hex: statusLabel.colorHex).opacity(0.15), in: Capsule())
             }
         }
-        .font(.system(size: 22))
+        .font(.system(size: 23))
         .foregroundStyle(.white.opacity(0.7))
     }
 
@@ -220,10 +220,10 @@ struct TVSeerrItemDetailView: View {
     private func infoRow(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 23, weight: .bold))
                 .foregroundStyle(DT.Color.textSecondary)
             Text(value)
-                .font(.system(size: 20))
+                .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
         }
@@ -261,9 +261,9 @@ struct TVSeerrItemDetailView: View {
                 HStack(spacing: 16) {
                     ForEach(seasons) { season in
                         VStack(spacing: 4) {
-                            Text(season.label).font(.system(size: 22, weight: .semibold))
+                            Text(season.label).font(.system(size: 23, weight: .semibold))
                             if let count = season.episodeCount {
-                                Text("\(count) episodes").font(.system(size: 18)).foregroundStyle(DT.Color.textSecondary)
+                                Text("\(count) episodes").font(.system(size: 23)).foregroundStyle(DT.Color.textSecondary)
                             }
                         }
                         .foregroundStyle(DT.Color.textPrimary)
@@ -297,13 +297,13 @@ struct TVSeerrItemDetailView: View {
                             .frame(width: 120, height: 120)
                             .clipShape(Circle())
                             Text(member.name)
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 23, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
                                 .lineLimit(2)
                                 .multilineTextAlignment(.center)
                             if let character = member.character {
                                 Text(character)
-                                    .font(.system(size: 16))
+                                    .font(.system(size: 23))
                                     .foregroundStyle(DT.Color.textSecondary)
                                     .lineLimit(1)
                             }

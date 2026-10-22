@@ -158,7 +158,7 @@ struct TitleInsights: View {
             // JustWatch supplies this data through TMDB, which asks for it to be credited.
             Text("Availability from JustWatch")
                 .font(.caption2)
-                .foregroundStyle(DT.Color.textSecondary.opacity(0.7))
+                .foregroundStyle(DT.Color.textSecondary)
         }
     }
 
