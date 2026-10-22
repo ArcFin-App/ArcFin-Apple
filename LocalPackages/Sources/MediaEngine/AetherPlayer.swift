@@ -174,6 +174,10 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         // because of display judder/a black flash on some TVs when the refresh rate switches.
         var options = LoadOptions()
         options.matchContentEnabled = UserDefaults.standard.bool(forKey: "matchContentFrameRate")
+        // About ten minutes ahead (segments are ~4 s) instead of the engine's ~40 s, filled while
+        // paused too. Held on disk, not in memory, and the engine stops at a quarter of the free
+        // space, so a large title on a full device buffers less rather than crowding it out.
+        options.forwardBufferSegments = 150
         try await engine.load(url: url, startPosition: startPosition, options: options)
     }
 

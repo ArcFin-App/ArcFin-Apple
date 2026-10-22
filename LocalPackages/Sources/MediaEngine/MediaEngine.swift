@@ -245,6 +245,10 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         let headers = CustomHTTPHeaders.current
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
+        // Left at 0, AVPlayer keeps a short lead chosen for it. Asking for three minutes lets it
+        // keep loading ahead, paused too, while the connection has room, so scrubbing nearby and
+        // a dip in bandwidth play from what's already here.
+        item.preferredForwardBufferDuration = 180
         player.replaceCurrentItem(with: item)
         log.info("Loading \(url.absoluteString)")
 
