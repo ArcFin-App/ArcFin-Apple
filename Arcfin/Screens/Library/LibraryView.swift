@@ -1444,6 +1444,7 @@ struct LibraryDetailView: View {
         Task {
             do {
                 let id = try await client.createPlaylist(credential: cred, authHeader: header, name: name, itemIds: [])
+                ContainingSets.shared.invalidate()
                 await PlaylistStore.shared.load(credential: cred, authHeader: header)
                 await reload()
                 createdPlaylist = MediaPlaylist(id: id, name: name, itemCount: 0)
@@ -1592,6 +1593,7 @@ struct LibraryDetailView: View {
         Task {
             do {
                 try await client.removeFromPlaylist(credential: cred, authHeader: header, playlistId: playlist.id, entryIds: [entryId])
+                ContainingSets.shared.invalidate()
                 await PlaylistStore.shared.load(credential: cred, authHeader: header)
             } catch {
                 playlistError = error.localizedDescription
@@ -1609,6 +1611,7 @@ struct LibraryDetailView: View {
         Task {
             do {
                 try await client.renamePlaylist(credential: cred, authHeader: header, playlistId: playlist.id, name: newName)
+                ContainingSets.shared.invalidate()
                 await PlaylistStore.shared.load(credential: cred, authHeader: header)
             } catch {
                 playlistName = oldName
@@ -1623,6 +1626,7 @@ struct LibraryDetailView: View {
         Task {
             do {
                 try await client.deletePlaylist(credential: cred, authHeader: header, playlistId: playlist.id)
+                ContainingSets.shared.invalidate()
                 await PlaylistStore.shared.load(credential: cred, authHeader: header)
                 dismiss()
             } catch {

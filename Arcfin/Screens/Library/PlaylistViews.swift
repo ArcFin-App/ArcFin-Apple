@@ -236,6 +236,7 @@ struct AddTitlesToPlaylistSheet: View {
         Task {
             do {
                 try await client.addToPlaylist(credential: cred, authHeader: header, playlistId: playlistId, itemIds: ordered)
+                ContainingSets.shared.invalidate()
                 await PlaylistStore.shared.load(credential: cred, authHeader: header)
                 onAdded()
                 dismiss()

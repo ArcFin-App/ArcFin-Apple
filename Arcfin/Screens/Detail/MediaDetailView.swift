@@ -49,6 +49,11 @@ struct MediaDetailView: View {
     /// whichever returned category (if any) names this movie as its baseline.
     @State private var jellyfinRecommended: MovieRecommendationCategory?
     @State private var seriesItem: MediaItem?
+    /// Collections and playlists this title (or an episode's show) is in.
+    @State private var containingCollections: [MediaItem] = []
+    @State private var containingPlaylists: [MediaItem] = []
+    @State private var openedCollection: MediaItem?
+    @State private var openedPlaylist: MediaItem?
     /// The episode a series-level Play/Resume button actually starts — a series itself
     /// isn't playable, so this is what getNextEpisode() resolves to.
     @State private var nextEpisode: MediaItem?
@@ -252,6 +257,14 @@ struct MediaDetailView: View {
             .frame(minWidth: 480, minHeight: 520)
         }
         #endif
+        .navigationDestination(item: $openedCollection) { collection in
+#if os(tvOS)
+            TVCollectionDetailView(item: collection)
+#else
+            CollectionDetailView(collection: collection)
+#endif
+        }
+        .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .navigationDestination(item: $selectedEpisode) { ep in
 #if os(tvOS)
             MediaDetailView(item: ep)
@@ -358,6 +371,8 @@ struct MediaDetailView: View {
         }
 #endif
         .task { await load() }
+        // Apart from load(): the first lookup reads every collection and playlist.
+        .task(id: item.id) { await loadContainingSets() }
         .task(id: item.tmdbId) {
             guard let tmdbId = item.tmdbId else { return }
             awards = await WikidataAwardsClient.shared.awards(
@@ -1059,6 +1074,12 @@ struct MediaDetailView: View {
         if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
             jellyfinRecommendedSection(jellyfinRecommended)
         }
+        if !containingCollections.isEmpty {
+            containingSection(containingCollections.count == 1 ? "Collection" : "Collections", containingCollections) { openedCollection = $0 }
+        }
+        if !containingPlaylists.isEmpty {
+            containingSection("In Your Playlists", containingPlaylists) { openedPlaylist = $0 }
+        }
 
         // Scores, where else it's streaming, and the details list. An episode's TMDB id is
         // the episode's, which Seerr's title lookups don't take, so episodes show the
@@ -1591,6 +1612,41 @@ struct MediaDetailView: View {
 #else
                         .buttonStyle(.plain)
                         .zoomTransitionSource(id: sim.id, in: zoomNamespace)
+#endif
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+#if os(tvOS)
+                .focusSection()
+#endif
+            }
+        }
+        .padding(.bottom, DT.Spacing.md)
+    }
+
+    private func loadContainingSets() async {
+        guard let cred = credential, let header = authHeader else { return }
+        let found = await ContainingSets.shared.sets(containing: [item.id, item.seriesId].compactMap { $0 },
+                                                     credential: cred, authHeader: header)
+        containingCollections = found.collections
+        containingPlaylists = found.playlists
+    }
+
+    /// The collections or playlists this title is in, laid out like More Like This.
+    private func containingSection(_ title: String, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(title).padding(.horizontal, DT.Spacing.pagePad)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 10) {
+                    ForEach(sets) { set in
+                        Button { open(set) } label: {
+                            PosterCard(title: set.name, imageURL: mediaRepo.imageURL(for: set))
+                        }
+#if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+#else
+                        .buttonStyle(.plain)
 #endif
                     }
                 }

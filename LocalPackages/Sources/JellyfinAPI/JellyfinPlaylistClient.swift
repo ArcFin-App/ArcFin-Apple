@@ -73,6 +73,41 @@ extension JellyfinMediaClient {
         }
     }
 
+    /// The user's collections.
+    public func getCollections(credential: ServerCredential, authHeader: String) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "BoxSet"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "SortBy", value: "SortName"),
+            .init(name: "Fields", value: "PrimaryImageTags,BackdropImageTags,ProductionYear"),
+            .init(name: "EnableUserData", value: "false"),
+        ]
+        let data = try await send(request(comps.url!, authHeader: authHeader))
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    /// Only the ids of what a collection or playlist holds: enough to tell what's in it.
+    public func getChildIds(credential: ServerCredential, authHeader: String, parentId: String) async throws -> [String] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "ParentId", value: parentId),
+            .init(name: "EnableImages", value: "false"),
+            .init(name: "EnableUserData", value: "false"),
+        ]
+        struct Page: Decodable {
+            struct Row: Decodable { let id: String; enum CodingKeys: String, CodingKey { case id = "Id" } }
+            let items: [Row]
+            enum CodingKeys: String, CodingKey { case items = "Items" }
+        }
+        let data = try await send(request(comps.url!, authHeader: authHeader))
+        return try JSONDecoder().decode(Page.self, from: data).items.map(\.id)
+    }
+
     public func getPlaylistEntries(credential: ServerCredential, authHeader: String, playlistId: String) async throws -> [PlaylistEntry] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Playlists/\(playlistId)/Items"),

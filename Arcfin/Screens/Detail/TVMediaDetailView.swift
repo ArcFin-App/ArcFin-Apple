@@ -39,6 +39,11 @@ struct TVMediaDetailView: View {
     @State private var showSubtitleSearch = false
     @State private var seriesItem: MediaItem?
     @State private var jellyfinRecommended: MovieRecommendationCategory?
+    /// Collections and playlists this title (or an episode's show) is in.
+    @State private var containingCollections: [MediaItem] = []
+    @State private var containingPlaylists: [MediaItem] = []
+    @State private var openedCollection: MediaItem?
+    @State private var openedPlaylist: MediaItem?
     @State private var loadedSeasonId: String?
     @Namespace private var focusNamespace
 
@@ -83,6 +88,15 @@ struct TVMediaDetailView: View {
         }
         .screenBackground()
         .task { await load() }
+        .task(id: item.id) {
+            guard let credential, let authHeader else { return }
+            let found = await ContainingSets.shared.sets(containing: [item.id, item.seriesId].compactMap { $0 },
+                                                         credential: credential, authHeader: authHeader)
+            containingCollections = found.collections
+            containingPlaylists = found.playlists
+        }
+        .navigationDestination(item: $openedCollection) { TVCollectionDetailView(item: $0) }
+        .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .task(id: item.tmdbId) {
             guard let tmdbId = item.tmdbId else { return }
             awards = await WikidataAwardsClient.shared.awards(
@@ -495,6 +509,14 @@ struct TVMediaDetailView: View {
         if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
             itemRow(jellyfinRecommended.title, jellyfinRecommended.items).trackSectionOffset().focusSection()
         }
+        if !containingCollections.isEmpty {
+            setRow(containingCollections.count == 1 ? "Collection" : "Collections", containingCollections) { openedCollection = $0 }
+                .trackSectionOffset().focusSection()
+        }
+        if !containingPlaylists.isEmpty {
+            setRow("In Your Playlists", containingPlaylists) { openedPlaylist = $0 }
+                .trackSectionOffset().focusSection()
+        }
         TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
             .padding(.horizontal, 80)
             .focusSection()
@@ -517,6 +539,29 @@ struct TVMediaDetailView: View {
                                 subtitle: rec.productionYear.map { String($0) },
                                 imageURL: mediaRepo.tvImageURL(for: rec, fillWidth: 640)
                             )
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+                .padding(.horizontal, 80)
+                .padding(.top, 20)
+                .focusSection()
+            }
+            .scrollClipDisabled()
+        }
+        .padding(.bottom, 56)
+    }
+
+    /// Collections or playlists, which open their own pages rather than a title's.
+    private func setRow(_ title: String, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle(title).padding(.horizontal, 80)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(sets) { set in
+                        Button { open(set) } label: {
+                            PosterCard(title: set.name, imageURL: mediaRepo.tvImageURL(for: set, fillWidth: 640))
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
