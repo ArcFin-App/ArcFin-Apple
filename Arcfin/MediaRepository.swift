@@ -70,10 +70,6 @@ final class MediaRepository {
     /// director, its cast.
     var recommendations: [MovieRecommendationCategory] = []
     var libraries: [JellyfinLibrary] = []
-    var topMovies: [MediaItem] = []
-    var topShows: [MediaItem] = []
-    var playedMovieCount: Int = 0
-    var playedEpisodeCount: Int = 0
     var serverID: String = ""
     var isLoading: Bool = false
     /// True when the last load couldn't reach the server at all (vs. a genuinely empty
@@ -164,10 +160,6 @@ final class MediaRepository {
         async let cw      = client.getContinueWatching(credential: credential, authHeader: header)
         async let la      = client.getLatestMedia(credential: credential, authHeader: header)
         async let libs    = client.getLibraries(credential: credential, authHeader: header)
-        async let tMov    = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Movie")
-        async let tShow   = client.getTopPlayed(credential: credential, authHeader: header, itemType: "Series")
-        async let cMov    = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Movie")
-        async let cEp     = client.getPlayedCount(credential: credential, authHeader: header, itemType: "Episode")
         async let srvID   = client.getServerID(credential: credential)
         async let nUp     = client.getNextUp(credential: credential, authHeader: header)
         async let raMov   = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")
@@ -203,10 +195,6 @@ final class MediaRepository {
         let cwResult = (try? await cw) ?? []
         let laResult = (try? await la) ?? []
         let libsResult = (try? await libs) ?? []
-        let tMovResult = (try? await tMov) ?? []
-        let tShowResult = (try? await tShow) ?? []
-        let cMovResult = (try? await cMov) ?? 0
-        let cEpResult = (try? await cEp) ?? 0
         let nUpResult = (try? await nUp) ?? []
         let raMovResult = (try? await raMov) ?? []
         let raShowResult = (try? await raShow) ?? []
@@ -223,10 +211,6 @@ final class MediaRepository {
         continueWatching       = cwResult
         recentlyAdded          = laResult
         libraries              = libsResult
-        topMovies              = tMovResult
-        topShows               = tShowResult
-        playedMovieCount       = cMovResult
-        playedEpisodeCount     = cEpResult
         nextUp                 = nUpResult
         recentlyAddedMovies    = raMovResult
         recentlyAddedShows     = raShowResult

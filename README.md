@@ -39,6 +39,16 @@ Each platform gets its own interface rather than a stretched phone app: Liquid G
 - **Search** across the server, with optional search history.
 - **Spoiler Protection** for episode thumbnails and descriptions.
 
+### Stats
+An optional tab, off until you turn it on in Settings › Appearance (Navigation on iPhone, iPad and Mac), worked out entirely from your Jellyfin watch history:
+- **Week, Month, Year or All Time:** time watched, and how many movies, episodes and shows.
+- **Activity** over the period, your busiest day, current and longest streaks, and when you watch: by weekday and time of day.
+- **Top shows** with how far through each you are, **top movies**, and what you've watched on repeat.
+- **Your taste:** genres, decades, studios and networks, age ratings, and the actors and directors you've seen most.
+- **Highlights:** average and highest rating, longest and oldest movie, and how long you've been watching.
+- **Your library:** how much of it you've watched, shows finished, titles in progress and favourites.
+- **Share:** a story- or post-sized card of your stats, made by Arcfin, ready for social media (iPhone, iPad and Mac).
+
 ### Downloads
 - **Offline playback** on iPhone, iPad and Mac, with your watch progress synced back when you're online.
 - **Fast:** large files download in parallel ranges, several titles at once, and keep going in the background.

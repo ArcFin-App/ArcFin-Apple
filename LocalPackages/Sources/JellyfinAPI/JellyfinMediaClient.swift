@@ -408,68 +408,6 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(JellyfinPublicServerInfo.self, from: data)
     }
 
-    public func getTopPlayed(
-        credential: ServerCredential,
-        authHeader: String,
-        itemType: String,
-        limit: Int = 6,
-        since: Date? = nil
-    ) async throws -> [MediaItem] {
-        var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
-            resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            .init(name: "SortBy", value: "PlayCount"),
-            .init(name: "SortOrder", value: "Descending"),
-            .init(name: "Filters", value: "IsPlayed"),
-            .init(name: "IncludeItemTypes", value: itemType),
-            .init(name: "Recursive", value: "true"),
-            .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ProductionYear"),
-        ]
-        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
-        var req = URLRequest(url: comps.url!)
-        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 15
-        let (data, _) = try await URLSession.arcfin.data(for: req)
-        let page = try JSONDecoder().decode(ItemsPage.self, from: data)
-        return page.items.map { $0.toMediaItem() }
-    }
-
-    /// "Played since" for Stats' 7D/30D ranges: Jellyfin has no last-played-date filter on
-    /// the items query, but minDateLastSavedForUser matches items whose per-user data (which
-    /// playback updates) changed since — a close stand-in, and it also catches favoriting.
-    private static func sinceQueryItem(_ date: Date) -> URLQueryItem {
-        .init(name: "MinDateLastSavedForUser", value: ISO8601DateFormatter().string(from: date))
-    }
-
-    public func getPlayedCount(
-        credential: ServerCredential,
-        authHeader: String,
-        itemType: String,
-        since: Date? = nil
-    ) async throws -> Int {
-        var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
-            resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            .init(name: "Filters", value: "IsPlayed"),
-            .init(name: "IncludeItemTypes", value: itemType),
-            .init(name: "Recursive", value: "true"),
-            .init(name: "Limit", value: "1"),
-        ]
-        if let since { comps.queryItems?.append(Self.sinceQueryItem(since)) }
-        var req = URLRequest(url: comps.url!)
-        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 15
-        let (data, _) = try await URLSession.arcfin.data(for: req)
-        struct CountPage: Decodable {
-            let totalRecordCount: Int
-            enum CodingKeys: String, CodingKey { case totalRecordCount = "TotalRecordCount" }
-        }
-        return (try? JSONDecoder().decode(CountPage.self, from: data).totalRecordCount) ?? 0
-    }
-
     public func getItemDetail(
         credential: ServerCredential,
         authHeader: String,

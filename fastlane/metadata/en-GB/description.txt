@@ -24,6 +24,7 @@ DISCOVER & TRACK
 • Cast and crew pages
 • Optional trailer playback, with an in-app YouTube fallback when a title has no local trailer
 • Connect Seerr to browse and request new content without leaving Arcfin
+• An optional Stats tab with your watch time, habits, streaks, top shows, genres and favourite actors, all from your own server, plus a card to share
 
 BUILT-IN PRIVACY
 • A profile picker with optional per-profile Face ID or PIN lock
