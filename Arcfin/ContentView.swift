@@ -125,6 +125,19 @@ struct ContentView: View {
         UserDefaults.standard.removeObject(forKey: ControlRoute.pendingKey)
         handleDeepLink(url)
     }
+
+    /// Siri's Download Next Episode, once there's a signed-in profile to download with.
+    private func startPendingDownload() {
+        guard let credential = authManager.state.credential,
+              let id = UserDefaults.standard.string(forKey: DownloadRoute.pendingKey) else { return }
+        UserDefaults.standard.removeObject(forKey: DownloadRoute.pendingKey)
+        let header = authManager.authClient.authHeader(token: credential.accessToken)
+        Task {
+            guard let item = try? await JellyfinMediaClient().getItemDetail(credential: credential, authHeader: header, itemId: id).item
+            else { return }
+            await downloadManager.startDownload(item: item, credential: credential, authHeader: header)
+        }
+    }
     #endif
 
     private var phase: AppPhase {
@@ -270,6 +283,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: ControlRoute.notification)) { _ in
             consumeControlLink()
         }
+        .onReceive(NotificationCenter.default.publisher(for: DownloadRoute.notification)) { _ in
+            startPendingDownload()
+        }
         #endif
         .task {
             await authManager.checkStoredAuth()
@@ -277,6 +293,7 @@ struct ContentView: View {
             if activeProfileHasPIN { isAppLocked = true }
             #if !os(tvOS)
             consumeControlLink()
+            startPendingDownload()
             #endif
         }
         .task { authManager.startNetworkMonitoring() }

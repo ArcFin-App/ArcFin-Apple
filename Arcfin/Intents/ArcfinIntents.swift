@@ -176,6 +176,79 @@ struct ShowDownloadsIntent: AppIntent {
     }
 }
 
+struct PlayTitleIntent: AppIntent {
+    static let title: LocalizedStringResource = "Play Title"
+    static let description = IntentDescription("Plays a movie or episode from where you left off, or a series from its next episode.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Title")
+    var target: MediaEntity
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        WatchRoute.open(id: target.id)
+        return .result()
+    }
+}
+
+struct PlayRandomMovieIntent: AppIntent {
+    static let title: LocalizedStringResource = "Play a Random Movie"
+    static let description = IntentDescription("Plays a movie you haven't watched yet, picked at random.")
+    static let openAppWhenRun = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let credential = IntentSession.credential() else {
+            return .result(dialog: "Open Arcfin and sign in first.")
+        }
+        let page = try await JellyfinMediaClient().getLibraryItems(
+            credential: credential, authHeader: IntentSession.authHeader(for: credential), libraryId: "",
+            limit: 1, includeItemTypes: "Movie", isPlayed: false, sortBy: "Random")
+        guard let movie = page.items.first else {
+            return .result(dialog: "You've watched every movie in your library.")
+        }
+        WatchRoute.open(id: movie.id)
+        return .result(dialog: "Playing \(movie.name).")
+    }
+}
+
+struct DownloadNextEpisodeIntent: AppIntent {
+    static let title: LocalizedStringResource = "Download Next Episode"
+    static let description = IntentDescription("Downloads the next episode of a series to watch.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Series")
+    var target: MediaEntity
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let credential = IntentSession.credential() else {
+            return .result(dialog: "Open Arcfin and sign in first.")
+        }
+        let header = IntentSession.authHeader(for: credential)
+        let client = JellyfinMediaClient()
+        let detail = try await client.getItemDetail(credential: credential, authHeader: header, itemId: target.id).item
+        let seriesId = detail.type == .episode ? detail.seriesId : detail.id
+        guard let seriesId, let next = try await client.getNextEpisode(credential: credential, authHeader: header, seriesId: seriesId) else {
+            return .result(dialog: "There's no next episode of \(target.title) to download.")
+        }
+        DownloadRoute.open(id: next.id)
+        return .result(dialog: "Downloading \(next.name).")
+    }
+}
+
+struct ShowDiscoverIntent: AppIntent {
+    static let title: LocalizedStringResource = "Show Discover"
+    static let description = IntentDescription("Opens Discover, to find something new to request.")
+    static let openAppWhenRun = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        ArcfinRouting.showDiscover()
+        return .result()
+    }
+}
+
 // MARK: - Shortcuts
 
 struct ArcfinShortcuts: AppShortcutsProvider {
@@ -189,6 +262,32 @@ struct ArcfinShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Continue Watching",
             systemImageName: "play.circle")
+        AppShortcut(
+            intent: PlayTitleIntent(),
+            phrases: [
+                "Play \(\.$target) in \(.applicationName)",
+                "Watch \(\.$target) in \(.applicationName)",
+                "Put on \(\.$target) in \(.applicationName)",
+            ],
+            shortTitle: "Play Title",
+            systemImageName: "play.fill")
+        AppShortcut(
+            intent: PlayRandomMovieIntent(),
+            phrases: [
+                "Play a random movie in \(.applicationName)",
+                "Surprise me in \(.applicationName)",
+                "Pick a movie in \(.applicationName)",
+            ],
+            shortTitle: "Random Movie",
+            systemImageName: "shuffle")
+        AppShortcut(
+            intent: DownloadNextEpisodeIntent(),
+            phrases: [
+                "Download the next episode of \(\.$target) in \(.applicationName)",
+                "Download \(\.$target) in \(.applicationName)",
+            ],
+            shortTitle: "Download Next Episode",
+            systemImageName: "arrow.down.to.line")
         AppShortcut(
             intent: OpenTitleIntent(),
             phrases: [
@@ -205,6 +304,14 @@ struct ArcfinShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Downloads",
             systemImageName: "arrow.down.circle")
+        AppShortcut(
+            intent: ShowDiscoverIntent(),
+            phrases: [
+                "Open Discover in \(.applicationName)",
+                "What's new to request in \(.applicationName)",
+            ],
+            shortTitle: "Discover",
+            systemImageName: "sparkles")
     }
 }
 

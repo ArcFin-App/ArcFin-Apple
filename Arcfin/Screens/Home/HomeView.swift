@@ -144,6 +144,9 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
                 selectedTab = .home
             }
+            .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+                selectedTab = .home
+            }
             #if os(macOS)
             // Cmd+, / Arcfin > Settings… — switches to Home so its own
             // arcfinShowSettings listener (below) can actually present it.
@@ -814,6 +817,17 @@ struct HomeView: View {
         UserDefaults.standard.removeObject(forKey: "arcfin.pendingResume")
         quickPlayRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
     }
+
+    /// Siri's Play and a SharePlay title: straight into the player.
+    private func playPendingWatch() {
+        guard let cred = authManager.state.credential, let id = WatchRoute.takePending() else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            if let request = await WatchRoute.resolve(id: id, credential: cred, authHeader: header) {
+                quickPlayRequest = request
+            }
+        }
+    }
     #endif
 
     private func recommendationTitle(_ category: MovieRecommendationCategory) -> String {
@@ -881,6 +895,9 @@ struct HomeView: View {
         #if !os(tvOS)
         .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
             resumeLatest()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+            playPendingWatch()
         }
         #endif
         #if !os(tvOS)
@@ -950,6 +967,7 @@ struct HomeView: View {
         }
         #if !os(tvOS)
         if UserDefaults.standard.bool(forKey: "arcfin.pendingResume") { resumeLatest() }
+        playPendingWatch()
         #endif
         if seerrRepo.hasCatalog && seerrDiscoverEnabled {
             await seerrRepo.loadDiscover()
