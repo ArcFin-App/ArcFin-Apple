@@ -1298,69 +1298,83 @@ extension PlayerView {
 
     // MARK: - Up Next
 
+    /// The credits of anything with a title after it (the next episode, or the next one in a
+    /// playlist or collection): what's next, and Skip Credits, Like and Dislike for what's
+    /// ending.
     func upNextCard(_ next: MediaItem) -> some View {
         VStack {
             Spacer()
             HStack {
                 Spacer()
-                HStack(spacing: 12) {
-                    if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
-                        CachedAsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let img): img.resizable().scaledToFill()
-                            default: DT.Color.backgroundSecondary
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
+                            CachedAsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let img): img.resizable().scaledToFill()
+                                default: DT.Color.backgroundSecondary
+                                }
+                            }
+                            .frame(width: 100, height: 56)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .accessibilityHidden(true)
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Up Next")
+                                .font(.system(.caption2, design: .default, weight: .bold))
+                                .tracking(0.5)
+                                .foregroundStyle(DT.Color.accent)
+                            Text(next.name)
+                                .font(.system(.footnote, design: .default, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                            if let s = next.parentIndexNumber, let e = next.indexNumber {
+                                Text("S\(s) · E\(e)")
+                                    .font(.system(.caption2))
+                                    .foregroundStyle(.white.opacity(0.6))
                             }
                         }
-                        .frame(width: 100, height: 56)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Up Next")
-                            .font(.system(.caption2, design: .default, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundStyle(DT.Color.accent)
-                        Text(next.name)
-                            .font(.system(.footnote, design: .default, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                        if let s = next.parentIndexNumber, let e = next.indexNumber {
-                            Text("S\(s) · E\(e)")
-                                .font(.system(.caption2))
-                                .foregroundStyle(.white.opacity(0.6))
-                        }
-                    }
-                    VStack(spacing: 10) {
+                        Spacer(minLength: 0)
                         Button { playNextEpisode() } label: {
                             Image(systemName: "play.fill")
                                 .font(.system(.subheadline, weight: .semibold))
                                 .foregroundStyle(.black)
-                                .frame(width: 30, height: 30)
+                                .frame(width: 34, height: 34)
                                 .background(.white, in: Circle())
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
-                        .accessibilityLabel("Play next")
+                        .accessibilityLabel("Play \(next.name)")
+                        .playerOverlayButton(cornerRadius: 22)
                         #if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: 15, prominent: true)
                         .prefersDefaultFocus(true, in: tvFocusNamespace)
                         #endif
                         Button { dismissUpNext() } label: {
                             Image(systemName: "xmark")
-                                .font(.system(.caption2, weight: .semibold))
+                                .font(.system(.caption, weight: .semibold))
                                 .foregroundStyle(.white.opacity(0.7))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .accessibilityLabel("Dismiss")
-                        #if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: 11)
-                        #endif
+                        .playerOverlayButton(cornerRadius: 22)
+                    }
+                    HStack(spacing: 8) {
+                        creditsAction("Skip Credits", systemImage: "forward.end.fill", isSelected: false) {
+                            skipCredits()
+                        }
+                        creditsAction("Like", systemImage: "hand.thumbsup", isSelected: currentLikes == true) {
+                            rateCurrentItem(true)
+                        }
+                        creditsAction("Dislike", systemImage: "hand.thumbsdown", isSelected: currentLikes == false) {
+                            rateCurrentItem(false)
+                        }
                     }
                 }
                 .padding(10)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
                 .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
-                .frame(maxWidth: 340)
+                .frame(maxWidth: 380)
                 #if os(tvOS)
                 .focusSection()
                 #endif
@@ -1370,6 +1384,31 @@ extension PlayerView {
         }
         .transition(.move(edge: .trailing).combined(with: .opacity))
         .animation(DT.Animation.fast, value: showUpNext)
+    }
+
+    private func creditsAction(_ title: String, systemImage: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: isSelected ? "\(systemImage).fill" : systemImage)
+                .font(.system(.caption, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(isSelected ? .black : .white)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(
+                    isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.16)),
+                    in: RoundedRectangle(cornerRadius: DT.Radius.md))
+        }
+        .playerOverlayButton(cornerRadius: DT.Radius.md)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// Past the credits: on to the next title when they run to the end, or to the scene after
+    /// them. Without the server's credits marker, the rest of the title counts as credits.
+    private func skipCredits() {
+        let now = Double(player.positionTicks) / 10_000_000
+        let duration = Double(player.durationTicks) / 10_000_000
+        skip(kind: "credits", span: segments.credits ?? (now...max(now, duration)))
     }
 
     // MARK: - More Like This
