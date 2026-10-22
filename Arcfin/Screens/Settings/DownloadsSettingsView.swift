@@ -116,6 +116,9 @@ struct DownloadsSettingsView: View {
             Section {
                 Toggle("Smart Downloads", isOn: $smartDownloadsEnabled)
                     .syncLocked("smartDownloadsEnabled", authManager)
+                    .onChange(of: smartDownloadsEnabled) { _, isOn in
+                        if isOn { downloadManager.refreshSmartDownloads() }
+                    }
                 if smartDownloadsEnabled {
                     Picker("Episodes to Keep", selection: $smartDownloadsEpisodeCount) {
                         ForEach(1...5, id: \.self) { count in
@@ -123,12 +126,14 @@ struct DownloadsSettingsView: View {
                         }
                     }
                     .syncLocked("smartDownloadsEpisodeCount", authManager)
+                    .onChange(of: smartDownloadsEpisodeCount) { downloadManager.refreshSmartDownloads() }
                     Picker("Storage Budget", selection: $smartDownloadsStorageBudgetGB) {
                         ForEach([5, 10, 25, 50], id: \.self) { gb in
                             Text("\(gb) GB").tag(gb)
                         }
                     }
                     .syncLocked("smartDownloadsStorageBudgetGB", authManager)
+                    .onChange(of: smartDownloadsStorageBudgetGB) { downloadManager.refreshSmartDownloads() }
                     Toggle("Use Mobile Data", isOn: $smartDownloadsAllowMobileData)
                         .syncLocked("smartDownloadsAllowMobileData", authManager)
                         .onChange(of: smartDownloadsAllowMobileData) { _, isOn in

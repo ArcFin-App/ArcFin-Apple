@@ -1338,9 +1338,11 @@ final class DownloadManager: NSObject {
             markForDeletionAfterWatching(itemId: item.itemId)
         }
 
+        // Only the shows it looks after: movies and other downloads someone started themselves
+        // would otherwise use up the budget and quietly stop every show.
         func totalDownloadedBytes() -> Int64 {
             let current = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
-            return current.reduce(0) { $0 + $1.fileSizeBytes }
+            return current.filter { $0.seriesId.map { targets[$0] != nil } ?? false }.reduce(0) { $0 + $1.fileSizeBytes }
         }
 
         for (seriesId, count) in targets {
