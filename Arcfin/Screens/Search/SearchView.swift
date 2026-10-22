@@ -18,6 +18,7 @@ struct SearchView: View {
     @State private var searchTask: Task<Void, Never>?
     @State private var requestingSeerrItem: SeerrItem?
     @AppStorage("recentSearches") private var recentSearchesData = Data()
+    @AppStorage("saveSearchHistory") private var saveSearchHistory = true
 
     private static let maxRecentSearches = 8
 
@@ -27,7 +28,7 @@ struct SearchView: View {
 
     private func saveRecentSearch(_ term: String) {
         let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.count >= 2 else { return }
+        guard saveSearchHistory, trimmed.count >= 2 else { return }
         var updated = recentSearches.filter { $0.caseInsensitiveCompare(trimmed) != .orderedSame }
         updated.insert(trimmed, at: 0)
         recentSearchesData = (try? JSONEncoder().encode(Array(updated.prefix(Self.maxRecentSearches)))) ?? Data()
