@@ -38,6 +38,7 @@ struct DownloadsView: View {
     #endif
     @State private var selection = Set<String>()
     @State private var showBulkDeleteConfirm = false
+    @State private var showMobileDataConfirm = false
 
     private var movies: [DownloadedItem] { items.filter { $0.seriesId == nil }.sorted { $0.name < $1.name } }
 
@@ -81,6 +82,12 @@ struct DownloadsView: View {
 
                     if !downloadManager.activeItemTitles.isEmpty {
                         Section {
+                            if downloadManager.isWaitingForWiFi {
+                                waitingForWiFiRow
+                                    #if os(iOS)
+                                    .listRowSeparator(.hidden)
+                                    #endif
+                            }
                             ForEach(downloadManager.orderedInProgressIds, id: \.self) { itemId in
                                 inProgressRow(itemId)
                                     .contextMenu {
@@ -218,6 +225,12 @@ struct DownloadsView: View {
                 pendingDeleteSeriesId = nil
             }
             Button("Cancel", role: .cancel) { pendingDeleteSeriesId = nil }
+        }
+        .alert("Download on Mobile Data?", isPresented: $showMobileDataConfirm) {
+            Button("Download") { downloadManager.allowMobileData() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply.")
         }
         .alert("Delete \(selection.count) selected download\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) {
@@ -383,6 +396,29 @@ struct DownloadsView: View {
 
     // MARK: - In progress
 
+    private var waitingForWiFiRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(.title3))
+                .foregroundStyle(DT.Color.textSecondary)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Waiting for Wi-Fi")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                Text("Downloads start when you're on Wi-Fi.")
+                    .font(.system(.caption2))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            Spacer()
+            Button("Start") { showMobileDataConfirm = true }
+                .buttonStyle(.borderedProminent)
+                .tint(DT.Color.accent)
+                .accessibilityHint("Downloads over mobile data")
+        }
+        .padding(.vertical, 4)
+    }
+
     private func inProgressRow(_ itemId: String) -> some View {
         let stats = downloadManager.stats[itemId]
         let fraction = downloadManager.progress[itemId] ?? 0
@@ -439,7 +475,8 @@ struct DownloadsView: View {
                 } else if let stats, stats.bytesWritten > 0 {
                     Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) downloaded")
                 } else if downloadManager.queuedItemIds.contains(itemId) {
-                    Text(downloadManager.isQueuePaused ? "Paused" : "Waiting in queue")
+                    Text(downloadManager.isQueuePaused ? "Paused"
+                         : downloadManager.isWaitingForWiFi ? "Waiting for Wi-Fi" : "Waiting in queue")
                 } else {
                     Text("Preparing…")
                 }

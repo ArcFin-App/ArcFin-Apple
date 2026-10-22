@@ -79,8 +79,15 @@ final class DownloadManager: NSObject {
     /// server URL and doesn't expose its current path) — kept running for the app's
     /// lifetime, same pattern as AuthManager's own monitor.
     @ObservationIgnored private var wifiPathMonitor: NWPathMonitor?
-    @ObservationIgnored private var isOnWiFi = true
+    @ObservationIgnored private var isOnMobileData = false
     @ObservationIgnored private var isRunningSmartDownloads = false
+    /// The queue is holding because Wi-Fi Only is on and the connection is mobile data.
+    private(set) var isWaitingForWiFi = false
+    /// Given from Downloads after the mobile data warning; lasts until the queue drains.
+    @ObservationIgnored private var mobileDataApproved = false
+
+    private var isWiFiOnly: Bool { UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true }
+    private var isMobileDataBlocked: Bool { isWiFiOnly && isOnMobileData && !mobileDataApproved }
     /// True background session on iOS — transfer keeps going, managed by nsurlsessiond,
     /// even if the app is suspended or killed; iOS relaunches the app to redeliver the
     /// delegate callback via AppDelegate's handleEventsForBackgroundURLSession. tvOS/macOS
@@ -146,12 +153,28 @@ final class DownloadManager: NSObject {
         guard wifiPathMonitor == nil else { return }
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
-            let onWiFi = path.usesInterfaceType(.wifi)
+            // isExpensive covers a personal hotspot too, which bills the same mobile data.
+            let onMobileData = path.status == .satisfied && path.isExpensive
             guard let self else { return }
-            Task { @MainActor in self.isOnWiFi = onWiFi }
+            Task { @MainActor in self.networkChanged(onMobileData: onMobileData) }
         }
         monitor.start(queue: DispatchQueue(label: "arcfin.downloads.pathMonitor"))
         wifiPathMonitor = monitor
+    }
+
+    private func networkChanged(onMobileData: Bool) {
+        isOnMobileData = onMobileData
+        guard isWaitingForWiFi, !isMobileDataBlocked else { return }
+        isWaitingForWiFi = false
+        Task { await processQueue() }
+    }
+
+    /// Starts a queue held for Wi-Fi over mobile data, once the person has accepted the cost.
+    func allowMobileData() {
+        mobileDataApproved = true
+        guard isWaitingForWiFi else { return }
+        isWaitingForWiFi = false
+        Task { await processQueue() }
     }
 
     /// Mirrors reconcileStaleActivitiesOnLaunch's own delay — authManager.checkStoredAuth()
@@ -209,7 +232,9 @@ final class DownloadManager: NSObject {
         let itemId = activeItemIds.first
         let stat = itemId.flatMap { stats[$0] }
         let meta = isFinished ? finishedMeta : itemId.flatMap { liveActivityItemMeta[$0] }
-        let title = isFinished ? (finishedTitle ?? "") : (itemId.flatMap { activeItemTitles[$0] } ?? "")
+        // Held for Wi-Fi, nothing has started yet: show the first title waiting.
+        let waiting = itemId == nil ? pendingQueue.first?.item : nil
+        let title = isFinished ? (finishedTitle ?? "") : (itemId.flatMap { activeItemTitles[$0] } ?? waiting?.name ?? "")
         // Spread the current title over time at the present speed: starting where it would
         // have to have begun to be this far along, ending when the rest arrives.
         var estimate: (start: Date, finish: Date)?
@@ -226,8 +251,9 @@ final class DownloadManager: NSObject {
             completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished,
             posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode,
             isPaused: !isFinished && (isQueuePaused || itemId.map(pausedItemIds.contains) == true),
-            nextItemTitle: isFinished ? nil : pendingQueue.first?.item.name,
-            estimateStart: estimate?.start, estimatedFinish: estimate?.finish
+            nextItemTitle: isFinished ? nil : pendingQueue.first { $0.item.id != waiting?.id }?.item.name,
+            estimateStart: estimate?.start, estimatedFinish: estimate?.finish,
+            isWaitingForWiFi: !isFinished && isWaitingForWiFi
         )
         Task { await liveActivity.update(ActivityContent(state: state, staleDate: nil)) }
     }
@@ -314,7 +340,7 @@ final class DownloadManager: NSObject {
     /// Lower-quality downloads need the server's playback info first, so they keep their turn.
     func handOffQueue() {
         #if canImport(UIKit) && !os(tvOS)
-        guard !isQueuePaused else { return }
+        guard !isQueuePaused, !isMobileDataBlocked else { return }
         for entry in pendingQueue where entry.bitrateCap == nil {
             let itemId = entry.item.id
             guard !handedOffItemIds.contains(itemId), !isDownloaded(itemId),
@@ -525,12 +551,21 @@ final class DownloadManager: NSObject {
         isProcessingQueue = true
         var downloadedEpisode = false
         while !pendingQueue.isEmpty, !isQueuePaused {
+            // A title already handed to the background session is transferring regardless.
+            if isMobileDataBlocked, let first = pendingQueue.first, !handedOffItemIds.contains(first.item.id) {
+                isWaitingForWiFi = true
+                #if canImport(ActivityKit) && os(iOS)
+                refreshLiveActivity()
+                #endif
+                break
+            }
             let next = pendingQueue.removeFirst()
             guard !isDownloaded(next.item.id) else { continue }
             await performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
             if next.item.type == .episode { downloadedEpisode = true }
         }
         isProcessingQueue = false
+        if pendingQueue.isEmpty { mobileDataApproved = false }
         // A show just got a downloaded episode, so Smart Downloads can line up the ones after
         // it. Only once the queue has drained: running it mid-queue would reenter this loop
         // (see runSmartDownloadsIfNeeded), and a run already in progress ignores this.
@@ -776,6 +811,7 @@ final class DownloadManager: NSObject {
     func cancelDownload(itemId: String) {
         let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
+        if pendingQueue.isEmpty { isWaitingForWiFi = false }
         downloadTasks[itemId]?.cancel()
         downloadTasks[itemId] = nil
         handedOffItemIds.remove(itemId)
@@ -979,8 +1015,8 @@ final class DownloadManager: NSObject {
         let globalOn = UserDefaults.standard.object(forKey: Self.smartDownloadsEnabledKey) as? Bool ?? false
         let kept = Self.keptShows
         guard globalOn || !kept.isEmpty else { return }
-        let wifiOnly = UserDefaults.standard.object(forKey: "wifiOnly") as? Bool ?? true
-        guard !wifiOnly || isOnWiFi else { return }
+        // Never on mobile data with Wi-Fi Only on, even after the queue was allowed it once.
+        guard !(isWiFiOnly && isOnMobileData) else { return }
         guard !isRunningSmartDownloads else { return }
         isRunningSmartDownloads = true
         defer { isRunningSmartDownloads = false }

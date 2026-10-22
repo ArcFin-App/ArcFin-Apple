@@ -36,13 +36,16 @@ public struct DownloadActivityAttributes: ActivityAttributes {
         /// bar and countdown keep moving while iOS has the app suspended and it can't update.
         public var estimateStart: Date?
         public var estimatedFinish: Date?
+        /// Held because Wi-Fi Only is on and the connection is mobile data.
+        public var isWaitingForWiFi: Bool?
 
         public init(
             currentItemTitle: String, bytesWritten: Int64, totalBytes: Int64, bytesPerSecond: Double,
             completedCount: Int, totalCount: Int, isFinished: Bool = false,
             posterImageData: Data? = nil, seasonNumber: Int? = nil, episodeNumber: Int? = nil,
             isPaused: Bool = false, nextItemTitle: String? = nil,
-            estimateStart: Date? = nil, estimatedFinish: Date? = nil
+            estimateStart: Date? = nil, estimatedFinish: Date? = nil,
+            isWaitingForWiFi: Bool = false
         ) {
             self.currentItemTitle = currentItemTitle
             self.bytesWritten = bytesWritten
@@ -58,6 +61,7 @@ public struct DownloadActivityAttributes: ActivityAttributes {
             self.nextItemTitle = nextItemTitle
             self.estimateStart = estimateStart
             self.estimatedFinish = estimatedFinish
+            self.isWaitingForWiFi = isWaitingForWiFi
         }
 
         /// The estimated span, when the transfer is moving.

@@ -41,7 +41,7 @@ private func percent(_ state: DownloadState) -> String {
 
 private func statusColor(_ state: DownloadState) -> Color {
     if state.isFinished { return WidgetDT.success }
-    return state.isPaused == true ? WidgetDT.paused : WidgetDT.accent
+    return state.isPaused == true || state.isWaitingForWiFi == true ? WidgetDT.paused : WidgetDT.accent
 }
 
 /// What's happening, in one short line: "Downloading 2 of 6", "Paused", "Ready to Watch".
@@ -49,6 +49,7 @@ private func statusLine(_ state: DownloadState) -> String {
     if state.isFinished {
         return state.totalCount > 1 ? "\(state.totalCount) Ready to Watch" : "Ready to Watch"
     }
+    if state.isWaitingForWiFi == true { return "Waiting for Wi-Fi" }
     let base = state.isPaused == true ? "Paused" : "Downloading"
     return state.totalCount > 1 ? "\(base) · \(state.position) of \(state.totalCount)" : base
 }
@@ -98,7 +99,9 @@ private struct ProgressRing: View {
                     .stroke(statusColor(state), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
             }
-            Image(systemName: state.isFinished ? "checkmark" : (state.isPaused == true ? "pause.fill" : "arrow.down"))
+            Image(systemName: state.isFinished ? "checkmark"
+                  : state.isWaitingForWiFi == true ? "wifi"
+                  : (state.isPaused == true ? "pause.fill" : "arrow.down"))
                 .font(.system(size: 9, weight: .heavy))
                 .foregroundStyle(statusColor(state))
         }
@@ -161,7 +164,9 @@ private struct TransferLine: View {
                     .contentTransition(.numericText())
             }
             Spacer(minLength: 4)
-            if state.isPaused == true {
+            if state.isWaitingForWiFi == true {
+                Text("Open Arcfin to use mobile data")
+            } else if state.isPaused == true {
                 Text("Open Arcfin to resume")
             } else if let estimate = state.estimate {
                 Text("Done by \(estimate.upperBound, style: .time)")
@@ -283,6 +288,7 @@ private struct LockScreenView: View {
                         Text(statusLine(state))
                     } icon: {
                         Image(systemName: state.isFinished ? "checkmark.circle.fill"
+                              : state.isWaitingForWiFi == true ? "wifi"
                               : (state.isPaused == true ? "pause.circle.fill" : "arrow.down.circle.fill"))
                     }
                     .font(.system(.subheadline, weight: .semibold))
@@ -332,6 +338,10 @@ private extension DownloadState {
     static let paused = DownloadState(
         currentItemTitle: "The Long Way Home", bytesWritten: 1_240_000_000, totalBytes: 3_400_000_000,
         bytesPerSecond: 0, completedCount: 1, totalCount: 6, seasonNumber: 2, episodeNumber: 5, isPaused: true)
+    static let waitingForWiFi = DownloadState(
+        currentItemTitle: "The Long Way Home", bytesWritten: 0, totalBytes: 0,
+        bytesPerSecond: 0, completedCount: 0, totalCount: 3, seasonNumber: 2, episodeNumber: 5,
+        nextItemTitle: "Crossing Over", isWaitingForWiFi: true)
     static let finished = DownloadState(
         currentItemTitle: "Crossing Over", bytesWritten: 3_400_000_000, totalBytes: 3_400_000_000,
         bytesPerSecond: 0, completedCount: 6, totalCount: 6, isFinished: true, seasonNumber: 2, episodeNumber: 6)
@@ -342,6 +352,7 @@ private extension DownloadState {
 } contentStates: {
     DownloadState.downloading
     DownloadState.paused
+    DownloadState.waitingForWiFi
     DownloadState.finished
 }
 

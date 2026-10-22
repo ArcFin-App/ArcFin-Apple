@@ -21,7 +21,8 @@ struct DownloadsSettingsView: View {
     var body: some View {
         List {
             Section {
-                Toggle("Wi-Fi Only", isOn: $wifiOnly)
+                // Stored as "wifiOnly" so the existing, synced setting carries over.
+                Toggle("Download on Mobile Data", isOn: Binding(get: { !wifiOnly }, set: { wifiOnly = !$0 }))
                     .syncLocked("wifiOnly", authManager)
                 Picker("Download Quality", selection: $downloadQuality) {
                     ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
@@ -29,6 +30,13 @@ struct DownloadsSettingsView: View {
                     }
                 }
                 .syncLocked("downloadQuality", authManager)
+            } footer: {
+                Text("When this is off, downloads wait for Wi-Fi. You can still start them from Downloads; mobile data charges may apply.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            .onChange(of: wifiOnly) { _, isOn in
+                if !isOn { downloadManager.allowMobileData() }
             }
 
             Section {
@@ -74,7 +82,7 @@ struct DownloadsSettingsView: View {
                     .syncLocked("smartDownloadsStorageBudgetGB", authManager)
                 }
             } footer: {
-                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing watched ones to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, and when you close the player. With Wi-Fi Only on, it waits for Wi-Fi.")
+                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing watched ones to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, and when you close the player. It never uses mobile data unless Download on Mobile Data is on.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
