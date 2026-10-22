@@ -1362,14 +1362,19 @@ final class DownloadManager: NSObject {
         for (seriesId, count) in targets {
             // The episode up next plus the `count` after it: the one you're on doesn't use
             // up the allowance.
-            guard let nextUp = try? await client.getUpcomingEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, count: count + 1) else {
+            guard var nextUp = try? await client.getUpcomingEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, count: count + 1) else {
                 Self.smartLog.error("Smart Downloads: couldn't get upcoming episodes for \(seriesId, privacy: .public)")
                 continue
+            }
+            let fromWatchHistory = !nextUp.isEmpty
+            if nextUp.isEmpty {
+                nextUp = await episodesAfterDownloads(seriesId: seriesId, downloaded: allDownloaded, count: count + 1,
+                                                      credential: credential, authHeader: authHeader)
             }
             Self.smartLog.info("Smart Downloads: \(seriesId, privacy: .public) up next \(nextUp.map { "S\($0.parentIndexNumber ?? 0)E\($0.indexNumber ?? 0)" }.joined(separator: " "), privacy: .public)")
             // Episodes before the next one up were watched, possibly streamed on another
             // device, which the downloaded copy's own played flag never hears about.
-            if kept[seriesId] != nil, let first = nextUp.first,
+            if fromWatchHistory, kept[seriesId] != nil, let first = nextUp.first,
                let season = first.parentIndexNumber, let episode = first.indexNumber {
                 for item in allDownloaded where item.seriesId == seriesId {
                     let s = item.seasonNumber ?? 0, e = item.episodeNumber ?? 0
@@ -1398,6 +1403,21 @@ final class DownloadManager: NSObject {
                 await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
             }
         }
+    }
+
+    /// When watch history gives no next episode (a later episode is marked watched, say), the
+    /// episodes from the first unwatched one downloaded here, or after the last one downloaded.
+    private func episodesAfterDownloads(seriesId: String, downloaded: [DownloadedItem], count: Int,
+                                        credential: ServerCredential, authHeader: String) async -> [MediaItem] {
+        guard let all = try? await client.getEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, seasonId: nil) else {
+            Self.smartLog.error("Smart Downloads: couldn't list episodes for \(seriesId, privacy: .public)")
+            return []
+        }
+        let downloadedIds = Set(downloaded.filter { $0.seriesId == seriesId }.map(\.itemId))
+        let positions = all.indices.filter { downloadedIds.contains(all[$0].id) }
+        let start = positions.first { all[$0].userData?.played != true } ?? positions.last.map { $0 + 1 } ?? 0
+        Self.smartLog.info("Smart Downloads: \(seriesId, privacy: .public) has \(all.count, privacy: .public) episodes, \(all.filter { $0.userData?.played == true }.count, privacy: .public) watched, downloaded at \(positions.map(String.init).joined(separator: ","), privacy: .public); starting at \(start, privacy: .public)")
+        return Array(all.dropFirst(start).filter { $0.userData?.played != true }.prefix(count))
     }
 
     private static func freeSpace() -> Int64? {
