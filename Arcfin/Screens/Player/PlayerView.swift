@@ -1618,10 +1618,28 @@ struct PlayerView: View {
     /// AVMediaSelectionGroup on the local asset can't reflect that, so a track change reloads
     /// via a fresh PlaybackInfo call with the new stream index, same as a quality change.
     func changeTrack(audioIndex: Int? = nil, subtitleIndex: Int?? = nil) {
+        let previousSubtitle = selectedSubtitleIndex
         if let audioIndex { selectedAudioIndex = audioIndex }
         if let subtitleIndex { selectedSubtitleIndex = subtitleIndex }
         rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil)
+        if audioIndex == nil, let subtitleIndex, !CastManager.shared.isConnected,
+           drawsSubtitleHere(previousSubtitle), drawsSubtitleHere(subtitleIndex),
+           let credential, let info = playbackInfo {
+            Task {
+                await loadSubtitleCues(from: info, credential: credential)
+                updateSubtitleText(forTicks: player.positionTicks)
+            }
+            return
+        }
         reload(errorContext: "switch track")
+    }
+
+    /// Text subtitles come as their own file (WebVTT) the app draws over the video, so moving
+    /// between them, or turning them off, leaves the stream as it is. Only one the server has
+    /// to burn into the picture (an image format being transcoded) needs a new stream.
+    private func drawsSubtitleHere(_ index: Int?) -> Bool {
+        guard let index else { return true }
+        return playbackInfo?.subtitleStreams.first(where: { $0.index == index })?.deliveryUrl != nil
     }
 
     func changeVersion(_ id: String) {
