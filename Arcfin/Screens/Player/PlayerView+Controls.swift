@@ -451,7 +451,7 @@ extension PlayerView {
                         #endif
                     }
                     #if os(tvOS)
-                    .prefersDefaultFocus(true, in: tvFocusNamespace)
+                    .prefersDefaultFocus(!tvControlsHidden, in: tvFocusNamespace)
                     #endif
                     Button { seek(by: skipForwardSeconds) } label: {
                         #if os(tvOS)
@@ -531,6 +531,72 @@ extension PlayerView {
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
         .focusSection()
+    }
+
+    /// Something besides the transport controls that the remote should land on.
+    private var tvOverlayHasFocusTarget: Bool {
+        showStillWatchingPrompt || (showUpNext && nextEpisode != nil)
+            || (showMoreLikeThis && !moreLikeThis.isEmpty) || showXRay
+    }
+
+    /// With the controls hidden, an invisible catcher holds focus, so a click never presses a
+    /// button nobody can see.
+    var tvCatcherActive: Bool {
+        tvControlsHidden && !tvOverlayHasFocusTarget && skipButtonLabel == nil
+    }
+
+    /// Changes whenever a different control should hold focus.
+    var tvFocusContext: String {
+        "\(tvControlsHidden)-\(tvCatcherActive)-\(skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)"
+    }
+
+    /// The remote while the controls are hidden, as in the system player: a click or a swipe
+    /// up or down shows them, left and right skip back and forward.
+    var tvRemoteCatcher: some View {
+        Button { toggleControlsVisibilityOnAction() } label: {
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .prefersDefaultFocus(true, in: tvFocusNamespace)
+        .onMoveCommand { direction in
+            switch direction {
+            case .left: tvQuickSeek(forward: false)
+            case .right: tvQuickSeek(forward: true)
+            default: toggleControlsVisibilityOnAction()
+            }
+        }
+        .accessibilityLabel("Show playback controls")
+        .ignoresSafeArea()
+    }
+
+    private func tvQuickSeek(forward: Bool) {
+        let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
+        let base = pendingSeekTargetTicks ?? player.positionTicks
+        performSeek(to: min(max(0, base + Int64(forward ? seconds : -seconds) * 10_000_000), player.durationTicks))
+        let feedback = SeekFeedback(forward: forward, onRight: forward, seconds: seconds)
+        seekFeedback = feedback
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            if seekFeedback == feedback { seekFeedback = nil }
+        }
+    }
+
+    /// Menu steps back one layer at a time: out of a scrub, then hides the controls, then
+    /// leaves the player.
+    func handleTVExit() {
+        if isScrubbing {
+            isScrubbing = false
+            scrubThumbnail = nil
+            scheduleAutoHide()
+        } else if !tvControlsHidden {
+            hideControlsTask?.cancel()
+            withAnimation(DT.Animation.fast) { tvControlsHidden = true }
+        } else {
+            closePlayer()
+        }
     }
 
     /// What the touch and Mac players keep in their More menu and have no button of their own here.
@@ -1198,7 +1264,9 @@ extension PlayerView {
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: DT.Radius.lg)
+                        .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
+                        // With the controls hidden, a click skips.
+                        .prefersDefaultFocus(tvControlsHidden, in: tvFocusNamespace)
                         #endif
                         .padding(.trailing, DT.Spacing.pagePad)
                         .padding(.bottom, 100)
@@ -1271,7 +1339,8 @@ extension PlayerView {
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: 15)
+                        .tvFocusRing(cornerRadius: 15, prominent: true)
+                        .prefersDefaultFocus(true, in: tvFocusNamespace)
                         #endif
                         Button { dismissUpNext() } label: {
                             Image(systemName: "xmark")
@@ -1510,6 +1579,7 @@ extension PlayerView {
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
                     .tvFocusRing(cornerRadius: DT.Radius.lg)
+                    .prefersDefaultFocus(true, in: tvFocusNamespace)
                     #else
                     .buttonStyle(.plain)
                     #endif

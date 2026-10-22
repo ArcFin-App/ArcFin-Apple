@@ -141,8 +141,8 @@ struct PlayerView: View {
     @StateObject var pip = PiPCoordinator()
     @State var vlcPipController: SwiftVLC.PiPController?
     @State var isPiPSupported = AVPictureInPictureController.isPictureInPictureSupported()
-    @State var nowPlayingManager = NowPlayingManager()
     #endif
+    @State var nowPlayingManager = NowPlayingManager()
     // Not PiP-specific — used by videoSurface's own aspect-fill toggle, which is
     // meaningful on tvOS too even though PiP itself isn't available there.
     @State var isFillScreen = false
@@ -184,6 +184,7 @@ struct PlayerView: View {
     // tvOS focus APIs are actually built for, so the system handles the landing itself instead
     // of this code guessing at timing.
     @Namespace var tvFocusNamespace
+    @Environment(\.resetFocus) var resetFocus
     #endif
 
     let client = JellyfinMediaClient()
@@ -284,10 +285,17 @@ struct PlayerView: View {
             controlsOverlay
                 #if os(tvOS)
                 .opacity(tvControlsHidden ? 0 : 1)
+                .disabled(tvControlsHidden)
                 #else
                 .opacity(isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
                 #endif
                 .allowsHitTesting(isControlsVisible && !CastManager.shared.isConnected)
+
+            #if os(tvOS)
+            if tvCatcherActive {
+                tvRemoteCatcher
+            }
+            #endif
 
             skipButton
 
@@ -326,6 +334,10 @@ struct PlayerView: View {
         #if os(tvOS)
         .focusScope(tvFocusNamespace)
         .onPlayPauseCommand { togglePlayPause() }
+        .onExitCommand { handleTVExit() }
+        // Hands focus to whichever control should have it now (the catcher, play/pause, Skip,
+        // Up Next) instead of leaving it on something that just disappeared.
+        .onChange(of: tvFocusContext) { _, _ in resetFocus(in: tvFocusNamespace) }
         // A fallback for when the currently-focused control has no further focusable
         // neighbor in that direction (e.g. focus sitting on the leftmost/rightmost transport
         // button, or on nothing in particular right after .prefersDefaultFocus lands) — the
@@ -360,9 +372,7 @@ struct PlayerView: View {
             checkUpNextThreshold(positionTicks: newValue)
             checkMoreLikeThisThreshold(positionTicks: newValue)
             autoSkipIfNeeded(positionTicks: newValue)
-            #if !os(tvOS)
             updateNowPlayingInfo()
-            #endif
         }
         .onChange(of: player.status) { _, newStatus in
             // The receiver is the one playing — any local resume (a load finishing, a seek
@@ -371,9 +381,7 @@ struct PlayerView: View {
                 Task { await player.pause() }
             }
             handleStatusChange(newStatus)
-            #if !os(tvOS)
             updateNowPlayingInfo()
-            #endif
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
@@ -626,7 +634,6 @@ struct PlayerView: View {
 
     // MARK: - Now Playing / AirPlay metadata
 
-    #if !os(tvOS)
     /// Reflects Cast state too — the local player stays paused for the whole cast session
     /// (see startCasting), so its own `.status` alone would show "paused" the entire time.
     var isEffectivelyPlaying: Bool {
@@ -709,7 +716,6 @@ struct PlayerView: View {
         }
         return items
     }
-    #endif
 
     private func handleMenuVisibilityChange(_ isOpen: Bool) {
         if isOpen {
@@ -1013,10 +1019,10 @@ struct PlayerView: View {
                     pip.activateIfNeeded()
                 }
             }
+            #endif
             setUpNowPlayingCommandsIfNeeded()
             updateNowPlayingInfo()
             Task { await fetchAndApplyNowPlayingArtwork() }
-            #endif
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
                                              positionTicks: startPositionTicks)
@@ -1193,9 +1199,7 @@ struct PlayerView: View {
         volumeEchoSuppressTask?.cancel()
         displayCriteriaMatcher.detach()
         #endif
-        #if !os(tvOS)
         nowPlayingManager.clear()
-        #endif
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
@@ -1659,14 +1663,12 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
                 await applyRememberedRate()
-                #if !os(tvOS)
-                #if !os(macOS)
+                #if !os(tvOS) && !os(macOS)
                 if let avPlayer = player as? AVFoundationPlayer {
                     avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
                 }
                 #endif
                 updateNowPlayingInfo()
-                #endif
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
             } catch {
                 errorMessage = "Couldn't \(errorContext): \(error.localizedDescription)"
