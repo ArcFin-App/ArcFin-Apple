@@ -25,6 +25,12 @@ struct TitleInsights: View {
     @State private var ratings: SeerrRatings?
     @State private var region = ""
 
+    #if os(tvOS)
+    private let logoSize: CGFloat = 96
+    #else
+    private let logoSize: CGFloat = 52
+    #endif
+
     var body: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.lg) {
             if part != .details, let ratings, !ratings.isEmpty { ratingsRow(ratings) }
@@ -34,7 +40,10 @@ struct TitleInsights: View {
                     whereToWatch(watch)
                 }
                 if !detailRows.isEmpty { detailsList }
+                // A TV can't open web pages.
+                #if !os(tvOS)
                 if !links.isEmpty { linksRow }
+                #endif
             }
         }
         .task(id: tmdbId) { await load() }
@@ -77,23 +86,32 @@ struct TitleInsights: View {
         }
     }
 
+    @ViewBuilder
     private func scoreChip(systemImage: String, tint: Color, value: String, label: String, url: URL?) -> some View {
-        Button { if let url { openURL(url) } } label: {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage).foregroundStyle(tint)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(value).font(.system(.subheadline, weight: .bold)).foregroundStyle(DT.Color.textPrimary)
-                    Text(label).font(.caption2).foregroundStyle(DT.Color.textSecondary)
-                }
+        let chip = HStack(spacing: 8) {
+            Image(systemName: systemImage).foregroundStyle(tint)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(value).font(.system(.subheadline, weight: .bold)).foregroundStyle(DT.Color.textPrimary)
+                Text(label).font(.caption2).foregroundStyle(DT.Color.textSecondary)
             }
-            .padding(.horizontal, 12)
-            .frame(minHeight: 44)
-            .background(DT.Color.backgroundSecondary.opacity(0.8), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .disabled(url == nil)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label) \(value)")
+        .padding(.horizontal, 12)
+        .frame(minHeight: 44)
+        .background(DT.Color.backgroundSecondary.opacity(0.8), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        #if os(tvOS)
+        // Focusable so the remote can reach (and scroll to) the scores; there's no page to open.
+        chip
+            .focusable()
+            .tvFocusRing(cornerRadius: 12)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(label) \(value)")
+        #else
+        Button { if let url { openURL(url) } } label: { chip }
+            .buttonStyle(.plain)
+            .disabled(url == nil)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(label) \(value)")
+        #endif
     }
 
     // MARK: - Next episode
@@ -161,7 +179,7 @@ struct TitleInsights: View {
                                     default: DT.Color.backgroundTertiary
                                     }
                                 }
-                                .frame(width: 52, height: 52)
+                                .frame(width: logoSize, height: logoSize)
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.white.opacity(0.08), lineWidth: 1))
                                 Text(provider.name)
@@ -170,7 +188,11 @@ struct TitleInsights: View {
                                     .lineLimit(2)
                                     .multilineTextAlignment(.center)
                             }
-                            .frame(width: 70)
+                            .frame(width: logoSize + 18)
+                            #if os(tvOS)
+                            .focusable()
+                            .tvFocusRing(cornerRadius: 12)
+                            #endif
                             .accessibilityElement(children: .combine)
                             .accessibilityLabel("\(provider.name), \(title.lowercased())")
                         }
@@ -245,6 +267,11 @@ struct TitleInsights: View {
                 }
             }
             .background(DT.Color.backgroundSecondary.opacity(0.7), in: RoundedRectangle(cornerRadius: DT.Radius.md))
+            #if os(tvOS)
+            // The last thing on the page; focusable so the remote can scroll down to it.
+            .focusable()
+            .tvFocusRing(cornerRadius: DT.Radius.md)
+            #endif
         }
     }
 
