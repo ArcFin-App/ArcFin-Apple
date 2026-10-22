@@ -230,9 +230,7 @@ struct HomeView: View {
         var isLandscape: Bool = false
     }
     @State private var seerrRequestItem: SeerrItem? = nil
-    #if os(iOS)
     @State private var seerrDeepLinkItem: SeerrItem?
-    #endif
     @State private var deepLinkItemID: String? = nil
     private let heroTimer = Timer.publish(every: 8, on: .main, in: .common).autoconnect()
     /// The rotation (and the trailer fetch each new slide starts) only runs while Home is
@@ -589,7 +587,7 @@ struct HomeView: View {
                     MediaDetailView(item: item)
 #else
                     MediaDetailView(item: item, zoomNamespace: zoomNamespace)
-                        .navigationTransition(.zoom(sourceID: item.id, in: zoomNamespace))
+                        .zoomNavigationTransition(id: item.id, in: zoomNamespace)
 #endif
                 }
                 .navigationDestination(item: $heroDetailItem) { item in
@@ -797,72 +795,27 @@ struct HomeView: View {
     }
     #endif
 
-    /// Jellyfin names a recommendation row by why it was picked.
     private func recommendationTitle(_ category: MovieRecommendationCategory) -> String {
-        guard let name = category.baselineItemName, !name.isEmpty else { return "Recommended" }
-        switch category.recommendationType {
-        case "SimilarToRecentlyPlayed": return "Because You Watched \(name)"
-        case "SimilarToLikedItem": return "Because You Liked \(name)"
-        case "HasDirectorFromRecentlyPlayed", "HasLikedDirector": return "Directed by \(name)"
-        case "HasActorFromRecentlyPlayed", "HasLikedActor": return "Starring \(name)"
-        default: return "Recommended"
-        }
+        HomeShelfLoader.recommendationTitle(category)
     }
 
     private func loadServiceRows() async {
-        guard seerrRepo.hasCatalog else { return }
-        let providers = StreamingServicePrefs.decode(streamingServicesData)
-        var rows: [Int: [SeerrItem]] = [:]
-        await withTaskGroup(of: (Int, [SeerrItem]).self) { group in
-            for provider in providers {
-                let id = provider.id
-                group.addTask { @MainActor in (id, await seerrRepo.popularOn(id)) }
-            }
-            // An empty answer is far more often a failed request than an empty catalogue; the
-            // row keeps what it had rather than disappearing until the next load.
-            for await (id, items) in group { rows[id] = items.isEmpty ? serviceRows[id] : items }
-        }
-        serviceRows = rows
+        serviceRows = await HomeShelfLoader.serviceRows(seerrRepo: seerrRepo, previous: serviceRows)
     }
 
-    /// Requests from the last two months whose title has arrived, newest first.
     private var recentlyAvailableRequests: [SeerrRequestItem] {
-        let cutoff = Date().addingTimeInterval(-60 * 86_400)
-        return Array(seerrRepo.requests
-            .filter { request in
-                (request.mediaStatus == .available || request.mediaStatus == .partiallyAvailable)
-                    && request.requestedAt > cutoff && request.tmdbId != nil
-            }
-            .sorted { $0.requestedAt > $1.requestedAt }
-            .prefix(12))
+        HomeShelfLoader.recentlyAvailable(seerrRepo.requests)
     }
 
-    /// Finds each arrived request's title in the library, keeping the request order and
-    /// dropping anything already watched.
     private func loadNowAvailable(_ requests: [SeerrRequestItem]) async {
         guard !requests.isEmpty, let cred = authManager.state.credential else {
             nowAvailable = []
             return
         }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
-        let client = JellyfinMediaClient()
-        var found: [Int: MediaItem] = [:]
-        await withTaskGroup(of: (Int, MediaItem?).self) { group in
-            for (index, request) in requests.enumerated() {
-                guard let tmdbId = request.tmdbId else { continue }
-                let isSeries = request.mediaType == .tv
-                let title = request.mediaTitle
-                group.addTask {
-                    (index, try? await client.findItem(credential: cred, authHeader: header,
-                                                       tmdbId: tmdbId, isSeries: isSeries, title: title))
-                }
-            }
-            for await (index, item) in group {
-                if let item { found[index] = item }
-            }
-        }
-        guard !Task.isCancelled, !(found.isEmpty && !nowAvailable.isEmpty) else { return }
-        nowAvailable = found.sorted { $0.key < $1.key }.map(\.value).filter { $0.userData?.played != true }
+        let found = await HomeShelfLoader.nowAvailable(requests, credential: cred, authHeader: header)
+        guard !Task.isCancelled, found != nil || nowAvailable.isEmpty else { return }
+        nowAvailable = found ?? []
     }
 
     var body: some View {
@@ -922,10 +875,10 @@ struct HomeView: View {
         .onAppear {
             if let id = UserDefaults.standard.string(forKey: "arcfin.pendingSeerrTitle") { openSeerrDeepLink(id: id) }
         }
+        #endif
         .sheet(item: $seerrDeepLinkItem) { item in
             NavigationStack { SeerrItemDetailView(item: item) }
         }
-        #endif
         .sheet(item: $seerrRequestItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $seerrRequestItem)
                 .presentationDetents([.medium, .large])
