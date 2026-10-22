@@ -707,19 +707,20 @@ public struct JellyfinMediaClient: Sendable {
         credential: ServerCredential,
         authHeader: String,
         seriesId: String,
-        seasonId: String
+        seasonId: String?
     ) async throws -> [MediaItem] {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Episodes"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
-            .init(name: "SeasonId", value: seasonId),
             .init(name: "Fields", value: "Overview,PremiereDate,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableImages", value: "true"),
             .init(name: "ImageTypeLimit", value: "1"),
         ]
+        // Without a season, every episode of the series in season and episode order.
+        if let seasonId { comps.queryItems?.append(.init(name: "SeasonId", value: seasonId)) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15

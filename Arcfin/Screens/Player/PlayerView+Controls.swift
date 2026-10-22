@@ -431,7 +431,24 @@ extension PlayerView {
                 Spacer()
                 #endif
 
-                HStack(spacing: 20) {
+                // Tighter with Previous and Next too, so the row still fits a phone held upright.
+                HStack(spacing: previousItem != nil || nextEpisode != nil ? 12 : 20) {
+                    if previousItem != nil {
+                        Button { playPrevious() } label: {
+                            #if os(tvOS)
+                            TVPlayerControlLabel(systemImage: "backward.end.fill", size: 16, diameter: 38)
+                            #else
+                            Image(systemName: "backward.end.fill")
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                            #endif
+                        }
+                        .accessibilityLabel(previousItem.map { "Previous: \($0.name)" } ?? "Previous")
+                        #if os(macOS)
+                        .help("Previous")
+                        #endif
+                    }
                     Button { seek(by: -skipBackwardSeconds) } label: {
                         #if os(tvOS)
                         TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
@@ -459,6 +476,22 @@ extension PlayerView {
                         #else
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.system(.title3)).foregroundStyle(.white)
+                        #endif
+                    }
+                    if let nextEpisode {
+                        Button { playNextEpisode() } label: {
+                            #if os(tvOS)
+                            TVPlayerControlLabel(systemImage: "forward.end.fill", size: 16, diameter: 38)
+                            #else
+                            Image(systemName: "forward.end.fill")
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                            #endif
+                        }
+                        .accessibilityLabel("Next: \(nextEpisode.name)")
+                        #if os(macOS)
+                        .help("Next")
                         #endif
                     }
                 }

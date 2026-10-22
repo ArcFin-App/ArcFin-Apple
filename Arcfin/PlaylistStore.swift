@@ -59,5 +59,10 @@ enum PlayQueue {
         return items[index + 1]
     }
 
+    static func item(before id: String) -> MediaItem? {
+        guard let index = items.firstIndex(where: { $0.id == id }), index > 0 else { return nil }
+        return items[index - 1]
+    }
+
     static func contains(_ id: String) -> Bool { items.contains { $0.id == id } }
 }

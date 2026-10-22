@@ -130,6 +130,8 @@ struct PlayerView: View {
     @State var showMoreLikeThis = false
     @State var moreLikeThisDismissed = false
     @State var nextEpisode: MediaItem?
+    /// The title before this one in the queue or the series, for the Previous button.
+    @State var previousItem: MediaItem?
     @State var showUpNext = false
     @State var upNextDismissed = false
     @State var upNextCountdown: Task<Void, Never>?
@@ -1042,14 +1044,21 @@ struct PlayerView: View {
         segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
         autoSkipped = []
 
-        if item.type == .episode {
-            if !PlayQueue.contains(item.id), let seriesId = item.seriesId {
-                let upNext = try? await client.getNextUp(credential: credential, authHeader: authHeader, seriesId: seriesId, limit: 1)
-                nextEpisode = upNext?.first
+        // A playlist or collection playing through goes by its own order; an episode by the
+        // series' order. Next Up wasn't usable here: part-way through an episode it answers
+        // with that same episode.
+        if PlayQueue.contains(item.id) {
+            nextEpisode = PlayQueue.item(after: item.id)
+            previousItem = PlayQueue.item(before: item.id)
+        } else if item.type == .episode, let seriesId = item.seriesId,
+                  let episodes = try? await client.getEpisodes(
+                    credential: credential, authHeader: authHeader, seriesId: seriesId, seasonId: nil) {
+            // Specials sit outside the run of the show unless one is what's playing.
+            let run = item.parentIndexNumber == 0 ? episodes : episodes.filter { $0.parentIndexNumber != 0 }
+            if let index = run.firstIndex(where: { $0.id == item.id }) {
+                nextEpisode = run.indices.contains(index + 1) ? run[index + 1] : nil
+                previousItem = index > 0 ? run[index - 1] : nil
             }
-        }
-        if let queued = PlayQueue.item(after: item.id) {
-            nextEpisode = queued
         }
 
         // Anything with an Up Next card already has something to watch next; the rest (movies,
@@ -1544,6 +1553,13 @@ struct PlayerView: View {
         showStillWatchingPrompt = false
         pendingAutoAdvanceEpisode = nil
         closePlayer()
+    }
+
+    func playPrevious() {
+        guard let previousItem else { return }
+        upNextCountdown?.cancel()
+        UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
+        onPlayNext(previousItem)
     }
 
     func dismissUpNext() {
