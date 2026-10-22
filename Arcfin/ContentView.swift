@@ -82,6 +82,12 @@ struct ContentView: View {
     @AppStorage("streamystatsURL")   private var statsURL         = ""
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @State private var showSeerrSetupPrompt = false
+    #if os(tvOS)
+    @AppStorage("libraryScreensaverEnabled") private var screensaverEnabled = true
+    @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
+    @State private var showScreensaver = false
+    @State private var idleTask: Task<Void, Never>?
+    #endif
 
     /// Routes an arcfin:// link from a widget, Live Activity, the Top Shelf or a control.
     private func handleDeepLink(_ url: URL) {
@@ -274,6 +280,17 @@ struct ContentView: View {
         .focusEffectDisabled()
         // Apple TV stays dark: its screens are full-bleed artwork, like the system TV app.
         .preferredColorScheme(.dark)
+        // Focus moving is the remote being used; there's no other app-wide signal for it.
+        .onReceive(NotificationCenter.default.publisher(for: UIFocusSystem.didUpdateNotification)) { _ in
+            restartIdleTimer()
+        }
+        .onChange(of: showScreensaver) { _, shown in if !shown { restartIdleTimer() } }
+        .onChange(of: screensaverEnabled) { restartIdleTimer() }
+        .onChange(of: screensaverMinutes) { restartIdleTimer() }
+        .fullScreenCover(isPresented: $showScreensaver) {
+            LibraryScreensaverView { showScreensaver = false }
+                .environment(mediaRepo)
+        }
 #endif
         .environment(authManager)
         .environment(mediaRepo)
@@ -328,6 +345,9 @@ struct ContentView: View {
                 arcfinSyncTask?.cancel()
                 seerrPollTask?.cancel()
             }
+            #if os(tvOS)
+            if newPhase == .active { restartIdleTimer() } else { idleTask?.cancel() }
+            #endif
             // Deliberately no re-lock here. scenePhase drops to .background not just when
             // the app is actually left, but also pulling down Notification/Control Center
             // over it and entering Picture in Picture (the app's own UI is off-screen, so
@@ -409,6 +429,21 @@ struct ContentView: View {
             }
         }
     }
+
+    #if os(tvOS)
+    /// Settings › Appearance › Screensaver: shown after the chosen idle minutes anywhere but
+    /// the player, the lock screen and sign-in.
+    private func restartIdleTimer() {
+        idleTask?.cancel()
+        guard screensaverEnabled, !showScreensaver else { return }
+        idleTask = Task {
+            try? await Task.sleep(for: .seconds(screensaverMinutes * 60))
+            guard !Task.isCancelled, phase == .main, !isAppLocked, scenePhase == .active,
+                  ScreensaverHold.count == 0, mediaRepo.hasAnyContent else { return }
+            showScreensaver = true
+        }
+    }
+    #endif
 
     private func seerrSetupPromptHandledKey(for credentialID: UUID) -> String {
         "arcfin.seerrSetupPromptHandled.\(credentialID.uuidString)"

@@ -12,6 +12,10 @@ struct AppearanceView: View {
     @AppStorage("spoilerProtection") private var spoilerProtection = false
     @AppStorage("libraryHideWatched") private var libraryHideWatched = false
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
+    #if os(tvOS)
+    @AppStorage("libraryScreensaverEnabled") private var screensaverEnabled = true
+    @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
+    #endif
     @Environment(AuthManager.self) private var authManager
     #if canImport(UIKit) && !os(tvOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -97,6 +101,32 @@ struct AppearanceView: View {
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
+
+            #if os(tvOS)
+            Section {
+                Toggle(isOn: $screensaverEnabled) {
+                    TVRowLabelText(title: "Library Screensaver")
+                }
+                .tvListRow()
+                if screensaverEnabled {
+                    Picker(selection: $screensaverMinutes) {
+                        ForEach([2, 3, 5, 10], id: \.self) { Text("\($0) Minutes").tag($0) }
+                    } label: {
+                        TVRowLabelText(title: "Start After")
+                    }
+                    .tvListRow()
+                }
+            } header: {
+                Text("Screensaver")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            } footer: {
+                Text("Shows artwork from your library when the remote hasn't been used for a while, except while something is playing. Press any button to go back. After 30 minutes the Apple TV's own screensaver and sleep settings take over; set Start After shorter than those to see it.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            #endif
 
             // tvOS has a fixed set of tabs.
             #if !os(tvOS)

@@ -369,6 +369,8 @@ struct PlayerView: View {
         .persistentSystemOverlays(.hidden)
         #endif
         #if os(tvOS)
+        .onAppear { ScreensaverHold.count += 1 }
+        .onDisappear { ScreensaverHold.count -= 1 }
         .focusScope(tvFocusNamespace)
         .onPlayPauseCommand { togglePlayPause() }
         .onExitCommand { handleTVExit() }
