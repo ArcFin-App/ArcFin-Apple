@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if !os(tvOS)
 import SwiftUI
+#if !os(tvOS)
 import LocalAuthentication
+#endif
 import AuthCore
 import JellyfinAPI
 
@@ -30,8 +31,13 @@ struct AppLockView: View {
     // across layout passes, which is what caused the picker to visibly jump from left-packed
     // to centered right after appearing. A size-class-driven fixed count never has to guess.
     private var columnCount: Int { sizeClass == .compact ? 2 : 3 }
+    #if os(tvOS)
+    private let tileWidth: CGFloat = 220
+    private let avatarSize: CGFloat = 180
+    #else
     private let tileWidth: CGFloat = 116
     private let avatarSize: CGFloat = 100
+    #endif
     private let gridSpacing: CGFloat = 24
     private var gridColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: gridSpacing), count: columnCount)
@@ -90,7 +96,13 @@ struct AppLockView: View {
                     Button { selectProfile(profile) } label: {
                         profileTile(profile)
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
+                    #else
                     .buttonStyle(.plain)
+                    #endif
                 }
             }
             .frame(maxWidth: gridMaxWidth)
@@ -207,6 +219,7 @@ struct AppLockView: View {
         // enrolled on this device authenticate the device owner, not a specific Jellyfin
         // profile, so auto-prompting for a DIFFERENT profile the moment it's tapped would
         // let Face ID silently switch identities without the PIN ever being the real gate.
+        #if !os(tvOS)
         guard useFaceID, profile.id == activeID, didAttemptBiometricsFor != profile.id else { return }
         didAttemptBiometricsFor = profile.id
         let context = LAContext()
@@ -216,6 +229,6 @@ struct AppLockView: View {
             localizedReason: "Unlock Arcfin"
         ), success else { return }
         unlock(as: profile)
+        #endif
     }
 }
-#endif

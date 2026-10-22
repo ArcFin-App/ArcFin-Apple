@@ -59,13 +59,9 @@ struct ContentView: View {
     @State private var heartbeatTask: Task<Void, Never>?
     @State private var arcfinSyncTask: Task<Void, Never>?
     @State private var seerrPollTask: Task<Void, Never>?
-    #if os(tvOS)
-    @State private var showProfilePicker = false
-    #else
     @State private var isAppLocked = false
     @State private var activeProfileHasPIN = false
     @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
-    #endif
     #if !os(tvOS)
     @State private var showOfflineDocPicker = false
     @State private var offlinePickedURL: URL?
@@ -109,11 +105,7 @@ struct ContentView: View {
 
     /// Through the lock screen's profile picker, so a PIN on another profile still applies.
     private func switchProfileFromSchedule() {
-        #if os(tvOS)
-        showProfilePicker = true
-        #else
         isAppLocked = true
-        #endif
     }
 
     private func loadProfileRules() async {
@@ -231,13 +223,11 @@ struct ContentView: View {
         ZStack {
             phaseContent
 
-            #if !os(tvOS)
             if isAppLocked {
                 AppLockView(useFaceID: appLockUseFaceID) { isAppLocked = false }
                     .transition(.opacity)
                     .zIndex(10)
             }
-            #endif
 
             #if os(macOS)
             // A .sheet on macOS is an inherently small, modal, parent-attached panel — it
@@ -256,9 +246,7 @@ struct ContentView: View {
             #endif
         }
         .animation(DT.Animation.standard, value: phase)
-        #if !os(tvOS)
         .animation(DT.Animation.standard, value: isAppLocked)
-        #endif
         .preferredColorScheme(.dark)
 #if os(tvOS)
         .focusEffectDisabled()
@@ -278,10 +266,8 @@ struct ContentView: View {
         #endif
         .task {
             await authManager.checkStoredAuth()
-            #if !os(tvOS)
             await refreshLockRequirement()
             if activeProfileHasPIN { isAppLocked = true }
-            #endif
             #if !os(tvOS)
             consumeControlLink()
             #endif
@@ -322,9 +308,7 @@ struct ContentView: View {
                 Task { await loadProfileRules() }
             }
         }
-        #if !os(tvOS)
         .onChange(of: authManager.state) { _, _ in Task { await refreshLockRequirement() } }
-        #endif
         .onAppear { configureSeerr() }
         .onChange(of: seerrURL)        { configureSeerr() }
         .onChange(of: seerrUsername)   { configureSeerr() }
@@ -361,12 +345,6 @@ struct ContentView: View {
         .onChange(of: authManager.isSyncingArcfin) { _, isSyncing in
             if !isSyncing { checkSeerrSetupPrompt() }
         }
-        #if os(tvOS)
-        .sheet(isPresented: $showProfilePicker) {
-            NavigationStack { TVUsersView() }
-                .preferredColorScheme(.dark)
-        }
-        #endif
         .sheet(isPresented: $showSeerrSetupPrompt) {
             if case .authenticated(let cred) = authManager.state {
                 SeerrSetupPromptView(
@@ -401,7 +379,6 @@ struct ContentView: View {
         showSeerrSetupPrompt = true
     }
 
-    #if !os(tvOS)
     private func refreshLockRequirement() async {
         guard case .authenticated(let cred) = authManager.state else {
             activeProfileHasPIN = false
@@ -409,7 +386,6 @@ struct ContentView: View {
         }
         activeProfileHasPIN = await authManager.pin(for: cred.id) != nil
     }
-    #endif
 
     private func syncOfflineProgress() {
         guard case .authenticated = authManager.state else { return }

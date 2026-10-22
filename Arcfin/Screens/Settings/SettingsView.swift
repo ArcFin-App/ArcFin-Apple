@@ -788,6 +788,9 @@ struct TVUsersView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
 
+    @State private var pinStates: [UUID: Bool] = [:]
+    @State private var pinTask: TVPINTask?
+
     private var activeID: UUID? { authManager.state.credential?.id }
 
     private var otherProfiles: [ServerCredential] {
@@ -801,15 +804,30 @@ struct TVUsersView: View {
                     tvProfileRow(active, isActive: true)
                         .listRowBackground(Color.clear)
                         .focusEffectDisabled()
-                } header: { sectionLabel("Current Profile") }
+                    if pinStates[active.id] == true {
+                        Button("Change PIN") { pinTask = TVPINTask(profile: active, kind: .change) }
+                            .tvListRow()
+                        Button("Remove PIN") { pinTask = TVPINTask(profile: active, kind: .remove) }
+                            .tvListRow()
+                    } else {
+                        Button("Set a PIN") { pinTask = TVPINTask(profile: active, kind: .set) }
+                            .tvListRow()
+                    }
+                } header: { sectionLabel("Current Profile") } footer: {
+                    Text("With a PIN, Arcfin asks for it when it opens and before switching to this profile.")
+                }
             }
 
             if !otherProfiles.isEmpty {
                 Section {
                     ForEach(otherProfiles) { profile in
                         Button {
-                            authManager.switchTo(profile)
-                            dismiss()
+                            if pinStates[profile.id] == true {
+                                pinTask = TVPINTask(profile: profile, kind: .unlock)
+                            } else {
+                                authManager.switchTo(profile)
+                                dismiss()
+                            }
                         } label: {
                             tvProfileRow(profile, isActive: false)
                         }
@@ -844,6 +862,22 @@ struct TVUsersView: View {
         .listStyle(.plain)
         .screenBackground()
         .navigationTitle("Profiles")
+        .task { await loadPINStates() }
+        .fullScreenCover(item: $pinTask) { task in
+            TVPINFlow(task: task) { switched in
+                pinTask = nil
+                Task { await loadPINStates() }
+                if switched { dismiss() }
+            }
+        }
+    }
+
+    private func loadPINStates() async {
+        var states: [UUID: Bool] = [:]
+        for profile in authManager.profiles {
+            states[profile.id] = await authManager.pin(for: profile.id) != nil
+        }
+        pinStates = states
     }
 
     private func tvProfileRow(_ cred: ServerCredential, isActive: Bool) -> some View {
@@ -877,6 +911,12 @@ struct TVUsersView: View {
 
             Spacer()
 
+            if pinStates[cred.id] == true {
+                Image(systemName: "lock.fill")
+                    .scaledFont(size: 18)
+                    .opacity(0.6)
+                    .accessibilityLabel("PIN protected")
+            }
             if isActive {
                 Image(systemName: "checkmark.circle.fill")
                     .scaledFont(size: 26)
@@ -891,6 +931,86 @@ struct TVUsersView: View {
             .font(.system(.caption, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
             .textCase(nil)
+    }
+}
+
+// MARK: - tvOS PINs
+
+struct TVPINTask: Identifiable {
+    enum Kind { case set, change, remove, unlock }
+    let id = UUID()
+    let profile: ServerCredential
+    let kind: Kind
+}
+
+/// Setting, changing and removing a profile's PIN, and entering it to switch to that profile.
+private struct TVPINFlow: View {
+    let task: TVPINTask
+    /// True when the flow ended by switching to the profile.
+    let onDone: (Bool) -> Void
+
+    @Environment(AuthManager.self) private var authManager
+    @State private var storedPIN: String?
+    @State private var verified = false
+    @State private var firstEntry: String?
+    @State private var errorMessage: String?
+    @State private var resetToken = 0
+
+    private var title: String {
+        switch task.kind {
+        case .unlock: "Enter PIN"
+        case .remove: "Enter PIN to remove it"
+        case .change where !verified: "Enter current PIN"
+        case .set, .change: firstEntry == nil ? "Enter a new PIN" : "Confirm the PIN"
+        }
+    }
+
+    var body: some View {
+        PINPadView(
+            title: title,
+            subtitle: task.profile.displayName,
+            errorMessage: errorMessage,
+            resetToken: resetToken,
+            onCancel: { onDone(false) },
+            onComplete: handle
+        )
+        .id(title)
+        .task { storedPIN = await authManager.pin(for: task.profile.id) }
+    }
+
+    private func handle(_ entered: String) {
+        let needsCurrent = task.kind == .unlock || task.kind == .remove || (task.kind == .change && !verified)
+        if needsCurrent {
+            guard entered == storedPIN else { return fail("Incorrect PIN") }
+            errorMessage = nil
+            switch task.kind {
+            case .unlock:
+                authManager.switchTo(task.profile)
+                onDone(true)
+            case .remove:
+                authManager.removePin(for: task.profile.id)
+                onDone(false)
+            default:
+                verified = true
+            }
+            return
+        }
+        guard let first = firstEntry else {
+            firstEntry = entered
+            errorMessage = nil
+            return
+        }
+        guard entered == first else {
+            firstEntry = nil
+            return fail("PINs don't match")
+        }
+        authManager.savePin(entered, for: task.profile.id)
+        onDone(false)
+    }
+
+    private func fail(_ message: String) {
+        errorMessage = message
+        resetToken += 1
     }
 }
 
