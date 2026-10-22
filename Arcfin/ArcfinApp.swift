@@ -75,7 +75,35 @@ struct ArcfinApp: App {
             }
         }
         #endif
+
+        #if !os(tvOS)
+        WindowGroup("Player", id: "player", for: PlayerWindowRequest.self) { $request in
+            if let request {
+                PlayerWindow(request: request)
+                    .modelContainer(sharedModelContainer)
+            }
+        }
+        #if os(macOS)
+        .defaultSize(width: 1280, height: 720)
+        #endif
+        #endif
     }
+}
+
+/// One set of app state for every window: the main one, another on iPad, and a player in a
+/// window of its own.
+@MainActor
+enum AppServices {
+    static let authManager = AuthManager()
+    static let mediaRepo = MediaRepository()
+    static let seerrRepo = SeerrRepository()
+    static let statsRepo = StreamystatsRepository()
+    static let downloadManager = DownloadManager()
+    static let syncPlayManager = SyncPlayManager()
+    static let sharePlayManager = SharePlayManager()
+    /// Past the app lock (or there's none) this launch. A player window brought back on
+    /// relaunch closes rather than play ahead of the lock.
+    static var hasPassedLock = false
 }
 
 #if os(macOS)

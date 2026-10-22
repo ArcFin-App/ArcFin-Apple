@@ -54,14 +54,14 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
 
-    @State private var authManager  = AuthManager()
-    @State private var mediaRepo    = MediaRepository()
+    @State private var authManager  = AppServices.authManager
+    @State private var mediaRepo    = AppServices.mediaRepo
     @State private var playbackPresenter = PlaybackPresenter()
-    @State private var seerrRepo    = SeerrRepository()
-    @State private var statsRepo    = StreamystatsRepository()
-    @State private var downloadManager = DownloadManager()
-    @State private var syncPlayManager = SyncPlayManager()
-    @State private var sharePlayManager = SharePlayManager()
+    @State private var seerrRepo    = AppServices.seerrRepo
+    @State private var statsRepo    = AppServices.statsRepo
+    @State private var downloadManager = AppServices.downloadManager
+    @State private var syncPlayManager = AppServices.syncPlayManager
+    @State private var sharePlayManager = AppServices.sharePlayManager
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
     @State private var arcfinSyncTask: Task<Void, Never>?
@@ -244,7 +244,10 @@ struct ContentView: View {
             phaseContent
 
             if isAppLocked {
-                AppLockView(useFaceID: appLockUseFaceID) { isAppLocked = false }
+                AppLockView(useFaceID: appLockUseFaceID) {
+                    isAppLocked = false
+                    AppServices.hasPassedLock = true
+                }
                     .transition(.opacity)
                     .zIndex(10)
             }
@@ -292,7 +295,7 @@ struct ContentView: View {
         .task {
             await authManager.checkStoredAuth()
             await refreshLockRequirement()
-            if activeProfileHasPIN { isAppLocked = true }
+            if activeProfileHasPIN { isAppLocked = true } else { AppServices.hasPassedLock = true }
             #if !os(tvOS)
             consumeControlLink()
             startPendingDownload()

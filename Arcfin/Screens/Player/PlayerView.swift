@@ -28,12 +28,24 @@ struct PlayerView: View {
     @StateObject var groupState = GroupStateObserver()
     @Environment(PlaybackPresenter.self) var playbackPresenter
     @Environment(\.dismiss) var dismiss
+    #if !os(tvOS)
+    @Environment(\.isPlayerWindow) var isPlayerWindow
+    @Environment(\.dismissWindow) var dismissWindow
+    @Environment(\.openWindow) var openWindow
+    @Environment(\.supportsMultipleWindows) var supportsMultipleWindows
+    #endif
 
     /// SwiftUI's own dismiss only does anything for a real .sheet/.fullScreenCover
     /// presentation — on macOS this view is a plain full-window ZStack overlay in
     /// ContentView instead (see PlaybackPresenter's own doc comment for why), so closing it
     /// there means clearing the shared presenter's request, not calling dismiss at all.
     func closePlayer() {
+        #if !os(tvOS)
+        if isPlayerWindow {
+            dismissWindow()
+            return
+        }
+        #endif
         #if os(macOS)
         playbackPresenter.dismiss()
         #else

@@ -67,10 +67,15 @@ final class SharePlayManager {
     @ObservationIgnored private var messenger: GroupSessionMessenger?
     @ObservationIgnored private var tasks: [Task<Void, Never>] = []
     @ObservationIgnored var currentServerId: () -> String = { "" }
+    @ObservationIgnored private var isObserving = false
 
     /// Runs for the life of the app: sessions arrive here whether this device started them or
     /// joined from the call.
     func observeSessions() async {
+        // Every window shares this manager; one listener is enough.
+        guard !isObserving else { return }
+        isObserving = true
+        defer { isObserving = false }
         for await session in WatchTogetherActivity.sessions() {
             configure(session)
         }

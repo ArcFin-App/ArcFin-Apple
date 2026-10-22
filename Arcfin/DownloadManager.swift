@@ -153,6 +153,8 @@ final class DownloadManager: NSObject {
     }()
 
     func configure(modelContext: ModelContext, authManager: AuthManager) {
+        // Every window shares this manager; only the first one sets it up.
+        guard self.modelContext == nil else { return }
         self.modelContext = modelContext
         self.authManager = authManager
         // `session` was only ever touched lazily, on the first actual download action —

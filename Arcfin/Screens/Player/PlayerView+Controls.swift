@@ -268,6 +268,11 @@ extension PlayerView {
                     Label("Picture in Picture", systemImage: "pip.enter")
                 }
             }
+            if supportsMultipleWindows, !isPlayerWindow {
+                Button { openInNewWindow() } label: {
+                    Label("Open in New Window", systemImage: "macwindow.badge.plus")
+                }
+            }
             #endif
 
             #if canImport(GoogleCast)
@@ -1161,6 +1166,14 @@ extension PlayerView {
         let mbps = Double(bitrate) / 1_000_000
         return mbps >= 1 ? String(format: "%.1f Mb/s", mbps) : String(format: "%.0f Kb/s", Double(bitrate) / 1000)
     }
+
+    #if !os(tvOS)
+    /// Carries on from here in a window of its own, so the app stays usable beside it.
+    func openInNewWindow() {
+        openWindow(value: PlayerWindowRequest(itemId: item.id, startTicks: player.positionTicks))
+        closePlayer()
+    }
+    #endif
 
     // MARK: - SharePlay
 
