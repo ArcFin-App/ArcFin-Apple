@@ -212,17 +212,18 @@ struct MediaDetailView: View {
                 .accessibilityLabel("Refresh")
                 .help("Refresh")
             }
-            ToolbarItem(placement: .primaryAction) { ratingMenu }
+            ToolbarItem(placement: .primaryAction) { ratingMenu.help("Rate") }
             ToolbarItem(placement: .primaryAction) {
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
                 }
                 .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                .help(isFavorite ? "Remove from Favorites" : "Add to Favorites")
             }
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .primaryAction) {
-                    DownloadButton(item: item)
+                    DownloadButton(item: item).help("Download")
                 }
             }
             if let shareURL {
@@ -231,9 +232,10 @@ struct MediaDetailView: View {
                         Image(systemName: "square.and.arrow.up")
                     }
                     .accessibilityLabel("Share")
+                    .help("Share")
                 }
             }
-            ToolbarItem(placement: .primaryAction) { moreMenu }
+            ToolbarItem(placement: .primaryAction) { moreMenu.help("More") }
         }
         .sheet(isPresented: $showSubtitleSearch) {
             NavigationStack {
