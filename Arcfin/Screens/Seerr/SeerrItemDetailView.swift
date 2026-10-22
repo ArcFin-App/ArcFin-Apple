@@ -20,11 +20,17 @@ struct SeerrItemDetailView: View {
     @State private var libraryItem: MediaItem?
     @State private var openLibraryItem: MediaItem?
     @State private var detail: SeerrMediaDetail?
+    /// The title's age rating for this region, e.g. "PG-13".
+    @State private var certification: String?
     @State private var isLoadingDetail = false
+    @State private var heroTint: Color?
+    @State private var moreLikeThis: [SeerrItem] = []
+    @State private var companyRow: (name: String, items: [SeerrItem])?
+    @State private var keywordRow: (name: String, items: [SeerrItem])?
+    @State private var openSeerrItem: SeerrItem?
     @State private var requestingItem: SeerrItem? = nil
     @State private var requestBounceTrigger = 0
-    #if os(iOS)
-    // YouTubeTrailerPlayerView is UIKit-only — see MediaDetailView's own note on the same gap.
+    #if !os(tvOS)
     @State private var showTrailer = false
     #endif
 
@@ -87,6 +93,8 @@ struct SeerrItemDetailView: View {
                         seasonsRow(seasons)
                     }
 
+                    TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .ratings)
+
                     if let cast = detail?.cast, !cast.isEmpty {
                         castRow(cast)
                     }
@@ -94,10 +102,18 @@ struct SeerrItemDetailView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.md)
 
+                TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .padding(.bottom, DT.Spacing.lg)
+
+                if !moreLikeThis.isEmpty { discoveryRow("More Like This", moreLikeThis) }
+                if let companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
+                if let keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
         }
-        .background(DT.Color.backgroundPrimary)
+        .detailPageBackground(tint: heroTint)
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         #if os(iOS)
@@ -112,21 +128,29 @@ struct SeerrItemDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                if seerrRepo.isConfigured {
                 Button { toggleWatchlist() } label: {
                     Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
-                        .foregroundStyle(.white)
+                        .foregroundStyle(DT.Color.textPrimary)
                         .symbolEffect(.bounce, value: seerrRepo.isInWatchlist(item))
                 }
                 .accessibilityLabel(seerrRepo.isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist")
+                }
             }
         }
         .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
+        .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
+        .task(id: item.id) {
+            if let url = item.backdropURL ?? item.posterURL { heroTint = await AverageColor.load(from: url) }
+        }
+        .task(id: item.id) { await loadDiscovery() }
         .task {
             isLoadingDetail = true
             detail = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
             isLoadingDetail = false
         }
         .task { await loadLibraryItem() }
+        .task { certification = await seerrRepo.certification(for: item) }
     }
 
     private func loadLibraryItem() async {
@@ -144,7 +168,8 @@ struct SeerrItemDetailView: View {
     /// to open, the row simply doesn't exist instead of leaving a lone button.
     @ViewBuilder
     private var actionButtons: some View {
-        if !isAvailable && hasRequestableContent {
+        // Requesting needs Seerr; a title shown from TMDB alone still links to the library copy.
+        if seerrRepo.isConfigured && !isAvailable && hasRequestableContent {
             Group {
                 Button {
                     requestBounceTrigger += 1
@@ -157,7 +182,7 @@ struct SeerrItemDetailView: View {
                         Text("Request")
                             .font(.system(.callout, design: .default, weight: .bold))
                     }
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(LinearGradient(
@@ -181,7 +206,7 @@ struct SeerrItemDetailView: View {
                         Text("View in Library")
                             .font(.system(.callout, design: .default, weight: .bold))
                     }
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DT.Color.onAccent)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(LinearGradient(
@@ -199,7 +224,7 @@ struct SeerrItemDetailView: View {
 
     @ViewBuilder
     private var trailerButton: some View {
-        #if os(iOS)
+        #if !os(tvOS)
         if let key = detail?.trailerYouTubeKey {
             Button {
                 showTrailer = true
@@ -213,14 +238,21 @@ struct SeerrItemDetailView: View {
                 .padding(.vertical, 12)
                 .background(DT.Color.backgroundSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.md)
+            #if os(iOS)
             .fullScreenCover(isPresented: $showTrailer) {
                 YouTubeTrailerPlayerView(videoID: key, title: item.title)
             }
+            #else
+            .sheet(isPresented: $showTrailer) {
+                YouTubeTrailerPlayerView(videoID: key, title: item.title)
+                    .frame(minWidth: 800, minHeight: 450)
+            }
+            #endif
         }
         #endif
     }
@@ -255,7 +287,7 @@ struct SeerrItemDetailView: View {
                             }
                         }
                         .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(.white.opacity(0.04))
+                        .background(DT.Color.textPrimary.opacity(0.04))
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
                     }
                 }
@@ -272,7 +304,7 @@ struct SeerrItemDetailView: View {
                 HStack(spacing: 10) {
                     ForEach(cast.prefix(12)) { member in
                         VStack(spacing: 4) {
-                            AsyncImage(url: member.profileURL) { phase in
+                            CachedAsyncImage(url: member.profileURL) { phase in
                                 switch phase {
                                 case .success(let img): img.resizable().scaledToFill()
                                 default: DT.Color.backgroundSecondary
@@ -302,38 +334,72 @@ struct SeerrItemDetailView: View {
     // MARK: - Hero
 
     private var heroSection: some View {
-        ZStack(alignment: .bottom) {
-            if let url = item.backdropURL ?? item.posterURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    default: fallbackHero
-                    }
-                }
-            } else { fallbackHero }
-
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
-                    .init(color: DT.Color.backgroundPrimary, location: 1),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-        }
-        .frame(height: 260)
-        .clipped()
+        DetailHeroBackdrop(url: item.backdropURL ?? item.posterURL)
     }
 
-    private var fallbackHero: some View {
-        LinearGradient(
-            colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
+    // MARK: - Discovery
+
+    /// Related titles, the studio's (or network's) other titles, and others sharing the
+    /// title's main keyword — each already filtered by the profile's parental controls.
+    private func loadDiscovery() async {
+        async let related = seerrRepo.relatedMedia(mediaType: item.mediaType, mediaId: item.id)
+        async let info = seerrRepo.relatedInfo(mediaType: item.mediaType, tmdbId: item.id)
+        moreLikeThis = Array(await related.filter { $0.id != item.id }.prefix(20))
+        guard let info = await info else { return }
+        if let company = info.companies.first {
+            let items = await seerrRepo.discoverByCompany(company.id, mediaType: item.mediaType).filter { $0.id != item.id }
+            if items.count >= 3 { companyRow = (company.name, Array(items.prefix(20))) }
+        }
+        // Keyword discovery covers movies only.
+        if item.mediaType == .movie, let keyword = info.keywords.first {
+            let items = await seerrRepo.discoverByKeyword(keyword.id).filter { $0.id != item.id }
+            if items.count >= 3 { keywordRow = (keyword.name, Array(items.prefix(20))) }
+        }
+    }
+
+    private func discoveryRow(_ title: String, _ items: [SeerrItem]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(DT.Font.cardTitle)
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+                .padding(.horizontal, DT.Spacing.pagePad)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 12) {
+                    ForEach(items) { related in
+                        Button { openSeerrItem = related } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                CachedAsyncImage(url: related.posterURL) { phase in
+                                    switch phase {
+                                    case .success(let image): image.resizable().scaledToFill()
+                                    default: DT.Color.backgroundSecondary
+                                    }
+                                }
+                                .frame(width: 110, height: 165)
+                                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+                                .overlay(alignment: .topTrailing) {
+                                    if let status = related.availabilityStatus {
+                                        Circle().fill(DT.Color.palette(status.colorHex)).frame(width: 10, height: 10).padding(6)
+                                            .accessibilityLabel(status.label)
+                                    }
+                                }
+                                Text(related.title)
+                                    .font(.system(.caption2, weight: .semibold))
+                                    .foregroundStyle(DT.Color.textPrimary)
+                                    .lineLimit(1)
+                                if let year = related.year {
+                                    Text(year).font(.caption2).foregroundStyle(DT.Color.textSecondary)
+                                }
+                            }
+                            .frame(width: 110)
+                        }
+                        .buttonStyle(PressableButtonStyle())
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+            }
+        }
+        .padding(.bottom, DT.Spacing.md)
     }
 
     // MARK: - Title block
@@ -341,7 +407,7 @@ struct SeerrItemDetailView: View {
     private var titleBlock: some View {
         HStack(alignment: .top, spacing: 14) {
             if let url = item.posterURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img): img.resizable().scaledToFill()
                     default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
@@ -349,7 +415,7 @@ struct SeerrItemDetailView: View {
                 }
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
             } else {
                 RoundedRectangle(cornerRadius: 10)
@@ -369,25 +435,34 @@ struct SeerrItemDetailView: View {
                         .font(.system(.caption2, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textSecondary)
                     if let year = item.year {
-                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         Text(year)
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
+                    if let certification, !certification.isEmpty {
+                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+                        Text(certification)
+                            .font(.system(.caption2, design: .default, weight: .semibold))
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
+                            .accessibilityLabel("Rated \(certification)")
+                    }
                     if let runtime = detail?.runtimeMinutes {
-                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         Text("\(runtime) min")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     if let rating = detail?.voteAverage, rating > 0 {
-                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2))
+                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(.caption2))
                             Text(String(format: "%.1f", rating))
                         }
                         .font(.system(.caption2))
-                        .foregroundStyle(Color(hex: "f59e0b"))
+                        .foregroundStyle(DT.Color.palette("f59e0b"))
                     }
                 }
                 // Lets HStack compress/truncate these Text children when every optional
@@ -410,14 +485,14 @@ struct SeerrItemDetailView: View {
             Spacer()
             Text(status.label)
                 .font(.system(.caption2, design: .default, weight: .bold))
-                .foregroundStyle(Color(hex: status.colorHex))
+                .foregroundStyle(DT.Color.palette(status.colorHex))
                 .padding(.horizontal, 10).padding(.vertical, 4)
-                .background(Color(hex: status.colorHex).opacity(0.15))
+                .background(DT.Color.palette(status.colorHex).opacity(0.15))
                 .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color(hex: status.colorHex).opacity(0.3), lineWidth: 1))
+                .overlay(Capsule().stroke(DT.Color.palette(status.colorHex).opacity(0.3), lineWidth: 1))
         }
         .padding(12)
-        .background(.white.opacity(0.04))
+        .background(DT.Color.textPrimary.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
     }
 }

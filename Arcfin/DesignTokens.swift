@@ -9,29 +9,34 @@ import AppKit
 #endif
 
 // MARK: - Design token system for Arcfin
-// Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass.
+// Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass. Every colour
+// follows the system appearance; the light values hold the same contrast as the dark ones.
 
 public enum DT {
 
     // MARK: - Colour
 
     public enum Color {
-        /// #0A0A0F — deep cinematic black, primary background
-        public static let backgroundPrimary   = SwiftUI.Color(hex: "0A0A0F")
-        /// #12121A — midnight navy, secondary surface
-        public static let backgroundSecondary = SwiftUI.Color(hex: "12121A")
-        /// #1C1C26 — deep charcoal cool tint, tertiary surface
-        public static let backgroundTertiary  = SwiftUI.Color(hex: "1C1C26")
-        /// #06B6D4 — cyan/ice, accent — active states, progress bars, focus rings, CTAs
-        public static let accent              = SwiftUI.Color(hex: "06B6D4")
-        /// #0891b2 — deeper cyan, gradient start for buttons and logo
-        public static let accentDeep          = SwiftUI.Color(hex: "0891b2")
+        /// Dark #0A0A0F, deep cinematic black / light #F2F2F7 — primary background
+        public static let backgroundPrimary   = SwiftUI.Color(light: "F2F2F7", dark: "0A0A0F")
+        /// Dark #12121A, midnight navy / light white — secondary surface
+        public static let backgroundSecondary = SwiftUI.Color(light: "FFFFFF", dark: "12121A")
+        /// Dark #1C1C26, deep charcoal / light #E5E5EA — tertiary surface
+        public static let backgroundTertiary  = SwiftUI.Color(light: "E5E5EA", dark: "1C1C26")
+        /// Dark #06B6D4, cyan/ice / light #0E7490 (cyan on white is 2.4:1; this is 4.3–5.4:1)
+        /// — active states, progress bars, focus rings, CTAs
+        public static let accent              = SwiftUI.Color(light: "0E7490", dark: "06B6D4")
+        /// Deeper cyan, gradient start for buttons and logo
+        public static let accentDeep          = SwiftUI.Color(light: "155E75", dark: "0891B2")
         /// Accent at reduced opacity for glass tinting
-        public static let accentSubtle        = SwiftUI.Color(hex: "06B6D4").opacity(0.15)
-        /// White — primary text
-        public static let textPrimary         = SwiftUI.Color.white
-        /// #06B6D4 — active/selected labels
-        public static let textActive          = SwiftUI.Color(hex: "06B6D4")
+        public static let accentSubtle        = accent.opacity(0.15)
+        /// Text and symbols on an accent fill: dark on the bright cyan (8.1:1, where white was
+        /// 2.4:1), white on the deeper light-appearance cyan (5.4:1).
+        public static let onAccent            = SwiftUI.Color(light: "FFFFFF", dark: "0A0A0F")
+        /// White / light #0A0A0F — primary text
+        public static let textPrimary         = SwiftUI.Color(light: "0A0A0F", dark: "FFFFFF")
+        /// Active/selected labels
+        public static let textActive          = accent
 
         /// Reads the system's real Increase Contrast accessibility setting directly —
         /// same bare-global-read shape as DT.Animation.reduceMotion below, so textSecondary/
@@ -48,18 +53,33 @@ public enum DT {
 
         /// #8E8E93 (5.2–6.1:1 on the three backgrounds) / Increase Contrast: #AEAEB4
         /// (7.65–8.95:1) — secondary metadata (system grey)
+        /// Light #636366 (4.8–5.9:1) / Increase Contrast #48484C (7.3–9.1:1).
         public static var textSecondary: SwiftUI.Color {
-            increaseContrast ? SwiftUI.Color(hex: "AEAEB4") : SwiftUI.Color(hex: "8E8E93")
+            increaseContrast ? SwiftUI.Color(light: "48484C", dark: "AEAEB4") : SwiftUI.Color(light: "636366", dark: "8E8E93")
         }
         /// #3A3A4A (1.5–1.8:1, under the 3:1 UI-boundary floor) / Increase Contrast:
         /// #6E6E82 (3.4–4.0:1) — separator / divider lines
         public static var separator: SwiftUI.Color {
-            increaseContrast ? SwiftUI.Color(hex: "6E6E82") : SwiftUI.Color(hex: "3A3A4A")
+            increaseContrast ? SwiftUI.Color(light: "8A8A8E", dark: "6E6E82") : SwiftUI.Color(light: "C6C6C8", dark: "3A3A4A")
+        }
+        /// A status or category colour from the shared palette, with a darker partner for the
+        /// light appearance (the bright dark-mode hues are 2.1–3.8:1 on white; these are 4.4:1
+        /// or better). Any other hex is used as is.
+        public static func palette(_ hex: String) -> SwiftUI.Color {
+            switch hex.lowercased() {
+            case "10b981": SwiftUI.Color(light: "047857", dark: "10B981")
+            case "f59e0b": SwiftUI.Color(light: "B45309", dark: "F59E0B")
+            case "ef4444": SwiftUI.Color(light: "B91C1C", dark: "EF4444")
+            case "8b5cf6": SwiftUI.Color(light: "6D28D9", dark: "8B5CF6")
+            case "f5c518": SwiftUI.Color(light: "A16207", dark: "F5C518")
+            case "06b6d4": accent
+            default: SwiftUI.Color(hex: hex)
+            }
         }
         /// Progress bar fill
-        public static let progressFill        = SwiftUI.Color(hex: "06B6D4")
+        public static let progressFill        = accent
         /// Progress bar track
-        public static let progressTrack       = SwiftUI.Color.white.opacity(0.15)
+        public static let progressTrack       = textPrimary.opacity(0.15)
     }
 
     // MARK: - Typography
@@ -163,6 +183,10 @@ public enum DT {
         public static var slow: SwiftUI.Animation {
             reduceMotion ? reducedFallback : .spring(response: 0.50, dampingFraction: 0.75)
         }
+        /// Any other animation, collapsed the same way under Reduce Motion.
+        public static func motion(_ animation: SwiftUI.Animation) -> SwiftUI.Animation {
+            reduceMotion ? reducedFallback : animation
+        }
         public static var playerFade: SwiftUI.Animation {
             reduceMotion ? reducedFallback : .easeInOut(duration: 0.25)
         }
@@ -190,6 +214,20 @@ public enum DT {
 }
 
 // MARK: - Hex colour initialiser
+
+extension SwiftUI.Color {
+    /// One colour for the light appearance and one for the dark, switching with the system.
+    init(light: String, dark: String) {
+        let light = SwiftUI.Color(hex: light), dark = SwiftUI.Color(hex: dark)
+        #if canImport(UIKit)
+        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light) })
+        #else
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(dark) : NSColor(light)
+        })
+        #endif
+    }
+}
 
 extension SwiftUI.Color {
     init(hex: String) {
@@ -221,7 +259,12 @@ private struct ScaledSystemFont: ViewModifier {
         case ..<28.5: .title
         default: .largeTitle
         }
+        #if os(tvOS)
+        // 23 pt is tvOS's smallest text style; anything under it is unreadable from the couch.
+        _size = ScaledMetric(wrappedValue: max(size * DT.Scale.font, 23), relativeTo: style)
+        #else
         _size = ScaledMetric(wrappedValue: size * DT.Scale.font, relativeTo: style)
+        #endif
         self.weight = weight
         self.design = design
     }
@@ -232,6 +275,23 @@ private struct ScaledSystemFont: ViewModifier {
 }
 
 extension View {
+    /// The player, splash and lock screen are dark in either system appearance: video and
+    /// artwork read best on black. Set on the view's own subtree, not the window, so the rest
+    /// of the app keeps following the system.
+    func alwaysDark() -> some View {
+        environment(\.colorScheme, .dark)
+    }
+
+    /// The players, which on iPhone, iPad and Apple TV are their own full-screen presentation:
+    /// that presentation is dark too, so its menus and alerts match.
+    func alwaysDarkPlayer() -> some View {
+        #if os(macOS)
+        alwaysDark()
+        #else
+        alwaysDark().preferredColorScheme(.dark)
+        #endif
+    }
+
     /// `DT.Scale.font` sizing that also tracks Dynamic Type — plain `.font(.system(size:))`
     /// stays fixed regardless of the user's text-size setting.
     func scaledFont(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {

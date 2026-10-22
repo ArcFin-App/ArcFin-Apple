@@ -20,6 +20,15 @@ struct TVHomeView: View {
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
+    @AppStorage(HomeShelfPrefs.orderKey) private var homeShelfOrderString = ""
+    @AppStorage(HomeShelfPrefs.activeKey) private var homeShelfActiveString = ""
+    @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
+    @State private var shuffledShelves = HomeShelfPrefs.shuffledOrder()
+    @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
+    @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
+    @State private var serviceRows: [Int: [SeerrItem]] = [:]
+    @State private var nowAvailable: [MediaItem] = []
+    @State private var openSeerrItem: SeerrItem?
 
     @FocusState private var focusedItemID: String?
     // @FocusState clears to nil the instant focus moves to anything not bound to it (e.g.
@@ -30,8 +39,6 @@ struct TVHomeView: View {
     @State private var lastFocusedItemID: String?
     @State private var heroDetailItem: MediaItem?
     @State private var deepLinkItemID: String? = nil
-    @State private var seerrRequestItem: SeerrItem? = nil
-    @State private var seerrRequestPending = false
     @State private var playbackRequest: PlaybackRequest?
     @State private var heroVideoBackdropItemID: String?
     @State private var heroVideoBackdropURL: URL?
@@ -79,12 +86,15 @@ struct TVHomeView: View {
                 .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
                 .ignoresSafeArea()
             }
-            .background(DT.Color.backgroundPrimary)
+            .screenBackground()
             .navigationDestination(item: $heroDetailItem) { item in
                 TVMediaDetailView(item: item)
             }
             .navigationDestination(for: MediaItem.self) { item in
                 TVMediaDetailView(item: item)
+            }
+            .navigationDestination(item: $openSeerrItem) { item in
+                TVSeerrItemDetailView(item: item)
             }
         }
         .fullScreenCover(item: $playbackRequest) { request in
@@ -110,18 +120,14 @@ struct TVHomeView: View {
                 heroDetailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
             }
         }
-        .alert(
-            seerrRequestItem.map { "Request \($0.title)" } ?? "Request",
-            isPresented: $seerrRequestPending,
-            presenting: seerrRequestItem
-        ) { item in
-            Button("Request via Seerr") {
-                Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: { item in
-            Text(item.year.map { "(\($0))" } ?? "")
+        .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+            playPendingWatch()
         }
+        .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
+            serviceRows = await HomeShelfLoader.serviceRows(seerrRepo: seerrRepo, previous: serviceRows)
+        }
+        .task(id: HomeShelfLoader.recentlyAvailable(seerrRepo.requests).map(\.id)) { await loadNowAvailable() }
+        .onDisappear { if shuffleHomeShelves { shuffledShelves = HomeShelfPrefs.shuffledOrder() } }
     }
 
     // MARK: - Load
@@ -160,15 +166,40 @@ struct TVHomeView: View {
             deepLinkItemID = nil
             heroDetailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
         }
-        if seerrRepo.isConfigured && seerrDiscoverEnabled {
+        playPendingWatch()
+        if seerrRepo.hasCatalog && seerrDiscoverEnabled {
             await seerrRepo.loadDiscover()
-            let seerrURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV)
+            await seerrRepo.loadWatchlist()
+            let seerrURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist)
                 .flatMap { [$0.backdropURL, $0.posterURL].compactMap { $0 } }
             mediaRepo.prefetch(urls: seerrURLs)
         }
         if focusedItemID == nil {
             focusedItemID = mediaRepo.continueWatching.first?.id
         }
+    }
+
+    /// A SharePlay title: straight into the player.
+    private func playPendingWatch() {
+        guard let cred = authManager.state.credential, let id = WatchRoute.takePending() else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        Task {
+            if let request = await WatchRoute.resolve(id: id, credential: cred, authHeader: header) {
+                playbackRequest = request
+            }
+        }
+    }
+
+    private func loadNowAvailable() async {
+        let requests = HomeShelfLoader.recentlyAvailable(seerrRepo.requests)
+        guard !requests.isEmpty, let cred = authManager.state.credential else {
+            nowAvailable = []
+            return
+        }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let found = await HomeShelfLoader.nowAvailable(requests, credential: cred, authHeader: header)
+        guard !Task.isCancelled, found != nil || nowAvailable.isEmpty else { return }
+        nowAvailable = found ?? []
     }
 
     // MARK: - Hero section
@@ -235,7 +266,7 @@ struct TVHomeView: View {
     private var heroInfoBlock: some View {
         if let item = heroDisplayItem {
             VStack(alignment: .leading, spacing: 16) {
-                AsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFit()
                             .frame(maxWidth: 300, maxHeight: 90)
@@ -249,7 +280,7 @@ struct TVHomeView: View {
                 }
                 .id(item.id)
                 .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: focusedItemID)
+                .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
 
                 heroMetaRow(item)
 
@@ -282,7 +313,7 @@ struct TVHomeView: View {
             .frame(maxWidth: 540, alignment: .leading)
             .id(item.id)
             .transition(.opacity)
-            .animation(.easeInOut(duration: 0.3), value: focusedItemID)
+            .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
         } else {
             brandingBlock
         }
@@ -302,19 +333,19 @@ struct TVHomeView: View {
     private func heroMetaRow(_ item: MediaItem) -> some View {
         HStack(spacing: 12) {
             if let year = item.productionYear {
-                Text(String(year)).font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
+                Text(String(year)).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = item.communityRating {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
-                        .font(.system(size: 22, weight: .bold)).foregroundStyle(DT.Color.accent)
+                        .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
-            Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 22))
+            Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
             Text(item.type == .series ? "Series" : "Movie")
-                .font(.system(size: 22)).foregroundStyle(.white.opacity(0.7))
+                .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
         }
     }
 
@@ -372,7 +403,7 @@ struct TVHomeView: View {
                 return
             }
             guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
-            withAnimation(.easeIn(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeIn(duration: 0.6))) {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropItemID = itemID
             }
@@ -380,7 +411,7 @@ struct TVHomeView: View {
             // short preview instead, same idea as tvOS's own featured-app hero rotators.
             try? await Task.sleep(for: .seconds(15))
             guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
-            withAnimation(.easeOut(duration: 0.6)) {
+            withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
                 heroVideoBackdropURL = nil
                 heroVideoBackdropItemID = nil
             }
@@ -395,7 +426,7 @@ struct TVHomeView: View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Continue Watching")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 23, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .padding(.horizontal, 80)
 
@@ -427,36 +458,105 @@ struct TVHomeView: View {
 
     // MARK: - Below fold
 
+    /// The user's shelves from Settings › Appearance › Home Shelves, in their order.
+    /// Continue Watching lives in the hero, so it's left out here.
+    private var orderedShelves: [HomeShelf] {
+        let active = HomeShelfPrefs.active(from: homeShelfActiveString)
+        let order = shuffleHomeShelves ? shuffledShelves : HomeShelfPrefs.order(from: homeShelfOrderString)
+        return order.filter { active.contains($0) && $0 != .continueWatching }
+    }
+
     private var belowFoldSection: some View {
-        // Matches the shelf set HomeView (iOS/iPadOS/macOS) shows beyond Continue Watching —
-        // tvOS previously only had one combined Recently Added row plus the three Seerr ones.
         VStack(spacing: 0) {
-            if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
-                mediaShelf(title: "Next Up", items: mediaRepo.nextUp)
-            }
-            if !mediaRepo.recentlyAddedMovies.isEmpty {
-                mediaShelf(title: "Recently Added Movies", badge: "NEW", items: mediaRepo.recentlyAddedMovies)
-            }
-            if !mediaRepo.recentlyAddedShows.isEmpty {
-                mediaShelf(title: "Recently Added Shows", badge: "NEW", items: mediaRepo.recentlyAddedShows)
-            }
-            if !mediaRepo.recentlyReleasedMovies.isEmpty {
-                mediaShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
-            }
-            if !mediaRepo.recentlyAiredEpisodes.isEmpty {
-                mediaShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
-            }
-            if !mediaRepo.watchAgain.isEmpty {
-                mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
-            }
-            if seerrRepo.isConfigured && seerrDiscoverEnabled {
-                if !seerrRepo.watchlist.isEmpty { seerrShelf(title: "Watchlist", items: seerrRepo.watchlist) }
-                if !seerrRepo.trending.isEmpty { seerrShelf(title: "Trending", items: seerrRepo.trending) }
-                if !seerrRepo.popularMovies.isEmpty { seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies) }
-                if !seerrRepo.popularTV.isEmpty { seerrShelf(title: "Popular Series", items: seerrRepo.popularTV) }
+            ForEach(orderedShelves) { shelf in
+                shelfView(for: shelf)
             }
         }
         .focusSection()
+    }
+
+    @ViewBuilder
+    private func shelfView(for shelf: HomeShelf) -> some View {
+        switch shelf {
+        case .continueWatching:
+            EmptyView()
+        case .nextUp:
+            if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
+                mediaShelf(title: "Next Up", items: mediaRepo.nextUp)
+            }
+        case .recentlyAddedMovies:
+            if !mediaRepo.recentlyAddedMovies.isEmpty {
+                mediaShelf(title: "Recently Added Movies", badge: "NEW", items: mediaRepo.recentlyAddedMovies)
+            }
+        case .recentlyAddedShows:
+            if !mediaRepo.recentlyAddedShows.isEmpty {
+                mediaShelf(title: "Recently Added Shows", badge: "NEW", items: mediaRepo.recentlyAddedShows)
+            }
+        case .recentlyReleasedMovies:
+            if !mediaRepo.recentlyReleasedMovies.isEmpty {
+                mediaShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
+            }
+        case .recentlyAiredEpisodes:
+            if !mediaRepo.recentlyAiredEpisodes.isEmpty {
+                mediaShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
+            }
+        case .watchAgain:
+            if !mediaRepo.watchAgain.isEmpty {
+                mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+            }
+        case .genreShelves:
+            ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
+                mediaShelf(title: "More \(shelf.genre)", items: shelf.items)
+            }
+        case .becauseYouWatched:
+            if let recommendation = mediaRepo.becauseYouWatched {
+                mediaShelf(title: "Because You Watched \(recommendation.source.name)", items: recommendation.items)
+            }
+        case .favorites:
+            if !mediaRepo.favorites.isEmpty {
+                mediaShelf(title: "Favorites", items: mediaRepo.favorites)
+            }
+        case .topRatedUnwatched:
+            if !mediaRepo.topRatedUnwatched.isEmpty {
+                mediaShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
+            }
+        case .suggested:
+            if !mediaRepo.suggestions.isEmpty {
+                mediaShelf(title: "Suggested for You", items: mediaRepo.suggestions)
+            }
+        case .recommendations:
+            ForEach(mediaRepo.recommendations) { category in
+                mediaShelf(title: HomeShelfLoader.recommendationTitle(category), items: category.items)
+            }
+        case .nowAvailable:
+            if seerrRepo.isConfigured, !nowAvailable.isEmpty {
+                mediaShelf(title: "Now Available", items: nowAvailable)
+            }
+        case .streamingServices:
+            if seerrRepo.hasCatalog {
+                ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
+                    if let items = serviceRows[provider.id], !items.isEmpty {
+                        seerrShelf(title: "Popular on \(provider.name)", items: items)
+                    }
+                }
+            }
+        case .seerrWatchlist:
+            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
+                seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
+            }
+        case .seerrTrending:
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
+                seerrShelf(title: "Trending", items: seerrRepo.trending)
+            }
+        case .seerrPopularMovies:
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
+                seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
+            }
+        case .seerrPopularSeries:
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
+                seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
+            }
+        }
     }
 
     private func mediaShelf(title: String, badge: String? = nil, items: [MediaItem]) -> some View {
@@ -485,11 +585,11 @@ struct TVHomeView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Text(title)
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 23, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                 if let badge {
                     Text(badge)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 23, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10).padding(.vertical, 3)
                         .background(Capsule().fill(DT.Color.accent.opacity(0.3)))
@@ -514,10 +614,7 @@ struct TVHomeView: View {
     private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
         tvShelfRow(title: title) {
             ForEach(items) { item in
-                Button {
-                    seerrRequestItem = item
-                    seerrRequestPending = true
-                } label: {
+                Button { openSeerrItem = item } label: {
                     PosterCard(
                         title: item.title,
                         subtitle: item.year,
@@ -534,6 +631,16 @@ struct TVHomeView: View {
 
     @ViewBuilder
     private func cwContextMenu(_ item: MediaItem) -> some View {
+        if item.type == .movie || item.type == .episode {
+            let ticks = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+            Button {
+                focusedItemID = nil
+                playbackRequest = PlaybackRequest(item: item, startTicks: ticks)
+            } label: {
+                Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+            }
+        }
+        ItemQuickActions(item: item)
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear { Label(String(year), systemImage: "calendar") }
         if let rating = item.communityRating {

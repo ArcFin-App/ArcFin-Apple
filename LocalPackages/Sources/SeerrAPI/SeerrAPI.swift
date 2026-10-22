@@ -99,13 +99,16 @@ public struct SeerrItem: Sendable, Identifiable, Equatable, Hashable {
     public var year: String?
     public var overview: String?
     public var availabilityStatus: SeerrAvailabilityStatus?
+    /// TMDB's adult flag, on movies only.
+    public var isAdult: Bool
 
     public init(id: Int, title: String, mediaType: RequestMediaType, posterPath: String? = nil,
                 backdropPath: String? = nil, year: String? = nil, overview: String? = nil,
-                availabilityStatus: SeerrAvailabilityStatus? = nil) {
+                availabilityStatus: SeerrAvailabilityStatus? = nil, isAdult: Bool = false) {
         self.id = id; self.title = title; self.mediaType = mediaType
         self.posterPath = posterPath; self.backdropPath = backdropPath
         self.year = year; self.overview = overview; self.availabilityStatus = availabilityStatus
+        self.isAdult = isAdult
     }
 
     public var posterURL: URL? {
@@ -289,4 +292,87 @@ public struct SeerrMediaDetail: Sendable, Equatable {
         self.status = status; self.cast = cast; self.seasons = seasons
         self.seasonRows = seasonRows; self.trailerYouTubeKey = trailerYouTubeKey
     }
+}
+
+/// A TMDB company, network or keyword: just enough to label and browse a row by it.
+public struct SeerrNamedEntity: Sendable, Identifiable, Equatable, Hashable {
+    public let id: Int
+    public let name: String
+    public init(id: Int, name: String) { self.id = id; self.name = name }
+}
+
+/// A streaming service, rental store or shop that has a title (TMDB/JustWatch data).
+public struct SeerrWatchProvider: Sendable, Identifiable, Equatable, Hashable, Codable {
+    public let id: Int
+    public let name: String
+    public let logoPath: String?
+
+    public init(id: Int, name: String, logoPath: String?) {
+        self.id = id; self.name = name; self.logoPath = logoPath
+    }
+
+    public var logoURL: URL? {
+        logoPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w154\($0)") }
+    }
+}
+
+/// Where a title can be watched in one country.
+public struct SeerrWatchAvailability: Sendable, Equatable {
+    public let streaming: [SeerrWatchProvider]
+    public var free: [SeerrWatchProvider] = []
+    public var ads: [SeerrWatchProvider] = []
+    public let rent: [SeerrWatchProvider]
+    public let buy: [SeerrWatchProvider]
+
+    public var isEmpty: Bool { streaming.isEmpty && free.isEmpty && ads.isEmpty && rent.isEmpty && buy.isEmpty }
+    /// TMDB's page listing every option, with links out to each service.
+    public let link: URL?
+}
+
+public struct SeerrNextEpisode: Sendable, Equatable {
+    public let name: String
+    public let seasonNumber: Int
+    public let episodeNumber: Int
+    public let airDate: Date?
+}
+
+/// What Seerr knows about a title beyond the request sheet's needs: what it's related to,
+/// where it's streaming, and the facts a details section shows.
+public struct SeerrRelatedInfo: Sendable, Equatable {
+    public let companies: [SeerrNamedEntity]
+    public let keywords: [SeerrNamedEntity]
+    public var watch: SeerrWatchAvailability?
+    public var originalTitle: String?
+    public var originalLanguage: String?
+    public var countries: [String] = []
+    public var status: String?
+    public var budget: Int?
+    public var revenue: Int?
+    public var createdBy: [String] = []
+    public var networks: [String] = []
+    public var numberOfSeasons: Int?
+    public var nextEpisode: SeerrNextEpisode?
+    public var imdbId: String?
+
+    public init(companies: [SeerrNamedEntity], keywords: [SeerrNamedEntity]) {
+        self.companies = companies
+        self.keywords = keywords
+    }
+}
+
+/// Review scores Seerr gathers: Rotten Tomatoes (critics and audience) and IMDb.
+public struct SeerrRatings: Sendable, Equatable {
+    public var criticsScore: Int?
+    /// "Certified Fresh", "Fresh" or "Rotten".
+    public var criticsRating: String?
+    public var audienceScore: Int?
+    /// "Upright" or "Spilled".
+    public var audienceRating: String?
+    public var rottenTomatoesURL: URL?
+    public var imdbScore: Double?
+    public var imdbURL: URL?
+
+    public init() {}
+
+    public var isEmpty: Bool { criticsScore == nil && audienceScore == nil && imdbScore == nil }
 }

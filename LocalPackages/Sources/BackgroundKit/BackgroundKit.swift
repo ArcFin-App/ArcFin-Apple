@@ -9,6 +9,7 @@ import Telemetry
 public enum BackgroundTaskIdentifier {
     public static let syncSettings = "com.psmattas.arcfin.sync-settings"
     public static let prefetchContent = "com.psmattas.arcfin.prefetch-content"
+    public static let refresh = "com.psmattas.arcfin.refresh"
 }
 
 // MARK: - Scheduler

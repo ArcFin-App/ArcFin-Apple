@@ -45,7 +45,6 @@ struct SetupGuideSheet: View {
                     }
                 }
         }
-        .preferredColorScheme(.dark)
 #endif
     }
 
@@ -65,7 +64,6 @@ struct SetupGuideSheet: View {
             .tvFocusRing(cornerRadius: DT.Radius.pill)
         }
         .background(DT.Color.backgroundPrimary.ignoresSafeArea())
-        .preferredColorScheme(.dark)
     }
 #endif
 
@@ -158,7 +156,7 @@ struct SetupGuideSheet: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: icon)
                 .font(.system(.caption2))
-                .foregroundStyle(icon.contains("check") ? Color(hex: "10b981") : Color.orange)
+                .foregroundStyle(icon.contains("check") ? DT.Color.palette("10b981") : Color.orange)
                 .frame(width: 16)
             Text(text)
                 .font(DT.Font.caption2)

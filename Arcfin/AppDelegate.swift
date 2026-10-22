@@ -2,6 +2,7 @@
 
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
+import UserNotifications
 import CastKit
 
 /// Two unrelated reasons this exists, both needing a real AppDelegate rather than a
@@ -17,7 +18,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         CastManager.shared.start()
+        UNUserNotificationCenter.current().delegate = NotificationRouter.shared
+        BackgroundRefresh.register()
         return true
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        BackgroundRefresh.schedule()
     }
 
     func application(

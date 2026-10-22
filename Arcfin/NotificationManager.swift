@@ -22,25 +22,125 @@ enum NotificationManager {
         }
     }
 
-    private static func send(title: String, body: String, identifier: String) async {
+    /// Where tapping a notification should land.
+    enum Route {
+        case item(String)
+        case downloads
+        case discover
+
+        fileprivate var userInfo: [String: String] {
+            switch self {
+            case .item(let id): ["route": "item", "itemID": id]
+            case .downloads: ["route": "downloads"]
+            case .discover: ["route": "discover"]
+            }
+        }
+    }
+
+    private static func send(title: String, body: String, identifier: String, route: Route? = nil) async {
+        // tvOS notifications carry only a badge, no text.
+        #if !os(tvOS)
         guard await ensureAuthorized() else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .default
+        // Settings › Notifications › Quiet Hours: still delivered, just without a sound or banner.
+        if QuietHours.isNow {
+            content.interruptionLevel = .passive
+        } else {
+            content.sound = .default
+        }
+        if let route { content.userInfo = route.userInfo }
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
         try? await UNUserNotificationCenter.current().add(request)
+        #endif
+    }
+
+    /// For the permission prompt when someone switches a notification toggle on — the lazy
+    /// request in `send` can't prompt from a background refresh, where nobody is looking.
+    static func requestAuthorizationIfNeeded() async {
+        _ = await ensureAuthorized()
+    }
+
+    /// `firstItemID` is the title a tap opens when several arrived at once.
+    static func notifyNewContent(titles: [String], firstItemID: String?) async {
+        guard let first = titles.first else { return }
+        let body = titles.count == 1 ? first : "\(first) and \(titles.count - 1) more"
+        await send(
+            title: "New in Your Library", body: body, identifier: "library-new.\(UUID().uuidString)",
+            route: firstItemID.map(Route.item))
+    }
+
+    static func notifyRequestDeclined(title: String) async {
+        await send(title: "Request Declined", body: title, identifier: "seerr-declined.\(UUID().uuidString)", route: .discover)
+    }
+
+    static func notifyWatchlistAvailable(title: String) async {
+        await send(title: "On Your Watchlist: Now Available", body: title, identifier: "watchlist-available.\(UUID().uuidString)", route: .discover)
     }
 
     static func notifyDownloadComplete(title: String) async {
-        await send(title: "Download Complete", body: title, identifier: "download.\(UUID().uuidString)")
+        await send(title: "Download Complete", body: title, identifier: "download.\(UUID().uuidString)", route: .downloads)
     }
 
     static func notifyRequestApproved(title: String) async {
-        await send(title: "Request Approved", body: title, identifier: "seerr-approved.\(UUID().uuidString)")
+        await send(title: "Request Approved", body: title, identifier: "seerr-approved.\(UUID().uuidString)", route: .discover)
     }
 
     static func notifyRequestAvailable(title: String) async {
-        await send(title: "Now Available", body: title, identifier: "seerr-available.\(UUID().uuidString)")
+        await send(title: "Now Available", body: title, identifier: "seerr-available.\(UUID().uuidString)", route: .discover)
+    }
+}
+
+#if !os(tvOS)
+/// Receives notification taps and shows banners while the app is open.
+final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
+    static let shared = NotificationRouter()
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .list, .sound]
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
+    ) async {
+        let info = response.notification.request.content.userInfo
+        let route = info["route"] as? String
+        let itemID = info["itemID"] as? String
+        await MainActor.run {
+            switch route {
+            case "item":
+                if let itemID { ArcfinRouting.openItem(id: itemID) }
+            case "downloads":
+                ArcfinRouting.showDownloads()
+            case "discover":
+                ArcfinRouting.showDiscover()
+            default:
+                break
+            }
+        }
+    }
+}
+#endif
+
+/// Settings › Notifications › Quiet Hours, as minutes after midnight.
+enum QuietHours {
+    static let enabledKey = "quietHoursEnabled"
+    static let startKey = "quietHoursStart"
+    static let endKey = "quietHoursEnd"
+    static let defaultStart = 22 * 60
+    static let defaultEnd = 7 * 60
+
+    static var isNow: Bool {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: enabledKey) else { return false }
+        let start = defaults.object(forKey: startKey) as? Int ?? defaultStart
+        let end = defaults.object(forKey: endKey) as? Int ?? defaultEnd
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: Date())
+        let now = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+        // A span that runs past midnight (22:00 to 07:00) wraps around.
+        return start <= end ? (now >= start && now < end) : (now >= start || now < end)
     }
 }

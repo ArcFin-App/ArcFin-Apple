@@ -82,7 +82,7 @@ public actor SeerrHTTPClient {
 
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
-    private var loginInFlight = false
+    private var loginTask: Task<Void, Error>?
     private let session: URLSession
     // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
     private let authFailedKey: String
@@ -155,13 +155,18 @@ public actor SeerrHTTPClient {
             throw SeerrError.authFailed
         }
         guard !isAuthenticated else { return }
-        // Actor suspends during network I/O, so concurrent callers can reach here while
-        // a login is already in flight. Skip rather than fan out — the first caller's
-        // login will set isAuthenticated = true before the retry.
-        guard !loginInFlight else { return }
-        loginInFlight = true
-        defer { loginInFlight = false }
-        try await login()
+        // The actor suspends during network I/O, so concurrent callers (Discover fires
+        // several requests at once, alongside Requests) reach here while a login is already
+        // running. They wait for that same login instead of returning early and sending
+        // their request unauthenticated, which came back 401 and surfaced as error -1011.
+        if let loginTask {
+            try await loginTask.value
+            return
+        }
+        let task = Task { try await login() }
+        loginTask = task
+        defer { loginTask = nil }
+        try await task.value
     }
 
     // MARK: - Discover
@@ -256,14 +261,21 @@ public actor SeerrHTTPClient {
 
     /// The user's Seerr watchlist. Only carries tmdbId/mediaType, so each entry is
     /// enriched with title/poster via the same detail lookup used for requests.
-    public func watchlist(limit: Int = 20) async throws -> [SeerrItem] {
+    /// Every page of it: Seerr serves the watchlist 20 at a time and ignores any page size.
+    public func watchlist() async throws -> [SeerrItem] {
         try await ensureAuthenticated()
-        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/discover/watchlist"),
-                                  resolvingAgainstBaseURL: false)!
-        comps.queryItems = [URLQueryItem(name: "take", value: "\(limit)")]
-        let data = try await fetch(comps.url!)
-        struct Page: Decodable { let results: [SeerrWatchlistItemResponse] }
-        let raw = try JSONDecoder().decode(Page.self, from: data).results
+        struct Page: Decodable { let totalPages: Int?; let results: [SeerrWatchlistItemResponse] }
+        var raw: [SeerrWatchlistItemResponse] = []
+        var page = 1
+        while true {
+            var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/discover/watchlist"),
+                                      resolvingAgainstBaseURL: false)!
+            comps.queryItems = [URLQueryItem(name: "page", value: "\(page)")]
+            let decoded = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!))
+            raw += decoded.results
+            guard page < (decoded.totalPages ?? 1), page < 25, !decoded.results.isEmpty else { break }
+            page += 1
+        }
 
         var items = [SeerrItem?](repeating: nil, count: raw.count)
         await withTaskGroup(of: (Int, SeerrItem?).self) { group in
@@ -355,6 +367,144 @@ public actor SeerrHTTPClient {
         return try JSONDecoder().decode(SeerrDetailResponse.self, from: data).toDetail(includeSpecials: includeSpecials)
     }
 
+    /// A title's age rating for a country (e.g. "PG-13", "TV-MA"), from its TMDB release
+    /// certifications (movies) or content ratings (TV). Falls back to the US rating, then any.
+    /// nil when TMDB has none.
+    public func certification(mediaType: RequestMediaType, tmdbId: Int, region: String) async throws -> String? {
+        try await ensureAuthenticated()
+        let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        let decoded = try JSONDecoder().decode(SeerrCertificationResponse.self, from: data)
+        var byRegion: [String: String] = [:]
+        for entry in decoded.releases?.results ?? [] {
+            if let rating = entry.releaseDates?.compactMap({ $0.certification }).first(where: { !$0.isEmpty }) {
+                byRegion[entry.region] = rating
+            }
+        }
+        for entry in decoded.contentRatings?.results ?? [] where !(entry.rating ?? "").isEmpty {
+            byRegion[entry.region] = entry.rating
+        }
+        return byRegion[region.uppercased()] ?? byRegion["US"] ?? byRegion.values.first
+    }
+
+    /// Movies (or shows) matching a TMDB keyword, e.g. "time travel".
+    public func discoverByKeyword(_ keywordId: Int, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage("api/v1/discover/keyword/\(keywordId)/movies", query: [("page", "\(page)")],
+                            defaultMediaType: .movie)
+    }
+
+    /// Popular titles first made in a language (ISO 639-1, e.g. "ko").
+    public func discoverByLanguage(_ language: String, mediaType: RequestMediaType, page: Int = 1) async throws -> [SeerrItem] {
+        let path = mediaType == .tv ? "api/v1/discover/tv/language/\(language)" : "api/v1/discover/movies/language/\(language)"
+        return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
+    }
+
+    /// Movies from a studio, or shows from a network, by TMDB id.
+    public func discoverByCompany(_ companyId: Int, mediaType: RequestMediaType, page: Int = 1) async throws -> [SeerrItem] {
+        let path = mediaType == .tv ? "api/v1/discover/tv/network/\(companyId)" : "api/v1/discover/movies/studio/\(companyId)"
+        return try await fetchPage(path, query: [("page", "\(page)")], defaultMediaType: mediaType)
+    }
+
+    /// A title's studios (movies) or networks (TV), keywords, where it's streaming in
+    /// `region`, and the facts for a details section.
+    public func related(mediaType: RequestMediaType, tmdbId: Int, region: String = "US") async throws -> SeerrRelatedInfo {
+        try await ensureAuthenticated()
+        let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
+        let data = try await fetch(baseURL.appendingPathComponent(path))
+        let decoded = try JSONDecoder().decode(SeerrRelatedResponse.self, from: data)
+        let companies = (mediaType == .tv ? decoded.networks : decoded.productionCompanies) ?? []
+        var info = SeerrRelatedInfo(
+            companies: companies.map { SeerrNamedEntity(id: $0.id, name: $0.name) },
+            keywords: (decoded.keywords ?? []).map { SeerrNamedEntity(id: $0.id, name: $0.name) })
+        if let entry = decoded.watchProviders?.first(where: { $0.region == region.uppercased() }) {
+            var watch = SeerrWatchAvailability(
+                streaming: (entry.flatrate ?? []).map(\.model), rent: (entry.rent ?? []).map(\.model),
+                buy: (entry.buy ?? []).map(\.model), link: entry.link.flatMap(URL.init(string:)))
+            watch.free = (entry.free ?? []).map(\.model)
+            watch.ads = (entry.ads ?? []).map(\.model)
+            info.watch = watch
+        }
+        info.originalTitle = decoded.originalTitle ?? decoded.originalName
+        info.originalLanguage = decoded.originalLanguage
+        info.countries = (decoded.productionCountries ?? []).map(\.name)
+        info.status = decoded.status
+        info.budget = decoded.budget.flatMap { $0 > 0 ? $0 : nil }
+        info.revenue = decoded.revenue.flatMap { $0 > 0 ? $0 : nil }
+        info.createdBy = (decoded.createdBy ?? []).map(\.name)
+        info.networks = (decoded.networks ?? []).map(\.name)
+        info.numberOfSeasons = decoded.numberOfSeasons
+        info.imdbId = decoded.externalIds?.imdbId ?? decoded.imdbId
+        if let next = decoded.nextEpisodeToAir {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            info.nextEpisode = SeerrNextEpisode(
+                name: next.name ?? "", seasonNumber: next.seasonNumber ?? 0,
+                episodeNumber: next.episodeNumber ?? 0, airDate: next.airDate.flatMap(formatter.date(from:)))
+        }
+        return info
+    }
+
+    /// Rotten Tomatoes and IMDb scores (movies get both, shows Rotten Tomatoes only).
+    public func ratings(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrRatings {
+        try await ensureAuthenticated()
+        var result = SeerrRatings()
+        if mediaType == .tv {
+            let data = try await fetch(baseURL.appendingPathComponent("api/v1/tv/\(tmdbId)/ratings"))
+            let rt = try JSONDecoder().decode(SeerrRTResponse.self, from: data)
+            result.criticsScore = rt.criticsScore
+            result.criticsRating = rt.criticsRating
+            result.rottenTomatoesURL = rt.url.flatMap(URL.init(string:))
+        } else {
+            let data = try await fetch(baseURL.appendingPathComponent("api/v1/movie/\(tmdbId)/ratingscombined"))
+            struct Combined: Decodable {
+                struct IMDb: Decodable { let criticsScore: Double?; let url: String? }
+                let rt: SeerrRTResponse?
+                let imdb: IMDb?
+            }
+            let combined = try JSONDecoder().decode(Combined.self, from: data)
+            result.criticsScore = combined.rt?.criticsScore
+            result.criticsRating = combined.rt?.criticsRating
+            result.audienceScore = combined.rt?.audienceScore
+            result.audienceRating = combined.rt?.audienceRating
+            result.rottenTomatoesURL = combined.rt?.url.flatMap(URL.init(string:))
+            result.imdbScore = combined.imdb?.criticsScore
+            result.imdbURL = combined.imdb?.url.flatMap(URL.init(string:))
+        }
+        return result
+    }
+
+    /// Countries TMDB has streaming availability for, as (ISO code, English name).
+    public func watchRegions() async throws -> [(code: String, name: String)] {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/watchproviders/regions"))
+        struct Region: Decodable {
+            let code: String
+            let name: String?
+            enum CodingKeys: String, CodingKey { case code = "iso_3166_1", name = "english_name" }
+        }
+        return try JSONDecoder().decode([Region].self, from: data).map { ($0.code, $0.name ?? $0.code) }
+    }
+
+    /// The streaming services TMDB lists for a country, most popular first.
+    public func watchProviders(mediaType: RequestMediaType, region: String) async throws -> [SeerrWatchProvider] {
+        try await ensureAuthenticated()
+        var comps = URLComponents(
+            url: baseURL.appendingPathComponent(mediaType == .tv ? "api/v1/watchproviders/tv" : "api/v1/watchproviders/movies"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [URLQueryItem(name: "watchRegion", value: region.uppercased())]
+        let data = try await fetch(comps.url!)
+        return try JSONDecoder().decode([SeerrProviderResponse].self, from: data).map(\.model)
+    }
+
+    /// Popular titles on a streaming service in a country.
+    public func discoverByWatchProvider(_ providerId: Int, mediaType: RequestMediaType, region: String, page: Int = 1) async throws -> [SeerrItem] {
+        try await fetchPage(mediaType == .tv ? "api/v1/discover/tv" : "api/v1/discover/movies",
+                            query: [("watchProviders", "\(providerId)"), ("watchRegion", region.uppercased()),
+                                    ("sortBy", "popularity.desc"), ("page", "\(page)")],
+                            defaultMediaType: mediaType)
+    }
+
     /// Server-wide request settings — whether a partial (per-season) request is even offered,
     /// and whether specials (season 0) are included in the season picker at all. Unauthenticated;
     /// Seerr serves this publicly.
@@ -369,6 +519,33 @@ public actor SeerrHTTPClient {
             partialRequestsEnabled: r.partialRequestsEnabled ?? true,
             enableSpecialEpisodes: r.enableSpecialEpisodes ?? false
         )
+    }
+
+    /// The country Seerr uses for streaming availability (and Discover): the signed-in user's
+    /// own setting, else the server's, as set in Seerr's settings. nil when neither is set,
+    /// or set to "all".
+    public func preferredRegion() async -> String? {
+        struct Settings: Decodable {
+            let streamingRegion: String?
+            let discoverRegion: String?
+            let region: String?
+            var best: String? {
+                [streamingRegion, discoverRegion, region]
+                    .compactMap { $0 }
+                    .first { $0.count == 2 && $0.lowercased() != "all" }
+            }
+        }
+        struct Me: Decodable { let settings: Settings? }
+        if (try? await ensureAuthenticated()) != nil,
+           let data = try? await fetch(baseURL.appendingPathComponent("api/v1/auth/me")),
+           let region = (try? JSONDecoder().decode(Me.self, from: data))?.settings?.best {
+            return region.uppercased()
+        }
+        if let data = try? await fetch(baseURL.appendingPathComponent("api/v1/settings/public")),
+           let region = (try? JSONDecoder().decode(Settings.self, from: data))?.best {
+            return region.uppercased()
+        }
+        return nil
     }
 
     /// The signed-in Seerr user's id and permission bitmask — needed to read their own
@@ -431,12 +608,14 @@ public actor SeerrHTTPClient {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         applyXSRF(to: &req)
-        let body: [String: Any] = ["tmdbId": tmdbId, "type": mediaType.rawValue, "title": title]
+        // Seerr's watchlist schema requires `mediaType`; the old `type` key was rejected with a
+        // 400 on every add, which the callers' try? swallowed.
+        let body: [String: Any] = ["tmdbId": tmdbId, "mediaType": mediaType.rawValue, "title": title]
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
-        let (data, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, status) = try await sendWrite(req)
+        // 409: it's already on the watchlist (added on the web, or from another device).
+        guard (200...299).contains(status) || status == 409 else {
             throw SeerrError.requestFailed(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
     }
@@ -450,11 +629,24 @@ public actor SeerrHTTPClient {
         req.httpMethod = "DELETE"
         applyXSRF(to: &req)
         req.timeoutInterval = 15
-        let (data, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, status) = try await sendWrite(req)
+        // 404: it was already taken off.
+        guard (200...299).contains(status) || status == 404 else {
             throw SeerrError.requestFailed(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
+    }
+
+    /// Sends a change, signing in again once if the session has expired, as `fetch` does.
+    private func sendWrite(_ request: URLRequest) async throws -> (Data, Int) {
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        guard http.statusCode == 401 else { return (data, http.statusCode) }
+        isAuthenticated = false
+        try await ensureAuthenticated()
+        var retry = request
+        applyXSRF(to: &retry)
+        let (retryData, retryResponse) = try await session.data(for: retry)
+        return (retryData, (retryResponse as? HTTPURLResponse)?.statusCode ?? -1)
     }
 
     /// Cancels a pending request, or removes a declined/available one from the list —
@@ -514,16 +706,23 @@ public actor SeerrHTTPClient {
             retryReq.timeoutInterval = 15
             applyXSRF(to: &retryReq)
             let (retryData, retryResp) = try await session.data(for: retryReq)
-            guard let retryHttp = retryResp as? HTTPURLResponse,
-                  (200...299).contains(retryHttp.statusCode) else {
-                throw URLError(.badServerResponse)
-            }
+            try Self.check(retryResp, data: retryData)
             return retryData
         }
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
+        try Self.check(response, data: data)
         return data
+    }
+
+    /// A failed request says which: the status and Seerr's own message, so an empty list
+    /// can explain itself instead of a generic "bad server response".
+    private static func check(_ response: URLResponse, data: Data) throws {
+        guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        guard (200...299).contains(http.statusCode) else {
+            struct Message: Decodable { let message: String? }
+            let message = (try? JSONDecoder().decode(Message.self, from: data))?.message
+                ?? String(data: data.prefix(200), encoding: .utf8) ?? ""
+            throw SeerrError.requestFailed(status: http.statusCode, body: message)
+        }
     }
 }
 
@@ -567,6 +766,7 @@ private struct SeerrItemResponse: Decodable {
     let firstAirDate: String?
     let overview: String?
     let mediaInfo: SeerrMediaInfoResponse?
+    let adult: Bool?
     // Only present on a person's combined_credits entries — a plain discover/search/
     // recommendations row never has these, so they're harmlessly nil everywhere else.
     let character: String?
@@ -577,13 +777,16 @@ private struct SeerrItemResponse: Decodable {
     }
 
     func toItem(defaultMediaType: RequestMediaType? = nil) -> SeerrItem? {
-        guard let displayTitle = title ?? name else { return nil }
+        // Search also returns people (and collections), which aren't requestable titles.
+        guard mediaType == nil || mediaType == "movie" || mediaType == "tv",
+              let displayTitle = title ?? name else { return nil }
         let type = resolvedMediaType ?? defaultMediaType ?? .movie
         let year = (releaseDate ?? firstAirDate).flatMap { $0.count >= 4 ? String($0.prefix(4)) : nil }
         let status = mediaInfo.flatMap { SeerrAvailabilityStatus(rawValue: $0.status) }
         return SeerrItem(id: id, title: displayTitle, mediaType: type,
                          posterPath: posterPath, backdropPath: backdropPath,
-                         year: year, overview: overview, availabilityStatus: status)
+                         year: year, overview: overview, availabilityStatus: status,
+                         isAdult: adult ?? false)
     }
 
     /// For a person's combined_credits row — needs the TMDB-assigned mediaType (unlike
@@ -767,4 +970,80 @@ private struct SeerrDetailResponse: Decodable {
             trailerYouTubeKey: trailerYouTubeKey
         )
     }
+}
+
+private struct SeerrCertificationResponse: Decodable {
+    struct Releases: Decodable {
+        struct Entry: Decodable {
+            struct ReleaseDate: Decodable { let certification: String? }
+            let region: String
+            let releaseDates: [ReleaseDate]?
+            enum CodingKeys: String, CodingKey { case region = "iso_3166_1", releaseDates = "release_dates" }
+        }
+        let results: [Entry]?
+    }
+    struct ContentRatings: Decodable {
+        struct Entry: Decodable {
+            let region: String
+            let rating: String?
+            enum CodingKeys: String, CodingKey { case region = "iso_3166_1", rating }
+        }
+        let results: [Entry]?
+    }
+    let releases: Releases?
+    let contentRatings: ContentRatings?
+}
+
+private struct SeerrProviderResponse: Decodable {
+    let id: Int
+    let name: String
+    let logoPath: String?
+    var model: SeerrWatchProvider { SeerrWatchProvider(id: id, name: name, logoPath: logoPath) }
+}
+
+private struct SeerrRTResponse: Decodable {
+    let criticsScore: Int?
+    let criticsRating: String?
+    let audienceScore: Int?
+    let audienceRating: String?
+    let url: String?
+}
+
+private struct SeerrRelatedResponse: Decodable {
+    struct Named: Decodable { let id: Int; let name: String }
+    struct Country: Decodable { let name: String }
+    struct Creator: Decodable { let name: String }
+    struct ExternalIds: Decodable { let imdbId: String? }
+    struct Episode: Decodable {
+        let name: String?
+        let seasonNumber: Int?
+        let episodeNumber: Int?
+        let airDate: String?
+    }
+    struct WatchEntry: Decodable {
+        let region: String
+        let link: String?
+        let flatrate: [SeerrProviderResponse]?
+        let free: [SeerrProviderResponse]?
+        let ads: [SeerrProviderResponse]?
+        let rent: [SeerrProviderResponse]?
+        let buy: [SeerrProviderResponse]?
+        enum CodingKeys: String, CodingKey { case region = "iso_3166_1", link, flatrate, free, ads, rent, buy }
+    }
+    let productionCompanies: [Named]?
+    let networks: [Named]?
+    let keywords: [Named]?
+    let watchProviders: [WatchEntry]?
+    let originalTitle: String?
+    let originalName: String?
+    let originalLanguage: String?
+    let productionCountries: [Country]?
+    let status: String?
+    let budget: Int?
+    let revenue: Int?
+    let createdBy: [Creator]?
+    let numberOfSeasons: Int?
+    let nextEpisodeToAir: Episode?
+    let externalIds: ExternalIds?
+    let imdbId: String?
 }

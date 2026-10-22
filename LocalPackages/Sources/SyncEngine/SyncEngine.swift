@@ -29,30 +29,54 @@ public enum OfflineProgressSync {
 
         let client = JellyfinMediaClient()
         var syncedCount = 0
-        for item in pending {
-            // serverId is the ServerCredential's own id (see DownloadManager, where it's
-            // stored as credential.id.uuidString) — matched against currently saved profiles
-            // rather than requiring the item's original server to still be the active one.
-            guard let credential = profiles.first(where: {
-                $0.id.uuidString == item.serverId && $0.userID == item.userId
-            }) else { continue }
-
+        // serverId is the ServerCredential's own id (see DownloadManager, where it's stored as
+        // credential.id.uuidString) — matched against currently saved profiles rather than
+        // requiring the item's original server to still be the active one.
+        let byProfile = Dictionary(grouping: pending) { "\($0.serverId)|\($0.userId)" }
+        for items in byProfile.values {
+            guard let first = items.first,
+                  let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId })
+            else { continue }
             let header = authHeader(credential)
-            await client.reportPlaybackStopped(
-                credential: credential, authHeader: header,
-                itemId: item.itemId, mediaSourceId: item.itemId,
-                positionTicks: item.playbackPositionTicks
-            )
-            if item.played {
-                try? await client.markWatched(credential: credential, authHeader: header, itemId: item.itemId, watched: true)
+            // The server's state first: the title may have been watched elsewhere meanwhile,
+            // and sending this device's older "part-way through" would mark it unwatched.
+            guard let server = try? await client.getUserData(
+                credential: credential, authHeader: header, itemIds: items.map(\.itemId))
+            else { continue }
+            for item in items {
+                if let remote = server[item.itemId], serverIsNewer(remote, than: item) {
+                    item.played = remote.played
+                    item.playbackPositionTicks = remote.played ? 0 : remote.playbackPositionTicks
+                    item.needsSync = false
+                    continue
+                }
+                do {
+                    try await client.updateUserData(
+                        credential: credential, authHeader: header, itemId: item.itemId,
+                        positionTicks: item.playbackPositionTicks, played: item.played,
+                        lastPlayed: item.progressChangedAt ?? Date()
+                    )
+                } catch {
+                    // Left marked, so the next sync tries again.
+                    continue
+                }
+                item.needsSync = false
+                syncedCount += 1
             }
-            item.needsSync = false
-            syncedCount += 1
         }
         try? modelContext.save()
         if syncedCount > 0 {
             log.info("Synced \(syncedCount) offline-played item(s) back to their server")
         }
+    }
+
+    /// Watched anywhere is never undone by a position from here; otherwise whichever was
+    /// played last wins. A download from before change times were kept defers to a watch.
+    @MainActor
+    static func serverIsNewer(_ remote: UserData, than item: DownloadedItem) -> Bool {
+        if remote.played && !item.played { return true }
+        guard !item.played, let serverTime = remote.lastPlayedDate, let localTime = item.progressChangedAt else { return false }
+        return serverTime > localTime
     }
 }
 
@@ -169,6 +193,12 @@ public enum SettingsSyncRegistry {
         .init("preferredSubtitleLanguage", .string),
         .init("skipForwardSeconds", .int),
         .init("skipBackwardSeconds", .int),
+        .init("rememberPlaybackSpeed", .bool),
+        .init("rememberTracksPerShow", .bool),
+        .init("mobileVideoQuality", .string),
+        .init("upNextCountdownSeconds", .int),
+        .init("resumeBehavior", .string),
+        .init("markWatchedAt", .string),
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),
@@ -177,20 +207,41 @@ public enum SettingsSyncRegistry {
         .init("smartDownloadsEnabled", .bool),
         .init("smartDownloadsEpisodeCount", .int),
         .init("smartDownloadsStorageBudgetGB", .int),
+        .init("smartDownloadsAllowMobileData", .bool),
+        .init("concurrentDownloads", .int),
+        .init("downloadSubtitles", .string),
+        .init("downloadTrickplay", .bool),
+        .init("seasonDownloadUnwatchedOnly", .bool),
+        .init("pauseDownloadsInLowPowerMode", .bool),
+        .init("pauseDownloadsInLowDataMode", .bool),
+        .init("removeDownloadsAfterDays", .int),
+        .init("removeWatchedWhenLowOnSpace", .bool),
         // Appearance
         .init("reduceMotion", .bool),
         .init("hapticsEnabled", .bool),
         .init("mergeContinueWatchingAndUpNext", .bool),
         .init("heroVideoBackdropsEnabled", .bool),
+        .init("shuffleHomeShelves", .bool),
+        .init("spoilerProtection", .bool),
+        .init("libraryHideWatched", .bool),
+        .init("saveSearchHistory", .bool),
         // Notifications
         .init("notifyNewContent", .bool),
+        .init("notifyRequestUpdates", .bool),
+        .init("notifyWatchlistAvailable", .bool),
         .init("notifyDownload", .bool),
+        .init("quietHoursEnabled", .bool),
+        .init("quietHoursStart", .int),
+        .init("quietHoursEnd", .int),
         // Player features
         .init("chapterListEnabled", .bool),
         .init("syncPlayEnabled", .bool),
         .init("castEnabled", .bool),
         .init("stillWatchingPromptEnabled", .bool),
         .init("matchContentFrameRate", .bool),
+        .init("autoPictureInPicture", .bool),
+        .init("swipeGesturesEnabled", .bool),
+        .init("doubleTapToSkip", .bool),
         // Subtitle style
         .init("subtitleTextSize", .string),
         .init("subtitleTextColor", .string),
@@ -204,8 +255,7 @@ public enum SettingsSyncRegistry {
         .init("seerrDiscoverEnabled", .bool),
         .init("seerrURL", .string),
         .init("seerrUsername", .string),
-        .init("seerrAuthMethod", .string),
-        .init("streamystatsURL", .string)
+        .init("seerrAuthMethod", .string)
     ]
 
     public static let allKeys: Set<String> = Set(entries.map { $0.key })
@@ -257,28 +307,65 @@ public enum SettingsSyncEngine {
         }
     }
 
-    /// Pull-then-push: applies the server's current values locally, then pushes back this
-    /// device's values for any registered key the server doesn't have yet (first sync from a
-    /// fresh install/profile populates the server). Returns the set of admin-locked keys, so the
-    /// caller can disable those controls in Settings — an empty set (including on any failure)
-    /// means nothing is locked, which is also the correct fallback when the plugin isn't
-    /// reachable: settings stay fully local-editable rather than erroring.
+    /// The values this device and the server last agreed on, so a sync can tell which side
+    /// changed a setting since.
+    private static let lastSyncedKey = "arcfin.settingsSync.lastSynced"
+
+    /// Which values to take from the server and which to send it. `base` is what both last
+    /// agreed on, nil before the first sync that kept it.
+    static func merge(local: [String: String], remote: [String: String], base: [String: String]?,
+                      locked: Set<String>) -> (apply: [String: String], push: [String: String]) {
+        var toApply: [String: String] = [:]
+        var toPush: [String: String] = [:]
+        for key in Set(remote.keys).union(local.keys) where SettingsSyncRegistry.allKeys.contains(key) {
+            let remoteValue = remote[key], localValue = local[key]
+            if locked.contains(key) {
+                if let remoteValue, remoteValue != localValue { toApply[key] = remoteValue }
+                continue
+            }
+            let changedHere = localValue != nil && localValue != base?[key]
+            if let localValue, remoteValue == nil || (changedHere && localValue != remoteValue) {
+                toPush[key] = localValue
+            } else if let remoteValue, remoteValue != localValue {
+                toApply[key] = remoteValue
+            }
+        }
+        return (toApply, toPush)
+    }
+
+    /// Whether this device has a setting the server hasn't heard yet.
+    public static func hasLocalChanges(defaults: UserDefaults = .standard) -> Bool {
+        guard let base = defaults.dictionary(forKey: lastSyncedKey) as? [String: String] else { return false }
+        return collectLocalPayload(defaults: defaults).settings != base
+    }
+
+    /// A three-way merge against what was last agreed: a setting changed on this device since
+    /// then is sent to the server, one changed only on the server is taken from it, and one an
+    /// administrator locked always comes from the server. Before, the server's value always won,
+    /// so anything changed here was put back at the next sync unless the server had never had it.
+    /// Returns the set of admin-locked keys, so the caller can disable those controls in Settings
+    /// — an empty set (including on any failure) means nothing is locked, which is also the
+    /// correct fallback when the plugin isn't reachable: settings stay fully local-editable.
     @discardableResult
     public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard) async -> Set<String> {
         let pluginClient = ArcfinPluginSyncClient(credential: credential, authHeader: authHeader)
 
         guard let remote = try? await pluginClient.pull() else { return [] }
-        apply(remote, defaults: defaults)
+        let locked = Set(((try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader)) ?? [])
+            .filter { $0.isLocked }.map { $0.key })
+        let local = collectLocalPayload(defaults: defaults).settings
+        // No record yet (the first sync since this was kept): a value set here counts as this
+        // device's choice, since the old sync would already have replaced anything it pulled.
+        let base = defaults.dictionary(forKey: lastSyncedKey) as? [String: String]
 
-        let local = collectLocalPayload(defaults: defaults)
-        let missingOnServer = local.settings.filter { remote.settings[$0.key] == nil }
-        if !missingOnServer.isEmpty {
-            try? await pluginClient.push(SyncPayload(settings: missingOnServer))
+        let (toApply, toPush) = merge(local: local, remote: remote.settings, base: base, locked: locked)
+        apply(SyncPayload(settings: toApply), defaults: defaults)
+        var agreed = collectLocalPayload(defaults: defaults).settings
+        if !toPush.isEmpty, (try? await pluginClient.push(SyncPayload(settings: toPush))) == nil {
+            // Not sent: keep those as changed here, so the next sync sends them again.
+            for key in toPush.keys { agreed[key] = base?[key] }
         }
-
-        guard let fullSettings = try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader) else {
-            return []
-        }
-        return Set(fullSettings.filter { $0.isLocked }.map { $0.key })
+        defaults.set(agreed, forKey: lastSyncedKey)
+        return locked
     }
 }

@@ -243,6 +243,9 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
               AVPictureInPictureController.isPictureInPictureSupported() else { return }
         let controller = AVPictureInPictureController(playerLayer: layer)
         controller?.delegate = self
+        #if os(iOS)
+        controller?.canStartPictureInPictureAutomaticallyFromInline = UserDefaults.standard.bool(forKey: "autoPictureInPicture")
+        #endif
         self.controller = controller
         isSupported = controller != nil
     }

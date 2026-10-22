@@ -2,9 +2,12 @@
 
 import SwiftUI
 import JellyfinAPI
+#if !os(tvOS)
+import AppIntents
+#endif
 import SeerrAPI
 import AuthCore
-#if os(iOS)
+#if !os(tvOS)
 import SwiftData
 import Persistence
 #endif
@@ -22,8 +25,8 @@ struct MediaDetailView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
-    #if os(iOS)
     @Environment(DownloadManager.self) private var downloadManager
+    #if !os(tvOS)
     @Environment(\.modelContext) private var modelContext
     #endif
     #if os(macOS)
@@ -34,6 +37,11 @@ struct MediaDetailView: View {
     @State private var detail: MediaItemDetail?
     @State private var awards: [WikidataAward] = []
     @State private var isFavorite = false
+    @State private var likes: Bool?
+    @State private var showSubtitleSearch = false
+    /// Upcoming episodes of this show kept downloaded automatically; 0 when off.
+    @State private var keptEpisodeCount = 0
+    @State private var heroTint: Color?
     @State private var similarItems: [MediaItem] = []
     @State private var seerrRelatedItems: [SeerrItem] = []
     /// Jellyfin-native fallback for the "Recommended" row when Seerr isn't configured —
@@ -41,6 +49,11 @@ struct MediaDetailView: View {
     /// whichever returned category (if any) names this movie as its baseline.
     @State private var jellyfinRecommended: MovieRecommendationCategory?
     @State private var seriesItem: MediaItem?
+    /// Collections and playlists this title (or an episode's show) is in.
+    @State private var containingCollections: [MediaItem] = []
+    @State private var containingPlaylists: [MediaItem] = []
+    @State private var openedCollection: MediaItem?
+    @State private var openedPlaylist: MediaItem?
     /// The episode a series-level Play/Resume button actually starts — a series itself
     /// isn't playable, so this is what getNextEpisode() resolves to.
     @State private var nextEpisode: MediaItem?
@@ -48,18 +61,21 @@ struct MediaDetailView: View {
     @State private var selectedSeason: MediaItem?
     @State private var episodes: [MediaItem] = []
     @State private var selectedEpisode: MediaItem?
+    /// The title the player ended up on after handing over to a suggestion or next episode.
+    @State private var lastPlayedItem: MediaItem?
     @State private var selectedPerson: MediaPerson?
     @State private var loadedSeasonId: String?
     @State private var trailers: [MediaItem] = []
     @State private var remoteTrailer: RemoteTrailer?
     @State private var youTubeTrailer: RemoteTrailer?
     @AppStorage("trailersEnabled") private var trailersEnabled = true
+    @AppStorage("spoilerProtection") private var spoilerProtection = false
     @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
     @State private var showTrailerPicker = false
     @State private var isLoading = true
     @State private var requestingSeerrItem: SeerrItem?
     @State private var playbackRequest: PlaybackRequest?
-    #if os(iOS)
+    #if !os(tvOS)
     @State private var seasonDownloadPreview: DownloadManager.DownloadPreview?
     @State private var isLoadingSeasonPreview = false
     /// Set when the target is already downloaded — offers a choice instead of always
@@ -80,7 +96,10 @@ struct MediaDetailView: View {
     #endif
 
     struct PlaybackRequest: Identifiable, Equatable {
-        let id = UUID()
+        // One constant identity, so handing over to the next title updates the open player
+        // cover in place instead of dismissing and re-presenting it (which dropped the
+        // rotation and flashed the detail screen in between).
+        var id: String { "player" }
         let item: MediaItem
         let startTicks: Int64
     }
@@ -114,20 +133,58 @@ struct MediaDetailView: View {
                 else { detailContent }
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
+            // The page can be laid out while the player still holds the screen in landscape;
+            // pinned to the visible width, it re-fits when the device turns back to portrait
+            // instead of keeping the landscape width and running past both edges.
+            .containerRelativeFrame(.horizontal)
 #if os(tvOS)
             .focusSection()
 #endif
         }
-        .background(DT.Color.backgroundPrimary)
+        .background {
+            ZStack {
+                DT.Color.backgroundPrimary
+                if let heroTint {
+                    LinearGradient(colors: [heroTint.opacity(0.4), .clear], startPoint: .top, endPoint: .bottom)
+                }
+            }
+            .ignoresSafeArea()
+            .animation(DT.Animation.motion(.easeInOut(duration: 0.4)), value: heroTint)
+        }
         .ignoresSafeArea(edges: .top)
+        .task(id: item.id) {
+            if let seriesId = seasonSeriesId {
+                keptEpisodeCount = DownloadManager.keptShows[seriesId]?.episodeCount ?? 0
+            }
+            guard let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 120) else { return }
+            heroTint = await AverageColor.load(from: url)
+        }
+        #if os(iOS)
+        // Pull down to pick up changes made elsewhere (another device, the web UI): watched
+        // state, resume position, the next episode and the season's progress.
+        .refreshable { await refreshAfterPlayback(waitForReport: false) }
+        #endif
+        #if !os(tvOS)
+        // Handoff to another device, Spotlight, and on-screen awareness: Siri and Apple
+        // Intelligence can resolve "this movie" to the MediaEntity for what's on screen.
+        .userActivity(ArcfinActivity.viewTitle) { activity in
+            activity.title = item.name
+            activity.isEligibleForHandoff = true
+            activity.isEligibleForSearch = true
+            activity.userInfo = ["itemID": item.id]
+            activity.webpageURL = shareURL
+            activity.appEntityIdentifier = EntityIdentifier(for: MediaEntity.self, identifier: item.id)
+        }
+        #endif
         .navigationTitle("")
         #if os(iOS)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { ratingMenu }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
+                        .foregroundStyle(isFavorite ? DT.Color.palette("EF4444") : DT.Color.textPrimary)
                 }
                 .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
@@ -140,25 +197,74 @@ struct MediaDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
                         Image(systemName: "square.and.arrow.up")
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DT.Color.textPrimary)
                     }
                     .accessibilityLabel("Share")
                 }
             }
+            ToolbarItem(placement: .topBarTrailing) { moreMenu }
+        }
+        .sheet(isPresented: $showSubtitleSearch) {
+            NavigationStack {
+                SubtitleSearchView(itemId: item.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("Done") { showSubtitleSearch = false } }
+                    }
+            }
+            .presentationDetents([.medium, .large])
         }
         #elseif os(macOS)
-        // Downloads are iOS-only (DownloadManager isn't wired up on macOS elsewhere in
-        // the app), but Favorite has no other entry point here without this toolbar.
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { Task { await refreshAfterPlayback(waitForReport: false) } } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .accessibilityLabel("Refresh")
+                .help("Refresh")
+            }
+            ToolbarItem(placement: .primaryAction) { ratingMenu.help("Rate") }
             ToolbarItem(placement: .primaryAction) {
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .foregroundStyle(isFavorite ? Color(hex: "EF4444") : .white)
+                        .foregroundStyle(isFavorite ? DT.Color.palette("EF4444") : DT.Color.textPrimary)
                 }
                 .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                .help(isFavorite ? "Remove from Favorites" : "Add to Favorites")
             }
+            if item.type == .movie || item.type == .episode {
+                ToolbarItem(placement: .primaryAction) {
+                    DownloadButton(item: item).help("Download")
+                }
+            }
+            if let shareURL {
+                ToolbarItem(placement: .primaryAction) {
+                    ShareLink(item: shareURL, subject: Text(item.name), message: Text(item.name)) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Share")
+                    .help("Share")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) { moreMenu.help("More") }
+        }
+        .sheet(isPresented: $showSubtitleSearch) {
+            NavigationStack {
+                SubtitleSearchView(itemId: item.id)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("Done") { showSubtitleSearch = false } }
+                    }
+            }
+            .frame(minWidth: 480, minHeight: 520)
         }
         #endif
+        .navigationDestination(item: $openedCollection) { collection in
+#if os(tvOS)
+            TVCollectionDetailView(item: collection)
+#else
+            CollectionDetailView(collection: collection)
+#endif
+        }
+        .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .navigationDestination(item: $selectedEpisode) { ep in
 #if os(tvOS)
             MediaDetailView(item: ep)
@@ -175,7 +281,7 @@ struct MediaDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
-        #if os(iOS)
+        #if !os(tvOS)
         .sheet(item: $seasonDownloadPreview) { preview in
             DownloadConfirmSheet(item: selectedSeason ?? item, preview: preview) { bitrateCap in
                 downloadSeason(bitrateCap: bitrateCap)
@@ -203,9 +309,17 @@ struct MediaDetailView: View {
             }
             Button("Cancel", role: .cancel) { pendingPlaybackChoice = nil }
         }
-        .fullScreenCover(item: $offlinePlaybackTarget) { downloaded in
+        #if os(iOS)
+        .fullScreenCover(item: $offlinePlaybackTarget, onDismiss: { Task { await refreshAfterPlayback() } }) { downloaded in
             OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: offlineStartOverride)
         }
+        #else
+        // fullScreenCover is unavailable on macOS; the offline player sizes itself in a sheet,
+        // as on the downloaded titles' own pages.
+        .sheet(item: $offlinePlaybackTarget, onDismiss: { Task { await refreshAfterPlayback() } }) { downloaded in
+            OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: offlineStartOverride)
+        }
+        #endif
         .alert("Download Failed", isPresented: Binding(
             get: { seasonDownloadErrorMessage != nil }, set: { if !$0 { seasonDownloadErrorMessage = nil } }
         )) {
@@ -225,10 +339,13 @@ struct MediaDetailView: View {
         }
         #endif
 #if os(iOS)
-        .fullScreenCover(item: $playbackRequest) { request in
+        .fullScreenCover(item: $playbackRequest, onDismiss: playerDismissed) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                lastPlayedItem = next
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
+            .id(request.item.id)
         }
         .fullScreenCover(item: $youTubeTrailer) { trailer in
             if let videoID = trailer.youTubeVideoID {
@@ -238,16 +355,24 @@ struct MediaDetailView: View {
 #elseif os(macOS)
         // A .sheet on macOS can't fill/fullscreen a window — PlayerView is rendered as a
         // full-window overlay by ContentView instead, driven by the shared PlaybackPresenter.
-        // (YouTubeTrailerPlayerView itself is UIKit-only — the "Play Trailer" button for a
-        // title with no local trailer, only a remote one, is a known gap on macOS until
-        // that view grows an AppKit path.)
         .onChange(of: playbackRequest) { _, request in
             guard let request else { return }
-            playbackPresenter.present(request.item, startTicks: request.startTicks)
+            playbackPresenter.present(request.item, startTicks: request.startTicks) { lastPlayedItem = $0 }
             playbackRequest = nil
+        }
+        .onChange(of: playbackPresenter.request == nil) { _, closed in
+            if closed { playerDismissed() }
+        }
+        .sheet(item: $youTubeTrailer) { trailer in
+            if let videoID = trailer.youTubeVideoID {
+                YouTubeTrailerPlayerView(videoID: videoID, title: trailer.name ?? item.name)
+                    .frame(minWidth: 800, minHeight: 450)
+            }
         }
 #endif
         .task { await load() }
+        // Apart from load(): the first lookup reads every collection and playlist.
+        .task(id: item.id) { await loadContainingSets() }
         .task(id: item.tmdbId) {
             guard let tmdbId = item.tmdbId else { return }
             awards = await WikidataAwardsClient.shared.awards(
@@ -268,11 +393,17 @@ struct MediaDetailView: View {
 
     // MARK: - Load
 
-    #if os(iOS)
+    #if !os(tvOS)
     /// Every episode in the current season already downloaded — the "Download Season"
     /// button should be inert then, not just silently no-op every episode it loops over.
     private var isSeasonFullyDownloaded: Bool {
-        !episodes.isEmpty && episodes.allSatisfy { downloadManager.isDownloaded($0.id) }
+        !episodes.isEmpty && seasonEpisodesToDownload.isEmpty
+    }
+
+    /// Settings › Downloads › Season Downloads can leave out episodes already watched.
+    private var seasonEpisodesToDownload: [MediaItem] {
+        let unwatchedOnly = UserDefaults.standard.bool(forKey: "seasonDownloadUnwatchedOnly")
+        return episodes.filter { !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
     }
 
     /// Fetches one representative preview (from the first not-yet-downloaded episode) to
@@ -280,7 +411,7 @@ struct MediaDetailView: View {
     /// N episodes?" text alert that gave no size/quality info at all.
     private func loadSeasonPreview() {
         guard case .authenticated(let credential) = authManager.state else { return }
-        let pending = episodes.filter { !downloadManager.isDownloaded($0.id) }
+        let pending = seasonEpisodesToDownload
         guard let firstPending = pending.first else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         isLoadingSeasonPreview = true
@@ -311,7 +442,7 @@ struct MediaDetailView: View {
     private func downloadSeason(bitrateCap: Int?) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        for episode in episodes where !downloadManager.isDownloaded(episode.id) {
+        for episode in seasonEpisodesToDownload {
             Task { await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap) }
         }
     }
@@ -354,9 +485,11 @@ struct MediaDetailView: View {
         async let detailTask = client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
         trailers = []
         
-        let fetchedDetail = try? await detailTask
+        // Without a connection, a downloaded title still has its full page from when it was saved.
+        let fetchedDetail = (try? await detailTask) ?? downloadManager.savedDetail(itemId: item.id)
         detail = fetchedDetail
         isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
+        likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
 
         if let fetchedDetail, let mediaType = seerrMediaType(for: fetchedDetail.item),
            let tmdbId = fetchedDetail.item.tmdbId {
@@ -371,8 +504,18 @@ struct MediaDetailView: View {
         jellyfinRecommended = nil
         if seerrRelatedItems.isEmpty, item.type == .movie {
             let categories = (try? await client.getMovieRecommendations(credential: cred, authHeader: header)) ?? []
-            jellyfinRecommended = categories.first {
+            let shown = Set(similarItems.map(\.id))
+            // "Because you watched <this title>" is built from the same similarity data as
+            // More Like This above, so only what that row doesn't already show is kept.
+            if let match = categories.first(where: {
                 $0.baselineItemName?.caseInsensitiveCompare(item.name) == .orderedSame
+            }) {
+                let fresh = match.items.filter { !shown.contains($0.id) && $0.id != item.id }
+                if fresh.count >= 3 {
+                    jellyfinRecommended = MovieRecommendationCategory(
+                        id: match.id, recommendationType: match.recommendationType,
+                        baselineItemName: match.baselineItemName, items: fresh)
+                }
             }
         }
 
@@ -422,6 +565,39 @@ struct MediaDetailView: View {
         }
     }
 
+    /// Re-reads the playback position after the player closes, so Play becomes Resume (and the
+    /// episode list's progress updates) without leaving and re-entering this screen. A full
+    /// `load()` would flash the loading state, so only the progress-bearing data is refetched.
+    /// Closing the player lands on whatever it was last playing: a suggestion opens its own
+    /// detail screen, while later episodes of this series just refresh this one.
+    private func playerDismissed() {
+        let last = lastPlayedItem
+        lastPlayedItem = nil
+        Task { await refreshAfterPlayback() }
+        downloadManager.refreshSmartDownloads()
+        guard let last, last.id != item.id else { return }
+        let sameSeries = last.type == .episode && last.seriesId != nil && last.seriesId == seasonSeriesId
+        if !sameSeries { selectedEpisode = last }
+    }
+
+    private func refreshAfterPlayback(waitForReport: Bool = true) async {
+        guard let cred = credential, let header = authHeader else { return }
+        // The player reports its final position as it closes; give that request a moment to land.
+        if waitForReport { try? await Task.sleep(for: .milliseconds(700)) }
+        if let fresh = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id) {
+            detail = fresh
+        }
+        guard let seriesId = seasonSeriesId else { return }
+        if item.type == .series,
+           let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
+            nextEpisode = nextEp
+        }
+        if let seasonId = loadedSeasonId,
+           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId) {
+            episodes = fresh
+        }
+    }
+
     // MARK: - Hero
 
     private var heroSection: some View {
@@ -441,25 +617,65 @@ struct MediaDetailView: View {
                 )
             } else { fallbackHero }
 
+            // Progressive blur: the material only shows toward the bottom edge, so the
+            // image softens as it leaves the frame rather than being covered by a flat band.
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0.35),
+                            .init(color: .black, location: 1),
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+        }
+        .frame(height: 260)
+        // Exactly the screen's width: a fill-scaled backdrop is wider than a small phone, and
+        // sized by its own width it pushed the whole page out past both edges.
+        .containerRelativeFrame(.horizontal)
+        // Fading the artwork's own opacity (instead of painting the page color over it)
+        // blends into whatever is behind, including the artwork-tinted page background.
+        .mask(
             LinearGradient(
                 stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
-                    .init(color: DT.Color.backgroundPrimary, location: 1),
+                    .init(color: .black, location: 0),
+                    .init(color: .black, location: 0.5),
+                    .init(color: .clear, location: 1),
                 ],
                 startPoint: .top, endPoint: .bottom
             )
-        }
-        .frame(height: 260)
+        )
         .clipped()
     }
 
     private var fallbackHero: some View {
-        LinearGradient(
-            colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
+        ZStack {
+            LinearGradient(
+                colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+            #if !os(tvOS)
+            savedArtwork("backdrop.jpg")
+            #endif
+        }
     }
+
+    #if !os(tvOS)
+    /// Artwork kept with a download, for when the server's can't be reached.
+    @ViewBuilder
+    private func savedArtwork(_ fileName: String) -> some View {
+        let url = [item.id, item.seriesId].compactMap { $0 }
+            .map { DownloadStore.directory(for: $0).appendingPathComponent(fileName) }
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+        if let url {
+            CachedAsyncImage(url: url) { phase in
+                if case .success(let image) = phase { image.resizable().scaledToFill() }
+            }
+        }
+    }
+    #endif
 
     // MARK: - Title block
 
@@ -472,11 +688,18 @@ struct MediaDetailView: View {
                     logCategory: "MediaDetailView",
                     logContext: "poster item=\(item.name)",
                     content: { img in img.resizable().scaledToFill() },
-                    placeholder: { RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary) }
+                    placeholder: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
+                            #if !os(tvOS)
+                            savedArtwork("poster.jpg")
+                            #endif
+                        }
+                    }
                 )
                 .frame(width: 90, height: 132)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.1), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
             } else {
                 RoundedRectangle(cornerRadius: 10)
@@ -515,7 +738,7 @@ struct MediaDetailView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
                 Text(rating)
                     .font(.system(.caption2, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
@@ -523,13 +746,13 @@ struct MediaDetailView: View {
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
                 Text("\(mins)m")
                     .font(.system(.caption, design: .default))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
                         .font(.system(.caption2))
@@ -538,6 +761,19 @@ struct MediaDetailView: View {
                         .font(.system(.caption2, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.accent)
                 }
+            }
+            if let critics = detail?.criticRating {
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
+                HStack(spacing: 3) {
+                    // Positive at 60% and up, the usual critics threshold.
+                    Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill")
+                        .font(.system(.caption2))
+                    Text("\(Int(critics.rounded()))%")
+                        .font(.system(.caption2, design: .default, weight: .bold))
+                }
+                .foregroundStyle(critics >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Critics score \(Int(critics.rounded())) percent")
             }
         }
         .lineLimit(1)
@@ -556,10 +792,10 @@ struct MediaDetailView: View {
 
     private var qualityRow: some View {
         HStack(spacing: 6) {
-            if detail?.is4K == true { qualityBadge("4K", color: Color(hex: "06B6D4")) }
-            if detail?.isHDR == true { qualityBadge("HDR", color: Color(hex: "F59E0B")) }
+            if detail?.is4K == true { qualityBadge("4K", color: DT.Color.palette("06B6D4")) }
+            if detail?.isHDR == true { qualityBadge("HDR", color: DT.Color.palette("F59E0B")) }
             if let codec = detail?.videoStream?.codec?.uppercased() {
-                qualityBadge(codec, color: Color(hex: "8B5CF6"))
+                qualityBadge(codec, color: DT.Color.palette("8B5CF6"))
             }
         }
     }
@@ -583,7 +819,7 @@ struct MediaDetailView: View {
                 .font(.system(.caption2, design: .default, weight: .semibold))
                 .lineLimit(1)
         }
-        .foregroundStyle(Color(hex: "f59e0b"))
+        .foregroundStyle(DT.Color.palette("f59e0b"))
     }
 
     private func qualityBadge(_ label: String, color: Color) -> some View {
@@ -660,14 +896,7 @@ struct MediaDetailView: View {
 #else
         HStack(spacing: 10) {
             Button {
-                #if os(iOS)
                 requestPlayback(startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0)
-                #else
-                playbackRequest = PlaybackRequest(
-                    item: playTargetItem,
-                    startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0
-                )
-                #endif
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill").font(.system(.subheadline))
@@ -700,7 +929,7 @@ struct MediaDetailView: View {
                         }
                     }
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(DT.Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, playDetailLine == nil ? 14 : 10)
                 .background(LinearGradient(
@@ -713,11 +942,7 @@ struct MediaDetailView: View {
 
             if isResumable {
                 Button {
-                    #if os(iOS)
                     requestPlayback(startTicks: 0, isExplicitStartOver: true)
-                    #else
-                    playbackRequest = PlaybackRequest(item: playTargetItem, startTicks: 0)
-                    #endif
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(.body, weight: .semibold))
@@ -725,7 +950,7 @@ struct MediaDetailView: View {
                         .frame(width: 48, height: 48)
                         .background(DT.Color.backgroundSecondary)
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
                 }
                 .accessibilityLabel("Start over")
                 .buttonStyle(.plain)
@@ -764,7 +989,7 @@ struct MediaDetailView: View {
                 .padding(.vertical, 12)
                 .background(DT.Color.backgroundSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.08), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -803,9 +1028,9 @@ struct MediaDetailView: View {
                             .font(.system(.caption2, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                             .padding(.horizontal, 12).padding(.vertical, 5)
-                            .background(.white.opacity(0.05))
+                            .background(DT.Color.textPrimary.opacity(0.05))
                             .clipShape(Capsule())
-                            .overlay(Capsule().stroke(.white.opacity(0.08), lineWidth: 1))
+                            .overlay(Capsule().stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -822,6 +1047,10 @@ struct MediaDetailView: View {
         }
 
         // Cast
+        // Review scores sit with the description, ahead of the cast.
+        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings)
+            .padding(.horizontal, DT.Spacing.pagePad)
+
         if let d = detail, !d.cast.isEmpty { castSection(d) }
 
         // Crew
@@ -845,6 +1074,19 @@ struct MediaDetailView: View {
         if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
             jellyfinRecommendedSection(jellyfinRecommended)
         }
+        if !containingCollections.isEmpty {
+            containingSection(containingCollections.count == 1 ? "Collection" : "Collections", containingCollections) { openedCollection = $0 }
+        }
+        if !containingPlaylists.isEmpty {
+            containingSection("In Your Playlists", containingPlaylists) { openedPlaylist = $0 }
+        }
+
+        // Scores, where else it's streaming, and the details list. An episode's TMDB id is
+        // the episode's, which Seerr's title lookups don't take, so episodes show the
+        // server's details only.
+        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, DT.Spacing.md)
     }
 
     // MARK: - Overview
@@ -996,7 +1238,7 @@ struct MediaDetailView: View {
 
                 Spacer()
 
-                #if os(iOS)
+                #if !os(tvOS)
                 Button {
                     if isLoadingSeasonPreview { return }
                     loadSeasonPreview()
@@ -1019,6 +1261,7 @@ struct MediaDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(episodes.isEmpty || isSeasonFullyDownloaded)
+                .shown(ProfileRules.shared.canDownload)
                 #else
                 Text("Episodes")
                     .font(.system(.footnote, design: .default, weight: .medium))
@@ -1059,9 +1302,9 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(.white.opacity(0.03))
+                .background(DT.Color.textPrimary.opacity(0.03))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
             }
 #if os(tvOS)
             .buttonStyle(TVCardButtonStyle())
@@ -1078,13 +1321,15 @@ struct MediaDetailView: View {
     private func episodeRow(_ ep: MediaItem) -> some View {
         let isWatched = ep.userData?.played == true
         let pct = ep.userData?.playedPercentage ?? 0
+        // Settings › Appearance › Spoiler Protection: nothing from an episode not yet started.
+        let hidesSpoilers = spoilerProtection && !isWatched && pct == 0
 
         return Button { selectedEpisode = ep } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 12) {
                     ZStack {
                         if let url = mediaRepo.episodeThumbnailURL(for: ep) {
-                            AsyncImage(url: url) { phase in
+                            CachedAsyncImage(url: url) { phase in
                                 switch phase {
                                 case .success(let img): img.resizable().scaledToFill()
                                 default: episodeThumbPlaceholder
@@ -1098,7 +1343,7 @@ struct MediaDetailView: View {
                             Color.black.opacity(0.45)
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(.title2))
-                                .foregroundStyle(Color(hex: "10b981"))
+                                .foregroundStyle(DT.Color.palette("10b981"))
                         } else if pct > 0 {
                             VStack(spacing: 0) {
                                 Spacer()
@@ -1115,13 +1360,23 @@ struct MediaDetailView: View {
                         }
                     }
                     .frame(width: 120, height: 68)
+                    .blur(radius: hidesSpoilers ? 14 : 0)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
 
                     VStack(alignment: .leading, spacing: 4) {
-                        if let epNum = ep.indexNumber {
-                            Text("E\(epNum)")
-                                .font(.system(.caption2, design: .default, weight: .semibold))
-                                .foregroundStyle(DT.Color.accent)
+                        HStack(spacing: 6) {
+                            if let epNum = ep.indexNumber {
+                                Text("E\(epNum)")
+                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .foregroundStyle(DT.Color.accent)
+                            }
+                            if let badge = episodeBadge(ep) {
+                                Text(badge)
+                                    .font(.system(.caption2, design: .default, weight: .bold))
+                                    .padding(.horizontal, 6).padding(.vertical, 1)
+                                    .background(DT.Color.accent.opacity(0.18), in: Capsule())
+                                    .foregroundStyle(DT.Color.accent)
+                            }
                         }
                         Text(ep.name)
                             .font(.system(.footnote, design: .default, weight: .semibold))
@@ -1130,12 +1385,12 @@ struct MediaDetailView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    #if os(iOS)
+                    #if !os(tvOS)
                     DownloadButton(item: ep)
                     #endif
                 }
 
-                if let overview = ep.overview, !overview.isEmpty {
+                if !hidesSpoilers, let overview = ep.overview, !overview.isEmpty {
                     Text(overview)
                         .font(.system(.caption2, design: .default))
                         .foregroundStyle(DT.Color.textSecondary)
@@ -1144,9 +1399,9 @@ struct MediaDetailView: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(.white.opacity(0.03))
+            .background(DT.Color.textPrimary.opacity(0.03))
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.05), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .contextMenu(menuItems: {
@@ -1162,11 +1417,22 @@ struct MediaDetailView: View {
         })
     }
 
+    /// "NEW" for an unwatched episode that premiered in the last two weeks; "FINALE" for the
+    /// last episode of the season being shown.
+    private func episodeBadge(_ ep: MediaItem) -> String? {
+        if ep.userData?.played != true, let premiere = ep.premiereDate,
+           premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
+            return "NEW"
+        }
+        if episodes.count > 1, ep.id == episodes.last?.id { return "FINALE" }
+        return nil
+    }
+
     private func episodeRowPreview(_ ep: MediaItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let url = mediaRepo.episodeThumbnailURL(for: ep) {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: episodeThumbPlaceholder
@@ -1198,6 +1464,68 @@ struct MediaDetailView: View {
             )
     }
 
+    private var moreMenu: some View {
+        Menu {
+            Button { PlaylistStore.shared.addingItem = item } label: {
+                Label("Add to Playlist…", systemImage: "text.badge.plus")
+            }
+            if (item.type == .movie || item.type == .episode) && ProfileRules.shared.canManageSubtitles {
+                Button { showSubtitleSearch = true } label: {
+                    Label("Search for Subtitles…", systemImage: "captions.bubble")
+                }
+            }
+            if let seriesId = seasonSeriesId, ProfileRules.shared.canDownload {
+                Picker(selection: Binding(
+                    get: { keptEpisodeCount },
+                    set: { count in
+                        keptEpisodeCount = count
+                        downloadManager.setKeptShow(seriesId: seriesId, name: item.seriesName ?? item.name,
+                                                    episodeCount: count == 0 ? nil : count)
+                    }
+                )) {
+                    Text("Off").tag(0)
+                    ForEach([1, 2, 3, 5], id: \.self) { count in
+                        Text(count == 1 ? "Next Episode" : "Next \(count) Episodes").tag(count)
+                    }
+                } label: {
+                    Label("Keep Downloaded", systemImage: "arrow.down.circle.dotted")
+                }
+                .pickerStyle(.menu)
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .foregroundStyle(DT.Color.textPrimary)
+        }
+        .accessibilityLabel("More")
+    }
+
+    private var ratingMenu: some View {
+        Menu {
+            Button { setRating(true) } label: {
+                Label(likes == true ? "Remove Like" : "Like", systemImage: likes == true ? "hand.thumbsup.fill" : "hand.thumbsup")
+            }
+            Button { setRating(false) } label: {
+                Label(likes == false ? "Remove Dislike" : "Dislike", systemImage: likes == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+            }
+        } label: {
+            Image(systemName: likes == true ? "hand.thumbsup.fill" : likes == false ? "hand.thumbsdown.fill" : "hand.thumbsup")
+                .foregroundStyle(DT.Color.textPrimary)
+        }
+        .accessibilityLabel("Rate")
+        .accessibilityValue(likes == true ? "Liked" : likes == false ? "Disliked" : "Not rated")
+    }
+
+    /// Tapping the current rating again clears it.
+    private func setRating(_ value: Bool) {
+        guard let cred = credential, let header = authHeader else { return }
+        let newValue: Bool? = likes == value ? nil : value
+        likes = newValue
+        HapticManager.impact(.light)
+        Task {
+            try? await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue)
+        }
+    }
+
     private func toggleFavorite() {
         guard let cred = credential, let header = authHeader else { return }
         let newValue = !isFavorite
@@ -1226,7 +1554,8 @@ struct MediaDetailView: View {
             playCount: watched ? old.playCount + 1 : max(0, old.playCount - 1),
             isFavorite: old.isFavorite,
             played: watched,
-            playedPercentage: watched ? nil : old.playedPercentage
+            playedPercentage: watched ? nil : old.playedPercentage,
+            likes: old.likes
         )
         return updated
     }
@@ -1295,6 +1624,41 @@ struct MediaDetailView: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
+    private func loadContainingSets() async {
+        guard let cred = credential, let header = authHeader else { return }
+        let found = await ContainingSets.shared.sets(containing: [item.id, item.seriesId].compactMap { $0 },
+                                                     credential: cred, authHeader: header)
+        containingCollections = found.collections
+        containingPlaylists = found.playlists
+    }
+
+    /// The collections or playlists this title is in, laid out like More Like This.
+    private func containingSection(_ title: String, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(title).padding(.horizontal, DT.Spacing.pagePad)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 10) {
+                    ForEach(sets) { set in
+                        Button { open(set) } label: {
+                            PosterCard(title: set.name, imageURL: mediaRepo.imageURL(for: set))
+                        }
+#if os(tvOS)
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+#else
+                        .buttonStyle(.plain)
+#endif
+                    }
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+#if os(tvOS)
+                .focusSection()
+#endif
+            }
+        }
+        .padding(.bottom, DT.Spacing.md)
+    }
+
     private func jellyfinRecommendedSection(_ category: MovieRecommendationCategory) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle(category.title).padding(.horizontal, DT.Spacing.pagePad)
@@ -1349,6 +1713,10 @@ struct MediaDetailView: View {
     }
 
     // MARK: - Helpers
+
+    private var insightsTmdbId: Int? {
+        item.type == .episode ? nil : (detail?.item.tmdbId ?? item.tmdbId)
+    }
 
     private func seerrMediaType(for item: MediaItem) -> RequestMediaType? {
         switch item.type {
@@ -1421,7 +1789,7 @@ struct CastPersonCard<Placeholder: View>: View {
             }
             .frame(width: 60, height: 60)
             .clipShape(Circle())
-            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : Color.white.opacity(0.1), lineWidth: hovered ? 2 : 1))
+            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : DT.Color.textPrimary.opacity(0.1), lineWidth: hovered ? 2 : 1))
             .scaleEffect(hovered ? 1.06 : 1)
 
             Text(name)
@@ -1477,7 +1845,7 @@ private struct TVPlayButtonLabel: View {
             radius: isFocused ? 18 : 6
         )
         .scaleEffect(isFocused ? 1.02 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.75), value: isFocused)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
     }
 }
 #endif

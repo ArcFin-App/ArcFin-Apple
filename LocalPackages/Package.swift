@@ -21,7 +21,6 @@ let package = Package(
         .library(name: "ImageCache",      targets: ["ImageCache"]),
         .library(name: "BackgroundKit",   targets: ["BackgroundKit"]),
         .library(name: "JellyfinAPI",     targets: ["JellyfinAPI"]),
-        .library(name: "StreamystatsAPI", targets: ["StreamystatsAPI"]),
         .library(name: "SeerrAPI",   targets: ["SeerrAPI"]),
         // MARK: Feature Packages
         .library(name: "AppState",        targets: ["AppState"]),
@@ -116,6 +115,7 @@ let package = Package(
         .target(
             name: "ImageCache",
             dependencies: [
+                "AuthCore",
                 "Telemetry",
                 .product(name: "Nuke",   package: "Nuke"),
                 .product(name: "NukeUI", package: "Nuke"),
@@ -142,17 +142,6 @@ let package = Package(
         ),
 
         .target(
-            name: "StreamystatsAPI",
-            dependencies: [
-                "AuthCore",
-                "Telemetry",
-                .product(name: "OpenAPIRuntime",    package: "swift-openapi-runtime"),
-                .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
-            ]
-            // plugins: [.plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")]
-        ),
-
-        .target(
             name: "SeerrAPI",
             dependencies: [
                 "AuthCore",
@@ -169,7 +158,6 @@ let package = Package(
             name: "AppState",
             dependencies: [
                 "JellyfinAPI",
-                "StreamystatsAPI",
                 "SeerrAPI",
                 "Persistence",
                 "AuthCore",
@@ -182,6 +170,7 @@ let package = Package(
             name: "MediaEngine",
             dependencies: [
                 "AppState",
+                "AuthCore",
                 "JellyfinAPI",
                 "Telemetry",
                 .product(name: "AetherEngine", package: "AetherEngine"),
@@ -233,5 +222,6 @@ let package = Package(
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence"]),
         .testTarget(name: "MediaEngineTests", dependencies: ["MediaEngine"]),
         .testTarget(name: "SearchKitTests",   dependencies: ["SearchKit"]),
+        .testTarget(name: "SyncEngineTests",  dependencies: ["SyncEngine"]),
     ]
 )

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if !os(tvOS)
 import SwiftUI
 
 struct PINPadView: View {
@@ -16,6 +15,11 @@ struct PINPadView: View {
     @State private var shakeOffset: CGFloat = 0
 
     private let pinLength = 4
+    #if os(tvOS)
+    private let keySize: CGFloat = 110
+    #else
+    private let keySize: CGFloat = 76
+    #endif
 
     var body: some View {
         ZStack {
@@ -28,6 +32,11 @@ struct PINPadView: View {
                         Button("Cancel", action: onCancel)
                             .font(.system(.callout, design: .default))
                             .foregroundStyle(DT.Color.accent)
+                            #if os(tvOS)
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                            .tvFocusRing(cornerRadius: DT.Radius.md)
+                            #endif
                         Spacer()
                     }
                     .padding(.horizontal, 24)
@@ -63,7 +72,7 @@ struct PINPadView: View {
                                         )
                                 )
                                 .frame(width: 14, height: 14)
-                                .animation(.spring(response: 0.15, dampingFraction: 0.7), value: digits.count)
+                                .animation(DT.Animation.motion(.spring(response: 0.15, dampingFraction: 0.7)), value: digits.count)
                         }
                     }
                     .offset(x: shakeOffset)
@@ -89,16 +98,17 @@ struct PINPadView: View {
                         }
                     }
                     HStack(spacing: 20) {
-                        Color.clear.frame(width: 76, height: 76)
+                        Color.clear.frame(width: keySize, height: keySize)
                         padButton(label: "0") { append(0) }
                         Button { removeLast() } label: {
-                            Image(systemName: "delete.left")
-                                .font(.system(.title3, weight: .light))
-                                .foregroundStyle(digits.isEmpty ? DT.Color.textSecondary.opacity(0.3) : DT.Color.textPrimary)
-                                .frame(width: 76, height: 76)
+                            PadKey(size: keySize, filled: false) {
+                                Image(systemName: "delete.left")
+                                    .font(.system(.title3, weight: .light))
+                                    .foregroundStyle(digits.isEmpty ? DT.Color.textSecondary.opacity(0.3) : DT.Color.textPrimary)
+                            }
                         }
                         .accessibilityLabel("Delete")
-                        .buttonStyle(.plain)
+                        .modifier(PadButtonStyle())
                         .disabled(digits.isEmpty)
                     }
                 }
@@ -106,6 +116,9 @@ struct PINPadView: View {
             }
         }
         .onChange(of: resetToken) { _, _ in triggerShake() }
+        #if os(tvOS)
+        .onExitCommand { onCancel?() }
+        #endif
         .animation(DT.Animation.fast, value: errorMessage)
     }
 
@@ -113,13 +126,13 @@ struct PINPadView: View {
 
     private func padButton(label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label)
-                .font(.system(.title, design: .rounded, weight: .light))
-                .foregroundStyle(DT.Color.textPrimary)
-                .frame(width: 76, height: 76)
-                .background(Circle().fill(DT.Color.backgroundSecondary))
+            PadKey(size: keySize) {
+                Text(label)
+                    .font(.system(.title, design: .rounded, weight: .light))
+                    .foregroundStyle(DT.Color.textPrimary)
+            }
         }
-        .buttonStyle(.plain)
+        .modifier(PadButtonStyle())
     }
 
     // MARK: - Actions
@@ -144,16 +157,43 @@ struct PINPadView: View {
     private func triggerShake() {
         digits = []
         let duration = 0.07
-        withAnimation(.easeInOut(duration: duration)) { shakeOffset = -10 }
+        withAnimation(DT.Animation.motion(.easeInOut(duration: duration))) { shakeOffset = -10 }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-            withAnimation(.easeInOut(duration: duration)) { shakeOffset = 10 }
+            withAnimation(DT.Animation.motion(.easeInOut(duration: duration))) { shakeOffset = 10 }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration * 2) {
-            withAnimation(.easeInOut(duration: duration)) { shakeOffset = -8 }
+            withAnimation(DT.Animation.motion(.easeInOut(duration: duration))) { shakeOffset = -8 }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration * 3) {
-            withAnimation(.spring(response: 0.2)) { shakeOffset = 0 }
+            withAnimation(DT.Animation.motion(.spring(response: 0.2))) { shakeOffset = 0 }
         }
     }
 }
-#endif
+
+/// A key of the pad; lights up under the tvOS focus.
+private struct PadKey<Content: View>: View {
+    let size: CGFloat
+    var filled = true
+    @ViewBuilder let content: () -> Content
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        content()
+            .frame(width: size, height: size)
+            .background(Circle().fill(isFocused ? DT.Color.accent : (filled ? DT.Color.backgroundSecondary : .clear)))
+            .scaleEffect(isFocused ? 1.08 : 1)
+            .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
+    }
+}
+
+private struct PadButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(tvOS)
+        content
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+        #else
+        content.buttonStyle(.plain)
+        #endif
+    }
+}

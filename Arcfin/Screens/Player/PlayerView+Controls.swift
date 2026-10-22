@@ -5,6 +5,7 @@ import AuthCore
 import JellyfinAPI
 import MediaEngine
 import CastKit
+import GroupActivities
 
 extension PlayerView {
 
@@ -80,7 +81,7 @@ extension PlayerView {
                             .foregroundStyle(hdrIsToneMapped ? .black : .white)
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .background(
-                                hdrIsToneMapped ? Color(hex: "F59E0B") : Color.clear,
+                                hdrIsToneMapped ? DT.Color.palette("F59E0B") : Color.clear,
                                 in: Capsule()
                             )
                             .overlay(
@@ -97,6 +98,13 @@ extension PlayerView {
             }
 
             Spacer()
+
+            // Portrait has no room beside the title; X-Ray is in the More menu there.
+            #if os(macOS)
+            if !castMembers.isEmpty { xRayButton }
+            #elseif !os(tvOS)
+            if !castMembers.isEmpty, isLandscape { xRayButton }
+            #endif
 
             #if canImport(UIKit) && !os(tvOS)
             quickActionIcons
@@ -255,9 +263,14 @@ extension PlayerView {
     private var moreMenu: some View {
         Menu {
             #if !os(tvOS)
-            if isPiPSupported {
+            if canPictureInPicture {
                 Button { togglePiP() } label: {
                     Label("Picture in Picture", systemImage: "pip.enter")
+                }
+            }
+            if supportsMultipleWindows, !isPlayerWindow {
+                Button { openInNewWindow() } label: {
+                    Label("Open in New Window", systemImage: "macwindow.badge.plus")
                 }
             }
             #endif
@@ -276,49 +289,44 @@ extension PlayerView {
             #endif
 
             #if !os(tvOS)
-            if syncPlayEnabled {
+            if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
                 Button { showSyncPlayMenu = true } label: {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }
             }
             #endif
+            sharePlayMenuItem
 
+            #if !os(tvOS)
+            if !castMembers.isEmpty {
+                Button { openXRay() } label: {
+                    Label("X-Ray: Cast", systemImage: "person.2")
+                }
+            }
+            #endif
+
+            Button { withAnimation { audioOnly.toggle() } } label: {
+                Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
+            }
             Button { showTrackMenu = true } label: {
                 Label("Subtitles & Audio", systemImage: "captions.bubble")
+            }
+            if let info = playbackInfo, info.versions.count > 1 {
+                Picker(selection: Binding(get: { info.mediaSourceId }, set: { changeVersion($0) })) {
+                    ForEach(info.versions) { Text($0.name).tag($0.id) }
+                } label: {
+                    Label("Version", systemImage: "square.stack")
+                }
+                .pickerStyle(.menu)
             }
             Button { showRateMenu = true } label: {
                 Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
             }
-            if !subtitleCues.isEmpty {
-                Menu {
-                    Button("Later by 0.5 s") { subtitleDelay += 0.5 }
-                    Button("Earlier by 0.5 s") { subtitleDelay -= 0.5 }
-                    Button("Later by 0.1 s") { subtitleDelay += 0.1 }
-                    Button("Earlier by 0.1 s") { subtitleDelay -= 0.1 }
-                    Button("Reset", role: .destructive) { subtitleDelay = 0 }
-                        .disabled(subtitleDelay == 0)
-                } label: {
-                    Label(
-                        subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", subtitleDelay)) s)",
-                        systemImage: "clock.arrow.2.circlepath")
-                }
-            }
+            subtitleTimingMenu
             Button { showQualityMenu = true } label: {
                 Label("Quality", systemImage: "slider.horizontal.3")
             }
-            Menu {
-                Button("Off") { setSleepTimer(minutes: nil) }
-                ForEach([15, 30, 45, 60], id: \.self) { minutes in
-                    Button("\(minutes) minutes") { setSleepTimer(minutes: minutes) }
-                }
-                if item.type == .episode {
-                    Button("End of episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
-                }
-            } label: {
-                Label(
-                    sleepTimerEndsAt != nil || sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
-                    systemImage: "moon.zzz")
-            }
+            sleepTimerMenu
             Button { showInfoSheet = true } label: {
                 Label("Media Info", systemImage: "info.circle")
             }
@@ -334,6 +342,40 @@ extension PlayerView {
         .focusEffectDisabled()
         .tvFocusRing(cornerRadius: 16)
         #endif
+    }
+
+    @ViewBuilder
+    private var subtitleTimingMenu: some View {
+        if !subtitleCues.isEmpty {
+            Menu {
+                Button("Later by 0.5 s") { subtitleDelay += 0.5 }
+                Button("Earlier by 0.5 s") { subtitleDelay -= 0.5 }
+                Button("Later by 0.1 s") { subtitleDelay += 0.1 }
+                Button("Earlier by 0.1 s") { subtitleDelay -= 0.1 }
+                Button("Reset", role: .destructive) { subtitleDelay = 0 }
+                    .disabled(subtitleDelay == 0)
+            } label: {
+                Label(
+                    subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", subtitleDelay)) s)",
+                    systemImage: "clock.arrow.2.circlepath")
+            }
+        }
+    }
+
+    private var sleepTimerMenu: some View {
+        Menu {
+            Button("Off") { setSleepTimer(minutes: nil) }
+            ForEach([15, 30, 45, 60], id: \.self) { minutes in
+                Button("\(minutes) minutes") { setSleepTimer(minutes: minutes) }
+            }
+            if item.type == .episode {
+                Button("End of Episode") { setSleepTimer(minutes: nil, atEndOfItem: true) }
+            }
+        } label: {
+            Label(
+                sleepTimerEndsAt != nil || sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
+                systemImage: "moon.zzz")
+        }
     }
 
     var episodeSubtitle: String? {
@@ -396,7 +438,24 @@ extension PlayerView {
                 Spacer()
                 #endif
 
-                HStack(spacing: 20) {
+                // Tighter with Previous and Next too, so the row still fits a phone held upright.
+                HStack(spacing: previousItem != nil || nextEpisode != nil ? 12 : 20) {
+                    if previousItem != nil {
+                        Button { playPrevious() } label: {
+                            #if os(tvOS)
+                            TVPlayerControlLabel(systemImage: "backward.end.fill", size: 16, diameter: 38)
+                            #else
+                            Image(systemName: "backward.end.fill")
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                            #endif
+                        }
+                        .accessibilityLabel(previousItem.map { "Previous: \($0.name)" } ?? "Previous")
+                        #if os(macOS)
+                        .help("Previous")
+                        #endif
+                    }
                     Button { seek(by: -skipBackwardSeconds) } label: {
                         #if os(tvOS)
                         TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
@@ -416,7 +475,7 @@ extension PlayerView {
                         #endif
                     }
                     #if os(tvOS)
-                    .prefersDefaultFocus(true, in: tvFocusNamespace)
+                    .prefersDefaultFocus(!tvControlsHidden, in: tvFocusNamespace)
                     #endif
                     Button { seek(by: skipForwardSeconds) } label: {
                         #if os(tvOS)
@@ -424,6 +483,22 @@ extension PlayerView {
                         #else
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.system(.title3)).foregroundStyle(.white)
+                        #endif
+                    }
+                    if let nextEpisode {
+                        Button { playNextEpisode() } label: {
+                            #if os(tvOS)
+                            TVPlayerControlLabel(systemImage: "forward.end.fill", size: 16, diameter: 38)
+                            #else
+                            Image(systemName: "forward.end.fill")
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                            #endif
+                        }
+                        .accessibilityLabel("Next: \(nextEpisode.name)")
+                        #if os(macOS)
+                        .help("Next")
                         #endif
                     }
                 }
@@ -486,10 +561,113 @@ extension PlayerView {
             Button { showInfoSheet = true } label: {
                 TVPlayerControlLabel(systemImage: "info.circle", size: 14, diameter: 32)
             }
+            Menu {
+                tvMoreMenuContent
+            } label: {
+                TVPlayerControlLabel(systemImage: "ellipsis", size: 14, diameter: 32)
+            }
+            .accessibilityLabel("More options")
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
         .focusSection()
+    }
+
+    /// Something besides the transport controls that the remote should land on.
+    private var tvOverlayHasFocusTarget: Bool {
+        showStillWatchingPrompt || (showUpNext && nextEpisode != nil)
+            || (showMoreLikeThis && !moreLikeThis.isEmpty) || showXRay
+    }
+
+    /// With the controls hidden, an invisible catcher holds focus, so a click never presses a
+    /// button nobody can see.
+    var tvCatcherActive: Bool {
+        tvControlsHidden && !tvOverlayHasFocusTarget && skipButtonLabel == nil
+    }
+
+    /// Changes whenever a different control should hold focus.
+    var tvFocusContext: String {
+        "\(tvControlsHidden)-\(tvCatcherActive)-\(skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)"
+    }
+
+    /// The remote while the controls are hidden, as in the system player: a click or a swipe
+    /// up shows them, down opens subtitles and audio, left and right skip back and forward.
+    var tvRemoteCatcher: some View {
+        Button { toggleControlsVisibilityOnAction() } label: {
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .prefersDefaultFocus(true, in: tvFocusNamespace)
+        .onMoveCommand { direction in
+            switch direction {
+            case .left: tvQuickSeek(forward: false)
+            case .right: tvQuickSeek(forward: true)
+            // Down opens subtitles and audio, as the system player's info panel does.
+            case .down: showTrackMenu = true
+            default: toggleControlsVisibilityOnAction()
+            }
+        }
+        .accessibilityLabel("Show playback controls")
+        .ignoresSafeArea()
+    }
+
+    private func tvQuickSeek(forward: Bool) {
+        let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
+        let base = pendingSeekTargetTicks ?? player.positionTicks
+        performSeek(to: min(max(0, base + Int64(forward ? seconds : -seconds) * 10_000_000), player.durationTicks))
+        let feedback = SeekFeedback(forward: forward, onRight: forward, seconds: seconds)
+        seekFeedback = feedback
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            if seekFeedback == feedback { seekFeedback = nil }
+        }
+    }
+
+    /// Menu steps back one layer at a time: out of a scrub, then hides the controls, then
+    /// leaves the player.
+    func handleTVExit() {
+        if isScrubbing {
+            isScrubbing = false
+            scrubThumbnail = nil
+            scheduleAutoHide()
+        } else if !tvControlsHidden {
+            hideControlsTask?.cancel()
+            withAnimation(DT.Animation.fast) { tvControlsHidden = true }
+        } else {
+            closePlayer()
+        }
+    }
+
+    /// What the touch and Mac players keep in their More menu and have no button of their own here.
+    @ViewBuilder
+    private var tvMoreMenuContent: some View {
+        if !castMembers.isEmpty {
+            Button { openXRay() } label: {
+                Label("X-Ray: Cast", systemImage: "person.2")
+            }
+        }
+        if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
+            Button { showSyncPlayMenu = true } label: {
+                Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
+            }
+        }
+        sharePlayMenuItem
+        Button { withAnimation { audioOnly.toggle() } } label: {
+            Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
+        }
+        if let info = playbackInfo, info.versions.count > 1 {
+            Picker(selection: Binding(get: { info.mediaSourceId }, set: { changeVersion($0) })) {
+                ForEach(info.versions) { Text($0.name).tag($0.id) }
+            } label: {
+                Label("Version", systemImage: "square.stack")
+            }
+            .pickerStyle(.menu)
+        }
+        subtitleTimingMenu
+        sleepTimerMenu
     }
     #endif
 
@@ -643,7 +821,7 @@ extension PlayerView {
         "-" + timeLabel(ticks: remainingTicks)
     }
 
-    private func timeLabel(ticks: Int64) -> String {
+    func timeLabel(ticks: Int64) -> String {
         let totalSeconds = Int(Double(ticks) / 10_000_000)
         let h = totalSeconds / 3600
         let m = (totalSeconds % 3600) / 60
@@ -699,7 +877,7 @@ extension PlayerView {
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .arcfinPlainButton()
                 }
             }
             .navigationTitle("Chapters")
@@ -736,6 +914,164 @@ extension PlayerView {
     private func jumpToChapter(_ chapter: MediaChapter) {
         Task { await player.seek(to: chapter.startPositionTicks) }
         HapticManager.impact(.light)
+    }
+
+    // MARK: - X-Ray
+
+    func openXRay() {
+        withAnimation(DT.Animation.fast) {
+            showXRay = true
+            isControlsVisible = false
+        }
+    }
+
+    private var xRayButton: some View {
+        Button { openXRay() } label: {
+            Label("X-Ray", systemImage: "person.2.fill")
+                .labelStyle(.titleAndIcon)
+                .font(.system(.caption, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .frame(height: 32)
+                .background(Color.white.opacity(0.15), in: Capsule())
+                .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("X-Ray: cast")
+    }
+
+    /// Who's in this, beside the picture: a panel on the trailing edge in landscape, along the
+    /// bottom in portrait. Playback carries on; picking someone pauses and opens their page.
+    @ViewBuilder
+    var xRayOverlay: some View {
+        if showXRay {
+            GeometryReader { proxy in
+                let landscape = proxy.size.width > proxy.size.height
+                ZStack(alignment: landscape ? .trailing : .bottom) {
+                    Color.black.opacity(0.25)
+                        .ignoresSafeArea()
+                        #if !os(tvOS)
+                        .onTapGesture { withAnimation(DT.Animation.fast) { showXRay = false } }
+                        #endif
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("X-Ray")
+                                    .font(.system(.headline, weight: .bold))
+                                    .foregroundStyle(.white)
+                                Text("In \(item.type == .episode ? (item.seriesName ?? item.name) : item.name)")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.6))
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                            Button {
+                                withAnimation(DT.Animation.fast) { showXRay = false }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(.footnote, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 30, height: 30)
+                                    .background(Color.white.opacity(0.15), in: Circle())
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .playerOverlayButton(cornerRadius: 22)
+                            .accessibilityLabel("Close X-Ray")
+                        }
+                        ScrollView(landscape ? .vertical : .horizontal, showsIndicators: false) {
+                            let layout = landscape
+                                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+                                : AnyLayout(HStackLayout(alignment: .top, spacing: 14))
+                            layout {
+                                ForEach(castMembers) { person in
+                                    Button { openXRayPerson(person) } label: {
+                                        xRayRow(person, compact: !landscape)
+                                    }
+                                    .playerOverlayButton(cornerRadius: DT.Radius.md)
+                                }
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .frame(width: landscape ? min(340, proxy.size.width * 0.42) : nil)
+                    .frame(maxWidth: landscape ? nil : .infinity)
+                    .frame(maxHeight: landscape ? .infinity : 230)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .padding(landscape ? 12 : 10)
+                    .transition(.move(edge: landscape ? .trailing : .bottom).combined(with: .opacity))
+                    #if os(tvOS)
+                    .focusSection()
+                    #endif
+                }
+            }
+            #if os(tvOS)
+            .onExitCommand { withAnimation(DT.Animation.fast) { showXRay = false } }
+            #endif
+        }
+    }
+
+    private func xRayRow(_ person: MediaPerson, compact: Bool) -> some View {
+        let photo = CachedAsyncImage(url: person.primaryImageTag.flatMap {
+            mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 160)
+        }) { phase in
+            switch phase {
+            case .success(let image): image.resizable().scaledToFill()
+            default:
+                ZStack {
+                    Color.white.opacity(0.1)
+                    Image(systemName: "person.fill").foregroundStyle(.white.opacity(0.4))
+                }
+            }
+        }
+        return Group {
+            if compact {
+                VStack(spacing: 6) {
+                    photo.frame(width: 72, height: 72).clipShape(Circle())
+                    Text(person.name)
+                        .font(.system(.caption, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                    if let role = person.role, !role.isEmpty {
+                        Text(role)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
+                }
+                .frame(width: 88)
+            } else {
+                HStack(spacing: 12) {
+                    photo.frame(width: 48, height: 48).clipShape(Circle())
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(person.name)
+                            .font(.system(.subheadline, weight: .semibold))
+                            .foregroundStyle(.white)
+                        if let role = person.role, !role.isEmpty {
+                            Text(role)
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .contentShape(Rectangle())
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens their page")
+    }
+
+    private func openXRayPerson(_ person: MediaPerson) {
+        Task { await player.pause() }
+        xRayPerson = person
     }
 
     // MARK: - Media info
@@ -792,7 +1128,7 @@ extension PlayerView {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         #endif
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle("Media Info")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -831,9 +1167,41 @@ extension PlayerView {
         return mbps >= 1 ? String(format: "%.1f Mb/s", mbps) : String(format: "%.0f Kb/s", Double(bitrate) / 1000)
     }
 
+    #if !os(tvOS)
+    /// Carries on from here in a window of its own, so the app stays usable beside it.
+    func openInNewWindow() {
+        openWindow(value: PlayerWindowRequest(itemId: item.id, startTicks: player.positionTicks))
+        closePlayer()
+    }
+    #endif
+
+    // MARK: - SharePlay
+
+    /// In a FaceTime call SharePlay starts straight away; otherwise the share sheet offers it.
+    /// Apple TV has no share sheet, so there it only shows during a call.
+    @ViewBuilder
+    var sharePlayMenuItem: some View {
+        if sharePlay.isActive {
+            Button(role: .destructive) { sharePlay.leave() } label: {
+                Label(sharePlay.participantCount > 1 ? "Leave SharePlay (\(sharePlay.participantCount))" : "Leave SharePlay",
+                      systemImage: "shareplay.slash")
+            }
+        } else if groupState.isEligibleForGroupSession {
+            Button { sharePlay.start(item) } label: {
+                Label("SharePlay", systemImage: "shareplay")
+            }
+        } else {
+            #if !os(tvOS)
+            ShareLink(item: WatchTogetherItem(activity: sharePlay.activity(for: item)),
+                      preview: SharePreview(item.type == .episode ? (item.seriesName ?? item.name) : item.name)) {
+                Label("SharePlay", systemImage: "shareplay")
+            }
+            #endif
+        }
+    }
+
     // MARK: - SyncPlay
 
-    #if !os(tvOS)
     var syncPlaySheet: some View {
         NavigationStack {
             Group {
@@ -949,7 +1317,6 @@ extension PlayerView {
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         syncPlayManager.leaveGroup(credential: credential, authHeader: authHeader)
     }
-    #endif
 
     // MARK: - Skip intro/credits
 
@@ -973,7 +1340,9 @@ extension PlayerView {
                         #if os(tvOS)
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: DT.Radius.lg)
+                        .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
+                        // With the controls hidden, a click skips.
+                        .prefersDefaultFocus(tvControlsHidden, in: tvFocusNamespace)
                         #endif
                         .padding(.trailing, DT.Spacing.pagePad)
                         .padding(.bottom, 100)
@@ -983,90 +1352,94 @@ extension PlayerView {
         }
     }
 
-    private var skipButtonLabel: String? {
-        guard UserDefaults.standard.bool(forKey: "skipIntro") || UserDefaults.standard.bool(forKey: "skipCredits") || UserDefaults.standard.bool(forKey: "skipRecap") else { return nil }
-        let currentSeconds = Double(player.positionTicks) / 10_000_000
-        // Recap ("previously on") is the cold open, ahead of the intro/title sequence —
-        // checked first so both can coexist without one's button hiding the other's.
-          if UserDefaults.standard.bool(forKey: "skipRecap"),
-              let recapEnd = recapEnd, currentSeconds < recapEnd, currentSeconds > 0.5 {
-            return "Skip Recap"
+    /// The segment playback is in right now, if any, with its button label.
+    var currentSkippable: (kind: String, label: String, span: ClosedRange<Double>)? {
+        let seconds = Double(player.positionTicks) / 10_000_000
+        guard seconds > 0.5 else { return nil }
+        // Recap ("previously on") is the cold open ahead of the intro, so it's checked first.
+        if let span = segments.recap, span.contains(seconds) { return ("recap", "Skip Recap", span) }
+        if let span = segments.intro, span.contains(seconds) { return ("intro", "Skip Intro", span) }
+        if let span = segments.credits, span.contains(seconds) {
+            // Up Next and the suggestions panel already offer a way on from the credits.
+            guard !showUpNext, !showMoreLikeThis else { return nil }
+            return ("credits", "Skip Credits", span)
         }
-          if UserDefaults.standard.bool(forKey: "skipIntro"),
-              let introEnd = introEnd, currentSeconds < introEnd, currentSeconds > 0.5 {
-            return "Skip Intro"
-        }
-          if UserDefaults.standard.bool(forKey: "skipCredits"),
-              let creditsStart = creditsStart, currentSeconds >= creditsStart {
-            return "Skip Credits"
-        }
+        if let span = segments.preview, span.contains(seconds) { return ("preview", "Skip Preview", span) }
         return nil
     }
 
+    private var skipButtonLabel: String? { currentSkippable?.label }
+
     // MARK: - Up Next
 
+    /// The credits of anything with a title after it (the next episode, or the next one in a
+    /// playlist or collection): what's next, with Play Next, Like and Dislike.
     func upNextCard(_ next: MediaItem) -> some View {
         VStack {
             Spacer()
             HStack {
                 Spacer()
-                HStack(spacing: 12) {
-                    if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let img): img.resizable().scaledToFill()
-                            default: DT.Color.backgroundSecondary
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
+                            CachedAsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let img): img.resizable().scaledToFill()
+                                default: DT.Color.backgroundSecondary
+                                }
+                            }
+                            .frame(width: 100, height: 56)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .accessibilityHidden(true)
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Up Next")
+                                .font(.system(.caption2, design: .default, weight: .bold))
+                                .tracking(0.5)
+                                .foregroundStyle(DT.Color.accent)
+                            Text(next.name)
+                                .font(.system(.footnote, design: .default, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                            if let s = next.parentIndexNumber, let e = next.indexNumber {
+                                Text("S\(s) · E\(e)")
+                                    .font(.system(.caption2))
+                                    .foregroundStyle(.white.opacity(0.6))
                             }
                         }
-                        .frame(width: 100, height: 56)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Up Next")
-                            .font(.system(.caption2, design: .default, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundStyle(DT.Color.accent)
-                        Text(next.name)
-                            .font(.system(.footnote, design: .default, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                        if let s = next.parentIndexNumber, let e = next.indexNumber {
-                            Text("S\(s) · E\(e)")
-                                .font(.system(.caption2))
-                                .foregroundStyle(.white.opacity(0.6))
-                        }
-                    }
-                    VStack(spacing: 10) {
-                        Button { playNextEpisode() } label: {
-                            Image(systemName: "play.fill")
-                                .font(.system(.subheadline, weight: .semibold))
-                                .foregroundStyle(.black)
-                                .frame(width: 30, height: 30)
-                                .background(.white, in: Circle())
-                        }
-                        .accessibilityLabel("Play next episode")
-                        #if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: 15)
-                        #endif
+                        Spacer(minLength: 0)
                         Button { dismissUpNext() } label: {
                             Image(systemName: "xmark")
-                                .font(.system(.caption2, weight: .semibold))
+                                .font(.system(.caption, weight: .semibold))
                                 .foregroundStyle(.white.opacity(0.7))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .accessibilityLabel("Dismiss")
+                        .playerOverlayButton(cornerRadius: 22)
+                    }
+                    HStack(spacing: 8) {
+                        // With something up next, going on to it comes before skipping the credits.
+                        creditsAction(next.type == .episode ? "Next Episode" : "Play Next",
+                                      systemImage: "play", isSelected: true) {
+                            playNextEpisode()
+                        }
+                        .accessibilityLabel("Play \(next.name)")
                         #if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: 11)
+                        .prefersDefaultFocus(true, in: tvFocusNamespace)
                         #endif
+                        creditsAction("Like", systemImage: "hand.thumbsup", isSelected: currentLikes == true) {
+                            rateCurrentItem(true)
+                        }
+                        creditsAction("Dislike", systemImage: "hand.thumbsdown", isSelected: currentLikes == false) {
+                            rateCurrentItem(false)
+                        }
                     }
                 }
                 .padding(10)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
                 .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
-                .frame(maxWidth: 340)
+                .frame(maxWidth: 380)
                 #if os(tvOS)
                 .focusSection()
                 #endif
@@ -1076,6 +1449,215 @@ extension PlayerView {
         }
         .transition(.move(edge: .trailing).combined(with: .opacity))
         .animation(DT.Animation.fast, value: showUpNext)
+    }
+
+    private func creditsAction(_ title: String, systemImage: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: isSelected ? "\(systemImage).fill" : systemImage)
+                .font(.system(.caption, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(isSelected ? .black : .white)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(
+                    isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.16)),
+                    in: RoundedRectangle(cornerRadius: DT.Radius.md))
+        }
+        .playerOverlayButton(cornerRadius: DT.Radius.md)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// Past the credits: to the scene after them, or the end when they run to it.
+    private func skipCredits() {
+        guard let credits = segments.credits else { return }
+        skip(kind: "credits", span: credits)
+    }
+
+    // MARK: - More Like This
+
+    /// The credits panel: the top three suggestions in the middle of the screen (a row in
+    /// landscape, a stack in portrait) and Like / Dislike buttons for what was just watched
+    /// along the bottom.
+    @ViewBuilder
+    var moreLikeThisOverlay: some View {
+        if showMoreLikeThis, !moreLikeThis.isEmpty {
+            ZStack {
+                Color.black.opacity(0.6)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Spacer()
+                        Button {
+                            moreLikeThisDismissed = true
+                            withAnimation(DT.Animation.fast) { showMoreLikeThis = false }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(.footnote, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 34, height: 34)
+                                .background(.white.opacity(0.18), in: Circle())
+                                .frame(width: 44, height: 44)
+                                .contentShape(Circle())
+                        }
+                        .playerOverlayButton(cornerRadius: 22)
+                        .accessibilityLabel("Dismiss suggestions")
+                    }
+
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: 14) {
+                        Text("More Like This")
+                            .font(.system(.title3, weight: .bold))
+                            .foregroundStyle(.white)
+                        let top = Array(moreLikeThis.prefix(3))
+                        if suggestionsAreHorizontal {
+                            HStack(spacing: 14) {
+                                ForEach(top) { suggestion in
+                                    Button { playSuggestion(suggestion) } label: { suggestionCard(suggestion) }
+                                        .playerOverlayButton(cornerRadius: DT.Radius.sm)
+                                }
+                            }
+                        } else {
+                            VStack(spacing: 10) {
+                                ForEach(top) { suggestion in
+                                    Button { playSuggestion(suggestion) } label: { suggestionRow(suggestion) }
+                                        .playerOverlayButton(cornerRadius: DT.Radius.sm)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: 12) {
+                        // Nothing up next: Skip Credits joins Like and Dislike when the server
+                        // marks the credits.
+                        if segments.credits != nil {
+                            ratingButton(title: "Skip Credits", systemImage: "forward.end", isSelected: false) {
+                                skipCredits()
+                            }
+                        }
+                        ratingButton(title: "Like", systemImage: "hand.thumbsup", isSelected: currentLikes == true) {
+                            rateCurrentItem(true)
+                        }
+                        ratingButton(title: "Dislike", systemImage: "hand.thumbsdown", isSelected: currentLikes == false) {
+                            rateCurrentItem(false)
+                        }
+                    }
+                    .frame(maxWidth: segments.credits != nil ? 560 : 420)
+                    .padding(.bottom, isControlsVisible ? 90 : 0)
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.vertical, 20)
+                #if os(tvOS)
+                .focusSection()
+                #endif
+            }
+            .transition(.opacity)
+            .animation(DT.Animation.fast, value: isControlsVisible)
+            #if os(tvOS)
+            .onExitCommand {
+                moreLikeThisDismissed = true
+                withAnimation(DT.Animation.fast) { showMoreLikeThis = false }
+            }
+            #endif
+        }
+    }
+
+    /// Closes the panel before handing over, since this view can outlive the item it was
+    /// showing suggestions for.
+    private func playSuggestion(_ suggestion: MediaItem) {
+        moreLikeThisDismissed = true
+        withAnimation(DT.Animation.fast) { showMoreLikeThis = false }
+        onPlayNext(suggestion)
+    }
+
+    private func ratingButton(title: String, systemImage: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: isSelected ? "\(systemImage).fill" : systemImage)
+                .font(.system(.body, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .foregroundStyle(isSelected ? .black : .white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.16)),
+                    in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(.white.opacity(0.3), lineWidth: 1))
+        }
+        .playerOverlayButton(cornerRadius: DT.Radius.md)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// Landscape (and the always-wide Mac window) lays suggestions out in a row; portrait
+    /// stacks them in a list.
+    private var suggestionsAreHorizontal: Bool {
+        #if os(iOS)
+        isLandscape
+        #else
+        true
+        #endif
+    }
+
+    private func suggestionImageURL(_ suggestion: MediaItem) -> URL? {
+        mediaRepo.imageURL(for: suggestion, type: .thumb, fillWidth: 400)
+            ?? mediaRepo.imageURL(for: suggestion, type: .backdrop, fillWidth: 400)
+            ?? mediaRepo.imageURL(for: suggestion, type: .primary, fillWidth: 400)
+    }
+
+    private func suggestionThumb(_ suggestion: MediaItem) -> some View {
+        CachedAsyncImage(url: suggestionImageURL(suggestion)) { phase in
+            if case .success(let image) = phase {
+                image.resizable().scaledToFill()
+            } else {
+                DT.Color.backgroundSecondary
+            }
+        }
+    }
+
+    private func suggestionCard(_ suggestion: MediaItem) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            suggestionThumb(suggestion)
+                .frame(width: 176, height: 99)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm))
+            Text(suggestion.name)
+                .font(.system(.footnote, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .frame(width: 176, alignment: .leading)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Play \(suggestion.name)")
+    }
+
+    private func suggestionRow(_ suggestion: MediaItem) -> some View {
+        HStack(spacing: 12) {
+            suggestionThumb(suggestion)
+                .frame(width: 128, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(suggestion.name)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                if let year = suggestion.productionYear {
+                    Text(String(year))
+                        .font(.system(.caption))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "play.fill")
+                .font(.system(.footnote))
+                .foregroundStyle(.white.opacity(0.8))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Play \(suggestion.name)")
     }
 
     // MARK: - Are you still watching
@@ -1112,6 +1694,7 @@ extension PlayerView {
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
                     .tvFocusRing(cornerRadius: DT.Radius.lg)
+                    .prefersDefaultFocus(true, in: tvFocusNamespace)
                     #else
                     .buttonStyle(.plain)
                     #endif
@@ -1194,7 +1777,7 @@ extension PlayerView {
             ZStack {
                 Color.black
                 if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: Color.clear
@@ -1214,7 +1797,7 @@ extension PlayerView {
             .font(.system(.footnote, design: .default, weight: .semibold))
             .foregroundStyle(.white.opacity(0.9))
             .padding(.horizontal, 14).padding(.vertical, 9)
-            .background(.white.opacity(0.15), in: Capsule())
+            .background(Color.white.opacity(0.15), in: Capsule())
             .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
     }
 
@@ -1378,7 +1961,7 @@ extension PlayerView {
                     .font(.system(.footnote, design: .default, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.9))
                     .padding(.horizontal, 18).padding(.vertical, 9)
-                    .background(.white.opacity(0.15), in: Capsule())
+                    .background(Color.white.opacity(0.15), in: Capsule())
                     .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -1387,15 +1970,9 @@ extension PlayerView {
     }
     #endif
 
-    private func skipToSegmentEnd() {
-        let currentSeconds = Double(player.positionTicks) / 10_000_000
-        if let recapEnd = recapEnd, currentSeconds < recapEnd {
-            Task { await player.seek(to: Int64(recapEnd * 10_000_000)) }
-        } else if let introEnd = introEnd, currentSeconds < introEnd {
-            Task { await player.seek(to: Int64(introEnd * 10_000_000)) }
-        } else if let creditsStart = creditsStart, currentSeconds >= creditsStart {
-            Task { await finishPlayback() }
-        }
+    func skipToSegmentEnd() {
+        guard let current = currentSkippable else { return }
+        skip(kind: current.kind, span: current.span)
     }
 
     // MARK: - Playback actions
@@ -1425,6 +2002,9 @@ extension PlayerView {
             return
         }
         #endif
+        if sharePlay.isActive {
+            sharePlay.send(player.status == .playing ? .pause : .play, itemId: item.id, positionTicks: player.positionTicks)
+        }
         Task {
             if player.status == .playing { await player.pause() } else { await player.play() }
         }
@@ -1456,6 +2036,9 @@ extension PlayerView {
             return
         }
         #endif
+        if sharePlay.isActive {
+            sharePlay.send(.seek, itemId: item.id, positionTicks: ticks)
+        }
         Task {
             await player.seek(to: ticks)
             if pendingSeekTargetTicks == ticks { pendingSeekTargetTicks = nil }
@@ -1538,7 +2121,7 @@ extension PlayerView {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(.largeTitle))
-                .foregroundStyle(Color(hex: "EF4444"))
+                .foregroundStyle(DT.Color.palette("EF4444"))
             Text(message)
                 .font(.system(.footnote))
                 .foregroundStyle(.white)
@@ -1737,6 +2320,9 @@ struct TrackSelectionSheet: View {
     let selectedSubtitleIndex: Int?
     let onSelectAudio: (Int) -> Void
     let onSelectSubtitle: (Int?) -> Void
+    /// Set to offer a search of the server's subtitle providers for this item.
+    var subtitleSearchItemId: String? = nil
+    var onSubtitleDownloaded: () -> Void = {}
 
     var body: some View {
         List {
@@ -1758,13 +2344,22 @@ struct TrackSelectionSheet: View {
                         onSelectSubtitle(stream.index)
                     }
                 }
+                if let subtitleSearchItemId {
+                    NavigationLink {
+                        SubtitleSearchView(itemId: subtitleSearchItemId, onDownloaded: onSubtitleDownloaded)
+                    } label: {
+                        Label("Search for Subtitles…", systemImage: "magnifyingglass")
+                            .foregroundStyle(DT.Color.accent)
+                    }
+                    .listRowBackground(DT.Color.backgroundSecondary)
+                }
             }
         }
         #if canImport(UIKit) && !os(tvOS)
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         #endif
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
     }
 
     private func trackRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
@@ -1784,5 +2379,20 @@ struct TrackSelectionSheet: View {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
         return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+    }
+}
+
+private extension View {
+    /// A button on the player's own overlays (suggestions, X-Ray): plain where it's pointed or
+    /// tapped at, a focus ring on tvOS where the remote moves between them.
+    @ViewBuilder
+    func playerOverlayButton(cornerRadius: CGFloat) -> some View {
+        #if os(tvOS)
+        buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: cornerRadius, prominent: true)
+        #else
+        buttonStyle(.plain)
+        #endif
     }
 }

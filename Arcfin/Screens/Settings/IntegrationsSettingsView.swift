@@ -9,7 +9,6 @@ struct IntegrationsSettingsView: View {
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("seerrURL")            private var seerrURL             = ""
-    @AppStorage("streamystatsURL")     private var streamystatsURL      = ""
 
     var body: some View {
         List {
@@ -29,36 +28,33 @@ struct IntegrationsSettingsView: View {
                     }
                 }
                 NavigationLink {
-                    StreamystatsPluginView()
-                        #if os(iOS)
-                        .toolbar(.hidden, for: .tabBar)
-                        #endif
+                    TMDBSettingsView()
                 } label: {
                     HStack {
-                        Text("Streamystats")
+                        Text("TMDB")
                         Spacer()
-                        if !streamystatsURL.isEmpty {
-                            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+                        if seerrRepo.hasTMDB {
+                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
                         }
                     }
                 }
             } footer: {
-                Text("Connect Jellyseerr for requests and Streamystats for play stats. Both are optional.")
+                Text("Connect Seerr for requests and TMDB for streaming and title details without Seerr. Both are optional.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Integrations")
     }
 
     @ViewBuilder
     private var seerrStatusPill: some View {
         if seerrRepo.authFailed {
-            Text("Auth Failed").font(.caption2).foregroundStyle(Color(hex: "EF4444"))
+            Text("Auth Failed").font(.caption2).foregroundStyle(DT.Color.palette("EF4444"))
         } else if !seerrURL.isEmpty {
-            Text("Connected").font(.caption2).foregroundStyle(Color(hex: "10b981"))
+            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
         }
     }
 }

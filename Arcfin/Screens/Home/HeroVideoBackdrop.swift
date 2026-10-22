@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import AuthCore
 import AVFoundation
 
 /// Muted, seamlessly-looping video behind the Home hero — the "video backdrop" idea some
@@ -41,7 +42,8 @@ final class LoopingPlayerUIView: UIView {
 
     init(url: URL) {
         super.init(frame: .zero)
-        let asset = AVURLAsset(url: url)
+        let headers = CustomHTTPHeaders.current
+        let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: item)
         player.isMuted = true
@@ -175,7 +177,8 @@ final class LoopingPlayerNSView: NSView {
     init(url: URL) {
         super.init(frame: .zero)
         wantsLayer = true
-        let asset = AVURLAsset(url: url)
+        let headers = CustomHTTPHeaders.current
+        let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: item)
         player.isMuted = true

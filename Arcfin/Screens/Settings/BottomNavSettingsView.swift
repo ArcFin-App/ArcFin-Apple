@@ -5,6 +5,7 @@ import SwiftUI
 struct BottomNavSettingsView: View {
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
+    @AppStorage(BottomNavPrefs.launchTabKey) private var launchTab = BottomNavItem.home
     #if canImport(UIKit) && !os(tvOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
@@ -45,6 +46,7 @@ struct BottomNavSettingsView: View {
                                 .font(.system(.title3))
                                 .foregroundStyle(active.contains(tab) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
                         }
+                        .accessibilityLabel(active.contains(tab) ? "Hide \(tab.title)" : "Show \(tab.title)")
                         .buttonStyle(.plain)
                     }
                 }
@@ -54,12 +56,22 @@ struct BottomNavSettingsView: View {
             } footer: {
                 Text("Drag to reorder. Up to \(BottomNavPrefs.maxActive) tabs can be active at once — the rest stay hidden but keep their place in the order if you turn them back on.")
             }
+
+            Section {
+                Picker("Open On", selection: $launchTab) {
+                    ForEach(order.filter(active.contains)) { tab in
+                        Text(tab.title).tag(tab)
+                    }
+                }
+            } footer: {
+                Text("The tab Arcfin opens on. Discover and Watchlist need Seerr connected; without it, Arcfin opens on Home.")
+            }
         }
         #if os(iOS)
         .environment(\.editMode, .constant(.active))
         #endif
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge(navTitle)
         .onAppear {
             // Persist the resolved default explicitly so an empty stored string only ever

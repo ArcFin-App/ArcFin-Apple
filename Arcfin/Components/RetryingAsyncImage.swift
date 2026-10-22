@@ -46,7 +46,7 @@ struct RetryingAsyncImage<I: View, P: View>: View {
 
     var body: some View {
         if let url {
-            AsyncImage(url: requestURL(url)) { phase in
+            CachedAsyncImage(url: requestURL(url)) { phase in
                 switch phase {
                 case .success(let img):
                     content(img)

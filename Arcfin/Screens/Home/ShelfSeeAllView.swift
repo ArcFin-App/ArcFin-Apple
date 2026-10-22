@@ -39,7 +39,7 @@ struct ShelfSeeAllView: View {
             }
             .padding(DT.Spacing.pagePad)
         }
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .navigationTitle(title)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -90,7 +90,7 @@ private struct ShelfSeeAllCard: View {
         VStack(alignment: .leading, spacing: 4) {
             ZStack {
                 if let imageURL {
-                    AsyncImage(url: imageURL) { phase in
+                    CachedAsyncImage(url: imageURL) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
                         default: DT.Color.backgroundSecondary
@@ -105,7 +105,7 @@ private struct ShelfSeeAllCard: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(
                 RoundedRectangle(cornerRadius: DT.Radius.card)
-                    .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(hovered ? DT.Color.accent.opacity(0.35) : DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
             )
             .scaleEffect(hovered ? 1.03 : 1)
             .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)

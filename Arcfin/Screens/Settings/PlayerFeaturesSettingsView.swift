@@ -12,6 +12,9 @@ struct PlayerFeaturesSettingsView: View {
     @AppStorage("castEnabled") private var castEnabled = true
     @AppStorage("stillWatchingPromptEnabled") private var stillWatchingPromptEnabled = true
     @AppStorage("matchContentFrameRate") private var matchContentFrameRate = false
+    @AppStorage("autoPictureInPicture") private var autoPictureInPicture = false
+    @AppStorage("swipeGesturesEnabled") private var swipeGesturesEnabled = true
+    @AppStorage("doubleTapToSkip") private var doubleTapToSkip = true
 
     var body: some View {
         List {
@@ -74,9 +77,29 @@ struct PlayerFeaturesSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
+
+            #if os(iOS)
+            Section {
+                Toggle("Picture in Picture When Leaving", isOn: $autoPictureInPicture)
+                    .syncLocked("autoPictureInPicture", authManager)
+                Toggle("Swipe for Brightness and Volume", isOn: $swipeGesturesEnabled)
+                    .syncLocked("swipeGesturesEnabled", authManager)
+                Toggle("Double-Tap to Skip", isOn: $doubleTapToSkip)
+                    .syncLocked("doubleTapToSkip", authManager)
+            } footer: {
+                Text("Picture in Picture keeps the video playing in a small window when you go to the Home Screen, with every player engine except when Aether has to decode in software (Picture in Picture isn't offered then at all). Swipe up or down on the left for brightness and on the right for volume; double-tap a side to skip.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            #elseif os(macOS)
+            Section {
+                Toggle("Double-Click to Skip", isOn: $doubleTapToSkip)
+                    .syncLocked("doubleTapToSkip", authManager)
+            }
+            #endif
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Player Features")
     }
 }

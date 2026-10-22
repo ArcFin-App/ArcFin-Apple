@@ -28,6 +28,7 @@ extension PlayerView {
         DragGesture(minimumDistance: 12)
             .onChanged { value in
                 if dragAxis == nil {
+                    guard swipeGesturesEnabled else { return }
                     guard abs(value.translation.height) > abs(value.translation.width) else { return }
                     let axis: DragAxis = value.startLocation.x < width / 2 ? .brightness : .volume
                     dragAxis = axis
@@ -79,6 +80,7 @@ extension PlayerView {
     }
 
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {
+        guard doubleTapToSkip else { toggleControls(); return }
         let tappedRight = location.x > width / 2
         let forward = tappedRight
         let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
@@ -110,6 +112,7 @@ extension PlayerView {
     }
 
     private func handleMacDoubleClick(at location: CGPoint, width: CGFloat) {
+        guard doubleTapToSkip else { toggleControls(); return }
         let tappedRight = location.x > width / 2
         let forward = tappedRight
         let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
@@ -144,6 +147,16 @@ extension PlayerView {
             try? await Task.sleep(for: .seconds(1.2))
             guard !Task.isCancelled else { return }
             macVolumeHUD = nil
+        }
+    }
+
+    func toggleMacMute() {
+        if macVolume == 0 {
+            adjustMacVolume(by: macVolumeBeforeMute ?? 1)
+            macVolumeBeforeMute = nil
+        } else {
+            macVolumeBeforeMute = macVolume
+            adjustMacVolume(by: -macVolume)
         }
     }
 }

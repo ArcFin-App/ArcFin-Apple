@@ -54,7 +54,7 @@ struct SubtitleStyleSettingsView: View {
             }
         }
         .arcfinListStyle()
-        .background(DT.Color.backgroundPrimary)
+        .screenBackground()
         .arcfinNavTitleLarge("Subtitle Style")
     }
 }
