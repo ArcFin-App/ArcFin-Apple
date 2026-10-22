@@ -1393,8 +1393,17 @@ extension PlayerView {
                         .playerOverlayButton(cornerRadius: 22)
                     }
                     HStack(spacing: 8) {
-                        creditsAction("Skip Credits", systemImage: "forward.end.fill", isSelected: false) {
-                            skipCredits()
+                        // Skip Credits needs the server's credits marker; without one, the
+                        // first button moves on to what's next.
+                        if segments.credits != nil {
+                            creditsAction("Skip Credits", systemImage: "forward.end.fill", isSelected: false) {
+                                skipCredits()
+                            }
+                        } else {
+                            creditsAction(next.type == .episode ? "Next Episode" : "Play Next",
+                                          systemImage: "forward.end.fill", isSelected: false) {
+                                playNextEpisode()
+                            }
                         }
                         creditsAction("Like", systemImage: "hand.thumbsup", isSelected: currentLikes == true) {
                             rateCurrentItem(true)
@@ -1436,12 +1445,10 @@ extension PlayerView {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// Past the credits: on to the next title when they run to the end, or to the scene after
-    /// them. Without the server's credits marker, the rest of the title counts as credits.
+    /// Past the credits: on to the next title when they run to the end, or to the scene after them.
     private func skipCredits() {
-        let now = Double(player.positionTicks) / 10_000_000
-        let duration = Double(player.durationTicks) / 10_000_000
-        skip(kind: "credits", span: segments.credits ?? (now...max(now, duration)))
+        guard let credits = segments.credits else { return }
+        skip(kind: "credits", span: credits)
     }
 
     // MARK: - More Like This
