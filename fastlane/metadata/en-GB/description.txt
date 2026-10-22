@@ -24,10 +24,9 @@ DISCOVER & TRACK
 • Cast and crew pages
 • Optional trailer playback, with an in-app YouTube fallback when a title has no local trailer
 • Connect Seerr to browse and request new content without leaving Arcfin
-• Connect Streamystats to see your own watch stats
 
 BUILT-IN PRIVACY
-• A Netflix-style profile picker with optional per-profile Face ID or PIN lock
+• A profile picker with optional per-profile Face ID or PIN lock
 • SyncPlay to watch together with others on your server, in sync
 • No analytics, no tracking, no third-party ad SDKs — Arcfin talks directly to your own server and nowhere else
 

@@ -9,7 +9,6 @@ struct IntegrationsSettingsView: View {
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("seerrURL")            private var seerrURL             = ""
-    @AppStorage("streamystatsURL")     private var streamystatsURL      = ""
 
     var body: some View {
         List {
@@ -29,20 +28,6 @@ struct IntegrationsSettingsView: View {
                     }
                 }
                 NavigationLink {
-                    StreamystatsPluginView()
-                        #if os(iOS)
-                        .toolbar(.hidden, for: .tabBar)
-                        #endif
-                } label: {
-                    HStack {
-                        Text("Streamystats")
-                        Spacer()
-                        if !streamystatsURL.isEmpty {
-                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
-                        }
-                    }
-                }
-                NavigationLink {
                     TMDBSettingsView()
                 } label: {
                     HStack {
@@ -54,7 +39,7 @@ struct IntegrationsSettingsView: View {
                     }
                 }
             } footer: {
-                Text("Connect Seerr for requests, Streamystats for play stats and TMDB for streaming and title details without Seerr. All are optional.")
+                Text("Connect Seerr for requests and TMDB for streaming and title details without Seerr. Both are optional.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

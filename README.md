@@ -18,7 +18,7 @@ A native Jellyfin client for iPhone, iPad, Mac and Apple TV.
 
 ## What is Arcfin?
 
-Arcfin is a SwiftUI client for your own Jellyfin server. It plays almost anything the server has, downloads titles for offline viewing, and works with the rest of the Apple ecosystem: AirPlay, Picture in Picture, SharePlay, Siri, widgets, Live Activities and the Top Shelf. Seerr (requests) and Streamystats (watch stats) are optional add-ons.
+Arcfin is a SwiftUI client for your own Jellyfin server. It plays almost anything the server has, downloads titles for offline viewing, and works with the rest of the Apple ecosystem: AirPlay, Picture in Picture, SharePlay, Siri, widgets, Live Activities and the Top Shelf. Seerr (requests) and TMDB (scores and where to watch) are optional add-ons.
 
 Each platform gets its own interface rather than a stretched phone app: Liquid Glass on iPhone and iPad, a sidebar, menu bar and keyboard shortcuts on Mac, and a focus-driven layout built for the Siri Remote on Apple TV.
 
@@ -59,7 +59,6 @@ Each platform gets its own interface rather than a stretched phone app: Liquid G
 
 ### Add-ons
 - **Seerr:** browse, request and keep a watchlist, signed in per profile.
-- **Streamystats:** your watch statistics.
 - **TMDB:** an optional key for scores and where-to-watch information.
 
 ## Platforms
@@ -93,7 +92,6 @@ LocalPackages/Sources/
 │   ├── BackgroundKit    — background task scheduling
 │   ├── LiveActivityKit  — download Live Activity, shared with the widget extension
 │   ├── JellyfinAPI      — Jellyfin REST and WebSocket client
-│   ├── StreamystatsAPI  — Streamystats client
 │   └── SeerrAPI         — Seerr client
 └── Features
     ├── MediaEngine      — Aether, AVFoundation and VLC behind one player protocol
@@ -113,7 +111,7 @@ LocalPackages/Sources/
 | Storage | SwiftData |
 | Images | Nuke |
 | Playback | [AetherEngine](https://github.com/superuser404notfound/AetherEngine), AVFoundation and [SwiftVLC](https://github.com/harflabs/SwiftVLC), behind `MediaPlayerProtocol` |
-| API clients | Hand-written for Jellyfin, Seerr and Streamystats |
+| API clients | Hand-written for Jellyfin and Seerr |
 | Tests | Swift Testing |
 
 ## Design system
@@ -150,7 +148,6 @@ cd LocalPackages && swift test
 
 - [Jellyfin](https://jellyfin.org): the media server (REST and WebSocket)
 - [Seerr](https://github.com/Fallenbagel/jellyseerr): content requests (formerly Jellyseerr)
-- [Streamystats](https://github.com/fredrikburmester/streamystats): self-hosted watch statistics
 - [TMDB](https://www.themoviedb.org): optional metadata
 
 Arcfin runs none of these. The app connects straight from your device to servers you run or have access to. See [arcfin.psmattas.com/privacy](https://arcfin.psmattas.com/privacy).

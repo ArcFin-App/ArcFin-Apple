@@ -255,8 +255,7 @@ public enum SettingsSyncRegistry {
         .init("seerrDiscoverEnabled", .bool),
         .init("seerrURL", .string),
         .init("seerrUsername", .string),
-        .init("seerrAuthMethod", .string),
-        .init("streamystatsURL", .string)
+        .init("seerrAuthMethod", .string)
     ]
 
     public static let allKeys: Set<String> = Set(entries.map { $0.key })

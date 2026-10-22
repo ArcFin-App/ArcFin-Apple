@@ -14,7 +14,6 @@ struct TVMediaDetailView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
-    @Environment(StreamystatsRepository.self) private var statsRepo
 
     @State private var detail: MediaItemDetail?
     @State private var awards: [WikidataAward] = []
@@ -348,13 +347,6 @@ struct TVMediaDetailView: View {
         if (item.type == .movie || item.type == .episode) && ProfileRules.shared.canManageSubtitles {
             Button { showSubtitleSearch = true } label: {
                 Label("Search for Subtitles…", systemImage: "captions.bubble")
-            }
-        }
-        if statsRepo.isConfigured {
-            Button {
-                Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
-            } label: {
-                Label("Add to Streamystats Watchlist", systemImage: "bookmark")
             }
         }
     }

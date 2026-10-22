@@ -25,7 +25,6 @@ struct SettingsView: View {
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
 #endif
     @AppStorage("seerrURL")            private var seerrURL             = ""
-    @AppStorage("streamystatsURL")     private var streamystatsURL      = ""
 
     var body: some View {
         List {
@@ -109,18 +108,6 @@ struct SettingsView: View {
                         Text("TMDB")
                         Spacer()
                         if seerrRepo.hasTMDB {
-                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
-                        }
-                    }
-                }
-                .listRowBackground(Color.clear)
-                NavigationLink {
-                    StreamystatsPluginView()
-                } label: {
-                    HStack {
-                        Text("Streamystats")
-                        Spacer()
-                        if !streamystatsURL.isEmpty {
                             Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
                         }
                     }
@@ -688,88 +675,6 @@ struct SeerrPluginView: View {
                     testResult = "✗ Wrong account type — try the other option"
                 } else {
                     testResult = "✗ Invalid credentials"
-                }
-            } catch {
-                testResult = "✗ \(error.localizedDescription)"
-            }
-            isTesting = false
-        }
-    }
-}
-
-// MARK: - Streamystats plugin view
-
-struct StreamystatsPluginView: View {
-    @Environment(AuthManager.self) private var authManager
-    @AppStorage("streamystatsURL") private var streamystatsURL = ""
-    @State private var testResult: String? = nil
-    @State private var isTesting = false
-
-    var body: some View {
-        List {
-            Section {
-                TextField("https://stats.example.com", text: $streamystatsURL)
-                    .textContentType(.URL)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                    #endif
-                    .syncLocked("streamystatsURL", authManager)
-            } header: {
-                Label("Server URL", systemImage: "server.rack")
-                    .font(.system(.caption, design: .default, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            } footer: {
-                Text("Streamystats authenticates using your existing Jellyfin session — no separate credentials needed.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            Section {
-                Button {
-                    testConnection()
-                } label: {
-                    HStack {
-                        if isTesting {
-                            ProgressView().scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "network")
-                        }
-                        Text(isTesting ? "Testing…" : "Test Connection")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                }
-                .disabled(streamystatsURL.isEmpty || isTesting)
-
-                if let result = testResult {
-                    Text(result)
-                        .font(.caption)
-                        .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
-        }
-        .arcfinListStyle()
-        .screenBackground()
-        .arcfinNavTitleLarge("Streamystats")
-    }
-
-    private func testConnection() {
-        guard let url = URL(string: streamystatsURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            testResult = "✗ Invalid URL"; return
-        }
-        isTesting = true; testResult = nil
-        Task {
-            // Public health endpoint — no auth needed
-            let req = URLRequest(url: url.appendingPathComponent("api/health"))
-            do {
-                let (_, resp) = try await URLSession.arcfin.data(for: req)
-                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                    testResult = "✓ Server reachable"
-                } else {
-                    testResult = "✗ Server returned an error"
                 }
             } catch {
                 testResult = "✗ \(error.localizedDescription)"

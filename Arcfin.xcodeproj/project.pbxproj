@@ -22,7 +22,6 @@
 		FAB5D7902FA79F5C002031A9 /* MediaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D78F2FA79F5C002031A9 /* MediaEngine */; };
 		FAB5D7922FA79F5C002031A9 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7912FA79F5C002031A9 /* Persistence */; };
 		FAB5D7942FA79F5C002031A9 /* SearchKit in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7932FA79F5C002031A9 /* SearchKit */; };
-		FAB5D7962FA79F5C002031A9 /* StreamystatsAPI in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */; };
 		FAB5D7982FA79F5C002031A9 /* SyncEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7972FA79F5C002031A9 /* SyncEngine */; };
 		FAB5D79A2FA79F5C002031A9 /* Telemetry in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7992FA79F5C002031A9 /* Telemetry */; };
 		FAB5D86E2FA9621A002031A9 /* TVServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAB5D86D2FA9621A002031A9 /* TVServices.framework */; };
@@ -179,7 +178,6 @@
 				FAB5D7982FA79F5C002031A9 /* SyncEngine in Frameworks */,
 				FAB5D7862FA79F5C002031A9 /* AuthCore in Frameworks */,
 				FAB5D7902FA79F5C002031A9 /* MediaEngine in Frameworks */,
-				FAB5D7962FA79F5C002031A9 /* StreamystatsAPI in Frameworks */,
 				FAB5D78C2FA79F5C002031A9 /* JellyfinAPI in Frameworks */,
 				FAB5D7942FA79F5C002031A9 /* SearchKit in Frameworks */,
 				5815AABD47E13900B5960B6B /* LiveActivityKit in Frameworks */,
@@ -303,7 +301,6 @@
 				FAB5D78F2FA79F5C002031A9 /* MediaEngine */,
 				FAB5D7912FA79F5C002031A9 /* Persistence */,
 				FAB5D7932FA79F5C002031A9 /* SearchKit */,
-				FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */,
 				FAB5D7972FA79F5C002031A9 /* SyncEngine */,
 				FAB5D7992FA79F5C002031A9 /* Telemetry */,
 				3971DC795356C888F780CE58 /* LiveActivityKit */,
@@ -1215,10 +1212,6 @@
 		FAB5D7932FA79F5C002031A9 /* SearchKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SearchKit;
-		};
-		FAB5D7952FA79F5C002031A9 /* StreamystatsAPI */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = StreamystatsAPI;
 		};
 		FAB5D7972FA79F5C002031A9 /* SyncEngine */ = {
 			isa = XCSwiftPackageProductDependency;

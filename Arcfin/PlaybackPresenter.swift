@@ -89,7 +89,6 @@ struct PlayerWindow: View {
         .environment(AppServices.mediaRepo)
         .environment(playbackPresenter)
         .environment(AppServices.seerrRepo)
-        .environment(AppServices.statsRepo)
         .environment(AppServices.downloadManager)
         .environment(AppServices.syncPlayManager)
         .environment(AppServices.sharePlayManager)

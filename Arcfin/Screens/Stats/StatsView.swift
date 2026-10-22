@@ -2,12 +2,10 @@
 
 import SwiftUI
 import JellyfinAPI
-import StreamystatsAPI
 import AuthCore
 
 struct StatsView: View {
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(StreamystatsRepository.self) private var statsRepo
 
     @Environment(AuthManager.self) private var authManager
 
@@ -77,15 +75,11 @@ struct StatsView: View {
                 activityRings
                 if !displayedTopShows.isEmpty { showsSection }
                 if !displayedTopMovies.isEmpty { moviesSection }
-                if statsRepo.isConfigured && !statsRepo.recommendations.isEmpty {
-                    recommendationsSection
-                }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
         }
         .screenBackground()
         .ignoresSafeArea(edges: .top)
-        .task { if statsRepo.isConfigured { await statsRepo.load() } }
         .task(id: selectedPeriod) { await loadPeriodStats() }
     }
 
@@ -94,7 +88,7 @@ struct StatsView: View {
     private var header: some View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(statsRepo.isConfigured ? "Streamystats" : "Your Library")
+                Text("Your Library")
                     .font(.system(.caption2, design: .default, weight: .bold))
                     .tracking(0.8)
                     .textCase(.uppercase)
@@ -408,62 +402,6 @@ struct StatsView: View {
         .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
         .tvFocusable(cornerRadius: 12)
     }
-
-    // MARK: - Streamystats recommendations
-
-    private var recommendationsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Streamystats")
-                        .font(.system(.caption2, design: .default, weight: .bold))
-                        .tracking(0.5)
-                        .textCase(.uppercase)
-                        .foregroundStyle(DT.Color.accent)
-                    Text("Recommended For You")
-                        .font(.system(.callout, design: .default, weight: .bold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, DT.Spacing.pagePad)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(statsRepo.recommendations) { rec in
-                        if let item = rec.item {
-                            VStack(alignment: .leading, spacing: 6) {
-                                CachedAsyncImage(url: item.posterURL) { phase in
-                                    switch phase {
-                                    case .success(let img): img.resizable().scaledToFill()
-                                    default: Rectangle().fill(DT.Color.backgroundTertiary)
-                                    }
-                                }
-                                .frame(width: 90 * cardScale, height: 130 * cardScale)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .clipped()
-
-                                Text(item.displayTitle)
-                                    .font(.system(.caption2, design: .default, weight: .semibold))
-                                    .foregroundStyle(DT.Color.textPrimary)
-                                    .lineLimit(2)
-                                    .frame(width: 90 * cardScale, alignment: .leading)
-
-                                if let year = item.productionYear {
-                                    Text(String(year))
-                                        .font(.system(.caption2))
-                                        .foregroundStyle(DT.Color.textSecondary)
-                                }
-                            }
-                            .tvFocusable(cornerRadius: 8)
-                        }
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-            }
-        }
-        .padding(.bottom, DT.Spacing.md)
-    }
 }
 
 private extension View {
@@ -481,5 +419,4 @@ private extension View {
 #Preview {
     StatsView()
         .environment(MediaRepository())
-        .environment(StreamystatsRepository())
 }

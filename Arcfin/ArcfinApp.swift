@@ -97,7 +97,6 @@ enum AppServices {
     static let authManager = AuthManager()
     static let mediaRepo = MediaRepository()
     static let seerrRepo = SeerrRepository()
-    static let statsRepo = StreamystatsRepository()
     static let downloadManager = DownloadManager()
     static let syncPlayManager = SyncPlayManager()
     static let sharePlayManager = SharePlayManager()

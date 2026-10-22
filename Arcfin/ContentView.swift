@@ -58,7 +58,6 @@ struct ContentView: View {
     @State private var mediaRepo    = AppServices.mediaRepo
     @State private var playbackPresenter = PlaybackPresenter()
     @State private var seerrRepo    = AppServices.seerrRepo
-    @State private var statsRepo    = AppServices.statsRepo
     @State private var downloadManager = AppServices.downloadManager
     @State private var syncPlayManager = AppServices.syncPlayManager
     @State private var sharePlayManager = AppServices.sharePlayManager
@@ -79,7 +78,6 @@ struct ContentView: View {
     @AppStorage("seerrURL")          private var seerrURL         = ""
     @AppStorage("seerrUsername")     private var seerrUsername    = ""
     @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = SeerrAuthMethod.jellyfin
-    @AppStorage("streamystatsURL")   private var statsURL         = ""
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @State private var showSeerrSetupPrompt = false
     #if os(tvOS)
@@ -296,7 +294,6 @@ struct ContentView: View {
         .environment(mediaRepo)
         .environment(playbackPresenter)
         .environment(seerrRepo)
-        .environment(statsRepo)
         .environment(downloadManager)
         .environment(syncPlayManager)
         .environment(sharePlayManager)
@@ -384,12 +381,6 @@ struct ContentView: View {
         // any stuck auth-failure cooldown and retries directly (see
         // SeerrRepository.retryAfterProfileSwitch).
         .onChange(of: authManager.state) { Task { await seerrRepo.retryAfterProfileSwitch() } }
-        // Streamystats is reconfigured after load() sets serverID + we have the token
-        .onChange(of: mediaRepo.serverID) { configureStats() }
-        .onChange(of: statsURL)           { configureStats() }
-        // A profile switch keeps the same serverID when staying on one server, so
-        // Streamystats needs its own trigger to pick up the new credential's token.
-        .onChange(of: authManager.state)  { configureStats() }
         .onChange(of: authManager.state) { _, newState in
             if case .authenticated = newState { syncOfflineProgress() }
         }
@@ -546,11 +537,6 @@ struct ContentView: View {
         }
     }
 
-    private func configureStats() {
-        guard case .authenticated(let cred) = authManager.state,
-              !mediaRepo.serverID.isEmpty else { return }
-        statsRepo.configure(urlString: statsURL, credential: cred, serverId: mediaRepo.serverID)
-    }
 }
 
 #Preview {

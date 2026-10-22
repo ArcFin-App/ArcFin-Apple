@@ -6,7 +6,7 @@ import SeerrAPI
 
 /// The user's own TMDB key. With it, title pages, streaming rows and Home's catalogue shelves
 /// work without Seerr, and keep working when Seerr's requests fail. Laid out like the Seerr
-/// and Streamystats pages.
+/// page.
 struct TMDBSettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 

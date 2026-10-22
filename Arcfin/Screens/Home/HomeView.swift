@@ -192,7 +192,6 @@ struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
-    @Environment(StreamystatsRepository.self) private var statsRepo
     @Environment(PlaybackPresenter.self) private var playbackPresenter
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -1450,14 +1449,6 @@ struct HomeView: View {
     @ViewBuilder
     func quickLookMenu(_ item: MediaItem) -> some View {
         ItemQuickActions(item: item)
-        if statsRepo.isConfigured {
-            Button {
-                HapticManager.impact(.light)
-                Task { try? await statsRepo.addToWatchlist(itemId: item.id) }
-            } label: {
-                Label("Add to Watchlist", systemImage: "bookmark")
-            }
-        }
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear {
             Label(String(year), systemImage: "calendar")

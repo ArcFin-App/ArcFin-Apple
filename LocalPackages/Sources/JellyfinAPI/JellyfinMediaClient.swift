@@ -393,7 +393,7 @@ public struct JellyfinMediaClient: Sendable {
         }
     }
 
-    /// Fetch the Jellyfin server UUID (needed for Streamystats jellyfinServerId param).
+    /// The Jellyfin server's UUID, from its public info.
     public func getServerID(credential: ServerCredential) async throws -> String {
         try await getPublicInfo(baseURL: credential.baseURL).id
     }
