@@ -68,6 +68,8 @@ final class AuthManager {
 
     let authClient = JellyfinAuthClient()
     private let syncClient = ArcfinSyncClient()
+    @ObservationIgnored private var settingsObserver: NSObjectProtocol?
+    @ObservationIgnored private var settingsPushTask: Task<Void, Never>?
     private let keychain = KeychainStore()
 
     // MARK: - Startup
@@ -329,7 +331,38 @@ final class AuthManager {
             let header = self.authClient.authHeader(token: credential.accessToken)
             self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
             self.arcfinSyncLastSyncedAt = .now
+            self.watchSettingsChanges()
             Self.syncLog.info("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
+        }
+    }
+
+    /// Sends a synced setting changed here a moment after the change, rather than at the next
+    /// launch, so other devices pick it up and the next sync doesn't see it as stale.
+    private func watchSettingsChanges() {
+        guard settingsObserver == nil else { return }
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            MainActor.assumeIsolated { self.scheduleSettingsPush() }
+        }
+    }
+
+    private func scheduleSettingsPush() {
+        // A sync's own writes land here too; it's already handling them.
+        guard arcfinSyncStatus != nil, !isSyncingArcfin else { return }
+        settingsPushTask?.cancel()
+        settingsPushTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, !Task.isCancelled, !self.isSyncingArcfin,
+                  case .authenticated(let credential) = self.state,
+                  SettingsSyncEngine.hasLocalChanges()
+            else { return }
+            self.isSyncingArcfin = true
+            defer { self.isSyncingArcfin = false }
+            let header = self.authClient.authHeader(token: credential.accessToken)
+            self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
+            self.arcfinSyncLastSyncedAt = .now
         }
     }
 

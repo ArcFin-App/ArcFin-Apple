@@ -308,28 +308,65 @@ public enum SettingsSyncEngine {
         }
     }
 
-    /// Pull-then-push: applies the server's current values locally, then pushes back this
-    /// device's values for any registered key the server doesn't have yet (first sync from a
-    /// fresh install/profile populates the server). Returns the set of admin-locked keys, so the
-    /// caller can disable those controls in Settings — an empty set (including on any failure)
-    /// means nothing is locked, which is also the correct fallback when the plugin isn't
-    /// reachable: settings stay fully local-editable rather than erroring.
+    /// The values this device and the server last agreed on, so a sync can tell which side
+    /// changed a setting since.
+    private static let lastSyncedKey = "arcfin.settingsSync.lastSynced"
+
+    /// Which values to take from the server and which to send it. `base` is what both last
+    /// agreed on, nil before the first sync that kept it.
+    static func merge(local: [String: String], remote: [String: String], base: [String: String]?,
+                      locked: Set<String>) -> (apply: [String: String], push: [String: String]) {
+        var toApply: [String: String] = [:]
+        var toPush: [String: String] = [:]
+        for key in Set(remote.keys).union(local.keys) where SettingsSyncRegistry.allKeys.contains(key) {
+            let remoteValue = remote[key], localValue = local[key]
+            if locked.contains(key) {
+                if let remoteValue, remoteValue != localValue { toApply[key] = remoteValue }
+                continue
+            }
+            let changedHere = localValue != nil && localValue != base?[key]
+            if let localValue, remoteValue == nil || (changedHere && localValue != remoteValue) {
+                toPush[key] = localValue
+            } else if let remoteValue, remoteValue != localValue {
+                toApply[key] = remoteValue
+            }
+        }
+        return (toApply, toPush)
+    }
+
+    /// Whether this device has a setting the server hasn't heard yet.
+    public static func hasLocalChanges(defaults: UserDefaults = .standard) -> Bool {
+        guard let base = defaults.dictionary(forKey: lastSyncedKey) as? [String: String] else { return false }
+        return collectLocalPayload(defaults: defaults).settings != base
+    }
+
+    /// A three-way merge against what was last agreed: a setting changed on this device since
+    /// then is sent to the server, one changed only on the server is taken from it, and one an
+    /// administrator locked always comes from the server. Before, the server's value always won,
+    /// so anything changed here was put back at the next sync unless the server had never had it.
+    /// Returns the set of admin-locked keys, so the caller can disable those controls in Settings
+    /// — an empty set (including on any failure) means nothing is locked, which is also the
+    /// correct fallback when the plugin isn't reachable: settings stay fully local-editable.
     @discardableResult
     public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard) async -> Set<String> {
         let pluginClient = ArcfinPluginSyncClient(credential: credential, authHeader: authHeader)
 
         guard let remote = try? await pluginClient.pull() else { return [] }
-        apply(remote, defaults: defaults)
+        let locked = Set(((try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader)) ?? [])
+            .filter { $0.isLocked }.map { $0.key })
+        let local = collectLocalPayload(defaults: defaults).settings
+        // No record yet (the first sync since this was kept): a value set here counts as this
+        // device's choice, since the old sync would already have replaced anything it pulled.
+        let base = defaults.dictionary(forKey: lastSyncedKey) as? [String: String]
 
-        let local = collectLocalPayload(defaults: defaults)
-        let missingOnServer = local.settings.filter { remote.settings[$0.key] == nil }
-        if !missingOnServer.isEmpty {
-            try? await pluginClient.push(SyncPayload(settings: missingOnServer))
+        let (toApply, toPush) = merge(local: local, remote: remote.settings, base: base, locked: locked)
+        apply(SyncPayload(settings: toApply), defaults: defaults)
+        var agreed = collectLocalPayload(defaults: defaults).settings
+        if !toPush.isEmpty, (try? await pluginClient.push(SyncPayload(settings: toPush))) == nil {
+            // Not sent: keep those as changed here, so the next sync sends them again.
+            for key in toPush.keys { agreed[key] = base?[key] }
         }
-
-        guard let fullSettings = try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader) else {
-            return []
-        }
-        return Set(fullSettings.filter { $0.isLocked }.map { $0.key })
+        defaults.set(agreed, forKey: lastSyncedKey)
+        return locked
     }
 }

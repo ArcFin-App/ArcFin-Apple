@@ -235,5 +235,6 @@ let package = Package(
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence"]),
         .testTarget(name: "MediaEngineTests", dependencies: ["MediaEngine"]),
         .testTarget(name: "SearchKitTests",   dependencies: ["SearchKit"]),
+        .testTarget(name: "SyncEngineTests",  dependencies: ["SyncEngine"]),
     ]
 )
