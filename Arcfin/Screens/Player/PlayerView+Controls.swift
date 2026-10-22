@@ -551,7 +551,7 @@ extension PlayerView {
     }
 
     /// The remote while the controls are hidden, as in the system player: a click or a swipe
-    /// up or down shows them, left and right skip back and forward.
+    /// up shows them, down opens subtitles and audio, left and right skip back and forward.
     var tvRemoteCatcher: some View {
         Button { toggleControlsVisibilityOnAction() } label: {
             Color.clear
@@ -565,6 +565,8 @@ extension PlayerView {
             switch direction {
             case .left: tvQuickSeek(forward: false)
             case .right: tvQuickSeek(forward: true)
+            // Down opens subtitles and audio, as the system player's info panel does.
+            case .down: showTrackMenu = true
             default: toggleControlsVisibilityOnAction()
             }
         }
