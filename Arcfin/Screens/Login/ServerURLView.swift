@@ -88,7 +88,7 @@ struct ServerURLView: View {
             }
             .font(.subheadline)
             .foregroundStyle(DT.Color.accent)
-            .buttonStyle(.plain)
+            .arcfinPlainButton(cornerRadius: DT.Radius.pill)
             .frame(maxWidth: .infinity)
         }
         .loginLayout {

@@ -345,7 +345,7 @@ struct SeerrRequestConfirmSheet: View {
             .opacity(blocked ? 0.4 : 1)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .arcfinPlainButton(cornerRadius: DT.Radius.md)
         .disabled(!interactive)
     }
 
@@ -463,7 +463,7 @@ struct SeerrRequestConfirmSheet: View {
                 .shadow(color: DT.Color.accent.opacity(0.35), radius: 16)
                 .opacity(requestDisabled ? 0.5 : 1)
         }
-        .buttonStyle(PressableButtonStyle())
+        .arcfinPlainButton(cornerRadius: DT.Radius.lg, pressable: true)
         .disabled(requestDisabled)
         .padding(.horizontal, DT.Spacing.pagePad)
     }
@@ -477,7 +477,7 @@ struct SeerrRequestConfirmSheet: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
         }
-        .buttonStyle(.plain)
+        .arcfinPlainButton(cornerRadius: DT.Radius.md)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.lg)
     }

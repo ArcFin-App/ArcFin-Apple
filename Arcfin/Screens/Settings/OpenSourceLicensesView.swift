@@ -68,7 +68,7 @@ struct LicensesView: View {
                     // real interactive control for a tvOS list row — focus-driven scrolling
                     // didn't reliably reach it, especially toward the end of the list.
                     Button {} label: { row.frame(maxWidth: .infinity, alignment: .leading) }
-                        .buttonStyle(.plain)
+                        .arcfinPlainButton()
                     #else
                     row
                     #endif

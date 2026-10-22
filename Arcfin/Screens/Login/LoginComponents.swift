@@ -75,7 +75,7 @@ struct LoginTextField: View {
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .arcfinPlainButton(cornerRadius: 22)
                     .accessibilityLabel(revealsPassword ? "Hide password" : "Show password")
                 }
                 if isValid {

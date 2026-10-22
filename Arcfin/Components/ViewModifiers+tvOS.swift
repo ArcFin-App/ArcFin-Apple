@@ -100,6 +100,23 @@ extension View {
 #endif
     }
 
+    /// A button with no chrome of its own: plain (or pressable) for touch and pointer, and on
+    /// tvOS, where the app turns off the system focus effect, a focus ring so it shows focus.
+    @ViewBuilder
+    func arcfinPlainButton(cornerRadius: CGFloat = DT.Radius.md, pressable: Bool = false) -> some View {
+        #if os(tvOS)
+        buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: cornerRadius, prominent: true)
+        #else
+        if pressable {
+            buttonStyle(PressableButtonStyle())
+        } else {
+            buttonStyle(.plain)
+        }
+        #endif
+    }
+
     func tvListRow() -> some View {
 #if os(tvOS)
         self

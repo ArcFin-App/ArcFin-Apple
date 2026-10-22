@@ -834,7 +834,7 @@ extension PlayerView {
                                 .foregroundStyle(DT.Color.textSecondary)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .arcfinPlainButton()
                 }
             }
             .navigationTitle("Chapters")

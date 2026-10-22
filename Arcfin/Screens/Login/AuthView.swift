@@ -133,7 +133,7 @@ struct AuthView: View {
                 Button("Get a New Code") { Task { await initiateQC() } }
                     .font(.subheadline)
                     .foregroundStyle(DT.Color.accent)
-                    .buttonStyle(.plain)
+                    .arcfinPlainButton(cornerRadius: DT.Radius.pill)
             }
         }
     }
