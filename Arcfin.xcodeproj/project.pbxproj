@@ -571,6 +571,8 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
+				"CURRENT_PROJECT_VERSION[sdk=iphoneos*]" = 1;
+				"CURRENT_PROJECT_VERSION[sdk=iphonesimulator*]" = 1;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -591,6 +593,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;
+				"MARKETING_VERSION[sdk=iphoneos*]" = 0.1.1;
+				"MARKETING_VERSION[sdk=iphonesimulator*]" = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -614,6 +618,8 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
+				"CURRENT_PROJECT_VERSION[sdk=iphoneos*]" = 1;
+				"CURRENT_PROJECT_VERSION[sdk=iphonesimulator*]" = 1;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -634,6 +640,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;
+				"MARKETING_VERSION[sdk=iphoneos*]" = 0.1.1;
+				"MARKETING_VERSION[sdk=iphonesimulator*]" = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -778,6 +786,8 @@
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
+				"CURRENT_PROJECT_VERSION[sdk=iphoneos*]" = 1;
+				"CURRENT_PROJECT_VERSION[sdk=iphonesimulator*]" = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
@@ -822,6 +832,8 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;
+				"MARKETING_VERSION[sdk=iphoneos*]" = 0.1.1;
+				"MARKETING_VERSION[sdk=iphonesimulator*]" = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -849,6 +861,8 @@
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
+				"CURRENT_PROJECT_VERSION[sdk=iphoneos*]" = 1;
+				"CURRENT_PROJECT_VERSION[sdk=iphonesimulator*]" = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
@@ -895,6 +909,8 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;
+				"MARKETING_VERSION[sdk=iphoneos*]" = 0.1.1;
+				"MARKETING_VERSION[sdk=iphonesimulator*]" = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
