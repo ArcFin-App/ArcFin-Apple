@@ -23,7 +23,7 @@ struct MainTabView: View {
     #else
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
-    @State private var selectedTab: BottomNavItem = .home
+    @State private var selectedTab = BottomNavItem(rawValue: UserDefaults.standard.string(forKey: BottomNavPrefs.launchTabKey) ?? "") ?? .home
     #endif
 
     #if !os(tvOS)
@@ -117,6 +117,10 @@ struct MainTabView: View {
             }
             .onChange(of: selectedTab) { old, _ in
                 if old == .home { NotificationCenter.default.post(name: .arcfinHomeTabLeft, object: nil) }
+            }
+            // The launch tab can be one that's since been turned off, or needs Seerr.
+            .onAppear {
+                if !visibleTabs.contains(selectedTab) { selectedTab = .home }
             }
             #if os(iOS)
             .modifier(CastMiniControllerAccessory())

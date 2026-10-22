@@ -167,7 +167,8 @@ struct LibraryView: View {
     /// UI) — hide them from the library list rather than showing a section that just
     /// leads to a dead end.
     private var supportedLibraries: [JellyfinLibrary] {
-        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
+        let hidden = LibraryVisibility.hiddenIDs
+        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && !hidden.contains($0.id) }
         #if os(tvOS)
         return libraries
         #else
@@ -1025,6 +1026,9 @@ struct LibraryDetailView: View {
         self.library = library
         self.playlist = playlist
         self.startsAddingTitles = startsAddingTitles
+        // Settings › Appearance › Hide Watched in Libraries; a playlist always shows everything.
+        let hidesWatched = UserDefaults.standard.bool(forKey: "libraryHideWatched") && library.collectionType != .playlists
+        _watchedFilter = State(initialValue: hidesWatched ? .unwatched : .all)
     }
 
     /// A playlist picked from the Playlists library.

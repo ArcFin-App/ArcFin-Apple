@@ -14,7 +14,8 @@ struct TVLibraryView: View {
     /// Live TV and Music have no player here. The Playlists tile is always there so the first
     /// playlist can be made from it, before the server lists a Playlists library of its own.
     private var libraries: [JellyfinLibrary] {
-        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
+        let hidden = LibraryVisibility.hiddenIDs
+        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && !hidden.contains($0.id) }
         guard !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) else { return libraries }
         return libraries + [JellyfinLibrary(id: LibraryDetailView.allPlaylistsID, name: "Playlists", collectionType: .playlists)]
     }

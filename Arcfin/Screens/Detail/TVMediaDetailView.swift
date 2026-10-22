@@ -908,6 +908,11 @@ private struct TVEpisodeCard: View {
     var badge: String? = nil
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(\.isFocused) private var isFocused
+    @AppStorage("spoilerProtection") private var spoilerProtection = false
+
+    private var hidesSpoilers: Bool {
+        spoilerProtection && ep.userData?.played != true && (ep.userData?.playedPercentage ?? 0) == 0
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -920,6 +925,7 @@ private struct TVEpisodeCard: View {
                 }
             }
             .frame(width: 320, height: 180)
+            .blur(radius: hidesSpoilers ? 24 : 0)
             .overlay {
                 if ep.userData?.played == true {
                     ZStack {

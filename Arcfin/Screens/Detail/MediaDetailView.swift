@@ -64,6 +64,7 @@ struct MediaDetailView: View {
     @State private var remoteTrailer: RemoteTrailer?
     @State private var youTubeTrailer: RemoteTrailer?
     @AppStorage("trailersEnabled") private var trailersEnabled = true
+    @AppStorage("spoilerProtection") private var spoilerProtection = false
     @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
     @State private var showTrailerPicker = false
     @State private var isLoading = true
@@ -1299,6 +1300,8 @@ struct MediaDetailView: View {
     private func episodeRow(_ ep: MediaItem) -> some View {
         let isWatched = ep.userData?.played == true
         let pct = ep.userData?.playedPercentage ?? 0
+        // Settings › Appearance › Spoiler Protection: nothing from an episode not yet started.
+        let hidesSpoilers = spoilerProtection && !isWatched && pct == 0
 
         return Button { selectedEpisode = ep } label: {
             VStack(alignment: .leading, spacing: 0) {
@@ -1336,6 +1339,7 @@ struct MediaDetailView: View {
                         }
                     }
                     .frame(width: 120, height: 68)
+                    .blur(radius: hidesSpoilers ? 14 : 0)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -1365,7 +1369,7 @@ struct MediaDetailView: View {
                     #endif
                 }
 
-                if let overview = ep.overview, !overview.isEmpty {
+                if !hidesSpoilers, let overview = ep.overview, !overview.isEmpty {
                     Text(overview)
                         .font(.system(.caption2, design: .default))
                         .foregroundStyle(DT.Color.textSecondary)

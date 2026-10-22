@@ -5,6 +5,7 @@ import SwiftUI
 struct BottomNavSettingsView: View {
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
+    @AppStorage(BottomNavPrefs.launchTabKey) private var launchTab = BottomNavItem.home
     #if canImport(UIKit) && !os(tvOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
@@ -53,6 +54,16 @@ struct BottomNavSettingsView: View {
                 Text(navTitle)
             } footer: {
                 Text("Drag to reorder. Up to \(BottomNavPrefs.maxActive) tabs can be active at once — the rest stay hidden but keep their place in the order if you turn them back on.")
+            }
+
+            Section {
+                Picker("Open On", selection: $launchTab) {
+                    ForEach(order.filter(active.contains)) { tab in
+                        Text(tab.title).tag(tab)
+                    }
+                }
+            } footer: {
+                Text("The tab Arcfin opens on. Discover and Watchlist need Seerr connected; without it, Arcfin opens on Home.")
             }
         }
         #if os(iOS)

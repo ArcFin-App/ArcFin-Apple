@@ -35,6 +35,7 @@ enum BottomNavPrefs {
     static let maxActive = 5
     static let orderKey = "bottomNavOrder"
     static let activeKey = "bottomNavActive"
+    static let launchTabKey = "launchTab"
 
     /// Every tab, in the user's chosen order — any tab type added in a future update
     /// that isn't in the saved order yet is appended at the end rather than dropped.

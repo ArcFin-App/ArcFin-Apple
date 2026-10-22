@@ -105,6 +105,43 @@ extension JellyfinMediaClient {
         return try JSONDecoder().decode(UserResponse.self, from: data).model
     }
 
+    /// Libraries the account leaves out of its latest titles (Jellyfin's own Home setting).
+    public func getLatestExcludedLibraries(credential: ServerCredential, authHeader: String) async throws -> [String] {
+        let configuration = try await userConfiguration(credential: credential, authHeader: authHeader)
+        return configuration["LatestItemsExcludes"] as? [String] ?? []
+    }
+
+    /// Writes the account's whole configuration back with only this list changed, so the
+    /// rest of its settings stay as they were.
+    public func setLatestExcludedLibraries(_ ids: [String], credential: ServerCredential, authHeader: String) async throws {
+        var configuration = try await userConfiguration(credential: credential, authHeader: authHeader)
+        configuration["LatestItemsExcludes"] = ids
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Configuration"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: configuration)
+        req.timeoutInterval = 15
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw JellyfinRequestError.status(http.statusCode)
+        }
+    }
+
+    private func userConfiguration(credential: ServerCredential, authHeader: String) async throws -> [String: Any] {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)"))
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, response) = try await URLSession.arcfin.data(for: req)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw JellyfinRequestError.status(http.statusCode)
+        }
+        guard let user = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let configuration = user["Configuration"] as? [String: Any]
+        else { throw JellyfinRequestError.status(-1) }
+        return configuration
+    }
+
     /// The server's own clock, from the Date header of an unauthenticated ping.
     public func getServerDate(baseURL: URL) async -> Date? {
         var req = URLRequest(url: baseURL.appendingPathComponent("System/Ping"))
