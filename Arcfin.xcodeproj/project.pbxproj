@@ -12,7 +12,7 @@
 		9AAD799AC974BBBF888EBA9C /* CastKit in Frameworks */ = {isa = PBXBuildFile; productRef = 33B25E2EDB0AABA56119E88B /* CastKit */; };
 		FA2E193C305DEF7900513FD4 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA2E193B305DEF7900513FD4 /* WidgetKit.framework */; };
 		FA2E193E305DEF7900513FD4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA2E193D305DEF7900513FD4 /* SwiftUI.framework */; };
-		FA2E1949305DEF7A00513FD4 /* ArcfinWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FA2E193A305DEF7900513FD4 /* ArcfinWidgetsExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FA2E1949305DEF7A00513FD4 /* ArcfinWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FA2E193A305DEF7900513FD4 /* ArcfinWidgetsExtension.appex */; platformFilters = (ios, macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FAB5D7842FA79F5C002031A9 /* AppState in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7832FA79F5C002031A9 /* AppState */; };
 		FAB5D7862FA79F5C002031A9 /* AuthCore in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7852FA79F5C002031A9 /* AuthCore */; };
 		FAB5D7882FA79F5C002031A9 /* BackgroundKit in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7872FA79F5C002031A9 /* BackgroundKit */; };
@@ -538,7 +538,10 @@
 /* Begin PBXTargetDependency section */
 		FA2E1948305DEF7A00513FD4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			platformFilter = ios;
+			platformFilters = (
+				ios,
+				macos,
+			);
 			target = FA2E1939305DEF7900513FD4 /* ArcfinWidgetsExtension */;
 			targetProxy = FA2E1947305DEF7A00513FD4 /* PBXContainerItemProxy */;
 		};

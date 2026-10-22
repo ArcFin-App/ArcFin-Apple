@@ -300,7 +300,16 @@ struct ContinueWatchingWidget: Widget {
         }
         .configurationDisplayName("Continue Watching")
         .description("Pick up where you left off.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge,
-                            .accessoryRectangular, .accessoryCircular, .accessoryInline])
+        .supportedFamilies(families)
+    }
+
+    /// The Lock Screen sizes exist on iOS only.
+    private var families: [WidgetFamily] {
+        #if os(iOS)
+        [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge,
+         .accessoryRectangular, .accessoryCircular, .accessoryInline]
+        #else
+        [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge]
+        #endif
     }
 }

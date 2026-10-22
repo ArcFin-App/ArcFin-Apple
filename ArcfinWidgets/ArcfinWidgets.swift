@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+#if os(iOS)
 import WidgetKit
 import SwiftUI
 import UIKit
@@ -151,3 +152,4 @@ struct DownloadLiveActivity: Widget {
         .padding(14)
     }
 }
+#endif
