@@ -79,6 +79,18 @@ struct LibraryView: View {
                 }
             }
 #elseif os(macOS)
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenFile)) { _ in
+                showDocPicker = true
+                // After the tab bar's own handler, which buffers it for an unmounted Browse.
+                Task { UserDefaults.standard.removeObject(forKey: "arcfin.pendingOpenFile") }
+            }
+            // File › Open Video File… while Browse wasn't on screen yet.
+            .onAppear {
+                if UserDefaults.standard.bool(forKey: "arcfin.pendingOpenFile") {
+                    UserDefaults.standard.removeObject(forKey: "arcfin.pendingOpenFile")
+                    showDocPicker = true
+                }
+            }
             .fileImporter(isPresented: $showDocPicker, allowedContentTypes: UTType.playableVideo) { result in
                 guard case .success(let url) = result else { return }
                 pickedURL = url

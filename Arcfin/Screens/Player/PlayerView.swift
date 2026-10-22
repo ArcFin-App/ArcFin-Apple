@@ -416,6 +416,14 @@ struct PlayerView: View {
             }
             return .handled
         }
+        .focusedSceneValue(\.playerCommands, PlayerCommands(
+            isPlaying: playPauseIconIsPlaying,
+            togglePlay: { togglePlayPause() },
+            skip: { seek(by: $0 > 0 ? skipForwardSeconds : -skipBackwardSeconds) },
+            volume: { adjustMacVolume(by: $0) },
+            toggleFullScreen: { toggleMacWindowFullScreen(macWindow) },
+            close: { closePlayer() }
+        ))
         #endif
         // These must live on a view that's always mounted, not inside the conditionally
         // -shown controlsOverlay — auto-hide removing that view from the tree while a

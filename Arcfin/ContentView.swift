@@ -42,6 +42,12 @@ extension Notification.Name {
     /// binding into MainTabView's private navigation state to reach otherwise, so this
     /// follows the same NotificationCenter pattern arcfinShowDownloads already established.
     static let arcfinShowSettings = Notification.Name("arcfinShowSettings")
+    /// The Mac's Go menu: "tab" in userInfo is a BottomNavItem raw value.
+    static let arcfinSelectTab = Notification.Name("arcfinSelectTab")
+    /// View › Refresh on the Mac.
+    static let arcfinRefresh = Notification.Name("arcfinRefresh")
+    /// File › Open Video File… on the Mac.
+    static let arcfinOpenFile = Notification.Name("arcfinOpenFile")
 }
 
 struct ContentView: View {

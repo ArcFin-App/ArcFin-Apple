@@ -144,6 +144,15 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
                 selectedTab = .home
             }
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinSelectTab)) { note in
+                guard let raw = note.userInfo?["tab"] as? String, let tab = BottomNavItem(rawValue: raw),
+                      visibleTabs.contains(tab) else { return }
+                selectedTab = tab
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenFile)) { _ in
+                UserDefaults.standard.set(true, forKey: "arcfin.pendingOpenFile")
+                selectedTab = .browse
+            }
             #endif
         }
 #endif
@@ -583,6 +592,9 @@ struct HomeView: View {
                 #if os(macOS)
                 .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
                     showSettings = true
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .arcfinRefresh)) { _ in
+                    Task { await loadHome(force: true) }
                 }
                 #endif
                 .navigationDestination(for: MediaItem.self) { item in
