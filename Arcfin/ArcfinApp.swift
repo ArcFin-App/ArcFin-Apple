@@ -19,13 +19,7 @@ struct ArcfinApp: App {
     }
     #endif
 
-    var sharedModelContainer: ModelContainer = {
-        do {
-            return try Persistence.makeContainer()
-        } catch {
-            fatalError("ModelContainer init failed: \(error)")
-        }
-    }()
+    var sharedModelContainer: ModelContainer = Persistence.makeContainerRecoveringFromFailure()
 
     var body: some Scene {
         WindowGroup {

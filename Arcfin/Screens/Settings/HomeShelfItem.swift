@@ -76,6 +76,15 @@ enum HomeShelfPrefs {
     static let orderKey = "homeShelfOrder"
     static let activeKey = "homeShelfActive"
     static let shuffleKey = "shuffleHomeShelves"
+    /// Every shelf there was when the active list was last saved.
+    static let knownKey = "homeShelfKnown"
+
+    /// The shelves in 0.1.0, which saved its active list without a known list beside it.
+    private static let firstShelves: Set<HomeShelf> = [
+        .continueWatching, .nextUp, .recentlyAddedMovies, .recentlyAddedShows,
+        .recentlyReleasedMovies, .recentlyAiredEpisodes, .watchAgain,
+        .seerrWatchlist, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries,
+    ]
 
     /// Continue Watching and Up Next always lead; everything else is fair game when shuffling.
     static let pinned: [HomeShelf] = [.continueWatching, .nextUp]
@@ -99,13 +108,20 @@ enum HomeShelfPrefs {
     /// Defaults to every shelf active until the user opts to trim the list — a shelf still
     /// only actually shows when it has content (or, for Recently Added, when the server's
     /// reachable at all), same gating as before this was configurable.
+    /// A shelf added in an update since the list was saved starts out on: it was never
+    /// switched off, only unknown.
     static func active(from raw: String) -> Set<HomeShelf> {
         guard !raw.isEmpty else { return Set(HomeShelf.allCases) }
-        return Set(raw.split(separator: ",").compactMap { HomeShelf(rawValue: String($0)) })
+        let saved = Set(raw.split(separator: ",").compactMap { HomeShelf(rawValue: String($0)) })
+        let known = UserDefaults.standard.string(forKey: knownKey)
+            .map { Set($0.split(separator: ",").compactMap { HomeShelf(rawValue: String($0)) }) } ?? firstShelves
+        return saved.union(HomeShelf.allCases.filter { !known.contains($0) })
     }
 
+    /// Records every current shelf as known alongside, so turning a new one off sticks.
     static func encode(_ items: Set<HomeShelf>) -> String {
-        items.map(\.rawValue).joined(separator: ",")
+        UserDefaults.standard.set(encode(HomeShelf.allCases), forKey: knownKey)
+        return items.map(\.rawValue).joined(separator: ",")
     }
 }
 

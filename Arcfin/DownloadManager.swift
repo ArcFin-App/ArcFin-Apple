@@ -125,6 +125,10 @@ final class DownloadManager: NSObject {
         // the point the OS still had its temp file around. Touching it here forces that
         // registration immediately at launch instead.
         _ = session
+        // Smart Downloads used to follow Wi-Fi Only; carry that over the first time.
+        if UserDefaults.standard.object(forKey: "smartDownloadsAllowMobileData") == nil {
+            UserDefaults.standard.set(!isWiFiOnly, forKey: "smartDownloadsAllowMobileData")
+        }
         startWiFiMonitoringIfNeeded()
         #if canImport(ActivityKit) && os(iOS)
         reconcileStaleActivitiesOnLaunch()
