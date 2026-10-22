@@ -60,7 +60,13 @@ struct SearchView: View {
                         .frame(minHeight: 44)
                         .contentShape(Rectangle())
                     }
+                    #if os(tvOS)
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.md)
+                    #else
                     .buttonStyle(.plain)
+                    #endif
                 }
             }
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -73,6 +79,8 @@ struct SearchView: View {
         // Fixed 3-up leaves a resizable Mac window either cramped or with cards
         // stretched absurdly wide — adaptive reflows the grid as the window resizes.
         [GridItem(.adaptive(minimum: 130), spacing: 12)]
+#elseif os(tvOS)
+        [GridItem(.adaptive(minimum: 220), spacing: 40)]
 #else
         [
             GridItem(.flexible(), spacing: 12),
@@ -145,7 +153,7 @@ struct SearchView: View {
                         SearchResultCard(title: item.name, subtitle: item.productionYear.map { String($0) },
                                           imageURL: posterImageURL(for: item))
                     }
-                    .buttonStyle(PressableButtonStyle())
+                    .modifier(ResultButtonStyle())
                     .simultaneousGesture(TapGesture().onEnded { saveRecentSearch(query) })
                 }
             }
@@ -164,6 +172,14 @@ struct SearchView: View {
 
     // MARK: - Discover section
 
+    private var discoverHint: String {
+        #if os(tvOS)
+        "Not in your library — select one to see it and request it"
+        #else
+        "Not in your library — tap to request"
+        #endif
+    }
+
     private var discoverSection: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
             HStack(spacing: 6) {
@@ -174,19 +190,27 @@ struct SearchView: View {
                     .font(DT.Font.cardTitle)
                     .foregroundStyle(DT.Color.textPrimary)
             }
-            Text("Not in your library — tap to request")
+            Text(discoverHint)
                 .font(.system(.caption2))
                 .foregroundStyle(DT.Color.textSecondary)
 
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(seerrResults) { item in
+                    #if os(tvOS)
+                    NavigationLink(value: item) {
+                        SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
+                    }
+                    .modifier(ResultButtonStyle())
+                    .simultaneousGesture(TapGesture().onEnded { saveRecentSearch(query) })
+                    #else
                     Button {
                         saveRecentSearch(query)
                         requestingSeerrItem = item
                     } label: {
                         SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
                     }
-                    .buttonStyle(PressableButtonStyle())
+                    .modifier(ResultButtonStyle())
+                    #endif
                 }
             }
         }
@@ -238,6 +262,9 @@ private struct SearchResultCard: View {
     let imageURL: URL?
 
     @State private var hovered = false
+    @Environment(\.isFocused) private var isFocused
+
+    private var highlighted: Bool { hovered || isFocused }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -258,10 +285,11 @@ private struct SearchResultCard: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(
                 RoundedRectangle(cornerRadius: DT.Radius.card)
-                    .stroke(hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(isFocused ? DT.Color.accent : (hovered ? DT.Color.accent.opacity(0.35) : Color.white.opacity(0.06)),
+                            lineWidth: isFocused ? 3 : 1)
             )
-            .scaleEffect(hovered ? 1.03 : 1)
-            .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
+            .scaleEffect(isFocused ? 1.06 : (hovered ? 1.03 : 1))
+            .shadow(color: highlighted ? DT.Color.accent.opacity(isFocused ? 0.4 : 0.2) : .clear, radius: highlighted ? 12 : 0)
 
             Text(title)
                 .font(.system(.caption, design: .default, weight: .semibold))
@@ -273,9 +301,22 @@ private struct SearchResultCard: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
-        .animation(DT.Animation.fast, value: hovered)
+        .animation(DT.Animation.fast, value: highlighted)
         #if !os(tvOS)
         .onHover { hovered = $0 }
+        #endif
+    }
+}
+
+/// Pressable on touch and pointer, a focus card on tvOS.
+private struct ResultButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(tvOS)
+        content
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+        #else
+        content.buttonStyle(PressableButtonStyle())
         #endif
     }
 }

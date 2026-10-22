@@ -73,6 +73,9 @@ struct MainTabView: View {
                             .navigationDestination(for: MediaItem.self) { item in
                                 TVMediaDetailView(item: item)
                             }
+                            .navigationDestination(for: SeerrItem.self) { item in
+                                TVSeerrItemDetailView(item: item)
+                            }
                     }
                 }
                 Tab("Requests", systemImage: "clock") {
