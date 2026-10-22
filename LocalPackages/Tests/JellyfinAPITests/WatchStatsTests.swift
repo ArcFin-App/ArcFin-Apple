@@ -35,6 +35,14 @@ struct WatchStatsTests {
             runTimeTicks: Int64(minutes) * 60 * 10_000_000)
     }
 
+    @Test("Periods are the calendar week, month and year, with their names")
+    func periodNames() {
+        #expect(StatsPeriod.month.name(now: now, calendar: calendar, firstPlayed: nil).contains("2026"))
+        #expect(StatsPeriod.year.name(now: now, calendar: calendar, firstPlayed: nil) == "2026")
+        #expect(StatsPeriod.month.interval(now: now, calendar: calendar)?.start == ISO8601DateFormatter().date(from: "2026-10-01T00:00:00Z"))
+        #expect(StatsPeriod.allTime.name(now: now, calendar: calendar, firstPlayed: nil).isEmpty)
+    }
+
     @Test("A period counts only titles last played inside it, once each")
     func periodFiltering() {
         let all = [
@@ -48,7 +56,7 @@ struct WatchStatsTests {
 
         let month = WatchStats(all: all, details: [:], period: .month, now: now, calendar: calendar)
         #expect(month.movies == 2)
-        #expect(month.buckets.count == 30)
+        #expect(month.buckets.count == 31)
 
         let allTime = WatchStats(all: all, details: [:], period: .allTime, now: now, calendar: calendar)
         #expect(allTime.movies == 3)

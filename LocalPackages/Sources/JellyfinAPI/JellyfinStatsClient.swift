@@ -100,9 +100,9 @@ extension JellyfinMediaClient {
                 resolvingAgainstBaseURL: false)!
             comps.queryItems = [
                 .init(name: "Ids", value: chunk.joined(separator: ",")),
-                .init(name: "Fields", value: "Genres,Studios,ProductionYear,PrimaryImageTags" + (includePeople ? ",People" : "")),
+                .init(name: "Fields", value: "Genres,Studios,ProductionYear,PrimaryImageTags,BackdropImageTags" + (includePeople ? ",People" : "")),
                 .init(name: "EnableUserData", value: "true"),
-                .init(name: "EnableImageTypes", value: "Primary"),
+                .init(name: "EnableImageTypes", value: "Primary,Backdrop"),
                 .init(name: "ImageTypeLimit", value: "1"),
             ]
             let data = try await statsData(comps.url!, timeout: 30, authHeader: authHeader)

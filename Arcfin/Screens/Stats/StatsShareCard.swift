@@ -205,7 +205,7 @@ struct StatsShareCard: View {
                 .font(.system(size: 17, weight: .heavy))
                 .foregroundStyle(.white)
             Spacer()
-            Text(stats.period.heading.uppercased())
+            Text((stats.period == .allTime ? stats.period.heading : stats.period.name(now: Date(), calendar: .current, firstPlayed: nil)).uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .tracking(1.2)
                 .foregroundStyle(cyan)

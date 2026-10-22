@@ -21,13 +21,29 @@ public enum StatsPeriod: String, CaseIterable, Identifiable, Sendable {
         self == .allTime ? "All Time" : "This \(title)"
     }
 
-    public func start(now: Date, calendar: Calendar) -> Date? {
-        let today = calendar.startOfDay(for: now)
+    /// The calendar week, month or year `now` is in; nil for All Time.
+    public func interval(now: Date, calendar: Calendar) -> DateInterval? {
         switch self {
-        case .week: return calendar.date(byAdding: .day, value: -6, to: today)
-        case .month: return calendar.date(byAdding: .day, value: -29, to: today)
-        case .year: return calendar.date(byAdding: .month, value: -11, to: calendar.dateInterval(of: .month, for: now)?.start ?? today)
-        case .allTime: return nil
+        case .week: calendar.dateInterval(of: .weekOfYear, for: now)
+        case .month: calendar.dateInterval(of: .month, for: now)
+        case .year: calendar.dateInterval(of: .year, for: now)
+        case .allTime: nil
+        }
+    }
+
+    /// Which week, month or year it is: "18–24 Oct", "October 2026", "2026".
+    public func name(now: Date, calendar: Calendar, firstPlayed: Date?) -> String {
+        switch self {
+        case .week:
+            guard let week = interval(now: now, calendar: calendar),
+                  let last = calendar.date(byAdding: .day, value: -1, to: week.end) else { return "" }
+            return (week.start..<last).formatted(.interval.day().month(.abbreviated))
+        case .month:
+            return now.formatted(.dateTime.month(.wide).year())
+        case .year:
+            return now.formatted(.dateTime.year())
+        case .allTime:
+            return firstPlayed.map { "Since \($0.formatted(.dateTime.month(.wide).year()))" } ?? ""
         }
     }
 }
@@ -130,7 +146,8 @@ public struct WatchStats: Sendable {
         calendar: Calendar = .current
     ) {
         self.period = period
-        let start = period.start(now: now, calendar: calendar)
+        let interval = period.interval(now: now, calendar: calendar)
+        let start = interval?.start
         let titles = all.filter { title in
             guard let start else { return true }
             return (title.lastPlayed ?? .distantPast) >= start
@@ -154,8 +171,8 @@ public struct WatchStats: Sendable {
         switch period {
         case .week, .month:
             unit = .day
-            let first = start ?? calendar.startOfDay(for: now)
-            let count = calendar.dateComponents([.day], from: first, to: calendar.startOfDay(for: now)).day.map { $0 + 1 } ?? 1
+            let first = interval?.start ?? calendar.startOfDay(for: now)
+            let count = interval.flatMap { calendar.dateComponents([.day], from: $0.start, to: $0.end).day } ?? 1
             bucketStarts = (0..<count).compactMap { calendar.date(byAdding: .day, value: $0, to: first) }
         case .year:
             unit = .month

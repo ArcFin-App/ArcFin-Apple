@@ -120,7 +120,7 @@ struct StatsView: View {
         } description: {
             Text(period == .allTime
                  ? "Finish a movie or an episode and your stats start here."
-                 : "Pick a longer period, or come back once you've finished something.")
+                 : "Nothing finished in \(period.name(now: Date(), calendar: .current, firstPlayed: nil)) yet. Pick a longer period, or come back once you've finished something.")
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 40)
@@ -652,47 +652,60 @@ private struct StatsHero: View {
 
     var body: some View {
         let headline = StatsFormat.headline(stats.seconds)
-        ZStack(alignment: .bottomLeading) {
-            if let artwork, let url = mediaRepo.imageURL(for: artwork, type: .backdrop, fillWidth: 1200) ?? mediaRepo.imageURL(for: artwork, fillWidth: 800) {
-                CachedAsyncImage(url: url) { phase in
-                    if case .success(let image) = phase {
-                        image.resizable().scaledToFill()
-                    } else {
-                        heroFallback
-                    }
-                }
-            } else {
-                heroFallback
-            }
-            LinearGradient(colors: [.black.opacity(0.15), .black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
-
-            VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(stats.period.heading.uppercased())
                     .font(.system(.caption, weight: .bold))
                     .tracking(1.2)
                     .foregroundStyle(DT.Color.palette("06b6d4"))
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(headline.value)
-                        .font(.system(size: 64 * StatsMetrics.scale, weight: .heavy, design: .rounded))
-                        .contentTransition(.numericText())
-                    Text("\(headline.unit) watched")
-                        .font(.system(.title3, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.8))
-                }
-                .foregroundStyle(.white)
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-                HStack(spacing: 10) {
-                    HeroCount(value: stats.movies, label: stats.movies == 1 ? "Movie" : "Movies")
-                    HeroCount(value: stats.episodes, label: stats.episodes == 1 ? "Episode" : "Episodes")
-                    HeroCount(value: stats.shows, label: stats.shows == 1 ? "Show" : "Shows")
+                let name = stats.period.name(now: Date(), calendar: .current, firstPlayed: stats.firstPlayed)
+                if !name.isEmpty {
+                    Text(name)
+                        .font(.system(.headline))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
             }
-            .padding(22)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(headline.value)
+                    .font(.system(size: 64 * StatsMetrics.scale, weight: .heavy, design: .rounded))
+                    .contentTransition(.numericText())
+                Text("\(headline.unit) watched")
+                    .font(.system(.title3, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .foregroundStyle(.white)
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
+            HStack(spacing: 10) {
+                HeroCount(value: stats.movies, label: stats.movies == 1 ? "Movie" : "Movies")
+                HeroCount(value: stats.episodes, label: stats.episodes == 1 ? "Episode" : "Episodes")
+                HeroCount(value: stats.shows, label: stats.shows == 1 ? "Show" : "Shows")
+            }
         }
-        .frame(height: 280 * StatsMetrics.scale)
-        .frame(maxWidth: .infinity)
+        .padding(22)
+        .frame(maxWidth: .infinity, minHeight: 280 * StatsMetrics.scale, alignment: .bottomLeading)
+        // Artwork filling the card overflows its frame, and an image takes taps across all of
+        // it: drawn behind, clipped and passed through, so the period control above still works.
+        .background {
+            ZStack {
+                if let artwork, let url = mediaRepo.imageURL(for: artwork, type: .backdrop, fillWidth: 1200) ?? mediaRepo.imageURL(for: artwork, fillWidth: 800) {
+                    CachedAsyncImage(url: url) { phase in
+                        if case .success(let image) = phase {
+                            image.resizable().scaledToFill()
+                        } else {
+                            heroFallback
+                        }
+                    }
+                } else {
+                    heroFallback
+                }
+                LinearGradient(colors: [.black.opacity(0.15), .black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
+            }
+            .clipped()
+            .allowsHitTesting(false)
+        }
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.xl, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: DT.Radius.xl, style: .continuous))
         .accessibilityElement(children: .combine)
         #if os(tvOS)
         .focusable()
@@ -824,6 +837,8 @@ private struct ShowRow: View {
                 }
             }
             .frame(width: 54 * StatsMetrics.scale, height: 80 * StatsMetrics.scale)
+            .clipped()
+            .contentShape(Rectangle())
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm, style: .continuous))
             VStack(alignment: .leading, spacing: 6) {
                 Text(show.item.name)
@@ -875,6 +890,8 @@ private struct PosterTile: View {
                 }
             }
             .frame(width: 120 * StatsMetrics.scale, height: 180 * StatsMetrics.scale)
+            .clipped()
+            .contentShape(Rectangle())
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
             .overlay(alignment: .topLeading) {
                 if let rank {
@@ -921,6 +938,8 @@ private struct PersonTile: View {
                 }
             }
             .frame(width: 84 * StatsMetrics.scale, height: 84 * StatsMetrics.scale)
+            .clipped()
+            .contentShape(Rectangle())
             .clipShape(Circle())
             Text(entry.person.name)
                 .font(.system(.footnote, weight: .semibold))
@@ -1075,6 +1094,8 @@ private struct RecentRow: View {
                 }
             }
             .frame(width: 40 * StatsMetrics.scale, height: 60 * StatsMetrics.scale)
+            .clipped()
+            .contentShape(Rectangle())
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.xs, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(title.item.type == .episode ? (title.item.seriesName ?? title.item.name) : title.item.name)
