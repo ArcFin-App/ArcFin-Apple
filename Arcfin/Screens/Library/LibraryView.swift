@@ -1149,6 +1149,9 @@ struct LibraryDetailView: View {
             } else {
                 ScrollView(showsIndicators: false) {
                     if playlist != nil { playlistHeader }
+                    #if os(tvOS)
+                    tvActionRow
+                    #endif
                     LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                         ForEach(items) { item in
                             gridLink(for: item) {
@@ -1167,7 +1170,7 @@ struct LibraryDetailView: View {
 #if os(tvOS)
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
-                            .contextMenu(menuItems: { quickLookMenu(item) }, preview: { libraryItemPreview(item) })
+                            .contextMenu(menuItems: { libraryMenu(item) }, preview: { libraryItemPreview(item) })
 #else
                             .buttonStyle(PressableButtonStyle())
                             .contextMenu(menuItems: { libraryMenu(item) }, preview: { libraryItemPreview(item) })
@@ -1261,6 +1264,7 @@ struct LibraryDetailView: View {
                 }
             }
         }
+#endif
 #if !os(macOS)
         .sheet(isPresented: $showFilterSheet) {
             LibraryFilterSheet(
@@ -1269,8 +1273,10 @@ struct LibraryDetailView: View {
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
                 extraFilters: $extraFilters, sortOptions: sortOptions
             )
+            #if os(iOS)
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            #endif
         }
 #else
         // .sheet doesn't reliably render its content on macOS here (same class of issue as
@@ -1336,11 +1342,19 @@ struct LibraryDetailView: View {
         #endif
         .navigationDestination(item: $randomPick) { pick in
             if pick.type == .boxSet {
+                #if os(tvOS)
+                TVCollectionDetailView(item: pick)
+                #else
                 CollectionDetailView(collection: pick)
+                #endif
             } else if pick.type == .playlist {
                 LibraryDetailView(playlistItem: pick)
             } else {
+                #if os(tvOS)
+                TVMediaDetailView(item: pick)
+                #else
                 MediaDetailView(item: pick)
+                #endif
             }
         }
         .onChange(of: sortOption) { _, newValue in
@@ -1348,7 +1362,6 @@ struct LibraryDetailView: View {
             if restoringSort { restoringSort = false; return }
             Task { await reload() }
         }
-#endif
         .modifier(PlaylistModifiers(
             isPlaylist: playlist != nil || isPlaylistsLibrary,
             actionItem: $playlistActionItem,
@@ -1458,6 +1471,41 @@ struct LibraryDetailView: View {
         }
     }
 
+    #if os(tvOS)
+    /// What the toolbar holds elsewhere; tvOS screens have no toolbar.
+    private var tvActionRow: some View {
+        HStack(spacing: 20) {
+            if playlist != nil {
+                Button { showAddTitles = true } label: { tvActionLabel("Add Titles", systemImage: "plus") }
+                Button { renameText = playlistName ?? library.name; showRename = true } label: {
+                    tvActionLabel("Rename", systemImage: "pencil")
+                }
+                Button { confirmDeletePlaylist = true } label: { tvActionLabel("Delete", systemImage: "trash") }
+            } else if isPlaylistsLibrary {
+                Button { showNewPlaylist = true } label: { tvActionLabel("New Playlist", systemImage: "plus") }
+            }
+            Button { showFilterSheet = true } label: {
+                tvActionLabel("Filter & Sort", systemImage: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+            }
+            if playlist == nil {
+                Button { Task { await pickRandom() } } label: { tvActionLabel("Surprise Me", systemImage: "dice") }
+                    .disabled(isPickingRandom)
+            }
+            Spacer()
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, DT.Spacing.md)
+        .focusSection()
+    }
+
+    private func tvActionLabel(_ title: String, systemImage: String) -> some View {
+        TVHeroButtonLabel(icon: systemImage, text: title)
+            .background(Capsule().fill(Color.white.opacity(0.06)))
+    }
+    #endif
+
     private var playlistHeroURL: URL? {
         guard let first = items.first else { return nil }
         return mediaRepo.imageURL(for: first, type: .backdrop, fillWidth: 1200)
@@ -1555,9 +1603,7 @@ struct LibraryDetailView: View {
         }
     }
 
-    #if !os(tvOS)
     @State private var showFilterSheet = false
-    #endif
 
     private func navTarget(for item: MediaItem) -> LibraryNavTarget {
         switch item.type {
@@ -1771,7 +1817,6 @@ struct LibraryDetailView: View {
         }
     }
 
-    #if !os(tvOS)
     private func loadFilterOptions() async {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
@@ -1791,9 +1836,6 @@ struct LibraryDetailView: View {
         availableRatings = options?.officialRatings ?? []
         availableTags = options?.tags ?? []
     }
-    #else
-    private func loadFilterOptions() async {}
-    #endif
 }
 
 // MARK: - Playlist dialogs
@@ -1877,7 +1919,6 @@ private struct PlaylistModifiers: ViewModifier {
 
 // MARK: - Library filter sheet
 
-#if !os(tvOS)
 /// Shared list content between the iOS/iPadOS sheet and the macOS in-place overlay panel
 /// below — .sheet(isPresented:) has now failed to render reliably on macOS twice in this
 /// app (the other case was PlayerView's track/chapter menus), so rather than keep chasing
@@ -1902,14 +1943,12 @@ struct LibraryFilterList: View {
             // tappable rows, same pattern as the Genre/Year sections below, work
             // identically everywhere since nothing depends on a platform picker style.
             Section {
-                DisclosureGroup {
+                FilterGroup(title: "Sort By", value: sortOption.rawValue) {
                     ForEach(sortOptions) { option in
                         filterRow(option.rawValue, isSelected: sortOption == option) {
                             sortOption = option
                         }
                     }
-                } label: {
-                    LabeledContent("Sort By", value: sortOption.rawValue)
                 }
             }
 
@@ -1925,41 +1964,46 @@ struct LibraryFilterList: View {
 
             if !availableGenres.isEmpty {
                 Section {
-                    DisclosureGroup {
-                    if selectedGenres.count > 1 {
-                        Picker("Match", selection: $extraFilters.matchAllGenres) {
-                            Text("Any").tag(false)
-                            Text("All").tag(true)
+                    FilterGroup(title: "Genre", value: Self.summary(selectedGenres)) {
+                        if selectedGenres.count > 1 {
+                            Picker("Match", selection: $extraFilters.matchAllGenres) {
+                                Text("Any").tag(false)
+                                Text("All").tag(true)
+                            }
+                            .pickerStyle(.segmented)
                         }
-                        .pickerStyle(.segmented)
-                    }
-                    ForEach(availableGenres, id: \.self) { genre in
-                        filterRow(genre, isSelected: selectedGenres.contains(genre)) {
-                            toggle(genre, in: &selectedGenres)
+                        ForEach(availableGenres, id: \.self) { genre in
+                            filterRow(genre, isSelected: selectedGenres.contains(genre)) {
+                                toggle(genre, in: &selectedGenres)
+                            }
                         }
-                    }
-                    } label: {
-                        LabeledContent("Genre", value: Self.summary(selectedGenres))
                     }
                 }
             }
 
             if !availableYears.isEmpty {
                 Section {
-                    DisclosureGroup {
+                    FilterGroup(title: "Year", value: Self.summary(Set(selectedYears.map(String.init)))) {
                         ForEach(availableYears, id: \.self) { year in
                             filterRow(String(year), isSelected: selectedYears.contains(year)) {
                                 toggle(year, in: &selectedYears)
                             }
                         }
-                    } label: {
-                        LabeledContent("Year", value: Self.summary(Set(selectedYears.map(String.init))))
                     }
                 }
             }
 
             Section("Minimum Score") {
                 let score = extraFilters.minRating ?? 0
+                #if os(tvOS)
+                Picker("Score", selection: Binding(
+                    get: { extraFilters.minRating ?? 0 },
+                    set: { extraFilters.minRating = $0 > 0 ? $0 : nil }
+                )) {
+                    Text("Any").tag(0.0)
+                    ForEach([5.0, 6.0, 7.0, 7.5, 8.0, 8.5, 9.0], id: \.self) { Text(String(format: "%.1f+", $0)).tag($0) }
+                }
+                #else
                 LabeledContent("Score", value: score > 0 ? String(format: "%.1f+", score) : "Any")
                 Slider(
                     value: Binding(
@@ -1970,6 +2014,7 @@ struct LibraryFilterList: View {
                 )
                 .accessibilityLabel("Minimum score")
                 .accessibilityValue(score > 0 ? String(format: "%.1f or higher", score) : "Any")
+                #endif
             }
 
             if !availableRatings.isEmpty {
@@ -1977,6 +2022,15 @@ struct LibraryFilterList: View {
                 let step = LibraryExtraFilters.ratingStep(extraFilters.officialRatings, in: ordered)
                 let label = step >= ordered.count ? "Any" : "Up to \(ordered[step])"
                 Section("Content Rating") {
+                    #if os(tvOS)
+                    Picker("Maturity", selection: Binding(
+                        get: { step },
+                        set: { extraFilters.officialRatings = LibraryExtraFilters.ratings(upToStep: $0, in: ordered) }
+                    )) {
+                        ForEach(0..<ordered.count, id: \.self) { Text("Up to \(ordered[$0])").tag($0) }
+                        Text("Any").tag(ordered.count)
+                    }
+                    #else
                     LabeledContent("Maturity", value: label)
                     Slider(
                         value: Binding(
@@ -1987,6 +2041,7 @@ struct LibraryFilterList: View {
                     )
                     .accessibilityLabel("Maximum content rating")
                     .accessibilityValue(label)
+                    #endif
                 }
             }
 
@@ -2000,14 +2055,12 @@ struct LibraryFilterList: View {
 
             if !availableTags.isEmpty {
                 Section {
-                    DisclosureGroup {
+                    FilterGroup(title: "Tags", value: Self.summary(extraFilters.tags)) {
                         ForEach(availableTags, id: \.self) { tag in
                             filterRow(tag, isSelected: extraFilters.tags.contains(tag)) {
                                 toggle(tag, in: &extraFilters.tags)
                             }
                         }
-                    } label: {
-                        LabeledContent("Tags", value: Self.summary(extraFilters.tags))
                     }
                 }
             }
@@ -2079,7 +2132,9 @@ struct LibraryFilterSheet: View {
                 extraFilters: $extraFilters, sortOptions: sortOptions
             )
             .navigationTitle("Filter & Sort")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -2089,7 +2144,30 @@ struct LibraryFilterSheet: View {
     }
 }
 #endif
-#endif
+
+/// A filter's choices: expanding in place where lists can, its own page on tvOS.
+private struct FilterGroup<Content: View>: View {
+    let title: String
+    let value: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        #if os(tvOS)
+        NavigationLink {
+            List { content() }
+                .navigationTitle(title)
+        } label: {
+            LabeledContent(title, value: value)
+        }
+        #else
+        DisclosureGroup {
+            content()
+        } label: {
+            LabeledContent(title, value: value)
+        }
+        #endif
+    }
+}
 
 // MARK: - Document picker (UIKit bridge)
 
