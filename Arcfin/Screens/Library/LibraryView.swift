@@ -119,14 +119,14 @@ struct LibraryView: View {
                     UserDefaults.standard.removeObject(forKey: "arcfin.pendingSearch")
                     searchQuery = term
                 }
-                if UserDefaults.standard.bool(forKey: "arcfin.pendingDownloads") {
-                    UserDefaults.standard.removeObject(forKey: "arcfin.pendingDownloads")
+                if UserDefaults.standard.bool(forKey: "arcfin.pendingShowDownloads") {
+                    UserDefaults.standard.removeObject(forKey: "arcfin.pendingShowDownloads")
                     navigateToDownloadsDeepLink = true
                 }
             }
             // arcfin://downloads — the download Live Activity or the Downloads control.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
-                UserDefaults.standard.removeObject(forKey: "arcfin.pendingDownloads")
+                UserDefaults.standard.removeObject(forKey: "arcfin.pendingShowDownloads")
                 searchQuery = ""
                 navigateToDownloadsDeepLink = true
             }

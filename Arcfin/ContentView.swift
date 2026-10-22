@@ -93,7 +93,7 @@ struct ContentView: View {
             NotificationCenter.default.post(name: .arcfinPlayItem, object: nil, userInfo: ["itemID": itemID])
         case "downloads":
             // Buffered too: the Browse tab that shows Downloads may not be mounted yet.
-            UserDefaults.standard.set(true, forKey: "arcfin.pendingDownloads")
+            UserDefaults.standard.set(true, forKey: "arcfin.pendingShowDownloads")
             NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
         case "resume":
             UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
