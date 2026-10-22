@@ -206,7 +206,9 @@ final class DownloadManager: NSObject {
             bytesWritten: stat?.bytesWritten ?? 0, totalBytes: stat?.totalBytes ?? 0,
             bytesPerSecond: stat?.bytesPerSecond ?? 0,
             completedCount: queueCompletedCount, totalCount: queueTotalCount, isFinished: isFinished,
-            posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode
+            posterImageData: meta?.posterData, seasonNumber: meta?.season, episodeNumber: meta?.episode,
+            isPaused: !isFinished && (isQueuePaused || itemId.map(pausedItemIds.contains) == true),
+            nextItemTitle: isFinished ? nil : pendingQueue.first?.item.name
         )
         Task { await liveActivity.update(ActivityContent(state: state, staleDate: nil)) }
     }
@@ -387,11 +389,17 @@ final class DownloadManager: NSObject {
         pausedItemIds.insert(itemId)
         stats[itemId]?.bytesPerSecond = 0
         speedSamples[itemId] = nil
+        #if canImport(ActivityKit) && os(iOS)
+        refreshLiveActivity()
+        #endif
     }
 
     func resumeDownload(itemId: String) {
         guard pausedItemIds.remove(itemId) != nil else { return }
         downloadTasks[itemId]?.resume()
+        #if canImport(ActivityKit) && os(iOS)
+        refreshLiveActivity()
+        #endif
     }
 
     /// Stops new items starting and suspends the transfer already in flight.
@@ -404,6 +412,9 @@ final class DownloadManager: NSObject {
         isQueuePaused = false
         for id in pausedItemIds { downloadTasks[id]?.resume() }
         pausedItemIds = []
+        #if canImport(ActivityKit) && os(iOS)
+        refreshLiveActivity()
+        #endif
         Task { await processQueue() }
     }
 
