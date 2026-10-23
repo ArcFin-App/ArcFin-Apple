@@ -10,6 +10,12 @@ struct ShelfSeeAllView: View {
 
     @Environment(MediaRepository.self) private var mediaRepo
     @State private var selectedItem: MediaItem?
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isWide: Bool { horizontalSizeClass == .regular }
+#else
+    private let isWide = false
+#endif
 
     private var columns: [GridItem] {
 #if os(macOS)
@@ -17,6 +23,9 @@ struct ShelfSeeAllView: View {
         // stretched absurdly wide — adaptive reflows the grid as the window resizes instead.
         [GridItem(.adaptive(minimum: isLandscape ? 220 : 130), spacing: 12)]
 #else
+        if isWide {
+            return [GridItem(.adaptive(minimum: isLandscape ? 260 : 150), spacing: 12)]
+        }
         let count = isLandscape ? 2 : 3
         return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
 #endif
