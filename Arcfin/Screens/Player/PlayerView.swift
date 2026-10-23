@@ -124,9 +124,11 @@ struct PlayerView: View {
     /// position, or they collapse into far less than the sum requested.
     @State var pendingSeekTargetTicks: Int64?
     @State var stallObserver: NSObjectProtocol?
-    /// Index into `Self.autoBitrateLadder`, nil = uncapped. Only meaningful while
-    /// `quality == .auto` — a manual pick never touches this.
-    @State var autoLadderIndex: Int?
+    /// Auto's current cap, nil = uncapped. Only meaningful while `quality == .auto` — a
+    /// manual pick never touches this.
+    @State var autoCap: StreamQualityCap?
+    @State var lastSeekAt: Date?
+    @State var autoRecoveryTask: Task<Void, Never>?
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
@@ -421,7 +423,10 @@ struct PlayerView: View {
             #endif
         }
         .onChange(of: subtitleDelay) { _, _ in updateSubtitleText(forTicks: player.positionTicks) }
-        .onChange(of: player.positionTicks) { _, newValue in
+        .onChange(of: player.positionTicks) { oldValue, newValue in
+            // Every seek path (scrubber, skip buttons, chapters, SyncPlay, auto-skip) shows
+            // up as a jump here, so this is where Auto learns a seek just happened.
+            if abs(newValue - oldValue) > 30_000_000 { lastSeekAt = Date() }
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
             checkMoreLikeThisThreshold(positionTicks: newValue)
@@ -1178,6 +1183,7 @@ struct PlayerView: View {
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
                                              positionTicks: resumeFrom)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
+            startAutoRecovery()
         } catch {
             errorMessage = "Couldn't start playback: \(error.localizedDescription)"
         }
@@ -1370,6 +1376,7 @@ struct PlayerView: View {
     private func teardown() async {
         sharePlay.playerClosed(item.id)
         progressReportTask?.cancel()
+        autoRecoveryTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
@@ -1452,30 +1459,12 @@ struct PlayerView: View {
 
     // MARK: - Quality
 
-    /// Fine-grained fallback steps for Auto — used both as the starting point (picked from
-    /// a bandwidth probe) and as the reactive stall-downgrade ladder. Deliberately finer
-    /// than the manual picker's four resolution tiers so a bad connection degrades gracefully
-    /// instead of jumping straight to 480p.
-    static let autoBitrateLadder: [StreamQualityCap] = [
-        StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1920),
-        StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 1280),
-        StreamQualityCap(maxBitrate: 2_000_000, maxWidth: 960),
-        StreamQualityCap(maxBitrate: 1_000_000, maxWidth: 720),
-        StreamQualityCap(maxBitrate: 500_000, maxWidth: 480),
-        StreamQualityCap(maxBitrate: 250_000, maxWidth: 426),
-    ]
-
     private func qualityCap(for quality: VideoQuality) -> StreamQualityCap {
         // No forceTranscode — a picked quality is a cap, not a demand to re-encode.
         // If the source already qualifies for direct play under that cap, it should stay
         // direct play (forcing a transcode there was wasteful and confusing: Jellyfin's own
         // dashboard correctly said Direct Play while this app's badge said Transcoding).
-        if quality == .auto {
-            if let autoLadderIndex, autoLadderIndex < Self.autoBitrateLadder.count {
-                return Self.autoBitrateLadder[autoLadderIndex]
-            }
-            return .auto
-        }
+        if quality == .auto { return autoCap ?? .auto }
         switch quality {
         case .max, .auto: return .auto
         case .p4k:   return StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840)
@@ -1485,24 +1474,10 @@ struct PlayerView: View {
         }
     }
 
-    /// Probes actual throughput via Jellyfin's own bandwidth-test endpoint and picks a
-    /// starting ladder step from it, instead of always starting uncapped and finding out
-    /// the connection is slow only after a stall-storm. A generous 25% safety margin below
-    /// the measured rate covers overhead and fluctuation; a failed/timed-out probe (e.g. a
-    /// genuinely poor connection) falls back to the lowest step rather than uncapped.
+    /// Probes throughput with Jellyfin's bandwidth test and starts Auto from it, instead of
+    /// starting uncapped and finding out the connection is slow only after a stall-storm.
     private func primeAutoLadder(credential: ServerCredential, authHeader: String) async {
-        guard let measuredBps = await client.testBitrate(credential: credential, authHeader: authHeader) else {
-            autoLadderIndex = Self.autoBitrateLadder.count - 1
-            return
-        }
-        let safe = Double(measuredBps) * 0.75
-        // Comfortably above the ladder's top step — plenty of bandwidth, let the source's
-        // real bitrate through uncapped instead of pinning it to the ladder's ceiling.
-        guard let topBitrate = Self.autoBitrateLadder.first?.maxBitrate, safe < Double(topBitrate) else {
-            autoLadderIndex = nil
-            return
-        }
-        autoLadderIndex = Self.autoBitrateLadder.firstIndex { Double($0.maxBitrate ?? 0) <= safe }
+        autoCap = AutoQuality.startingCap(measuredBps: await client.testBitrate(credential: credential, authHeader: authHeader))
     }
 
     func changeQuality(to newQuality: VideoQuality) {
@@ -1529,36 +1504,69 @@ struct PlayerView: View {
     /// "network can't keep up" signal on its own, and reacting to one caused a reload loop
     /// twice (each reload's startup buffering looked like another stall). Now requires
     /// several stalls clustered in a short window, which normal one-off blips don't produce.
+    /// While Auto is running below the source's quality, re-measures the connection after
+    /// every few minutes of smooth playback and raises the cap once it has clearly recovered.
+    private func startAutoRecovery() {
+        autoRecoveryTask?.cancel()
+        guard let credential, let authHeader else { return }
+        autoRecoveryTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(180))
+                guard !Task.isCancelled, quality == .auto, autoCap != nil, player.status == .playing,
+                      !player.isBuffering, recentStallTimestamps.isEmpty,
+                      lastStallHandledAt.map({ Date().timeIntervalSince($0) > 180 }) ?? true
+                else { continue }
+                let measured = await client.testBitrate(credential: credential, authHeader: authHeader)
+                guard !Task.isCancelled, case .raise(let cap) = AutoQuality.afterRecovery(
+                    current: autoCap, sourceBitrate: playbackInfo?.bitrate, measuredBps: measured)
+                else { continue }
+                autoCap = cap
+                reload(errorContext: "raise quality")
+                if let bitrate = cap?.maxBitrate {
+                    networkToast = String(format: "Raised to %.0f Mb/s — your connection has recovered", Double(bitrate) / 1_000_000)
+                } else {
+                    networkToast = "Back to full quality — your connection has recovered"
+                }
+                try? await Task.sleep(for: .seconds(3))
+                networkToast = nil
+            }
+        }
+    }
+
     func handlePlaybackStall() {
         guard quality == .auto else { return }
-        if let lastLoad = lastLoadStartedAt, Date().timeIntervalSince(lastLoad) < 12 { return }
-
         let now = Date()
+        guard AutoQuality.countsStall(at: now, lastLoad: lastLoadStartedAt, lastSeek: lastSeekAt,
+                                      isPaused: player.status == .paused) else { return }
+
         recentStallTimestamps.append(now)
         recentStallTimestamps.removeAll { now.timeIntervalSince($0) > 15 }
         guard recentStallTimestamps.count >= 3 else { return }
         recentStallTimestamps.removeAll()
 
         if let last = lastStallHandledAt, now.timeIntervalSince(last) < 30 { return }
-        let nextIndex = (autoLadderIndex ?? -1) + 1
-        guard nextIndex < Self.autoBitrateLadder.count else {
-            // The ladder's exhausted and it's STILL stalling repeatedly — that's not a
-            // bandwidth problem a lower bitrate can fix (already tried every step), it's
-            // something else entirely (a codec/output failure, a dead source, etc.). Silently
-            // returning here left the video frozen on a spinner forever with zero feedback —
-            // surface it instead of pretending nothing's wrong.
-            lastStallHandledAt = now
-            errorMessage = "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC."
-            return
-        }
         lastStallHandledAt = now
-        autoLadderIndex = nextIndex
-        reload(errorContext: "adjust quality")
-        let mbps = Double(Self.autoBitrateLadder[nextIndex].maxBitrate ?? 0) / 1_000_000
-        networkToast = "Lowered to \(mbps >= 1 ? String(format: "%.0f Mb/s", mbps) : String(format: "%.0f Kb/s", mbps * 1000)) — your connection can't keep up"
+        guard let credential, let authHeader else { return }
         Task {
-            try? await Task.sleep(for: .seconds(3))
-            networkToast = nil
+            // Measured again before acting: a stall can come from the server or the engine
+            // rather than the connection, and lowering quality doesn't help with those.
+            let measured = await client.testBitrate(credential: credential, authHeader: authHeader)
+            switch AutoQuality.afterStalls(current: autoCap, sourceBitrate: playbackInfo?.bitrate, measuredBps: measured) {
+            case .keep:
+                return
+            case .exhausted:
+                // Still stalling at the bottom step: not a bandwidth problem a lower bitrate
+                // can fix (a codec/output failure, a dead source), so say so rather than
+                // leaving the video frozen on a spinner.
+                errorMessage = "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC."
+            case .lower(let cap):
+                autoCap = cap
+                reload(errorContext: "adjust quality")
+                let mbps = Double(cap.maxBitrate ?? 0) / 1_000_000
+                networkToast = "Lowered to \(mbps >= 1 ? String(format: "%.0f Mb/s", mbps) : String(format: "%.0f Kb/s", mbps * 1000)) — your connection can't keep up"
+                try? await Task.sleep(for: .seconds(3))
+                networkToast = nil
+            }
         }
     }
 
