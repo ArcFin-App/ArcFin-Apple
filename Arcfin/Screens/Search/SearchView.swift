@@ -14,7 +14,8 @@ struct SearchView: View {
 
     @State private var jellyfinResults: [MediaItem] = []
     @State private var seerrResults: [SeerrItem] = []
-    @State private var isSearching = false
+    @State private var isSearchingLibrary = false
+    @State private var isSearchingDiscover = false
     @State private var searchTask: Task<Void, Never>?
     @State private var requestingSeerrItem: SeerrItem?
     @AppStorage("recentSearches") private var recentSearchesData = Data()
@@ -101,7 +102,7 @@ struct SearchView: View {
                     systemImage: "magnifyingglass",
                     description: Text("Find movies, shows, and more.")
                 )
-            } else if !isSearching && jellyfinResults.isEmpty && seerrResults.isEmpty {
+            } else if !isSearchingLibrary && !isSearchingDiscover && jellyfinResults.isEmpty && seerrResults.isEmpty {
                 ContentUnavailableView.search(text: query)
             } else {
                 ScrollView(showsIndicators: false) {
@@ -232,25 +233,34 @@ struct SearchView: View {
         guard !query.isEmpty else {
             jellyfinResults = []
             seerrResults = []
-            isSearching = false
+            isSearchingLibrary = false
+            isSearchingDiscover = false
             return
         }
-        isSearching = true
+        isSearchingLibrary = true
+        isSearchingDiscover = true
         searchTask = Task {
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
-            async let jellyTask: [MediaItem] = mediaRepo.searchIfAuthenticated(
-                query: query,
-                authState: authManager.state,
-                authClient: authManager.authClient
-            )
-            async let seerrTask = seerrRepo.search(query: query)
-
-            let (jellyfin, seerr) = await (jellyTask, seerrTask)
-            guard !Task.isCancelled else { return }
-            jellyfinResults = jellyfin
-            seerrResults = seerr
-            isSearching = false
+            // Each server's results show as they arrive, so a slow one doesn't hold up the other.
+            await withDiscardingTaskGroup { group in
+                group.addTask { @MainActor in
+                    let jellyfin = await mediaRepo.searchIfAuthenticated(
+                        query: query,
+                        authState: authManager.state,
+                        authClient: authManager.authClient
+                    )
+                    guard !Task.isCancelled else { return }
+                    jellyfinResults = jellyfin
+                    isSearchingLibrary = false
+                }
+                group.addTask { @MainActor in
+                    let seerr = await seerrRepo.search(query: query)
+                    guard !Task.isCancelled else { return }
+                    seerrResults = seerr
+                    isSearchingDiscover = false
+                }
+            }
         }
     }
 }
