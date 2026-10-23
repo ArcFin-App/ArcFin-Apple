@@ -87,6 +87,7 @@ struct SeerrItemDetailView: View {
                             .font(.system(.footnote))
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
+                            .frame(maxWidth: 720, alignment: .leading)
                     }
 
                     if let seasons = detail?.seasons, !seasons.isEmpty {
