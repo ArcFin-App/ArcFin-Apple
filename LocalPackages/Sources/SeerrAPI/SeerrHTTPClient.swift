@@ -373,7 +373,8 @@ public actor SeerrHTTPClient {
     public func certification(mediaType: RequestMediaType, tmdbId: Int, region: String) async throws -> String? {
         try await ensureAuthenticated()
         let path = mediaType == .tv ? "api/v1/tv/\(tmdbId)" : "api/v1/movie/\(tmdbId)"
-        let data = try await fetch(baseURL.appendingPathComponent(path))
+        // Short: these run one per search result, and a slow Seerr shouldn't hold the list.
+        let data = try await fetch(baseURL.appendingPathComponent(path), timeout: 5)
         let decoded = try JSONDecoder().decode(SeerrCertificationResponse.self, from: data)
         var byRegion: [String: String] = [:]
         for entry in decoded.releases?.results ?? [] {
@@ -693,9 +694,9 @@ public actor SeerrHTTPClient {
         }
     }
 
-    private func fetch(_ url: URL) async throws -> Data {
+    private func fetch(_ url: URL, timeout: TimeInterval = 15) async throws -> Data {
         var req = URLRequest(url: url)
-        req.timeoutInterval = 15
+        req.timeoutInterval = timeout
         applyXSRF(to: &req)
         let (data, response) = try await session.data(for: req)
         if let http = response as? HTTPURLResponse, http.statusCode == 401 {
@@ -703,7 +704,7 @@ public actor SeerrHTTPClient {
             try await ensureAuthenticated()
             // Rebuild so the fresh XSRF-TOKEN from the new login is included.
             var retryReq = URLRequest(url: url)
-            retryReq.timeoutInterval = 15
+            retryReq.timeoutInterval = timeout
             applyXSRF(to: &retryReq)
             let (retryData, retryResp) = try await session.data(for: retryReq)
             try Self.check(retryResp, data: retryData)
