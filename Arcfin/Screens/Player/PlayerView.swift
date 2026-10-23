@@ -28,6 +28,7 @@ struct PlayerView: View {
     @StateObject var groupState = GroupStateObserver()
     @Environment(PlaybackPresenter.self) var playbackPresenter
     @Environment(\.dismiss) var dismiss
+    @Environment(\.scenePhase) var scenePhase
     #if !os(tvOS)
     @Environment(\.isPlayerWindow) var isPlayerWindow
     @Environment(\.dismissWindow) var dismissWindow
@@ -132,6 +133,8 @@ struct PlayerView: View {
     @State var autoCap: StreamQualityCap?
     @State var lastSeekAt: Date?
     @State var autoRecoveryTask: Task<Void, Never>?
+    @State var wasBackgrounded = false
+    @State var foregroundCheckTask: Task<Void, Never>?
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
@@ -450,6 +453,15 @@ struct PlayerView: View {
             }
             handleStatusChange(newStatus)
             updateNowPlayingInfo()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: wasBackgrounded = true
+            case .active where wasBackgrounded:
+                wasBackgrounded = false
+                checkPlaybackAfterForeground()
+            default: break
+            }
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
@@ -1387,6 +1399,7 @@ struct PlayerView: View {
         progressReportTask?.cancel()
         autoRecoveryTask?.cancel()
         autoSkipTask?.cancel()
+        foregroundCheckTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
@@ -1540,6 +1553,21 @@ struct PlayerView: View {
                 try? await Task.sleep(for: .seconds(3))
                 networkToast = nil
             }
+        }
+    }
+
+    /// Back from the background (a call, another app) still loading and not moving: the server
+    /// may have ended the stream while nothing was asking for it, and the engine waits on it
+    /// forever. Reopening at the same position starts a new one.
+    private func checkPlaybackAfterForeground() {
+        foregroundCheckTask?.cancel()
+        let startTicks = player.positionTicks
+        foregroundCheckTask = Task {
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, player.status == .loading || player.isBuffering,
+                  player.positionTicks == startTicks
+            else { return }
+            reload(errorContext: "resume playback", resumeTicks: startTicks)
         }
     }
 
