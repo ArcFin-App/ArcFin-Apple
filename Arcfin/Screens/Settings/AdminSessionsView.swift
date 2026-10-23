@@ -15,6 +15,10 @@ struct AdminSessionsView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var refreshTask: Task<Void, Never>?
+    @State private var socket: JellyfinWebSocketClient?
+    @State private var socketTask: Task<Void, Never>?
+    @State private var receivedAt = Date()
+    @State private var lastPush: Date?
 
     private let client = JellyfinMediaClient()
 
@@ -43,8 +47,14 @@ struct AdminSessionsView: View {
         .arcfinNavTitleLarge("Active Sessions")
         .task { await load() }
         .refreshable { await load() }
-        .onAppear { startAutoRefresh() }
-        .onDisappear { refreshTask?.cancel() }
+        .onAppear {
+            startLiveUpdates()
+            startAutoRefresh()
+        }
+        .onDisappear {
+            refreshTask?.cancel()
+            stopLiveUpdates()
+        }
     }
 
     private func sessionRow(_ session: JellyfinSession) -> some View {
@@ -72,15 +82,23 @@ struct AdminSessionsView: View {
                         .font(.system(.footnote, design: .default, weight: .medium))
                         .foregroundStyle(DT.Color.textPrimary)
                     if let position = session.positionTicks, let duration = session.runTimeTicks, duration > 0 {
-                        ProgressView(value: Double(position), total: Double(duration))
-                            .tint(DT.Color.accent)
-                        HStack {
-                            Text(timeLabel(position))
-                            Spacer()
-                            Text(timeLabel(duration))
+                        // Clients only report progress every few seconds; advance the clock
+                        // locally in between so a playing row doesn't stall and jump.
+                        TimelineView(.periodic(from: .now, by: 1)) { context in
+                            let elapsed = session.isPaused ? 0 : Int64(context.date.timeIntervalSince(receivedAt) * 10_000_000)
+                            let current = min(position + max(elapsed, 0), duration)
+                            VStack(spacing: 4) {
+                                ProgressView(value: Double(current), total: Double(duration))
+                                    .tint(DT.Color.accent)
+                                HStack {
+                                    Text(timeLabel(current))
+                                    Spacer()
+                                    Text(timeLabel(duration))
+                                }
+                                .font(.system(.caption2, design: .monospaced))
+                                .foregroundStyle(DT.Color.textSecondary)
+                            }
                         }
-                        .font(.system(.caption2, design: .monospaced))
-                        .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
                 .padding(.top, 2)
@@ -105,22 +123,52 @@ struct AdminSessionsView: View {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         do {
-            sessions = try await client.getActiveSessions(credential: credential, authHeader: authHeader)
-            errorMessage = nil
+            apply(try await client.getActiveSessions(credential: credential, authHeader: authHeader))
         } catch {
             errorMessage = "Couldn't load active sessions."
         }
         isLoading = false
     }
 
-    /// Sessions are live state — a static snapshot goes stale the moment someone else
-    /// starts/stops playing, so this screen refreshes itself while it's on screen.
+    private func apply(_ newSessions: [JellyfinSession]) {
+        sessions = newSessions
+        receivedAt = Date()
+        errorMessage = nil
+        isLoading = false
+    }
+
+    private func startLiveUpdates() {
+        stopLiveUpdates()
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let deviceId = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
+        let socket = JellyfinWebSocketClient(credential: credential, deviceId: deviceId)
+        self.socket = socket
+        socket.startSessionUpdates()
+        socketTask = Task {
+            for await event in socket.events {
+                guard case .sessions(let pushed) = event else { continue }
+                lastPush = Date()
+                apply(pushed)
+            }
+        }
+    }
+
+    private func stopLiveUpdates() {
+        socketTask?.cancel()
+        socket?.stopSessionUpdates()
+        socket?.close()
+        socket = nil
+    }
+
+    /// Fallback for when the WebSocket can't connect (e.g. a reverse proxy that doesn't
+    /// forward upgrades) — polls only while no push has arrived recently.
     private func startAutoRefresh() {
         refreshTask?.cancel()
         refreshTask = Task {
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(10))
+                try? await Task.sleep(for: .seconds(5))
                 guard !Task.isCancelled else { return }
+                if let lastPush, Date().timeIntervalSince(lastPush) < 5 { continue }
                 await load()
             }
         }
