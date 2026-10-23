@@ -348,7 +348,9 @@ extension JellyfinMediaClient {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("MediaSegments/\(itemId)"),
             resolvingAgainstBaseURL: false)!
-        comps.queryItems = [.init(name: "includeSegmentTypes", value: "Intro,Outro,Recap,Preview")]
+        // The server binds this as a repeated parameter; a comma-joined value parses as one
+        // bitwise-ORed enum value that matches no segment, so nothing came back.
+        comps.queryItems = ["Intro", "Outro", "Recap", "Preview"].map { .init(name: "includeSegmentTypes", value: $0) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 6
