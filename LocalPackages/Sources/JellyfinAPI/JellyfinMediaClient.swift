@@ -1121,9 +1121,11 @@ struct JellyfinItemResponse: Decodable {
     let providerIds: [String: String]?
     let genres: [String]?
     let premiereDate: String?
+    let locationType: String?
 
     enum CodingKeys: String, CodingKey {
         case premiereDate = "PremiereDate"
+        case locationType = "LocationType"
         case genres = "Genres"
         case id = "Id"
         case name = "Name"
@@ -1174,7 +1176,8 @@ struct JellyfinItemResponse: Decodable {
             parentBackdropItemId: parentBackdropItemId,
             parentBackdropImageTags: parentBackdropImageTags ?? [],
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
-            premiereDate: premiereDate.flatMap(Self.parseDay)
+            premiereDate: premiereDate.flatMap(Self.parseDay),
+            isVirtual: locationType == "Virtual"
         )
     }
 
@@ -1259,6 +1262,7 @@ private struct ItemDetailResponse: Decodable {
     let endDate: String?
     let externalUrls: [ExternalUrlResponse]?
     let mediaSources: [MediaSourceSummary]?
+    let locationType: String?
 
     struct ExternalUrlResponse: Decodable {
         let name: String?
@@ -1279,7 +1283,7 @@ private struct ItemDetailResponse: Decodable {
         case criticRating = "CriticRating", originalTitle = "OriginalTitle"
         case productionLocations = "ProductionLocations", tags = "Tags", status = "Status"
         case airDays = "AirDays", airTime = "AirTime", premiereDate = "PremiereDate", endDate = "EndDate"
-        case externalUrls = "ExternalUrls", mediaSources = "MediaSources"
+        case externalUrls = "ExternalUrls", mediaSources = "MediaSources", locationType = "LocationType"
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
         case imageTags = "ImageTags", backdropImageTags = "BackdropImageTags"
         case userData = "UserData", productionYear = "ProductionYear"
@@ -1317,7 +1321,9 @@ private struct ItemDetailResponse: Decodable {
             parentIndexNumber: parentIndexNumber,
             seriesId: seriesId,
             seriesPrimaryImageTag: seriesPrimaryImageTag,
-            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
+            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            premiereDate: premiereDate.flatMap(Self.parseDay),
+            isVirtual: locationType == "Virtual"
         )
         var detail = MediaItemDetail(
             item: mediaItem,
