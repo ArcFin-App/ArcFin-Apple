@@ -1017,7 +1017,6 @@ struct LibraryDetailView: View {
     @State private var playlistName: String?
     /// Playlist entry ids by item id, which removing a row needs.
     @State private var entryIds: [String: String] = [:]
-    @State private var playlistActionItem: MediaItem?
     @State private var playlistPlayback: MediaDetailView.PlaybackRequest?
     @State private var showAddTitles = false
     @State private var showRename = false
@@ -1459,15 +1458,11 @@ struct LibraryDetailView: View {
     @ViewBuilder
     private func gridLink<Content: View>(for item: MediaItem, @ViewBuilder label: () -> Content) -> some View {
         if playlist != nil {
-            // Attached to the title itself, so on iPad and Mac the choice points at it.
-            Button { playlistActionItem = item } label: { label() }
-                .confirmationDialog(cardTitle(item), isPresented: Binding(
-                    get: { playlistActionItem?.id == item.id }, set: { if !$0 { playlistActionItem = nil } }
-                ), titleVisibility: .visible) {
-                    playlistActions(item)
-                } message: {
-                    if let subtitle = cardSubtitle(item), item.type == .episode { Text(subtitle) }
-                }
+            // A menu opens the same way from every card; a confirmation dialog switched
+            // between a popover and a full sheet depending on the room around the card.
+            Menu { playlistActions(item) } label: { label() }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
         } else {
             NavigationLink(value: navTarget(for: item)) { label() }
         }
