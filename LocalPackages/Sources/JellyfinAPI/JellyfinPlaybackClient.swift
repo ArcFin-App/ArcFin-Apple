@@ -237,14 +237,16 @@ extension JellyfinMediaClient {
 
     // MARK: - Network bandwidth probe
 
-    /// Downloads a throwaway buffer of `sizeBytes` from Jellyfin's own bandwidth-test
-    /// endpoint and times it — used to pick a sane starting quality cap for Auto instead
-    /// of always starting uncapped and eating a stall-storm on a slow connection.
-    /// Returns measured throughput in bits per second, or nil if the probe failed/timed out.
+    /// Streams up to `sizeBytes` from Jellyfin's bandwidth-test endpoint for at most
+    /// `duration` and returns the throughput in bits per second, or nil if the probe failed.
+    /// A 1 MB sample finished before the connection got up to speed and under-read fast
+    /// links, so this reads a bigger sample but stops on time on a slow one. The first
+    /// chunk is left out so the server's response latency doesn't count as slowness.
     public func testBitrate(
         credential: ServerCredential,
         authHeader: String,
-        sizeBytes: Int = 1_000_000
+        sizeBytes: Int = 10_000_000,
+        duration: Duration = .seconds(4)
     ) async -> Int? {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Playback/BitrateTest"),
@@ -254,14 +256,15 @@ extension JellyfinMediaClient {
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
 
-        let start = Date()
-        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
-              let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode),
-              !data.isEmpty
-        else { return nil }
-        let elapsed = Date().timeIntervalSince(start)
-        guard elapsed > 0.05 else { return nil }
-        return Int(Double(data.count) * 8 / elapsed)
+        let probe = ThroughputProbe()
+        let session = URLSession(configuration: URLSession.arcfin.configuration, delegate: probe, delegateQueue: nil)
+        defer { session.invalidateAndCancel() }
+        session.dataTask(with: req).resume()
+        let deadline = ContinuousClock.now + duration
+        while !probe.isFinished, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return probe.bitsPerSecond
     }
 
     /// The tile-sheet URL for one trickplay tile — cache these client-side, each holds
@@ -643,4 +646,48 @@ private struct LegacySegment: Decodable {
     let end: Double?
     let valid: Bool?
     enum CodingKeys: String, CodingKey { case start = "IntroStart", end = "IntroEnd", valid = "Valid" }
+}
+
+private final class ThroughputProbe: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private let lock = NSLock()
+    private var failed = false
+    private var finished = false
+    private var firstChunkAt: Date?
+    private var lastChunkAt: Date?
+    private var bytesAfterFirstChunk = 0
+
+    var isFinished: Bool { lock.withLock { finished } }
+
+    var bitsPerSecond: Int? {
+        lock.withLock {
+            guard !failed, let firstChunkAt, let lastChunkAt, bytesAfterFirstChunk > 0 else { return nil }
+            let elapsed = lastChunkAt.timeIntervalSince(firstChunkAt)
+            guard elapsed > 0.05 else { return nil }
+            return Int(Double(bytesAfterFirstChunk) * 8 / elapsed)
+        }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse) async -> URLSession.ResponseDisposition {
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            lock.withLock { failed = true; finished = true }
+            return .cancel
+        }
+        return .allow
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        let now = Date()
+        lock.withLock {
+            if firstChunkAt == nil {
+                firstChunkAt = now
+            } else {
+                bytesAfterFirstChunk += data.count
+            }
+            lastChunkAt = now
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        lock.withLock { finished = true }
+    }
 }
