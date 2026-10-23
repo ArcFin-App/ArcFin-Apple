@@ -101,6 +101,21 @@ public struct JellyfinSession: Sendable, Identifiable, Equatable {
     public let positionTicks: Int64?
     public let runTimeTicks: Int64?
     public let lastActivityDate: Date?
+    /// "DirectPlay", "DirectStream" or "Transcode", as the server reports it.
+    public var playMethod: String? = nil
+    public var transcode: Transcode? = nil
+    public var supportsRemoteControl: Bool = false
+
+    public struct Transcode: Sendable, Equatable {
+        public let bitrate: Int?
+        public let videoCodec: String?
+        public let audioCodec: String?
+        public let isVideoDirect: Bool
+        public let isAudioDirect: Bool
+        /// The server's reasons, e.g. "VideoCodecNotSupported", "ContainerBitrateExceedsLimit".
+        public let reasons: [String]
+        public let hardwareAcceleration: String?
+    }
 }
 
 /// Caps applied when the user overrides automatic quality — nil means uncapped/Auto.
@@ -385,6 +400,36 @@ extension JellyfinMediaClient {
         return try JSONDecoder().decode([SessionResponse].self, from: data).map { $0.toSession() }
     }
 
+    public enum SessionCommand: String, Sendable {
+        case stop = "Stop", pause = "Pause", unpause = "Unpause"
+    }
+
+    /// POST /Sessions/{id}/Playing/{command} — controls another client's playback (admin).
+    public func sendPlaystateCommand(_ command: SessionCommand, sessionId: String, credential: ServerCredential, authHeader: String) async throws {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions/\(sessionId)/Playing/\(command.rawValue)"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        let (_, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    /// POST /Sessions/{id}/Message — shows a message on another client's screen.
+    public func sendSessionMessage(_ text: String, sessionId: String, credential: ServerCredential, authHeader: String) async throws {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions/\(sessionId)/Message"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 10
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["Header": "Message from the server admin", "Text": text, "TimeoutMs": 15_000])
+        let (_, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     // MARK: - Device profile
 
     /// For engines that demux and decode on the device (Aether's FFmpeg + VideoToolbox, VLC):
@@ -500,9 +545,25 @@ struct SessionResponse: Decodable {
     struct PlayState: Decodable {
         let isPaused: Bool?
         let positionTicks: Int64?
+        let playMethod: String?
         enum CodingKeys: String, CodingKey {
             case isPaused = "IsPaused"
             case positionTicks = "PositionTicks"
+            case playMethod = "PlayMethod"
+        }
+    }
+    struct TranscodingInfo: Decodable {
+        let bitrate: Int?
+        let videoCodec: String?
+        let audioCodec: String?
+        let isVideoDirect: Bool?
+        let isAudioDirect: Bool?
+        let transcodeReasons: [String]?
+        let hardwareAccelerationType: String?
+        enum CodingKeys: String, CodingKey {
+            case bitrate = "Bitrate", videoCodec = "VideoCodec", audioCodec = "AudioCodec"
+            case isVideoDirect = "IsVideoDirect", isAudioDirect = "IsAudioDirect"
+            case transcodeReasons = "TranscodeReasons", hardwareAccelerationType = "HardwareAccelerationType"
         }
     }
     let id: String
@@ -515,8 +576,12 @@ struct SessionResponse: Decodable {
     // ISO 8601) doesn't match JSONDecoder's default .deferredToDate strategy, and a single
     // unparseable field on one session shouldn't fail decoding the whole session list.
     let lastActivityDate: String?
+    let transcodingInfo: TranscodingInfo?
+    let supportsRemoteControl: Bool?
 
     enum CodingKeys: String, CodingKey {
+        case transcodingInfo = "TranscodingInfo"
+        case supportsRemoteControl = "SupportsRemoteControl"
         case id = "Id"
         case userName = "UserName"
         case deviceName = "DeviceName"
@@ -543,7 +608,15 @@ struct SessionResponse: Decodable {
             isPaused: playState?.isPaused ?? false,
             positionTicks: playState?.positionTicks,
             runTimeTicks: nowPlayingItem?.runTimeTicks,
-            lastActivityDate: parsedDate
+            lastActivityDate: parsedDate,
+            playMethod: playState?.playMethod,
+            transcode: transcodingInfo.map {
+                JellyfinSession.Transcode(
+                    bitrate: $0.bitrate, videoCodec: $0.videoCodec, audioCodec: $0.audioCodec,
+                    isVideoDirect: $0.isVideoDirect ?? false, isAudioDirect: $0.isAudioDirect ?? false,
+                    reasons: $0.transcodeReasons ?? [], hardwareAcceleration: $0.hardwareAccelerationType)
+            },
+            supportsRemoteControl: supportsRemoteControl ?? false
         )
     }
 }
