@@ -130,6 +130,8 @@ struct PlayerView: View {
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
+    /// What setup() is waiting on, shown under the spinner when a start takes a while.
+    @State var loadingStage: String?
     @State var networkToast: String?
     @State var chapters: [MediaChapter] = []
     @State var castMembers: [MediaPerson] = []
@@ -289,9 +291,7 @@ struct PlayerView: View {
             // player.load() (fetching PlaybackInfo/item detail first) — without it the screen
             // was just black with no spinner for that whole prefetch window.
             if errorMessage == nil, player.status == .idle || player.status == .loading || player.isBuffering {
-                ProgressView()
-                    .tint(.white)
-                    .scaleEffect(1.4)
+                PlayerLoadingIndicator(status: loadingStatusText)
             }
 
             if let errorMessage {
@@ -940,6 +940,12 @@ struct PlayerView: View {
 
     // MARK: - Setup / teardown
 
+    private var loadingStatusText: String {
+        if let loadingStage { return loadingStage }
+        if playbackInfo?.playMethod == .transcode { return "Waiting for the server…" }
+        return "Buffering…"
+    }
+
     private var decodesNatively: Bool { player is AetherEnginePlayer || player is VLCEnginePlayer }
 
     /// The AVFoundation/VLC split Auto used before Aether existed — now only reached when
@@ -997,8 +1003,10 @@ struct PlayerView: View {
             return
         }
         if quality == .auto {
+            loadingStage = "Checking your connection…"
             await primeAutoLadder(credential: credential, authHeader: authHeader)
         }
+        loadingStage = "Contacting the server…"
         do {
             // The engine is picked before asking the server how to stream, because the answer
             // depends on it: Aether and VLC take the file as is, AVFoundation needs it repackaged.
@@ -1097,6 +1105,7 @@ struct PlayerView: View {
             currentLikes = detail?.item.userData?.likes
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
+            loadingStage = info.playMethod == .transcode ? "The server is converting this video…" : "Opening the video…"
             // Auto's pre-flight pick can't catch everything — a runtime load failure on
             // Aether (the exact class of bug we spent real time on this session, where a
             // source's own structure breaks one engine but not another) falls back once to
@@ -1118,6 +1127,7 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             await player.play()
+            loadingStage = nil
             await applyRememberedRate()
             sharePlay.playerOpened(item)
             // The preferred or remembered audio language, which a file played as is ignores.
