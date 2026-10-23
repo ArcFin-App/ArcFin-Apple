@@ -128,6 +128,7 @@ struct PlayerView: View {
     /// manual pick never touches this.
     @State var autoCap: StreamQualityCap?
     @State var lastSeekAt: Date?
+    @State var autoRecoveryTask: Task<Void, Never>?
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
@@ -1172,6 +1173,7 @@ struct PlayerView: View {
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
                                              positionTicks: resumeFrom)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
+            startAutoRecovery()
         } catch {
             errorMessage = "Couldn't start playback: \(error.localizedDescription)"
         }
@@ -1364,6 +1366,7 @@ struct PlayerView: View {
     private func teardown() async {
         sharePlay.playerClosed(item.id)
         progressReportTask?.cancel()
+        autoRecoveryTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
@@ -1491,6 +1494,35 @@ struct PlayerView: View {
     /// "network can't keep up" signal on its own, and reacting to one caused a reload loop
     /// twice (each reload's startup buffering looked like another stall). Now requires
     /// several stalls clustered in a short window, which normal one-off blips don't produce.
+    /// While Auto is running below the source's quality, re-measures the connection after
+    /// every few minutes of smooth playback and raises the cap once it has clearly recovered.
+    private func startAutoRecovery() {
+        autoRecoveryTask?.cancel()
+        guard let credential, let authHeader else { return }
+        autoRecoveryTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(180))
+                guard !Task.isCancelled, quality == .auto, autoCap != nil, player.status == .playing,
+                      !player.isBuffering, recentStallTimestamps.isEmpty,
+                      lastStallHandledAt.map({ Date().timeIntervalSince($0) > 180 }) ?? true
+                else { continue }
+                let measured = await client.testBitrate(credential: credential, authHeader: authHeader)
+                guard !Task.isCancelled, case .raise(let cap) = AutoQuality.afterRecovery(
+                    current: autoCap, sourceBitrate: playbackInfo?.bitrate, measuredBps: measured)
+                else { continue }
+                autoCap = cap
+                reload(errorContext: "raise quality")
+                if let bitrate = cap?.maxBitrate {
+                    networkToast = String(format: "Raised to %.0f Mb/s — your connection has recovered", Double(bitrate) / 1_000_000)
+                } else {
+                    networkToast = "Back to full quality — your connection has recovered"
+                }
+                try? await Task.sleep(for: .seconds(3))
+                networkToast = nil
+            }
+        }
+    }
+
     func handlePlaybackStall() {
         guard quality == .auto else { return }
         let now = Date()

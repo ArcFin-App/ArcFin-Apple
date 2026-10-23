@@ -54,6 +54,24 @@ public enum AutoQuality {
         return (current?.maxBitrate ?? .max) > (bottom.maxBitrate ?? 0) ? .lower(bottom) : .exhausted
     }
 
+    public enum RecoveryDecision: Equatable, Sendable {
+        case keep
+        /// Raise to this cap; nil lifts the cap and plays the file as it is.
+        case raise(StreamQualityCap?)
+    }
+
+    /// Whether a lowered cap can come back up, from a fresh measurement taken during smooth
+    /// playback. Raising costs a reload, so it only happens for a clear gain: the new cap
+    /// must be at least half again the current one, or let the source through untouched.
+    public static func afterRecovery(current: StreamQualityCap?, sourceBitrate: Int?, measuredBps: Int?) -> RecoveryDecision {
+        guard let current, let currentBitrate = current.maxBitrate, let measuredBps else { return .keep }
+        let safe = Double(measuredBps) * headroom
+        if let sourceBitrate, safe >= Double(sourceBitrate) { return .raise(nil) }
+        guard let candidate = startingCap(measuredBps: measuredBps) else { return .raise(nil) }
+        guard let candidateBitrate = candidate.maxBitrate, Double(candidateBitrate) >= Double(currentBitrate) * 1.5 else { return .keep }
+        return .raise(candidate)
+    }
+
     /// Whether a stall should count towards lowering quality. A load or seek buffers by
     /// design, and a paused player isn't waiting on the network.
     public static func countsStall(at now: Date, lastLoad: Date?, lastSeek: Date?, isPaused: Bool) -> Bool {

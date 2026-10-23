@@ -63,4 +63,32 @@ struct AutoQualityTests {
         #expect(!AutoQuality.countsStall(at: now, lastLoad: nil, lastSeek: nil, isPaused: true))
         #expect(AutoQuality.countsStall(at: now, lastLoad: now.addingTimeInterval(-60), lastSeek: now.addingTimeInterval(-60), isPaused: false))
     }
+
+    @Test("A recovered connection lifts the cap when the source fits")
+    func recoveryLiftsCap() {
+        let decision = AutoQuality.afterRecovery(current: StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 1280),
+                                                 sourceBitrate: 10_000_000, measuredBps: 40_000_000)
+        #expect(decision == .raise(nil))
+    }
+
+    @Test("A recovered connection raises to the measured rate when the source still doesn't fit")
+    func recoveryRaisesToMeasured() throws {
+        let decision = AutoQuality.afterRecovery(current: StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 1280),
+                                                 sourceBitrate: 30_000_000, measuredBps: 16_000_000)
+        #expect(decision == .raise(StreamQualityCap(maxBitrate: 12_000_000, maxWidth: nil)))
+    }
+
+    @Test("A small improvement isn't worth a reload")
+    func smallImprovementKeeps() {
+        let decision = AutoQuality.afterRecovery(current: StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1920),
+                                                 sourceBitrate: 30_000_000, measuredBps: 13_000_000)
+        #expect(decision == .keep)
+    }
+
+    @Test("Uncapped or unmeasured stays as is")
+    func recoveryNeedsCapAndMeasurement() {
+        #expect(AutoQuality.afterRecovery(current: nil, sourceBitrate: nil, measuredBps: 50_000_000) == .keep)
+        #expect(AutoQuality.afterRecovery(current: StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 1280),
+                                          sourceBitrate: nil, measuredBps: nil) == .keep)
+    }
 }
