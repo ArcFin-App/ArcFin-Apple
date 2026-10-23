@@ -22,7 +22,7 @@ struct PlaybackSettingsView: View {
     @AppStorage("skipForwardSeconds")  private var skipForwardSeconds  = 10
     @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
     @AppStorage("mobileVideoQuality") private var mobileVideoQuality = ""
-    @AppStorage("upNextCountdownSeconds") private var upNextCountdownSeconds = 8
+    @AppStorage("upNextCountdownSeconds") private var upNextCountdownSeconds = 5
     @AppStorage(ResumeBehavior.key) private var resumeBehavior = ResumeBehavior.resume
     @AppStorage(WatchedThreshold.key) private var watchedThreshold = WatchedThreshold.server
     @AppStorage("defaultPlaybackSpeed") private var defaultPlaybackSpeed = 1.0
@@ -124,17 +124,6 @@ struct PlaybackSettingsView: View {
                 }
                 .tvListRow()
                 .syncLocked("autoPlayNext", authManager)
-                if autoPlayNext {
-                    Picker(selection: $upNextCountdownSeconds) {
-                        ForEach([5, 8, 10, 15], id: \.self) { seconds in
-                            Text("\(seconds)s").tag(seconds)
-                        }
-                    } label: {
-                        TVRowLabelText(title: "Up Next Countdown")
-                    }
-                    .tvListRow()
-                    .syncLocked("upNextCountdownSeconds", authManager)
-                }
                 Toggle(isOn: $skipRecap) {
                     TVRowLabelText(title: "Skip Recap Automatically")
                 }
@@ -150,6 +139,19 @@ struct PlaybackSettingsView: View {
                 }
                 .tvListRow()
                 .syncLocked("skipCredits", authManager)
+                if autoPlayNext || skipRecap || skipIntro || skipCredits {
+                    Picker(selection: $upNextCountdownSeconds) {
+                        ForEach([3, 4, 5], id: \.self) { seconds in
+                            Text("\(seconds)s").tag(seconds)
+                        }
+                    } label: {
+                        TVRowLabelText(title: "Countdown")
+                    }
+                    .tvListRow()
+                    .syncLocked("upNextCountdownSeconds", authManager)
+                    // Earlier versions offered up to 15 s.
+                    .onAppear { upNextCountdownSeconds = min(max(upNextCountdownSeconds, 3), 5) }
+                }
                 Toggle(isOn: $subtitleDefault) {
                     TVRowLabelText(title: "Show Subtitles by Default")
                 }
@@ -172,7 +174,7 @@ struct PlaybackSettingsView: View {
                     .syncLocked("defaultPlaybackSpeed", authManager)
                 }
             } footer: {
-                Text("Remember Playback Speed starts new videos at the speed you last picked; otherwise they start at the default speed. Skip buttons appear whenever your server knows where a recap, intro, credits or preview is (from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins); the Skip toggles do it for you.")
+                Text("Remember Playback Speed starts new videos at the speed you last picked; otherwise they start at the default speed. Skip buttons appear whenever your server knows where a recap, intro, credits or preview is (from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins); the Skip toggles do it for you. Countdown is how long the button fills before an automatic skip or the next episode starts.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

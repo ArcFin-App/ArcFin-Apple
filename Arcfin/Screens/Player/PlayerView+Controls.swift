@@ -1334,7 +1334,13 @@ extension PlayerView {
                             }
                             .foregroundStyle(.white)
                             .padding(.horizontal, 16).padding(.vertical, 10)
+                            .background {
+                                if let countdown = autoSkipCountdown, countdown.kind == currentSkippable?.kind {
+                                    CountdownFill(countdown: countdown, color: .white.opacity(0.28))
+                                }
+                            }
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                             .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
                         }
                         #if os(tvOS)
@@ -1360,8 +1366,9 @@ extension PlayerView {
         if let span = segments.recap, span.contains(seconds) { return ("recap", "Skip Recap", span) }
         if let span = segments.intro, span.contains(seconds) { return ("intro", "Skip Intro", span) }
         if let span = segments.credits, span.contains(seconds) {
-            // Up Next and the suggestions panel already offer a way on from the credits.
-            guard !showUpNext, !showMoreLikeThis else { return nil }
+            // Up Next and the suggestions panel already offer a way on from the credits,
+            // unless an automatic skip is counting down and needs to be seen.
+            guard !showUpNext, !showMoreLikeThis || autoSkipCountdown?.kind == "credits" else { return nil }
             return ("credits", "Skip Credits", span)
         }
         if let span = segments.preview, span.contains(seconds) { return ("preview", "Skip Preview", span) }
@@ -1421,7 +1428,7 @@ extension PlayerView {
                     HStack(spacing: 8) {
                         // With something up next, going on to it comes before skipping the credits.
                         creditsAction(next.type == .episode ? "Next Episode" : "Play Next",
-                                      systemImage: "play", isSelected: true) {
+                                      systemImage: "play", isSelected: true, countdown: upNextCountdownState) {
                             playNextEpisode()
                         }
                         .accessibilityLabel("Play \(next.name)")
@@ -1451,7 +1458,8 @@ extension PlayerView {
         .animation(DT.Animation.fast, value: showUpNext)
     }
 
-    private func creditsAction(_ title: String, systemImage: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func creditsAction(_ title: String, systemImage: String, isSelected: Bool,
+                               countdown: AutoActionCountdown? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: isSelected ? "\(systemImage).fill" : systemImage)
                 .font(.system(.caption, weight: .semibold))
@@ -1459,9 +1467,13 @@ extension PlayerView {
                 .minimumScaleFactor(0.8)
                 .foregroundStyle(isSelected ? .black : .white)
                 .frame(maxWidth: .infinity, minHeight: 44)
+                .background {
+                    if let countdown { CountdownFill(countdown: countdown, color: .black.opacity(0.18)) }
+                }
                 .background(
                     isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.16)),
                     in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
         }
         .playerOverlayButton(cornerRadius: DT.Radius.md)
         .accessibilityLabel(title)
