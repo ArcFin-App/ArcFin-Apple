@@ -193,12 +193,11 @@ struct SearchView: View {
         let details = [kindLabel(item), item.seriesName, episodeCode(item), item.productionYear.map(String.init)].compactMap { $0 }
         return NavigationLink(value: item) {
             ZStack(alignment: .bottomLeading) {
-                CachedAsyncImage(url: mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1000) ?? posterImageURL(for: item)) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: DT.Color.backgroundTertiary
-                    }
-                }
+                RetryingAsyncImage(
+                    url: mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1000) ?? posterImageURL(for: item),
+                    logCategory: "SearchView", logContext: "top result item=\(item.name)",
+                    content: { $0.resizable().scaledToFill() },
+                    placeholder: { DT.Color.backgroundTertiary })
                 .frame(maxWidth: .infinity)
                 .frame(height: Self.topResultHeight)
                 .clipped()
@@ -360,12 +359,10 @@ struct SearchView: View {
 
     private func discoverRowContent(_ item: SeerrItem) -> some View {
         HStack(alignment: .center, spacing: DT.Spacing.sm) {
-            CachedAsyncImage(url: item.posterURL) { phase in
-                switch phase {
-                case .success(let img): img.resizable().scaledToFill()
-                default: DT.Color.backgroundTertiary
-                }
-            }
+            RetryingAsyncImage(
+                url: item.posterURL, logCategory: "SearchView", logContext: "discover item=\(item.title)",
+                content: { $0.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundTertiary })
             .frame(width: Self.discoverPosterWidth, height: Self.discoverPosterWidth * 1.5)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm, style: .continuous))
             .allowsHitTesting(false)
@@ -469,17 +466,11 @@ private struct SearchResultCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             ZStack {
-                if let imageURL {
-                    CachedAsyncImage(url: imageURL) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: DT.Color.backgroundSecondary
-                        }
-                    }
-                    .clipped()
-                } else {
-                    DT.Color.backgroundSecondary
-                }
+                RetryingAsyncImage(
+                    url: imageURL, logCategory: "SearchView", logContext: "result item=\(title)",
+                    content: { $0.resizable().scaledToFill() },
+                    placeholder: { DT.Color.backgroundSecondary })
+                .clipped()
             }
             .aspectRatio(aspectRatio, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
