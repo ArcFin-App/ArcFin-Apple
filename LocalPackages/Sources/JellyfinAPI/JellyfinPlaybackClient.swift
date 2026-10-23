@@ -435,7 +435,7 @@ extension JellyfinMediaClient {
     /// For engines that demux and decode on the device (Aether's FFmpeg + VideoToolbox, VLC):
     /// any container and codec plays as is, so the server only steps in when the bitrate
     /// cap forces a transcode, and image subtitles stay in the file for the engine to draw.
-    private static var nativeDecoderProfile: [String: Any] { [
+    static var nativeDecoderProfile: [String: Any] { [
         "MaxStreamingBitrate": 120_000_000,
         "DirectPlayProfiles": [
             ["Container": "mkv,webm,mp4,m4v,mov,avi,ts,m2ts,mpegts,mts,wmv,asf,flv,ogg,ogv,3gp,mpg,mpeg,vob",
@@ -460,7 +460,7 @@ extension JellyfinMediaClient {
     /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
     /// hardcoded — a struct, not a View, so read straight from UserDefaults like the rest
     /// of the playback code's own settings reads (skipIntro/autoPlayNext etc.) already do.
-    private static func deviceProfile(forCast: Bool) -> [String: Any] {
+    static func deviceProfile(forCast: Bool) -> [String: Any] {
         let allowHEVC = (UserDefaults.standard.object(forKey: "codecAllowHEVCDirectPlay") as? Bool) ?? true
         let allowSurroundAudio = UserDefaults.standard.bool(forKey: "codecAllowSurroundAudioDirectPlay")
         let videoCodecs = allowHEVC ? "h264,hevc" : "h264"
