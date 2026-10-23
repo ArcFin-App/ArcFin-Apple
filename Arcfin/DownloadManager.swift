@@ -1371,6 +1371,8 @@ final class DownloadManager: NSObject {
                 nextUp = await episodesAfterDownloads(seriesId: seriesId, downloaded: allDownloaded, count: count + 1,
                                                       credential: credential, authHeader: authHeader)
             }
+            // Listed ahead of airing, with no file to fetch yet.
+            nextUp.removeAll(where: \.isVirtual)
             Self.smartLog.info("Smart Downloads: \(seriesId, privacy: .public) up next \(nextUp.map { "S\($0.parentIndexNumber ?? 0)E\($0.indexNumber ?? 0)" }.joined(separator: " "), privacy: .public)")
             // Episodes before the next one up were watched, possibly streamed on another
             // device, which the downloaded copy's own played flag never hears about.
