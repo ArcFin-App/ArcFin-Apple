@@ -607,6 +607,7 @@ struct LocalPlayerView: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         #endif
+        .keepsScreenAwake(status: player.status)
         .task {
             _ = url.startAccessingSecurityScopedResource()
             try? await player.load(url: url, startPositionTicks: 0)

@@ -392,6 +392,7 @@ struct PlayerView: View {
             }
         }
         #endif
+        .keepsScreenAwake(status: player.status)
         .task { if !isAskingToResume { await setup() } }
         .confirmationDialog("Resume Playback?", isPresented: $isAskingToResume, titleVisibility: .visible) {
             Button("Resume from \(timeLabel(ticks: startPositionTicks))") {

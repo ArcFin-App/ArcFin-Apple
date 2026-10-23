@@ -5,6 +5,7 @@ import AVFoundation
 import AVKit
 import Combine
 import JellyfinAPI
+import MediaEngine
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 import MediaPlayer
@@ -474,3 +475,38 @@ final class SystemVolumeController {
     }
 }
 #endif
+
+extension View {
+    /// Keeps the display on while a player is loading, buffering or playing; once paused,
+    /// ended or failed the device can sleep as usual.
+    func keepsScreenAwake(status: PlaybackStatus) -> some View {
+        onAppear { ScreenAwake.set(true) }
+            .onChange(of: status) { _, status in
+                switch status {
+                case .idle, .loading, .playing: ScreenAwake.set(true)
+                case .paused, .ended, .failed: ScreenAwake.set(false)
+                }
+            }
+            .onDisappear { ScreenAwake.set(false) }
+    }
+}
+
+@MainActor
+private enum ScreenAwake {
+    #if os(macOS)
+    private static var activity: NSObjectProtocol?
+    #endif
+
+    static func set(_ awake: Bool) {
+        #if canImport(UIKit)
+        UIApplication.shared.isIdleTimerDisabled = awake
+        #elseif os(macOS)
+        if awake, activity == nil {
+            activity = ProcessInfo.processInfo.beginActivity(options: .idleDisplaySleepDisabled, reason: "Video playback")
+        } else if !awake, let current = activity {
+            ProcessInfo.processInfo.endActivity(current)
+            activity = nil
+        }
+        #endif
+    }
+}
