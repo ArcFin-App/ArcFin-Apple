@@ -49,7 +49,7 @@ struct PlayerView: View {
         #if os(macOS)
         playbackPresenter.dismiss()
         #else
-        dismiss()
+        closeRotatedPlayer { dismiss() }
         #endif
     }
 

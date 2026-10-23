@@ -294,6 +294,31 @@ func resetPlayerOrientation() {
 }
 #endif
 
+/// Closes a player. When the rotate button turned it sideways while the device is held
+/// upright, the screen underneath was laid out upright and would show pillarboxed until the
+/// rotation caught up after the cover had gone, so the rotation goes first.
+func closeRotatedPlayer(_ close: @escaping @MainActor () -> Void) {
+    #if canImport(UIKit) && !os(tvOS)
+    guard let scene = UIApplication.shared.connectedScenes
+        .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+          scene.effectiveGeometry.interfaceOrientation.isLandscape,
+          !UIDevice.current.orientation.isLandscape
+    else { close(); return }
+    scene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { _ in }
+    Task {
+        let deadline = ContinuousClock.now + .seconds(1)
+        while scene.effectiveGeometry.interfaceOrientation.isLandscape, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(30))
+        }
+        // The geometry flips as the rotation starts; let it finish before the cover animates.
+        try? await Task.sleep(for: .milliseconds(400))
+        close()
+    }
+    #else
+    close()
+    #endif
+}
+
 // MARK: - macOS window-level fullscreen
 
 #if os(macOS)
