@@ -488,7 +488,7 @@ extension JellyfinMediaClient {
 
 // MARK: - Private response decoders
 
-private struct SessionResponse: Decodable {
+struct SessionResponse: Decodable {
     struct NowPlayingItem: Decodable {
         let name: String?
         let runTimeTicks: Int64?

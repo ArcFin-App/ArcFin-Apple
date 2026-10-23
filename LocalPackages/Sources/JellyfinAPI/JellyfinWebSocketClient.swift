@@ -4,8 +4,7 @@ import Foundation
 import AuthCore
 
 /// Anything Arcfin currently cares about from Jellyfin's WebSocket feed. Everything else
-/// the server sends (library change notifications, generic session updates, etc.) is
-/// intentionally not modeled — SyncPlay is the only consumer today.
+/// the server sends (library change notifications, etc.) is intentionally not modeled.
 public enum JellyfinWSEvent: Sendable {
     case syncPlayCommand(SyncPlayCommand)
     /// Fired for every SyncPlayGroupUpdate regardless of its nested Type — the payload
@@ -14,14 +13,16 @@ public enum JellyfinWSEvent: Sendable {
     /// "something about the group changed, go re-fetch /SyncPlay/List for current state".
     case syncPlayGroupChanged
     case syncPlayGroupGone
+    /// Pushed by the server after `startSessionUpdates` — the same list GET /Sessions returns.
+    case sessions([JellyfinSession])
 }
 
 /// Thin wrapper over URLSessionWebSocketTask for Jellyfin's `/socket` feed. One instance
-/// per active connection — SyncPlayManager owns its lifecycle (connect only while a
-/// SyncPlay group is joined, disconnect on leave).
+/// per active connection; the owner (SyncPlayManager, AdminSessionsView) closes it.
 public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
     private let task: URLSessionWebSocketTask
     private let continuation: AsyncStream<JellyfinWSEvent>.Continuation
+    private let keepAliveTask = KeepAliveBox()
     public let events: AsyncStream<JellyfinWSEvent>
 
     public init(credential: ServerCredential, deviceId: String) {
@@ -40,8 +41,25 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
     }
 
     public func close() {
+        keepAliveTask.cancel()
         continuation.finish()
         task.cancel(with: .goingAway, reason: nil)
+    }
+
+    /// Asks the server to push the session list every `intervalMs`, starting immediately.
+    public func startSessionUpdates(intervalMs: Int = 1000) {
+        send(type: "SessionsStart", data: "0,\(intervalMs)")
+    }
+
+    public func stopSessionUpdates() {
+        send(type: "SessionsStop", data: nil)
+    }
+
+    private func send(type: String, data: String?) {
+        var payload: [String: String] = ["MessageType": type]
+        payload["Data"] = data
+        guard let json = try? JSONEncoder().encode(payload), let text = String(data: json, encoding: .utf8) else { return }
+        task.send(.string(text)) { _ in }
     }
 
     private func receiveLoop() async {
@@ -75,9 +93,25 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
             } else {
                 continuation.yield(.syncPlayGroupChanged)
             }
+        case "Sessions":
+            guard let payload = try? JSONDecoder().decode(SessionsPayload.self, from: raw) else { return }
+            continuation.yield(.sessions(payload.data.map { $0.toSession() }))
+        case "ForceKeepAlive":
+            // The server drops a socket that stays silent past this timeout (seconds).
+            let timeout = (try? JSONDecoder().decode(KeepAlivePayload.self, from: raw))?.data ?? 60
+            startKeepAlive(every: .seconds(max(timeout / 2, 5)))
         default:
             break
         }
+    }
+
+    private func startKeepAlive(every interval: Duration) {
+        keepAliveTask.replace(with: Task { [weak self] in
+            while !Task.isCancelled {
+                self?.send(type: "KeepAlive", data: nil)
+                try? await Task.sleep(for: interval)
+            }
+        })
     }
 
     private struct Envelope: Decodable {
@@ -95,6 +129,16 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
         enum CodingKeys: String, CodingKey { case data = "Data" }
     }
 
+    private struct SessionsPayload: Decodable {
+        let data: [SessionResponse]
+        enum CodingKeys: String, CodingKey { case data = "Data" }
+    }
+
+    private struct KeepAlivePayload: Decodable {
+        let data: Int?
+        enum CodingKeys: String, CodingKey { case data = "Data" }
+    }
+
     private struct GroupUpdatePayload: Decodable {
         struct Data: Decodable {
             let type: String?
@@ -102,5 +146,18 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
         }
         let data: Data?
         enum CodingKeys: String, CodingKey { case data = "Data" }
+    }
+}
+
+private final class KeepAliveBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var task: Task<Void, Never>?
+
+    func replace(with new: Task<Void, Never>) {
+        lock.withLock { task?.cancel(); task = new }
+    }
+
+    func cancel() {
+        lock.withLock { task?.cancel(); task = nil }
     }
 }
