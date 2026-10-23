@@ -510,3 +510,33 @@ private enum ScreenAwake {
         #endif
     }
 }
+
+/// The player's spinner. A start or rebuffer that runs past a couple of seconds also says what
+/// it's waiting on, so a slow server or connection doesn't look like a frozen app.
+struct PlayerLoadingIndicator: View {
+    let status: String
+    @State private var showsStatus = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            ProgressView()
+                .tint(.white)
+                .scaleEffect(1.4)
+            if showsStatus {
+                Text(status)
+                    .font(.system(.footnote, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .contentTransition(.opacity)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 32)
+        .animation(.easeInOut(duration: 0.25), value: showsStatus)
+        .animation(.easeInOut(duration: 0.25), value: status)
+        .task {
+            try? await Task.sleep(for: .seconds(2))
+            showsStatus = true
+        }
+    }
+}
