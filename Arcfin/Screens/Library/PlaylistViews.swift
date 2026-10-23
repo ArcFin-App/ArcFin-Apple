@@ -16,6 +16,8 @@ struct AddToPlaylistSheet: View {
     @State private var newName = ""
     @State private var busy = false
     @State private var errorMessage: String?
+    /// For a show or season: how many episodes adding it puts in the playlist.
+    @State private var episodeCount: Int?
 
     private var credential: ServerCredential? { authManager.state.credential }
     private var authHeader: String? { credential.map { authManager.authClient.authHeader(token: $0.accessToken) } }
@@ -30,6 +32,11 @@ struct AddToPlaylistSheet: View {
                             .onSubmit(createWithItem)
                         Button("Create", action: createWithItem)
                             .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty || busy)
+                    }
+                } footer: {
+                    // The server adds a show or season as each of its episodes.
+                    if let episodeCount, episodeCount > 1 {
+                        Text("Adds \(episodeCount) episodes of \(item.type == .season ? (item.seriesName.map { "\($0), \(item.name)" } ?? item.name) : item.name).")
                     }
                 }
                 if !store.playlists.isEmpty {
@@ -64,6 +71,15 @@ struct AddToPlaylistSheet: View {
             .task {
                 guard let credential, let authHeader else { return }
                 await store.load(credential: credential, authHeader: authHeader)
+            }
+            .task {
+                guard let credential, let authHeader else { return }
+                let seriesId = item.type == .series ? item.id : (item.type == .season ? item.seriesId : nil)
+                guard let seriesId else { return }
+                episodeCount = try? await JellyfinMediaClient().getEpisodes(
+                    credential: credential, authHeader: authHeader, seriesId: seriesId,
+                    seasonId: item.type == .season ? item.id : nil
+                ).filter { !$0.isVirtual }.count
             }
         }
     }
