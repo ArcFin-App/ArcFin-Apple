@@ -402,6 +402,20 @@ extension PlayerView {
         return info.isDolbyVision ? "DOLBY VISION" : "HDR"
     }
 
+    /// Every button already has a 44 pt target; the gaps keep thumbs off the neighbouring one.
+    /// A phone held upright with Previous and Next too is the one layout short on room.
+    private var transportSpacing: CGFloat {
+        let crowded = previousItem != nil || nextEpisode != nil
+        #if os(tvOS)
+        return crowded ? 12 : 20
+        #elseif os(macOS)
+        return 32
+        #else
+        let roomy = isLandscape || UIDevice.current.userInterfaceIdiom == .pad
+        return roomy ? 40 : (crowded ? 4 : 24)
+        #endif
+    }
+
     private var bottomBar: some View {
         VStack(spacing: 10) {
             scrubber
@@ -439,8 +453,7 @@ extension PlayerView {
                 Spacer()
                 #endif
 
-                // Tighter with Previous and Next too, so the row still fits a phone held upright.
-                HStack(spacing: previousItem != nil || nextEpisode != nil ? 12 : 20) {
+                HStack(spacing: transportSpacing) {
                     if previousItem != nil {
                         Button { playPrevious() } label: {
                             #if os(tvOS)
@@ -463,6 +476,8 @@ extension PlayerView {
                         #else
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                             .font(.system(.title3)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                         #endif
                     }
                     Button { togglePlayPause() } label: {
@@ -472,7 +487,8 @@ extension PlayerView {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
                             .font(.system(.largeTitle))
                             .foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 56, height: 56)
+                            .contentShape(Rectangle())
                         #endif
                     }
                     #if os(tvOS)
@@ -484,6 +500,8 @@ extension PlayerView {
                         #else
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.system(.title3)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                         #endif
                     }
                     if let nextEpisode {
