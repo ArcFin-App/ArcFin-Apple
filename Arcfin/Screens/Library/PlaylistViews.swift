@@ -136,8 +136,25 @@ struct AddTitlesToPlaylistSheet: View {
     @State private var isSearching = false
     @State private var isAdding = false
     @State private var errorMessage: String?
+    /// Episode counts of the shows listed, fetched as their rows appear.
+    @State private var episodeCounts: [String: Int] = [:]
+    /// The picked titles that are shows, kept apart from the list so a new search doesn't lose them.
+    @State private var pickedShowIDs: Set<String> = []
 
     private let client = JellyfinMediaClient()
+
+    /// The server adds a show as each of its episodes, so with a show picked the total
+    /// differs from the number of rows ticked.
+    private var selectionSummary: String? {
+        let shows = selectedIDs.filter { pickedShowIDs.contains($0) }
+        guard !shows.isEmpty else { return nil }
+        let episodes = shows.compactMap { episodeCounts[$0] }.reduce(0, +)
+        let others = selectedIDs.count - shows.count
+        let showText = shows.count == 1 ? "1 show" : "\(shows.count) shows"
+        let episodeText = episodes > 0 && shows.allSatisfy({ episodeCounts[$0] != nil }) ? " (\(episodes) episodes)" : ""
+        let otherText = others > 0 ? " and \(others) other \(others == 1 ? "title" : "titles")" : ""
+        return "Adds \(showText)\(episodeText)\(otherText)."
+    }
 
     private var suggestions: [MediaItem] {
         var seen = Set<String>()
@@ -161,6 +178,12 @@ struct AddTitlesToPlaylistSheet: View {
                                 .disabled(existingIds.contains(item.id))
                         }
                     }
+                }
+                if let selectionSummary {
+                    Text(selectionSummary)
+                        .font(.footnote)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .listRowBackground(Color.clear)
                 }
                 if let errorMessage {
                     Text(errorMessage).font(.footnote).foregroundStyle(.red)
@@ -214,12 +237,21 @@ struct AddTitlesToPlaylistSheet: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .task(id: item.id) { await loadEpisodeCount(item) }
+    }
+
+    private func loadEpisodeCount(_ item: MediaItem) async {
+        guard item.type == .series, episodeCounts[item.id] == nil, let cred = authManager.state.credential else { return }
+        let episodes = try? await client.getEpisodes(
+            credential: cred, authHeader: authManager.authClient.authHeader(token: cred.accessToken),
+            seriesId: item.id, seasonId: nil)
+        if let episodes { episodeCounts[item.id] = episodes.filter { !$0.isVirtual }.count }
     }
 
     private func detail(for item: MediaItem, isIn: Bool) -> String {
         if isIn { return "Already in this playlist" }
         switch item.type {
-        case .series: return "Show · every episode"
+        case .series: return episodeCounts[item.id].map { "Show · adds \($0) episodes" } ?? "Show · every episode"
         case .episode:
             let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }].compactMap { $0 }.joined(separator: " · ")
             return [code, item.name].filter { !$0.isEmpty }.joined(separator: " · ")
@@ -229,6 +261,7 @@ struct AddTitlesToPlaylistSheet: View {
 
     private func toggle(_ item: MediaItem) {
         if let index = selectedIDs.firstIndex(of: item.id) { selectedIDs.remove(at: index) } else { selectedIDs.append(item.id) }
+        if item.type == .series { pickedShowIDs.insert(item.id) }
         HapticManager.impact(.light)
     }
 
