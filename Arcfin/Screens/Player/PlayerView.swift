@@ -223,7 +223,7 @@ struct PlayerView: View {
 
     let client = JellyfinMediaClient()
 
-    enum DragAxis { case brightness, volume }
+    enum DragAxis { case brightness, volume, seek }
     struct AutoActionCountdown: Equatable {
         let kind: String
         let startedAt: Date

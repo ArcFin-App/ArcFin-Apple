@@ -30,6 +30,7 @@ extension PlayerView {
                     .contentShape(Rectangle())
                     #if canImport(UIKit) && !os(tvOS)
                     .gesture(tapGesture(width: proxy.size.width))
+                    .simultaneousGesture(dragGesture(width: proxy.size.width))
                     #elseif os(macOS)
                     .gesture(macTapGesture(width: proxy.size.width))
                     #endif
@@ -785,7 +786,7 @@ extension PlayerView {
         .allowsHitTesting(false)
     }
 
-    private func updateScrubThumbnail() {
+    func updateScrubThumbnail() {
         // 2s buckets — fetching a fresh crop on every pixel of drag would hammer the loader.
         let bucket = Int(scrubTicks / (2 * 10_000_000))
         guard bucket != lastThumbnailBucket, let loader = trickplayLoader else { return }
@@ -2154,7 +2155,7 @@ extension PlayerView {
     #if canImport(UIKit) && !os(tvOS)
     @ViewBuilder
     var dragAxisIndicator: some View {
-        if let dragAxis {
+        if let dragAxis, dragAxis != .seek {
             let isBrightness = dragAxis == .brightness
             HStack {
                 if !isBrightness { Spacer() }

@@ -82,12 +82,12 @@ struct PlayerFeaturesSettingsView: View {
             Section {
                 Toggle("Picture in Picture When Leaving", isOn: $autoPictureInPicture)
                     .syncLocked("autoPictureInPicture", authManager)
-                Toggle("Swipe for Brightness and Volume", isOn: $swipeGesturesEnabled)
+                Toggle("Swipe Gestures", isOn: $swipeGesturesEnabled)
                     .syncLocked("swipeGesturesEnabled", authManager)
                 Toggle("Double-Tap to Skip", isOn: $doubleTapToSkip)
                     .syncLocked("doubleTapToSkip", authManager)
             } footer: {
-                Text("Picture in Picture keeps the video playing in a small window when you go to the Home Screen, with every player engine except when Aether has to decode in software (Picture in Picture isn't offered then at all). Swipe up or down on the left for brightness and on the right for volume; double-tap a side to skip.")
+                Text("Picture in Picture keeps the video playing in a small window when you go to the Home Screen, with every player engine except when Aether has to decode in software (Picture in Picture isn't offered then at all). Swipe up or down on the left for brightness and on the right for volume, and sideways to move through the video; double-tap a side to skip.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
