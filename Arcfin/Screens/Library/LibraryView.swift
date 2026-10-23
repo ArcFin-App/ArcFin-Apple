@@ -615,10 +615,13 @@ struct LocalPlayerView: View {
         .onDisappear {
             Task { await player.stop() }
             url.stopAccessingSecurityScopedResource()
+            #if canImport(UIKit) && !os(tvOS)
+            resetPlayerOrientation()
+            #endif
         }
         .onChange(of: player.status) { _, status in
             if status == .playing { scheduleAutoHide() }
-            if status == .ended { dismiss() }
+            if status == .ended { closeRotatedPlayer { dismiss() } }
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
@@ -656,7 +659,7 @@ struct LocalPlayerView: View {
 
     private var topBar: some View {
         HStack(spacing: 16) {
-            Button { dismiss() } label: {
+            Button { closeRotatedPlayer { dismiss() } } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)

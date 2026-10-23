@@ -49,7 +49,7 @@ struct PlayerView: View {
         #if os(macOS)
         playbackPresenter.dismiss()
         #else
-        dismiss()
+        closeRotatedPlayer { dismiss() }
         #endif
     }
 
@@ -983,6 +983,14 @@ struct PlayerView: View {
         #endif
         guard let credential, let authHeader else {
             errorMessage = "Not signed in."
+            return
+        }
+        guard !item.isVirtual else {
+            if let premiere = item.premiereDate, premiere > Date() {
+                errorMessage = "This episode airs \(premiere.formatted(.dateTime.day().month(.wide))). It'll play once it's on your server."
+            } else {
+                errorMessage = "This episode isn't on your server."
+            }
             return
         }
         if quality == .auto {

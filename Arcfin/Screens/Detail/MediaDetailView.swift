@@ -403,7 +403,7 @@ struct MediaDetailView: View {
     /// Settings › Downloads › Season Downloads can leave out episodes already watched.
     private var seasonEpisodesToDownload: [MediaItem] {
         let unwatchedOnly = UserDefaults.standard.bool(forKey: "seasonDownloadUnwatchedOnly")
-        return episodes.filter { !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
+        return episodes.filter { !$0.isVirtual && !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
     }
 
     /// Fetches one representative preview (from the first not-yet-downloaded episode) to
@@ -886,6 +886,15 @@ struct MediaDetailView: View {
         }
     }
 
+    /// "Airs 30 Oct" for an episode listed before it's out; "Not on Your Server" for one missing.
+    static func unavailableText(_ item: MediaItem) -> String {
+        if let premiere = item.premiereDate, premiere > Date() {
+            return "Airs \(premiere.formatted(.dateTime.day().month(.abbreviated)))"
+        }
+        return "Not on Your Server"
+    }
+
+    @ViewBuilder
     private var playButton: some View {
 #if os(tvOS)
         Button {} label: { TVPlayButtonLabel() }
@@ -894,6 +903,16 @@ struct MediaDetailView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.md)
 #else
+        if playTargetItem.isVirtual {
+            Label(Self.unavailableText(playTargetItem), systemImage: "calendar")
+                .font(.system(.callout, design: .default, weight: .bold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.md)
+        } else {
         HStack(spacing: 10) {
             Button {
                 requestPlayback(startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0)
@@ -959,6 +978,7 @@ struct MediaDetailView: View {
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
+        }
 #endif
     }
 
@@ -1386,7 +1406,7 @@ struct MediaDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     #if !os(tvOS)
-                    DownloadButton(item: ep)
+                    if !ep.isVirtual { DownloadButton(item: ep) }
                     #endif
                 }
 
@@ -1420,6 +1440,7 @@ struct MediaDetailView: View {
     /// "NEW" for an unwatched episode that premiered in the last two weeks; "FINALE" for the
     /// last episode of the season being shown.
     private func episodeBadge(_ ep: MediaItem) -> String? {
+        if ep.isVirtual { return Self.unavailableText(ep).uppercased() }
         if ep.userData?.played != true, let premiere = ep.premiereDate,
            premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
             return "NEW"

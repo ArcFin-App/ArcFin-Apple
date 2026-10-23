@@ -200,7 +200,7 @@ struct OfflinePlayerView: View {
                 if deleteAfterWatching {
                     downloadManager.markForDeletionAfterWatching(itemId: downloadedItem.itemId)
                 }
-                dismiss()
+                closeRotatedPlayer { dismiss() }
             }
         }
         #if !os(tvOS)
@@ -240,7 +240,7 @@ struct OfflinePlayerView: View {
             if isMacFullScreen {
                 toggleMacWindowFullScreen(macWindow)
             } else {
-                dismiss()
+                closeRotatedPlayer { dismiss() }
             }
             return .handled
         }
@@ -459,7 +459,7 @@ struct OfflinePlayerView: View {
 
     private var topBar: some View {
         HStack(spacing: 16) {
-            Button { dismiss() } label: {
+            Button { closeRotatedPlayer { dismiss() } } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
@@ -586,7 +586,7 @@ struct OfflinePlayerView: View {
             Task { await player.seek(to: Int64(introEnd * 10_000_000)) }
         } else if let creditsStart = downloadedItem.creditsStartSeconds, seconds >= creditsStart {
             savePosition(final: true)
-            dismiss()
+            closeRotatedPlayer { dismiss() }
         }
     }
 
