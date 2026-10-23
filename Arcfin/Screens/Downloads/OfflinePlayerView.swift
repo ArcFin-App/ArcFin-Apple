@@ -163,6 +163,7 @@ struct OfflinePlayerView: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         #endif
+        .keepsScreenAwake(status: player.status)
         .task { await setup() }
         .confirmationDialog("Resume Playback?", isPresented: $isAskingToResume, titleVisibility: .visible) {
             Button("Resume from \(Self.timeText(askedResumeTicks))") { resumeAnswer = askedResumeTicks }
