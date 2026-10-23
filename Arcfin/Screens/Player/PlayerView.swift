@@ -940,6 +940,8 @@ struct PlayerView: View {
 
     // MARK: - Setup / teardown
 
+    private var decodesNatively: Bool { player is AetherEnginePlayer || player is VLCEnginePlayer }
+
     /// The AVFoundation/VLC split Auto used before Aether existed — now only reached when
     /// Aether itself fails to construct or load a source (see setup()'s runtime fallback).
     private func legacyEnginePlayer(container: String?, videoStream: JellyfinMediaStream?) -> any MediaPlayerProtocol {
@@ -998,35 +1000,29 @@ struct PlayerView: View {
             await primeAutoLadder(credential: credential, authHeader: authHeader)
         }
         do {
-            var info = try await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
-                quality: qualityCap(for: quality)
-            )
+            // The engine is picked before asking the server how to stream, because the answer
+            // depends on it: Aether and VLC take the file as is, AVFoundation needs it repackaged.
             // .choose always resolves Auto down to a concrete engine — three outcomes here.
             let engine = PlaybackEngineSelector.choose(
-                preference: playbackEnginePreference, container: info.container, videoStream: info.videoStream
+                preference: playbackEnginePreference, container: nil, videoStream: nil
             )
             switch engine {
-            case .aether:
+            case .aether, .auto:
                 if !(player is AetherEnginePlayer) {
                     // init() throws — a construction failure is just another "Aether can't
                     // serve this session" case, handled by the exact same fallback path a
                     // load() failure goes through below.
-                    player = (try? AetherEnginePlayer())
-                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                    player = (try? AetherEnginePlayer()) ?? VLCEnginePlayer()
                 }
             case .vlc:
                 if !(player is VLCEnginePlayer) { player = VLCEnginePlayer() }
             case .avFoundation:
                 if !(player is AVFoundationPlayer) { player = AVFoundationPlayer() }
-            case .auto:
-                // .choose() never actually returns .auto (it always resolves Auto down to a
-                // concrete engine above) — only reachable if that invariant breaks later.
-                if !(player is AetherEnginePlayer) {
-                    player = (try? AetherEnginePlayer())
-                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
-                }
             }
+            var info = try await client.getPlaybackInfo(
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
+                quality: qualityCap(for: quality), nativeDecoder: decodesNatively
+            )
             selectedAudioIndex = info.defaultAudioStreamIndex
             // The server only marks a subtitle default when one's flagged default/forced
             // there — most libraries don't have that set, so "Show Subtitles by Default"
@@ -1083,7 +1079,8 @@ struct PlayerView: View {
             if languagePreferenceApplied, let reInfo = try? await client.getPlaybackInfo(
                 credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality),
-                audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
+                audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                nativeDecoder: decodesNatively
             ) {
                 info = reInfo
             }
@@ -1109,6 +1106,15 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
                 player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                if !decodesNatively {
+                    info = try await client.getPlaybackInfo(
+                        credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
+                        quality: qualityCap(for: quality),
+                        audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
+                    )
+                    playbackInfo = info
+                    await loadSubtitleCues(from: info, credential: credential)
+                }
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             await player.play()
@@ -1809,7 +1815,8 @@ struct PlayerView: View {
                 if let info = try? await client.getPlaybackInfo(
                     credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                     quality: qualityCap(for: quality),
-                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex),
+                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                    nativeDecoder: decodesNatively),
                    let added = info.subtitleStreams.first(where: { !known.contains($0.index) }) {
                     networkToast = nil
                     changeTrack(subtitleIndex: .some(added.index))
@@ -1887,7 +1894,8 @@ struct PlayerView: View {
                 let info = try await client.getPlaybackInfo(
                     credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                     quality: qualityCap(for: quality),
-                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
+                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                    nativeDecoder: decodesNatively
                 )
                 playbackInfo = info
                 await loadSubtitleCues(from: info, credential: credential)

@@ -133,7 +133,8 @@ extension JellyfinMediaClient {
         quality: StreamQualityCap = .auto,
         audioStreamIndex: Int? = nil,
         subtitleStreamIndex: Int? = nil,
-        forCast: Bool = false
+        forCast: Bool = false,
+        nativeDecoder: Bool = false
     ) async throws -> JellyfinPlaybackInfo {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/\(itemId)/PlaybackInfo"),
@@ -149,7 +150,8 @@ extension JellyfinMediaClient {
         var body: [String: Any] = [
             "UserId": credential.userID,
             "AutoOpenLiveStream": true,
-            "DeviceProfile": Self.deviceProfile(forCast: forCast),
+            "DeviceProfile": forCast || !nativeDecoder
+                ? Self.deviceProfile(forCast: forCast) : Self.nativeDecoderProfile,
         ]
         if let maxBitrate = quality.maxBitrate { body["MaxStreamingBitrate"] = maxBitrate }
         // MaxWidth forces a resolution-based transcode even when the source's bitrate
@@ -385,6 +387,30 @@ extension JellyfinMediaClient {
 
     // MARK: - Device profile
 
+    /// For engines that demux and decode on the device (Aether's FFmpeg + VideoToolbox, VLC):
+    /// any container and codec plays as is, so the server only steps in when the bitrate
+    /// cap forces a transcode, and image subtitles stay in the file for the engine to draw.
+    private static var nativeDecoderProfile: [String: Any] { [
+        "MaxStreamingBitrate": 120_000_000,
+        "DirectPlayProfiles": [
+            ["Container": "mkv,webm,mp4,m4v,mov,avi,ts,m2ts,mpegts,mts,wmv,asf,flv,ogg,ogv,3gp,mpg,mpeg,vob",
+             "Type": "Video"],
+        ],
+        "TranscodingProfiles": [
+            [
+                "Container": "mp4", "Type": "Video", "AudioCodec": "aac,ac3,eac3",
+                "VideoCodec": "hevc,h264", "Context": "Streaming", "Protocol": "hls",
+                "MaxAudioChannels": "8", "MinSegments": "2", "BreakOnNonKeyFrames": true,
+            ],
+        ],
+        "SubtitleProfiles": [
+            ["Format": "vtt", "Method": "External"],
+            ["Format": "pgssub", "Method": "Embed"],
+            ["Format": "dvdsub", "Method": "Embed"],
+            ["Format": "dvbsub", "Method": "Embed"],
+        ],
+    ] }
+
     /// Two escape hatches for device-specific codec issues, surfaced as user-facing toggles
     /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
     /// hardcoded — a struct, not a View, so read straight from UserDefaults like the rest
@@ -416,16 +442,17 @@ extension JellyfinMediaClient {
             ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": mp4AudioCodecs],
             ["Container": "mov", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": movAudioCodecs],
         ],
-        // h264-only for the transcode OUTPUT. The real cause of the "audio plays, video is
-        // black" bug turned out to be AVFoundation's documented requirement that HEVC be
-        // FourCC-tagged hvc1, not hev1 — not HEVC decode itself being broken. The CodecProfile
-        // below asks Jellyfin to tag transcoded HEVC correctly, but since that couldn't be
-        // verified against a live server, h264 stays as the confirmed-working transcode
-        // target for now; hevc output can be re-enabled once the tag fix is confirmed too.
+        // HLS can only carry HEVC in fMP4 segments, and with h264 as the only output an HEVC
+        // source in mkv was re-encoded in full instead of just repackaged. The Chromecast
+        // receiver keeps the h264-in-ts output it's known to play.
         "TranscodingProfiles": [
-            [
+            forCast ? [
                 "Container": "ts", "Type": "Video", "AudioCodec": "aac",
                 "VideoCodec": "h264", "Context": "Streaming", "Protocol": "hls",
+                "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
+            ] : [
+                "Container": "mp4", "Type": "Video", "AudioCodec": "aac",
+                "VideoCodec": videoCodecs, "Context": "Streaming", "Protocol": "hls",
                 "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
             ],
         ],
