@@ -515,6 +515,7 @@ private struct LibraryItemCard: View {
                             Text(year)
                                 .font(.system(.caption2))
                                 .foregroundStyle(.white.opacity(0.6))
+                                .lineLimit(2)
                         }
                     }
                     .padding(8)
@@ -1019,7 +1020,6 @@ struct LibraryDetailView: View {
     @State private var playlistName: String?
     /// Playlist entry ids by item id, which removing a row needs.
     @State private var entryIds: [String: String] = [:]
-    @State private var playlistActionItem: MediaItem?
     @State private var playlistPlayback: MediaDetailView.PlaybackRequest?
     @State private var showAddTitles = false
     @State private var showRename = false
@@ -1191,9 +1191,9 @@ struct LibraryDetailView: View {
                             gridLink(for: item) {
 #if os(tvOS)
                                 PosterCard(
-                                    title: item.name,
-                                    subtitle: item.productionYear.map { String($0) },
-                                    imageURL: mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400),
+                                    title: cardTitle(item),
+                                    subtitle: cardSubtitle(item),
+                                    imageURL: cardPosterURL(item),
                                     width: 200,
                                     height: 356
                                 )
@@ -1393,7 +1393,6 @@ struct LibraryDetailView: View {
         }
         .modifier(PlaylistModifiers(
             isPlaylist: playlist != nil || isPlaylistsLibrary,
-            actionItem: $playlistActionItem,
             playback: $playlistPlayback,
             showAddTitles: $showAddTitles,
             showRename: $showRename,
@@ -1403,8 +1402,6 @@ struct LibraryDetailView: View {
             playlistId: playlist?.id ?? "",
             playlistName: playlistName ?? library.name,
             existingIds: Set(items.map(\.id)),
-            onPlay: { item, ticks in startPlaylistPlayback(from: item, startTicks: ticks) },
-            onShowDetails: { randomPick = $0 },
             onRename: renamePlaylist,
             onDelete: deletePlaylist,
             onChanged: { Task { await reload() } }
@@ -1464,10 +1461,28 @@ struct LibraryDetailView: View {
     @ViewBuilder
     private func gridLink<Content: View>(for item: MediaItem, @ViewBuilder label: () -> Content) -> some View {
         if playlist != nil {
-            Button { playlistActionItem = item } label: { label() }
+            // A menu opens the same way from every card; a confirmation dialog switched
+            // between a popover and a full sheet depending on the room around the card.
+            Menu { playlistActions(item) } label: { label() }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
         } else {
             NavigationLink(value: navTarget(for: item)) { label() }
         }
+    }
+
+    @ViewBuilder
+    private func playlistActions(_ item: MediaItem) -> some View {
+        let resume = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+        if item.type == .movie || item.type == .episode {
+            if resume > 0 {
+                Button("Resume") { startPlaylistPlayback(from: item, startTicks: resume) }
+                Button("Play from Beginning") { startPlaylistPlayback(from: item, startTicks: 0) }
+            } else {
+                Button("Play") { startPlaylistPlayback(from: item, startTicks: 0) }
+            }
+        }
+        Button("Show Details") { randomPick = item }
     }
 
     /// A playlist's page opens like a collection's: the first title's artwork as the hero,
@@ -1477,7 +1492,7 @@ struct LibraryDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 DetailHeroBackdrop(url: playlistHeroURL, height: 300)
                 HStack(alignment: .bottom, spacing: 14) {
-                    FannedPosters(urls: items.prefix(3).map { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 240) })
+                    FannedPosters(urls: items.prefix(3).map { cardPosterURL($0) })
                     VStack(alignment: .leading, spacing: 6) {
                         Text("PLAYLIST")
                             .font(.system(.caption2, weight: .bold))
@@ -1653,10 +1668,29 @@ struct LibraryDetailView: View {
 
     private func libraryItemCard(_ item: MediaItem) -> some View {
         LibraryItemCard(
-            imageURL: mediaRepo.imageURL(for: item),
-            title: item.name,
-            year: item.productionYear.map { String($0) }
+            imageURL: cardPosterURL(item),
+            title: cardTitle(item),
+            year: cardSubtitle(item)
         )
+    }
+
+    /// An episode (a playlist holds a show as its episodes) is shown as its show, with the
+    /// season, episode and its own name underneath.
+    private func cardTitle(_ item: MediaItem) -> String {
+        item.type == .episode ? (item.seriesName ?? item.name) : item.name
+    }
+
+    private func cardSubtitle(_ item: MediaItem) -> String? {
+        guard item.type == .episode else { return item.productionYear.map { String($0) } }
+        let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }].compactMap { $0 }
+        return (code + (item.seriesName == nil ? [] : [item.name])).joined(separator: " · ").nilIfEmpty
+    }
+
+    private func cardPosterURL(_ item: MediaItem) -> URL? {
+        guard item.type == .episode, let seriesId = item.seriesId, let tag = item.seriesPrimaryImageTag,
+              let base = mediaRepo.baseURL, let token = mediaRepo.accessToken
+        else { return mediaRepo.imageURL(for: item) }
+        return JellyfinMediaClient.imageURL(baseURL: base, itemID: seriesId, tag: tag, type: .primary, fillWidth: 300, token: token)
     }
 
     private func libraryItemPreview(_ item: MediaItem) -> some View {
@@ -1886,7 +1920,6 @@ private struct PlaylistPageStyle: ViewModifier {
 /// A playlist's choices and sheets, kept out of LibraryDetailView's already long chain.
 private struct PlaylistModifiers: ViewModifier {
     let isPlaylist: Bool
-    @Binding var actionItem: MediaItem?
     @Binding var playback: MediaDetailView.PlaybackRequest?
     @Binding var showAddTitles: Bool
     @Binding var showRename: Bool
@@ -1896,8 +1929,6 @@ private struct PlaylistModifiers: ViewModifier {
     let playlistId: String
     let playlistName: String
     let existingIds: Set<String>
-    let onPlay: (MediaItem, Int64) -> Void
-    let onShowDetails: (MediaItem) -> Void
     let onRename: (String) -> Void
     let onDelete: () -> Void
     let onChanged: () -> Void
@@ -1905,20 +1936,6 @@ private struct PlaylistModifiers: ViewModifier {
     func body(content: Content) -> some View {
         if isPlaylist {
             content
-                .confirmationDialog(actionItem?.name ?? "", isPresented: Binding(
-                    get: { actionItem != nil }, set: { if !$0 { actionItem = nil } }
-                ), titleVisibility: .visible, presenting: actionItem) { item in
-                    let resume = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
-                    if item.type == .movie || item.type == .episode {
-                        if resume > 0 {
-                            Button("Resume") { onPlay(item, resume) }
-                            Button("Play from Beginning") { onPlay(item, 0) }
-                        } else {
-                            Button("Play") { onPlay(item, 0) }
-                        }
-                    }
-                    Button("Show Details") { onShowDetails(item) }
-                }
                 .sheet(isPresented: $showAddTitles) {
                     AddTitlesToPlaylistSheet(playlistId: playlistId, existingIds: existingIds, onAdded: onChanged)
                 }
