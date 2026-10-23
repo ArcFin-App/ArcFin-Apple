@@ -49,6 +49,7 @@ final class ProfileRules {
     func clear() {
         profile = nil
         certifications = [:]
+        failedLookups = [:]
     }
 
     // MARK: - Ratings
@@ -99,33 +100,64 @@ final class ProfileRules {
         let candidates = items.filter { !$0.isAdult }
 
         loadSavedCertifications(region: region)
-        let missing = candidates.filter { certifications[key($0, region)] == nil }
+        let now = Date()
+        let missing = candidates.filter { item in
+            let itemKey = key(item, region)
+            guard certifications[itemKey] == nil else { return false }
+            // A title whose lookup just failed isn't asked again on every keystroke.
+            if let failed = failedLookups[itemKey], now.timeIntervalSince(failed) < Self.failedLookupRetry { return false }
+            return true
+        }
         if !missing.isEmpty {
-            // All at once, up to 16 in flight: each is a detail request to the Seerr server.
-            let found = await withTaskGroup(of: (String, String?).self) { group in
+            // Up to 16 in flight, each a detail request to the Seerr server. The whole batch
+            // gets a deadline: a slow or overloaded Seerr would otherwise hold the list for
+            // as long as its slowest answers, and what's still out is treated as unrated.
+            let found = await withTaskGroup(of: (String, String?)?.self) { group in
                 var results: [(String, String?)] = []
                 var iterator = missing.makeIterator()
+                group.addTask {
+                    try? await Task.sleep(for: Self.lookupDeadline)
+                    return nil
+                }
                 for _ in 0..<16 {
                     guard let item = iterator.next() else { break }
                     let itemKey = key(item, region)
                     group.addTask { (itemKey, await lookUp(item, region)) }
                 }
-                while let result = await group.next() {
+                while let next = await group.next() {
+                    guard let result = next else {
+                        group.cancelAll()
+                        break
+                    }
                     results.append(result)
                     if let item = iterator.next() {
                         let itemKey = key(item, region)
                         group.addTask { (itemKey, await lookUp(item, region)) }
                     }
+                    if results.count == missing.count {
+                        group.cancelAll()
+                        break
+                    }
                 }
                 return results
             }
             // The lookup answers "" for a title with no rating and nil when it couldn't ask;
-            // only real answers are remembered, so a failed lookup is tried again next time.
+            // only real answers are remembered, so a failed lookup is tried again later.
+            var answered = Set<String>()
             for (itemKey, rating) in found {
                 guard let rating else { continue }
+                answered.insert(itemKey)
                 certifications[itemKey] = .some(rating.isEmpty ? nil : rating)
+                failedLookups[itemKey] = nil
             }
-            saveCertifications()
+            for item in missing where !answered.contains(key(item, region)) {
+                failedLookups[key(item, region)] = now
+            }
+            if !answered.isEmpty { saveCertifications() }
+            let unanswered = missing.count - answered.count
+            if unanswered > 0 {
+                Self.log.info("Seerr rating lookups: \(answered.count, privacy: .public) answered, \(unanswered, privacy: .public) failed or timed out")
+            }
         }
         let kept = candidates.filter { item in
             let rating = certifications[key(item, region)] ?? nil
@@ -136,6 +168,9 @@ final class ProfileRules {
     }
 
     private static let log = Telemetry.logger(category: "ProfileRules")
+    private static let lookupDeadline: Duration = .seconds(6)
+    private static let failedLookupRetry: TimeInterval = 10 * 60
+    @ObservationIgnored private var failedLookups: [String: Date] = [:]
     private static let savedCertificationsKey = "arcfin.seerrCertifications"
     @ObservationIgnored private var loadedSavedCertifications = false
 
