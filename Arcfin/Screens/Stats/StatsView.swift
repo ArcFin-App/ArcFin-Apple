@@ -352,7 +352,7 @@ struct StatsView: View {
                 }
                 .padding(.vertical, 4)
             }
-            .scrollClipDisabled()
+            .scrollClipDisabled(!isWide)
         }
     }
 
@@ -372,7 +372,7 @@ struct StatsView: View {
                 }
                 .padding(.vertical, 4)
             }
-            .scrollClipDisabled()
+            .scrollClipDisabled(!isWide)
         }
     }
 
@@ -418,7 +418,7 @@ struct StatsView: View {
             }
             .padding(.vertical, 4)
         }
-        .scrollClipDisabled()
+        .scrollClipDisabled(!isWide)
     }
 
     private func tasteCard(_ stats: WatchStats) -> some View {
