@@ -29,9 +29,9 @@ struct HomeShelfSettingsView: View {
     var body: some View {
         List {
             Section {
-                Toggle("Shuffle Shelves", isOn: $shuffleShelves)
-            } footer: {
-                Text("Mixes up the order of your shelves every time you open Home. Continue Watching and Next Up stay at the top. Reordering is turned off while this is on.")
+                Toggle(isOn: $shuffleShelves) {
+                    TVRowLabelText(title: "Shuffle Shelves", detail: "New order each time you open Home; Continue Watching and Next Up stay on top. Turns off reordering.")
+                }
             }
 
             Section {
