@@ -69,15 +69,6 @@ extension View {
     }
 
     @ViewBuilder
-    func arcfinRowSeparatorHidden() -> some View {
-#if os(tvOS)
-        self
-#else
-        self.listRowSeparator(.hidden)
-#endif
-    }
-
-    @ViewBuilder
     func arcfinFieldBackground() -> some View {
 #if os(tvOS)
         self.background(DT.Color.backgroundSecondary)

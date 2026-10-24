@@ -271,9 +271,6 @@ struct SettingsView: View {
                     profileCard(cred: cred)
                 }
                 .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                .arcfinRowSeparatorHidden()
 #endif
             }
         }
@@ -302,7 +299,7 @@ struct SettingsView: View {
             .map { String($0).uppercased() }
             .joined()
 
-        return HStack(spacing: 16) {
+        return HStack(spacing: 12) {
             ZStack {
                 Circle()
                     .fill(LinearGradient(
@@ -310,8 +307,7 @@ struct SettingsView: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
-                    .frame(width: 52, height: 52)
-                    .shadow(color: DT.Color.accent.opacity(0.35), radius: 10, y: 3)
+                    .frame(width: 44, height: 44)
                 if let tag = cred.userImageTag {
                     CachedAsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
                         switch phase {
@@ -319,7 +315,7 @@ struct SettingsView: View {
                         default: initialsLabel(initials)
                         }
                     }
-                    .frame(width: 52, height: 52)
+                    .frame(width: 44, height: 44)
                     .clipShape(Circle())
                 } else {
                     initialsLabel(initials)
@@ -347,17 +343,8 @@ struct SettingsView: View {
                 .font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.5))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: DT.Radius.lg)
-                .fill(DT.Color.backgroundSecondary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DT.Radius.lg)
-                        .stroke(DT.Color.accent.opacity(0.18), lineWidth: 1)
-                )
-        )
-        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
     }
 
     // MARK: - Row builders
