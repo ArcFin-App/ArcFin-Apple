@@ -2173,7 +2173,9 @@ extension PlayerView {
     #if canImport(UIKit) && !os(tvOS)
     @ViewBuilder
     var dragAxisIndicator: some View {
-        if let dragAxis, dragAxis != .seek {
+        if dragAxis == .seek {
+            swipeSeekIndicator
+        } else if let dragAxis {
             let isBrightness = dragAxis == .brightness
             HStack {
                 if !isBrightness { Spacer() }
@@ -2199,6 +2201,29 @@ extension PlayerView {
             .transition(.opacity)
             .allowsHitTesting(false)
         }
+    }
+
+    /// How far a sideways swipe has moved and where it will land, in the middle of the screen.
+    private var swipeSeekIndicator: some View {
+        let deltaTicks = Int64(scrubTicks) - Int64(dragBaseline)
+        let forward = deltaTicks >= 0
+        return VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: forward ? "forward.fill" : "backward.fill")
+                    .font(.system(.title3))
+                Text("\(forward ? "+" : "−")\(timeLabel(ticks: abs(deltaTicks)))")
+                    .font(.system(.title2, design: .monospaced, weight: .semibold))
+                    .contentTransition(.numericText())
+            }
+            Text("\(timeLabel(ticks: Int64(scrubTicks))) / \(timeLabel(ticks: player.durationTicks))")
+                .font(.system(.caption, design: .monospaced, weight: .medium))
+                .foregroundStyle(.white.opacity(0.75))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 22).padding(.vertical, 14)
+        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .transition(.opacity)
+        .allowsHitTesting(false)
     }
     #elseif os(macOS)
     /// Same visual language as dragAxisIndicator above (there's no brightness axis to show on
