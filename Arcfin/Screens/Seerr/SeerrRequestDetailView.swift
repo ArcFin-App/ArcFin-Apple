@@ -120,6 +120,7 @@ struct SeerrRequestDetailView: View {
                     }
                 }
             }
+            .shelfScrollButtons()
         }
     }
 
@@ -156,6 +157,7 @@ struct SeerrRequestDetailView: View {
                     }
                 }
             }
+            .shelfScrollButtons()
         }
     }
 

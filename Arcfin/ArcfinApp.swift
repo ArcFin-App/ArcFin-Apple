@@ -34,16 +34,13 @@ struct ArcfinApp: App {
         .windowResizability(.contentSize)
         .commands {
             SidebarCommands()
-            // Standard macOS convention: Cmd+, / "Arcfin > Settings…" opens Settings.
-            // There's no scene-level binding into MainTabView's private navigation state to
-            // reach it directly, so this posts a notification the same way arcfinShowDownloads
-            // already does for the download Live Activity's tap target — an established
-            // pattern in this codebase, not a new one.
-            CommandGroup(replacing: .appSettings) {
-                Button("Settings…") {
-                    NotificationCenter.default.post(name: .arcfinShowSettings, object: nil)
+            // Edit › Find… (⌘F) searches the library, the app's one search field.
+            CommandGroup(replacing: .textEditing) {
+                Button("Find…") {
+                    UserDefaults.standard.set(true, forKey: "arcfin.pendingFindFocus")
+                    NotificationCenter.default.post(name: .arcfinSearch, object: nil)
                 }
-                .keyboardShortcut(",", modifiers: .command)
+                .keyboardShortcut("f", modifiers: .command)
             }
             CommandGroup(after: .newItem) {
                 Button("Open Video File…") {
@@ -73,6 +70,13 @@ struct ArcfinApp: App {
                 }
                 .keyboardShortcut("d", modifiers: [.option, .command])
             }
+        }
+        #endif
+
+        #if os(macOS)
+        Settings {
+            MacSettingsWindow()
+                .modelContainer(sharedModelContainer)
         }
         #endif
 

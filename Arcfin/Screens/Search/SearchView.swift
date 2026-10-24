@@ -344,6 +344,7 @@ struct SearchView: View {
                 .padding(.vertical, 30)
                 #endif
             }
+            .shelfScrollButtons()
             #if os(tvOS)
             .scrollClipDisabled()
             #endif
@@ -356,6 +357,12 @@ struct SearchView: View {
     private static let landscapeWidth: CGFloat = 400
     private static let shelfSpacing: CGFloat = 40
     private static let discoverPosterWidth: CGFloat = 120
+    #elseif os(macOS)
+    private static let topResultHeight: CGFloat = 300
+    private static let posterWidth: CGFloat = 150
+    private static let landscapeWidth: CGFloat = 300
+    private static let shelfSpacing: CGFloat = 16
+    private static let discoverPosterWidth: CGFloat = 80
     #else
     private static let topResultHeight: CGFloat = 210
     private static let posterWidth: CGFloat = 112

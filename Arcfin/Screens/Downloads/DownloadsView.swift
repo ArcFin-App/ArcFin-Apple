@@ -504,6 +504,7 @@ struct DownloadsView: View {
                     }
                 }
             }
+            .shelfScrollButtons()
             .padding(.horizontal, -DT.Spacing.pagePad)
             .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
         }

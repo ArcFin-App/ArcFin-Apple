@@ -151,11 +151,6 @@ struct MainTabView: View {
                 selectedTab = .home
             }
             #if os(macOS)
-            // Cmd+, / Arcfin > Settings… — switches to Home so its own
-            // arcfinShowSettings listener (below) can actually present it.
-            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
-                selectedTab = .home
-            }
             .onReceive(NotificationCenter.default.publisher(for: .arcfinSelectTab)) { note in
                 guard let raw = note.userInfo?["tab"] as? String, let tab = BottomNavItem(rawValue: raw),
                       visibleTabs.contains(tab) else { return }
@@ -212,6 +207,9 @@ struct HomeView: View {
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
+    #if os(macOS)
+    @Environment(\.openSettings) private var openSettings
+    #endif
     /// Titles the user requested through Seerr that have since arrived in the library.
     @State private var nowAvailable: [MediaItem] = []
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
@@ -488,7 +486,7 @@ struct HomeView: View {
                 subtitle: itemDisplaySubtitle(item),
                 progress: item.userData?.playedPercentage.map { $0 / 100 },
                 imageURL: landscapeShelfImageURL(for: item),
-                width: 200, height: 113
+                width: DT.Size.wideCard.width, height: DT.Size.wideCard.height
             )
 #endif
         }
@@ -601,9 +599,6 @@ struct HomeView: View {
                     SettingsView()
                 }
                 #if os(macOS)
-                .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
-                    showSettings = true
-                }
                 .onReceive(NotificationCenter.default.publisher(for: .arcfinRefresh)) { _ in
                     Task { await loadHome(force: true) }
                 }
@@ -675,7 +670,7 @@ struct HomeView: View {
                     .help("Refresh")
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button { showSettings = true } label: {
+                    Button { openSettings() } label: {
                         avatarView
                             .frame(width: 22, height: 22)
                     }
