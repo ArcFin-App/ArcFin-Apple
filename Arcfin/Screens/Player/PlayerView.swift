@@ -1863,6 +1863,17 @@ struct PlayerView: View {
     @discardableResult
     private func selectAudioInEngine() async -> Bool {
         guard let info = playbackInfo, info.playMethod == .directPlay, let index = selectedAudioIndex else { return false }
+        // Aether names tracks by their stream index in the file, the same number Jellyfin uses,
+        // so it needs no matching by order (which gave up whenever the two lists differed).
+        if player is AetherEnginePlayer {
+            for _ in 0..<20 where player.availableAudioTracks.isEmpty {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            if player.availableAudioTracks.contains(where: { $0.id == index }) {
+                if index != player.selectedAudioTrackIndex { await player.setAudioTrack(index: index) }
+                return true
+            }
+        }
         let embedded = info.audioStreams.filter { !$0.isExternal }.sorted { $0.index < $1.index }
         guard let ordinal = embedded.firstIndex(where: { $0.index == index }) else { return false }
         // Engines list tracks a moment after the file opens.
