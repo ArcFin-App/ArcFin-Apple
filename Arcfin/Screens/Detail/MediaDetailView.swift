@@ -602,7 +602,7 @@ struct MediaDetailView: View {
 
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
-            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
+            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: Self.backdropFillWidth) {
                 RetryingAsyncImage(
                     url: url,
                     logCategory: "MediaDetailView",
@@ -631,7 +631,7 @@ struct MediaDetailView: View {
                     )
                 )
         }
-        .frame(height: 260)
+        .frame(height: Self.heroHeight)
         // Exactly the screen's width: a fill-scaled backdrop is wider than a small phone, and
         // sized by its own width it pushed the whole page out past both edges.
         .containerRelativeFrame(.horizontal)
@@ -682,7 +682,7 @@ struct MediaDetailView: View {
     private var titleBlock: some View {
         HStack(alignment: .top, spacing: 14) {
             // Portrait poster
-            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 200) {
+            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: Self.posterFillWidth) {
                 RetryingAsyncImage(
                     url: url,
                     logCategory: "MediaDetailView",
@@ -697,19 +697,19 @@ struct MediaDetailView: View {
                         }
                     }
                 )
-                .frame(width: 90, height: 132)
+                .frame(width: Self.posterSize.width, height: Self.posterSize.height)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
             } else {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(DT.Color.backgroundSecondary)
-                    .frame(width: 90, height: 132)
+                    .frame(width: Self.posterSize.width, height: Self.posterSize.height)
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
-                    .font(.system(.title3, design: .default, weight: .heavy))
+                    .font(.system(Self.titleStyle, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.5)
                     .lineLimit(3)
@@ -721,9 +721,25 @@ struct MediaDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, -50)
+        .padding(.top, -Self.posterSize.height * 0.38)
         .padding(.bottom, DT.Spacing.md)
     }
+
+    // A Mac window is far wider than a phone: a 260 pt strip of backdrop and a 90 pt
+    // poster left the top of the page looking like a banner ad.
+    #if os(macOS)
+    private static let heroHeight: CGFloat = 420
+    private static let posterSize = CGSize(width: 170, height: 250)
+    private static let titleStyle: Font.TextStyle = .largeTitle
+    private static let backdropFillWidth = 1800
+    private static let posterFillWidth = 400
+    #else
+    private static let heroHeight: CGFloat = 260
+    private static let posterSize = CGSize(width: 90, height: 132)
+    private static let titleStyle: Font.TextStyle = .title3
+    private static let backdropFillWidth = 900
+    private static let posterFillWidth = 200
+    #endif
 
     private var metaRow: some View {
         // lineLimit(1) cascades to every Text child, giving HStack's layout room to
