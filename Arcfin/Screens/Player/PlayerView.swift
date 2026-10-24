@@ -399,6 +399,9 @@ struct PlayerView: View {
         // reveals controls via toggleControlsVisibilityOnAction(), same as every other seek
         // entry point.
         .onMoveCommand { direction in
+            // With the controls up, left and right only move between them; running off the
+            // end of a row shouldn't seek.
+            guard tvControlsHidden else { return }
             switch direction {
             case .left: seek(by: -skipBackwardSeconds)
             case .right: seek(by: skipForwardSeconds)
