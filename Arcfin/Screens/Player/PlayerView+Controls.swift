@@ -2395,21 +2395,40 @@ struct TrackSelectionSheet: View {
 
     private func trackRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack {
-                Text(label).foregroundStyle(DT.Color.textPrimary)
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
-                }
-            }
+            TrackRowLabel(label: label, isSelected: isSelected)
         }
+        #if os(tvOS)
+        .listRowBackground(Color.clear)
+        #else
         .listRowBackground(DT.Color.backgroundSecondary)
+        #endif
     }
 
     private func label(for stream: JellyfinMediaStream) -> String {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
         return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+    }
+}
+
+/// tvOS draws a light platter behind the focused row, which white text disappears into.
+private struct TrackRowLabel: View {
+    let label: String
+    let isSelected: Bool
+    #if os(tvOS)
+    @Environment(\.isFocused) private var isFocused
+    #else
+    private let isFocused = false
+    #endif
+
+    var body: some View {
+        HStack {
+            Text(label).foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
+            Spacer()
+            if isSelected {
+                Image(systemName: "checkmark").foregroundStyle(isFocused ? Color.black : DT.Color.accent)
+            }
+        }
     }
 }
 
