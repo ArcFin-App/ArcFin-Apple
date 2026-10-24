@@ -20,6 +20,8 @@ struct SearchView: View {
     @State private var requestingSeerrItem: SeerrItem?
     @AppStorage("recentSearches") private var recentSearchesData = Data()
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
+    /// Off brings back the plain Library and Discover poster grids.
+    @AppStorage("modernSearch") private var modernSearch = true
 
     private static let maxRecentSearches = 8
 
@@ -88,6 +90,8 @@ struct SearchView: View {
                 )
             } else if !isSearchingLibrary && !isSearchingDiscover && jellyfinResults.isEmpty && seerrResults.isEmpty {
                 ContentUnavailableView.search(text: query)
+            } else if !modernSearch {
+                classicResults
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: DT.Spacing.xl) {
@@ -126,6 +130,86 @@ struct SearchView: View {
                 .presentationBackground(.ultraThinMaterial)
                 #endif
         }
+    }
+
+    // MARK: - Classic layout
+
+    private var classicColumns: [GridItem] {
+        #if os(macOS)
+        [GridItem(.adaptive(minimum: 130), spacing: 12)]
+        #elseif os(tvOS)
+        [GridItem(.adaptive(minimum: 220), spacing: 40)]
+        #else
+        Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+        #endif
+    }
+
+    private var classicResults: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: DT.Spacing.xl) {
+                if !jellyfinResults.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
+                        Text("Library")
+                            .font(DT.Font.cardTitle)
+                            .foregroundStyle(DT.Color.textPrimary)
+                        LazyVGrid(columns: classicColumns, spacing: 16) {
+                            ForEach(jellyfinResults) { item in
+                                NavigationLink(value: item) {
+                                    SearchResultCard(title: item.name, subtitle: item.productionYear.map { String($0) },
+                                                     imageURL: posterImageURL(for: item))
+                                }
+                                .modifier(ResultButtonStyle())
+                                .simultaneousGesture(TapGesture().onEnded { saveRecentSearch(query) })
+                            }
+                        }
+                    }
+                } else if isSearchingLibrary {
+                    ProgressView().frame(maxWidth: .infinity)
+                }
+                if seerrRepo.isConfigured && !seerrResults.isEmpty {
+                    classicDiscover
+                }
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
+    }
+
+    private var classicDiscover: some View {
+        VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+                Text("Discover")
+                    .font(DT.Font.cardTitle)
+                    .foregroundStyle(DT.Color.textPrimary)
+            }
+            LazyVGrid(columns: classicColumns, spacing: 16) {
+                ForEach(seerrResults) { item in
+                    #if os(tvOS)
+                    NavigationLink(value: item) {
+                        SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
+                    }
+                    .modifier(ResultButtonStyle())
+                    .simultaneousGesture(TapGesture().onEnded { saveRecentSearch(query) })
+                    #else
+                    Button {
+                        saveRecentSearch(query)
+                        requestingSeerrItem = item
+                    } label: {
+                        SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
+                    }
+                    .modifier(ResultButtonStyle())
+                    #endif
+                }
+            }
+        }
+        .padding(DT.Spacing.sm)
+        .background(DT.Color.backgroundSecondary.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.accent.opacity(0.2), lineWidth: 1))
     }
 
     private func searchingRow(_ text: String) -> some View {

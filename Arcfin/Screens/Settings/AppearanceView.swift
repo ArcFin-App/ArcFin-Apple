@@ -12,6 +12,7 @@ struct AppearanceView: View {
     @AppStorage("spoilerProtection") private var spoilerProtection = false
     @AppStorage("libraryHideWatched") private var libraryHideWatched = false
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
+    @AppStorage("modernSearch") private var modernSearch = true
     #if os(tvOS)
     @AppStorage("libraryScreensaverEnabled") private var screensaverEnabled = true
     @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
@@ -78,6 +79,11 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
                 .syncLocked("libraryHideWatched", authManager)
+                Toggle(isOn: $modernSearch) {
+                    TVRowLabelText(title: "Modern Search")
+                }
+                .tvListRow()
+                .syncLocked("modernSearch", authManager)
                 Toggle(isOn: $saveSearchHistory) {
                     TVRowLabelText(title: "Save Search History")
                 }
@@ -98,7 +104,7 @@ struct AppearanceView: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Spoiler Protection blurs the pictures and hides the descriptions of episodes you haven't started. Hide Watched in Libraries starts library grids filtered to unwatched; you can still change it there. Turning off Save Search History also clears it. Libraries chooses which show in Browse and in Recently Added.")
+                Text("Spoiler Protection blurs the pictures and hides the descriptions of episodes you haven't started. Hide Watched in Libraries starts library grids filtered to unwatched; you can still change it there. Modern Search shows a top result, shelves by kind and a Discover list; off, results are plain Library and Discover poster grids. Turning off Save Search History also clears it. Libraries chooses which show in Browse and in Recently Added.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
