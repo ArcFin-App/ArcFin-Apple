@@ -1033,13 +1033,10 @@ struct HomeView: View {
     private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
         ShelfRow(title: title, onSeeAll: nil) {
             ForEach(items) { item in
-                Button {
-                    // Without Seerr there's nothing to request; the title's page is shown instead.
-                    if seerrRepo.isConfigured { seerrRequestItem = item } else { seerrDeepLinkItem = item }
-                } label: {
+                Button { openSeerrShelfItem(item) } label: {
                     PosterCard(
                         title: item.title,
-                        subtitle: item.year,
+                        subtitle: seerrShelfSubtitle(for: item),
                         imageURL: seerrShelfImageURL(for: item)
                     )
                 }
@@ -1052,6 +1049,33 @@ struct HomeView: View {
 #endif
             }
         }
+    }
+
+    private func seerrShelfSubtitle(for item: SeerrItem) -> String? {
+        [item.year, mediaRepo.hasInLibrary(item) ? "In Library" : nil]
+            .compactMap { $0 }.joined(separator: " · ").nilIfEmpty
+    }
+
+    /// The library's own copy when the server has the title, even where Seerr hasn't caught up
+    /// yet; otherwise the request sheet, or the title's page without Seerr to request from.
+    private func openSeerrShelfItem(_ item: SeerrItem) {
+        Task {
+            if let local = await libraryCopy(of: item) {
+                heroDetailItem = local
+            } else if seerrRepo.isConfigured {
+                seerrRequestItem = item
+            } else {
+                seerrDeepLinkItem = item
+            }
+        }
+    }
+
+    private func libraryCopy(of item: SeerrItem) async -> MediaItem? {
+        guard let credential = authManager.state.credential else { return nil }
+        let header = authManager.authClient.authHeader(token: credential.accessToken)
+        return try? await JellyfinMediaClient().findItem(
+            credential: credential, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
+            title: item.title, year: item.year.flatMap { Int($0.prefix(4)) })
     }
 
     private func seerrShelfImageURL(for item: SeerrItem) -> URL? {
@@ -1465,7 +1489,7 @@ struct HomeView: View {
         if let year = item.year {
             Label(year, systemImage: "calendar")
         }
-        if item.availabilityStatus != .available {
+        if !mediaRepo.hasInLibrary(item) {
             Button {
                 Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
             } label: {
