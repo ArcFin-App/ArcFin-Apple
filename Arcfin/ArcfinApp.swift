@@ -34,6 +34,14 @@ struct ArcfinApp: App {
         .windowResizability(.contentSize)
         .commands {
             SidebarCommands()
+            // Edit › Find… (⌘F) searches the library, the app's one search field.
+            CommandGroup(replacing: .textEditing) {
+                Button("Find…") {
+                    UserDefaults.standard.set(true, forKey: "arcfin.pendingFindFocus")
+                    NotificationCenter.default.post(name: .arcfinSearch, object: nil)
+                }
+                .keyboardShortcut("f", modifiers: .command)
+            }
             CommandGroup(after: .newItem) {
                 Button("Open Video File…") {
                     NotificationCenter.default.post(name: .arcfinOpenFile, object: nil)

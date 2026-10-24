@@ -26,6 +26,16 @@ struct LibraryView: View {
     @State private var navigateToLocalPlayer = false
     @State private var navigateToDownloadsDeepLink = false
     @State private var searchQuery = ""
+#if os(macOS)
+    @FocusState private var isSearchFocused: Bool
+
+    /// Find… (⌘F) can come before Browse has ever been open, so it's left as a flag.
+    private func focusSearchIfPending() {
+        guard UserDefaults.standard.bool(forKey: "arcfin.pendingFindFocus") else { return }
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingFindFocus")
+        isSearchFocused = true
+    }
+#endif
 
     private var gridColumns: [GridItem] {
 #if os(macOS)
@@ -61,6 +71,9 @@ struct LibraryView: View {
             .screenBackground()
             .navigationTitle("Browse")
             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
+#if os(macOS)
+            .searchFocused($isSearchFocused)
+#endif
 #if !os(macOS) && !os(tvOS)
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -122,8 +135,14 @@ struct LibraryView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { note in
                 if let term = note.userInfo?["term"] as? String { searchQuery = term }
+                #if os(macOS)
+                focusSearchIfPending()
+                #endif
             }
             .onAppear {
+                #if os(macOS)
+                focusSearchIfPending()
+                #endif
                 if let term = UserDefaults.standard.string(forKey: "arcfin.pendingSearch") {
                     UserDefaults.standard.removeObject(forKey: "arcfin.pendingSearch")
                     searchQuery = term
