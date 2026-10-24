@@ -1471,7 +1471,9 @@ private struct SearchHintResponse: Decodable {
     let type: String
     let primaryImageTag: String?
     let thumbImageTag: String?
+    let thumbImageItemId: String?
     let backdropImageTag: String?
+    let backdropImageItemId: String?
     let productionYear: Int?
     let series: String?
     let indexNumber: Int?
@@ -1480,6 +1482,7 @@ private struct SearchHintResponse: Decodable {
     enum CodingKeys: String, CodingKey {
         case itemId = "ItemId", name = "Name", type = "Type"
         case primaryImageTag = "PrimaryImageTag", thumbImageTag = "ThumbImageTag"
+        case thumbImageItemId = "ThumbImageItemId", backdropImageItemId = "BackdropImageItemId"
         case backdropImageTag = "BackdropImageTag", productionYear = "ProductionYear"
         case series = "Series", indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber"
     }
@@ -1495,15 +1498,21 @@ private struct SearchHintResponse: Decodable {
         case "BoxSet":  mappedType = .boxSet
         default:        return nil
         }
+        // An episode's thumb and backdrop are usually the series' own, named by these ids;
+        // read as the episode's they asked for images it doesn't have and loaded nothing.
+        let ownsThumb = thumbImageItemId == nil || thumbImageItemId == itemId
+        let ownsBackdrop = backdropImageItemId == nil || backdropImageItemId == itemId
         return MediaItem(
             id: itemId, name: name, type: mappedType,
-            backdropImageTags: backdropImageTag.map { [$0] } ?? [],
+            backdropImageTags: ownsBackdrop ? backdropImageTag.map { [$0] } ?? [] : [],
             primaryImageTag: primaryImageTag,
-            thumbImageTag: thumbImageTag,
+            thumbImageTag: ownsThumb ? thumbImageTag : nil,
             productionYear: productionYear,
             seriesName: series,
             indexNumber: indexNumber,
-            parentIndexNumber: parentIndexNumber
+            parentIndexNumber: parentIndexNumber,
+            parentBackdropItemId: ownsBackdrop ? nil : backdropImageItemId,
+            parentBackdropImageTags: ownsBackdrop ? [] : backdropImageTag.map { [$0] } ?? []
         )
     }
 }
