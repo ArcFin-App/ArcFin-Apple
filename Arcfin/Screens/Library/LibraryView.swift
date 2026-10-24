@@ -33,12 +33,21 @@ struct LibraryView: View {
         // adaptive reflows into more columns as it grows instead.
         [GridItem(.adaptive(minimum: 220), spacing: 12)]
 #else
-        [
+        if isWide {
+            return [GridItem(.adaptive(minimum: 240), spacing: 12)]
+        }
+        return [
             GridItem(.flexible(), spacing: 12),
             GridItem(.flexible(), spacing: 12),
         ]
 #endif
     }
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isWide: Bool { horizontalSizeClass == .regular }
+#else
+    private let isWide = false
+#endif
 
     var body: some View {
         NavigationStack {

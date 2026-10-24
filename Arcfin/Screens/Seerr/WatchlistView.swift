@@ -14,13 +14,23 @@ struct WatchlistView: View {
         #elseif os(tvOS)
         [GridItem(.adaptive(minimum: 260), spacing: 20)]
         #else
-        [
+        if isWide {
+            return [GridItem(.adaptive(minimum: 150, maximum: 210), spacing: 12)]
+        }
+        return [
             GridItem(.flexible(), spacing: 12),
             GridItem(.flexible(), spacing: 12),
             GridItem(.flexible(), spacing: 12),
         ]
         #endif
     }
+
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isWide: Bool { horizontalSizeClass == .regular }
+    #else
+    private let isWide = false
+    #endif
 
     var body: some View {
         Group {
