@@ -42,19 +42,19 @@ struct AppearanceView: View {
         List {
             Section {
                 Toggle(isOn: $mergeContinueWatchingAndUpNext) {
-                    TVRowLabelText(title: "Merge Continue Watching & Up Next")
+                    TVRowLabelText(title: "Merge Continue Watching & Up Next", detail: "Shows them as one row instead of two.")
                 }
                 .tvListRow()
                 .syncLocked("mergeContinueWatchingAndUpNext", authManager)
                 Toggle(isOn: $heroVideoBackdropsEnabled) {
-                    TVRowLabelText(title: "Hero Video Backdrops")
+                    TVRowLabelText(title: "Hero Video Backdrops", detail: "Plays a muted trailer behind the featured title when the server has one.")
                 }
                 .tvListRow()
                 .syncLocked("heroVideoBackdropsEnabled", authManager)
                 NavigationLink {
                     HomeShelfSettingsView()
                 } label: {
-                    Text("Home Shelves")
+                    TVRowLabelText(title: "Home Shelves", detail: "Reorder or hide Home's rows.")
                 }
                 .tvListRow()
             } header: {
@@ -62,30 +62,26 @@ struct AppearanceView: View {
                     .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Shows Continue Watching and Up Next as a single combined row instead of two separate ones. Hero Video Backdrops autoplays a muted trailer behind the featured title when the server has one available. Home Shelves lets you reorder or hide individual rows.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $spoilerProtection) {
-                    TVRowLabelText(title: "Spoiler Protection")
+                    TVRowLabelText(title: "Spoiler Protection", detail: "Blurs the pictures and hides the descriptions of episodes you haven't started.")
                 }
                 .tvListRow()
                 .syncLocked("spoilerProtection", authManager)
                 Toggle(isOn: $libraryHideWatched) {
-                    TVRowLabelText(title: "Hide Watched in Libraries")
+                    TVRowLabelText(title: "Hide Watched in Libraries", detail: "Library grids start filtered to unwatched; you can still change it there.")
                 }
                 .tvListRow()
                 .syncLocked("libraryHideWatched", authManager)
                 Toggle(isOn: $modernSearch) {
-                    TVRowLabelText(title: "Modern Search")
+                    TVRowLabelText(title: "Modern Search", detail: "A top result, shelves by kind and a Discover list. Off shows plain poster grids.")
                 }
                 .tvListRow()
                 .syncLocked("modernSearch", authManager)
                 Toggle(isOn: $saveSearchHistory) {
-                    TVRowLabelText(title: "Save Search History")
+                    TVRowLabelText(title: "Save Search History", detail: "Turning it off also clears it.")
                 }
                 .tvListRow()
                 .syncLocked("saveSearchHistory", authManager)
@@ -95,7 +91,7 @@ struct AppearanceView: View {
                 NavigationLink {
                     LibraryVisibilityView()
                 } label: {
-                    Text("Libraries")
+                    TVRowLabelText(title: "Libraries", detail: "Which libraries show in Browse and in Recently Added.")
                 }
                 .tvListRow()
             } header: {
@@ -103,23 +99,19 @@ struct AppearanceView: View {
                     .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Spoiler Protection blurs the pictures and hides the descriptions of episodes you haven't started. Hide Watched in Libraries starts library grids filtered to unwatched; you can still change it there. Modern Search shows a top result, shelves by kind and a Discover list; off, results are plain Library and Discover poster grids. Turning off Save Search History also clears it. Libraries chooses which show in Browse and in Recently Added.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             #if os(tvOS)
             Section {
                 Toggle(isOn: $screensaverEnabled) {
-                    TVRowLabelText(title: "Library Screensaver")
+                    TVRowLabelText(title: "Library Screensaver", detail: "Shows your library's artwork when the remote hasn't been used for a while, except during playback. Press any button to go back.")
                 }
                 .tvListRow()
                 if screensaverEnabled {
                     Picker(selection: $screensaverMinutes) {
                         ForEach([2, 3, 5, 10], id: \.self) { Text("\($0) Minutes").tag($0) }
                     } label: {
-                        TVRowLabelText(title: "Start After")
+                        TVRowLabelText(title: "Start After", detail: "After 30 minutes the Apple TV's own screensaver and sleep settings take over.")
                     }
                     .tvListRow()
                 }
@@ -128,10 +120,6 @@ struct AppearanceView: View {
                     .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Shows artwork from your library when the remote hasn't been used for a while, except while something is playing. Press any button to go back. After 30 minutes the Apple TV's own screensaver and sleep settings take over; set Start After shorter than those to see it.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
@@ -143,7 +131,7 @@ struct AppearanceView: View {
                         activeTabs = BottomNavPrefs.encode(active)
                     }
                 )) {
-                    TVRowLabelText(title: "Stats")
+                    TVRowLabelText(title: "Stats", detail: "Adds a Stats tab with your watch time, habits and favourites.")
                 }
                 .tvListRow()
             } header: {
@@ -151,10 +139,6 @@ struct AppearanceView: View {
                     .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Adds a Stats tab with your watch time, habits and favourites, worked out from your Jellyfin watch history.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
             #endif
 
@@ -164,7 +148,7 @@ struct AppearanceView: View {
                 NavigationLink {
                     BottomNavSettingsView()
                 } label: {
-                    Text(navSectionTitle)
+                    TVRowLabelText(title: navSectionTitle, detail: "Which tabs show and in what order. Discover and Watchlist need Seerr connected.")
                 }
                 .tvListRow()
             } header: {
@@ -172,16 +156,12 @@ struct AppearanceView: View {
                     .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Choose which tabs show and in what order. Discover and Watchlist only appear when Seerr is connected, even if active here.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
             #endif
 
             Section {
                 Toggle(isOn: $reduceMotion) {
-                    TVRowLabelText(title: "Reduce Motion")
+                    TVRowLabelText(title: "Reduce Motion", detail: "Fewer animations and transitions throughout the app.")
                 }
                 .tvListRow()
                 .syncLocked("reduceMotion", authManager)
@@ -190,17 +170,13 @@ struct AppearanceView: View {
                     .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Minimizes animations and transitions throughout the app.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
 
             #if os(iOS)
             Section {
                 Toggle(isOn: $hapticsEnabled) {
-                    TVRowLabelText(title: "Haptic Feedback")
+                    TVRowLabelText(title: "Haptic Feedback", detail: "A light vibration on key actions, like requesting a title.")
                 }
                 .tvListRow()
                 .syncLocked("hapticsEnabled", authManager)
@@ -209,10 +185,6 @@ struct AppearanceView: View {
                     .font(.system(.caption, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
-            } footer: {
-                Text("Taps a light vibration on key interactions like requesting a title.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
             #endif
         }

@@ -31,75 +31,83 @@ struct DownloadsSettingsView: View {
         List {
             Section {
                 // Stored as "wifiOnly" so the existing, synced setting carries over.
-                Toggle("Download on Mobile Data", isOn: Binding(get: { !wifiOnly }, set: { wifiOnly = !$0 }))
-                    .syncLocked("wifiOnly", authManager)
-                Picker("Download Quality", selection: $downloadQuality) {
+                Toggle(isOn: Binding(get: { !wifiOnly }, set: { wifiOnly = !$0 })) {
+                    TVRowLabelText(title: "Download on Mobile Data", detail: "Off, downloads wait for Wi-Fi. Charges may apply.")
+                }
+                .syncLocked("wifiOnly", authManager)
+                Picker(selection: $downloadQuality) {
                     ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
                         Text(q.label).tag(q)
                     }
+                } label: {
+                    TVRowLabelText(title: "Download Quality", detail: "Higher takes more space.")
                 }
                 .syncLocked("downloadQuality", authManager)
-            } footer: {
-                Text("When this is off, downloads wait for Wi-Fi. You can still start them from Downloads; mobile data charges may apply.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
             .onChange(of: wifiOnly) { downloadManager.recheckQueueHold() }
 
             Section {
-                Picker("Downloads at Once", selection: $concurrentDownloads) {
+                Picker(selection: $concurrentDownloads) {
                     ForEach(1...3, id: \.self) { Text("\($0)").tag($0) }
+                } label: {
+                    TVRowLabelText(title: "Downloads at Once", detail: "How many download at the same time.")
                 }
                 .syncLocked("concurrentDownloads", authManager)
-                Picker("Subtitles", selection: $downloadSubtitles) {
+                Picker(selection: $downloadSubtitles) {
                     Text("All").tag("all")
                     Text("Preferred Language").tag("preferred")
                     Text("None").tag("none")
+                } label: {
+                    TVRowLabelText(title: "Subtitles", detail: "Preferred Language uses the one from Playback settings, or saves all when none is set.")
                 }
                 .syncLocked("downloadSubtitles", authManager)
-                Toggle("Scrubbing Previews", isOn: $downloadTrickplay)
-                    .syncLocked("downloadTrickplay", authManager)
-                Toggle("Season Downloads Skip Watched", isOn: $seasonDownloadUnwatchedOnly)
-                    .syncLocked("seasonDownloadUnwatchedOnly", authManager)
-            } footer: {
-                Text("Preferred Language uses the subtitle language in Playback settings, or saves all when none is set. Scrubbing previews are the thumbnails shown while you scrub; leaving them out saves space.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
+                Toggle(isOn: $downloadTrickplay) {
+                    TVRowLabelText(title: "Scrubbing Previews", detail: "The thumbnails shown while you scrub. Leaving them out saves space.")
+                }
+                .syncLocked("downloadTrickplay", authManager)
+                Toggle(isOn: $seasonDownloadUnwatchedOnly) {
+                    TVRowLabelText(title: "Season Downloads Skip Watched", detail: "Downloading a season leaves out episodes you've watched.")
+                }
+                .syncLocked("seasonDownloadUnwatchedOnly", authManager)
             }
 
             Section {
-                Toggle("Pause in Low Power Mode", isOn: $pauseInLowPowerMode)
-                    .syncLocked("pauseDownloadsInLowPowerMode", authManager)
-                    .onChange(of: pauseInLowPowerMode) { downloadManager.recheckQueueHold() }
-                Toggle("Pause in Low Data Mode", isOn: $pauseInLowDataMode)
-                    .syncLocked("pauseDownloadsInLowDataMode", authManager)
-                    .onChange(of: pauseInLowDataMode) { downloadManager.recheckQueueHold() }
-            } footer: {
-                Text("Downloads wait until the mode is off. You can still start them from Downloads.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
+                Toggle(isOn: $pauseInLowPowerMode) {
+                    TVRowLabelText(title: "Pause in Low Power Mode", detail: "Downloads wait until Low Power Mode is off.")
+                }
+                .syncLocked("pauseDownloadsInLowPowerMode", authManager)
+                .onChange(of: pauseInLowPowerMode) { downloadManager.recheckQueueHold() }
+                Toggle(isOn: $pauseInLowDataMode) {
+                    TVRowLabelText(title: "Pause in Low Data Mode", detail: "Downloads wait until Low Data Mode is off.")
+                }
+                .syncLocked("pauseDownloadsInLowDataMode", authManager)
+                .onChange(of: pauseInLowDataMode) { downloadManager.recheckQueueHold() }
             }
 
             Section {
-                Toggle("Delete After Watching", isOn: $deleteAfterWatching)
-                    .syncLocked("deleteDownloadsAfterWatching", authManager)
-                Picker("Remove Downloads After", selection: $removeAfterDays) {
+                Toggle(isOn: $deleteAfterWatching) {
+                    TVRowLabelText(title: "Delete After Watching", detail: "Removes a movie or episode once you finish it, here or on another device.")
+                }
+                .syncLocked("deleteDownloadsAfterWatching", authManager)
+                Picker(selection: $removeAfterDays) {
                     Text("Never").tag(0)
                     Text("7 Days").tag(7)
                     Text("30 Days").tag(30)
+                } label: {
+                    TVRowLabelText(title: "Remove Downloads After", detail: "Counts from the day it downloaded, watched or not.")
                 }
                 .syncLocked("removeDownloadsAfterDays", authManager)
-                Toggle("Remove Watched When Low on Space", isOn: $removeWatchedWhenLow)
-                    .syncLocked("removeWatchedWhenLowOnSpace", authManager)
-            } footer: {
-                Text("Delete After Watching removes a movie or episode once you finish it, here or on another device. Remove Downloads After counts from the day it downloaded, watched or not. When the device has under 2 GB free, the oldest watched downloads go first.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
+                Toggle(isOn: $removeWatchedWhenLow) {
+                    TVRowLabelText(title: "Remove Watched When Low on Space", detail: "Under 2 GB free, the oldest watched downloads go first.")
+                }
+                .syncLocked("removeWatchedWhenLowOnSpace", authManager)
             }
 
             Section {
-                NavigationLink("Manage Storage") {
+                NavigationLink {
                     StorageManagementView()
+                } label: {
+                    TVRowLabelText(title: "Manage Storage", detail: "What's downloaded and how much space it takes.")
                 }
                 LabeledContent("Image Cache", value: ByteCountFormatter.string(fromByteCount: Int64(imageCacheBytes), countStyle: .file))
                 Button("Clear Image Cache", role: .destructive) {
@@ -108,41 +116,49 @@ struct DownloadsSettingsView: View {
                 }
                 .disabled(imageCacheBytes == 0)
             } footer: {
-                Text("Posters and backdrops are cached to load faster. Clearing them never touches your downloads; they re-download as you browse.")
+                Text("Posters and backdrops are kept to load faster. Clearing them never touches your downloads.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
-                Toggle("Smart Downloads", isOn: $smartDownloadsEnabled)
-                    .syncLocked("smartDownloadsEnabled", authManager)
-                    .onChange(of: smartDownloadsEnabled) { _, isOn in
-                        if isOn { downloadManager.refreshSmartDownloads() }
-                    }
+                Toggle(isOn: $smartDownloadsEnabled) {
+                    TVRowLabelText(title: "Smart Downloads", detail: "Keeps the episode you're up to and the next ones of each show you've downloaded, removing watched ones.")
+                }
+                .syncLocked("smartDownloadsEnabled", authManager)
+                .onChange(of: smartDownloadsEnabled) { _, isOn in
+                    if isOn { downloadManager.refreshSmartDownloads() }
+                }
                 if smartDownloadsEnabled {
-                    Picker("Episodes to Keep", selection: $smartDownloadsEpisodeCount) {
+                    Picker(selection: $smartDownloadsEpisodeCount) {
                         ForEach(1...5, id: \.self) { count in
                             Text("\(count)").tag(count)
                         }
+                    } label: {
+                        TVRowLabelText(title: "Episodes to Keep", detail: "How many upcoming episodes of each show to keep.")
                     }
                     .syncLocked("smartDownloadsEpisodeCount", authManager)
                     .onChange(of: smartDownloadsEpisodeCount) { downloadManager.refreshSmartDownloads() }
-                    Picker("Storage Budget", selection: $smartDownloadsStorageBudgetGB) {
+                    Picker(selection: $smartDownloadsStorageBudgetGB) {
                         ForEach([5, 10, 25, 50], id: \.self) { gb in
                             Text("\(gb) GB").tag(gb)
                         }
+                    } label: {
+                        TVRowLabelText(title: "Storage Budget", detail: "The most space Smart Downloads uses.")
                     }
                     .syncLocked("smartDownloadsStorageBudgetGB", authManager)
                     .onChange(of: smartDownloadsStorageBudgetGB) { downloadManager.refreshSmartDownloads() }
-                    Toggle("Use Mobile Data", isOn: $smartDownloadsAllowMobileData)
-                        .syncLocked("smartDownloadsAllowMobileData", authManager)
-                        .onChange(of: smartDownloadsAllowMobileData) { _, isOn in
-                            downloadManager.recheckQueueHold()
-                            if isOn { downloadManager.refreshSmartDownloads() }
-                        }
+                    Toggle(isOn: $smartDownloadsAllowMobileData) {
+                        TVRowLabelText(title: "Use Mobile Data", detail: "Lets Smart Downloads download on mobile data. Charges may apply.")
+                    }
+                    .syncLocked("smartDownloadsAllowMobileData", authManager)
+                    .onChange(of: smartDownloadsAllowMobileData) { _, isOn in
+                        downloadManager.recheckQueueHold()
+                        if isOn { downloadManager.refreshSmartDownloads() }
+                    }
                 }
             } footer: {
-                Text("Smart Downloads keeps the episode you're up to and the next ones of each show with downloads, removing ones watched here or anywhere else to stay under your storage budget. It checks after a download finishes, when you open the app or come back to it, when the connection returns, and when you close the player. It only uses mobile data with Use Mobile Data on; charges may apply.")
+                Text("Smart Downloads checks after a download finishes, when you open the app, when the connection returns and when you close the player.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -163,7 +179,7 @@ struct DownloadsSettingsView: View {
                 } header: {
                     Text("Kept Downloaded")
                 } footer: {
-                    Text("Shows set to Keep Downloaded from their page. They download as soon as you choose, and the Smart Downloads storage budget doesn't apply to them; they stop when the device is under 2 GB free. Swipe to stop; episodes already downloaded stay until watched.")
+                    Text("Shows set to Keep Downloaded from their page download straight away, outside the storage budget, and stop under 2 GB free. Swipe to stop.")
                         .font(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }
@@ -171,12 +187,10 @@ struct DownloadsSettingsView: View {
 
             #if !os(tvOS)
             Section {
-                Toggle("Offline Mode", isOn: $offlineModeEnabled)
-                    .syncLocked("offlineModeEnabled", authManager)
-            } footer: {
-                Text("Offline Mode shows only your downloaded content — no connection to your server is used or needed.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
+                Toggle(isOn: $offlineModeEnabled) {
+                    TVRowLabelText(title: "Offline Mode", detail: "Shows only what's downloaded, without connecting to your server.")
+                }
+                .syncLocked("offlineModeEnabled", authManager)
             }
             #endif
         }

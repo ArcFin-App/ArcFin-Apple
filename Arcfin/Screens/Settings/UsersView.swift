@@ -101,13 +101,11 @@ struct UsersView: View {
 
             // ── App Lock ─────────────────────────────────────────────────
             Section {
-                Toggle("Use \(biometricLabel)", isOn: $appLockUseFaceID)
+                Toggle(isOn: $appLockUseFaceID) {
+                    TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+                }
             } header: {
                 sectionLabel("App Lock")
-            } footer: {
-                Text("When the active profile has a PIN set (above), Arcfin asks for it on launch and when returning from the background. \(biometricLabel) offers a faster unlock — the PIN is always the fallback.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
         }
         .arcfinListStyle()
