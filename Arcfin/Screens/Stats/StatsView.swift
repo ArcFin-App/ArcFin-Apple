@@ -772,13 +772,10 @@ private struct StatsHero: View {
         .background {
             ZStack {
                 if let artwork, let url = mediaRepo.imageURL(for: artwork, type: .backdrop, fillWidth: 1200) ?? mediaRepo.imageURL(for: artwork, fillWidth: 800) {
-                    CachedAsyncImage(url: url) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            heroFallback
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: url, logCategory: "StatsView",
+                        content: { $0.resizable().scaledToFill() },
+                        placeholder: { heroFallback })
                 } else {
                     heroFallback
                 }
@@ -912,13 +909,10 @@ private struct ShowRow: View {
                 .font(.system(.title3, design: .rounded, weight: .heavy).monospacedDigit())
                 .foregroundStyle(rank == 1 ? DT.Color.accent : DT.Color.textSecondary)
                 .frame(width: 26 * StatsMetrics.scale)
-            CachedAsyncImage(url: mediaRepo.imageURL(for: show.item)) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    DT.Color.backgroundTertiary
-                }
-            }
+            RetryingAsyncImage(
+                url: mediaRepo.imageURL(for: show.item), logCategory: "StatsView",
+                content: { $0.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundTertiary })
             .frame(width: 54 * StatsMetrics.scale, height: 80 * StatsMetrics.scale)
             .clipped()
             .contentShape(Rectangle())
@@ -965,13 +959,10 @@ private struct PosterTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CachedAsyncImage(url: mediaRepo.imageURL(for: item)) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    DT.Color.backgroundTertiary
-                }
-            }
+            RetryingAsyncImage(
+                url: mediaRepo.imageURL(for: item), logCategory: "StatsView",
+                content: { $0.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundTertiary })
             .frame(width: 120 * StatsMetrics.scale, height: 180 * StatsMetrics.scale)
             .clipped()
             .contentShape(Rectangle())
@@ -1009,13 +1000,10 @@ private struct PersonTile: View {
         VStack(spacing: 8) {
             Group {
                 if let tag = entry.person.primaryImageTag, let url = mediaRepo.personImageURL(personId: entry.person.id, tag: tag, fillWidth: 240) {
-                    CachedAsyncImage(url: url) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            placeholder
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: url, logCategory: "StatsView",
+                        content: { $0.resizable().scaledToFill() },
+                        placeholder: { placeholder })
                 } else {
                     placeholder
                 }
@@ -1169,13 +1157,10 @@ private struct RecentRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            CachedAsyncImage(url: mediaRepo.imageURL(for: poster)) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    DT.Color.backgroundTertiary
-                }
-            }
+            RetryingAsyncImage(
+                url: mediaRepo.imageURL(for: poster), logCategory: "StatsView",
+                content: { $0.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundTertiary })
             .frame(width: 40 * StatsMetrics.scale, height: 60 * StatsMetrics.scale)
             .clipped()
             .contentShape(Rectangle())
