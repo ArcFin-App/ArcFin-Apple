@@ -29,7 +29,7 @@ struct SeerrView: View {
         return [.init(.flexible()), .init(.flexible())]
     }
 #elseif os(macOS)
-    private let discoverColumns = [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)]
+    private let discoverColumns = [GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 12)]
 #else
     private let discoverColumns: [GridItem] = [.init(.flexible()), .init(.flexible())]
 #endif
@@ -293,7 +293,7 @@ struct SeerrView: View {
                     .focusSection()
                 }
 #elseif os(macOS)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
+                LazyVGrid(columns: discoverColumns, spacing: 12) {
                     ForEach(items) { item in
                         discoverCard(item)
                     }
@@ -562,7 +562,7 @@ struct SeerrView: View {
                     .focusSection()
                 }
 #elseif os(macOS)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
+                LazyVGrid(columns: discoverColumns, spacing: 12) {
                     ForEach(searchResults) { item in
                         discoverCard(item)
                     }

@@ -68,6 +68,15 @@ struct PosterCard: View {
 #endif
 
     #if !os(tvOS)
+    // The Mac's caption styles are 10 pt, too small over artwork on a bigger card.
+    #if os(macOS)
+    private static let titleStyle: Font.TextStyle = .body
+    private static let subtitleStyle: Font.TextStyle = .subheadline
+    #else
+    private static let titleStyle: Font.TextStyle = .caption
+    private static let subtitleStyle: Font.TextStyle = .caption2
+    #endif
+
     private var iOSBody: some View {
         ZStack(alignment: .bottom) {
             imageLayer
@@ -109,13 +118,13 @@ struct PosterCard: View {
                 Spacer()
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(.caption, design: .default, weight: .semibold))
+                        .font(.system(Self.titleStyle, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                     if let subtitle {
                         Text(subtitle)
-                            .font(.system(.caption2, design: .default, weight: .medium))
+                            .font(.system(Self.subtitleStyle, design: .default, weight: .medium))
                             .foregroundStyle(DT.Color.textSecondary)
                             .lineLimit(1)
                             .truncationMode(.tail)

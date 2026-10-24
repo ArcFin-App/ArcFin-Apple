@@ -10,7 +10,7 @@ struct WatchlistView: View {
 
     private var columns: [GridItem] {
         #if os(macOS)
-        [GridItem(.adaptive(minimum: 140, maximum: 200), spacing: 12)]
+        [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 16)]
         #elseif os(tvOS)
         [GridItem(.adaptive(minimum: 260), spacing: 20)]
         #else

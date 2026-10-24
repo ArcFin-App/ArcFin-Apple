@@ -488,7 +488,7 @@ struct HomeView: View {
                 subtitle: itemDisplaySubtitle(item),
                 progress: item.userData?.playedPercentage.map { $0 / 100 },
                 imageURL: landscapeShelfImageURL(for: item),
-                width: 200, height: 113
+                width: DT.Size.wideCard.width, height: DT.Size.wideCard.height
             )
 #endif
         }

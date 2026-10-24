@@ -65,7 +65,7 @@ struct CollectionDetailView: View {
 
     private var columns: [GridItem] {
 #if os(macOS)
-        [GridItem(.adaptive(minimum: 130), spacing: 12)]
+        [GridItem(.adaptive(minimum: 150), spacing: 16)]
 #else
         if isWide {
             return [GridItem(.adaptive(minimum: 150), spacing: 12)]
