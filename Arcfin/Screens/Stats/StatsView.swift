@@ -18,6 +18,9 @@ struct StatsView: View {
     @State private var counts = StatsLibraryCounts()
     @State private var stats: WatchStats?
     @State private var phase = Phase.loading
+    /// Landscape and iPad: the cards go in two columns instead of one long, stretched one.
+    @State private var isWide = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     #if !os(tvOS)
     @State private var showShare = false
     #endif
@@ -99,11 +102,12 @@ struct StatsView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.top, 8)
                 .padding(.bottom, 40)
-                .frame(maxWidth: 900)
+                .frame(maxWidth: isWide ? 1300 : 900)
                 .frame(maxWidth: .infinity)
             }
             #if !os(tvOS)
             .refreshable { await load() }
+            .onGeometryChange(for: Bool.self) { $0.size.width >= 700 } action: { isWide = $0 }
             #endif
         }
     }
@@ -172,18 +176,51 @@ struct StatsView: View {
 
     @ViewBuilder
     private func sections(_ stats: WatchStats) -> some View {
-        StatsHero(stats: stats)
+        // A phone on its side has little height; the full-size hero would fill it.
+        StatsHero(stats: stats, compact: verticalSizeClass == .compact)
+        if isWide {
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 28) { chartSections(stats) }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                VStack(alignment: .leading, spacing: 28) { titleSections(stats) }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+        } else {
+            activityCard(stats)
+            habitsCard(stats)
+            if !stats.topShows.isEmpty { showsSection(stats) }
+            if !stats.topMovies.isEmpty { moviesSection(stats) }
+            if !stats.genres.isEmpty { genresCard(stats) }
+            if !stats.actors.isEmpty || !stats.directors.isEmpty { peopleSection(stats) }
+            if !stats.decades.isEmpty || !stats.studios.isEmpty || !stats.ratings.isEmpty { tasteCard(stats) }
+            if !stats.rewatched.isEmpty { rewatchedSection(stats) }
+            highlightsCard(stats)
+            libraryCard
+            recentSection(stats)
+        }
+        footnote
+    }
+
+    @ViewBuilder
+    private func chartSections(_ stats: WatchStats) -> some View {
         activityCard(stats)
         habitsCard(stats)
-        if !stats.topShows.isEmpty { showsSection(stats) }
-        if !stats.topMovies.isEmpty { moviesSection(stats) }
         if !stats.genres.isEmpty { genresCard(stats) }
-        if !stats.actors.isEmpty || !stats.directors.isEmpty { peopleSection(stats) }
         if !stats.decades.isEmpty || !stats.studios.isEmpty || !stats.ratings.isEmpty { tasteCard(stats) }
-        if !stats.rewatched.isEmpty { rewatchedSection(stats) }
         highlightsCard(stats)
         libraryCard
+    }
+
+    @ViewBuilder
+    private func titleSections(_ stats: WatchStats) -> some View {
+        if !stats.topShows.isEmpty { showsSection(stats) }
+        if !stats.topMovies.isEmpty { moviesSection(stats) }
+        if !stats.actors.isEmpty || !stats.directors.isEmpty { peopleSection(stats) }
+        if !stats.rewatched.isEmpty { rewatchedSection(stats) }
         recentSection(stats)
+    }
+
+    private var footnote: some View {
         Text("Worked out from what's marked watched on your Jellyfin server. Inside a period, a title counts once, on the last day you played it; All Time counts every play. Watch time uses each title's full length.")
             .font(.caption)
             .foregroundStyle(DT.Color.textSecondary)
@@ -315,7 +352,7 @@ struct StatsView: View {
                 }
                 .padding(.vertical, 4)
             }
-            .scrollClipDisabled()
+            .scrollClipDisabled(!isWide)
         }
     }
 
@@ -335,7 +372,7 @@ struct StatsView: View {
                 }
                 .padding(.vertical, 4)
             }
-            .scrollClipDisabled()
+            .scrollClipDisabled(!isWide)
         }
     }
 
@@ -381,7 +418,7 @@ struct StatsView: View {
             }
             .padding(.vertical, 4)
         }
-        .scrollClipDisabled()
+        .scrollClipDisabled(!isWide)
     }
 
     private func tasteCard(_ stats: WatchStats) -> some View {
@@ -690,6 +727,7 @@ private struct StatsSectionHeader: View {
 /// The period's headline over the artwork of what was watched most.
 private struct StatsHero: View {
     let stats: WatchStats
+    var compact = false
     @Environment(MediaRepository.self) private var mediaRepo
 
     private var artwork: MediaItem? {
@@ -712,7 +750,7 @@ private struct StatsHero: View {
             }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(headline.value)
-                    .font(.system(size: 64 * StatsMetrics.scale, weight: .heavy, design: .rounded))
+                    .font(.system(size: (compact ? 48 : 64) * StatsMetrics.scale, weight: .heavy, design: .rounded))
                     .contentTransition(.numericText())
                 Text("\(headline.unit) watched")
                     .font(.system(.title3, weight: .semibold))
@@ -728,19 +766,16 @@ private struct StatsHero: View {
             }
         }
         .padding(22)
-        .frame(maxWidth: .infinity, minHeight: 280 * StatsMetrics.scale, alignment: .bottomLeading)
+        .frame(maxWidth: .infinity, minHeight: (compact ? 190 : 280) * StatsMetrics.scale, alignment: .bottomLeading)
         // Artwork filling the card overflows its frame, and an image takes taps across all of
         // it: drawn behind, clipped and passed through, so the period control above still works.
         .background {
             ZStack {
                 if let artwork, let url = mediaRepo.imageURL(for: artwork, type: .backdrop, fillWidth: 1200) ?? mediaRepo.imageURL(for: artwork, fillWidth: 800) {
-                    CachedAsyncImage(url: url) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            heroFallback
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: url, logCategory: "StatsView",
+                        content: { $0.resizable().scaledToFill() },
+                        placeholder: { heroFallback })
                 } else {
                     heroFallback
                 }
@@ -874,13 +909,10 @@ private struct ShowRow: View {
                 .font(.system(.title3, design: .rounded, weight: .heavy).monospacedDigit())
                 .foregroundStyle(rank == 1 ? DT.Color.accent : DT.Color.textSecondary)
                 .frame(width: 26 * StatsMetrics.scale)
-            CachedAsyncImage(url: mediaRepo.imageURL(for: show.item)) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    DT.Color.backgroundTertiary
-                }
-            }
+            RetryingAsyncImage(
+                url: mediaRepo.imageURL(for: show.item), logCategory: "StatsView",
+                content: { $0.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundTertiary })
             .frame(width: 54 * StatsMetrics.scale, height: 80 * StatsMetrics.scale)
             .clipped()
             .contentShape(Rectangle())
@@ -927,13 +959,10 @@ private struct PosterTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CachedAsyncImage(url: mediaRepo.imageURL(for: item)) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    DT.Color.backgroundTertiary
-                }
-            }
+            RetryingAsyncImage(
+                url: mediaRepo.imageURL(for: item), logCategory: "StatsView",
+                content: { $0.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundTertiary })
             .frame(width: 120 * StatsMetrics.scale, height: 180 * StatsMetrics.scale)
             .clipped()
             .contentShape(Rectangle())
@@ -971,13 +1000,10 @@ private struct PersonTile: View {
         VStack(spacing: 8) {
             Group {
                 if let tag = entry.person.primaryImageTag, let url = mediaRepo.personImageURL(personId: entry.person.id, tag: tag, fillWidth: 240) {
-                    CachedAsyncImage(url: url) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            placeholder
-                        }
-                    }
+                    RetryingAsyncImage(
+                        url: url, logCategory: "StatsView",
+                        content: { $0.resizable().scaledToFill() },
+                        placeholder: { placeholder })
                 } else {
                     placeholder
                 }
@@ -1131,13 +1157,10 @@ private struct RecentRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            CachedAsyncImage(url: mediaRepo.imageURL(for: poster)) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    DT.Color.backgroundTertiary
-                }
-            }
+            RetryingAsyncImage(
+                url: mediaRepo.imageURL(for: poster), logCategory: "StatsView",
+                content: { $0.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundTertiary })
             .frame(width: 40 * StatsMetrics.scale, height: 60 * StatsMetrics.scale)
             .clipped()
             .contentShape(Rectangle())
