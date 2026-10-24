@@ -614,16 +614,30 @@ struct TVHomeView: View {
     private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
         tvShelfRow(title: title) {
             ForEach(items) { item in
-                Button { openSeerrItem = item } label: {
+                Button { openSeerrShelfItem(item) } label: {
                     PosterCard(
                         title: item.title,
-                        subtitle: item.year,
+                        subtitle: [item.year, mediaRepo.hasInLibrary(item) ? "In Library" : nil]
+                            .compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
                         imageURL: item.backdropURL ?? item.posterURL
                     )
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
             }
+        }
+    }
+
+    /// The library's own copy when the server has the title, even where Seerr hasn't caught
+    /// up yet; otherwise the title's Seerr page.
+    private func openSeerrShelfItem(_ item: SeerrItem) {
+        Task {
+            guard let credential = authManager.state.credential else { openSeerrItem = item; return }
+            let header = authManager.authClient.authHeader(token: credential.accessToken)
+            let local = try? await JellyfinMediaClient().findItem(
+                credential: credential, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
+                title: item.title, year: item.year.flatMap { Int($0.prefix(4)) })
+            if let local { heroDetailItem = local } else { openSeerrItem = item }
         }
     }
 

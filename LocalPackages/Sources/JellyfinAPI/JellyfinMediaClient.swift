@@ -587,6 +587,35 @@ public struct JellyfinMediaClient: Sendable {
         return matches.count == 1 ? matches.first : nil
     }
 
+    /// The key `getLibraryTMDBKeys` stores a title under.
+    public static func libraryKey(tmdbId: Int, isSeries: Bool) -> String {
+        "\(isSeries ? "tv" : "movie"):\(tmdbId)"
+    }
+
+    /// Every movie and show in the library that has a TMDB id, as `libraryKey`s, so a list of
+    /// Seerr titles (identified by TMDB id) can be told which of them the server already has.
+    /// Ids only, without images or user data, to keep a large library's answer small.
+    public func getLibraryTMDBKeys(credential: ServerCredential, authHeader: String) async throws -> Set<String> {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Fields", value: "ProviderIds"),
+            .init(name: "EnableImages", value: "false"),
+            .init(name: "EnableUserData", value: "false"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 30
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let items = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        return Set(items.compactMap { item in
+            item.tmdbId.map { Self.libraryKey(tmdbId: $0, isSeries: item.type == .series) }
+        })
+    }
+
     private func findItemByProviderId(
         credential: ServerCredential,
         authHeader: String,

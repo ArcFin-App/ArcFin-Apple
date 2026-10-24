@@ -4,6 +4,7 @@ import Foundation
 import Observation
 import AuthCore
 import JellyfinAPI
+import SeerrAPI
 import Telemetry
 import Network
 import os
@@ -70,6 +71,8 @@ final class MediaRepository {
     /// director, its cast.
     var recommendations: [MovieRecommendationCategory] = []
     var libraries: [JellyfinLibrary] = []
+    /// TMDB keys (`JellyfinMediaClient.libraryKey`) of every movie and show the server has.
+    var libraryTMDBKeys: Set<String> = []
     var serverID: String = ""
     var isLoading: Bool = false
     /// True when the last load couldn't reach the server at all (vs. a genuinely empty
@@ -172,6 +175,7 @@ final class MediaRepository {
         async let topUnw  = client.getTopRatedUnwatched(credential: credential, authHeader: header)
         async let sugg    = client.getSuggestions(credential: credential, authHeader: header)
         async let recs    = client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)
+        async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
 
         // Every result is gathered first and only shown if the server answered: a failed or
         // cancelled attempt used to replace every shelf with an empty list, which with
@@ -206,6 +210,7 @@ final class MediaRepository {
         let topUnwResult = (try? await topUnw) ?? []
         let suggResult = (try? await sugg) ?? []
         let recsResult = (try? await recs) ?? []
+        let tmdbKeysResult = try? await tmdbKeys
         guard succeeded else { return false }
 
         continueWatching       = cwResult
@@ -223,8 +228,16 @@ final class MediaRepository {
         topRatedUnwatched      = topUnwResult
         suggestions            = suggResult
         recommendations        = recsResult.filter { $0.items.count >= 3 }
+        if let tmdbKeysResult { libraryTMDBKeys = tmdbKeysResult }
 
         return succeeded
+    }
+
+    /// Whether the server already has a Seerr title: Seerr says so, or the library holds its
+    /// TMDB id (Seerr's own status lags until it next scans the library).
+    func hasInLibrary(_ item: SeerrItem) -> Bool {
+        item.availabilityStatus == .available
+            || libraryTMDBKeys.contains(JellyfinMediaClient.libraryKey(tmdbId: item.id, isSeries: item.mediaType == .tv))
     }
 
     func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {
