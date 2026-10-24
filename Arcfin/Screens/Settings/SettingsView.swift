@@ -116,9 +116,10 @@ struct SettingsView: View {
             } header: {
                 sectionHeader("Plugins", icon: "puzzlepiece.extension")
             }
-#else
+#elseif os(iOS)
             // Grouped hub — each row below pushes to its own focused screen instead of
-            // stacking every preference into one long page.
+            // stacking every preference into one long page. The Mac's Settings window lists
+            // these panes in its own sidebar.
             Section {
                 NavigationLink {
                     PlaybackSettingsView()
