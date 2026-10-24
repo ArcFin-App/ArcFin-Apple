@@ -28,6 +28,7 @@ struct PlayerView: View {
     @StateObject var groupState = GroupStateObserver()
     @Environment(PlaybackPresenter.self) var playbackPresenter
     @Environment(\.dismiss) var dismiss
+    @Environment(\.scenePhase) var scenePhase
     #if !os(tvOS)
     @Environment(\.isPlayerWindow) var isPlayerWindow
     @Environment(\.dismissWindow) var dismissWindow
@@ -116,6 +117,9 @@ struct PlayerView: View {
     @State var segments = SkipSegments()
     /// Segments already skipped automatically, so seeking back into one lets it play.
     @State var autoSkipped: Set<String> = []
+    /// A Skip … Automatically setting about to act: the button shows it filling, then skips.
+    @State var autoSkipCountdown: AutoActionCountdown?
+    @State var autoSkipTask: Task<Void, Never>?
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
     /// Optimistic target of the most recent seek request — player.positionTicks only
@@ -129,6 +133,8 @@ struct PlayerView: View {
     @State var autoCap: StreamQualityCap?
     @State var lastSeekAt: Date?
     @State var autoRecoveryTask: Task<Void, Never>?
+    @State var wasBackgrounded = false
+    @State var foregroundCheckTask: Task<Void, Never>?
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
@@ -156,6 +162,7 @@ struct PlayerView: View {
     @State var showUpNext = false
     @State var upNextDismissed = false
     @State var upNextCountdown: Task<Void, Never>?
+    @State var upNextCountdownState: AutoActionCountdown?
     @AppStorage("doubleTapToSkip") var doubleTapToSkip = true
     /// Where playback starts: the resume point, or the beginning under Start Over.
     @State var resumeFrom: Int64 = 0
@@ -219,7 +226,12 @@ struct PlayerView: View {
 
     let client = JellyfinMediaClient()
 
-    enum DragAxis { case brightness, volume }
+    enum DragAxis { case brightness, volume, seek }
+    struct AutoActionCountdown: Equatable {
+        let kind: String
+        let startedAt: Date
+        let seconds: Double
+    }
     struct SeekFeedback: Identifiable, Equatable {
         let id = UUID()
         let forward: Bool
@@ -387,6 +399,9 @@ struct PlayerView: View {
         // reveals controls via toggleControlsVisibilityOnAction(), same as every other seek
         // entry point.
         .onMoveCommand { direction in
+            // With the controls up, left and right only move between them; running off the
+            // end of a row shouldn't seek.
+            guard tvControlsHidden else { return }
             switch direction {
             case .left: seek(by: -skipBackwardSeconds)
             case .right: seek(by: skipForwardSeconds)
@@ -441,6 +456,15 @@ struct PlayerView: View {
             }
             handleStatusChange(newStatus)
             updateNowPlayingInfo()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: wasBackgrounded = true
+            case .active where wasBackgrounded:
+                wasBackgrounded = false
+                checkPlaybackAfterForeground()
+            default: break
+            }
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
@@ -1377,6 +1401,8 @@ struct PlayerView: View {
         sharePlay.playerClosed(item.id)
         progressReportTask?.cancel()
         autoRecoveryTask?.cancel()
+        autoSkipTask?.cancel()
+        foregroundCheckTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
@@ -1533,6 +1559,21 @@ struct PlayerView: View {
         }
     }
 
+    /// Back from the background (a call, another app) still loading and not moving: the server
+    /// may have ended the stream while nothing was asking for it, and the engine waits on it
+    /// forever. Reopening at the same position starts a new one.
+    private func checkPlaybackAfterForeground() {
+        foregroundCheckTask?.cancel()
+        let startTicks = player.positionTicks
+        foregroundCheckTask = Task {
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, player.status == .loading || player.isBuffering,
+                  player.positionTicks == startTicks
+            else { return }
+            reload(errorContext: "resume playback", resumeTicks: startTicks)
+        }
+    }
+
     func handlePlaybackStall() {
         guard quality == .auto else { return }
         let now = Date()
@@ -1581,12 +1622,13 @@ struct PlayerView: View {
             && (segments.credits.map { seconds >= $0.lowerBound } ?? (remainingSeconds <= 30))
         if withinWindow, !showUpNext {
             showUpNext = true
-            if UserDefaults.standard.bool(forKey: "autoPlayNext") {
+            let defaults = UserDefaults.standard
+            if defaults.bool(forKey: "autoPlayNext") || (defaults.bool(forKey: "skipCredits") && segments.credits != nil) {
                 startUpNextCountdown()
             }
         } else if !withinWindow, showUpNext {
             showUpNext = false
-            upNextCountdown?.cancel()
+            cancelUpNextCountdown()
         }
     }
 
@@ -1614,8 +1656,29 @@ struct PlayerView: View {
         ] {
             guard enabled, let span, span.contains(seconds), !autoSkipped.contains(kind) else { continue }
             autoSkipped.insert(kind)
-            skip(kind: kind, span: span)
+            // In the credits the Up Next card's own countdown moves on to the next title.
+            if kind == "credits", showUpNext { return }
+            startAutoSkip(kind: kind)
             return
+        }
+    }
+
+    /// How long an automatic skip or Up Next waits, so it can be seen and cancelled first.
+    static var autoActionSeconds: Double {
+        Double(min(max(UserDefaults.standard.object(forKey: "upNextCountdownSeconds") as? Int ?? 5, 3), 5))
+    }
+
+    private func startAutoSkip(kind: String) {
+        autoSkipTask?.cancel()
+        let countdown = AutoActionCountdown(kind: kind, startedAt: Date(), seconds: Self.autoActionSeconds)
+        autoSkipCountdown = countdown
+        autoSkipTask = Task {
+            try? await Task.sleep(for: .seconds(countdown.seconds))
+            guard !Task.isCancelled, autoSkipCountdown == countdown else { return }
+            autoSkipCountdown = nil
+            // Seeking out of the segment, or skipping it by hand, calls the skip off.
+            guard let current = currentSkippable, current.kind == kind else { return }
+            skip(kind: kind, span: current.span)
         }
     }
 
@@ -1644,20 +1707,27 @@ struct PlayerView: View {
     }
 
     private func startUpNextCountdown() {
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
+        let countdown = AutoActionCountdown(kind: "next", startedAt: Date(), seconds: Self.autoActionSeconds)
+        upNextCountdownState = countdown
         upNextCountdown = Task {
-            try? await Task.sleep(for: .seconds(UserDefaults.standard.object(forKey: "upNextCountdownSeconds") as? Int ?? 8))
+            try? await Task.sleep(for: .seconds(countdown.seconds))
             guard !Task.isCancelled else { return }
             playNextEpisode(isAutomatic: true)
         }
     }
 
-    /// `isAutomatic` distinguishes the 8s countdown silently firing from the user actually
+    func cancelUpNextCountdown() {
+        upNextCountdown?.cancel()
+        upNextCountdownState = nil
+    }
+
+    /// `isAutomatic` distinguishes the countdown silently firing from the user actually
     /// tapping Play on the Up Next card — only the former counts toward the "are you still
     /// watching" streak (a manual tap is proof someone's there, and resets it).
     func playNextEpisode(isAutomatic: Bool = false) {
         guard let nextEpisode else { return }
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
         if isAutomatic, sleepAtEndOfItem {
             sleepAtEndOfItem = false
             showUpNext = false
@@ -1745,7 +1815,7 @@ struct PlayerView: View {
 
     func playPrevious() {
         guard let previousItem else { return }
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
         onPlayNext(previousItem)
     }
@@ -1753,7 +1823,7 @@ struct PlayerView: View {
     func dismissUpNext() {
         upNextDismissed = true
         showUpNext = false
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
     }
 
     // MARK: - Audio/subtitle tracks
@@ -1793,6 +1863,17 @@ struct PlayerView: View {
     @discardableResult
     private func selectAudioInEngine() async -> Bool {
         guard let info = playbackInfo, info.playMethod == .directPlay, let index = selectedAudioIndex else { return false }
+        // Aether names tracks by their stream index in the file, the same number Jellyfin uses,
+        // so it needs no matching by order (which gave up whenever the two lists differed).
+        if player is AetherEnginePlayer {
+            for _ in 0..<20 where player.availableAudioTracks.isEmpty {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            if player.availableAudioTracks.contains(where: { $0.id == index }) {
+                if index != player.selectedAudioTrackIndex { await player.setAudioTrack(index: index) }
+                return true
+            }
+        }
         let embedded = info.audioStreams.filter { !$0.isExternal }.sorted { $0.index < $1.index }
         guard let ordinal = embedded.firstIndex(where: { $0.index == index }) else { return false }
         // Engines list tracks a moment after the file opens.

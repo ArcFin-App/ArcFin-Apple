@@ -540,3 +540,19 @@ struct PlayerLoadingIndicator: View {
         }
     }
 }
+
+/// Fills left to right over an automatic action's countdown, behind the button it belongs to.
+struct CountdownFill: View {
+    let countdown: PlayerView.AutoActionCountdown
+    let color: Color
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let progress = min(max(context.date.timeIntervalSince(countdown.startedAt) / countdown.seconds, 0), 1)
+            GeometryReader { proxy in
+                color.frame(width: proxy.size.width * progress)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
