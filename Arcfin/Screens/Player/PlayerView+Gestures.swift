@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import MediaEngine
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 #elseif os(macOS)
@@ -29,7 +30,10 @@ extension PlayerView {
             .onChanged { value in
                 if dragAxis == nil {
                     guard swipeGesturesEnabled else { return }
-                    guard abs(value.translation.height) > abs(value.translation.width) else { return }
+                    if abs(value.translation.width) > abs(value.translation.height) {
+                        beginSwipeSeek()
+                        return
+                    }
                     let axis: DragAxis = value.startLocation.x < width / 2 ? .brightness : .volume
                     dragAxis = axis
                     if axis == .volume {
@@ -43,12 +47,20 @@ extension PlayerView {
                     HapticManager.impact(.light)
                 }
                 guard let dragAxis else { return }
+                if dragAxis == .seek {
+                    // A swipe across the whole screen moves 90 seconds.
+                    let delta = Double(value.translation.width / width) * 90 * 10_000_000
+                    scrubTicks = min(max(Double(dragBaseline) + delta, 0), Double(player.durationTicks))
+                    updateScrubThumbnail()
+                    return
+                }
                 let delta = -value.translation.height / 250
                 let newValue = min(max(dragBaseline + delta, 0), 1)
                 dragValue = newValue
                 switch dragAxis {
                 case .brightness: activeWindowScene?.screen.brightness = newValue
                 case .volume: volumeController?.setVolume(Float(newValue))
+                case .seek: break
                 }
                 // Light tick every 10% crossed, not every pixel of drag.
                 let step = Int((newValue * 10).rounded())
@@ -58,6 +70,14 @@ extension PlayerView {
                 }
             }
             .onEnded { _ in
+                if dragAxis == .seek {
+                    dragAxis = nil
+                    performSeek(to: Int64(scrubTicks))
+                    isScrubbing = false
+                    scrubThumbnail = nil
+                    scheduleAutoHide()
+                    return
+                }
                 dragAxis = nil
                 lastHapticStep = nil
                 // The final setVolume call's own echo through the outputVolume observer
@@ -73,6 +93,19 @@ extension PlayerView {
                     isDraggingVolume = false
                 }
             }
+    }
+
+    /// Sideways swipes scrub, with the controls up so the scrubber and its preview show where
+    /// the swipe will land.
+    private func beginSwipeSeek() {
+        guard player.durationTicks > 0 else { return }
+        dragAxis = .seek
+        dragBaseline = CGFloat(pendingSeekTargetTicks ?? player.positionTicks)
+        scrubTicks = Double(dragBaseline)
+        isScrubbing = true
+        hideControlsTask?.cancel()
+        withAnimation(DT.Animation.fast) { isControlsVisible = true }
+        HapticManager.impact(.light)
     }
 
     func toggleOrientation() {

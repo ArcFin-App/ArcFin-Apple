@@ -30,6 +30,7 @@ extension PlayerView {
                     .contentShape(Rectangle())
                     #if canImport(UIKit) && !os(tvOS)
                     .gesture(tapGesture(width: proxy.size.width))
+                    .simultaneousGesture(dragGesture(width: proxy.size.width))
                     #elseif os(macOS)
                     .gesture(macTapGesture(width: proxy.size.width))
                     #endif
@@ -401,6 +402,20 @@ extension PlayerView {
         return info.isDolbyVision ? "DOLBY VISION" : "HDR"
     }
 
+    /// Every button already has a 44 pt target; the gaps keep thumbs off the neighbouring one.
+    /// A phone held upright with Previous and Next too is the one layout short on room.
+    private var transportSpacing: CGFloat {
+        let crowded = previousItem != nil || nextEpisode != nil
+        #if os(tvOS)
+        return crowded ? 12 : 20
+        #elseif os(macOS)
+        return 32
+        #else
+        let roomy = isLandscape || UIDevice.current.userInterfaceIdiom == .pad
+        return roomy ? 40 : (crowded ? 4 : 24)
+        #endif
+    }
+
     private var bottomBar: some View {
         VStack(spacing: 10) {
             scrubber
@@ -438,8 +453,7 @@ extension PlayerView {
                 Spacer()
                 #endif
 
-                // Tighter with Previous and Next too, so the row still fits a phone held upright.
-                HStack(spacing: previousItem != nil || nextEpisode != nil ? 12 : 20) {
+                HStack(spacing: transportSpacing) {
                     if previousItem != nil {
                         Button { playPrevious() } label: {
                             #if os(tvOS)
@@ -462,6 +476,8 @@ extension PlayerView {
                         #else
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                             .font(.system(.title3)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                         #endif
                     }
                     Button { togglePlayPause() } label: {
@@ -471,7 +487,8 @@ extension PlayerView {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
                             .font(.system(.largeTitle))
                             .foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 56, height: 56)
+                            .contentShape(Rectangle())
                         #endif
                     }
                     #if os(tvOS)
@@ -483,6 +500,8 @@ extension PlayerView {
                         #else
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.system(.title3)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                         #endif
                     }
                     if let nextEpisode {
@@ -785,7 +804,7 @@ extension PlayerView {
         .allowsHitTesting(false)
     }
 
-    private func updateScrubThumbnail() {
+    func updateScrubThumbnail() {
         // 2s buckets — fetching a fresh crop on every pixel of drag would hammer the loader.
         let bucket = Int(scrubTicks / (2 * 10_000_000))
         guard bucket != lastThumbnailBucket, let loader = trickplayLoader else { return }
@@ -1334,7 +1353,13 @@ extension PlayerView {
                             }
                             .foregroundStyle(.white)
                             .padding(.horizontal, 16).padding(.vertical, 10)
+                            .background {
+                                if let countdown = autoSkipCountdown, countdown.kind == currentSkippable?.kind {
+                                    CountdownFill(countdown: countdown, color: .white.opacity(0.28))
+                                }
+                            }
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                             .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
                         }
                         #if os(tvOS)
@@ -1360,8 +1385,9 @@ extension PlayerView {
         if let span = segments.recap, span.contains(seconds) { return ("recap", "Skip Recap", span) }
         if let span = segments.intro, span.contains(seconds) { return ("intro", "Skip Intro", span) }
         if let span = segments.credits, span.contains(seconds) {
-            // Up Next and the suggestions panel already offer a way on from the credits.
-            guard !showUpNext, !showMoreLikeThis else { return nil }
+            // Up Next and the suggestions panel already offer a way on from the credits,
+            // unless an automatic skip is counting down and needs to be seen.
+            guard !showUpNext, !showMoreLikeThis || autoSkipCountdown?.kind == "credits" else { return nil }
             return ("credits", "Skip Credits", span)
         }
         if let span = segments.preview, span.contains(seconds) { return ("preview", "Skip Preview", span) }
@@ -1421,7 +1447,7 @@ extension PlayerView {
                     HStack(spacing: 8) {
                         // With something up next, going on to it comes before skipping the credits.
                         creditsAction(next.type == .episode ? "Next Episode" : "Play Next",
-                                      systemImage: "play", isSelected: true) {
+                                      systemImage: "play", isSelected: true, countdown: upNextCountdownState) {
                             playNextEpisode()
                         }
                         .accessibilityLabel("Play \(next.name)")
@@ -1451,7 +1477,8 @@ extension PlayerView {
         .animation(DT.Animation.fast, value: showUpNext)
     }
 
-    private func creditsAction(_ title: String, systemImage: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func creditsAction(_ title: String, systemImage: String, isSelected: Bool,
+                               countdown: AutoActionCountdown? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: isSelected ? "\(systemImage).fill" : systemImage)
                 .font(.system(.caption, weight: .semibold))
@@ -1459,9 +1486,13 @@ extension PlayerView {
                 .minimumScaleFactor(0.8)
                 .foregroundStyle(isSelected ? .black : .white)
                 .frame(maxWidth: .infinity, minHeight: 44)
+                .background {
+                    if let countdown { CountdownFill(countdown: countdown, color: .black.opacity(0.18)) }
+                }
                 .background(
                     isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.white.opacity(0.16)),
                     in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
         }
         .playerOverlayButton(cornerRadius: DT.Radius.md)
         .accessibilityLabel(title)
@@ -2142,7 +2173,9 @@ extension PlayerView {
     #if canImport(UIKit) && !os(tvOS)
     @ViewBuilder
     var dragAxisIndicator: some View {
-        if let dragAxis {
+        if dragAxis == .seek {
+            swipeSeekIndicator
+        } else if let dragAxis {
             let isBrightness = dragAxis == .brightness
             HStack {
                 if !isBrightness { Spacer() }
@@ -2168,6 +2201,29 @@ extension PlayerView {
             .transition(.opacity)
             .allowsHitTesting(false)
         }
+    }
+
+    /// How far a sideways swipe has moved and where it will land, in the middle of the screen.
+    private var swipeSeekIndicator: some View {
+        let deltaTicks = Int64(scrubTicks) - Int64(dragBaseline)
+        let forward = deltaTicks >= 0
+        return VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: forward ? "forward.fill" : "backward.fill")
+                    .font(.system(.title3))
+                Text("\(forward ? "+" : "−")\(timeLabel(ticks: abs(deltaTicks)))")
+                    .font(.system(.title2, design: .monospaced, weight: .semibold))
+                    .contentTransition(.numericText())
+            }
+            Text("\(timeLabel(ticks: Int64(scrubTicks))) / \(timeLabel(ticks: player.durationTicks))")
+                .font(.system(.caption, design: .monospaced, weight: .medium))
+                .foregroundStyle(.white.opacity(0.75))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 22).padding(.vertical, 14)
+        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .transition(.opacity)
+        .allowsHitTesting(false)
     }
     #elseif os(macOS)
     /// Same visual language as dragAxisIndicator above (there's no brightness axis to show on
@@ -2364,21 +2420,40 @@ struct TrackSelectionSheet: View {
 
     private func trackRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack {
-                Text(label).foregroundStyle(DT.Color.textPrimary)
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
-                }
-            }
+            TrackRowLabel(label: label, isSelected: isSelected)
         }
+        #if os(tvOS)
+        .listRowBackground(Color.clear)
+        #else
         .listRowBackground(DT.Color.backgroundSecondary)
+        #endif
     }
 
     private func label(for stream: JellyfinMediaStream) -> String {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
         return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+    }
+}
+
+/// tvOS draws a light platter behind the focused row, which white text disappears into.
+private struct TrackRowLabel: View {
+    let label: String
+    let isSelected: Bool
+    #if os(tvOS)
+    @Environment(\.isFocused) private var isFocused
+    #else
+    private let isFocused = false
+    #endif
+
+    var body: some View {
+        HStack {
+            Text(label).foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
+            Spacer()
+            if isSelected {
+                Image(systemName: "checkmark").foregroundStyle(isFocused ? Color.black : DT.Color.accent)
+            }
+        }
     }
 }
 

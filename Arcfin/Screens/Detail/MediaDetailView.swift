@@ -1119,7 +1119,10 @@ struct MediaDetailView: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
+                // Lines across a whole iPad are too long to read comfortably.
+                .frame(maxWidth: 720, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
     }
