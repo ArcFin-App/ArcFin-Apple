@@ -13,8 +13,10 @@ struct IntegrationsSettingsView: View {
     var body: some View {
         List {
             Section {
-                Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
-                    .syncLocked("seerrDiscoverEnabled", authManager)
+                Toggle(isOn: $seerrDiscoverEnabled) {
+                    TVRowLabelText(title: "Show Discover on Home", detail: "Adds your Seerr watchlist and its trending and popular rows to Home.")
+                }
+                .syncLocked("seerrDiscoverEnabled", authManager)
                 NavigationLink {
                     SeerrPluginView()
                         #if os(iOS)
@@ -22,7 +24,7 @@ struct IntegrationsSettingsView: View {
                         #endif
                 } label: {
                     HStack {
-                        Text("Seerr")
+                        TVRowLabelText(title: "Seerr", detail: "Request movies and shows, and keep a watchlist.")
                         Spacer()
                         seerrStatusPill
                     }
@@ -31,7 +33,7 @@ struct IntegrationsSettingsView: View {
                     TMDBSettingsView()
                 } label: {
                     HStack {
-                        Text("TMDB")
+                        TVRowLabelText(title: "TMDB", detail: "Streaming services and title details, without Seerr.")
                         Spacer()
                         if seerrRepo.hasTMDB {
                             Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
@@ -39,7 +41,7 @@ struct IntegrationsSettingsView: View {
                     }
                 }
             } footer: {
-                Text("Connect Seerr for requests and TMDB for streaming and title details without Seerr. Both are optional.")
+                Text("Both are optional.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }

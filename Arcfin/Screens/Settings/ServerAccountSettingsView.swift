@@ -22,27 +22,27 @@ struct ServerAccountSettingsView: View {
                 serverRow
                 #if !os(tvOS)
                 Button { showSwitchServerSheet = true } label: {
-                    Text("Switch Server")
+                    TVRowLabelText(title: "Switch Server", detail: "Move to another server you've signed in to.")
                 }
                 .disabled(distinctServerCount <= 1)
                 #endif
                 NavigationLink {
                     AddServerFlowView()
                 } label: {
-                    Text("Add Server")
+                    TVRowLabelText(title: "Add Server", detail: "Sign in to another Jellyfin server.")
                 }
                 if let activeID = authManager.state.credential?.id {
                     NavigationLink {
                         ServerSettingsView(profileID: activeID)
                     } label: {
-                        Text("Server Settings")
+                        TVRowLabelText(title: "Server Settings", detail: "Addresses, home Wi-Fi, custom headers and settings sync.")
                     }
                 }
                 if authManager.isAdmin {
                     NavigationLink {
                         AdminSessionsView()
                     } label: {
-                        Text("Active Sessions")
+                        TVRowLabelText(title: "Active Sessions", detail: "Who's watching on your server right now.")
                     }
                 }
             }

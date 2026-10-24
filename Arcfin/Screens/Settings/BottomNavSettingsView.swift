@@ -58,13 +58,13 @@ struct BottomNavSettingsView: View {
             }
 
             Section {
-                Picker("Open On", selection: $launchTab) {
+                Picker(selection: $launchTab) {
                     ForEach(order.filter(active.contains)) { tab in
                         Text(tab.title).tag(tab)
                     }
+                } label: {
+                    TVRowLabelText(title: "Open On", detail: "The tab Arcfin opens on. Discover and Watchlist need Seerr; without it, Home.")
                 }
-            } footer: {
-                Text("The tab Arcfin opens on. Discover and Watchlist need Seerr connected; without it, Arcfin opens on Home.")
             }
         }
         #if os(iOS)

@@ -62,7 +62,7 @@ struct PlaybackSettingsView: View {
                         Text(q.label).tag(q)
                     }
                 } label: {
-                    TVRowLabelText(title: "Video Quality")
+                    TVRowLabelText(title: "Video Quality", detail: "Auto picks from your connection; a fixed choice caps every stream.")
                 }
                 .tvListRow()
                 .syncLocked("videoQuality", authManager)
@@ -73,21 +73,16 @@ struct PlaybackSettingsView: View {
                         Text(q.label).tag(q.rawValue)
                     }
                 } label: {
-                    TVRowLabelText(title: "Quality on Mobile Data")
+                    TVRowLabelText(title: "Quality on Mobile Data", detail: "Used instead when you're on mobile data.")
                 }
                 .syncLocked("mobileVideoQuality", authManager)
                 #endif
-                VStack(alignment: .leading, spacing: 4) {
-                    Picker(selection: $playbackEngine) {
-                        ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
-                            Text(engine.rawValue).tag(engine)
-                        }
-                    } label: {
-                        TVRowLabelText(title: "Playback Engine")
+                Picker(selection: $playbackEngine) {
+                    ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
+                        Text(engine.rawValue).tag(engine)
                     }
-                    Text("Auto is recommended and prefers Aether, which handles the widest range of formats, HDR, and surround/Atmos audio. If a video won't play, switch to AVFoundation or VLC directly — then back to Auto once it's fixed.")
-                        .font(.caption)
-                        .foregroundStyle(DT.Color.textSecondary)
+                } label: {
+                    TVRowLabelText(title: "Playback Engine", detail: "Auto prefers Aether, which plays the most formats, HDR and surround. If a video won't play, try AVFoundation or VLC.")
                 }
                 .tvListRow()
                 .syncLocked("playbackEngine", authManager)
@@ -99,7 +94,7 @@ struct PlaybackSettingsView: View {
                         Text("\(seconds)s").tag(seconds)
                     }
                 } label: {
-                    TVRowLabelText(title: "Skip Forward")
+                    TVRowLabelText(title: "Skip Forward", detail: "For the skip buttons, double-tap and the arrow keys.")
                 }
                 .tvListRow()
                 .syncLocked("skipForwardSeconds", authManager)
@@ -108,34 +103,30 @@ struct PlaybackSettingsView: View {
                         Text("\(seconds)s").tag(seconds)
                     }
                 } label: {
-                    TVRowLabelText(title: "Skip Backward")
+                    TVRowLabelText(title: "Skip Backward", detail: "For the skip buttons, double-tap and the arrow keys.")
                 }
                 .tvListRow()
                 .syncLocked("skipBackwardSeconds", authManager)
-            } footer: {
-                Text("Used by the on-screen skip buttons, double-tap to seek, and the left/right arrow keys.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $autoPlayNext) {
-                    TVRowLabelText(title: "Auto-play Next Episode")
+                    TVRowLabelText(title: "Auto-play Next Episode", detail: "Starts the next episode when the credits roll.")
                 }
                 .tvListRow()
                 .syncLocked("autoPlayNext", authManager)
                 Toggle(isOn: $skipRecap) {
-                    TVRowLabelText(title: "Skip Recap Automatically")
+                    TVRowLabelText(title: "Skip Recap Automatically", detail: "Skips a recap when the server knows where it is.")
                 }
                 .tvListRow()
                 .syncLocked("skipRecap", authManager)
                 Toggle(isOn: $skipIntro) {
-                    TVRowLabelText(title: "Skip Intro Automatically")
+                    TVRowLabelText(title: "Skip Intro Automatically", detail: "Skips the intro when the server knows where it is.")
                 }
                 .tvListRow()
                 .syncLocked("skipIntro", authManager)
                 Toggle(isOn: $skipCredits) {
-                    TVRowLabelText(title: "Skip Credits Automatically")
+                    TVRowLabelText(title: "Skip Credits Automatically", detail: "Skips the credits, or moves on to what's next.")
                 }
                 .tvListRow()
                 .syncLocked("skipCredits", authManager)
@@ -145,7 +136,7 @@ struct PlaybackSettingsView: View {
                             Text("\(seconds)s").tag(seconds)
                         }
                     } label: {
-                        TVRowLabelText(title: "Countdown")
+                        TVRowLabelText(title: "Countdown", detail: "How long the button fills before an automatic skip or the next episode.")
                     }
                     .tvListRow()
                     .syncLocked("upNextCountdownSeconds", authManager)
@@ -153,12 +144,12 @@ struct PlaybackSettingsView: View {
                     .onAppear { upNextCountdownSeconds = min(max(upNextCountdownSeconds, 3), 5) }
                 }
                 Toggle(isOn: $subtitleDefault) {
-                    TVRowLabelText(title: "Show Subtitles by Default")
+                    TVRowLabelText(title: "Show Subtitles by Default", detail: "Turns on a subtitle track when a video starts.")
                 }
                 .tvListRow()
                 .syncLocked("subtitleDefault", authManager)
                 Toggle(isOn: $rememberPlaybackSpeed) {
-                    TVRowLabelText(title: "Remember Playback Speed")
+                    TVRowLabelText(title: "Remember Playback Speed", detail: "New videos start at the speed you last picked.")
                 }
                 .tvListRow()
                 .syncLocked("rememberPlaybackSpeed", authManager)
@@ -168,13 +159,13 @@ struct PlaybackSettingsView: View {
                             Text(rate == 1 ? "Normal" : "\(rate.formatted())×").tag(rate)
                         }
                     } label: {
-                        TVRowLabelText(title: "Default Speed")
+                        TVRowLabelText(title: "Default Speed", detail: "The speed new videos start at.")
                     }
                     .tvListRow()
                     .syncLocked("defaultPlaybackSpeed", authManager)
                 }
             } footer: {
-                Text("Remember Playback Speed starts new videos at the speed you last picked; otherwise they start at the default speed. Skip buttons appear whenever your server knows where a recap, intro, credits or preview is (from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins); the Skip toggles do it for you. Countdown is how long the button fills before an automatic skip or the next episode starts.")
+                Text("Skip buttons show when your server knows where a recap, intro, credits or preview is, from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -185,7 +176,7 @@ struct PlaybackSettingsView: View {
                         Text(option.label).tag(option)
                     }
                 } label: {
-                    TVRowLabelText(title: "When Resuming")
+                    TVRowLabelText(title: "When Resuming", detail: "What Play does for a title you've started.")
                 }
                 .tvListRow()
                 .syncLocked(ResumeBehavior.key, authManager)
@@ -194,19 +185,15 @@ struct PlaybackSettingsView: View {
                         Text(option.label).tag(option)
                     }
                 } label: {
-                    TVRowLabelText(title: "Mark as Watched")
+                    TVRowLabelText(title: "Mark as Watched", detail: "When closing the player counts a title as watched. Server Default uses your server's setting, usually 90%.")
                 }
                 .tvListRow()
                 .syncLocked(WatchedThreshold.key, authManager)
-            } footer: {
-                Text("When Resuming applies to titles you've started. Mark as Watched is when closing the player counts a title as watched; Server Default leaves it to your Jellyfin server (usually 90%).")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $trailersEnabled) {
-                    TVRowLabelText(title: "Trailers")
+                    TVRowLabelText(title: "Trailers", detail: "Shows Play Trailer when the server has a trailer.")
                 }
                 .tvListRow()
                 .syncLocked("trailersEnabled", authManager)
@@ -214,23 +201,11 @@ struct PlaybackSettingsView: View {
                 // YouTubeTrailerPlayerView (YouTubePlayerKit, needs WebKit) isn't available
                 // on tvOS at all — only a local trailer indexed on the server plays there.
                 if trailersEnabled {
-                    Toggle("YouTube Fallback", isOn: $youtubeTrailersEnabled)
-                        .syncLocked("youtubeTrailersEnabled", authManager)
+                    Toggle(isOn: $youtubeTrailersEnabled) {
+                        TVRowLabelText(title: "YouTube Fallback", detail: "Plays a YouTube trailer when the server has none.")
+                    }
+                    .syncLocked("youtubeTrailersEnabled", authManager)
                 }
-                #endif
-            } footer: {
-                #if os(tvOS)
-                Text(trailersEnabled
-                     ? "Shows a Play Trailer button when the server has a local trailer indexed."
-                     : "Turns off trailer playback entirely.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-                #else
-                Text(trailersEnabled
-                     ? "Shows a Play Trailer button when the server has a local trailer indexed. YouTube Fallback plays a YouTube trailer in-app when no local one is available."
-                     : "Turns off trailer playback entirely, including the YouTube fallback.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
                 #endif
             }
 
@@ -240,7 +215,7 @@ struct PlaybackSettingsView: View {
                         Text(option.name).tag(option.code)
                     }
                 } label: {
-                    TVRowLabelText(title: "Preferred Audio Language")
+                    TVRowLabelText(title: "Preferred Audio Language", detail: "Starts on this language when a title has it.")
                 }
                 .tvListRow()
                 .syncLocked("preferredAudioLanguage", authManager)
@@ -249,19 +224,15 @@ struct PlaybackSettingsView: View {
                         Text(option.name).tag(option.code)
                     }
                 } label: {
-                    TVRowLabelText(title: "Preferred Subtitle Language")
+                    TVRowLabelText(title: "Preferred Subtitle Language", detail: "Starts on this language when a title has it.")
                 }
                 .tvListRow()
                 .syncLocked("preferredSubtitleLanguage", authManager)
-            } footer: {
-                Text("Used to pick a starting audio/subtitle track when a title has a matching language available — otherwise falls back to the server's default.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $rememberTracksPerShow) {
-                    TVRowLabelText(title: "Remember Tracks Per Show")
+                    TVRowLabelText(title: "Remember Tracks Per Show", detail: "Change audio or subtitles once and the rest of that show starts the same way.")
                 }
                 .tvListRow()
                 .syncLocked(ShowTrackMemory.enabledKey, authManager)
@@ -273,29 +244,25 @@ struct PlaybackSettingsView: View {
                         Text("Forget \(rememberedShowCount) Remembered \(rememberedShowCount == 1 ? "Show" : "Shows")")
                     }
                 }
-            } footer: {
-                Text("Pick Japanese audio or turn subtitles off once, and the rest of that show's episodes start the same way. Overrides the preferred languages above for shows you've adjusted.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 NavigationLink {
                     CodecProfileSettingsView()
                 } label: {
-                    Text("Codec Compatibility")
+                    TVRowLabelText(title: "Codec Compatibility", detail: "Which formats this device is told it can play.")
                 }
                 .tvListRow()
                 NavigationLink {
                     PlayerFeaturesSettingsView()
                 } label: {
-                    Text("Player Features")
+                    TVRowLabelText(title: "Player Features", detail: "Picture in Picture, gestures, chapters and more.")
                 }
                 .tvListRow()
                 NavigationLink {
                     SubtitleStyleSettingsView()
                 } label: {
-                    Text("Subtitle Style")
+                    TVRowLabelText(title: "Subtitle Style", detail: "Size, colour and background of subtitles.")
                 }
                 .tvListRow()
             }

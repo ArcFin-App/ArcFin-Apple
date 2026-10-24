@@ -9,19 +9,35 @@ import SwiftUI
 // Picker(selection:label:)) instead of the string convenience initializer wherever a tvOS
 // row needs its text to read in the app's text color while focused. A plain, unstyled Text
 // on every other platform, so call sites don't need their own platform guard.
+/// `detail` is the line or two under a setting that says what it does.
 struct TVRowLabelText: View {
     let title: String
+    var detail: String? = nil
 #if os(tvOS)
     @Environment(\.isFocused) private var isFocused
 #endif
 
     var body: some View {
 #if os(tvOS)
-        Text(title)
-            .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
-            .animation(DT.Animation.fast, value: isFocused)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
+            if let detail {
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(isFocused ? Color.black.opacity(0.65) : DT.Color.textSecondary)
+            }
+        }
+        .animation(DT.Animation.fast, value: isFocused)
 #else
-        Text(title)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            if let detail {
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        }
 #endif
     }
 }
@@ -66,15 +82,6 @@ extension View {
     func screenBackground() -> some View {
         frame(maxWidth: .infinity, maxHeight: .infinity)
             .background { DT.Color.backgroundPrimary.ignoresSafeArea() }
-    }
-
-    @ViewBuilder
-    func arcfinRowSeparatorHidden() -> some View {
-#if os(tvOS)
-        self
-#else
-        self.listRowSeparator(.hidden)
-#endif
     }
 
     @ViewBuilder

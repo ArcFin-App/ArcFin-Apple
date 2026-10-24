@@ -156,11 +156,9 @@ struct ServerSettingsView: View {
             }
 
             Section {
-                NavigationLink("Custom Headers") { CustomHeadersView() }
-            } footer: {
-                Text("Extra headers for a server behind an access gateway, such as Cloudflare Access.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
+                NavigationLink { CustomHeadersView() } label: {
+                    TVRowLabelText(title: "Custom Headers", detail: "Extra headers for a server behind an access gateway, such as Cloudflare Access.")
+                }
             }
 
             Section {
