@@ -12,6 +12,7 @@ struct UsersView: View {
     var onExpand: (() -> Void)? = nil
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(\.dismiss) private var dismiss
 
     @State private var pinStates: [UUID: Bool] = [:]
     @State private var switchTarget: ServerCredential? = nil
@@ -45,7 +46,7 @@ struct UsersView: View {
                             hasPIN: pinStates[active.id] == true
                         )
                     }
-                } header: { sectionLabel("Current Profile") }
+                } header: { Text("Current Profile") }
             }
 
             // ── Other profiles ───────────────────────────────────────────
@@ -81,19 +82,15 @@ struct UsersView: View {
                         }
                         Task { await loadPINStates() }
                     }
-                } header: { sectionLabel("Switch To") }
+                } header: { Text("Switch To") }
             }
 
             // ── Add profile ───────────────────────────────────────────────
             Section {
-                Button {
+                Button("Add Profile", systemImage: "plus") {
                     onExpand?()
                     showAddProfile = true
-                } label: {
-                    Label("Add Profile", systemImage: "plus.circle.fill")
-                        .foregroundStyle(DT.Color.accent)
                 }
-                .buttonStyle(.plain)
                 .navigationDestination(isPresented: $showAddProfile) {
                     AddProfileFlowView()
                 }
@@ -105,15 +102,21 @@ struct UsersView: View {
                     TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
                 }
             } header: {
-                sectionLabel("App Lock")
+                Text("App Lock")
             }
         }
         .arcfinListStyle()
         .screenBackground()
+        .tint(DT.Color.accent)
         .navigationTitle("Profiles")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { dismiss() }
+            }
+        }
         .task { await loadPINStates() }
         .onChange(of: authManager.profiles) { _, _ in Task { await loadPINStates() } }
         // PIN entry sheet for switching to a protected profile
@@ -200,12 +203,6 @@ struct UsersView: View {
         pinStates = states
     }
 
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.system(.caption, design: .default, weight: .semibold))
-            .foregroundStyle(DT.Color.textSecondary)
-            .textCase(nil)
-    }
 }
 
 // MARK: - Profile row content
@@ -215,60 +212,31 @@ struct ProfileRowContent: View {
     let isActive: Bool
     let hasPIN: Bool
 
-    private var initials: String {
-        profile.displayName
-            .split(separator: " ").prefix(2)
-            .compactMap { $0.first }
-            .map { String($0).uppercased() }
-            .joined()
-    }
-
     var body: some View {
-        HStack(spacing: 14) {
-            // Avatar
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [DT.Color.accent, DT.Color.accentDeep],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 48, height: 48)
-                    .shadow(color: isActive ? DT.Color.accent.opacity(0.35) : .clear, radius: 8)
-                Text(initials)
-                    .font(.system(.body, design: .rounded, weight: .bold))
-                    .foregroundStyle(DT.Color.onAccent)
-            }
-
-            // Info
-            VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 12) {
+            ProfileAvatar(profile: profile)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(profile.displayName)
-                    .font(.system(.callout, design: .default, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
-
                 Text(profile.baseURL.host ?? profile.baseURL.absoluteString)
-                    .font(.system(.caption))
+                    .font(.subheadline)
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
-
-                HStack(spacing: 4) {
-                    Image(systemName: hasPIN ? "lock.fill" : "lock.open")
-                        .font(.system(.caption2))
-                        .foregroundStyle(hasPIN ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
-                    Text(hasPIN ? "PIN enabled" : "No PIN")
-                        .font(.system(.caption2))
-                        .foregroundStyle(hasPIN ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
-                }
             }
-
             Spacer()
-
+            if hasPIN {
+                Image(systemName: "lock.fill")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .accessibilityLabel("PIN protected")
+            }
             if isActive {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(.title3))
+                Image(systemName: "checkmark")
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(DT.Color.accent)
+                    .accessibilityLabel("Current profile")
             }
         }
-        .padding(.vertical, 6)
         .contentShape(Rectangle())
     }
 }
@@ -299,21 +267,19 @@ struct ProfileDetailView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-            } header: { sectionLabel("Profile") }
+            } header: { Text("Profile") }
 
             Section {
                 if hasPIN {
                     Button("Change PIN") { pinFlow = .changeVerifyCurrent }
-                        .foregroundStyle(DT.Color.accent)
-                    Button("Disable PIN Protection", role: .destructive) {
+                    Button("Turn Off PIN", role: .destructive) {
                         pinFlow = .disableVerifyCurrent
                     }
                 } else {
-                    Button("Enable PIN Protection") { pinFlow = .setNew }
-                        .foregroundStyle(DT.Color.accent)
+                    Button("Turn On PIN") { pinFlow = .setNew }
                 }
             } header: {
-                sectionLabel("Security")
+                Text("Security")
             } footer: {
                 Text(hasPIN
                      ? "A 4-digit PIN is required when switching to this profile."
@@ -333,6 +299,7 @@ struct ProfileDetailView: View {
         }
         .arcfinListStyle()
         .screenBackground()
+        .tint(DT.Color.accent)
         .navigationTitle(profile.displayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -346,12 +313,6 @@ struct ProfileDetailView: View {
         }
     }
 
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.system(.caption, design: .default, weight: .semibold))
-            .foregroundStyle(DT.Color.textSecondary)
-            .textCase(nil)
-    }
 }
 
 // MARK: - PIN flow sheet (set / change / disable)

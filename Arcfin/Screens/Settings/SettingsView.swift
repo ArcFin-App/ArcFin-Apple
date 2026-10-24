@@ -278,12 +278,6 @@ struct SettingsView: View {
         }
     }
 
-    private func initialsLabel(_ initials: String) -> some View {
-        Text(initials)
-            .font(.system(.body, design: .rounded, weight: .bold))
-            .foregroundStyle(DT.Color.onAccent)
-    }
-
     private func settingsRow(_ title: String, icon: String) -> some View {
         Label {
             Text(title).foregroundStyle(DT.Color.textPrimary)
@@ -295,34 +289,8 @@ struct SettingsView: View {
     }
 
     private func profileCard(cred: ServerCredential) -> some View {
-        let initials = cred.displayName
-            .split(separator: " ").prefix(2)
-            .compactMap { $0.first }
-            .map { String($0).uppercased() }
-            .joined()
-
-        return HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [DT.Color.accent, DT.Color.accentDeep],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 44, height: 44)
-                if let tag = cred.userImageTag {
-                    CachedAsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: initialsLabel(initials)
-                        }
-                    }
-                    .frame(width: 44, height: 44)
-                    .clipShape(Circle())
-                } else {
-                    initialsLabel(initials)
-                }
-            }
+        HStack(spacing: 12) {
+            ProfileAvatar(profile: cred, size: 44)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(cred.displayName)
