@@ -181,6 +181,7 @@ struct SeerrView: View {
                         }
                     }
                 }
+                .shelfScrollButtons()
                 .padding(.bottom, DT.Spacing.md)
             }
         }
@@ -292,6 +293,7 @@ struct SeerrView: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .focusSection()
                 }
+                .shelfScrollButtons()
 #elseif os(macOS)
                 LazyVGrid(columns: discoverColumns, spacing: 12) {
                     ForEach(items) { item in
@@ -561,6 +563,7 @@ struct SeerrView: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .focusSection()
                 }
+                .shelfScrollButtons()
 #elseif os(macOS)
                 LazyVGrid(columns: discoverColumns, spacing: 12) {
                     ForEach(searchResults) { item in

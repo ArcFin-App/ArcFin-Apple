@@ -1071,6 +1071,7 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
             .padding(.bottom, DT.Spacing.md)
 #if os(tvOS)
             .focusSection()
@@ -1176,6 +1177,7 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
 #if os(tvOS)
@@ -1660,6 +1662,7 @@ struct MediaDetailView: View {
                 .focusSection()
 #endif
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1695,6 +1698,7 @@ struct MediaDetailView: View {
                 .focusSection()
 #endif
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1726,6 +1730,7 @@ struct MediaDetailView: View {
                 .focusSection()
 #endif
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1748,6 +1753,7 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }

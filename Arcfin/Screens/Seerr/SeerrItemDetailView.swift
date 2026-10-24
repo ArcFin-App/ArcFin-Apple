@@ -293,6 +293,7 @@ struct SeerrItemDetailView: View {
                     }
                 }
             }
+            .shelfScrollButtons()
         }
     }
 
@@ -329,6 +330,7 @@ struct SeerrItemDetailView: View {
                     }
                 }
             }
+            .shelfScrollButtons()
         }
     }
 
@@ -399,6 +401,7 @@ struct SeerrItemDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }

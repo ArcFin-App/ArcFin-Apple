@@ -72,6 +72,7 @@ struct ShelfRow<Content: View>: View {
                 .focusSection()
 #endif
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.lg)
 #if os(tvOS)

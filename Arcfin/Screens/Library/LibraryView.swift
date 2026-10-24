@@ -205,6 +205,7 @@ struct LibraryView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .focusSection()
             }
+            .shelfScrollButtons()
             .padding(.horizontal, -DT.Spacing.pagePad)
 #else
             LazyVGrid(columns: gridColumns, spacing: 12) {

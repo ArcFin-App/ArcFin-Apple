@@ -429,6 +429,7 @@ struct CollectionDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
         }
     }
 

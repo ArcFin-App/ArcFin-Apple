@@ -260,6 +260,7 @@ struct SearchView: View {
                 .padding(.vertical, 30)
                 #endif
             }
+            .shelfScrollButtons()
             #if os(tvOS)
             .scrollClipDisabled()
             #endif

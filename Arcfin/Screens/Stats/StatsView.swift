@@ -352,6 +352,7 @@ struct StatsView: View {
                 }
                 .padding(.vertical, 4)
             }
+            .shelfScrollButtons()
             .scrollClipDisabled(!isWide)
         }
     }
@@ -372,6 +373,7 @@ struct StatsView: View {
                 }
                 .padding(.vertical, 4)
             }
+            .shelfScrollButtons()
             .scrollClipDisabled(!isWide)
         }
     }
@@ -418,6 +420,7 @@ struct StatsView: View {
             }
             .padding(.vertical, 4)
         }
+        .shelfScrollButtons()
         .scrollClipDisabled(!isWide)
     }
 
@@ -1203,6 +1206,7 @@ private struct FlowChips: View {
                 }
             }
         }
+        .shelfScrollButtons()
     }
 }
 

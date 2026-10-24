@@ -126,6 +126,7 @@ struct PersonDetailView: View {
                             .padding(.horizontal, DT.Spacing.pagePad)
                             .padding(.vertical, 12)
                         }
+                        .shelfScrollButtons()
                         .scrollClipDisabled()
                     }
                 }

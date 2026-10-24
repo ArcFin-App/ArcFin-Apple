@@ -84,6 +84,7 @@ struct TitleInsights: View {
                 }
             }
         }
+        .shelfScrollButtons()
     }
 
     @ViewBuilder
@@ -198,6 +199,7 @@ struct TitleInsights: View {
                         }
                     }
                 }
+                .shelfScrollButtons()
             }
         }
     }
@@ -301,6 +303,7 @@ struct TitleInsights: View {
                 }
             }
         }
+        .shelfScrollButtons()
     }
 
     private func money(_ amount: Int) -> String {
