@@ -1,0 +1,100 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Continue watching in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Continue watching in ${applicationName}",
+              "Resume my show in ${applicationName}",
+              "What was I watching in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Download the next episode of ${target} in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Download the next episode of ${target} in ${applicationName}",
+              "Download ${target} in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Open ${target} in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Open ${target} in ${applicationName}",
+              "Show ${target} in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Open Discover in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Open Discover in ${applicationName}",
+              "What's new to request in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Play ${target} in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Play ${target} in ${applicationName}",
+              "Watch ${target} in ${applicationName}",
+              "Put on ${target} in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Play a random movie in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Play a random movie in ${applicationName}",
+              "Surprise me in ${applicationName}",
+              "Pick a movie in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Show my downloads in ${applicationName}" : {
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Show my downloads in ${applicationName}",
+              "Open downloads in ${applicationName}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

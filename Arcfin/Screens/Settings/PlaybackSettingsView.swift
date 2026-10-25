@@ -79,7 +79,7 @@ struct PlaybackSettingsView: View {
                 #endif
                 Picker(selection: $playbackEngine) {
                     ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
-                        Text(engine.rawValue).tag(engine)
+                        Text(engine == .auto ? String(localized: "Auto") : engine.rawValue).tag(engine)
                     }
                 } label: {
                     TVRowLabelText(title: "Playback Engine", detail: "Auto prefers Aether, which plays the most formats, HDR and surround. If a video won't play, try AVFoundation or VLC.")
@@ -280,9 +280,9 @@ enum ResumeBehavior: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .ask: "Ask"
-        case .resume: "Resume"
-        case .startOver: "Start Over"
+        case .ask: String(localized: "Ask")
+        case .resume: String(localized: "Resume")
+        case .startOver: String(localized: "Start Over")
         }
     }
     static var current: ResumeBehavior {
@@ -297,10 +297,10 @@ enum WatchedThreshold: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .server: "Server Default"
-        case .credits: "When Credits Start"
-        case .eighty: "At 80%"
-        case .eightyFive: "At 85%"
+        case .server: String(localized: "Server Default")
+        case .credits: String(localized: "When Credits Start")
+        case .eighty: String(localized: "At 80%")
+        case .eightyFive: String(localized: "At 85%")
         }
     }
     static var current: WatchedThreshold {
