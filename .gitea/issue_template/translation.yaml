@@ -1,7 +1,7 @@
 name: 🌍 Translation
 about: Offer to translate Arcfin into a language, or report a wrong or missing translation
 labels:
-  - "Kind/Enhancement"
+  - "Kind/Translation"
 body:
   - type: markdown
     attributes:
