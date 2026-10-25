@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ of %@" : {},
+    "%@%@" : {},
+    "Continue Watching" : {},
+    "Discover" : {},
+    "Discover & Request" : {},
+    "Discover something new" : {},
+    "Done" : {},
+    "Done by %@" : {},
+    "Downloads" : {},
+    "Find something new to watch and request it." : {},
+    "New" : {},
+    "Nothing new yet" : {},
+    "Nothing to resume" : {},
+    "Open Arcfin to resume" : {},
+    "Open Arcfin to use mobile data" : {},
+    "Open downloads" : {},
+    "Open your downloads to watch offline." : {},
+    "Pick up where you left off." : {},
+    "Play whatever you were watching last." : {},
+    "Recently Added" : {},
+    "Resume Watching" : {},
+    "Resume watching" : {},
+    "See the newest movies and shows on your server." : {},
+    "Up Next" : {}
+  },
+  "version" : "1.0"
+}
