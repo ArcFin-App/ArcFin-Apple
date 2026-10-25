@@ -39,6 +39,8 @@ jobs:
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
             build | tee "$RUNNER_TEMP/build-${{ matrix.platform }}.log" | grep -E ' error:|\*\* BUILD'
+      - name: Text is in the String Catalogs (${{ matrix.platform }})
+        run: python3 .gitea/scripts/check-string-catalog.py "$RUNNER_TEMP/dd-${{ matrix.platform }}" "$GITHUB_WORKSPACE"
       # Report only for now: lists Swift warnings from this repo's own files, not dependencies.
       - name: Warnings in our code (${{ matrix.platform }})
         if: always()
