@@ -8,12 +8,24 @@
             "state" : "needs_review",
             "value" : "%@ von %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ sur %@"
+          }
         }
       }
     },
     "%@%@" : {
       "localizations" : {
         "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -28,6 +40,12 @@
             "state" : "needs_review",
             "value" : "Weiterschauen"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reprendre la lecture"
+          }
         }
       }
     },
@@ -37,6 +55,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Entdecken"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Découvrir"
           }
         }
       }
@@ -48,6 +72,12 @@
             "state" : "needs_review",
             "value" : "Entdecken & Anfragen"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Découvrir et demander"
+          }
         }
       }
     },
@@ -57,6 +87,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Entdecke etwas Neues"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Découvrez quelque chose de nouveau"
           }
         }
       }
@@ -68,6 +104,12 @@
             "state" : "needs_review",
             "value" : "Fertig"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Terminé"
+          }
         }
       }
     },
@@ -77,6 +119,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Fertig um %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Terminé à %@"
           }
         }
       }
@@ -88,6 +136,12 @@
             "state" : "needs_review",
             "value" : "Downloads"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Téléchargements"
+          }
         }
       }
     },
@@ -97,6 +151,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Finde etwas Neues zum Schauen und frag es an."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trouvez quelque chose de nouveau à regarder et demandez-le."
           }
         }
       }
@@ -108,6 +168,12 @@
             "state" : "needs_review",
             "value" : "Neu"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nouveau"
+          }
         }
       }
     },
@@ -117,6 +183,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Noch nichts Neues"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rien de nouveau pour l’instant"
           }
         }
       }
@@ -128,6 +200,12 @@
             "state" : "needs_review",
             "value" : "Nichts zum Fortsetzen"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rien à reprendre"
+          }
         }
       }
     },
@@ -138,6 +216,12 @@
             "state" : "needs_review",
             "value" : "Öffne Arcfin zum Fortsetzen"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ouvrez Arcfin pour reprendre"
+          }
         }
       }
     },
@@ -147,6 +231,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Öffne Arcfin, um mobile Daten zu nutzen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ouvrez Arcfin pour utiliser les données cellulaires"
           }
         }
       }
@@ -160,6 +250,12 @@
             "state" : "needs_review",
             "value" : "Entdecken öffnen"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ouvrir Découvrir"
+          }
         }
       }
     },
@@ -169,6 +265,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Downloads öffnen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ouvrir les téléchargements"
           }
         }
       }
@@ -182,6 +284,12 @@
             "state" : "needs_review",
             "value" : "Downloads öffnen"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ouvrir les téléchargements"
+          }
         }
       }
     },
@@ -191,6 +299,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Öffne deine Downloads, um offline zu schauen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ouvrez vos téléchargements pour regarder hors ligne."
           }
         }
       }
@@ -202,6 +316,12 @@
             "state" : "needs_review",
             "value" : "Mach da weiter, wo du aufgehört hast."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reprenez là où vous vous étiez arrêté."
+          }
         }
       }
     },
@@ -211,6 +331,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Spiel ab, was du zuletzt geschaut hast."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lisez ce que vous regardiez en dernier."
           }
         }
       }
@@ -224,6 +350,12 @@
             "state" : "needs_review",
             "value" : "Spielt ab, was du zuletzt geschaut hast."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lit ce que vous regardiez en dernier."
+          }
         }
       }
     },
@@ -233,6 +365,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Kürzlich hinzugefügt"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ajouts récents"
           }
         }
       }
@@ -244,6 +382,12 @@
             "state" : "needs_review",
             "value" : "Weiterschauen"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reprendre la lecture"
+          }
         }
       }
     },
@@ -253,6 +397,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Weiterschauen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reprendre la lecture"
           }
         }
       }
@@ -264,6 +414,12 @@
             "state" : "needs_review",
             "value" : "Sieh dir die neuesten Filme und Serien auf deinem Server an."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Voyez les derniers films et séries de votre serveur."
+          }
         }
       }
     },
@@ -273,6 +429,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Als Nächstes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "À suivre"
           }
         }
       }

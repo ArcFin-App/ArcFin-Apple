@@ -414,6 +414,7 @@
 				en,
 				Base,
 				de,
+				fr,
 			);
 			mainGroup = FAB5D74B2FA79A9B002031A9;
 			minimizedProjectReferenceProxies = 1;
