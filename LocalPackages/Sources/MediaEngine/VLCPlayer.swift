@@ -207,7 +207,7 @@ public enum PlaybackEngineSelector {
         // same VideoToolbox hardware decoder.
         let needsVLCForBitDepth = (videoStream?.bitDepth ?? 8) > 8
         let chosen: PlaybackEngineKind = (isCompatible && !needsVLCForBitDepth) ? .avFoundation : .vlc
-        log.debug("""
+        log.notice("""
             Fallback chose \(chosen.rawValue, privacy: .public) — container: \(container ?? "nil", privacy: .public), \
             videoCodec: \(videoStream?.codec ?? "nil", privacy: .public), \
             videoRange: \(videoStream?.videoRange ?? "nil", privacy: .public), \
