@@ -293,6 +293,16 @@ public struct JellyfinMediaClient: Sendable {
         return page.items.map { $0.toMediaItem() }
     }
 
+    /// The same image at its original size, or nil when the URL asks for no resize.
+    public static func unresizedImageURL(_ url: URL) -> URL? {
+        let resizeParams: Set<String> = ["fillWidth", "fillHeight", "maxWidth", "maxHeight", "quality"]
+        guard var comps = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let items = comps.queryItems, items.contains(where: { resizeParams.contains($0.name) })
+        else { return nil }
+        comps.queryItems = items.filter { !resizeParams.contains($0.name) }
+        return comps.url
+    }
+
     public static func imageURL(
         baseURL: URL,
         itemID: String,

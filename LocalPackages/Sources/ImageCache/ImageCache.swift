@@ -4,6 +4,7 @@ import Foundation
 import SwiftUI
 import Nuke
 import AuthCore
+import JellyfinAPI
 import Telemetry
 
 // MARK: - Pipeline
@@ -66,7 +67,16 @@ public enum ImageCache: Sendable {
     /// Loads through the shared pipeline: memory cache, then disk cache, then network, with
     /// decoding off the main thread and duplicate in-flight requests coalesced.
     public static func load(_ url: URL) async throws -> PlatformImage {
-        try await shared.image(for: url)
+        do {
+            return try await shared.image(for: url)
+        } catch {
+            // Jellyfin's resize cache can answer one size of an image with an empty 200
+            // forever; the original size still loads.
+            guard !Task.isCancelled, let original = JellyfinMediaClient.unresizedImageURL(url) else { throw error }
+            let image = try await shared.image(for: original)
+            shared.cache[ImageRequest(url: url)] = ImageContainer(image: image)
+            return image
+        }
     }
 
     /// Loads all URLs into the Nuke decoded cache concurrently so images render
@@ -76,7 +86,7 @@ public enum ImageCache: Sendable {
         Task.detached(priority: .utility) {
             await withTaskGroup(of: Void.self) { group in
                 for url in captured {
-                    group.addTask { _ = try? await ImageCache.shared.image(for: url) }
+                    group.addTask { _ = try? await ImageCache.load(url) }
                 }
             }
         }
@@ -113,7 +123,7 @@ public struct LazyHeroImage: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: url) {
             guard let url else { return }
-            guard let response = try? await ImageCache.shared.image(for: url) else { return }
+            guard let response = try? await ImageCache.load(url) else { return }
             #if canImport(UIKit)
             let loaded = Image(uiImage: response)
             #else
