@@ -7043,6 +7043,70 @@
         }
       }
     },
+    "Arcfin switches language the next time it opens." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin wechselt die Sprache beim nächsten Öffnen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin cambiará de idioma la próxima vez que se abra."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin changera de langue à sa prochaine ouverture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin cambierà lingua alla prossima apertura."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinは次回の起動時に言語を切り替えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin은 다음에 열 때 언어를 전환합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin wisselt van taal als je het de volgende keer opent."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin muda de idioma na próxima vez que for aberto."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin сменит язык при следующем запуске."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 将在下次打开时切换语言。"
+          }
+        }
+      }
+    },
     "Arcfin Sync" : {
       "localizations" : {
         "de" : {
@@ -7103,134 +7167,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Arcfin Sync"
-          }
-        }
-      }
-    },
-    "Arcfin's language is set in System Settings › General › Language & Region." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Die Sprache von Arcfin wird in den Systemeinstellungen › Allgemein › Sprache & Region festgelegt."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "El idioma de Arcfin se configura en Ajustes del Sistema › General › Idioma y región."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La langue d’Arcfin se règle dans Réglages Système › Général › Langue et région."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La lingua di Arcfin si imposta in Impostazioni di Sistema › Generali › Lingua e Zona."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfinの言語は「システム設定」›「一般」›「言語と地域」で設定します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin의 언어는 시스템 설정 › 일반 › 언어 및 지역에서 설정합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De taal van Arcfin stel je in via Systeeminstellingen › Algemeen › Taal en regio."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "O idioma do Arcfin é definido em Ajustes do Sistema › Geral › Idioma e Região."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Язык Arcfin задаётся в разделе «Системные настройки» › «Основные» › «Язык и регион»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin 的语言在“系统设置”›“通用”›“语言与地区”中设置。"
-          }
-        }
-      }
-    },
-    "Arcfin's language is set in the Settings app." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Die Sprache von Arcfin wird in der Einstellungen-App festgelegt."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "El idioma de Arcfin se configura en la app Ajustes."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La langue d’Arcfin se règle dans l’app Réglages."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La lingua di Arcfin si imposta nell’app Impostazioni."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfinの言語は「設定」アプリで設定します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin의 언어는 설정 앱에서 설정합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De taal van Arcfin stel je in via de Instellingen-app."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "O idioma do Arcfin é definido no app Ajustes."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Язык Arcfin задаётся в приложении «Настройки»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin 的语言在“设置”App 中设置。"
           }
         }
       }
@@ -51589,6 +51525,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "当你的服务器安装了 Arcfin Sync Jellyfin 插件时，与其同步受支持的 App 设置。已锁定的设置由管理员控制，无法在此更改。"
+          }
+        }
+      }
+    },
+    "System Default" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Systemstandard"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Predeterminado del sistema"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Valeur du système"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Predefinito di sistema"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "システムのデフォルト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "시스템 기본값"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Systeemstandaard"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Padrão do sistema"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Как в системе"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "系统默认"
           }
         }
       }
