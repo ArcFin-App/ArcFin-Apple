@@ -183,7 +183,7 @@ struct AdminSessionsView: View {
     }
 
     /// "VideoCodecNotSupported" → "Video codec not supported".
-    private static func readableReason(_ reason: String) -> String {
+    nonisolated private static func readableReason(_ reason: String) -> String {
         var words: [String] = []
         for character in reason {
             if character.isUppercase || words.isEmpty {

@@ -11,16 +11,26 @@ import SwiftUI
 // on every other platform, so call sites don't need their own platform guard.
 /// `detail` is the line or two under a setting that says what it does.
 struct TVRowLabelText: View {
-    let title: String
-    var detail: String? = nil
+    let title: Text
+    var detail: LocalizedStringKey? = nil
 #if os(tvOS)
     @Environment(\.isFocused) private var isFocused
 #endif
 
+    init(title: LocalizedStringKey, detail: LocalizedStringKey? = nil) {
+        self.title = Text(title)
+        self.detail = detail
+    }
+
+    init(verbatim title: String, detail: LocalizedStringKey? = nil) {
+        self.title = Text(verbatim: title)
+        self.detail = detail
+    }
+
     var body: some View {
 #if os(tvOS)
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
+            title
                 .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
             if let detail {
                 Text(detail)
@@ -31,7 +41,7 @@ struct TVRowLabelText: View {
         .animation(DT.Animation.fast, value: isFocused)
 #else
         VStack(alignment: .leading, spacing: 2) {
-            Text(title)
+            title
             if let detail {
                 Text(detail)
                     .font(.caption)
@@ -200,7 +210,7 @@ struct TVPlayerControlLabel: View {
 // For inline text buttons (See All, etc.).
 // Shows accent fill only on focus; completely invisible at rest.
 struct TVFocusButtonLabel: View {
-    let title: String
+    let title: LocalizedStringKey
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
@@ -218,7 +228,7 @@ struct TVFocusButtonLabel: View {
 // No visible background at rest; accent or glass fill on focus.
 struct TVHeroButtonLabel: View {
     let icon: String
-    let text: String
+    let text: LocalizedStringKey
     var isPrimary: Bool = false
     @Environment(\.isFocused) private var isFocused
 
