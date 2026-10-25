@@ -997,23 +997,15 @@ private struct DiagnosticsRow: View {
     }
 
     private func label(title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Group {
-                if isPreparing {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Image(systemName: "square.and.arrow.up")
-                }
+        HStack {
+            TVRowLabelText(title: title, detail: detail)
+                .foregroundStyle(DT.Color.textPrimary)
+            Spacer()
+            if isPreparing {
+                ProgressView().controlSize(.small)
+            } else {
+                Image(systemName: "square.and.arrow.up").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
             }
-            .foregroundStyle(DT.Color.accent)
-            .frame(width: 22)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).foregroundStyle(DT.Color.accent)
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-            Spacer(minLength: 0)
         }
         .contentShape(Rectangle())
     }
