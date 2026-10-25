@@ -73,6 +73,7 @@ struct MediaDetailView: View {
     @State private var showTrailerPicker = false
     @State private var isLoading = true
     @State private var requestingSeerrItem: SeerrItem?
+    @State private var openedSeerrItem: SeerrItem?
     @State private var playbackRequest: PlaybackRequest?
     #if !os(tvOS)
     @State private var seasonDownloadPreview: DownloadManager.DownloadPreview?
@@ -273,6 +274,13 @@ struct MediaDetailView: View {
         }
         .navigationDestination(item: $selectedPerson) { person in
             PersonDetailView(person: person)
+        }
+        .navigationDestination(item: $openedSeerrItem) { item in
+#if os(tvOS)
+            TVSeerrItemDetailView(item: item)
+#else
+            SeerrItemDetailView(item: item)
+#endif
         }
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
@@ -783,7 +791,7 @@ struct MediaDetailView: View {
                     // Positive at 60% and up, the usual critics threshold.
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill")
                         .font(.system(.caption2))
-                    Text("\(Int(critics.rounded()))%")
+                    Text(Double(critics) / 100, format: .percent.precision(.fractionLength(0)))
                         .font(.system(.caption2, design: .default, weight: .bold))
                 }
                 .foregroundStyle(critics >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"))
@@ -1750,10 +1758,10 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(seerrRelatedItems) { sim in
-                        Button { requestingSeerrItem = sim } label: {
+                        Button { openSeerrRelated(sim) } label: {
                             PosterCard(
                                 title: sim.title,
-                                subtitle: sim.year,
+                                subtitle: seerrRelatedSubtitle(sim),
                                 imageURL: sim.posterURL
                             )
                         }
@@ -1765,6 +1773,29 @@ struct MediaDetailView: View {
             .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
+    }
+
+    private func seerrRelatedSubtitle(_ item: SeerrItem) -> String? {
+        let status: String? = mediaRepo.hasInLibrary(item) ? String(localized: "In Library")
+            : seerrRepo.isRequested(item) ? String(localized: "Requested") : nil
+        return [item.year, status].compactMap { $0 }.joined(separator: " · ").nilIfEmpty
+    }
+
+    /// The library's copy when the server has it, the title's Seerr page when it's already
+    /// requested, and only otherwise the request sheet.
+    private func openSeerrRelated(_ item: SeerrItem) {
+        Task {
+            if let cred = credential, let header = authHeader,
+               let local = try? await client.findItem(
+                   credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
+                   title: item.title, year: item.year.flatMap { Int($0.prefix(4)) }) {
+                selectedEpisode = local
+            } else if seerrRepo.isRequested(item) {
+                openedSeerrItem = item
+            } else {
+                requestingSeerrItem = item
+            }
+        }
     }
 
     // MARK: - Helpers

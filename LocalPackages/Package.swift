@@ -116,6 +116,7 @@ let package = Package(
             name: "ImageCache",
             dependencies: [
                 "AuthCore",
+                "JellyfinAPI",
                 "Telemetry",
                 .product(name: "Nuke",   package: "Nuke"),
                 .product(name: "NukeUI", package: "Nuke"),

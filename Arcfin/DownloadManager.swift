@@ -411,8 +411,7 @@ final class DownloadManager: NSObject {
             return
         }
           let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: imageID, tag: tag, type: imageType, fillWidth: 120, token: credential.accessToken)
-          guard let (data, response) = try? await URLSession.arcfin.data(from: url),
-              (response as? HTTPURLResponse)?.statusCode == 200 else { return }
+          guard let data = await URLSession.arcfin.imageData(from: url) else { return }
         guard var existing = liveActivityItemMeta[item.id] else { return }
         existing.posterData = Self.liveActivityThumbnail(from: data)
         liveActivityItemMeta[item.id] = existing
@@ -991,7 +990,7 @@ final class DownloadManager: NSObject {
                                   credential: ServerCredential, as fileName: String, in dir: URL) async -> String? {
         guard let tag else { return nil }
         let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: itemId, tag: tag, type: type, fillWidth: width, token: credential.accessToken)
-        guard let (data, _) = try? await URLSession.arcfin.data(from: url),
+        guard let data = await URLSession.arcfin.imageData(from: url),
               (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
         else { return nil }
         return fileName
@@ -1012,7 +1011,7 @@ final class DownloadManager: NSObject {
                 let fileName = "cast-\(person.id).jpg"
                 guard let url = comps.url else { continue }
                 group.addTask {
-                    guard let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty,
+                    guard let data = await URLSession.arcfin.imageData(from: url),
                           (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
                     else { return (index, "") }
                     return (index, fileName)
@@ -1041,7 +1040,7 @@ final class DownloadManager: NSObject {
         var posterFileName: String?
         if let tag = detail.item.primaryImageTag {
             let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
-            if let (data, _) = try? await URLSession.arcfin.data(from: url) {
+            if let data = await URLSession.arcfin.imageData(from: url) {
                 posterFileName = "poster.jpg"
                 try? data.write(to: dir.appendingPathComponent("poster.jpg"))
             }
@@ -1049,7 +1048,7 @@ final class DownloadManager: NSObject {
         var backdropFileName: String?
         if let tag = detail.item.backdropImageTags.first {
             let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
-            if let (data, _) = try? await URLSession.arcfin.data(from: url) {
+            if let data = await URLSession.arcfin.imageData(from: url) {
                 backdropFileName = "backdrop.jpg"
                 try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
             }

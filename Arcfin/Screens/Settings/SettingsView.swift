@@ -13,9 +13,9 @@ struct SettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var showUsersSheet = false
+    @State private var languageOverride = AppLanguage.override ?? ""
     #if !os(tvOS)
     @State private var usersDetent: PresentationDetent = .medium
-    @Environment(\.openURL) private var openURL
     #endif
     #if os(tvOS)
     @State private var listID = UUID()
@@ -161,31 +161,26 @@ struct SettingsView: View {
             }
 #endif
 
-#if !os(tvOS)
             if AppLanguage.isChoosable {
                 Section {
-                    Button {
-                        openURL(AppLanguage.settingsURL)
-                    } label: {
-                        LabeledContent {
-                            Text(AppLanguage.current).foregroundStyle(.secondary)
-                        } label: {
-                            settingsRow("Language", icon: "globe")
+                    Picker(selection: $languageOverride) {
+                        Text("System Default").tag("")
+                        ForEach(AppLanguage.available, id: \.self) { code in
+                            Text(verbatim: AppLanguage.name(of: code)).tag(code)
                         }
-                        .contentShape(Rectangle())
+                    } label: {
+                        settingsRow("Language", icon: "globe")
                     }
-                    #if os(macOS)
-                    .buttonStyle(.plain)
-                    #endif
+                    .tvListRow()
+                    .onChange(of: languageOverride) { _, code in
+                        AppLanguage.override = code.isEmpty ? nil : code
+                    }
                 } footer: {
-                    #if os(macOS)
-                    Text("Arcfin's language is set in System Settings › General › Language & Region.")
-                    #else
-                    Text("Arcfin's language is set in the Settings app.")
-                    #endif
+                    if languageOverride != AppLanguage.atLaunch {
+                        Text("Arcfin switches language the next time it opens.")
+                    }
                 }
             }
-#endif
 
             // ── About ────────────────────────────────────────────────────
             Section {
@@ -946,28 +941,37 @@ private struct TVAddProfileFlowView: View {
 }
 #endif
 
-#if !os(tvOS)
-/// Apps follow the system's per-app language setting, which only offers a choice once the app
-/// ships a second language.
+/// An in-app choice writes AppleLanguages into Arcfin's own defaults, the same key the
+/// system's per-app language setting uses; Foundation reads it at launch.
 private enum AppLanguage {
-    static var isChoosable: Bool {
-        Bundle.main.localizations.filter { $0 != "Base" }.count > 1
+    private static let key = "AppleLanguages"
+
+    static let available = Bundle.main.localizations
+        .filter { $0 != "Base" }
+        .sorted { name(of: $0).localizedStandardCompare(name(of: $1)) == .orderedAscending }
+
+    static var isChoosable: Bool { available.count > 1 }
+
+    /// The choice this launch is running with, so a change can say it applies next time.
+    static let atLaunch = override ?? ""
+
+    static var override: String? {
+        get {
+            let domain = Bundle.main.bundleIdentifier.flatMap(UserDefaults.standard.persistentDomain(forName:))
+            return (domain?[key] as? [String])?.first.flatMap { available.contains($0) ? $0 : nil }
+        }
+        set {
+            if let newValue { UserDefaults.standard.set([newValue], forKey: key) }
+            else { UserDefaults.standard.removeObject(forKey: key) }
+        }
     }
 
-    static var current: String {
-        let code = Bundle.main.preferredLocalizations.first ?? "en"
-        return Locale.current.localizedString(forIdentifier: code) ?? code
-    }
-
-    static var settingsURL: URL {
-        #if os(macOS)
-        URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
-        #else
-        URL(string: UIApplication.openSettingsURLString)!
-        #endif
+    /// Each language in its own words, as language pickers show them.
+    static func name(of code: String) -> String {
+        let locale = Locale(identifier: code)
+        return locale.localizedString(forIdentifier: code)?.capitalized(with: locale) ?? code
     }
 }
-#endif
 
 #if !os(tvOS)
 /// Builds the report before offering it, so the share sheet opens on a finished file rather

@@ -18,6 +18,21 @@ extension URLSession {
     public static var arcfin: URLSession {
         ArcfinSessionBox.session(for: CustomHTTPHeaders.current)
     }
+
+    /// An image's bytes, or nil. Jellyfin's resize cache can answer one size of an image
+    /// with an empty 200 forever, so a failed or empty resized request retries the original.
+    public func imageData(from url: URL) async -> Data? {
+        if let data = await nonEmptyData(from: url) { return data }
+        guard let original = JellyfinMediaClient.unresizedImageURL(url) else { return nil }
+        return await nonEmptyData(from: original)
+    }
+
+    private func nonEmptyData(from url: URL) async -> Data? {
+        guard let (data, response) = try? await data(from: url), !data.isEmpty,
+              (response as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) ?? true
+        else { return nil }
+        return data
+    }
 }
 
 private enum ArcfinSessionBox {
