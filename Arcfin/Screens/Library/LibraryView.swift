@@ -234,7 +234,7 @@ struct LibraryView: View {
 #else
             LazyVGrid(columns: gridColumns, spacing: 12) {
                 ForEach(supportedLibraries) { library in
-                    Button { openedLibrary = library } label: {
+                    libraryLink(library) {
                         LibraryCard(library: library, imageURL: mediaRepo.libraryBackdropURL(for: library))
                     }
                     .buttonStyle(.plain)
@@ -242,6 +242,17 @@ struct LibraryView: View {
             }
 #endif
         }
+    }
+
+    @ViewBuilder
+    private func libraryLink<Label: View>(_ library: JellyfinLibrary, @ViewBuilder label: () -> Label) -> some View {
+        #if os(macOS)
+        Button { openedLibrary = library } label: { label() }
+        #else
+        // A library opened from a binding sits above the path, so titles pushed onto the
+        // path from inside it would land underneath.
+        NavigationLink(value: library) { label() }
+        #endif
     }
 
     // MARK: - Your Requests section

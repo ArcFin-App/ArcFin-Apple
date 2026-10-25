@@ -24,11 +24,13 @@ struct ProfileAvatar: View {
                 .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
                 .foregroundStyle(DT.Color.onAccent)
             if let tag = profile.userImageTag {
-                CachedAsyncImage(url: JellyfinMediaClient.userImageURL(
-                    baseURL: profile.baseURL, userID: profile.userID, tag: tag,
-                    fillWidth: Int(size * 3), token: profile.accessToken)) { phase in
-                    if case .success(let image) = phase { image.resizable().scaledToFill() }
-                }
+                RetryingAsyncImage(
+                    url: JellyfinMediaClient.userImageURL(
+                        baseURL: profile.baseURL, userID: profile.userID, tag: tag,
+                        fillWidth: Int(size * 3), token: profile.accessToken),
+                    logCategory: "ProfileAvatar",
+                    content: { $0.resizable().scaledToFill() },
+                    placeholder: { Color.clear })
             }
         }
         .frame(width: size, height: size)
