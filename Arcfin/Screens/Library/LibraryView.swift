@@ -1488,7 +1488,12 @@ struct LibraryDetailView: View {
                 .menuStyle(.button)
                 .menuIndicator(.hidden)
         } else {
+            #if !os(macOS)
             NavigationLink(value: navTarget(for: item)) { label() }
+            #else
+            // On the Mac a NavigationLink(value:) can't find Browse's destination.
+            Button { randomPick = item } label: { label() }
+            #endif
         }
     }
 

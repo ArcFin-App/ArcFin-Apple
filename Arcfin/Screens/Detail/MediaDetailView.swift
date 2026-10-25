@@ -1324,10 +1324,20 @@ struct MediaDetailView: View {
 #endif
     }
 
+    @ViewBuilder
+    private func titleLink<Label: View>(_ item: MediaItem, @ViewBuilder label: () -> Label) -> some View {
+        #if os(macOS)
+        // On the Mac a NavigationLink(value:) can't always find the stack's destination.
+        Button { selectedEpisode = item } label: { label() }
+        #else
+        NavigationLink(value: item) { label() }
+        #endif
+    }
+
     private func seriesLinkSection(_ series: MediaItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Series")
-            NavigationLink(value: series) {
+            titleLink(series) {
                 HStack(spacing: 10) {
                     Image(systemName: "tv")
                         .font(.system(.subheadline))
@@ -1641,7 +1651,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(similarItems) { sim in
-                        NavigationLink(value: sim) {
+                        titleLink(sim) {
                             PosterCard(
                                 title: sim.name,
                                 subtitle: sim.productionYear.map { String($0) },
@@ -1709,7 +1719,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(category.items) { rec in
-                        NavigationLink(value: rec) {
+                        titleLink(rec) {
                             PosterCard(
                                 title: rec.name,
                                 subtitle: rec.productionYear.map { String($0) },
