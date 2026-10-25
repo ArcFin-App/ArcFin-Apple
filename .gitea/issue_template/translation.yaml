@@ -1,0 +1,61 @@
+name: 🌍 Translation
+about: Offer to translate Arcfin into a language, or report a wrong or missing translation
+labels:
+  - "Kind/Enhancement"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Translations are added through pull requests. See **Translating Arcfin** in [CONTRIBUTING.md](https://git.psmattas.com/ArcFin/ArcFin/src/branch/develop/CONTRIBUTING.md#translating-arcfin) for how.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this about?
+      options:
+        - I'd like to translate Arcfin into a new language
+        - I'd like to help review or finish an existing language
+        - A translation is wrong, awkward or missing
+        - The English text is wrong or unclear
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Include the region if it matters.
+      placeholder: e.g. German, Portuguese (Brazil), French (Canada)
+    validations:
+      required: true
+
+  - type: textarea
+    id: where
+    attributes:
+      label: Where in the app
+      description: For a wrong or unclear text, the screen it's on and what it says now. Skip this if you're offering to translate.
+      placeholder: |
+        Settings › Playback › "Skip Intro Automatically"
+        Shows: …
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested text
+      description: What it should say instead.
+
+  - type: checkboxes
+    id: platform
+    attributes:
+      label: Platform
+      description: Where you saw it, or which devices you can test a translation on.
+      options:
+        - label: iPhone / iPad
+        - label: Mac
+        - label: Apple TV
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Screenshots help a lot for wording that doesn't fit or reads oddly.
