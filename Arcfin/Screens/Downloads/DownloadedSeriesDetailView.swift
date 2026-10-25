@@ -59,7 +59,7 @@ struct DownloadedSeriesDetailView: View {
                             }
                             if let rating = series?.communityRating, rating > 0 {
                                 HStack(spacing: 2) {
-                                    Image(systemName: "star.fill").font(.system(.caption2))
+                                    Image(systemName: "star.fill").font(.system(.caption2)).accessibilityHidden(true)
                                     Text(String(format: "%.1f", rating))
                                 }
                                 .font(.system(.caption2))
@@ -260,6 +260,7 @@ struct DownloadedSeriesDetailView: View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
             .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
+            .accessibilityHidden(true)
     }
     #endif
 
@@ -284,6 +285,7 @@ struct DownloadedSeriesDetailView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityAddTraits(selection.contains(episode.itemId) ? .isSelected : [])
         } else {
             Button {
                 playStartOverride = nil
@@ -344,6 +346,7 @@ struct DownloadedSeriesDetailView: View {
             Image(systemName: episode.played ? "checkmark.circle.fill" : "play.circle")
                 .font(.system(.title3))
                 .foregroundStyle(episode.played ? DT.Color.palette("10b981") : DT.Color.textSecondary)
+                .accessibilityLabel(episode.played ? "Watched" : "Not watched")
         }
     }
 
