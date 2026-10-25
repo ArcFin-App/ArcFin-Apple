@@ -5,6 +5,7 @@ import SeerrAPI
 
 struct SeerrView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(MediaRepository.self) private var mediaRepo
 
     @State private var mediaType: RequestMediaType = .movie
     @State private var selectedGenre: SeerrGenre? = nil
@@ -342,7 +343,7 @@ struct SeerrView: View {
         .buttonStyle(.plain)
         .contextMenu(menuItems: {
             let alreadyRequested = seerrRepo.matchingRequest(for: item) != nil
-            let isAvailable = item.availabilityStatus == .available
+            let isAvailable = mediaRepo.hasInLibrary(item)
             Button {
                 toggleWatchlist(item)
             } label: {
@@ -392,7 +393,7 @@ struct SeerrView: View {
     private func discoverCardContent(_ item: SeerrItem) -> some View {
         let matchingRequest = seerrRepo.matchingRequest(for: item)
         let alreadyRequested = matchingRequest != nil
-        let isAvailable = item.availabilityStatus == .available
+        let isAvailable = mediaRepo.hasInLibrary(item)
 
         return ZStack(alignment: .bottomLeading) {
             // Poster

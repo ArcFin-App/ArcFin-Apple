@@ -383,9 +383,9 @@ struct SearchView: View {
 
     // MARK: - Discover (Seerr)
 
-    /// What's already on the server last: those are mostly in the library results above.
+    /// Only what isn't on the server: anything it has is in the library results above.
     private var discoverResults: [SeerrItem] {
-        seerrResults.filter { $0.availabilityStatus != .available } + seerrResults.filter { $0.availabilityStatus == .available }
+        seerrResults.filter { !mediaRepo.hasInLibrary($0) }
     }
 
     private var discoverSection: some View {
