@@ -64,6 +64,16 @@
             ]
           }
         },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 이어서 시청하기",
+              "${applicationName}에서 내 시리즈 이어서 보기",
+              "${applicationName}에서 뭘 보고 있었지"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -140,6 +150,15 @@
             "values" : [
               "${applicationName}で${target}の次のエピソードをダウンロード",
               "${applicationName}で${target}をダウンロード"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 ${target} 다음 에피소드 다운로드",
+              "${applicationName}에서 ${target} 다운로드"
             ]
           }
         },
@@ -220,6 +239,15 @@
             ]
           }
         },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 ${target} 열기",
+              "${applicationName}에서 ${target} 보기"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -294,6 +322,15 @@
             "values" : [
               "${applicationName}でディスカバーを開く",
               "${applicationName}で新しくリクエストできる作品"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 탐색 열기",
+              "${applicationName}에서 새로 요청할 작품"
             ]
           }
         },
@@ -377,6 +414,16 @@
               "${applicationName}で${target}を再生",
               "${applicationName}で${target}を見る",
               "${applicationName}で${target}をかける"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 ${target} 재생",
+              "${applicationName}에서 ${target} 시청",
+              "${applicationName}에서 ${target} 틀어 줘"
             ]
           }
         },
@@ -465,6 +512,16 @@
             ]
           }
         },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 무작위 영화 재생",
+              "${applicationName}에서 아무거나 추천해 줘",
+              "${applicationName}에서 영화 골라 줘"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -541,6 +598,15 @@
             "values" : [
               "${applicationName}でダウンロードを表示",
               "${applicationName}でダウンロードを開く"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 내 다운로드 보기",
+              "${applicationName}에서 다운로드 열기"
             ]
           }
         },
