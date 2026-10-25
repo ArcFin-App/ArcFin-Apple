@@ -36,7 +36,7 @@ struct AppearanceView: View {
         #endif
     }
 
-    private var navSectionTitle: String { usesBottomBar ? "Bottom Navigation" : "Navigation" }
+    private var navSectionTitle: LocalizedStringKey { usesBottomBar ? "Bottom Navigation" : "Navigation" }
 
     var body: some View {
         List {
@@ -240,7 +240,7 @@ struct LibraryVisibilityView: View {
                             hiddenString = ids.sorted().joined(separator: ",")
                         }
                     )) {
-                        TVRowLabelText(title: library.name)
+                        TVRowLabelText(verbatim: library.name)
                     }
                     .tvListRow()
                 }
@@ -254,7 +254,7 @@ struct LibraryVisibilityView: View {
                         get: { !latestExcluded.contains(library.id) },
                         set: { shown in setLatest(library.id, shown: shown) }
                     )) {
-                        TVRowLabelText(title: library.name)
+                        TVRowLabelText(verbatim: library.name)
                     }
                     .tvListRow()
                     .disabled(!latestLoaded)

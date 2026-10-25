@@ -62,6 +62,73 @@ AI tools (Claude Code) are used for assistive coding. All AI-generated code is r
 
 ---
 
+## Translating Arcfin
+
+Translations come in as pull requests, like any other change. All you need
+is a Mac with Xcode 26 or later; no account anywhere else.
+
+### Before you start
+
+Open a **Translation** issue saying which language you'd like to do. It
+saves two people translating the same language, and it's where questions
+about wording can go.
+
+### Where the text lives
+
+| File | What's in it |
+|---|---|
+| `Arcfin/Localizable.xcstrings` | Everything in the app |
+| `ArcfinWidgets/Localizable.xcstrings` | Widgets and Live Activities |
+| `Arcfin/InfoPlist.xcstrings` | Permission prompts (Bluetooth, Face ID, Local Network, Location) |
+| `Arcfin/Intents/AppShortcuts.xcstrings` | Siri and Shortcuts phrases |
+
+English is the source language. Don't edit the English text in these
+files; if the English is wrong or unclear, say so in your issue.
+
+### Adding a language
+
+1. In Xcode, select the **Arcfin** project, then **Info › Localizations**,
+   and click **+** to add your language. Xcode adds a column for it to every
+   catalog above.
+2. Open each `.xcstrings` file, pick your language in the sidebar, and
+   translate. Mark an entry **Reviewed** once you're happy with it.
+3. Build and run with your language: **Product › Scheme › Edit Scheme ›
+   Run › Options › App Language**. Check the screens you translated on as
+   many platforms as you can (iPhone, iPad, Mac, Apple TV).
+
+### Guidelines
+
+- **Keep placeholders** such as `%@`, `%lld` and `${applicationName}`
+  exactly as they are. You can move them; use `%1$@`, `%2$@` if your
+  language needs them in a different order.
+- **Plurals**: if a string has a number in it, use **Vary by Plural** so
+  each plural form of your language reads correctly.
+- **Use Apple's wording** for system features (Picture in Picture, AirPlay,
+  SharePlay, Face ID and so on), as your language's version of iOS shows
+  them.
+- **Don't translate names**: Arcfin, Jellyfin, Seerr, and the player engine
+  names Aether, AVFoundation and VLC.
+- **Keep it short.** Labels sit on buttons, tabs and Apple TV cards. If a
+  translation won't fit, a shorter word beats a cut-off one.
+- **Siri phrases**: give a few natural ways to say each one. Every phrase
+  must include `${applicationName}`, and `${target}` where the English has
+  it.
+
+### When a language ships
+
+A language is merged once it's **at least 90% translated** and has been
+**read through by a second speaker** of that language. Anything still
+untranslated shows in English. Until then, keep the work in a draft pull
+request; it can be updated as new text is added.
+
+Fixes to an existing translation are welcome as small pull requests at any
+time.
+
+As with every commit, translation commits need a DCO sign-off
+(`git commit -s`).
+
+---
+
 ## Reporting Issues
 
 Open a Gitea issue with:

@@ -35,3 +35,14 @@ body:
           required: true
         - label: Tests added/updated and passing (Swift Testing, not XCTest)
         - label: Docs updated (if applicable)
+
+  - type: checkboxes
+    id: translation
+    attributes:
+      label: Translations (only if this PR adds or changes a translation)
+      description: "See Translating Arcfin in CONTRIBUTING.md."
+      options:
+        - label: "The language is at least 90% translated (a fix to an existing translation can skip this)"
+        - label: "Placeholders such as %@, %lld and ${applicationName} are kept"
+        - label: "A second speaker of the language has read it through"
+        - label: "Run in the language, with screenshots of the main screens attached"

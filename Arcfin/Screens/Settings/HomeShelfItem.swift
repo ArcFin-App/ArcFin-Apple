@@ -18,25 +18,25 @@ enum HomeShelf: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .continueWatching:       "Continue Watching"
-        case .nextUp:                 "Next Up"
-        case .recentlyAddedMovies:    "Recently Added Movies"
-        case .recentlyAddedShows:     "Recently Added Shows"
-        case .recentlyReleasedMovies: "Recently Released Movies"
-        case .recentlyAiredEpisodes:  "Recently Aired Episodes"
-        case .watchAgain:             "Watch Again"
-        case .genreShelves:           "Genre Picks"
-        case .becauseYouWatched:      "Because You Watched"
-        case .favorites:              "Favorites"
-        case .topRatedUnwatched:      "Top Rated, Unwatched"
-        case .nowAvailable:           "Now Available"
-        case .suggested:              "Suggested for You"
-        case .recommendations:        "Recommended"
-        case .streamingServices:      "Your Streaming Services"
-        case .seerrWatchlist:         "Watchlist"
-        case .seerrTrending:          "Trending"
-        case .seerrPopularMovies:     "Popular Movies"
-        case .seerrPopularSeries:     "Popular Series"
+        case .continueWatching:       String(localized: "Continue Watching")
+        case .nextUp:                 String(localized: "Next Up")
+        case .recentlyAddedMovies:    String(localized: "Recently Added Movies")
+        case .recentlyAddedShows:     String(localized: "Recently Added Shows")
+        case .recentlyReleasedMovies: String(localized: "Recently Released Movies")
+        case .recentlyAiredEpisodes:  String(localized: "Recently Aired Episodes")
+        case .watchAgain:             String(localized: "Watch Again")
+        case .genreShelves:           String(localized: "Genre Picks")
+        case .becauseYouWatched:      String(localized: "Because You Watched")
+        case .favorites:              String(localized: "Favorites")
+        case .topRatedUnwatched:      String(localized: "Top Rated, Unwatched")
+        case .nowAvailable:           String(localized: "Now Available")
+        case .suggested:              String(localized: "Suggested for You")
+        case .recommendations:        String(localized: "Recommended")
+        case .streamingServices:      String(localized: "Your Streaming Services")
+        case .seerrWatchlist:         String(localized: "Watchlist")
+        case .seerrTrending:          String(localized: "Trending")
+        case .seerrPopularMovies:     String(localized: "Popular Movies")
+        case .seerrPopularSeries:     String(localized: "Popular Series")
         }
     }
 
