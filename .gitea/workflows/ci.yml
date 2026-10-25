@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-tests:
+    runs-on: macos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift package tests
+        working-directory: LocalPackages
+        run: swift test
+
+  build:
+    runs-on: macos
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS, macOS, tvOS]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.platform }}
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -scheme Arcfin \
+            -destination "generic/platform=${{ matrix.platform }}" \
+            -derivedDataPath "$RUNNER_TEMP/dd-${{ matrix.platform }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee "$RUNNER_TEMP/build-${{ matrix.platform }}.log" | grep -E ' error:|\*\* BUILD'
