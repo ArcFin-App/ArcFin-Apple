@@ -279,7 +279,7 @@ struct SettingsView: View {
         }
     }
 
-    private func settingsRow(_ title: String, icon: String) -> some View {
+    private func settingsRow(_ title: LocalizedStringKey, icon: String) -> some View {
         Label {
             Text(title).foregroundStyle(DT.Color.textPrimary)
         } icon: {
@@ -340,7 +340,7 @@ struct SettingsView: View {
         }
     }
 
-    private func sectionHeader(_ title: String, icon: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, icon: String) -> some View {
         Label(title, systemImage: icon)
             .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(DT.Color.textSecondary)
