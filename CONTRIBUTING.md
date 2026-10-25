@@ -124,6 +124,19 @@ request; it can be updated as new text is added.
 Fixes to an existing translation are welcome as small pull requests at any
 time.
 
+### Languages that need a reviewer
+
+The first versions of these languages were machine translated so they could
+ship sooner, and no native speaker has read them yet: German, French,
+Spanish, Simplified Chinese, Brazilian Portuguese, Japanese, Italian,
+Korean, Dutch and Russian. Every entry in them is marked **Needs Review** in
+Xcode. They're exempt from the second-speaker rule above.
+
+If you speak one of them, filter a catalog to **Needs Review**, fix what
+reads wrong and mark the rest **Reviewed**. A pull request covering part of
+a language is fine. Plurals especially need a look: these first versions
+avoid **Vary by Plural**, so strings with a number may read stiffly.
+
 As with every commit, translation commits need a DCO sign-off
 (`git commit -s`).
 
