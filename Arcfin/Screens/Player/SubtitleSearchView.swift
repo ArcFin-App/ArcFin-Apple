@@ -107,6 +107,7 @@ struct SubtitleSearchView: View {
             } else {
                 Image(systemName: "arrow.down.circle")
                     .foregroundStyle(DT.Color.accent)
+                    .accessibilityLabel("Download")
             }
         }
         .contentShape(Rectangle())

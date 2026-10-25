@@ -12,11 +12,11 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .home:      "Home"
-        case .browse:    "Browse"
-        case .stats:     "Stats"
-        case .requests:  "Discover"
-        case .watchlist: "Watchlist"
+        case .home:      String(localized: "Home")
+        case .browse:    String(localized: "Browse")
+        case .stats:     String(localized: "Stats")
+        case .requests:  String(localized: "Discover")
+        case .watchlist: String(localized: "Watchlist")
         }
     }
 

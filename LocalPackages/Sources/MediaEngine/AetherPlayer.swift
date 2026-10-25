@@ -186,7 +186,13 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
             options.probesize = 8 * 1024 * 1024
             options.maxAnalyzeDuration = 5_000_000
         }
-        try await engine.load(url: url, startPosition: startPosition, options: options)
+        log.notice("Loading \(url.absoluteString) from \(Int(startPosition ?? 0), privacy: .public) s")
+        do {
+            try await engine.load(url: url, startPosition: startPosition, options: options)
+        } catch {
+            log.error("Couldn't open the stream: \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
     }
 
     public func play() async { engine.play() }

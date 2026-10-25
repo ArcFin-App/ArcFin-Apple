@@ -176,6 +176,7 @@ struct StorageManagementView: View {
         Image(systemName: selection.contains(id) ? "checkmark.circle.fill" : "circle")
             .font(.system(.title3))
             .foregroundStyle(selection.contains(id) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
+            .accessibilityHidden(true)
     }
     #endif
 
@@ -200,6 +201,7 @@ struct StorageManagementView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityAddTraits(selection.contains(entry.id) ? .isSelected : [])
         } else {
             entryRowContent(entry)
                 #if os(macOS)
