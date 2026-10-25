@@ -4,9 +4,9 @@
 
 [<img src="assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)
 
-> **Not yet on the App Store.** Arcfin is available through [TestFlight](https://testflight.apple.com/join/kkC58n2w). Version 0.1.0 is with Apple for review; 0.1.2 is in testing.
+> **Not yet on the App Store.** Arcfin is available through [TestFlight](https://testflight.apple.com/join/kkC58n2w). Version 0.1.0 is with Apple for review; 0.2.0 is in testing.
 
-![Version](https://img.shields.io/badge/version-0.1.2-blue)
+![Version](https://img.shields.io/badge/version-0.2.0-blue)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS-lightgrey?logo=apple&logoColor=white)
 ![Minimum OS](https://img.shields.io/badge/OS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
@@ -59,6 +59,8 @@ An optional tab, off until you turn it on in Settings › Appearance (Navigation
 ### Profiles and settings
 - **Profiles** with a picker, Face ID, Touch ID or PIN lock, and the server's parental controls and access schedule.
 - **Settings sync** across devices with the Arcfin Sync server plugin, including settings an admin can lock.
+- **Live updates:** watching, progress and favourites from other devices, and new titles on the server, show on Home while the app is open.
+- **Help:** Share Diagnostics makes a text file of the app's log and any crash reports to send with a problem report; nothing is sent automatically.
 - **Settings** grouped into Playback, Player Features, Downloads, Browsing, Appearance, Notifications, Server and Integrations.
 
 ### Across the system
@@ -75,7 +77,7 @@ An optional tab, off until you turn it on in Settings › Appearance (Navigation
 
 | Platform | Status |
 |---|---|
-| iOS 26 and iPadOS 26 | The main platform. 0.1.2 in testing |
+| iOS 26 and iPadOS 26 | The main platform. 0.2.0 in testing |
 | macOS 26 | Feature parity with iPhone and iPad, with a native AppKit video surface, sidebar, menu bar commands and Touch ID |
 | tvOS 26 | Feature parity apart from downloads, with remote and focus navigation throughout |
 
