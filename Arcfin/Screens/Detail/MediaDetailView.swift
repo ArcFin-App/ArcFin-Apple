@@ -108,6 +108,14 @@ struct MediaDetailView: View {
 
     private var credential: ServerCredential? { authManager.state.credential }
 
+    private var shelfZoomNamespace: Namespace.ID? {
+        #if os(tvOS)
+        nil
+        #else
+        zoomNamespace
+        #endif
+    }
+
     /// Jellyfin web client's details page for this item — the same link the web UI's own
     /// "copy link" produces, so anyone with access to the server can open it.
     private var shareURL: URL? {
@@ -269,7 +277,7 @@ struct MediaDetailView: View {
 #if os(tvOS)
             MediaDetailView(item: ep)
 #else
-            MediaDetailView(item: ep, zoomNamespace: zoomNamespace)
+            MediaDetailView(item: ep, zoomNamespace: shelfZoomNamespace)
 #endif
         }
         .navigationDestination(item: $selectedPerson) { person in
@@ -1043,7 +1051,7 @@ struct MediaDetailView: View {
     // MARK: - Loading skeleton
 
     private var loadingContent: some View {
-        overviewSection("Loading overview text that fills a few lines of placeholder content.")
+        DetailOverviewSection(text: "Loading overview text that fills a few lines of placeholder content.")
             .padding(.top, DT.Spacing.md)
             .redacted(reason: .placeholder)
     }
@@ -1055,32 +1063,13 @@ struct MediaDetailView: View {
         playButton
         trailerButton
 
-        // Genres
         if let d = detail, !d.genres.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(d.genres, id: \.self) { genre in
-                        Text(genre)
-                            .font(.system(.caption2, design: .default, weight: .medium))
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .padding(.horizontal, 12).padding(.vertical, 5)
-                            .background(DT.Color.textPrimary.opacity(0.05))
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-            }
-            .shelfScrollButtons()
-            .padding(.bottom, DT.Spacing.md)
-#if os(tvOS)
-            .focusSection()
-#endif
+            DetailGenreChips(genres: d.genres)
         }
 
         // Overview
         if let overview = detail?.item.overview ?? item.overview, !overview.isEmpty {
-            overviewSection(overview)
+            DetailOverviewSection(text: overview)
         }
 
         // Cast
@@ -1088,10 +1077,12 @@ struct MediaDetailView: View {
         TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings)
             .padding(.horizontal, DT.Spacing.pagePad)
 
-        if let d = detail, !d.cast.isEmpty { castSection(d) }
+        if let d = detail, !d.cast.isEmpty { DetailCastSection(cast: d.cast) { selectedPerson = $0 } }
 
         // Crew
-        if let d = detail, (!d.directors.isEmpty || !d.writers.isEmpty) { crewSection(d) }
+        if let d = detail, (!d.directors.isEmpty || !d.writers.isEmpty) {
+            DetailCrewSection(directors: d.directors, writers: d.writers)
+        }
 
         if let seriesItem, item.type == .episode {
             seriesLinkSection(seriesItem)
@@ -1104,18 +1095,18 @@ struct MediaDetailView: View {
 
         // Similar / recommended
         if !seerrRelatedItems.isEmpty {
-            seerrRelatedSection
+            DetailSeerrShelf(items: seerrRelatedItems) { requestingSeerrItem = $0 }
         } else if !similarItems.isEmpty {
-            similarSection
+            DetailTitleShelf(title: "More Like This", items: similarItems, zoomNamespace: shelfZoomNamespace)
         }
         if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-            jellyfinRecommendedSection(jellyfinRecommended)
+            DetailTitleShelf(title: jellyfinRecommended.title, items: jellyfinRecommended.items, zoomNamespace: shelfZoomNamespace)
         }
         if !containingCollections.isEmpty {
-            containingSection(containingCollections.count == 1 ? "Collection" : "Collections", containingCollections) { openedCollection = $0 }
+            DetailSetShelf(title: containingCollections.count == 1 ? "Collection" : "Collections", sets: containingCollections) { openedCollection = $0 }
         }
         if !containingPlaylists.isEmpty {
-            containingSection("In Your Playlists", containingPlaylists) { openedPlaylist = $0 }
+            DetailSetShelf(title: "In Your Playlists", sets: containingPlaylists) { openedPlaylist = $0 }
         }
 
         // Scores, where else it's streaming, and the details list. An episode's TMDB id is
@@ -1124,101 +1115,6 @@ struct MediaDetailView: View {
         TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, DT.Spacing.md)
-    }
-
-    // MARK: - Overview
-
-    private func overviewSection(_ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("Overview")
-            Text(text)
-                .font(.system(.footnote, design: .default))
-                .foregroundStyle(DT.Color.textSecondary)
-                .lineSpacing(5)
-                .fixedSize(horizontal: false, vertical: true)
-                // Lines across a whole iPad are too long to read comfortably.
-                .frame(maxWidth: 720, alignment: .leading)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.md)
-    }
-
-    // MARK: - Cast
-
-    private func castSection(_ d: MediaItemDetail) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("Cast").padding(.horizontal, DT.Spacing.pagePad)
-            ScrollView(.horizontal, showsIndicators: false) {
-                // Lazy: a plain HStack fired every cast member's AsyncImage request the
-                // instant this section appeared — a large cast (20+ for some titles) could
-                // saturate AsyncImage's shared URLSession all at once and fail the whole
-                // burst together under any network degradation. See ShelfRow.swift for the
-                // same fix applied to Home's shelves.
-                LazyHStack(alignment: .top, spacing: 12) {
-                    ForEach(d.cast) { person in
-                        Button { selectedPerson = person } label: {
-                            CastPersonCard(
-                                imageURL: person.primaryImageTag.flatMap {
-                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120)
-                                },
-                                name: person.name,
-                                role: person.role,
-                                placeholder: { personPlaceholder }
-                            )
-                        }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
-                        .buttonStyle(.plain)
-#endif
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-            }
-            .shelfScrollButtons()
-        }
-        .padding(.bottom, DT.Spacing.md)
-#if os(tvOS)
-        .focusSection()
-#endif
-    }
-
-    private var personPlaceholder: some View {
-        Circle()
-            .fill(DT.Color.backgroundSecondary)
-            .overlay(Image(systemName: "person.fill")
-                .font(.system(.title2))
-                .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
-    }
-
-    // MARK: - Crew
-
-    private func crewSection(_ d: MediaItemDetail) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if !d.directors.isEmpty {
-                crewRow(label: "Director", people: d.directors)
-            }
-            if !d.writers.isEmpty {
-                crewRow(label: "Writer", people: d.writers.prefix(3).map { $0 })
-            }
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.md)
-    }
-
-    private func crewRow(label: String, people: [MediaPerson]) -> some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .font(.system(.caption2, design: .default, weight: .bold))
-                .foregroundStyle(DT.Color.textSecondary)
-                .frame(width: 60, alignment: .leading)
-            Text(people.map { $0.name }.joined(separator: ", "))
-                .font(.system(.caption, design: .default))
-                .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(1)
-        }
     }
 
     // MARK: - Series seasons + episodes
@@ -1326,7 +1222,7 @@ struct MediaDetailView: View {
 
     private func seriesLinkSection(_ series: MediaItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("Series")
+            DetailSectionTitle(title: "Series")
             NavigationLink(value: series) {
                 HStack(spacing: 10) {
                     Image(systemName: "tv")
@@ -1633,129 +1529,12 @@ struct MediaDetailView: View {
         }
     }
 
-    // MARK: - Similar items
-
-    private var similarSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("More Like This").padding(.horizontal, DT.Spacing.pagePad)
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 10) {
-                    ForEach(similarItems) { sim in
-                        NavigationLink(value: sim) {
-                            PosterCard(
-                                title: sim.name,
-                                subtitle: sim.productionYear.map { String($0) },
-                                imageURL: mediaRepo.imageURL(for: sim)
-                            )
-                        }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
-                        .buttonStyle(.plain)
-                        .zoomTransitionSource(id: sim.id, in: zoomNamespace)
-#endif
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-#if os(tvOS)
-                .focusSection()
-#endif
-            }
-            .shelfScrollButtons()
-        }
-        .padding(.bottom, DT.Spacing.md)
-    }
-
     private func loadContainingSets() async {
         guard let cred = credential, let header = authHeader else { return }
         let found = await ContainingSets.shared.sets(containing: [item.id, item.seriesId].compactMap { $0 },
                                                      credential: cred, authHeader: header)
         containingCollections = found.collections
         containingPlaylists = found.playlists
-    }
-
-    /// The collections or playlists this title is in, laid out like More Like This.
-    private func containingSection(_ title: String, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle(title).padding(.horizontal, DT.Spacing.pagePad)
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 10) {
-                    ForEach(sets) { set in
-                        Button { open(set) } label: {
-                            PosterCard(title: set.name, imageURL: mediaRepo.imageURL(for: set))
-                        }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
-                        .buttonStyle(.plain)
-#endif
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-#if os(tvOS)
-                .focusSection()
-#endif
-            }
-            .shelfScrollButtons()
-        }
-        .padding(.bottom, DT.Spacing.md)
-    }
-
-    private func jellyfinRecommendedSection(_ category: MovieRecommendationCategory) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle(category.title).padding(.horizontal, DT.Spacing.pagePad)
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 10) {
-                    ForEach(category.items) { rec in
-                        NavigationLink(value: rec) {
-                            PosterCard(
-                                title: rec.name,
-                                subtitle: rec.productionYear.map { String($0) },
-                                imageURL: mediaRepo.imageURL(for: rec)
-                            )
-                        }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
-                        .buttonStyle(.plain)
-                        .zoomTransitionSource(id: rec.id, in: zoomNamespace)
-#endif
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-#if os(tvOS)
-                .focusSection()
-#endif
-            }
-            .shelfScrollButtons()
-        }
-        .padding(.bottom, DT.Spacing.md)
-    }
-
-    private var seerrRelatedSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("Recommended").padding(.horizontal, DT.Spacing.pagePad)
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 10) {
-                    ForEach(seerrRelatedItems) { sim in
-                        Button { requestingSeerrItem = sim } label: {
-                            PosterCard(
-                                title: sim.title,
-                                subtitle: sim.year,
-                                imageURL: sim.posterURL
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-            }
-            .shelfScrollButtons()
-        }
-        .padding(.bottom, DT.Spacing.md)
     }
 
     // MARK: - Helpers
@@ -1798,13 +1577,6 @@ struct MediaDetailView: View {
             return seasons[lastPlayedIdx + 1]
         }
         return seasons.first
-    }
-
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
-            .font(.system(.callout, design: .default, weight: .bold))
-            .foregroundStyle(DT.Color.textPrimary)
-            .tracking(-0.3)
     }
 }
 
