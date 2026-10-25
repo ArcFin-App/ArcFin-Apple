@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var showUsersSheet = false
     #if !os(tvOS)
     @State private var usersDetent: PresentationDetent = .medium
+    @Environment(\.openURL) private var openURL
     #endif
     #if os(tvOS)
     @State private var listID = UUID()
@@ -155,6 +156,32 @@ struct SettingsView: View {
                     IntegrationsSettingsView()
                 } label: {
                     settingsRow("Integrations", icon: "puzzlepiece.extension")
+                }
+            }
+#endif
+
+#if !os(tvOS)
+            if AppLanguage.isChoosable {
+                Section {
+                    Button {
+                        openURL(AppLanguage.settingsURL)
+                    } label: {
+                        LabeledContent {
+                            Text(AppLanguage.current).foregroundStyle(.secondary)
+                        } label: {
+                            settingsRow("Language", icon: "globe")
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    #if os(macOS)
+                    .buttonStyle(.plain)
+                    #endif
+                } footer: {
+                    #if os(macOS)
+                    Text("Arcfin's language is set in System Settings › General › Language & Region.")
+                    #else
+                    Text("Arcfin's language is set in the Settings app.")
+                    #endif
                 }
             }
 #endif
@@ -900,3 +927,25 @@ private struct TVAddProfileFlowView: View {
 }
 #endif
 
+#if !os(tvOS)
+/// Apps follow the system's per-app language setting, which only offers a choice once the app
+/// ships a second language.
+private enum AppLanguage {
+    static var isChoosable: Bool {
+        Bundle.main.localizations.filter { $0 != "Base" }.count > 1
+    }
+
+    static var current: String {
+        let code = Bundle.main.preferredLocalizations.first ?? "en"
+        return Locale.current.localizedString(forIdentifier: code) ?? code
+    }
+
+    static var settingsURL: URL {
+        #if os(macOS)
+        URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
+        #else
+        URL(string: UIApplication.openSettingsURLString)!
+        #endif
+    }
+}
+#endif
