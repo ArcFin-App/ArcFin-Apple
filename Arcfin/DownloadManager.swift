@@ -256,8 +256,17 @@ final class DownloadManager: NSObject {
                 // Delete After Watching counts finishing it anywhere, not only here.
                 if newlyWatched && deletesWatched { markForDeletionAfterWatching(itemId: item.itemId) }
             }
+            await saveMissingSkipSegments(items, credential: credential, authHeader: authClient.authHeader(token: credential.accessToken))
         }
         try? modelContext.save()
+    }
+
+    /// Downloads made before every skip marker was saved get the rest while the server is
+    /// reachable (it just answered for these items), a few at a time.
+    private func saveMissingSkipSegments(_ items: [DownloadedItem], credential: ServerCredential, authHeader: String) async {
+        for item in items.filter({ !$0.skipSegmentsSaved }).prefix(20) {
+            item.skipSegments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.itemId)
+        }
     }
 
     private func startWiFiMonitoringIfNeeded() {
@@ -852,9 +861,9 @@ final class DownloadManager: NSObject {
                 trickplayWidth: savedTrickplay?.width, trickplayHeight: savedTrickplay?.height,
                 trickplayTileWidth: savedTrickplay?.tileWidth, trickplayTileHeight: savedTrickplay?.tileHeight,
                 trickplayIntervalMs: savedTrickplay?.intervalMs, trickplayThumbnailCount: savedTrickplay?.thumbnailCount,
-                introEndSeconds: fetched.introEnd, creditsStartSeconds: fetched.creditsStart,
                 fileSizeBytes: fileSize
             )
+            downloaded.skipSegments = fetched.skips
             downloaded.tagline = detail.taglines.first
             downloaded.studios = detail.studios
             downloaded.directors = detail.directors.map(\.name)
@@ -905,8 +914,7 @@ final class DownloadManager: NSObject {
         var trickplayFileNames: [String] = []
         var posterFileName: String?
         var backdropFileName: String?
-        var introEnd: Double?
-        var creditsStart: Double?
+        var skips = SkipSegments()
         var castPhotoFileNames: [String] = []
     }
 
@@ -927,8 +935,7 @@ final class DownloadManager: NSObject {
         return DownloadExtras(
             subtitleFileNames: subs.map(\.fileName), subtitleLanguages: subs.map(\.language),
             trickplayFileNames: tileNames, posterFileName: posterName, backdropFileName: backdropName,
-            introEnd: skips.intro?.upperBound, creditsStart: skips.credits?.lowerBound,
-            castPhotoFileNames: cast)
+            skips: skips, castPhotoFileNames: cast)
     }
 
     /// External tracks only (embedded ones travel with the video file itself), per Settings ›
@@ -1731,6 +1738,37 @@ extension DownloadManager: URLSessionDownloadDelegate {
             Self.pendingBackgroundCompletionHandler?()
             Self.pendingBackgroundCompletionHandler = nil
             #endif
+        }
+    }
+}
+
+extension DownloadedItem {
+    /// The skip markers saved with the download, in the streaming player's shape. A download
+    /// from before intro starts were saved treats its intro as starting at the beginning.
+    var skipSegments: SkipSegments {
+        get {
+            func span(_ start: Double?, _ end: Double?) -> ClosedRange<Double>? {
+                guard let start, let end else { return nil }
+                return start...max(start, end)
+            }
+            let runtime = runtimeTicks > 0 ? Double(runtimeTicks) / 10_000_000 : .greatestFiniteMagnitude
+            return SkipSegments(
+                intro: span(introEndSeconds.map { _ in introStartSeconds ?? 0 }, introEndSeconds),
+                recap: span(recapStartSeconds, recapEndSeconds),
+                credits: span(creditsStartSeconds, creditsEndSeconds ?? creditsStartSeconds.map { _ in runtime }),
+                preview: span(previewStartSeconds, previewEndSeconds)
+            )
+        }
+        set {
+            introStartSeconds = newValue.intro?.lowerBound
+            introEndSeconds = newValue.intro?.upperBound
+            recapStartSeconds = newValue.recap?.lowerBound
+            recapEndSeconds = newValue.recap?.upperBound
+            creditsStartSeconds = newValue.credits?.lowerBound
+            creditsEndSeconds = newValue.credits?.upperBound
+            previewStartSeconds = newValue.preview?.lowerBound
+            previewEndSeconds = newValue.preview?.upperBound
+            skipSegmentsSaved = true
         }
     }
 }
