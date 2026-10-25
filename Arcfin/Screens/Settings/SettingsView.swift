@@ -6,6 +6,7 @@ import JellyfinAPI
 import MediaEngine
 import Persistence
 import SeerrAPI
+import Telemetry
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -176,6 +177,8 @@ struct SettingsView: View {
                 .listRowBackground(Color.clear)
 #endif
 #if os(tvOS)
+                LabeledContent("Support", value: "arcfin.psmattas.com/support")
+                    .listRowBackground(Color.clear)
                 LabeledContent("Privacy Policy", value: "arcfin.psmattas.com/privacy")
                     .listRowBackground(Color.clear)
                 LabeledContent("Terms of Use", value: "arcfin.psmattas.com/terms")
@@ -183,6 +186,17 @@ struct SettingsView: View {
                 LabeledContent("Data Protection", value: "arcfin.psmattas.com/data-protection")
                     .listRowBackground(Color.clear)
 #else
+                ShareLink(item: DiagnosticsReport(), preview: SharePreview("Arcfin Diagnostics")) {
+                    TVRowLabelText(title: "Share Diagnostics", detail: "This session's log and any crash reports, as a text file to send with a problem report. It can include your server's address and the titles you played.")
+                        .foregroundStyle(DT.Color.textPrimary)
+                }
+                Link(destination: URL(string: "https://arcfin.psmattas.com/support")!) {
+                    HStack {
+                        Text("Contact Support").foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
                 Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
                     HStack {
                         Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
