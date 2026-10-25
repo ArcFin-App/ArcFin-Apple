@@ -32,7 +32,6 @@ struct MediaDetailView: View {
     #if os(macOS)
     @Environment(PlaybackPresenter.self) private var playbackPresenter
     #endif
-    @Environment(\.dismiss) private var dismiss
 
     @State private var detail: MediaItemDetail?
     @State private var awards: [WikidataAward] = []
