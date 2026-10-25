@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-tests:
+    runs-on: macos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift package tests
+        working-directory: LocalPackages
+        run: swift test --force-resolved-versions
+
+  build:
+    runs-on: macos
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS, macOS, tvOS]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.platform }}
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -scheme Arcfin \
+            -destination "generic/platform=${{ matrix.platform }}" \
+            -derivedDataPath "$RUNNER_TEMP/dd-${{ matrix.platform }}" \
+            -disableAutomaticPackageResolution \
+            -skipMacroValidation \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee "$RUNNER_TEMP/build-${{ matrix.platform }}.log" | grep -E ' error:|\*\* BUILD'
+      # Report only for now: lists Swift warnings from this repo's own files, not dependencies.
+      - name: Warnings in our code (${{ matrix.platform }})
+        if: always()
+        run: |
+          log="$RUNNER_TEMP/build-${{ matrix.platform }}.log"
+          [ -f "$log" ] || exit 0
+          grep -E "^$GITHUB_WORKSPACE/[^:]+:[0-9]+:[0-9]+: warning:" "$log" | sort -u > "$RUNNER_TEMP/warnings.txt" || true
+          count=$(wc -l < "$RUNNER_TEMP/warnings.txt" | tr -d ' ')
+          echo "$count warning(s) in our code on ${{ matrix.platform }}"
+          sed "s|^$GITHUB_WORKSPACE/||" "$RUNNER_TEMP/warnings.txt"
+
+  # TestFlight builds are Release; this catches code that only breaks with optimisation on.
+  release-build:
+    runs-on: macos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build iOS (Release)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -scheme Arcfin \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$RUNNER_TEMP/dd-release" \
+            -disableAutomaticPackageResolution \
+            -skipMacroValidation \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            build | grep -E ' error:|\*\* BUILD'
+
+  # Merge commits are skipped: Gitea makes them when a PR is merged or its branch updated.
+  sign-off:
+    if: github.event_name == 'pull_request'
+    runs-on: macos
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit has a Signed-off-by line
+        run: |
+          base="origin/${{ github.base_ref }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          missing=0
+          for commit in $(git rev-list --no-merges "$base..$head"); do
+            if ! git log -1 --format=%B "$commit" | grep -q '^Signed-off-by: '; then
+              echo "::error::$(git log -1 --format='%h %s' "$commit") has no Signed-off-by line (git commit -s)"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] && echo "All commits are signed off."
+          exit "$missing"

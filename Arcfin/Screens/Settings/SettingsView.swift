@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var showUsersSheet = false
     #if !os(tvOS)
     @State private var usersDetent: PresentationDetent = .medium
+    @Environment(\.openURL) private var openURL
     #endif
     #if os(tvOS)
     @State private var listID = UUID()
@@ -160,6 +161,32 @@ struct SettingsView: View {
             }
 #endif
 
+#if !os(tvOS)
+            if AppLanguage.isChoosable {
+                Section {
+                    Button {
+                        openURL(AppLanguage.settingsURL)
+                    } label: {
+                        LabeledContent {
+                            Text(AppLanguage.current).foregroundStyle(.secondary)
+                        } label: {
+                            settingsRow("Language", icon: "globe")
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    #if os(macOS)
+                    .buttonStyle(.plain)
+                    #endif
+                } footer: {
+                    #if os(macOS)
+                    Text("Arcfin's language is set in System Settings › General › Language & Region.")
+                    #else
+                    Text("Arcfin's language is set in the Settings app.")
+                    #endif
+                }
+            }
+#endif
+
             // ── About ────────────────────────────────────────────────────
             Section {
                 LabeledContent("Version") {
@@ -293,7 +320,7 @@ struct SettingsView: View {
         }
     }
 
-    private func settingsRow(_ title: String, icon: String) -> some View {
+    private func settingsRow(_ title: LocalizedStringKey, icon: String) -> some View {
         Label {
             Text(title).foregroundStyle(DT.Color.textPrimary)
         } icon: {
@@ -354,7 +381,7 @@ struct SettingsView: View {
         }
     }
 
-    private func sectionHeader(_ title: String, icon: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, icon: String) -> some View {
         Label(title, systemImage: icon)
             .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(DT.Color.textSecondary)
@@ -395,12 +422,12 @@ enum VideoQuality: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .max:   "Max Quality"
-        case .auto:  "Auto (Recommended)"
-        case .p4k:   "4K Ultra HD"
-        case .p1080: "1080p HD"
-        case .p720:  "720p"
-        case .p480:  "480p"
+        case .max:   String(localized: "Max Quality")
+        case .auto:  String(localized: "Auto (Recommended)")
+        case .p4k:   String(localized: "4K Ultra HD")
+        case .p1080: String(localized: "1080p HD")
+        case .p720:  String(localized: "720p")
+        case .p480:  String(localized: "480p")
         }
     }
     /// Source pixel height this tier requires — nil for Auto/Max, which have no fixed
@@ -833,10 +860,10 @@ private struct TVPINFlow: View {
 
     private var title: String {
         switch task.kind {
-        case .unlock: "Enter PIN"
-        case .remove: "Enter PIN to remove it"
-        case .change where !verified: "Enter current PIN"
-        case .set, .change: firstEntry == nil ? "Enter a new PIN" : "Confirm the PIN"
+        case .unlock: String(localized: "Enter PIN")
+        case .remove: String(localized: "Enter PIN to remove it")
+        case .change where !verified: String(localized: "Enter current PIN")
+        case .set, .change: firstEntry == nil ? String(localized: "Enter a new PIN") : String(localized: "Confirm the PIN")
         }
     }
 
@@ -914,3 +941,25 @@ private struct TVAddProfileFlowView: View {
 }
 #endif
 
+#if !os(tvOS)
+/// Apps follow the system's per-app language setting, which only offers a choice once the app
+/// ships a second language.
+private enum AppLanguage {
+    static var isChoosable: Bool {
+        Bundle.main.localizations.filter { $0 != "Base" }.count > 1
+    }
+
+    static var current: String {
+        let code = Bundle.main.preferredLocalizations.first ?? "en"
+        return Locale.current.localizedString(forIdentifier: code) ?? code
+    }
+
+    static var settingsURL: URL {
+        #if os(macOS)
+        URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
+        #else
+        URL(string: UIApplication.openSettingsURLString)!
+        #endif
+    }
+}
+#endif

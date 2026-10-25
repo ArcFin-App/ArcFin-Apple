@@ -60,13 +60,13 @@ struct AccessScheduleView: View {
     }
 
     private var message: String {
-        let name = rules.profile?.name ?? "This profile"
+        let name = rules.profile?.name ?? String(localized: "This profile")
         guard let next = rules.nextAllowedTime() else {
-            return "\(name) can't use this server at the moment."
+            return String(localized: "\(name) can't use this server at the moment.")
         }
         let when = Calendar.current.isDate(next, inSameDayAs: Date())
             ? next.formatted(date: .omitted, time: .shortened)
             : next.formatted(.dateTime.weekday(.wide).hour().minute())
-        return "\(name) can watch again from \(when)."
+        return String(localized: "\(name) can watch again from \(when).")
     }
 }

@@ -558,8 +558,9 @@ struct StatsView: View {
         }
         let movieIds = titles.filter { $0.item.type == .movie }.prefix(150).map(\.id)
         let creditIds = Array(seriesIds.prefix(60)) + movieIds
+        let showIds = Array(seriesIds.prefix(500))
         async let showDetails = client.getStatsDetails(credential: credential, authHeader: header,
-                                                       ids: Array(seriesIds.prefix(500)), includePeople: false)
+                                                       ids: showIds, includePeople: false)
         async let creditDetails = client.getStatsDetails(credential: credential, authHeader: header,
                                                          ids: creditIds, includePeople: true)
         var merged = (try? await showDetails) ?? [:]
@@ -592,7 +593,7 @@ enum StatsMetrics {
 }
 
 enum StatsFormat {
-    static let palette = ["06b6d4", "8b5cf6", "10b981", "F97316", "EC4899", "EAB308", "3B82F6", "EF4444"].map(DT.Color.palette)
+    static var palette: [Color] { ["06b6d4", "8b5cf6", "10b981", "F97316", "EC4899", "EAB308", "3B82F6", "EF4444"].map { DT.Color.palette($0) } }
 
     static func duration(_ seconds: Double) -> String {
         let formatter = DateComponentsFormatter()
@@ -646,10 +647,10 @@ private enum DayPart: CaseIterable {
 
     var title: String {
         switch self {
-        case .morning: "Morning"
-        case .afternoon: "Afternoon"
-        case .evening: "Evening"
-        case .night: "Late night"
+        case .morning: String(localized: "Morning")
+        case .afternoon: String(localized: "Afternoon")
+        case .evening: String(localized: "Evening")
+        case .night: String(localized: "Late night")
         }
     }
 
