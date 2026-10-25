@@ -24,6 +24,16 @@
             ]
           }
         },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Seguir viendo en ${applicationName}",
+              "Reanudar mi serie en ${applicationName}",
+              "Qué estaba viendo en ${applicationName}"
+            ]
+          }
+        },
         "fr" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -54,6 +64,15 @@
             "values" : [
               "Download the next episode of ${target} in ${applicationName}",
               "Download ${target} in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Descargar el siguiente episodio de ${target} en ${applicationName}",
+              "Descargar ${target} en ${applicationName}"
             ]
           }
         },
@@ -89,6 +108,15 @@
             ]
           }
         },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir ${target} en ${applicationName}",
+              "Mostrar ${target} en ${applicationName}"
+            ]
+          }
+        },
         "fr" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -118,6 +146,15 @@
             "values" : [
               "Open Discover in ${applicationName}",
               "What's new to request in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir Descubrir en ${applicationName}",
+              "Qué hay nuevo para solicitar en ${applicationName}"
             ]
           }
         },
@@ -152,6 +189,16 @@
               "Play ${target} in ${applicationName}",
               "Watch ${target} in ${applicationName}",
               "Put on ${target} in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproducir ${target} en ${applicationName}",
+              "Ver ${target} en ${applicationName}",
+              "Poner ${target} en ${applicationName}"
             ]
           }
         },
@@ -190,6 +237,16 @@
             ]
           }
         },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproducir una película al azar en ${applicationName}",
+              "Sorpréndeme en ${applicationName}",
+              "Elige una película en ${applicationName}"
+            ]
+          }
+        },
         "fr" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -220,6 +277,15 @@
             "values" : [
               "Show my downloads in ${applicationName}",
               "Open downloads in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Mostrar mis descargas en ${applicationName}",
+              "Abrir descargas en ${applicationName}"
             ]
           }
         },

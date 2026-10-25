@@ -17,6 +17,12 @@
             "value" : "ArcFin"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -38,6 +44,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "Arcfin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "Arcfin"
           }
         },
@@ -65,6 +77,12 @@
             "value" : "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La compatibilidad de Arcfin con Chromecast puede usar Bluetooth para encontrar dispositivos Cast cercanos."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -87,6 +105,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Face ID is used to unlock Arcfin when App Lock is enabled for your profile."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID se usa para desbloquear Arcfin cuando el bloqueo de la app está activado para tu perfil."
           }
         },
         "fr" : {
@@ -113,6 +137,12 @@
             "value" : "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa tu red local para encontrar tu servidor Jellyfin y conectarse a él, y para transmitir contenido a dispositivos cercanos."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -135,6 +165,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa el nombre de tu red wifi para cambiar automáticamente entre la dirección local y la remota de tu servidor según estés en casa o fuera. Tu ubicación nunca se guarda, rastrea ni comparte; solo se usa para leer el nombre de la wifi actual."
           }
         },
         "fr" : {

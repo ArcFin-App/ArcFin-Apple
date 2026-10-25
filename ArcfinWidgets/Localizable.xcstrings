@@ -9,6 +9,12 @@
             "value" : "%@ von %@"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ de %@"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -20,6 +26,12 @@
     "%@%@" : {
       "localizations" : {
         "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -41,6 +53,12 @@
             "value" : "Weiterschauen"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seguir viendo"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -55,6 +73,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Entdecken"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descubrir"
           }
         },
         "fr" : {
@@ -73,6 +97,12 @@
             "value" : "Entdecken & Anfragen"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descubrir y solicitar"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -87,6 +117,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Entdecke etwas Neues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descubre algo nuevo"
           }
         },
         "fr" : {
@@ -105,6 +141,12 @@
             "value" : "Fertig"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Listo"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -119,6 +161,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Fertig um %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Termina a las %@"
           }
         },
         "fr" : {
@@ -137,6 +185,12 @@
             "value" : "Downloads"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descargas"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -151,6 +205,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Finde etwas Neues zum Schauen und frag es an."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Encuentra algo nuevo que ver y solicítalo."
           }
         },
         "fr" : {
@@ -169,6 +229,12 @@
             "value" : "Neu"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuevo"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -183,6 +249,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Noch nichts Neues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aún no hay nada nuevo"
           }
         },
         "fr" : {
@@ -201,6 +273,12 @@
             "value" : "Nichts zum Fortsetzen"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada que reanudar"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -217,6 +295,12 @@
             "value" : "Öffne Arcfin zum Fortsetzen"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abre Arcfin para reanudar"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -231,6 +315,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Öffne Arcfin, um mobile Daten zu nutzen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abre Arcfin para usar datos móviles"
           }
         },
         "fr" : {
@@ -251,6 +341,12 @@
             "value" : "Entdecken öffnen"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abrir Descubrir"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -265,6 +361,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Downloads öffnen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abrir descargas"
           }
         },
         "fr" : {
@@ -285,6 +387,12 @@
             "value" : "Downloads öffnen"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abrir Descargas"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -299,6 +407,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Öffne deine Downloads, um offline zu schauen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abre tus descargas para ver sin conexión."
           }
         },
         "fr" : {
@@ -317,6 +431,12 @@
             "value" : "Mach da weiter, wo du aufgehört hast."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sigue donde lo dejaste."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -331,6 +451,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Spiel ab, was du zuletzt geschaut hast."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduce lo último que estabas viendo."
           }
         },
         "fr" : {
@@ -351,6 +477,12 @@
             "value" : "Spielt ab, was du zuletzt geschaut hast."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduce lo último que estabas viendo."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -365,6 +497,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Kürzlich hinzugefügt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Añadido recientemente"
           }
         },
         "fr" : {
@@ -383,6 +521,12 @@
             "value" : "Weiterschauen"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seguir viendo"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -397,6 +541,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Weiterschauen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seguir viendo"
           }
         },
         "fr" : {
@@ -415,6 +565,12 @@
             "value" : "Sieh dir die neuesten Filme und Serien auf deinem Server an."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mira las películas y series más nuevas de tu servidor."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -429,6 +585,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Als Nächstes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A continuación"
           }
         },
         "fr" : {
