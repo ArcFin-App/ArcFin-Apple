@@ -21,6 +21,12 @@
             "value" : "%@ sur %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ / %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -50,6 +56,12 @@
           }
         },
         "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -89,6 +101,12 @@
             "value" : "Reprendre la lecture"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "視聴を続ける"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -121,6 +139,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrir"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ディスカバー"
           }
         },
         "pt-BR" : {
@@ -157,6 +181,12 @@
             "value" : "Découvrir et demander"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ディスカバーとリクエスト"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -189,6 +219,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrez quelque chose de nouveau"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新しい作品を見つけよう"
           }
         },
         "pt-BR" : {
@@ -225,6 +261,12 @@
             "value" : "Terminé"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "完了"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -257,6 +299,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Terminé à %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@に見終わります"
           }
         },
         "pt-BR" : {
@@ -293,6 +341,12 @@
             "value" : "Téléchargements"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロード"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -325,6 +379,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Trouvez quelque chose de nouveau à regarder et demandez-le."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新しく見る作品を見つけて、リクエストしましょう。"
           }
         },
         "pt-BR" : {
@@ -361,6 +421,12 @@
             "value" : "Nouveau"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新着"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -393,6 +459,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Rien de nouveau pour l’instant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新着はまだありません"
           }
         },
         "pt-BR" : {
@@ -429,6 +501,12 @@
             "value" : "Rien à reprendre"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再開できる作品はありません"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -463,6 +541,12 @@
             "value" : "Ouvrez Arcfin pour reprendre"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinを開いて再開"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -495,6 +579,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez Arcfin pour utiliser les données cellulaires"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinを開いてモバイルデータ通信を使用"
           }
         },
         "pt-BR" : {
@@ -533,6 +623,12 @@
             "value" : "Ouvrir Découvrir"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ディスカバーを開く"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -565,6 +661,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrir les téléchargements"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロードを開く"
           }
         },
         "pt-BR" : {
@@ -603,6 +705,12 @@
             "value" : "Ouvrir les téléchargements"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロードを開く"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -635,6 +743,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez vos téléchargements pour regarder hors ligne."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロードを開いてオフラインで視聴しましょう。"
           }
         },
         "pt-BR" : {
@@ -671,6 +785,12 @@
             "value" : "Reprenez là où vous vous étiez arrêté."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "前回の続きから。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -703,6 +823,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Lisez ce que vous regardiez en dernier."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "最後に見ていた作品を再生します。"
           }
         },
         "pt-BR" : {
@@ -741,6 +867,12 @@
             "value" : "Lit ce que vous regardiez en dernier."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "最後に見ていた作品を再生します。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -773,6 +905,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ajouts récents"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "最近追加された項目"
           }
         },
         "pt-BR" : {
@@ -809,6 +947,12 @@
             "value" : "Reprendre la lecture"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "視聴を再開"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -841,6 +985,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Reprendre la lecture"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "視聴を再開"
           }
         },
         "pt-BR" : {
@@ -877,6 +1027,12 @@
             "value" : "Voyez les derniers films et séries de votre serveur."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバの最新の映画やシリーズを見てみましょう。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -909,6 +1065,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "À suivre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "次に見る"
           }
         },
         "pt-BR" : {

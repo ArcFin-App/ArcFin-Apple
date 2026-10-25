@@ -44,6 +44,16 @@
             ]
           }
         },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で視聴を続ける",
+              "${applicationName}で番組を再開",
+              "${applicationName}で何を見ていた"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -102,6 +112,15 @@
             "values" : [
               "Télécharger l’épisode suivant de ${target} dans ${applicationName}",
               "Télécharger ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で${target}の次のエピソードをダウンロード",
+              "${applicationName}で${target}をダウンロード"
             ]
           }
         },
@@ -164,6 +183,15 @@
             ]
           }
         },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で${target}を開く",
+              "${applicationName}で${target}を表示"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -220,6 +248,15 @@
             "values" : [
               "Ouvrir Découvrir dans ${applicationName}",
               "Quoi de neuf à demander dans ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}でディスカバーを開く",
+              "${applicationName}で新しくリクエストできる作品"
             ]
           }
         },
@@ -283,6 +320,16 @@
               "Lire ${target} dans ${applicationName}",
               "Regarder ${target} dans ${applicationName}",
               "Mettre ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で${target}を再生",
+              "${applicationName}で${target}を見る",
+              "${applicationName}で${target}をかける"
             ]
           }
         },
@@ -351,6 +398,16 @@
             ]
           }
         },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}でランダムに映画を再生",
+              "${applicationName}でおまかせ",
+              "${applicationName}で映画を選んで"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -409,6 +466,15 @@
             "values" : [
               "Afficher mes téléchargements dans ${applicationName}",
               "Ouvrir les téléchargements dans ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}でダウンロードを表示",
+              "${applicationName}でダウンロードを開く"
             ]
           }
         },
