@@ -20,6 +20,12 @@
             "state" : "needs_review",
             "value" : "%@ sur %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ / %@"
+          }
         }
       }
     },
@@ -38,6 +44,12 @@
           }
         },
         "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -64,6 +76,12 @@
             "state" : "needs_review",
             "value" : "Reprendre la lecture"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "继续观看"
+          }
         }
       }
     },
@@ -85,6 +103,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "发现"
           }
         }
       }
@@ -108,6 +132,12 @@
             "state" : "needs_review",
             "value" : "Découvrir et demander"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "发现与请求"
+          }
         }
       }
     },
@@ -129,6 +159,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrez quelque chose de nouveau"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "发现新内容"
           }
         }
       }
@@ -152,6 +188,12 @@
             "state" : "needs_review",
             "value" : "Terminé"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "完成"
+          }
         }
       }
     },
@@ -173,6 +215,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Terminé à %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 看完"
           }
         }
       }
@@ -196,6 +244,12 @@
             "state" : "needs_review",
             "value" : "Téléchargements"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "下载"
+          }
         }
       }
     },
@@ -217,6 +271,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Trouvez quelque chose de nouveau à regarder et demandez-le."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "找到新的内容来观看并请求它。"
           }
         }
       }
@@ -240,6 +300,12 @@
             "state" : "needs_review",
             "value" : "Nouveau"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新"
+          }
         }
       }
     },
@@ -261,6 +327,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Rien de nouveau pour l’instant"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "暂时没有新内容"
           }
         }
       }
@@ -284,6 +356,12 @@
             "state" : "needs_review",
             "value" : "Rien à reprendre"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没有可继续的内容"
+          }
         }
       }
     },
@@ -306,6 +384,12 @@
             "state" : "needs_review",
             "value" : "Ouvrez Arcfin pour reprendre"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开 Arcfin 以继续"
+          }
         }
       }
     },
@@ -327,6 +411,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez Arcfin pour utiliser les données cellulaires"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开 Arcfin 以使用蜂窝数据"
           }
         }
       }
@@ -352,6 +442,12 @@
             "state" : "needs_review",
             "value" : "Ouvrir Découvrir"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开“发现”"
+          }
         }
       }
     },
@@ -373,6 +469,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrir les téléchargements"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开下载"
           }
         }
       }
@@ -398,6 +500,12 @@
             "state" : "needs_review",
             "value" : "Ouvrir les téléchargements"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开“下载”"
+          }
         }
       }
     },
@@ -419,6 +527,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez vos téléchargements pour regarder hors ligne."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开你的下载项以离线观看。"
           }
         }
       }
@@ -442,6 +556,12 @@
             "state" : "needs_review",
             "value" : "Reprenez là où vous vous étiez arrêté."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "从上次停下的地方继续。"
+          }
         }
       }
     },
@@ -463,6 +583,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Lisez ce que vous regardiez en dernier."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放你上次观看的内容。"
           }
         }
       }
@@ -488,6 +614,12 @@
             "state" : "needs_review",
             "value" : "Lit ce que vous regardiez en dernier."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放你上次观看的内容。"
+          }
         }
       }
     },
@@ -509,6 +641,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ajouts récents"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "最近添加"
           }
         }
       }
@@ -532,6 +670,12 @@
             "state" : "needs_review",
             "value" : "Reprendre la lecture"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "继续观看"
+          }
         }
       }
     },
@@ -553,6 +697,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Reprendre la lecture"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "继续观看"
           }
         }
       }
@@ -576,6 +726,12 @@
             "state" : "needs_review",
             "value" : "Voyez les derniers films et séries de votre serveur."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "查看你服务器上最新的电影和剧集。"
+          }
         }
       }
     },
@@ -597,6 +753,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "À suivre"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "接下来"
           }
         }
       }

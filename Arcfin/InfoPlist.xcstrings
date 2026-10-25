@@ -28,6 +28,12 @@
             "state" : "translated",
             "value" : "ArcFin"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
         }
       }
     },
@@ -54,6 +60,12 @@
           }
         },
         "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arcfin"
@@ -88,6 +100,12 @@
             "state" : "needs_review",
             "value" : "La prise en charge de Chromecast d’Arcfin peut utiliser le Bluetooth pour trouver les appareils Cast à proximité."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 的 Chromecast 支持可以使用蓝牙来帮助发现附近的投放设备。"
+          }
         }
       }
     },
@@ -117,6 +135,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Face ID sert à déverrouiller Arcfin quand le verrouillage de l’app est activé pour votre profil."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "当你的描述文件启用了应用锁时，面容 ID 用于解锁 Arcfin。"
           }
         }
       }
@@ -148,6 +172,12 @@
             "state" : "needs_review",
             "value" : "Arcfin utilise votre réseau local pour trouver votre serveur Jellyfin et s’y connecter, et pour diffuser des médias sur les appareils à proximité."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 使用你的本地网络来发现并连接你的 Jellyfin 服务器，以及将媒体投放到附近的设备。"
+          }
         }
       }
     },
@@ -177,6 +207,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Arcfin utilise le nom de votre réseau Wi-Fi pour basculer automatiquement entre l’adresse locale et l’adresse distante de votre serveur selon que vous êtes chez vous ou non. Votre position n’est jamais enregistrée, suivie ni partagée — elle sert uniquement à lire le nom du Wi-Fi actuel."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 使用你的无线局域网名称，在你在家和外出时自动切换服务器的本地地址和远程地址。你的位置绝不会被存储、跟踪或共享——它仅用于读取当前的无线局域网名称。"
           }
         }
       }

@@ -43,6 +43,16 @@
               "Qu’est-ce que je regardais dans ${applicationName}"
             ]
           }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中继续观看",
+              "在${applicationName}中继续看我的剧",
+              "我在${applicationName}中看到哪了"
+            ]
+          }
         }
       }
     },
@@ -82,6 +92,15 @@
             "values" : [
               "Télécharger l’épisode suivant de ${target} dans ${applicationName}",
               "Télécharger ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中下载${target}的下一集",
+              "在${applicationName}中下载${target}"
             ]
           }
         }
@@ -125,6 +144,15 @@
               "Afficher ${target} dans ${applicationName}"
             ]
           }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中打开${target}",
+              "在${applicationName}中显示${target}"
+            ]
+          }
         }
       }
     },
@@ -164,6 +192,15 @@
             "values" : [
               "Ouvrir Découvrir dans ${applicationName}",
               "Quoi de neuf à demander dans ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中打开发现",
+              "${applicationName}中有什么新内容可以请求"
             ]
           }
         }
@@ -211,6 +248,16 @@
               "Mettre ${target} dans ${applicationName}"
             ]
           }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中播放${target}",
+              "在${applicationName}中观看${target}",
+              "在${applicationName}中放${target}"
+            ]
+          }
         }
       }
     },
@@ -256,6 +303,16 @@
               "Choisis un film dans ${applicationName}"
             ]
           }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中随机播放一部电影",
+              "在${applicationName}中给我惊喜",
+              "在${applicationName}中挑一部电影"
+            ]
+          }
         }
       }
     },
@@ -295,6 +352,15 @@
             "values" : [
               "Afficher mes téléchargements dans ${applicationName}",
               "Ouvrir les téléchargements dans ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中显示我的下载",
+              "在${applicationName}中打开下载"
             ]
           }
         }
