@@ -916,6 +916,13 @@ enum LibraryNavTarget: Hashable {
 enum LibraryWatchedFilter: String, CaseIterable, Identifiable {
     case all = "All", unwatched = "Unwatched", watched = "Watched"
     var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .all: String(localized: "All")
+        case .unwatched: String(localized: "Unwatched")
+        case .watched: String(localized: "Watched")
+        }
+    }
 }
 
 /// Filters beyond genre/year/watched/favorites: content rating and a minimum community
@@ -959,6 +966,13 @@ struct LibraryExtraFilters: Equatable {
 enum LibraryQualityFilter: String, CaseIterable, Identifiable {
     case any = "Any", hd = "HD", uhd = "4K"
     var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .any: String(localized: "Any")
+        case .hd: String(localized: "HD")
+        case .uhd: String(localized: "4K")
+        }
+    }
 }
 
 enum LibrarySortOption: String, CaseIterable, Identifiable {
@@ -973,6 +987,19 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
     case playlistOrder = "Playlist Order"
 
     var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .nameAsc: String(localized: "Name (A–Z)")
+        case .nameDesc: String(localized: "Name (Z–A)")
+        case .dateAddedDesc: String(localized: "Recently Added")
+        case .releaseDateDesc: String(localized: "Release Date (Newest)")
+        case .releaseDateAsc: String(localized: "Release Date (Oldest)")
+        case .ratingDesc: String(localized: "Rating (Highest)")
+        case .genreAsc: String(localized: "Genre")
+        case .playlistOrder: String(localized: "Playlist Order")
+        }
+    }
 
     static let standard = allCases.filter { $0 != .playlistOrder }
 
@@ -1003,9 +1030,9 @@ enum LibraryGridDensity: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .compact: return "Compact"
-        case .normal: return "Normal"
-        case .comfortable: return "Comfortable"
+        case .compact: return String(localized: "Compact")
+        case .normal: return String(localized: "Normal")
+        case .comfortable: return String(localized: "Comfortable")
         }
     }
 
@@ -2127,9 +2154,9 @@ struct LibraryFilterList: View {
             // tappable rows, same pattern as the Genre/Year sections below, work
             // identically everywhere since nothing depends on a platform picker style.
             Section {
-                FilterGroup(title: "Sort By", value: sortOption.rawValue) {
+                FilterGroup(title: "Sort By", value: sortOption.label) {
                     ForEach(sortOptions) { option in
-                        filterRow(option.rawValue, isSelected: sortOption == option) {
+                        filterRow(option.label, isSelected: sortOption == option) {
                             sortOption = option
                         }
                     }
@@ -2139,7 +2166,7 @@ struct LibraryFilterList: View {
             Section("Status") {
                 Picker("Status", selection: $watchedFilter) {
                     ForEach(LibraryWatchedFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
+                        Text(filter.label).tag(filter)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -2231,7 +2258,7 @@ struct LibraryFilterList: View {
 
             Section("Quality") {
                 Picker("Resolution", selection: $extraFilters.quality) {
-                    ForEach(LibraryQualityFilter.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(LibraryQualityFilter.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 Toggle("Has Subtitles", isOn: $extraFilters.hasSubtitles)

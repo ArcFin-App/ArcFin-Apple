@@ -103,7 +103,7 @@ struct StatsShareCard: View {
     enum Format: String, CaseIterable, Identifiable {
         case story, post
         var id: String { rawValue }
-        var title: String { self == .story ? "Story" : "Post" }
+        var title: String { self == .story ? String(localized: "Story") : String(localized: "Post") }
         var size: CGSize { self == .story ? CGSize(width: 360, height: 640) : CGSize(width: 360, height: 450) }
     }
 

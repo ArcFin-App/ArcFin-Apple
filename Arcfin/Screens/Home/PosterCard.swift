@@ -286,7 +286,14 @@ enum CardRequestStatus: String {
         }
     }
 
-    var label: String { rawValue.capitalized }
+    var label: String {
+        switch self {
+        case .approved:    String(localized: "Approved")
+        case .pending:     String(localized: "Pending")
+        case .downloading: String(localized: "Downloading")
+        case .available:   String(localized: "Available")
+        }
+    }
 }
 
 /// Shared pill treatment for a request/availability status badge — was independently

@@ -9,10 +9,10 @@ enum SubtitleTextSize: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .small: return "Small"
-        case .medium: return "Medium"
-        case .large: return "Large"
-        case .extraLarge: return "Extra Large"
+        case .small: return String(localized: "Small")
+        case .medium: return String(localized: "Medium")
+        case .large: return String(localized: "Large")
+        case .extraLarge: return String(localized: "Extra Large")
         }
     }
 
@@ -33,10 +33,10 @@ enum SubtitleTextColorOption: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .white: return "White"
-        case .yellow: return "Yellow"
-        case .cyan: return "Cyan"
-        case .green: return "Green"
+        case .white: return String(localized: "White")
+        case .yellow: return String(localized: "Yellow")
+        case .cyan: return String(localized: "Cyan")
+        case .green: return String(localized: "Green")
         }
     }
 
@@ -57,9 +57,9 @@ enum SubtitleBackgroundStyle: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .box: return "Box"
-        case .outline: return "Outline"
-        case .none: return "None"
+        case .box: return String(localized: "Box")
+        case .outline: return String(localized: "Outline")
+        case .none: return String(localized: "None")
         }
     }
 }
