@@ -897,70 +897,6 @@
         }
       }
     },
-    "%@ · %lld%%" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld %%"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld %%"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld %%"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld%%"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld%%"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld%%"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld%%"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld%%"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld%%"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ · %lld%%"
-          }
-        }
-      }
-    },
     "%@ / %@" : {
       "localizations" : {
         "de" : {
@@ -1085,70 +1021,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@ %@"
-          }
-        }
-      }
-    },
-    "%@ %lld%%" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld %%"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld %%"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld %%"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld%%"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld%%"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld%%"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld%%"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld%%"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld%%"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ %lld%%"
           }
         }
       }
@@ -3199,70 +3071,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%lld."
-          }
-        }
-      }
-    },
-    "%lld%%" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld %%"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld %%"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld %%"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld%%"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld%%"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld%%"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld%%"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld%%"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld%%"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld%%"
           }
         }
       }
@@ -7299,130 +7107,66 @@
         }
       }
     },
-    "At 80%" : {
+    "At %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Bei 80 %"
+            "value" : "Bei %@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Al 80 %"
+            "value" : "Al %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "À 80 %"
+            "value" : "À %@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "All’80%"
+            "value" : "All’%@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "80%時点"
+            "value" : "%@時点"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "80%에서"
+            "value" : "%@에서"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Bij 80%"
+            "value" : "Bij %@"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Em 80%"
+            "value" : "Em %@"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "На 80%"
+            "value" : "На %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "80% 时"
-          }
-        }
-      }
-    },
-    "At 85%" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Bei 85 %"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Al 85 %"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "À 85 %"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "All’85%"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "85%時点"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "85%에서"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Bij 85%"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Em 85%"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "На 85%"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "85% 时"
+            "value" : "%@ 时"
           }
         }
       }
@@ -57611,66 +57355,66 @@
         }
       }
     },
-    "When closing the player counts a title as watched. Server Default uses your server's setting, usually 90%." : {
+    "When closing the player counts a title as watched. Server Default uses your server's setting, usually %@." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Ab wann beim Schließen des Players ein Titel als gesehen gilt. Server-Standard nutzt die Einstellung deines Servers, meist 90 %."
+            "value" : "Ab wann beim Schließen des Players ein Titel als gesehen gilt. Server-Standard nutzt die Einstellung deines Servers, meist %@."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Cuándo cuenta un título como visto al cerrar el reproductor. Valor del servidor usa el ajuste de tu servidor, normalmente el 90 %."
+            "value" : "Cuándo cuenta un título como visto al cerrar el reproductor. Valor del servidor usa el ajuste de tu servidor, normalmente el %@."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Quand la fermeture du lecteur compte un titre comme vu. Valeur du serveur utilise le réglage de votre serveur, généralement 90 %."
+            "value" : "Quand la fermeture du lecteur compte un titre comme vu. Valeur du serveur utilise le réglage de votre serveur, généralement %@."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Quando chiudere il player conta un titolo come visto. Predefinito del server usa l’impostazione del tuo server, di solito 90%."
+            "value" : "Quando chiudere il player conta un titolo come visto. Predefinito del server usa l’impostazione del tuo server, di solito %@."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "プレーヤーを閉じたときに作品を視聴済みとするタイミング。「サーバのデフォルト」はサーバの設定（通常は90%）を使用します。"
+            "value" : "プレーヤーを閉じたときに作品を視聴済みとするタイミング。「サーバのデフォルト」はサーバの設定（通常は%@）を使用します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "플레이어를 닫을 때 작품을 시청함으로 처리하는 시점입니다. 서버 기본값은 서버 설정(보통 90%)을 사용합니다."
+            "value" : "플레이어를 닫을 때 작품을 시청함으로 처리하는 시점입니다. 서버 기본값은 서버 설정(보통 %@)을 사용합니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Wanneer het sluiten van de speler een titel als bekeken telt. Serverstandaard gebruikt de instelling van je server, meestal 90%."
+            "value" : "Wanneer het sluiten van de speler een titel als bekeken telt. Serverstandaard gebruikt de instelling van je server, meestal %@."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Quando fechar o player conta um título como assistido. Padrão do servidor usa o ajuste do seu servidor, normalmente 90%."
+            "value" : "Quando fechar o player conta um título como assistido. Padrão do servidor usa o ajuste do seu servidor, normalmente %@."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Когда закрытие плеера засчитывает тайтл как просмотренный. «По умолчанию сервера» использует настройку сервера, обычно 90%."
+            "value" : "Когда закрытие плеера засчитывает тайтл как просмотренный. «По умолчанию сервера» использует настройку сервера, обычно %@."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "关闭播放器时何时将作品计为已观看。“服务器默认”使用服务器的设置，通常为 90%。"
+            "value" : "关闭播放器时何时将作品计为已观看。“服务器默认”使用服务器的设置，通常为 %@。"
           }
         }
       }

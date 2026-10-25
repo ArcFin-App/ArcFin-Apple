@@ -69,14 +69,14 @@ struct TitleInsights: View {
                     scoreChip(
                         systemImage: score >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: "\(score)%", label: ratings.criticsRating ?? "Critics",
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: ratings.criticsRating ?? "Critics",
                         url: ratings.rottenTomatoesURL)
                 }
                 if let score = ratings.audienceScore {
                     scoreChip(
                         systemImage: "person.3.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: "\(score)%", label: "Audience", url: ratings.rottenTomatoesURL)
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: "Audience", url: ratings.rottenTomatoesURL)
                 }
                 if let imdb = ratings.imdbScore {
                     scoreChip(systemImage: "star.fill", tint: DT.Color.palette("f5c518"),

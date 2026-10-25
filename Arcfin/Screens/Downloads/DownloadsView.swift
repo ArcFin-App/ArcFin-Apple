@@ -416,7 +416,7 @@ struct DownloadsView: View {
                     .lineLimit(1)
                 Spacer()
                 if let stats, stats.totalBytes > 0 {
-                    Text("\(Int(fraction * 100))%")
+                    Text(Double(fraction), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                         .font(.system(.caption, weight: .semibold))
                         .monospacedDigit()
                         .foregroundStyle(DT.Color.textSecondary)

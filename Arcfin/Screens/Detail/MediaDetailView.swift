@@ -791,7 +791,7 @@ struct MediaDetailView: View {
                     // Positive at 60% and up, the usual critics threshold.
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill")
                         .font(.system(.caption2))
-                    Text("\(Int(critics.rounded()))%")
+                    Text(Double(critics) / 100, format: .percent.precision(.fractionLength(0)))
                         .font(.system(.caption2, design: .default, weight: .bold))
                 }
                 .foregroundStyle(critics >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"))
