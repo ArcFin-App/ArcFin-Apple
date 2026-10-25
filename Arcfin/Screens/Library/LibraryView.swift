@@ -1670,7 +1670,7 @@ struct LibraryDetailView: View {
         .focusSection()
     }
 
-    private func tvActionLabel(_ title: String, systemImage: String) -> some View {
+    private func tvActionLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
         TVHeroButtonLabel(icon: systemImage, text: title)
             .background(Capsule().fill(DT.Color.textPrimary.opacity(0.06)))
     }
