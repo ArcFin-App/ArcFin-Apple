@@ -695,6 +695,7 @@ struct LocalPlayerView: View {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close")
             Text(url.deletingPathExtension().lastPathComponent)
                 .font(.system(.subheadline, design: .default, weight: .semibold))
                 .foregroundStyle(.white)
@@ -1278,6 +1279,8 @@ struct LibraryDetailView: View {
                 Button { showFilterSheet = true } label: {
                     Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                 }
+                .accessibilityLabel("Filter & Sort")
+                .accessibilityValue(filtersActive ? "Filters on" : "")
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
