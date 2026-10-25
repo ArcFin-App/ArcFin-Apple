@@ -1085,7 +1085,7 @@ struct MediaDetailView: View {
         }
 
         if let seriesItem, item.type == .episode {
-            seriesLinkSection(seriesItem)
+            DetailSeriesLink(series: seriesItem)
         }
 
         // Series: seasons + episodes
@@ -1209,7 +1209,13 @@ struct MediaDetailView: View {
 
             VStack(spacing: 8) {
                 ForEach(episodes) { ep in
-                    episodeRow(ep)
+                    EpisodeRow(
+                        episode: ep,
+                        badge: episodeBadge(ep),
+                        spoilerProtection: spoilerProtection,
+                        onSelect: { selectedEpisode = ep },
+                        onToggleWatched: { markEpisodeWatched(ep, watched: ep.userData?.played != true) }
+                    )
                 }
             }
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -1218,140 +1224,6 @@ struct MediaDetailView: View {
 #if os(tvOS)
         .focusSection()
 #endif
-    }
-
-    private func seriesLinkSection(_ series: MediaItem) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            DetailSectionTitle(title: "Series")
-            NavigationLink(value: series) {
-                HStack(spacing: 10) {
-                    Image(systemName: "tv")
-                        .font(.system(.subheadline))
-                        .foregroundStyle(DT.Color.accent)
-                    Text(series.name)
-                        .font(.system(.footnote, design: .default, weight: .semibold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(1)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(.caption2))
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(DT.Color.textPrimary.opacity(0.03))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
-            }
-#if os(tvOS)
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 10)
-#else
-            .buttonStyle(.plain)
-#endif
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.bottom, DT.Spacing.md)
-    }
-
-    private func episodeRow(_ ep: MediaItem) -> some View {
-        let isWatched = ep.userData?.played == true
-        let pct = ep.userData?.playedPercentage ?? 0
-        // Settings › Appearance › Spoiler Protection: nothing from an episode not yet started.
-        let hidesSpoilers = spoilerProtection && !isWatched && pct == 0
-
-        return Button { selectedEpisode = ep } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: 12) {
-                    ZStack {
-                        if let url = mediaRepo.episodeThumbnailURL(for: ep) {
-                            CachedAsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let img): img.resizable().scaledToFill()
-                                default: episodeThumbPlaceholder
-                                }
-                            }
-                        } else {
-                            episodeThumbPlaceholder
-                        }
-
-                        if isWatched {
-                            Color.black.opacity(0.45)
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(.title2))
-                                .foregroundStyle(DT.Color.palette("10b981"))
-                        } else if pct > 0 {
-                            VStack(spacing: 0) {
-                                Spacer()
-                                GeometryReader { geo in
-                                    ZStack(alignment: .leading) {
-                                        Rectangle().fill(.white.opacity(0.25)).frame(height: 3)
-                                        Rectangle()
-                                            .fill(DT.Color.accent)
-                                            .frame(width: geo.size.width * CGFloat(min(pct / 100.0, 1.0)), height: 3)
-                                    }
-                                }
-                                .frame(height: 3)
-                            }
-                        }
-                    }
-                    .frame(width: 120, height: 68)
-                    .blur(radius: hidesSpoilers ? 14 : 0)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            if let epNum = ep.indexNumber {
-                                Text("E\(epNum)")
-                                    .font(.system(.caption2, design: .default, weight: .semibold))
-                                    .foregroundStyle(DT.Color.accent)
-                            }
-                            if let badge = episodeBadge(ep) {
-                                Text(badge)
-                                    .font(.system(.caption2, design: .default, weight: .bold))
-                                    .padding(.horizontal, 6).padding(.vertical, 1)
-                                    .background(DT.Color.accent.opacity(0.18), in: Capsule())
-                                    .foregroundStyle(DT.Color.accent)
-                            }
-                        }
-                        Text(ep.name)
-                            .font(.system(.footnote, design: .default, weight: .semibold))
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .lineLimit(2)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    #if !os(tvOS)
-                    if !ep.isVirtual { DownloadButton(item: ep) }
-                    #endif
-                }
-
-                if !hidesSpoilers, let overview = ep.overview, !overview.isEmpty {
-                    Text(overview)
-                        .font(.system(.caption2, design: .default))
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .lineLimit(3)
-                        .padding(.top, 8)
-                }
-            }
-            .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(DT.Color.textPrimary.opacity(0.03))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .contextMenu(menuItems: {
-            Button {
-                HapticManager.impact(.light)
-                markEpisodeWatched(ep, watched: !isWatched)
-            } label: {
-                Label(isWatched ? "Mark as Unwatched" : "Mark as Watched",
-                      systemImage: isWatched ? "eye.slash" : "checkmark")
-            }
-        }, preview: {
-            episodeRowPreview(ep)
-        })
     }
 
     /// "NEW" for an unwatched episode that premiered in the last two weeks; "FINALE" for the
@@ -1364,42 +1236,6 @@ struct MediaDetailView: View {
         }
         if episodes.count > 1, ep.id == episodes.last?.id { return "FINALE" }
         return nil
-    }
-
-    private func episodeRowPreview(_ ep: MediaItem) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Group {
-                if let url = mediaRepo.episodeThumbnailURL(for: ep) {
-                    CachedAsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: episodeThumbPlaceholder
-                        }
-                    }
-                } else {
-                    episodeThumbPlaceholder
-                }
-            }
-            .frame(width: 240, height: 135)
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-
-            Text(ep.name)
-                .font(.system(.footnote, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(2)
-                .frame(width: 240, alignment: .leading)
-        }
-        .padding(DT.Spacing.sm)
-    }
-
-    private var episodeThumbPlaceholder: some View {
-        Rectangle()
-            .fill(DT.Color.backgroundSecondary)
-            .overlay(
-                Image(systemName: "play.rectangle")
-                    .font(.system(.title3))
-                    .foregroundStyle(DT.Color.textSecondary.opacity(0.3))
-            )
     }
 
     private var moreMenu: some View {
