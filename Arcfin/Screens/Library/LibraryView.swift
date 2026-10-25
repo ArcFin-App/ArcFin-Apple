@@ -26,6 +26,7 @@ struct LibraryView: View {
     @State private var navigateToLocalPlayer = false
     @State private var navigateToDownloadsDeepLink = false
     @State private var searchQuery = ""
+    @State private var openedLibrary: JellyfinLibrary?
 #if os(macOS)
     @FocusState private var isSearchFocused: Bool
 
@@ -79,6 +80,10 @@ struct LibraryView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
+                LibraryDetailView(library: library)
+            }
+            // On the Mac a tile's NavigationLink(value:) can't find the destination above.
+            .navigationDestination(item: $openedLibrary) { library in
                 LibraryDetailView(library: library)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
@@ -229,7 +234,7 @@ struct LibraryView: View {
 #else
             LazyVGrid(columns: gridColumns, spacing: 12) {
                 ForEach(supportedLibraries) { library in
-                    NavigationLink(value: library) {
+                    Button { openedLibrary = library } label: {
                         LibraryCard(library: library, imageURL: mediaRepo.libraryBackdropURL(for: library))
                     }
                     .buttonStyle(.plain)
@@ -1483,7 +1488,12 @@ struct LibraryDetailView: View {
                 .menuStyle(.button)
                 .menuIndicator(.hidden)
         } else {
+            #if !os(macOS)
             NavigationLink(value: navTarget(for: item)) { label() }
+            #else
+            // On the Mac a NavigationLink(value:) can't find Browse's destination.
+            Button { randomPick = item } label: { label() }
+            #endif
         }
     }
 
