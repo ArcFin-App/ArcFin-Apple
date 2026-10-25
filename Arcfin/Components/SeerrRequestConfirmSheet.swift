@@ -229,6 +229,7 @@ struct SeerrRequestConfirmSheet: View {
             }
             .padding(.horizontal, DT.Spacing.pagePad)
         }
+        .shelfScrollButtons()
         .padding(.bottom, DT.Spacing.sm)
     }
 
@@ -255,6 +256,7 @@ struct SeerrRequestConfirmSheet: View {
             }
             .padding(.horizontal, DT.Spacing.pagePad)
         }
+        .shelfScrollButtons()
         .padding(.bottom, DT.Spacing.lg)
     }
 

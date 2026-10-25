@@ -118,9 +118,15 @@ public enum DT {
         public static let xxxl: CGFloat = 64
 
         /// Standard horizontal page margin
+#if os(macOS)
+        public static let pagePad: CGFloat = 28
+        /// Shelf row internal item gap
+        public static let shelfGap: CGFloat = 16
+#else
         public static let pagePad: CGFloat = 20
         /// Shelf row internal item gap
         public static let shelfGap: CGFloat = 12
+#endif
         /// Section header → shelf gap
         public static let sectionGap: CGFloat = 8
     }
@@ -144,11 +150,22 @@ public enum DT {
         /// Poster card — portrait 2:3 on iOS, landscape 16:9 thumb on tvOS
 #if os(tvOS)
         public static let posterCard        = CGSize(width: 320, height: 180)
+#elseif os(macOS)
+        // Seen from further away than a phone, in a window several times wider.
+        public static let posterCard        = CGSize(width: 150, height: 225)
 #else
         public static let posterCard        = CGSize(width: 110, height: 165)
 #endif
         /// Backdrop card: landscape 16:9
+#if os(macOS)
+        public static let backdropCard      = CGSize(width: 320, height: 180)
+        /// Continue Watching and other landscape shelf cards.
+        public static let wideCard          = CGSize(width: 280, height: 158)
+#else
         public static let backdropCard      = CGSize(width: 240, height: 135)
+        /// Continue Watching and other landscape shelf cards.
+        public static let wideCard          = CGSize(width: 200, height: 113)
+#endif
         /// Hero banner height
         public static let heroBannerHeight: CGFloat = 520
         /// Tab bar height (approx, under Liquid Glass)

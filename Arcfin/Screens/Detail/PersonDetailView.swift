@@ -54,13 +54,22 @@ struct PersonDetailView: View {
 #if os(macOS)
         // Fixed 3-up stretches cards absurdly wide on a resizable Mac window — adaptive
         // reflows the grid as the window resizes instead.
-        [GridItem(.adaptive(minimum: 130), spacing: 12)]
+        [GridItem(.adaptive(minimum: 150), spacing: 16)]
 #elseif os(tvOS)
         [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: 40)]
 #else
-        Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+        if isWide {
+            return [GridItem(.adaptive(minimum: 150), spacing: 12)]
+        }
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
 #endif
     }
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isWide: Bool { horizontalSizeClass == .regular }
+#else
+    private let isWide = false
+#endif
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -117,6 +126,7 @@ struct PersonDetailView: View {
                             .padding(.horizontal, DT.Spacing.pagePad)
                             .padding(.vertical, 12)
                         }
+                        .shelfScrollButtons()
                         .scrollClipDisabled()
                     }
                 }

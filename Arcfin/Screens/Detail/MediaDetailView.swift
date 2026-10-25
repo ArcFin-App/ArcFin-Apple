@@ -32,7 +32,6 @@ struct MediaDetailView: View {
     #if os(macOS)
     @Environment(PlaybackPresenter.self) private var playbackPresenter
     #endif
-    @Environment(\.dismiss) private var dismiss
 
     @State private var detail: MediaItemDetail?
     @State private var awards: [WikidataAward] = []
@@ -403,7 +402,7 @@ struct MediaDetailView: View {
     /// Settings › Downloads › Season Downloads can leave out episodes already watched.
     private var seasonEpisodesToDownload: [MediaItem] {
         let unwatchedOnly = UserDefaults.standard.bool(forKey: "seasonDownloadUnwatchedOnly")
-        return episodes.filter { !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
+        return episodes.filter { !$0.isVirtual && !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
     }
 
     /// Fetches one representative preview (from the first not-yet-downloaded episode) to
@@ -602,7 +601,7 @@ struct MediaDetailView: View {
 
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
-            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 900) {
+            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: Self.backdropFillWidth) {
                 RetryingAsyncImage(
                     url: url,
                     logCategory: "MediaDetailView",
@@ -631,7 +630,7 @@ struct MediaDetailView: View {
                     )
                 )
         }
-        .frame(height: 260)
+        .frame(height: Self.heroHeight)
         // Exactly the screen's width: a fill-scaled backdrop is wider than a small phone, and
         // sized by its own width it pushed the whole page out past both edges.
         .containerRelativeFrame(.horizontal)
@@ -682,7 +681,7 @@ struct MediaDetailView: View {
     private var titleBlock: some View {
         HStack(alignment: .top, spacing: 14) {
             // Portrait poster
-            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 200) {
+            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: Self.posterFillWidth) {
                 RetryingAsyncImage(
                     url: url,
                     logCategory: "MediaDetailView",
@@ -697,19 +696,19 @@ struct MediaDetailView: View {
                         }
                     }
                 )
-                .frame(width: 90, height: 132)
+                .frame(width: Self.posterSize.width, height: Self.posterSize.height)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
             } else {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(DT.Color.backgroundSecondary)
-                    .frame(width: 90, height: 132)
+                    .frame(width: Self.posterSize.width, height: Self.posterSize.height)
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
-                    .font(.system(.title3, design: .default, weight: .heavy))
+                    .font(.system(Self.titleStyle, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.5)
                     .lineLimit(3)
@@ -721,9 +720,25 @@ struct MediaDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, -50)
+        .padding(.top, -Self.posterSize.height * 0.38)
         .padding(.bottom, DT.Spacing.md)
     }
+
+    // A Mac window is far wider than a phone: a 260 pt strip of backdrop and a 90 pt
+    // poster left the top of the page looking like a banner ad.
+    #if os(macOS)
+    private static let heroHeight: CGFloat = 420
+    private static let posterSize = CGSize(width: 170, height: 250)
+    private static let titleStyle: Font.TextStyle = .largeTitle
+    private static let backdropFillWidth = 1800
+    private static let posterFillWidth = 400
+    #else
+    private static let heroHeight: CGFloat = 260
+    private static let posterSize = CGSize(width: 90, height: 132)
+    private static let titleStyle: Font.TextStyle = .title3
+    private static let backdropFillWidth = 900
+    private static let posterFillWidth = 200
+    #endif
 
     private var metaRow: some View {
         // lineLimit(1) cascades to every Text child, giving HStack's layout room to
@@ -886,6 +901,15 @@ struct MediaDetailView: View {
         }
     }
 
+    /// "Airs 30 Oct" for an episode listed before it's out; "Not on Your Server" for one missing.
+    static func unavailableText(_ item: MediaItem) -> String {
+        if let premiere = item.premiereDate, premiere > Date() {
+            return "Airs \(premiere.formatted(.dateTime.day().month(.abbreviated)))"
+        }
+        return "Not on Your Server"
+    }
+
+    @ViewBuilder
     private var playButton: some View {
 #if os(tvOS)
         Button {} label: { TVPlayButtonLabel() }
@@ -894,6 +918,16 @@ struct MediaDetailView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.md)
 #else
+        if playTargetItem.isVirtual {
+            Label(Self.unavailableText(playTargetItem), systemImage: "calendar")
+                .font(.system(.callout, design: .default, weight: .bold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.md)
+        } else {
         HStack(spacing: 10) {
             Button {
                 requestPlayback(startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0)
@@ -959,6 +993,7 @@ struct MediaDetailView: View {
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
+        }
 #endif
     }
 
@@ -1035,6 +1070,7 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
             .padding(.bottom, DT.Spacing.md)
 #if os(tvOS)
             .focusSection()
@@ -1099,7 +1135,10 @@ struct MediaDetailView: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
+                // Lines across a whole iPad are too long to read comfortably.
+                .frame(maxWidth: 720, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1137,6 +1176,7 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
 #if os(tvOS)
@@ -1283,10 +1323,20 @@ struct MediaDetailView: View {
 #endif
     }
 
+    @ViewBuilder
+    private func titleLink<Label: View>(_ item: MediaItem, @ViewBuilder label: () -> Label) -> some View {
+        #if os(macOS)
+        // On the Mac a NavigationLink(value:) can't always find the stack's destination.
+        Button { selectedEpisode = item } label: { label() }
+        #else
+        NavigationLink(value: item) { label() }
+        #endif
+    }
+
     private func seriesLinkSection(_ series: MediaItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Series")
-            NavigationLink(value: series) {
+            titleLink(series) {
                 HStack(spacing: 10) {
                     Image(systemName: "tv")
                         .font(.system(.subheadline))
@@ -1386,7 +1436,7 @@ struct MediaDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     #if !os(tvOS)
-                    DownloadButton(item: ep)
+                    if !ep.isVirtual { DownloadButton(item: ep) }
                     #endif
                 }
 
@@ -1420,6 +1470,7 @@ struct MediaDetailView: View {
     /// "NEW" for an unwatched episode that premiered in the last two weeks; "FINALE" for the
     /// last episode of the season being shown.
     private func episodeBadge(_ ep: MediaItem) -> String? {
+        if ep.isVirtual { return Self.unavailableText(ep).uppercased() }
         if ep.userData?.played != true, let premiere = ep.premiereDate,
            premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
             return "NEW"
@@ -1599,7 +1650,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(similarItems) { sim in
-                        NavigationLink(value: sim) {
+                        titleLink(sim) {
                             PosterCard(
                                 title: sim.name,
                                 subtitle: sim.productionYear.map { String($0) },
@@ -1620,6 +1671,7 @@ struct MediaDetailView: View {
                 .focusSection()
 #endif
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1655,6 +1707,7 @@ struct MediaDetailView: View {
                 .focusSection()
 #endif
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1665,7 +1718,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(category.items) { rec in
-                        NavigationLink(value: rec) {
+                        titleLink(rec) {
                             PosterCard(
                                 title: rec.name,
                                 subtitle: rec.productionYear.map { String($0) },
@@ -1686,6 +1739,7 @@ struct MediaDetailView: View {
                 .focusSection()
 #endif
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }
@@ -1708,6 +1762,7 @@ struct MediaDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }

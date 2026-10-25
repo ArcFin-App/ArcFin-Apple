@@ -587,6 +587,35 @@ public struct JellyfinMediaClient: Sendable {
         return matches.count == 1 ? matches.first : nil
     }
 
+    /// The key `getLibraryTMDBKeys` stores a title under.
+    public static func libraryKey(tmdbId: Int, isSeries: Bool) -> String {
+        "\(isSeries ? "tv" : "movie"):\(tmdbId)"
+    }
+
+    /// Every movie and show in the library that has a TMDB id, as `libraryKey`s, so a list of
+    /// Seerr titles (identified by TMDB id) can be told which of them the server already has.
+    /// Ids only, without images or user data, to keep a large library's answer small.
+    public func getLibraryTMDBKeys(credential: ServerCredential, authHeader: String) async throws -> Set<String> {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Fields", value: "ProviderIds"),
+            .init(name: "EnableImages", value: "false"),
+            .init(name: "EnableUserData", value: "false"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 30
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let items = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        return Set(items.compactMap { item in
+            item.tmdbId.map { Self.libraryKey(tmdbId: $0, isSeries: item.type == .series) }
+        })
+    }
+
     private func findItemByProviderId(
         credential: ServerCredential,
         authHeader: String,
@@ -1121,9 +1150,11 @@ struct JellyfinItemResponse: Decodable {
     let providerIds: [String: String]?
     let genres: [String]?
     let premiereDate: String?
+    let locationType: String?
 
     enum CodingKeys: String, CodingKey {
         case premiereDate = "PremiereDate"
+        case locationType = "LocationType"
         case genres = "Genres"
         case id = "Id"
         case name = "Name"
@@ -1174,7 +1205,8 @@ struct JellyfinItemResponse: Decodable {
             parentBackdropItemId: parentBackdropItemId,
             parentBackdropImageTags: parentBackdropImageTags ?? [],
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
-            premiereDate: premiereDate.flatMap(Self.parseDay)
+            premiereDate: premiereDate.flatMap(Self.parseDay),
+            isVirtual: locationType == "Virtual"
         )
     }
 
@@ -1259,6 +1291,7 @@ private struct ItemDetailResponse: Decodable {
     let endDate: String?
     let externalUrls: [ExternalUrlResponse]?
     let mediaSources: [MediaSourceSummary]?
+    let locationType: String?
 
     struct ExternalUrlResponse: Decodable {
         let name: String?
@@ -1279,7 +1312,7 @@ private struct ItemDetailResponse: Decodable {
         case criticRating = "CriticRating", originalTitle = "OriginalTitle"
         case productionLocations = "ProductionLocations", tags = "Tags", status = "Status"
         case airDays = "AirDays", airTime = "AirTime", premiereDate = "PremiereDate", endDate = "EndDate"
-        case externalUrls = "ExternalUrls", mediaSources = "MediaSources"
+        case externalUrls = "ExternalUrls", mediaSources = "MediaSources", locationType = "LocationType"
         case id = "Id", name = "Name", type = "Type", overview = "Overview"
         case imageTags = "ImageTags", backdropImageTags = "BackdropImageTags"
         case userData = "UserData", productionYear = "ProductionYear"
@@ -1317,7 +1350,9 @@ private struct ItemDetailResponse: Decodable {
             parentIndexNumber: parentIndexNumber,
             seriesId: seriesId,
             seriesPrimaryImageTag: seriesPrimaryImageTag,
-            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") }
+            tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            premiereDate: premiereDate.flatMap(Self.parseDay),
+            isVirtual: locationType == "Virtual"
         )
         var detail = MediaItemDetail(
             item: mediaItem,
@@ -1465,7 +1500,9 @@ private struct SearchHintResponse: Decodable {
     let type: String
     let primaryImageTag: String?
     let thumbImageTag: String?
+    let thumbImageItemId: String?
     let backdropImageTag: String?
+    let backdropImageItemId: String?
     let productionYear: Int?
     let series: String?
     let indexNumber: Int?
@@ -1474,6 +1511,7 @@ private struct SearchHintResponse: Decodable {
     enum CodingKeys: String, CodingKey {
         case itemId = "ItemId", name = "Name", type = "Type"
         case primaryImageTag = "PrimaryImageTag", thumbImageTag = "ThumbImageTag"
+        case thumbImageItemId = "ThumbImageItemId", backdropImageItemId = "BackdropImageItemId"
         case backdropImageTag = "BackdropImageTag", productionYear = "ProductionYear"
         case series = "Series", indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber"
     }
@@ -1489,15 +1527,21 @@ private struct SearchHintResponse: Decodable {
         case "BoxSet":  mappedType = .boxSet
         default:        return nil
         }
+        // An episode's thumb and backdrop are usually the series' own, named by these ids;
+        // read as the episode's they asked for images it doesn't have and loaded nothing.
+        let ownsThumb = thumbImageItemId == nil || thumbImageItemId == itemId
+        let ownsBackdrop = backdropImageItemId == nil || backdropImageItemId == itemId
         return MediaItem(
             id: itemId, name: name, type: mappedType,
-            backdropImageTags: backdropImageTag.map { [$0] } ?? [],
+            backdropImageTags: ownsBackdrop ? backdropImageTag.map { [$0] } ?? [] : [],
             primaryImageTag: primaryImageTag,
-            thumbImageTag: thumbImageTag,
+            thumbImageTag: ownsThumb ? thumbImageTag : nil,
             productionYear: productionYear,
             seriesName: series,
             indexNumber: indexNumber,
-            parentIndexNumber: parentIndexNumber
+            parentIndexNumber: parentIndexNumber,
+            parentBackdropItemId: ownsBackdrop ? nil : backdropImageItemId,
+            parentBackdropImageTags: ownsBackdrop ? [] : backdropImageTag.map { [$0] } ?? []
         )
     }
 }

@@ -90,7 +90,9 @@ struct SettingsView: View {
 
             // ── Plugins ──────────────────────────────────────────────────
             Section {
-                Toggle("Show Discover on Home", isOn: $seerrDiscoverEnabled)
+                Toggle(isOn: $seerrDiscoverEnabled) {
+                    TVRowLabelText(title: "Show Discover on Home", detail: "Adds your Seerr watchlist and its trending and popular rows to Home.")
+                }
                 NavigationLink {
                     SeerrPluginView()
                 } label: {
@@ -116,9 +118,10 @@ struct SettingsView: View {
             } header: {
                 sectionHeader("Plugins", icon: "puzzlepiece.extension")
             }
-#else
+#elseif os(iOS)
             // Grouped hub — each row below pushes to its own focused screen instead of
-            // stacking every preference into one long page.
+            // stacking every preference into one long page. The Mac's Settings window lists
+            // these panes in its own sidebar.
             Section {
                 NavigationLink {
                     PlaybackSettingsView()
@@ -271,18 +274,9 @@ struct SettingsView: View {
                     profileCard(cred: cred)
                 }
                 .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                .arcfinRowSeparatorHidden()
 #endif
             }
         }
-    }
-
-    private func initialsLabel(_ initials: String) -> some View {
-        Text(initials)
-            .font(.system(.body, design: .rounded, weight: .bold))
-            .foregroundStyle(DT.Color.onAccent)
     }
 
     private func settingsRow(_ title: String, icon: String) -> some View {
@@ -296,35 +290,8 @@ struct SettingsView: View {
     }
 
     private func profileCard(cred: ServerCredential) -> some View {
-        let initials = cred.displayName
-            .split(separator: " ").prefix(2)
-            .compactMap { $0.first }
-            .map { String($0).uppercased() }
-            .joined()
-
-        return HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [DT.Color.accent, DT.Color.accentDeep],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 52, height: 52)
-                    .shadow(color: DT.Color.accent.opacity(0.35), radius: 10, y: 3)
-                if let tag = cred.userImageTag {
-                    CachedAsyncImage(url: JellyfinMediaClient.userImageURL(baseURL: cred.baseURL, userID: cred.userID, tag: tag, fillWidth: 104, token: cred.accessToken)) { phase in
-                        switch phase {
-                        case .success(let img): img.resizable().scaledToFill()
-                        default: initialsLabel(initials)
-                        }
-                    }
-                    .frame(width: 52, height: 52)
-                    .clipShape(Circle())
-                } else {
-                    initialsLabel(initials)
-                }
-            }
+        HStack(spacing: 12) {
+            ProfileAvatar(profile: cred, size: 44)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(cred.displayName)
@@ -347,17 +314,8 @@ struct SettingsView: View {
                 .font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.5))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: DT.Radius.lg)
-                .fill(DT.Color.backgroundSecondary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DT.Radius.lg)
-                        .stroke(DT.Color.accent.opacity(0.18), lineWidth: 1)
-                )
-        )
-        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
     }
 
     // MARK: - Row builders

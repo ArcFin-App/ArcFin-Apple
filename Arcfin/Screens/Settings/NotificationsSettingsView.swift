@@ -29,33 +29,37 @@ struct NotificationsSettingsView: View {
         List {
             Section {
                 Toggle(isOn: $notifyNewContent) {
-                    TVRowLabelText(title: "New Content Added")
+                    TVRowLabelText(title: "New Content Added", detail: "When a new movie or episode lands in your libraries.")
                 }
                 .tvListRow()
                 .syncLocked("notifyNewContent", authManager)
-                Toggle("Request Updates", isOn: $notifyRequestUpdates)
-                    .syncLocked("notifyRequestUpdates", authManager)
-                Toggle("Watchlist Available", isOn: $notifyWatchlistAvailable)
-                    .syncLocked("notifyWatchlistAvailable", authManager)
+                Toggle(isOn: $notifyRequestUpdates) {
+                    TVRowLabelText(title: "Request Updates", detail: "When a Seerr request is approved, declined or available.")
+                }
+                .syncLocked("notifyRequestUpdates", authManager)
+                Toggle(isOn: $notifyWatchlistAvailable) {
+                    TVRowLabelText(title: "Watchlist Available", detail: "When a title on your watchlist arrives in your library.")
+                }
+                .syncLocked("notifyWatchlistAvailable", authManager)
                 // No downloads on macOS — nothing would ever trigger this notification there.
                 #if !os(tvOS)
-                Toggle("Download Complete", isOn: $notifyDownload)
-                    .syncLocked("notifyDownload", authManager)
+                Toggle(isOn: $notifyDownload) {
+                    TVRowLabelText(title: "Download Complete", detail: "When a download finishes.")
+                }
+                .syncLocked("notifyDownload", authManager)
                 #endif
             }
 
             #if !os(tvOS)
             Section {
-                Toggle("Quiet Hours", isOn: $quietHoursEnabled)
-                    .syncLocked(QuietHours.enabledKey, authManager)
+                Toggle(isOn: $quietHoursEnabled) {
+                    TVRowLabelText(title: "Quiet Hours", detail: "Notifications in these hours go to Notification Center without a sound or banner.")
+                }
+                .syncLocked(QuietHours.enabledKey, authManager)
                 if quietHoursEnabled {
                     DatePicker("From", selection: time($quietStart), displayedComponents: .hourAndMinute)
                     DatePicker("To", selection: time($quietEnd), displayedComponents: .hourAndMinute)
                 }
-            } footer: {
-                Text("Notifications that arrive during quiet hours go straight to Notification Center, without a sound or banner.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
             #endif
         }

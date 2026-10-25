@@ -20,81 +20,65 @@ struct PlayerFeaturesSettingsView: View {
         List {
             Section {
                 Toggle(isOn: $chapterListEnabled) {
-                    TVRowLabelText(title: "Chapter List")
+                    TVRowLabelText(title: "Chapter List", detail: "A button in the player to jump between chapters, when the title has them.")
                 }
                 .tvListRow()
                 .syncLocked("chapterListEnabled", authManager)
-            } footer: {
-                Text("Shows a jump-to-chapter list button in the player when the item has chapter markers.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $syncPlayEnabled) {
-                    TVRowLabelText(title: "SyncPlay")
+                    TVRowLabelText(title: "SyncPlay", detail: "Create or join a group that keeps playback in sync with others.")
                 }
                 .tvListRow()
                 .syncLocked("syncPlayEnabled", authManager)
-            } footer: {
-                Text("Lets you create or join a SyncPlay group to keep playback in sync with others watching the same title.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $castEnabled) {
-                    TVRowLabelText(title: "Chromecast")
+                    TVRowLabelText(title: "Chromecast", detail: "Shows the Cast button when a Chromecast is on your network.")
                 }
                 .tvListRow()
                 .syncLocked("castEnabled", authManager)
-            } footer: {
-                Text("Shows the Cast button when a Chromecast device is available on your network.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $stillWatchingPromptEnabled) {
-                    TVRowLabelText(title: "\"Are You Still Watching?\" Prompt")
+                    TVRowLabelText(title: "\"Are You Still Watching?\" Prompt", detail: "Pauses and asks after 3 episodes play in a row with no input.")
                 }
                 .tvListRow()
                 .syncLocked("stillWatchingPromptEnabled", authManager)
-            } footer: {
-                Text("Pauses and asks for confirmation after 3 episodes have auto-played in a row with no interaction.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             Section {
                 Toggle(isOn: $matchContentFrameRate) {
-                    TVRowLabelText(title: "Match Content Frame Rate")
+                    TVRowLabelText(title: "Match Content Frame Rate", detail: "Switches the display to the video's frame rate so motion doesn't judder. AVFoundation only; some TVs flash black when it switches.")
                 }
                 .tvListRow()
                 .syncLocked("matchContentFrameRate", authManager)
-            } footer: {
-                Text("Switches the display's refresh rate to match the video's frame rate (e.g. 24fps film) so panning motion doesn't judder. Only applies to AVFoundation playback — off by default since some TVs/displays show a brief black flash when the refresh rate switches.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
 
             #if os(iOS)
             Section {
-                Toggle("Picture in Picture When Leaving", isOn: $autoPictureInPicture)
-                    .syncLocked("autoPictureInPicture", authManager)
-                Toggle("Swipe for Brightness and Volume", isOn: $swipeGesturesEnabled)
-                    .syncLocked("swipeGesturesEnabled", authManager)
-                Toggle("Double-Tap to Skip", isOn: $doubleTapToSkip)
-                    .syncLocked("doubleTapToSkip", authManager)
-            } footer: {
-                Text("Picture in Picture keeps the video playing in a small window when you go to the Home Screen, with every player engine except when Aether has to decode in software (Picture in Picture isn't offered then at all). Swipe up or down on the left for brightness and on the right for volume; double-tap a side to skip.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
+                Toggle(isOn: $autoPictureInPicture) {
+                    TVRowLabelText(title: "Picture in Picture When Leaving", detail: "Keeps the video playing in a small window when you go Home. Not offered when Aether decodes in software.")
+                }
+                .syncLocked("autoPictureInPicture", authManager)
+                Toggle(isOn: $swipeGesturesEnabled) {
+                    TVRowLabelText(title: "Swipe Gestures", detail: "Up or down on the left for brightness, the right for volume; sideways to move through the video.")
+                }
+                .syncLocked("swipeGesturesEnabled", authManager)
+                Toggle(isOn: $doubleTapToSkip) {
+                    TVRowLabelText(title: "Double-Tap to Skip", detail: "Double-tap a side of the video to skip back or forward.")
+                }
+                .syncLocked("doubleTapToSkip", authManager)
             }
             #elseif os(macOS)
             Section {
-                Toggle("Double-Click to Skip", isOn: $doubleTapToSkip)
-                    .syncLocked("doubleTapToSkip", authManager)
+                Toggle(isOn: $doubleTapToSkip) {
+                    TVRowLabelText(title: "Double-Click to Skip", detail: "Double-click a side of the video to skip back or forward.")
+                }
+                .syncLocked("doubleTapToSkip", authManager)
             }
             #endif
         }

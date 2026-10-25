@@ -26,6 +26,17 @@ struct LibraryView: View {
     @State private var navigateToLocalPlayer = false
     @State private var navigateToDownloadsDeepLink = false
     @State private var searchQuery = ""
+    @State private var openedLibrary: JellyfinLibrary?
+#if os(macOS)
+    @FocusState private var isSearchFocused: Bool
+
+    /// Find… (⌘F) can come before Browse has ever been open, so it's left as a flag.
+    private func focusSearchIfPending() {
+        guard UserDefaults.standard.bool(forKey: "arcfin.pendingFindFocus") else { return }
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingFindFocus")
+        isSearchFocused = true
+    }
+#endif
 
     private var gridColumns: [GridItem] {
 #if os(macOS)
@@ -33,12 +44,21 @@ struct LibraryView: View {
         // adaptive reflows into more columns as it grows instead.
         [GridItem(.adaptive(minimum: 220), spacing: 12)]
 #else
-        [
+        if isWide {
+            return [GridItem(.adaptive(minimum: 240), spacing: 12)]
+        }
+        return [
             GridItem(.flexible(), spacing: 12),
             GridItem(.flexible(), spacing: 12),
         ]
 #endif
     }
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isWide: Bool { horizontalSizeClass == .regular }
+#else
+    private let isWide = false
+#endif
 
     var body: some View {
         NavigationStack {
@@ -52,11 +72,18 @@ struct LibraryView: View {
             .screenBackground()
             .navigationTitle("Browse")
             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
+#if os(macOS)
+            .searchFocused($isSearchFocused)
+#endif
 #if !os(macOS) && !os(tvOS)
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
+                LibraryDetailView(library: library)
+            }
+            // On the Mac a tile's NavigationLink(value:) can't find the destination above.
+            .navigationDestination(item: $openedLibrary) { library in
                 LibraryDetailView(library: library)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
@@ -113,8 +140,14 @@ struct LibraryView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { note in
                 if let term = note.userInfo?["term"] as? String { searchQuery = term }
+                #if os(macOS)
+                focusSearchIfPending()
+                #endif
             }
             .onAppear {
+                #if os(macOS)
+                focusSearchIfPending()
+                #endif
                 if let term = UserDefaults.standard.string(forKey: "arcfin.pendingSearch") {
                     UserDefaults.standard.removeObject(forKey: "arcfin.pendingSearch")
                     searchQuery = term
@@ -196,11 +229,12 @@ struct LibraryView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .focusSection()
             }
+            .shelfScrollButtons()
             .padding(.horizontal, -DT.Spacing.pagePad)
 #else
             LazyVGrid(columns: gridColumns, spacing: 12) {
                 ForEach(supportedLibraries) { library in
-                    NavigationLink(value: library) {
+                    Button { openedLibrary = library } label: {
                         LibraryCard(library: library, imageURL: mediaRepo.libraryBackdropURL(for: library))
                     }
                     .buttonStyle(.plain)
@@ -515,6 +549,7 @@ private struct LibraryItemCard: View {
                             Text(year)
                                 .font(.system(.caption2))
                                 .foregroundStyle(.white.opacity(0.6))
+                                .lineLimit(2)
                         }
                     }
                     .padding(8)
@@ -606,6 +641,7 @@ struct LocalPlayerView: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         #endif
+        .keepsScreenAwake(status: player.status)
         .task {
             _ = url.startAccessingSecurityScopedResource()
             try? await player.load(url: url, startPositionTicks: 0)
@@ -614,10 +650,13 @@ struct LocalPlayerView: View {
         .onDisappear {
             Task { await player.stop() }
             url.stopAccessingSecurityScopedResource()
+            #if canImport(UIKit) && !os(tvOS)
+            resetPlayerOrientation()
+            #endif
         }
         .onChange(of: player.status) { _, status in
             if status == .playing { scheduleAutoHide() }
-            if status == .ended { dismiss() }
+            if status == .ended { closeRotatedPlayer { dismiss() } }
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, newValue in
@@ -655,7 +694,7 @@ struct LocalPlayerView: View {
 
     private var topBar: some View {
         HStack(spacing: 16) {
-            Button { dismiss() } label: {
+            Button { closeRotatedPlayer { dismiss() } } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
@@ -1016,7 +1055,6 @@ struct LibraryDetailView: View {
     @State private var playlistName: String?
     /// Playlist entry ids by item id, which removing a row needs.
     @State private var entryIds: [String: String] = [:]
-    @State private var playlistActionItem: MediaItem?
     @State private var playlistPlayback: MediaDetailView.PlaybackRequest?
     @State private var showAddTitles = false
     @State private var showRename = false
@@ -1184,30 +1222,16 @@ struct LibraryDetailView: View {
                     tvActionRow
                     #endif
                     LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
-                        ForEach(items) { item in
-                            gridLink(for: item) {
-#if os(tvOS)
-                                PosterCard(
-                                    title: item.name,
-                                    subtitle: item.productionYear.map { String($0) },
-                                    imageURL: mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400),
-                                    width: 200,
-                                    height: 356
-                                )
-#else
-                                libraryItemCard(item)
-#endif
+                        ForEach(gridEntries) { entry in
+                            Group {
+                                if entry.items.count > 1 {
+                                    showGroupCell(entry.items)
+                                } else {
+                                    itemCell(entry.items[0])
+                                }
                             }
-#if os(tvOS)
-                            .buttonStyle(TVCardButtonStyle())
-                            .focusEffectDisabled()
-                            .contextMenu(menuItems: { libraryMenu(item) }, preview: { libraryItemPreview(item) })
-#else
-                            .buttonStyle(PressableButtonStyle())
-                            .contextMenu(menuItems: { libraryMenu(item) }, preview: { libraryItemPreview(item) })
-#endif
                             .onAppear {
-                                if shouldLoadMore(after: item) {
+                                if let last = entry.items.last, shouldLoadMore(after: last) {
                                     Task { await loadMore() }
                                 }
                             }
@@ -1390,7 +1414,6 @@ struct LibraryDetailView: View {
         }
         .modifier(PlaylistModifiers(
             isPlaylist: playlist != nil || isPlaylistsLibrary,
-            actionItem: $playlistActionItem,
             playback: $playlistPlayback,
             showAddTitles: $showAddTitles,
             showRename: $showRename,
@@ -1400,8 +1423,6 @@ struct LibraryDetailView: View {
             playlistId: playlist?.id ?? "",
             playlistName: playlistName ?? library.name,
             existingIds: Set(items.map(\.id)),
-            onPlay: { item, ticks in startPlaylistPlayback(from: item, startTicks: ticks) },
-            onShowDetails: { randomPick = $0 },
             onRename: renamePlaylist,
             onDelete: deletePlaylist,
             onChanged: { Task { await reload() } }
@@ -1461,10 +1482,142 @@ struct LibraryDetailView: View {
     @ViewBuilder
     private func gridLink<Content: View>(for item: MediaItem, @ViewBuilder label: () -> Content) -> some View {
         if playlist != nil {
-            Button { playlistActionItem = item } label: { label() }
+            // A menu opens the same way from every card; a confirmation dialog switched
+            // between a popover and a full sheet depending on the room around the card.
+            Menu { playlistActions(item) } label: { label() }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
         } else {
+            #if !os(macOS)
             NavigationLink(value: navTarget(for: item)) { label() }
+            #else
+            // On the Mac a NavigationLink(value:) can't find Browse's destination.
+            Button { randomPick = item } label: { label() }
+            #endif
         }
+    }
+
+    private func itemCell(_ item: MediaItem) -> some View {
+        gridLink(for: item) {
+#if os(tvOS)
+            PosterCard(
+                title: cardTitle(item),
+                subtitle: cardSubtitle(item),
+                imageURL: cardPosterURL(item),
+                width: 200,
+                height: 356
+            )
+#else
+            libraryItemCard(item)
+#endif
+        }
+#if os(tvOS)
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+#else
+        .buttonStyle(PressableButtonStyle())
+#endif
+        .contextMenu(menuItems: { libraryMenu(item) }, preview: { libraryItemPreview(item) })
+    }
+
+    /// One grid cell: a title, or in a playlist a run of episodes from one show.
+    private struct GridEntry: Identifiable {
+        let items: [MediaItem]
+        var id: String { items[0].id }
+    }
+
+    /// A playlist holds a show as all of its episodes. In playlist order, three or more in a
+    /// row from one show become a single card, so a whole series doesn't fill the page;
+    /// one or two stay as they are, since those were most likely added one by one.
+    private var gridEntries: [GridEntry] {
+        guard playlist != nil, sortOption == .playlistOrder else { return items.map { GridEntry(items: [$0]) } }
+        var entries: [GridEntry] = []
+        var run: [MediaItem] = []
+        func flush() {
+            if run.count >= 3 {
+                entries.append(GridEntry(items: run))
+            } else {
+                entries += run.map { GridEntry(items: [$0]) }
+            }
+            run = []
+        }
+        for item in items {
+            if item.type == .episode, let seriesId = item.seriesId, run.first?.seriesId == seriesId {
+                run.append(item)
+            } else {
+                flush()
+                if item.type == .episode, item.seriesId != nil {
+                    run = [item]
+                } else {
+                    entries.append(GridEntry(items: [item]))
+                }
+            }
+        }
+        flush()
+        return entries
+    }
+
+    private func showGroupCell(_ episodes: [MediaItem]) -> some View {
+        let first = episodes[0]
+        let seasons = Set(episodes.compactMap(\.parentIndexNumber)).sorted()
+        let seasonText = seasons.count > 1 ? "S\(seasons[0])–S\(seasons[seasons.count - 1])"
+            : seasons.first.map { "Season \($0)" }
+        let subtitle = (["\(episodes.count) episodes"] + [seasonText].compactMap { $0 }).joined(separator: " · ")
+        return Menu {
+            showGroupActions(episodes)
+        } label: {
+#if os(tvOS)
+            PosterCard(title: first.seriesName ?? first.name, subtitle: subtitle,
+                       imageURL: cardPosterURL(first), width: 200, height: 356)
+#else
+            LibraryItemCard(imageURL: cardPosterURL(first), title: first.seriesName ?? first.name, year: subtitle)
+#endif
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+#if os(tvOS)
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+#else
+        .buttonStyle(PressableButtonStyle())
+#endif
+        .contextMenu {
+            Button(role: .destructive) { removeFromPlaylist(episodes) } label: {
+                Label("Remove \(episodes.count) Episodes from Playlist", systemImage: "minus.circle")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func showGroupActions(_ episodes: [MediaItem]) -> some View {
+        let next = episodes.first { $0.userData?.played != true } ?? episodes[0]
+        let resume = next.userData?.played == true ? 0 : (next.userData?.playbackPositionTicks ?? 0)
+        let code = [next.parentIndexNumber.map { "S\($0)" }, next.indexNumber.map { "E\($0)" }]
+            .compactMap { $0 }.joined(separator: " ")
+        Button(resume > 0 ? "Resume \(code)" : "Play \(code)") { startPlaylistPlayback(from: next, startTicks: resume) }
+        if next != episodes[0] {
+            Button("Play from the First Episode") { startPlaylistPlayback(from: episodes[0], startTicks: 0) }
+        }
+        if let seriesId = episodes[0].seriesId {
+            Button("Show Details") {
+                randomPick = MediaItem(id: seriesId, name: episodes[0].seriesName ?? episodes[0].name, type: .series,
+                                       primaryImageTag: episodes[0].seriesPrimaryImageTag)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func playlistActions(_ item: MediaItem) -> some View {
+        let resume = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+        if item.type == .movie || item.type == .episode {
+            if resume > 0 {
+                Button("Resume") { startPlaylistPlayback(from: item, startTicks: resume) }
+                Button("Play from Beginning") { startPlaylistPlayback(from: item, startTicks: 0) }
+            } else {
+                Button("Play") { startPlaylistPlayback(from: item, startTicks: 0) }
+            }
+        }
+        Button("Show Details") { randomPick = item }
     }
 
     /// A playlist's page opens like a collection's: the first title's artwork as the hero,
@@ -1474,7 +1627,7 @@ struct LibraryDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 DetailHeroBackdrop(url: playlistHeroURL, height: 300)
                 HStack(alignment: .bottom, spacing: 14) {
-                    FannedPosters(urls: items.prefix(3).map { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 240) })
+                    FannedPosters(urls: items.prefix(3).map { cardPosterURL($0) })
                     VStack(alignment: .leading, spacing: 6) {
                         Text("PLAYLIST")
                             .font(.system(.caption2, weight: .bold))
@@ -1586,12 +1739,18 @@ struct LibraryDetailView: View {
     }
 
     private func removeFromPlaylist(_ item: MediaItem) {
-        guard let playlist, let entryId = entryIds[item.id], let cred = authManager.state.credential else { return }
+        removeFromPlaylist([item])
+    }
+
+    private func removeFromPlaylist(_ removed: [MediaItem]) {
+        let entries = removed.compactMap { entryIds[$0.id] }
+        guard let playlist, !entries.isEmpty, let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
-        items.removeAll { $0.id == item.id }
+        let removedIds = Set(removed.map(\.id))
+        items.removeAll { removedIds.contains($0.id) }
         Task {
             do {
-                try await client.removeFromPlaylist(credential: cred, authHeader: header, playlistId: playlist.id, entryIds: [entryId])
+                try await client.removeFromPlaylist(credential: cred, authHeader: header, playlistId: playlist.id, entryIds: entries)
                 ContainingSets.shared.invalidate()
                 await PlaylistStore.shared.load(credential: cred, authHeader: header)
             } catch {
@@ -1650,10 +1809,29 @@ struct LibraryDetailView: View {
 
     private func libraryItemCard(_ item: MediaItem) -> some View {
         LibraryItemCard(
-            imageURL: mediaRepo.imageURL(for: item),
-            title: item.name,
-            year: item.productionYear.map { String($0) }
+            imageURL: cardPosterURL(item),
+            title: cardTitle(item),
+            year: cardSubtitle(item)
         )
+    }
+
+    /// An episode (a playlist holds a show as its episodes) is shown as its show, with the
+    /// season, episode and its own name underneath.
+    private func cardTitle(_ item: MediaItem) -> String {
+        item.type == .episode ? (item.seriesName ?? item.name) : item.name
+    }
+
+    private func cardSubtitle(_ item: MediaItem) -> String? {
+        guard item.type == .episode else { return item.productionYear.map { String($0) } }
+        let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }].compactMap { $0 }
+        return (code + (item.seriesName == nil ? [] : [item.name])).joined(separator: " · ").nilIfEmpty
+    }
+
+    private func cardPosterURL(_ item: MediaItem) -> URL? {
+        guard item.type == .episode, let seriesId = item.seriesId, let tag = item.seriesPrimaryImageTag,
+              let base = mediaRepo.baseURL, let token = mediaRepo.accessToken
+        else { return mediaRepo.imageURL(for: item) }
+        return JellyfinMediaClient.imageURL(baseURL: base, itemID: seriesId, tag: tag, type: .primary, fillWidth: 300, token: token)
     }
 
     private func libraryItemPreview(_ item: MediaItem) -> some View {
@@ -1883,7 +2061,6 @@ private struct PlaylistPageStyle: ViewModifier {
 /// A playlist's choices and sheets, kept out of LibraryDetailView's already long chain.
 private struct PlaylistModifiers: ViewModifier {
     let isPlaylist: Bool
-    @Binding var actionItem: MediaItem?
     @Binding var playback: MediaDetailView.PlaybackRequest?
     @Binding var showAddTitles: Bool
     @Binding var showRename: Bool
@@ -1893,8 +2070,6 @@ private struct PlaylistModifiers: ViewModifier {
     let playlistId: String
     let playlistName: String
     let existingIds: Set<String>
-    let onPlay: (MediaItem, Int64) -> Void
-    let onShowDetails: (MediaItem) -> Void
     let onRename: (String) -> Void
     let onDelete: () -> Void
     let onChanged: () -> Void
@@ -1902,20 +2077,6 @@ private struct PlaylistModifiers: ViewModifier {
     func body(content: Content) -> some View {
         if isPlaylist {
             content
-                .confirmationDialog(actionItem?.name ?? "", isPresented: Binding(
-                    get: { actionItem != nil }, set: { if !$0 { actionItem = nil } }
-                ), titleVisibility: .visible, presenting: actionItem) { item in
-                    let resume = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
-                    if item.type == .movie || item.type == .episode {
-                        if resume > 0 {
-                            Button("Resume") { onPlay(item, resume) }
-                            Button("Play from Beginning") { onPlay(item, 0) }
-                        } else {
-                            Button("Play") { onPlay(item, 0) }
-                        }
-                    }
-                    Button("Show Details") { onShowDetails(item) }
-                }
                 .sheet(isPresented: $showAddTitles) {
                     AddTitlesToPlaylistSheet(playlistId: playlistId, existingIds: existingIds, onAdded: onChanged)
                 }

@@ -101,6 +101,21 @@ public struct JellyfinSession: Sendable, Identifiable, Equatable {
     public let positionTicks: Int64?
     public let runTimeTicks: Int64?
     public let lastActivityDate: Date?
+    /// "DirectPlay", "DirectStream" or "Transcode", as the server reports it.
+    public var playMethod: String? = nil
+    public var transcode: Transcode? = nil
+    public var supportsRemoteControl: Bool = false
+
+    public struct Transcode: Sendable, Equatable {
+        public let bitrate: Int?
+        public let videoCodec: String?
+        public let audioCodec: String?
+        public let isVideoDirect: Bool
+        public let isAudioDirect: Bool
+        /// The server's reasons, e.g. "VideoCodecNotSupported", "ContainerBitrateExceedsLimit".
+        public let reasons: [String]
+        public let hardwareAcceleration: String?
+    }
 }
 
 /// Caps applied when the user overrides automatic quality — nil means uncapped/Auto.
@@ -133,7 +148,8 @@ extension JellyfinMediaClient {
         quality: StreamQualityCap = .auto,
         audioStreamIndex: Int? = nil,
         subtitleStreamIndex: Int? = nil,
-        forCast: Bool = false
+        forCast: Bool = false,
+        nativeDecoder: Bool = false
     ) async throws -> JellyfinPlaybackInfo {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Items/\(itemId)/PlaybackInfo"),
@@ -149,7 +165,8 @@ extension JellyfinMediaClient {
         var body: [String: Any] = [
             "UserId": credential.userID,
             "AutoOpenLiveStream": true,
-            "DeviceProfile": Self.deviceProfile(forCast: forCast),
+            "DeviceProfile": forCast || !nativeDecoder
+                ? Self.deviceProfile(forCast: forCast) : Self.nativeDecoderProfile,
         ]
         if let maxBitrate = quality.maxBitrate { body["MaxStreamingBitrate"] = maxBitrate }
         // MaxWidth forces a resolution-based transcode even when the source's bitrate
@@ -237,14 +254,16 @@ extension JellyfinMediaClient {
 
     // MARK: - Network bandwidth probe
 
-    /// Downloads a throwaway buffer of `sizeBytes` from Jellyfin's own bandwidth-test
-    /// endpoint and times it — used to pick a sane starting quality cap for Auto instead
-    /// of always starting uncapped and eating a stall-storm on a slow connection.
-    /// Returns measured throughput in bits per second, or nil if the probe failed/timed out.
+    /// Streams up to `sizeBytes` from Jellyfin's bandwidth-test endpoint for at most
+    /// `duration` and returns the throughput in bits per second, or nil if the probe failed.
+    /// A 1 MB sample finished before the connection got up to speed and under-read fast
+    /// links, so this reads a bigger sample but stops on time on a slow one. The first
+    /// chunk is left out so the server's response latency doesn't count as slowness.
     public func testBitrate(
         credential: ServerCredential,
         authHeader: String,
-        sizeBytes: Int = 1_000_000
+        sizeBytes: Int = 10_000_000,
+        duration: Duration = .seconds(4)
     ) async -> Int? {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Playback/BitrateTest"),
@@ -254,14 +273,15 @@ extension JellyfinMediaClient {
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
 
-        let start = Date()
-        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
-              let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode),
-              !data.isEmpty
-        else { return nil }
-        let elapsed = Date().timeIntervalSince(start)
-        guard elapsed > 0.05 else { return nil }
-        return Int(Double(data.count) * 8 / elapsed)
+        let probe = ThroughputProbe()
+        let session = URLSession(configuration: URLSession.arcfin.configuration, delegate: probe, delegateQueue: nil)
+        defer { session.invalidateAndCancel() }
+        session.dataTask(with: req).resume()
+        let deadline = ContinuousClock.now + duration
+        while !probe.isFinished, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return probe.bitsPerSecond
     }
 
     /// The tile-sheet URL for one trickplay tile — cache these client-side, each holds
@@ -328,7 +348,9 @@ extension JellyfinMediaClient {
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("MediaSegments/\(itemId)"),
             resolvingAgainstBaseURL: false)!
-        comps.queryItems = [.init(name: "includeSegmentTypes", value: "Intro,Outro,Recap,Preview")]
+        // The server binds this as a repeated parameter; a comma-joined value parses as one
+        // bitwise-ORed enum value that matches no segment, so nothing came back.
+        comps.queryItems = ["Intro", "Outro", "Recap", "Preview"].map { .init(name: "includeSegmentTypes", value: $0) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 6
@@ -380,13 +402,67 @@ extension JellyfinMediaClient {
         return try JSONDecoder().decode([SessionResponse].self, from: data).map { $0.toSession() }
     }
 
+    public enum SessionCommand: String, Sendable {
+        case stop = "Stop", pause = "Pause", unpause = "Unpause"
+    }
+
+    /// POST /Sessions/{id}/Playing/{command} — controls another client's playback (admin).
+    public func sendPlaystateCommand(_ command: SessionCommand, sessionId: String, credential: ServerCredential, authHeader: String) async throws {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions/\(sessionId)/Playing/\(command.rawValue)"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        let (_, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    /// POST /Sessions/{id}/Message — shows a message on another client's screen.
+    public func sendSessionMessage(_ text: String, sessionId: String, credential: ServerCredential, authHeader: String) async throws {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions/\(sessionId)/Message"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 10
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["Header": "Message from the server admin", "Text": text, "TimeoutMs": 15_000])
+        let (_, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     // MARK: - Device profile
+
+    /// For engines that demux and decode on the device (Aether's FFmpeg + VideoToolbox, VLC):
+    /// any container and codec plays as is, so the server only steps in when the bitrate
+    /// cap forces a transcode, and image subtitles stay in the file for the engine to draw.
+    static var nativeDecoderProfile: [String: Any] { [
+        "MaxStreamingBitrate": 120_000_000,
+        "DirectPlayProfiles": [
+            ["Container": "mkv,webm,mp4,m4v,mov,avi,ts,m2ts,mpegts,mts,wmv,asf,flv,ogg,ogv,3gp,mpg,mpeg,vob",
+             "Type": "Video"],
+        ],
+        "TranscodingProfiles": [
+            [
+                "Container": "mp4", "Type": "Video", "AudioCodec": "aac,ac3,eac3",
+                "VideoCodec": "hevc,h264", "Context": "Streaming", "Protocol": "hls",
+                "MaxAudioChannels": "8", "MinSegments": "2", "BreakOnNonKeyFrames": true,
+            ],
+        ],
+        "SubtitleProfiles": [
+            ["Format": "vtt", "Method": "External"],
+            ["Format": "pgssub", "Method": "Embed"],
+            ["Format": "dvdsub", "Method": "Embed"],
+            ["Format": "dvbsub", "Method": "Embed"],
+        ],
+    ] }
 
     /// Two escape hatches for device-specific codec issues, surfaced as user-facing toggles
     /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
     /// hardcoded — a struct, not a View, so read straight from UserDefaults like the rest
     /// of the playback code's own settings reads (skipIntro/autoPlayNext etc.) already do.
-    private static func deviceProfile(forCast: Bool) -> [String: Any] {
+    static func deviceProfile(forCast: Bool) -> [String: Any] {
         let allowHEVC = (UserDefaults.standard.object(forKey: "codecAllowHEVCDirectPlay") as? Bool) ?? true
         let allowSurroundAudio = UserDefaults.standard.bool(forKey: "codecAllowSurroundAudioDirectPlay")
         let videoCodecs = allowHEVC ? "h264,hevc" : "h264"
@@ -413,16 +489,17 @@ extension JellyfinMediaClient {
             ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": mp4AudioCodecs],
             ["Container": "mov", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": movAudioCodecs],
         ],
-        // h264-only for the transcode OUTPUT. The real cause of the "audio plays, video is
-        // black" bug turned out to be AVFoundation's documented requirement that HEVC be
-        // FourCC-tagged hvc1, not hev1 — not HEVC decode itself being broken. The CodecProfile
-        // below asks Jellyfin to tag transcoded HEVC correctly, but since that couldn't be
-        // verified against a live server, h264 stays as the confirmed-working transcode
-        // target for now; hevc output can be re-enabled once the tag fix is confirmed too.
+        // HLS can only carry HEVC in fMP4 segments, and with h264 as the only output an HEVC
+        // source in mkv was re-encoded in full instead of just repackaged. The Chromecast
+        // receiver keeps the h264-in-ts output it's known to play.
         "TranscodingProfiles": [
-            [
+            forCast ? [
                 "Container": "ts", "Type": "Video", "AudioCodec": "aac",
                 "VideoCodec": "h264", "Context": "Streaming", "Protocol": "hls",
+                "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
+            ] : [
+                "Container": "mp4", "Type": "Video", "AudioCodec": "aac",
+                "VideoCodec": videoCodecs, "Context": "Streaming", "Protocol": "hls",
                 "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
             ],
         ],
@@ -458,7 +535,7 @@ extension JellyfinMediaClient {
 
 // MARK: - Private response decoders
 
-private struct SessionResponse: Decodable {
+struct SessionResponse: Decodable {
     struct NowPlayingItem: Decodable {
         let name: String?
         let runTimeTicks: Int64?
@@ -470,9 +547,25 @@ private struct SessionResponse: Decodable {
     struct PlayState: Decodable {
         let isPaused: Bool?
         let positionTicks: Int64?
+        let playMethod: String?
         enum CodingKeys: String, CodingKey {
             case isPaused = "IsPaused"
             case positionTicks = "PositionTicks"
+            case playMethod = "PlayMethod"
+        }
+    }
+    struct TranscodingInfo: Decodable {
+        let bitrate: Int?
+        let videoCodec: String?
+        let audioCodec: String?
+        let isVideoDirect: Bool?
+        let isAudioDirect: Bool?
+        let transcodeReasons: [String]?
+        let hardwareAccelerationType: String?
+        enum CodingKeys: String, CodingKey {
+            case bitrate = "Bitrate", videoCodec = "VideoCodec", audioCodec = "AudioCodec"
+            case isVideoDirect = "IsVideoDirect", isAudioDirect = "IsAudioDirect"
+            case transcodeReasons = "TranscodeReasons", hardwareAccelerationType = "HardwareAccelerationType"
         }
     }
     let id: String
@@ -485,8 +578,12 @@ private struct SessionResponse: Decodable {
     // ISO 8601) doesn't match JSONDecoder's default .deferredToDate strategy, and a single
     // unparseable field on one session shouldn't fail decoding the whole session list.
     let lastActivityDate: String?
+    let transcodingInfo: TranscodingInfo?
+    let supportsRemoteControl: Bool?
 
     enum CodingKeys: String, CodingKey {
+        case transcodingInfo = "TranscodingInfo"
+        case supportsRemoteControl = "SupportsRemoteControl"
         case id = "Id"
         case userName = "UserName"
         case deviceName = "DeviceName"
@@ -513,7 +610,15 @@ private struct SessionResponse: Decodable {
             isPaused: playState?.isPaused ?? false,
             positionTicks: playState?.positionTicks,
             runTimeTicks: nowPlayingItem?.runTimeTicks,
-            lastActivityDate: parsedDate
+            lastActivityDate: parsedDate,
+            playMethod: playState?.playMethod,
+            transcode: transcodingInfo.map {
+                JellyfinSession.Transcode(
+                    bitrate: $0.bitrate, videoCodec: $0.videoCodec, audioCodec: $0.audioCodec,
+                    isVideoDirect: $0.isVideoDirect ?? false, isAudioDirect: $0.isAudioDirect ?? false,
+                    reasons: $0.transcodeReasons ?? [], hardwareAcceleration: $0.hardwareAccelerationType)
+            },
+            supportsRemoteControl: supportsRemoteControl ?? false
         )
     }
 }
@@ -643,4 +748,48 @@ private struct LegacySegment: Decodable {
     let end: Double?
     let valid: Bool?
     enum CodingKeys: String, CodingKey { case start = "IntroStart", end = "IntroEnd", valid = "Valid" }
+}
+
+private final class ThroughputProbe: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private let lock = NSLock()
+    private var failed = false
+    private var finished = false
+    private var firstChunkAt: Date?
+    private var lastChunkAt: Date?
+    private var bytesAfterFirstChunk = 0
+
+    var isFinished: Bool { lock.withLock { finished } }
+
+    var bitsPerSecond: Int? {
+        lock.withLock {
+            guard !failed, let firstChunkAt, let lastChunkAt, bytesAfterFirstChunk > 0 else { return nil }
+            let elapsed = lastChunkAt.timeIntervalSince(firstChunkAt)
+            guard elapsed > 0.05 else { return nil }
+            return Int(Double(bytesAfterFirstChunk) * 8 / elapsed)
+        }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse) async -> URLSession.ResponseDisposition {
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            lock.withLock { failed = true; finished = true }
+            return .cancel
+        }
+        return .allow
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        let now = Date()
+        lock.withLock {
+            if firstChunkAt == nil {
+                firstChunkAt = now
+            } else {
+                bytesAfterFirstChunk += data.count
+            }
+            lastChunkAt = now
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        lock.withLock { finished = true }
+    }
 }

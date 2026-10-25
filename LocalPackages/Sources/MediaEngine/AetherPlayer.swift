@@ -178,6 +178,14 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         // paused too. Held on disk, not in memory, and the engine stops at a quarter of the free
         // space, so a large title on a full device buffers less rather than crowding it out.
         options.forwardBufferSegments = 150
+        // The engine's open-time probe reads up to 50 MB / 60 s, which a remux with sparse PGS
+        // tracks always exhausts — over a remote link that held the first frame for over a
+        // minute. Video and audio resolve within the first few MB; subtitle tracks come from
+        // the engine's own side demuxer, which keeps the full budget.
+        if url.scheme == "http" || url.scheme == "https" {
+            options.probesize = 8 * 1024 * 1024
+            options.maxAnalyzeDuration = 5_000_000
+        }
         try await engine.load(url: url, startPosition: startPosition, options: options)
     }
 

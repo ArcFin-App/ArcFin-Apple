@@ -151,11 +151,6 @@ struct MainTabView: View {
                 selectedTab = .home
             }
             #if os(macOS)
-            // Cmd+, / Arcfin > Settings… — switches to Home so its own
-            // arcfinShowSettings listener (below) can actually present it.
-            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
-                selectedTab = .home
-            }
             .onReceive(NotificationCenter.default.publisher(for: .arcfinSelectTab)) { note in
                 guard let raw = note.userInfo?["tab"] as? String, let tab = BottomNavItem(rawValue: raw),
                       visibleTabs.contains(tab) else { return }
@@ -212,6 +207,9 @@ struct HomeView: View {
 
     @State private var heroIndex: Int = 0
     @State private var showSettings = false
+    #if os(macOS)
+    @Environment(\.openSettings) private var openSettings
+    #endif
     /// Titles the user requested through Seerr that have since arrived in the library.
     @State private var nowAvailable: [MediaItem] = []
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
@@ -488,7 +486,7 @@ struct HomeView: View {
                 subtitle: itemDisplaySubtitle(item),
                 progress: item.userData?.playedPercentage.map { $0 / 100 },
                 imageURL: landscapeShelfImageURL(for: item),
-                width: 200, height: 113
+                width: DT.Size.wideCard.width, height: DT.Size.wideCard.height
             )
 #endif
         }
@@ -601,9 +599,6 @@ struct HomeView: View {
                     SettingsView()
                 }
                 #if os(macOS)
-                .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSettings)) { _ in
-                    showSettings = true
-                }
                 .onReceive(NotificationCenter.default.publisher(for: .arcfinRefresh)) { _ in
                     Task { await loadHome(force: true) }
                 }
@@ -675,7 +670,7 @@ struct HomeView: View {
                     .help("Refresh")
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button { showSettings = true } label: {
+                    Button { openSettings() } label: {
                         avatarView
                             .frame(width: 22, height: 22)
                     }
@@ -1038,13 +1033,10 @@ struct HomeView: View {
     private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
         ShelfRow(title: title, onSeeAll: nil) {
             ForEach(items) { item in
-                Button {
-                    // Without Seerr there's nothing to request; the title's page is shown instead.
-                    if seerrRepo.isConfigured { seerrRequestItem = item } else { seerrDeepLinkItem = item }
-                } label: {
+                Button { openSeerrShelfItem(item) } label: {
                     PosterCard(
                         title: item.title,
-                        subtitle: item.year,
+                        subtitle: seerrShelfSubtitle(for: item),
                         imageURL: seerrShelfImageURL(for: item)
                     )
                 }
@@ -1057,6 +1049,33 @@ struct HomeView: View {
 #endif
             }
         }
+    }
+
+    private func seerrShelfSubtitle(for item: SeerrItem) -> String? {
+        [item.year, mediaRepo.hasInLibrary(item) ? "In Library" : nil]
+            .compactMap { $0 }.joined(separator: " · ").nilIfEmpty
+    }
+
+    /// The library's own copy when the server has the title, even where Seerr hasn't caught up
+    /// yet; otherwise the request sheet, or the title's page without Seerr to request from.
+    private func openSeerrShelfItem(_ item: SeerrItem) {
+        Task {
+            if let local = await libraryCopy(of: item) {
+                heroDetailItem = local
+            } else if seerrRepo.isConfigured {
+                seerrRequestItem = item
+            } else {
+                seerrDeepLinkItem = item
+            }
+        }
+    }
+
+    private func libraryCopy(of item: SeerrItem) async -> MediaItem? {
+        guard let credential = authManager.state.credential else { return nil }
+        let header = authManager.authClient.authHeader(token: credential.accessToken)
+        return try? await JellyfinMediaClient().findItem(
+            credential: credential, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
+            title: item.title, year: item.year.flatMap { Int($0.prefix(4)) })
     }
 
     private func seerrShelfImageURL(for item: SeerrItem) -> URL? {
@@ -1470,7 +1489,7 @@ struct HomeView: View {
         if let year = item.year {
             Label(year, systemImage: "calendar")
         }
-        if item.availabilityStatus != .available {
+        if !mediaRepo.hasInLibrary(item) {
             Button {
                 Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
             } label: {

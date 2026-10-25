@@ -87,6 +87,7 @@ struct SeerrItemDetailView: View {
                             .font(.system(.footnote))
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
+                            .frame(maxWidth: 720, alignment: .leading)
                     }
 
                     if let seasons = detail?.seasons, !seasons.isEmpty {
@@ -292,6 +293,7 @@ struct SeerrItemDetailView: View {
                     }
                 }
             }
+            .shelfScrollButtons()
         }
     }
 
@@ -328,6 +330,7 @@ struct SeerrItemDetailView: View {
                     }
                 }
             }
+            .shelfScrollButtons()
         }
     }
 
@@ -398,6 +401,7 @@ struct SeerrItemDetailView: View {
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
+            .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
     }

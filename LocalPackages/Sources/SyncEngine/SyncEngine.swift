@@ -225,6 +225,7 @@ public enum SettingsSyncRegistry {
         .init("spoilerProtection", .bool),
         .init("libraryHideWatched", .bool),
         .init("saveSearchHistory", .bool),
+        .init("modernSearch", .bool),
         // Notifications
         .init("notifyNewContent", .bool),
         .init("notifyRequestUpdates", .bool),

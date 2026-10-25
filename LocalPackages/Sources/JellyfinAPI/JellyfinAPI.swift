@@ -46,6 +46,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public var parentBackdropImageTags: [String]
     public var tmdbId: Int?
     public var premiereDate: Date?
+    /// Listed on the server with no file behind it: an episode that hasn't aired or is missing.
+    public var isVirtual: Bool
 
     public init(
         id: String,
@@ -66,7 +68,8 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         parentBackdropItemId: String? = nil,
         parentBackdropImageTags: [String] = [],
         tmdbId: Int? = nil,
-        premiereDate: Date? = nil
+        premiereDate: Date? = nil,
+        isVirtual: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -87,6 +90,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         self.parentBackdropImageTags = parentBackdropImageTags
         self.tmdbId = tmdbId
         self.premiereDate = premiereDate
+        self.isVirtual = isVirtual
     }
 }
 

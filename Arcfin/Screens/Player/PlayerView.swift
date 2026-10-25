@@ -28,6 +28,7 @@ struct PlayerView: View {
     @StateObject var groupState = GroupStateObserver()
     @Environment(PlaybackPresenter.self) var playbackPresenter
     @Environment(\.dismiss) var dismiss
+    @Environment(\.scenePhase) var scenePhase
     #if !os(tvOS)
     @Environment(\.isPlayerWindow) var isPlayerWindow
     @Environment(\.dismissWindow) var dismissWindow
@@ -49,7 +50,7 @@ struct PlayerView: View {
         #if os(macOS)
         playbackPresenter.dismiss()
         #else
-        dismiss()
+        closeRotatedPlayer { dismiss() }
         #endif
     }
 
@@ -116,6 +117,9 @@ struct PlayerView: View {
     @State var segments = SkipSegments()
     /// Segments already skipped automatically, so seeking back into one lets it play.
     @State var autoSkipped: Set<String> = []
+    /// A Skip … Automatically setting about to act: the button shows it filling, then skips.
+    @State var autoSkipCountdown: AutoActionCountdown?
+    @State var autoSkipTask: Task<Void, Never>?
     @State var progressReportTask: Task<Void, Never>?
     @State var seekFeedback: SeekFeedback?
     /// Optimistic target of the most recent seek request — player.positionTicks only
@@ -124,12 +128,18 @@ struct PlayerView: View {
     /// position, or they collapse into far less than the sum requested.
     @State var pendingSeekTargetTicks: Int64?
     @State var stallObserver: NSObjectProtocol?
-    /// Index into `Self.autoBitrateLadder`, nil = uncapped. Only meaningful while
-    /// `quality == .auto` — a manual pick never touches this.
-    @State var autoLadderIndex: Int?
+    /// Auto's current cap, nil = uncapped. Only meaningful while `quality == .auto` — a
+    /// manual pick never touches this.
+    @State var autoCap: StreamQualityCap?
+    @State var lastSeekAt: Date?
+    @State var autoRecoveryTask: Task<Void, Never>?
+    @State var wasBackgrounded = false
+    @State var foregroundCheckTask: Task<Void, Never>?
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
+    /// What setup() is waiting on, shown under the spinner when a start takes a while.
+    @State var loadingStage: String?
     @State var networkToast: String?
     @State var chapters: [MediaChapter] = []
     @State var castMembers: [MediaPerson] = []
@@ -152,6 +162,7 @@ struct PlayerView: View {
     @State var showUpNext = false
     @State var upNextDismissed = false
     @State var upNextCountdown: Task<Void, Never>?
+    @State var upNextCountdownState: AutoActionCountdown?
     @AppStorage("doubleTapToSkip") var doubleTapToSkip = true
     /// Where playback starts: the resume point, or the beginning under Start Over.
     @State var resumeFrom: Int64 = 0
@@ -215,7 +226,12 @@ struct PlayerView: View {
 
     let client = JellyfinMediaClient()
 
-    enum DragAxis { case brightness, volume }
+    enum DragAxis { case brightness, volume, seek }
+    struct AutoActionCountdown: Equatable {
+        let kind: String
+        let startedAt: Date
+        let seconds: Double
+    }
     struct SeekFeedback: Identifiable, Equatable {
         let id = UUID()
         let forward: Bool
@@ -289,9 +305,7 @@ struct PlayerView: View {
             // player.load() (fetching PlaybackInfo/item detail first) — without it the screen
             // was just black with no spinner for that whole prefetch window.
             if errorMessage == nil, player.status == .idle || player.status == .loading || player.isBuffering {
-                ProgressView()
-                    .tint(.white)
-                    .scaleEffect(1.4)
+                PlayerLoadingIndicator(status: loadingStatusText)
             }
 
             if let errorMessage {
@@ -385,6 +399,9 @@ struct PlayerView: View {
         // reveals controls via toggleControlsVisibilityOnAction(), same as every other seek
         // entry point.
         .onMoveCommand { direction in
+            // With the controls up, left and right only move between them; running off the
+            // end of a row shouldn't seek.
+            guard tvControlsHidden else { return }
             switch direction {
             case .left: seek(by: -skipBackwardSeconds)
             case .right: seek(by: skipForwardSeconds)
@@ -392,6 +409,7 @@ struct PlayerView: View {
             }
         }
         #endif
+        .keepsScreenAwake(status: player.status)
         .task { if !isAskingToResume { await setup() } }
         .confirmationDialog("Resume Playback?", isPresented: $isAskingToResume, titleVisibility: .visible) {
             Button("Resume from \(timeLabel(ticks: startPositionTicks))") {
@@ -420,7 +438,10 @@ struct PlayerView: View {
             #endif
         }
         .onChange(of: subtitleDelay) { _, _ in updateSubtitleText(forTicks: player.positionTicks) }
-        .onChange(of: player.positionTicks) { _, newValue in
+        .onChange(of: player.positionTicks) { oldValue, newValue in
+            // Every seek path (scrubber, skip buttons, chapters, SyncPlay, auto-skip) shows
+            // up as a jump here, so this is where Auto learns a seek just happened.
+            if abs(newValue - oldValue) > 30_000_000 { lastSeekAt = Date() }
             updateSubtitleText(forTicks: newValue)
             checkUpNextThreshold(positionTicks: newValue)
             checkMoreLikeThisThreshold(positionTicks: newValue)
@@ -435,6 +456,15 @@ struct PlayerView: View {
             }
             handleStatusChange(newStatus)
             updateNowPlayingInfo()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: wasBackgrounded = true
+            case .active where wasBackgrounded:
+                wasBackgrounded = false
+                checkPlaybackAfterForeground()
+            default: break
+            }
         }
         #if !os(tvOS)
         .onChange(of: isFillScreen) { _, _ in applyFillScreen() }
@@ -939,6 +969,14 @@ struct PlayerView: View {
 
     // MARK: - Setup / teardown
 
+    private var loadingStatusText: String {
+        if let loadingStage { return loadingStage }
+        if playbackInfo?.playMethod == .transcode { return "Waiting for the server…" }
+        return "Buffering…"
+    }
+
+    private var decodesNatively: Bool { player is AetherEnginePlayer || player is VLCEnginePlayer }
+
     /// The AVFoundation/VLC split Auto used before Aether existed — now only reached when
     /// Aether itself fails to construct or load a source (see setup()'s runtime fallback).
     private func legacyEnginePlayer(container: String?, videoStream: JellyfinMediaStream?) -> any MediaPlayerProtocol {
@@ -985,39 +1023,43 @@ struct PlayerView: View {
             errorMessage = "Not signed in."
             return
         }
+        guard !item.isVirtual else {
+            if let premiere = item.premiereDate, premiere > Date() {
+                errorMessage = "This episode airs \(premiere.formatted(.dateTime.day().month(.wide))). It'll play once it's on your server."
+            } else {
+                errorMessage = "This episode isn't on your server."
+            }
+            return
+        }
         if quality == .auto {
+            loadingStage = "Checking your connection…"
             await primeAutoLadder(credential: credential, authHeader: authHeader)
         }
+        loadingStage = "Contacting the server…"
         do {
-            var info = try await client.getPlaybackInfo(
-                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
-                quality: qualityCap(for: quality)
-            )
+            // The engine is picked before asking the server how to stream, because the answer
+            // depends on it: Aether and VLC take the file as is, AVFoundation needs it repackaged.
             // .choose always resolves Auto down to a concrete engine — three outcomes here.
             let engine = PlaybackEngineSelector.choose(
-                preference: playbackEnginePreference, container: info.container, videoStream: info.videoStream
+                preference: playbackEnginePreference, container: nil, videoStream: nil
             )
             switch engine {
-            case .aether:
+            case .aether, .auto:
                 if !(player is AetherEnginePlayer) {
                     // init() throws — a construction failure is just another "Aether can't
                     // serve this session" case, handled by the exact same fallback path a
                     // load() failure goes through below.
-                    player = (try? AetherEnginePlayer())
-                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                    player = (try? AetherEnginePlayer()) ?? VLCEnginePlayer()
                 }
             case .vlc:
                 if !(player is VLCEnginePlayer) { player = VLCEnginePlayer() }
             case .avFoundation:
                 if !(player is AVFoundationPlayer) { player = AVFoundationPlayer() }
-            case .auto:
-                // .choose() never actually returns .auto (it always resolves Auto down to a
-                // concrete engine above) — only reachable if that invariant breaks later.
-                if !(player is AetherEnginePlayer) {
-                    player = (try? AetherEnginePlayer())
-                        ?? legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
-                }
             }
+            var info = try await client.getPlaybackInfo(
+                credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
+                quality: qualityCap(for: quality), nativeDecoder: decodesNatively
+            )
             selectedAudioIndex = info.defaultAudioStreamIndex
             // The server only marks a subtitle default when one's flagged default/forced
             // there — most libraries don't have that set, so "Show Subtitles by Default"
@@ -1074,7 +1116,8 @@ struct PlayerView: View {
             if languagePreferenceApplied, let reInfo = try? await client.getPlaybackInfo(
                 credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality),
-                audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
+                audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                nativeDecoder: decodesNatively
             ) {
                 info = reInfo
             }
@@ -1091,6 +1134,7 @@ struct PlayerView: View {
             currentLikes = detail?.item.userData?.likes
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
+            loadingStage = info.playMethod == .transcode ? "The server is converting this video…" : "Opening the video…"
             // Auto's pre-flight pick can't catch everything — a runtime load failure on
             // Aether (the exact class of bug we spent real time on this session, where a
             // source's own structure breaks one engine but not another) falls back once to
@@ -1100,9 +1144,19 @@ struct PlayerView: View {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
                 player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+                if !decodesNatively {
+                    info = try await client.getPlaybackInfo(
+                        credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
+                        quality: qualityCap(for: quality),
+                        audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
+                    )
+                    playbackInfo = info
+                    await loadSubtitleCues(from: info, credential: credential)
+                }
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             await player.play()
+            loadingStage = nil
             await applyRememberedRate()
             sharePlay.playerOpened(item)
             // The preferred or remembered audio language, which a file played as is ignores.
@@ -1153,6 +1207,7 @@ struct PlayerView: View {
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
                                              positionTicks: resumeFrom)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
+            startAutoRecovery()
         } catch {
             errorMessage = "Couldn't start playback: \(error.localizedDescription)"
         }
@@ -1345,6 +1400,9 @@ struct PlayerView: View {
     private func teardown() async {
         sharePlay.playerClosed(item.id)
         progressReportTask?.cancel()
+        autoRecoveryTask?.cancel()
+        autoSkipTask?.cancel()
+        foregroundCheckTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
@@ -1427,30 +1485,12 @@ struct PlayerView: View {
 
     // MARK: - Quality
 
-    /// Fine-grained fallback steps for Auto — used both as the starting point (picked from
-    /// a bandwidth probe) and as the reactive stall-downgrade ladder. Deliberately finer
-    /// than the manual picker's four resolution tiers so a bad connection degrades gracefully
-    /// instead of jumping straight to 480p.
-    static let autoBitrateLadder: [StreamQualityCap] = [
-        StreamQualityCap(maxBitrate: 8_000_000, maxWidth: 1920),
-        StreamQualityCap(maxBitrate: 4_000_000, maxWidth: 1280),
-        StreamQualityCap(maxBitrate: 2_000_000, maxWidth: 960),
-        StreamQualityCap(maxBitrate: 1_000_000, maxWidth: 720),
-        StreamQualityCap(maxBitrate: 500_000, maxWidth: 480),
-        StreamQualityCap(maxBitrate: 250_000, maxWidth: 426),
-    ]
-
     private func qualityCap(for quality: VideoQuality) -> StreamQualityCap {
         // No forceTranscode — a picked quality is a cap, not a demand to re-encode.
         // If the source already qualifies for direct play under that cap, it should stay
         // direct play (forcing a transcode there was wasteful and confusing: Jellyfin's own
         // dashboard correctly said Direct Play while this app's badge said Transcoding).
-        if quality == .auto {
-            if let autoLadderIndex, autoLadderIndex < Self.autoBitrateLadder.count {
-                return Self.autoBitrateLadder[autoLadderIndex]
-            }
-            return .auto
-        }
+        if quality == .auto { return autoCap ?? .auto }
         switch quality {
         case .max, .auto: return .auto
         case .p4k:   return StreamQualityCap(maxBitrate: 100_000_000, maxWidth: 3840)
@@ -1460,24 +1500,10 @@ struct PlayerView: View {
         }
     }
 
-    /// Probes actual throughput via Jellyfin's own bandwidth-test endpoint and picks a
-    /// starting ladder step from it, instead of always starting uncapped and finding out
-    /// the connection is slow only after a stall-storm. A generous 25% safety margin below
-    /// the measured rate covers overhead and fluctuation; a failed/timed-out probe (e.g. a
-    /// genuinely poor connection) falls back to the lowest step rather than uncapped.
+    /// Probes throughput with Jellyfin's bandwidth test and starts Auto from it, instead of
+    /// starting uncapped and finding out the connection is slow only after a stall-storm.
     private func primeAutoLadder(credential: ServerCredential, authHeader: String) async {
-        guard let measuredBps = await client.testBitrate(credential: credential, authHeader: authHeader) else {
-            autoLadderIndex = Self.autoBitrateLadder.count - 1
-            return
-        }
-        let safe = Double(measuredBps) * 0.75
-        // Comfortably above the ladder's top step — plenty of bandwidth, let the source's
-        // real bitrate through uncapped instead of pinning it to the ladder's ceiling.
-        guard let topBitrate = Self.autoBitrateLadder.first?.maxBitrate, safe < Double(topBitrate) else {
-            autoLadderIndex = nil
-            return
-        }
-        autoLadderIndex = Self.autoBitrateLadder.firstIndex { Double($0.maxBitrate ?? 0) <= safe }
+        autoCap = AutoQuality.startingCap(measuredBps: await client.testBitrate(credential: credential, authHeader: authHeader))
     }
 
     func changeQuality(to newQuality: VideoQuality) {
@@ -1504,36 +1530,84 @@ struct PlayerView: View {
     /// "network can't keep up" signal on its own, and reacting to one caused a reload loop
     /// twice (each reload's startup buffering looked like another stall). Now requires
     /// several stalls clustered in a short window, which normal one-off blips don't produce.
+    /// While Auto is running below the source's quality, re-measures the connection after
+    /// every few minutes of smooth playback and raises the cap once it has clearly recovered.
+    private func startAutoRecovery() {
+        autoRecoveryTask?.cancel()
+        guard let credential, let authHeader else { return }
+        autoRecoveryTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(180))
+                guard !Task.isCancelled, quality == .auto, autoCap != nil, player.status == .playing,
+                      !player.isBuffering, recentStallTimestamps.isEmpty,
+                      lastStallHandledAt.map({ Date().timeIntervalSince($0) > 180 }) ?? true
+                else { continue }
+                let measured = await client.testBitrate(credential: credential, authHeader: authHeader)
+                guard !Task.isCancelled, case .raise(let cap) = AutoQuality.afterRecovery(
+                    current: autoCap, sourceBitrate: playbackInfo?.bitrate, measuredBps: measured)
+                else { continue }
+                autoCap = cap
+                reload(errorContext: "raise quality")
+                if let bitrate = cap?.maxBitrate {
+                    networkToast = String(format: "Raised to %.0f Mb/s — your connection has recovered", Double(bitrate) / 1_000_000)
+                } else {
+                    networkToast = "Back to full quality — your connection has recovered"
+                }
+                try? await Task.sleep(for: .seconds(3))
+                networkToast = nil
+            }
+        }
+    }
+
+    /// Back from the background (a call, another app) still loading and not moving: the server
+    /// may have ended the stream while nothing was asking for it, and the engine waits on it
+    /// forever. Reopening at the same position starts a new one.
+    private func checkPlaybackAfterForeground() {
+        foregroundCheckTask?.cancel()
+        let startTicks = player.positionTicks
+        foregroundCheckTask = Task {
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, player.status == .loading || player.isBuffering,
+                  player.positionTicks == startTicks
+            else { return }
+            reload(errorContext: "resume playback", resumeTicks: startTicks)
+        }
+    }
+
     func handlePlaybackStall() {
         guard quality == .auto else { return }
-        if let lastLoad = lastLoadStartedAt, Date().timeIntervalSince(lastLoad) < 12 { return }
-
         let now = Date()
+        guard AutoQuality.countsStall(at: now, lastLoad: lastLoadStartedAt, lastSeek: lastSeekAt,
+                                      isPaused: player.status == .paused) else { return }
+
         recentStallTimestamps.append(now)
         recentStallTimestamps.removeAll { now.timeIntervalSince($0) > 15 }
         guard recentStallTimestamps.count >= 3 else { return }
         recentStallTimestamps.removeAll()
 
         if let last = lastStallHandledAt, now.timeIntervalSince(last) < 30 { return }
-        let nextIndex = (autoLadderIndex ?? -1) + 1
-        guard nextIndex < Self.autoBitrateLadder.count else {
-            // The ladder's exhausted and it's STILL stalling repeatedly — that's not a
-            // bandwidth problem a lower bitrate can fix (already tried every step), it's
-            // something else entirely (a codec/output failure, a dead source, etc.). Silently
-            // returning here left the video frozen on a spinner forever with zero feedback —
-            // surface it instead of pretending nothing's wrong.
-            lastStallHandledAt = now
-            errorMessage = "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC."
-            return
-        }
         lastStallHandledAt = now
-        autoLadderIndex = nextIndex
-        reload(errorContext: "adjust quality")
-        let mbps = Double(Self.autoBitrateLadder[nextIndex].maxBitrate ?? 0) / 1_000_000
-        networkToast = "Lowered to \(mbps >= 1 ? String(format: "%.0f Mb/s", mbps) : String(format: "%.0f Kb/s", mbps * 1000)) — your connection can't keep up"
+        guard let credential, let authHeader else { return }
         Task {
-            try? await Task.sleep(for: .seconds(3))
-            networkToast = nil
+            // Measured again before acting: a stall can come from the server or the engine
+            // rather than the connection, and lowering quality doesn't help with those.
+            let measured = await client.testBitrate(credential: credential, authHeader: authHeader)
+            switch AutoQuality.afterStalls(current: autoCap, sourceBitrate: playbackInfo?.bitrate, measuredBps: measured) {
+            case .keep:
+                return
+            case .exhausted:
+                // Still stalling at the bottom step: not a bandwidth problem a lower bitrate
+                // can fix (a codec/output failure, a dead source), so say so rather than
+                // leaving the video frozen on a spinner.
+                errorMessage = "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC."
+            case .lower(let cap):
+                autoCap = cap
+                reload(errorContext: "adjust quality")
+                let mbps = Double(cap.maxBitrate ?? 0) / 1_000_000
+                networkToast = "Lowered to \(mbps >= 1 ? String(format: "%.0f Mb/s", mbps) : String(format: "%.0f Kb/s", mbps * 1000)) — your connection can't keep up"
+                try? await Task.sleep(for: .seconds(3))
+                networkToast = nil
+            }
         }
     }
 
@@ -1548,12 +1622,13 @@ struct PlayerView: View {
             && (segments.credits.map { seconds >= $0.lowerBound } ?? (remainingSeconds <= 30))
         if withinWindow, !showUpNext {
             showUpNext = true
-            if UserDefaults.standard.bool(forKey: "autoPlayNext") {
+            let defaults = UserDefaults.standard
+            if defaults.bool(forKey: "autoPlayNext") || (defaults.bool(forKey: "skipCredits") && segments.credits != nil) {
                 startUpNextCountdown()
             }
         } else if !withinWindow, showUpNext {
             showUpNext = false
-            upNextCountdown?.cancel()
+            cancelUpNextCountdown()
         }
     }
 
@@ -1581,8 +1656,29 @@ struct PlayerView: View {
         ] {
             guard enabled, let span, span.contains(seconds), !autoSkipped.contains(kind) else { continue }
             autoSkipped.insert(kind)
-            skip(kind: kind, span: span)
+            // In the credits the Up Next card's own countdown moves on to the next title.
+            if kind == "credits", showUpNext { return }
+            startAutoSkip(kind: kind)
             return
+        }
+    }
+
+    /// How long an automatic skip or Up Next waits, so it can be seen and cancelled first.
+    static var autoActionSeconds: Double {
+        Double(min(max(UserDefaults.standard.object(forKey: "upNextCountdownSeconds") as? Int ?? 5, 3), 5))
+    }
+
+    private func startAutoSkip(kind: String) {
+        autoSkipTask?.cancel()
+        let countdown = AutoActionCountdown(kind: kind, startedAt: Date(), seconds: Self.autoActionSeconds)
+        autoSkipCountdown = countdown
+        autoSkipTask = Task {
+            try? await Task.sleep(for: .seconds(countdown.seconds))
+            guard !Task.isCancelled, autoSkipCountdown == countdown else { return }
+            autoSkipCountdown = nil
+            // Seeking out of the segment, or skipping it by hand, calls the skip off.
+            guard let current = currentSkippable, current.kind == kind else { return }
+            skip(kind: kind, span: current.span)
         }
     }
 
@@ -1611,20 +1707,27 @@ struct PlayerView: View {
     }
 
     private func startUpNextCountdown() {
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
+        let countdown = AutoActionCountdown(kind: "next", startedAt: Date(), seconds: Self.autoActionSeconds)
+        upNextCountdownState = countdown
         upNextCountdown = Task {
-            try? await Task.sleep(for: .seconds(UserDefaults.standard.object(forKey: "upNextCountdownSeconds") as? Int ?? 8))
+            try? await Task.sleep(for: .seconds(countdown.seconds))
             guard !Task.isCancelled else { return }
             playNextEpisode(isAutomatic: true)
         }
     }
 
-    /// `isAutomatic` distinguishes the 8s countdown silently firing from the user actually
+    func cancelUpNextCountdown() {
+        upNextCountdown?.cancel()
+        upNextCountdownState = nil
+    }
+
+    /// `isAutomatic` distinguishes the countdown silently firing from the user actually
     /// tapping Play on the Up Next card — only the former counts toward the "are you still
     /// watching" streak (a manual tap is proof someone's there, and resets it).
     func playNextEpisode(isAutomatic: Bool = false) {
         guard let nextEpisode else { return }
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
         if isAutomatic, sleepAtEndOfItem {
             sleepAtEndOfItem = false
             showUpNext = false
@@ -1712,7 +1815,7 @@ struct PlayerView: View {
 
     func playPrevious() {
         guard let previousItem else { return }
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
         onPlayNext(previousItem)
     }
@@ -1720,7 +1823,7 @@ struct PlayerView: View {
     func dismissUpNext() {
         upNextDismissed = true
         showUpNext = false
-        upNextCountdown?.cancel()
+        cancelUpNextCountdown()
     }
 
     // MARK: - Audio/subtitle tracks
@@ -1760,6 +1863,17 @@ struct PlayerView: View {
     @discardableResult
     private func selectAudioInEngine() async -> Bool {
         guard let info = playbackInfo, info.playMethod == .directPlay, let index = selectedAudioIndex else { return false }
+        // Aether names tracks by their stream index in the file, the same number Jellyfin uses,
+        // so it needs no matching by order (which gave up whenever the two lists differed).
+        if player is AetherEnginePlayer {
+            for _ in 0..<20 where player.availableAudioTracks.isEmpty {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            if player.availableAudioTracks.contains(where: { $0.id == index }) {
+                if index != player.selectedAudioTrackIndex { await player.setAudioTrack(index: index) }
+                return true
+            }
+        }
         let embedded = info.audioStreams.filter { !$0.isExternal }.sorted { $0.index < $1.index }
         guard let ordinal = embedded.firstIndex(where: { $0.index == index }) else { return false }
         // Engines list tracks a moment after the file opens.
@@ -1800,7 +1914,8 @@ struct PlayerView: View {
                 if let info = try? await client.getPlaybackInfo(
                     credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                     quality: qualityCap(for: quality),
-                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex),
+                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                    nativeDecoder: decodesNatively),
                    let added = info.subtitleStreams.first(where: { !known.contains($0.index) }) {
                     networkToast = nil
                     changeTrack(subtitleIndex: .some(added.index))
@@ -1878,7 +1993,8 @@ struct PlayerView: View {
                 let info = try await client.getPlaybackInfo(
                     credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                     quality: qualityCap(for: quality),
-                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
+                    audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
+                    nativeDecoder: decodesNatively
                 )
                 playbackInfo = info
                 await loadSubtitleCues(from: info, credential: credential)

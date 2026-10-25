@@ -15,8 +15,25 @@ struct SeerrView: View {
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
     @State private var requestingItem: SeerrItem? = nil
+    @State private var openedItem: SeerrItem?
     /// Popular titles first made in this device's language, when it isn't English.
     @State private var languageItems: [SeerrItem] = []
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// Two across fits a phone; on a wider iPad two stretched each poster to half the
+    /// screen, so it fills the width with posters of a phone-like size instead.
+    private var discoverColumns: [GridItem] {
+        if horizontalSizeClass == .regular {
+            return [GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 8)]
+        }
+        return [.init(.flexible()), .init(.flexible())]
+    }
+#elseif os(macOS)
+    private let discoverColumns = [GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 12)]
+#else
+    private let discoverColumns: [GridItem] = [.init(.flexible()), .init(.flexible())]
+#endif
 
     private var genresForType: [SeerrGenre] {
         mediaType == .tv ? seerrRepo.tvGenres : seerrRepo.movieGenres
@@ -49,6 +66,10 @@ struct SeerrView: View {
             .arcfinNavTitleLarge("Discover")
             .searchable(text: $searchText, prompt: "Movies, series, people…")
             .navigationDestination(for: SeerrItem.self) { item in
+                SeerrItemDetailView(item: item)
+            }
+            // On the Mac a card's NavigationLink(value:) can't find the destination above.
+            .navigationDestination(item: $openedItem) { item in
                 SeerrItemDetailView(item: item)
             }
         }
@@ -165,6 +186,7 @@ struct SeerrView: View {
                         }
                     }
                 }
+                .shelfScrollButtons()
                 .padding(.bottom, DT.Spacing.md)
             }
         }
@@ -276,15 +298,16 @@ struct SeerrView: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .focusSection()
                 }
+                .shelfScrollButtons()
 #elseif os(macOS)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
+                LazyVGrid(columns: discoverColumns, spacing: 12) {
                     ForEach(items) { item in
                         discoverCard(item)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
 #else
-                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
+                LazyVGrid(columns: discoverColumns, spacing: 8) {
                     ForEach(items) { item in
                         discoverCard(item)
                     }
@@ -318,7 +341,7 @@ struct SeerrView: View {
     }
 
     private func discoverCard(_ item: SeerrItem) -> some View {
-        NavigationLink(value: item) {
+        Button { openedItem = item } label: {
             discoverCardContent(item)
         }
         .buttonStyle(.plain)
@@ -481,7 +504,7 @@ struct SeerrView: View {
     // MARK: - Loading skeleton
 
     private var loadingGrid: some View {
-        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
+        LazyVGrid(columns: discoverColumns, spacing: 8) {
             ForEach(Self.placeholderDiscoverItems) { item in
                 discoverCardContent(item)
             }
@@ -545,15 +568,16 @@ struct SeerrView: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .focusSection()
                 }
+                .shelfScrollButtons()
 #elseif os(macOS)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 8)], spacing: 8) {
+                LazyVGrid(columns: discoverColumns, spacing: 12) {
                     ForEach(searchResults) { item in
                         discoverCard(item)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
 #else
-                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
+                LazyVGrid(columns: discoverColumns, spacing: 8) {
                     ForEach(searchResults) { item in
                         discoverCard(item)
                     }

@@ -5,6 +5,7 @@ import AVFoundation
 import AVKit
 import Combine
 import JellyfinAPI
+import MediaEngine
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 import MediaPlayer
@@ -294,6 +295,31 @@ func resetPlayerOrientation() {
 }
 #endif
 
+/// Closes a player. When the rotate button turned it sideways while the device is held
+/// upright, the screen underneath was laid out upright and would show pillarboxed until the
+/// rotation caught up after the cover had gone, so the rotation goes first.
+func closeRotatedPlayer(_ close: @escaping @MainActor () -> Void) {
+    #if canImport(UIKit) && !os(tvOS)
+    guard let scene = UIApplication.shared.connectedScenes
+        .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+          scene.effectiveGeometry.interfaceOrientation.isLandscape,
+          !UIDevice.current.orientation.isLandscape
+    else { close(); return }
+    scene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { _ in }
+    Task {
+        let deadline = ContinuousClock.now + .seconds(1)
+        while scene.effectiveGeometry.interfaceOrientation.isLandscape, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(30))
+        }
+        // The geometry flips as the rotation starts; let it finish before the cover animates.
+        try? await Task.sleep(for: .milliseconds(400))
+        close()
+    }
+    #else
+    close()
+    #endif
+}
+
 // MARK: - macOS window-level fullscreen
 
 #if os(macOS)
@@ -449,3 +475,84 @@ final class SystemVolumeController {
     }
 }
 #endif
+
+extension View {
+    /// Keeps the display on while a player is loading, buffering or playing; once paused,
+    /// ended or failed the device can sleep as usual.
+    func keepsScreenAwake(status: PlaybackStatus) -> some View {
+        onAppear { ScreenAwake.set(true) }
+            .onChange(of: status) { _, status in
+                switch status {
+                case .idle, .loading, .playing: ScreenAwake.set(true)
+                case .paused, .ended, .failed: ScreenAwake.set(false)
+                }
+            }
+            .onDisappear { ScreenAwake.set(false) }
+    }
+}
+
+@MainActor
+private enum ScreenAwake {
+    #if os(macOS)
+    private static var activity: NSObjectProtocol?
+    #endif
+
+    static func set(_ awake: Bool) {
+        #if canImport(UIKit)
+        UIApplication.shared.isIdleTimerDisabled = awake
+        #elseif os(macOS)
+        if awake, activity == nil {
+            activity = ProcessInfo.processInfo.beginActivity(options: .idleDisplaySleepDisabled, reason: "Video playback")
+        } else if !awake, let current = activity {
+            ProcessInfo.processInfo.endActivity(current)
+            activity = nil
+        }
+        #endif
+    }
+}
+
+/// The player's spinner. A start or rebuffer that runs past a couple of seconds also says what
+/// it's waiting on, so a slow server or connection doesn't look like a frozen app.
+struct PlayerLoadingIndicator: View {
+    let status: String
+    @State private var showsStatus = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            ProgressView()
+                .tint(.white)
+                .scaleEffect(1.4)
+            if showsStatus {
+                Text(status)
+                    .font(.system(.footnote, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .contentTransition(.opacity)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 32)
+        .animation(.easeInOut(duration: 0.25), value: showsStatus)
+        .animation(.easeInOut(duration: 0.25), value: status)
+        .task {
+            try? await Task.sleep(for: .seconds(2))
+            showsStatus = true
+        }
+    }
+}
+
+/// Fills left to right over an automatic action's countdown, behind the button it belongs to.
+struct CountdownFill: View {
+    let countdown: PlayerView.AutoActionCountdown
+    let color: Color
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let progress = min(max(context.date.timeIntervalSince(countdown.startedAt) / countdown.seconds, 0), 1)
+            GeometryReader { proxy in
+                color.frame(width: proxy.size.width * progress)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
