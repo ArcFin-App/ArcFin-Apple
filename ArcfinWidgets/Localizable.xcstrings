@@ -39,6 +39,12 @@
             "value" : "%@ / %@"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ van %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -86,6 +92,12 @@
           }
         },
         "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -143,6 +155,12 @@
             "value" : "이어서 시청하기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verder kijken"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -193,6 +211,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "탐색"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ontdek"
           }
         },
         "pt-BR" : {
@@ -247,6 +271,12 @@
             "value" : "탐색 및 요청"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ontdek en vraag aan"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -297,6 +327,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "새로운 작품 발견"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ontdek iets nieuws"
           }
         },
         "pt-BR" : {
@@ -351,6 +387,12 @@
             "value" : "완료"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gereed"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -401,6 +443,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@에 시청 완료"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Klaar om %@"
           }
         },
         "pt-BR" : {
@@ -455,6 +503,12 @@
             "value" : "다운로드"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -505,6 +559,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "새로 볼 작품을 찾아 요청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vind iets nieuws om te kijken en vraag het aan."
           }
         },
         "pt-BR" : {
@@ -559,6 +619,12 @@
             "value" : "신규"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nieuw"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -609,6 +675,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "아직 새 항목 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nog niets nieuws"
           }
         },
         "pt-BR" : {
@@ -663,6 +735,12 @@
             "value" : "이어서 재생할 항목 없음"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niets om te hervatten"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -715,6 +793,12 @@
             "value" : "Arcfin을 열어 이어서 재생"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Open Arcfin om te hervatten"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -765,6 +849,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Arcfin을 열어 셀룰러 데이터 사용"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Open Arcfin om mobiele data te gebruiken"
           }
         },
         "pt-BR" : {
@@ -821,6 +911,12 @@
             "value" : "탐색 열기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Open Ontdek"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -871,6 +967,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "다운로드 열기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Open downloads"
           }
         },
         "pt-BR" : {
@@ -927,6 +1029,12 @@
             "value" : "다운로드 열기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Open Downloads"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -977,6 +1085,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "다운로드를 열어 오프라인으로 시청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Open je downloads om offline te kijken."
           }
         },
         "pt-BR" : {
@@ -1031,6 +1145,12 @@
             "value" : "멈춘 곳부터 이어서 보세요."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ga verder waar je was gebleven."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1081,6 +1201,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "마지막으로 보던 작품을 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Speel af waar je het laatst naar keek."
           }
         },
         "pt-BR" : {
@@ -1137,6 +1263,12 @@
             "value" : "마지막으로 보던 작품을 재생합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Speelt af waar je het laatst naar keek."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1187,6 +1319,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "최근 추가된 항목"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Recent toegevoegd"
           }
         },
         "pt-BR" : {
@@ -1241,6 +1379,12 @@
             "value" : "이어서 시청하기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verder kijken"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1291,6 +1435,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "이어서 시청하기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verder kijken"
           }
         },
         "pt-BR" : {
@@ -1345,6 +1495,12 @@
             "value" : "서버의 최신 영화와 시리즈를 확인하세요."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bekijk de nieuwste films en series op je server."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1395,6 +1551,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "다음 볼 작품"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hierna"
           }
         },
         "pt-BR" : {

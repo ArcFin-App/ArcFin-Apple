@@ -47,6 +47,12 @@
             "value" : "ArcFin"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
@@ -102,6 +108,12 @@
           }
         },
         "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "nl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arcfin"
@@ -167,6 +179,12 @@
             "value" : "Arcfin의 Chromecast 지원은 근처의 전송 기기를 찾기 위해 Bluetooth를 사용할 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De Chromecast-ondersteuning van Arcfin kan Bluetooth gebruiken om Cast-apparaten in de buurt te vinden."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -225,6 +243,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "프로필에서 앱 잠금이 켜져 있으면 Face ID를 사용하여 Arcfin의 잠금을 해제합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID wordt gebruikt om Arcfin te ontgrendelen als app-vergrendeling aanstaat voor je profiel."
           }
         },
         "pt-BR" : {
@@ -287,6 +311,12 @@
             "value" : "Arcfin은 로컬 네트워크를 사용하여 Jellyfin 서버를 찾아 연결하고 근처 기기로 미디어를 전송합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin gebruikt je lokale netwerk om je Jellyfin-server te vinden en ermee te verbinden, en om media naar apparaten in de buurt te casten."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -345,6 +375,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Arcfin은 집에 있는지 외출 중인지에 따라 서버의 로컬 주소와 원격 주소를 자동으로 전환하기 위해 Wi-Fi 네트워크 이름을 사용합니다. 위치는 저장, 추적, 공유되지 않으며 현재 Wi-Fi 이름을 읽는 데만 사용됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin gebruikt de naam van je wifinetwerk om automatisch te wisselen tussen het lokale en externe adres van je server, afhankelijk van of je thuis bent of niet. Je locatie wordt nooit bewaard, gevolgd of gedeeld — hij wordt alleen gebruikt om de naam van het huidige wifinetwerk te lezen."
           }
         },
         "pt-BR" : {

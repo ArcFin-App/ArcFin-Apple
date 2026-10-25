@@ -74,6 +74,16 @@
             ]
           }
         },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Kijk verder in ${applicationName}",
+              "Hervat mijn serie in ${applicationName}",
+              "Waar keek ik naar in ${applicationName}"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -159,6 +169,15 @@
             "values" : [
               "${applicationName}에서 ${target} 다음 에피소드 다운로드",
               "${applicationName}에서 ${target} 다운로드"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Download de volgende aflevering van ${target} in ${applicationName}",
+              "Download ${target} in ${applicationName}"
             ]
           }
         },
@@ -248,6 +267,15 @@
             ]
           }
         },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Open ${target} in ${applicationName}",
+              "Toon ${target} in ${applicationName}"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -331,6 +359,15 @@
             "values" : [
               "${applicationName}에서 탐색 열기",
               "${applicationName}에서 새로 요청할 작품"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Open Ontdek in ${applicationName}",
+              "Wat is er nieuw om aan te vragen in ${applicationName}"
             ]
           }
         },
@@ -424,6 +461,16 @@
               "${applicationName}에서 ${target} 재생",
               "${applicationName}에서 ${target} 시청",
               "${applicationName}에서 ${target} 틀어 줘"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Speel ${target} af in ${applicationName}",
+              "Kijk ${target} in ${applicationName}",
+              "Zet ${target} op in ${applicationName}"
             ]
           }
         },
@@ -522,6 +569,16 @@
             ]
           }
         },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Speel een willekeurige film af in ${applicationName}",
+              "Verras me in ${applicationName}",
+              "Kies een film in ${applicationName}"
+            ]
+          }
+        },
         "pt-BR" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -607,6 +664,15 @@
             "values" : [
               "${applicationName}에서 내 다운로드 보기",
               "${applicationName}에서 다운로드 열기"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Toon mijn downloads in ${applicationName}",
+              "Open downloads in ${applicationName}"
             ]
           }
         },
