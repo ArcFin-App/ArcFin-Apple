@@ -5,6 +5,12 @@
       "comment" : "Bundle display name",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -17,6 +23,12 @@
       "comment" : "Bundle name",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -29,6 +41,12 @@
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Chromecast-Unterstützung von Arcfin kann Bluetooth nutzen, um Cast-Geräte in der Nähe zu finden."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -41,6 +59,12 @@
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID wird genutzt, um Arcfin zu entsperren, wenn die App-Sperre für dein Profil aktiviert ist."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -53,6 +77,12 @@
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin nutzt dein lokales Netzwerk, um deinen Jellyfin-Server zu finden und sich damit zu verbinden und um Medien an Geräte in der Nähe zu übertragen."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -65,6 +95,12 @@
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin nutzt den Namen deines WLANs, um automatisch zwischen der lokalen und der externen Adresse deines Servers zu wechseln, je nachdem, ob du zu Hause oder unterwegs bist. Dein Standort wird nie gespeichert, verfolgt oder geteilt – er wird nur zum Lesen des aktuellen WLAN-Namens genutzt."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",

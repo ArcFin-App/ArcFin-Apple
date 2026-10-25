@@ -4,6 +4,16 @@
     "Continue watching in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "In ${applicationName} weiterschauen",
+              "Meine Serie in ${applicationName} fortsetzen",
+              "Was habe ich in ${applicationName} geschaut"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -19,6 +29,15 @@
     "Download the next episode of ${target} in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Nächste Folge von ${target} in ${applicationName} laden",
+              "${target} in ${applicationName} laden"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -33,6 +52,15 @@
     "Open ${target} in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${target} in ${applicationName} öffnen",
+              "${target} in ${applicationName} anzeigen"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -47,6 +75,15 @@
     "Open Discover in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Entdecken in ${applicationName} öffnen",
+              "Was gibt es Neues zum Anfragen in ${applicationName}"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -61,6 +98,16 @@
     "Play ${target} in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${target} in ${applicationName} abspielen",
+              "${target} in ${applicationName} ansehen",
+              "${target} in ${applicationName} starten"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -76,6 +123,16 @@
     "Play a random movie in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Einen zufälligen Film in ${applicationName} abspielen",
+              "Überrasch mich in ${applicationName}",
+              "Wähl einen Film in ${applicationName}"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -91,6 +148,15 @@
     "Show my downloads in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Meine Downloads in ${applicationName} anzeigen",
+              "Downloads in ${applicationName} öffnen"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
