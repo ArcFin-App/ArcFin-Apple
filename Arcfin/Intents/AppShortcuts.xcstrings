@@ -44,6 +44,16 @@
             ]
           }
         },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Continua a guardare su ${applicationName}",
+              "Riprendi la mia serie su ${applicationName}",
+              "Cosa stavo guardando su ${applicationName}"
+            ]
+          }
+        },
         "ja" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -115,6 +125,15 @@
             ]
           }
         },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Scarica il prossimo episodio di ${target} su ${applicationName}",
+              "Scarica ${target} su ${applicationName}"
+            ]
+          }
+        },
         "ja" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -183,6 +202,15 @@
             ]
           }
         },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Apri ${target} su ${applicationName}",
+              "Mostra ${target} su ${applicationName}"
+            ]
+          }
+        },
         "ja" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -248,6 +276,15 @@
             "values" : [
               "Ouvrir Découvrir dans ${applicationName}",
               "Quoi de neuf à demander dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Apri Scopri su ${applicationName}",
+              "Cosa c’è di nuovo da richiedere su ${applicationName}"
             ]
           }
         },
@@ -320,6 +357,16 @@
               "Lire ${target} dans ${applicationName}",
               "Regarder ${target} dans ${applicationName}",
               "Mettre ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Riproduci ${target} su ${applicationName}",
+              "Guarda ${target} su ${applicationName}",
+              "Metti ${target} su ${applicationName}"
             ]
           }
         },
@@ -398,6 +445,16 @@
             ]
           }
         },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Riproduci un film a caso su ${applicationName}",
+              "Sorprendimi su ${applicationName}",
+              "Scegli un film su ${applicationName}"
+            ]
+          }
+        },
         "ja" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -466,6 +523,15 @@
             "values" : [
               "Afficher mes téléchargements dans ${applicationName}",
               "Ouvrir les téléchargements dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Mostra i miei download su ${applicationName}",
+              "Apri i download su ${applicationName}"
             ]
           }
         },

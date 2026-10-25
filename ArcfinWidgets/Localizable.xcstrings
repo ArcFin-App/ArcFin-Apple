@@ -21,6 +21,12 @@
             "value" : "%@ sur %@"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ di %@"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -56,6 +62,12 @@
           }
         },
         "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "it" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -101,6 +113,12 @@
             "value" : "Reprendre la lecture"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continua a guardare"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -139,6 +157,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrir"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scopri"
           }
         },
         "ja" : {
@@ -181,6 +205,12 @@
             "value" : "Découvrir et demander"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scopri e richiedi"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -219,6 +249,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrez quelque chose de nouveau"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scopri qualcosa di nuovo"
           }
         },
         "ja" : {
@@ -261,6 +297,12 @@
             "value" : "Terminé"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Fine"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -299,6 +341,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Terminé à %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Finisce alle %@"
           }
         },
         "ja" : {
@@ -341,6 +389,12 @@
             "value" : "Téléchargements"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Download"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -379,6 +433,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Trouvez quelque chose de nouveau à regarder et demandez-le."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trova qualcosa di nuovo da guardare e richiedilo."
           }
         },
         "ja" : {
@@ -421,6 +481,12 @@
             "value" : "Nouveau"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuovo"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -459,6 +525,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Rien de nouveau pour l’instant"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ancora niente di nuovo"
           }
         },
         "ja" : {
@@ -501,6 +573,12 @@
             "value" : "Rien à reprendre"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niente da riprendere"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -541,6 +619,12 @@
             "value" : "Ouvrez Arcfin pour reprendre"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri Arcfin per riprendere"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -579,6 +663,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez Arcfin pour utiliser les données cellulaires"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri Arcfin per usare i dati cellulare"
           }
         },
         "ja" : {
@@ -623,6 +713,12 @@
             "value" : "Ouvrir Découvrir"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri Scopri"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -661,6 +757,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrir les téléchargements"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri download"
           }
         },
         "ja" : {
@@ -705,6 +807,12 @@
             "value" : "Ouvrir les téléchargements"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri Download"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -743,6 +851,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez vos téléchargements pour regarder hors ligne."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apri i tuoi download per guardare offline."
           }
         },
         "ja" : {
@@ -785,6 +899,12 @@
             "value" : "Reprenez là où vous vous étiez arrêté."
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riprendi da dove avevi lasciato."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -823,6 +943,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Lisez ce que vous regardiez en dernier."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riproduci ciò che stavi guardando per ultimo."
           }
         },
         "ja" : {
@@ -867,6 +993,12 @@
             "value" : "Lit ce que vous regardiez en dernier."
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riproduce ciò che stavi guardando per ultimo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -905,6 +1037,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ajouts récents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aggiunti di recente"
           }
         },
         "ja" : {
@@ -947,6 +1085,12 @@
             "value" : "Reprendre la lecture"
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continua a guardare"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -985,6 +1129,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Reprendre la lecture"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continua a guardare"
           }
         },
         "ja" : {
@@ -1027,6 +1177,12 @@
             "value" : "Voyez les derniers films et séries de votre serveur."
           }
         },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Guarda i film e le serie più recenti del tuo server."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1065,6 +1221,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "À suivre"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prossimi"
           }
         },
         "ja" : {
