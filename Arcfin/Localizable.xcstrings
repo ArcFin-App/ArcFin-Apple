@@ -1,923 +1,2807 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
-    "  •  " : {},
-    "\"Are You Still Watching?\" Prompt" : {},
-    "%@" : {},
-    "%@ %@" : {},
-    "%@ %lld%%" : {},
-    "%@ / %@" : {},
-    "%@ can watch again from %@." : {},
-    "%@ can't use this server at the moment." : {},
-    "%@ downloaded" : {},
-    "%@ of %@" : {},
-    "%@ used by %lld download%@" : {},
-    "%@ watched" : {},
-    "%@ · %@" : {},
-    "%@ · %lld%%" : {},
-    "%@%@" : {},
-    "%@%@%@" : {},
-    "%@'s %@" : {},
-    "%@, %@" : {},
-    "%@/s" : {},
-    "%@: %lld of %lld" : {},
-    "%@h" : {},
-    "%@×" : {},
-    "%lld" : {},
-    "%lld %@" : {},
-    "%lld %@ · %@" : {},
-    "%lld GB" : {},
-    "%lld Minutes" : {},
-    "%lld Seerr titles" : {},
-    "%lld episode%@" : {},
-    "%lld episode%@ downloaded" : {},
-    "%lld episodes" : {},
-    "%lld found" : {},
-    "%lld min" : {},
-    "%lld min left" : {},
-    "%lld minutes" : {},
-    "%lld of %lld" : {},
-    "%lld of %lld watched" : {},
-    "%lld titles" : {},
-    "%lld%%" : {},
-    "%lld." : {},
-    "%lldm" : {},
-    "%llds" : {},
-    "1 title" : {},
-    "1080p HD" : {},
-    "30 Days" : {},
-    "480p" : {},
-    "4K" : {},
-    "4K Ultra HD" : {},
-    "7 Days" : {},
-    "720p" : {},
-    "A 4-digit PIN is required when switching to this profile." : {},
-    "A button in the player to jump between chapters, when the title has them." : {},
-    "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too." : {},
-    "A light vibration on key actions, like requesting a title." : {},
-    "A top result, shelves by kind and a Discover list. Off shows plain poster grids." : {},
-    "API Key" : {},
-    "API key or read access token" : {},
-    "Account" : {},
-    "Account Type" : {},
-    "Active Sessions" : {},
-    "Add" : {},
-    "Add %lld" : {},
-    "Add Header" : {},
-    "Add Profile" : {},
-    "Add Server" : {},
-    "Add Titles" : {},
-    "Add a PIN to require verification before switching to this profile." : {},
-    "Add movies, shows and episodes, or long-press any title and choose Add to Playlist." : {},
-    "Add to Favorites" : {},
-    "Add to Playlist" : {},
-    "Add to Playlist…" : {},
-    "Add to Watchlist" : {},
-    "Add to favorites" : {},
-    "Add to watchlist" : {},
-    "Add your Seerr server URL and credentials in Settings → Plugins → Seerr." : {},
-    "Add your Seerr server in Settings → Plugins → Seerr." : {},
-    "Adding up what you've watched…" : {},
-    "Addresses, home Wi-Fi, custom headers and settings sync." : {},
-    "Adds %lld episodes of %@." : {},
-    "Adds a Stats tab with your watch time, habits and favourites." : {},
-    "Adds your Seerr watchlist and its trending and popular rows to Home." : {},
-    "After 30 minutes the Apple TV's own screensaver and sleep settings take over." : {},
-    "Afternoon" : {},
-    "Age ratings" : {},
-    "AirPlay" : {},
-    "All" : {},
-    "All watched" : {},
-    "Allowed" : {},
-    "Allowed Times" : {},
-    "Allowed times" : {},
-    "Any" : {},
-    "App Lock" : {},
-    "Appearance" : {},
-    "Approved" : {},
-    "Arcfin" : {},
-    "Arcfin Sync" : {},
-    "Arcfin couldn't load anything from your Jellyfin server." : {},
-    "Arcfin's language is set in System Settings › General › Language & Region." : {},
-    "Arcfin's language is set in the Settings app." : {},
-    "Are you still watching?" : {},
-    "Ask" : {},
-    "At 80%" : {},
-    "At 85%" : {},
-    "Audio" : {},
-    "Audio & Subtitles…" : {},
-    "Audio Language" : {},
-    "Audio Only" : {},
-    "Auth Failed" : {},
-    "Authentication Failed" : {},
-    "Authorize" : {},
-    "Auto" : {},
-    "Auto (Recommended)" : {},
-    "Auto picks from your connection; a fixed choice caps every stream." : {},
-    "Auto prefers Aether, which plays the most formats, HDR and surround. If a video won't play, try AVFoundation or VLC." : {},
-    "Auto-play Next Episode" : {},
-    "Automatic (%@)" : {},
-    "Automatic uses the region set in Seerr, the same one its own pages use. Choose a country to see what streams there instead." : {},
-    "Availability from JustWatch" : {},
-    "Available" : {},
-    "Available in %@" : {},
-    "Background" : {},
-    "Because You Watched" : {},
-    "Bitrate" : {},
-    "Blurs the pictures and hides the descriptions of episodes you haven't started." : {},
-    "Both are optional." : {},
-    "Bottom Navigation" : {},
-    "Box" : {},
-    "Browse" : {},
-    "Browse Files" : {},
-    "Browsing" : {},
-    "Build" : {},
-    "By day of the week" : {},
-    "By decade" : {},
-    "By time of day" : {},
-    "COLLECTION" : {},
-    "Can't Play This" : {},
-    "Can't Reach Your Server" : {},
-    "Can't reach your server" : {},
-    "Cancel" : {},
-    "Cancel All" : {},
-    "Cancel All Downloads" : {},
-    "Cancel Download" : {},
-    "Cancel all downloads?" : {},
-    "Cancel download" : {},
-    "Cast" : {},
-    "Casting to %@" : {},
-    "Change PIN" : {},
-    "Change audio or subtitles once and the rest of that show starts the same way." : {},
-    "Change these, and the limits above, from the server's dashboard." : {},
-    "Chapter List" : {},
-    "Chapters" : {},
-    "Check your Seerr credentials in Settings → Plugins → Seerr." : {},
-    "Check your connection or Server Settings, then retry." : {},
-    "Check your connection to the server, then try again." : {},
-    "Check your connection, then open it again." : {},
-    "Chromecast" : {},
-    "Clear" : {},
-    "Clear All Filters" : {},
-    "Clear Image Cache" : {},
-    "Clear Selection" : {},
-    "Close" : {},
-    "Close Player" : {},
-    "Close X-Ray" : {},
-    "Close and reopen the app for URL or Wi-Fi network changes to take effect." : {},
-    "Close player" : {},
-    "Close trailer" : {},
-    "Code" : {},
-    "Code %@" : {},
-    "Codec" : {},
-    "Codec Compatibility" : {},
-    "Colour" : {},
-    "Comfortable" : {},
-    "Coming soon." : {},
-    "Compact" : {},
-    "Confirm the PIN" : {},
-    "Connect" : {},
-    "Connect Seerr" : {},
-    "Connected" : {},
-    "Connecting to your server…" : {},
-    "Connection" : {},
-    "Container" : {},
-    "Content Rating" : {},
-    "Continue Watching" : {},
-    "Couldn't Load Stats" : {},
-    "Couldn't Reach That Session" : {},
-    "Couldn't load Discover from Seerr" : {},
-    "Couldn't load streaming services." : {},
-    "Countdown" : {},
-    "Country" : {},
-    "Counts from the day it downloaded, watched or not." : {},
-    "Create" : {},
-    "Create a Group" : {},
-    "Create or join a group that keeps playback in sync with others." : {},
-    "Credentials" : {},
-    "Critics score %lld percent" : {},
-    "Current Profile" : {},
-    "Current profile" : {},
-    "Currently Using" : {},
-    "Custom Headers" : {},
-    "Cyan" : {},
-    "Data Protection" : {},
-    "Date" : {},
-    "Day" : {},
-    "Decade" : {},
-    "Declined" : {},
-    "Default Speed" : {},
-    "Delete" : {},
-    "Delete %@?" : {},
-    "Delete %lld selected download%@?" : {},
-    "Delete %lld selected episode%@?" : {},
-    "Delete (%lld)" : {},
-    "Delete After Watching" : {},
-    "Delete All Episodes" : {},
-    "Delete Download" : {},
-    "Delete Playlist" : {},
-    "Delete this download?" : {},
-    "Delete this episode?" : {},
-    "Delete this show's downloads?" : {},
-    "Details" : {},
-    "Direct Play HEVC (H.265)" : {},
-    "Direct Play Surround Audio (AC3/EAC3/DTS)" : {},
-    "Discover" : {},
-    "Dislike" : {},
-    "Disliked" : {},
-    "Dismiss" : {},
-    "Dismiss suggestions" : {},
-    "Done" : {},
-    "Double-Click to Skip" : {},
-    "Double-Tap to Skip" : {},
-    "Double-click a side of the video to skip back or forward." : {},
-    "Double-tap a side of the video to skip back or forward." : {},
-    "Download" : {},
-    "Download Complete" : {},
-    "Download Failed" : {},
-    "Download Next" : {},
-    "Download Next Episode" : {},
-    "Download Now?" : {},
-    "Download Quality" : {},
-    "Download Season" : {},
-    "Download movies and episodes to watch them without a connection." : {},
-    "Download on Mobile Data" : {},
-    "Download on Mobile Data?" : {},
-    "Download queue options" : {},
-    "Downloaded" : {},
-    "Downloaded movies and shows will appear here once you have some." : {},
-    "Downloaded, tap to delete" : {},
-    "Downloading" : {},
-    "Downloading %@." : {},
-    "Downloading a season leaves out episodes you've watched." : {},
-    "Downloads" : {},
-    "Downloads at Once" : {},
-    "Downloads start when Low Data Mode is off." : {},
-    "Downloads start when Low Power Mode is off." : {},
-    "Downloads start when you're on Wi-Fi." : {},
-    "Downloads the next episode of a series to watch." : {},
-    "Downloads wait until Low Data Mode is off." : {},
-    "Downloads wait until Low Power Mode is off." : {},
-    "Drag to reorder. Up to %lld tabs can be active at once — the rest stay hidden but keep their place in the order if you turn them back on." : {},
-    "E%lld" : {},
-    "Each gets a Popular on … row on Home, in this order." : {},
-    "Each gets a Popular on … row on Home, in this order. Press and hold one to move it." : {},
-    "Earlier by 0.1 s" : {},
-    "Earlier by 0.5 s" : {},
-    "Edit" : {},
-    "Empty Playlist" : {},
-    "End of Episode" : {},
-    "Ends %@" : {},
-    "Enter PIN" : {},
-    "Enter PIN to remove it" : {},
-    "Enter Your Password" : {},
-    "Enter a new PIN" : {},
-    "Enter current PIN" : {},
-    "Enter the code shown on another device to sign it in instantly using this account." : {},
-    "Ep %lld" : {},
-    "Episodes" : {},
-    "Episodes to Keep" : {},
-    "Evening" : {},
-    "Everyone in a group needs %@ already open in their own player — SyncPlay keeps play, pause, and seek in sync from there." : {},
-    "Extra Large" : {},
-    "Extra headers for a server behind an access gateway, such as Cloudflare Access." : {},
-    "Faster" : {},
-    "Favorites" : {},
-    "Favourites Only" : {},
-    "Featured" : {},
-    "Feedback" : {},
-    "Fewer animations and transitions throughout the app." : {},
-    "Fill Screen" : {},
-    "Fill screen" : {},
-    "Filter & Sort" : {},
-    "Filter requests" : {},
-    "Find movies, shows, and more." : {},
-    "Find…" : {},
-    "Finish a movie or an episode and your stats start here." : {},
-    "Fit to Screen" : {},
-    "Fit to screen" : {},
-    "For a server behind an access gateway" : {},
-    "For the skip buttons, double-tap and the arrow keys." : {},
-    "Forget %lld Remembered %@" : {},
-    "Free Up Space (%lld)" : {},
-    "Free up space by deleting %lld selected download%@?" : {},
-    "From" : {},
-    "General" : {},
-    "Genre" : {},
-    "Genre Picks" : {},
-    "Genres" : {},
-    "Get a New Code" : {},
-    "Get your server running in a few steps" : {},
-    "Go" : {},
-    "Go Back Online" : {},
-    "Green" : {},
-    "Grid Density" : {},
-    "Grid density" : {},
-    "Group" : {},
-    "Group name" : {},
-    "HD" : {},
-    "Haptic Feedback" : {},
-    "Has Subtitles" : {},
-    "Header name" : {},
-    "Hero Video Backdrops" : {},
-    "Hidden Tags" : {},
-    "Hide %@" : {},
-    "Hide Watched in Libraries" : {},
-    "Hide password" : {},
-    "Higher takes more space." : {},
-    "Home" : {},
-    "Home Shelves" : {},
-    "Home Wi-Fi Network" : {},
-    "Hours" : {},
-    "How long the button fills before an automatic skip or the next episode." : {},
-    "How many download at the same time." : {},
-    "How many upcoming episodes of each show to keep." : {},
-    "Idle · last active %@" : {},
-    "Image Cache" : {},
-    "In %@" : {},
-    "In this Collection" : {},
-    "Integrations" : {},
-    "Jellyfin Setup Guide" : {},
-    "Join a Group" : {},
-    "Keep Downloaded" : {},
-    "Keep Downloading" : {},
-    "Keeps the episode you're up to and the next ones of each show you've downloaded, removing watched ones." : {},
-    "Keeps the video playing in a small window when you go Home. Not offered when Aether decodes in software." : {},
-    "Kept Downloaded" : {},
-    "Kind" : {},
-    "Language" : {},
-    "Large" : {},
-    "Largest First" : {},
-    "Last Active" : {},
-    "Last Sign-In" : {},
-    "Last Synced" : {},
-    "Late night" : {},
-    "Later by 0.1 s" : {},
-    "Later by 0.5 s" : {},
-    "Leave Group" : {},
-    "Leave SharePlay" : {},
-    "Leave SharePlay (%lld)" : {},
-    "Lets Smart Downloads download on mobile data. Charges may apply." : {},
-    "Libraries" : {},
-    "Library" : {},
-    "Library Screensaver" : {},
-    "Library grids start filtered to unwatched; you can still change it there." : {},
-    "Licenses & Third-Party Notices" : {},
-    "Licenses and other third-party components Arcfin uses." : {},
-    "Like" : {},
-    "Liked" : {},
-    "Local Address" : {},
-    "Local URL" : {},
-    "Locked Settings" : {},
-    "Looking for groups…" : {},
-    "Looking for servers on your network…" : {},
-    "Low Data Mode Is On" : {},
-    "Low Data Mode is on. Downloading uses data your device is trying to save." : {},
-    "Low Power Mode Is On" : {},
-    "Low Power Mode is on. Downloading uses more battery." : {},
-    "MOVIE" : {},
-    "Made by Arcfin" : {},
-    "Made by PSMattas" : {},
-    "Make a playlist, then add movies, shows and episodes to it." : {},
-    "Manage" : {},
-    "Manage Storage" : {},
-    "Mark Season Unwatched" : {},
-    "Mark Season Watched" : {},
-    "Mark Series Unwatched" : {},
-    "Mark Series Watched" : {},
-    "Mark Unwatched" : {},
-    "Mark Watched" : {},
-    "Mark as Unwatched" : {},
-    "Mark as Watched" : {},
-    "Mark watched options" : {},
-    "Match" : {},
-    "Match Content Frame Rate" : {},
-    "Maturity" : {},
-    "Max Quality" : {},
-    "Maximum Rating" : {},
-    "Maximum content rating" : {},
-    "Media Info" : {},
-    "Media Status" : {},
-    "Media Type" : {},
-    "Medium" : {},
-    "Merge Continue Watching & Up Next" : {},
-    "Message" : {},
-    "Minimum Score" : {},
-    "Minimum score" : {},
-    "Modern Search" : {},
-    "More" : {},
-    "More Info" : {},
-    "More Like This" : {},
-    "More options" : {},
-    "Morning" : {},
-    "Motion" : {},
-    "Move Down" : {},
-    "Move Up" : {},
-    "Move to another server you've signed in to." : {},
-    "Movie" : {},
-    "Movies" : {},
-    "Movies and episodes saved for offline playback" : {},
-    "Movies and series" : {},
-    "Movies, series, people…" : {},
-    "Movies, shows, episodes" : {},
-    "Movies, shows, people…" : {},
-    "Mute" : {},
-    "My %@" : {},
-    "My %@ on Arcfin" : {},
-    "My Requests" : {},
-    "Name" : {},
-    "Name (A–Z)" : {},
-    "Name (Z–A)" : {},
-    "Navigation" : {},
-    "Never" : {},
-    "New Content Added" : {},
-    "New Playlist" : {},
-    "New order each time you open Home; Continue Watching and Next Up stay on top. Turns off reordering." : {},
-    "New playlist" : {},
-    "New videos start at the speed you last picked." : {},
-    "Next" : {},
-    "Next %lld Episodes" : {},
-    "Next Episode" : {},
-    "Next Up" : {},
-    "Next: %@" : {},
-    "No %@ Requests" : {},
-    "No Downloads" : {},
-    "No Libraries" : {},
-    "No Playlists" : {},
-    "No Requests" : {},
-    "No Subtitles Found" : {},
-    "No active sessions." : {},
-    "No audio track selected." : {},
-    "No content limits are set for this profile." : {},
-    "No joinable groups right now." : {},
-    "No playback info available." : {},
-    "No trailer available" : {},
-    "None" : {},
-    "Normal" : {},
-    "Normal Speed" : {},
-    "Not Available Right Now" : {},
-    "Not Now" : {},
-    "Not Right Now" : {},
-    "Not allowed" : {},
-    "Not in your library yet · from Seerr" : {},
-    "Not rated" : {},
-    "Nothing Here" : {},
-    "Nothing Watched Yet" : {},
-    "Nothing Watched in %@" : {},
-    "Nothing found in this library." : {},
-    "Nothing you finished was last played then. Try another %@." : {},
-    "Notifications" : {},
-    "Notifications in these hours go to Notification Center without a sound or banner." : {},
-    "Now Available" : {},
-    "OK" : {},
-    "Off" : {},
-    "Off, downloads wait for Wi-Fi. Charges may apply." : {},
-    "Offline Mode" : {},
-    "Only Tagged" : {},
-    "Only for audio always going to a receiver over AirPlay or HDMI. This device can't play these itself, so they'd be silent." : {},
-    "Open Arcfin and sign in first." : {},
-    "Open Discover" : {},
-    "Open Downloads" : {},
-    "Open On" : {},
-    "Open Seerr Title" : {},
-    "Open Title" : {},
-    "Open Video File…" : {},
-    "Open a video file" : {},
-    "Open in New Window" : {},
-    "Open local file" : {},
-    "Opening %@." : {},
-    "Opening your library…" : {},
-    "Opens Discover, to find something new to request." : {},
-    "Opens a movie, series or episode in Arcfin." : {},
-    "Opens a random collection" : {},
-    "Opens a random title from this library using the current filters" : {},
-    "Opens a title from your Seerr watchlist or requests." : {},
-    "Opens their page" : {},
-    "Opens whatever you were watching most recently." : {},
-    "Opens your downloaded titles." : {},
-    "Operating System" : {},
-    "Optional. Get a free key at themoviedb.org under Settings → API. Arcfin uses it for where titles are streaming, title details and what's popular without Seerr, and when Seerr can't reach TMDB. Requests still go through Seerr. Stored in the Keychain on this device." : {},
-    "Outline" : {},
-    "PIN protected" : {},
-    "PLAYLIST" : {},
-    "Parental Controls" : {},
-    "Password" : {},
-    "Pause" : {},
-    "Pause Queue" : {},
-    "Pause download" : {},
-    "Pause in Low Data Mode" : {},
-    "Pause in Low Power Mode" : {},
-    "Paused" : {},
-    "Pauses and asks after 3 episodes play in a row with no input." : {},
-    "Pending" : {},
-    "Period" : {},
-    "Permissions" : {},
-    "Pick a longer period, go back to an earlier one, or come back once you've finished something." : {},
-    "Pick a video file from Files app" : {},
-    "Pick the services you use to get a row of what's popular on each, from Seerr or TMDB." : {},
-    "Picture in Picture" : {},
-    "Picture in Picture When Leaving" : {},
-    "Picture in Picture, gestures, chapters and more." : {},
-    "Play" : {},
-    "Play %@" : {},
-    "Play Downloaded" : {},
-    "Play Method" : {},
-    "Play Title" : {},
-    "Play Trailer" : {},
-    "Play a Random Movie" : {},
-    "Play from Beginning" : {},
-    "Play from the First Episode" : {},
-    "Playback" : {},
-    "Playback Engine" : {},
-    "Playback Speed" : {},
-    "Playback paused before %@" : {},
-    "Playback position" : {},
-    "Playback speed" : {},
-    "Player" : {},
-    "Player Features" : {},
-    "Playing %@." : {},
-    "Playlist" : {},
-    "Playlist Order" : {},
-    "Playlist options" : {},
-    "Plays a YouTube trailer when the server has none." : {},
-    "Plays a movie or episode from where you left off, or a series from its next episode." : {},
-    "Plays a movie you haven't watched yet, picked at random." : {},
-    "Plays a muted trailer behind the featured title when the server has one." : {},
-    "Plays whatever you were watching last." : {},
-    "Please select your profile to continue" : {},
-    "Popular Movies" : {},
-    "Popular Series" : {},
-    "Post" : {},
-    "Posters and backdrops are kept to load faster. Clearing them never touches your downloads." : {},
-    "Preferred Audio Language" : {},
-    "Preferred Language" : {},
-    "Preferred Language uses the one from Playback settings, or saves all when none is set." : {},
-    "Preferred Subtitle Language" : {},
-    "Preparing download" : {},
-    "Preparing…" : {},
-    "Press to go back" : {},
-    "Previous" : {},
-    "Previous: %@" : {},
-    "Privacy Policy" : {},
-    "Product" : {},
-    "Profile" : {},
-    "Profiles" : {},
-    "Public Server Info" : {},
-    "Quality" : {},
-    "Quality on Mobile Data" : {},
-    "Quick Connect" : {},
-    "Quick tips" : {},
-    "Quiet Hours" : {},
-    "Random Movie" : {},
-    "Rate" : {},
-    "Rated %@" : {},
-    "Rating" : {},
-    "Rating (Highest)" : {},
-    "Read More" : {},
-    "Recent" : {},
-    "Recently Added" : {},
-    "Recently Added Movies" : {},
-    "Recently Added Shows" : {},
-    "Recently Aired Episodes" : {},
-    "Recently Released Movies" : {},
-    "Recommended" : {},
-    "Reduce Motion" : {},
-    "Refresh" : {},
-    "Release Date (Newest)" : {},
-    "Release Date (Oldest)" : {},
-    "Release Order" : {},
-    "Remember Playback Speed" : {},
-    "Remember Tracks Per Show" : {},
-    "Remote Quality Limit" : {},
-    "Remote URL" : {},
-    "Remove" : {},
-    "Remove %lld Episodes from Playlist" : {},
-    "Remove Connection" : {},
-    "Remove Dislike" : {},
-    "Remove Downloads After" : {},
-    "Remove Key" : {},
-    "Remove Like" : {},
-    "Remove PIN" : {},
-    "Remove Profile" : {},
-    "Remove Request" : {},
-    "Remove Seerr connection?" : {},
-    "Remove Watched When Low on Space" : {},
-    "Remove from Continue Watching" : {},
-    "Remove from Favorites" : {},
-    "Remove from Playlist" : {},
-    "Remove from Watchlist" : {},
-    "Remove from favorites" : {},
-    "Remove from watchlist" : {},
-    "Remove this request?" : {},
-    "Removes a movie or episode once you finish it, here or on another device." : {},
-    "Rename" : {},
-    "Rename Playlist" : {},
-    "Reorder or hide Home's rows." : {},
-    "Request" : {},
-    "Request Status" : {},
-    "Request Updates" : {},
-    "Request from Seerr" : {},
-    "Request movies and shows, and keep a watchlist." : {},
-    "Request via Seerr" : {},
-    "Requests" : {},
-    "Reset" : {},
-    "Resolution" : {},
-    "Results" : {},
-    "Resume" : {},
-    "Resume %@" : {},
-    "Resume Playback?" : {},
-    "Resume Queue" : {},
-    "Resume Watching" : {},
-    "Resume download" : {},
-    "Resume from %@" : {},
-    "Retry" : {},
-    "Retrying…" : {},
-    "Role" : {},
-    "Rotate" : {},
-    "S%lld · E%lld" : {},
-    "S%lld · E%lld%@" : {},
-    "SERIES" : {},
-    "Same as Wi-Fi" : {},
-    "Save" : {},
-    "Save Search History" : {},
-    "Saved on the Server" : {},
-    "Score" : {},
-    "Screensaver" : {},
-    "Scrubbing Previews" : {},
-    "Search" : {},
-    "Search Results" : {},
-    "Search Subtitles" : {},
-    "Search for Subtitles…" : {},
-    "Search services" : {},
-    "Season" : {},
-    "Season %@" : {},
-    "Season Downloaded" : {},
-    "Season Downloads Skip Watched" : {},
-    "Seasons" : {},
-    "Security" : {},
-    "See All" : {},
-    "Seerr" : {},
-    "Seerr Not Connected" : {},
-    "Seerr Title" : {},
-    "Seerr has no streaming services listed for this country." : {},
-    "Seerr uses the same Jellyfin account (%@) — this is only used to connect Seerr and isn't stored anywhere else." : {},
-    "Select" : {},
-    "Select All" : {},
-    "Send" : {},
-    "Send Message…" : {},
-    "Send a Message" : {},
-    "Send a request to your Seerr server. You'll be notified when it becomes available." : {},
-    "Sent with every request to your Jellyfin server, its images and video streams. Use this for a server behind an access gateway, for example a Cloudflare Access service token (CF-Access-Client-Id and CF-Access-Client-Secret). Values are stored in the Keychain. The VLC player and casting can't send them." : {},
-    "Series" : {},
-    "Server" : {},
-    "Server Default" : {},
-    "Server Name" : {},
-    "Server Settings" : {},
-    "Server URL" : {},
-    "Set a PIN" : {},
-    "Settings" : {},
-    "Settings Are Locked" : {},
-    "Setup Completed" : {},
-    "Setup Guide" : {},
-    "Share" : {},
-    "Share Your Stats" : {},
-    "SharePlay" : {},
-    "Show %@" : {},
-    "Show Details" : {},
-    "Show Discover" : {},
-    "Show Discover on Home" : {},
-    "Show Downloads" : {},
-    "Show Subtitles by Default" : {},
-    "Show Video" : {},
-    "Show as grid" : {},
-    "Show as list" : {},
-    "Show in Browse" : {},
-    "Show in Recently Added" : {},
-    "Show password" : {},
-    "Show playback controls" : {},
-    "Shows Play Trailer when the server has a trailer." : {},
-    "Shows on %@ for 15 seconds." : {},
-    "Shows only what's downloaded, without connecting to your server." : {},
-    "Shows set to Keep Downloaded from their page download straight away, outside the storage budget, and stop under 2 GB free. Swipe to stop." : {},
-    "Shows the Cast button when a Chromecast is on your network." : {},
-    "Shows them as one row instead of two." : {},
-    "Shows your library's artwork when the remote hasn't been used for a while, except during playback. Press any button to go back." : {},
-    "Shuffle" : {},
-    "Shuffle Shelves" : {},
-    "Sign In Instead" : {},
-    "Sign Out" : {},
-    "Sign in or unlock Arcfin in its main window first." : {},
-    "Sign in to another Jellyfin server." : {},
-    "Sign out of this server?" : {},
-    "Sign-in method" : {},
-    "Simultaneous Streams" : {},
-    "Size" : {},
-    "Size, colour and background of subtitles." : {},
-    "Skip Back" : {},
-    "Skip Backward" : {},
-    "Skip Credits Automatically" : {},
-    "Skip Forward" : {},
-    "Skip Intro Automatically" : {},
-    "Skip Recap Automatically" : {},
-    "Skip back %lld seconds" : {},
-    "Skip back 10 seconds" : {},
-    "Skip buttons show when your server knows where a recap, intro, credits or preview is, from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins." : {},
-    "Skip forward %lld seconds" : {},
-    "Skip forward 10 seconds" : {},
-    "Skips a recap when the server knows where it is." : {},
-    "Skips the credits, or moves on to what's next." : {},
-    "Skips the intro when the server knows where it is." : {},
-    "Sleep Timer" : {},
-    "Sleep Timer (On)" : {},
-    "Slower" : {},
-    "Small" : {},
-    "Smart Downloads" : {},
-    "Smart Downloads checks after a download finishes, when you open the app, when the connection returns and when you close the player." : {},
-    "Sort" : {},
-    "Sort By" : {},
-    "Sort by %@" : {},
-    "Spoiler Protection" : {},
-    "Start" : {},
-    "Start After" : {},
-    "Start Over" : {},
-    "Start from Beginning" : {},
-    "Start over" : {},
-    "Starts on this language when a title has it." : {},
-    "Starts the downloads now" : {},
-    "Starts the next episode when the credits roll." : {},
-    "Stats" : {},
-    "Status" : {},
-    "Still trying to reach your server" : {},
-    "Stop" : {},
-    "Stop Casting" : {},
-    "Stop Playback" : {},
-    "Stop casting" : {},
-    "Storage Budget" : {},
-    "Story" : {},
-    "Stream" : {},
-    "Stream Online" : {},
-    "Streaming Services" : {},
-    "Streaming services and title details, without Seerr." : {},
-    "Studios and networks" : {},
-    "Subtitle" : {},
-    "Subtitle Language" : {},
-    "Subtitle Style" : {},
-    "Subtitle Timing" : {},
-    "Subtitle Timing (%@ s)" : {},
-    "Subtitles" : {},
-    "Subtitles & Audio" : {},
-    "Subtitles and audio" : {},
-    "Suggested for You" : {},
-    "Suggestions" : {},
-    "Surprise Me" : {},
-    "Surprise me" : {},
-    "Swipe Gestures" : {},
-    "Switch Profile" : {},
-    "Switch Server" : {},
-    "Switch To" : {},
-    "Switches the display to the video's frame rate so motion doesn't judder. AVFoundation only; some TVs flash black when it switches." : {},
-    "Sync Now" : {},
-    "SyncPlay" : {},
-    "Syncing…" : {},
-    "Syncs supported app settings with the Arcfin Sync Jellyfin plugin, when your server has it installed. Locked settings are controlled by your admin and can't be changed here." : {},
-    "TMDB" : {},
-    "TOP RESULT" : {},
-    "TV Shows" : {},
-    "TV volume" : {},
-    "Tabs" : {},
-    "Terms of Use" : {},
-    "Test Connection" : {},
-    "Testing…" : {},
-    "The most space Smart Downloads uses." : {},
-    "The speed new videos start at." : {},
-    "The tab Arcfin opens on. Discover and Watchlist need Seerr; without it, Home." : {},
-    "The thumbnails shown while you scrub. Leaving them out saves space." : {},
-    "The titles stay in your library." : {},
-    "There's no next episode of %@ to download." : {},
-    "This clears the saved server URL and credentials. You can reconnect any time." : {},
-    "This download will be converted on your server before downloading — this may take longer than the file size alone suggests." : {},
-    "This is downloaded — play the offline copy or stream from the server?" : {},
-    "This is taking longer than usual." : {},
-    "This is taking longer than usual. Your downloads work without a connection." : {},
-    "This profile" : {},
-    "This request will be approved automatically." : {},
-    "This server only requests whole series at a time." : {},
-    "This server uses Seerr to handle media requests and more. Would you like to connect it now?" : {},
-    "This trailer can't be played" : {},
-    "Title" : {},
-    "Titles" : {},
-    "Titles outside these limits are hidden everywhere in Arcfin, including Discover and requests." : {},
-    "Titles watched by decade" : {},
-    "Titles you add to your watchlist will appear here." : {},
-    "To" : {},
-    "Toggle Full Screen" : {},
-    "Toggle full screen" : {},
-    "Top Rated, Unwatched" : {},
-    "Top result: %@, %@" : {},
-    "Track" : {},
-    "Trailers" : {},
-    "Trending" : {},
-    "Try Again" : {},
-    "Try a different status filter." : {},
-    "Try another language." : {},
-    "Turn Off PIN" : {},
-    "Turn On Offline Mode" : {},
-    "Turn On PIN" : {},
-    "Turn Subtitles Off" : {},
-    "Turn Subtitles On" : {},
-    "Turn off if HEVC videos stall or stay black on this device; they'll be converted to H.264 instead." : {},
-    "Turning it off also clears it." : {},
-    "Turns on a subtitle track when a video starts." : {},
-    "Under 2 GB free, the oldest watched downloads go first." : {},
-    "Unmute" : {},
-    "Unrated Titles" : {},
-    "Unwatched" : {},
-    "Up Next" : {},
-    "Up or down on the left for brightness, the right for volume; sideways to move through the video." : {},
-    "Up to %@" : {},
-    "Use %@" : {},
-    "Use Current" : {},
-    "Use Mobile Data" : {},
-    "Used automatically when this device is connected to the saved home Wi-Fi network. Requires the Access Wi-Fi Information capability." : {},
-    "Used instead when you're on mobile data." : {},
-    "Used when you're not on the saved home Wi-Fi network below." : {},
-    "Username" : {},
-    "Uses the subtitle providers installed on your server, such as OpenSubtitles." : {},
-    "Value" : {},
-    "Version" : {},
-    "Video" : {},
-    "Video Quality" : {},
-    "Video Range" : {},
-    "View Details" : {},
-    "View in Library" : {},
-    "Volume Down" : {},
-    "Volume Up" : {},
-    "Waiting for Wi-Fi" : {},
-    "Waiting for approval" : {},
-    "Watch Again" : {},
-    "Watch Downloads Instead" : {},
-    "Watch Downloads Offline" : {},
-    "Watch time by day of the week" : {},
-    "Watch time, %@" : {},
-    "Watched" : {},
-    "Watched on Jellyfin" : {},
-    "Watchlist" : {},
-    "Watchlist Available" : {},
-    "Watchlist Empty" : {},
-    "Welcome to Arcfin" : {},
-    "Welcome, %@!" : {},
-    "What Play does for a title you've started." : {},
-    "What's already downloaded of them is discarded." : {},
-    "What's downloaded and how much space it takes." : {},
-    "When Credits Start" : {},
-    "When Resuming" : {},
-    "When a Seerr request is approved, declined or available." : {},
-    "When a download finishes." : {},
-    "When a new movie or episode lands in your libraries." : {},
-    "When a title on your watchlist arrives in your library." : {},
-    "When closing the player counts a title as watched. Server Default uses your server's setting, usually 90%." : {},
-    "Where to Watch" : {},
-    "Where to Watch in %@" : {},
-    "Which formats this device is told it can play." : {},
-    "Which libraries show in Browse and in Recently Added." : {},
-    "Which tabs show and in what order. Discover and Watchlist need Seerr connected." : {},
-    "White" : {},
-    "Who's watching on your server right now." : {},
-    "With a PIN, Arcfin asks for it when it opens and before switching to this profile." : {},
-    "Worked out from what's marked watched on your Jellyfin server. Inside a period, a title counts once, on the last day you played it; All Time counts every play. Watch time uses each title's full length." : {},
-    "X-Ray" : {},
-    "X-Ray: Cast" : {},
-    "X-Ray: cast" : {},
-    "Year" : {},
-    "Yellow" : {},
-    "Yes, Connect Now" : {},
-    "You appear to be offline." : {},
-    "You can also ask your admin to connect this for you — initial sign-in is the only time it can be set up here, since this setting is locked." : {},
-    "You have nothing to continue watching." : {},
-    "You'll need to sign in again to use it. Downloads stay on this device." : {},
-    "You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply." : {},
-    "You've watched every movie in your library." : {},
-    "YouTube Fallback" : {},
-    "Your Code" : {},
-    "Your Jellyfin libraries will appear here." : {},
-    "Your Jellyfin media, beautifully." : {},
-    "Your Playlists" : {},
-    "Your Profile" : {},
-    "Your Services" : {},
-    "Your Streaming Services" : {},
-    "Your media requests will appear here." : {},
-    "Your stats card for %@" : {},
-    "by PSMattas" : {},
-    "http://10.0.1.122:5055" : {},
-    "http://10.0.1.50:8096" : {},
-    "https://your-server.example.com" : {},
-    "of movies and TV" : {},
-    "·" : {},
-    "· %@" : {},
-    "· %lld min" : {},
-    "•" : {},
-    "★ %@" : {}
+    "" : {
+
+    },
+    "  •  " : {
+
+    },
+    "Account & Server" : {
+
+    },
+    "Plugins" : {
+
+    },
+    "Preferences" : {
+
+    },
+    "Support" : {
+
+    },
+    "·" : {
+
+    },
+    "· %@" : {
+
+    },
+    "· %lld min" : {
+
+    },
+    "\"Are You Still Watching?\" Prompt" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ · %@" : {
+
+    },
+    "%@ · %lld%%" : {
+
+    },
+    "%@ / %@" : {
+
+    },
+    "%@ %@" : {
+
+    },
+    "%@ %lld%%" : {
+
+    },
+    "%@ can watch again from %@." : {
+
+    },
+    "%@ can't use this server at the moment." : {
+
+    },
+    "%@ downloaded" : {
+
+    },
+    "%@ of %@" : {
+
+    },
+    "%@ used by %lld download%@" : {
+
+    },
+    "%@ watched" : {
+
+    },
+    "%@, %@" : {
+
+    },
+    "%@: %lld of %lld" : {
+
+    },
+    "%@. Save or send it, then attach it to your issue or support request." : {
+      "comment" : "A button that opens a share sheet with a file attached. The argument is the name of the file, and the second argument is a description of the file's purpose.",
+      "isCommentAutoGenerated" : true
+    },
+    "%@'s %@" : {
+
+    },
+    "%@/s" : {
+
+    },
+    "%@%@" : {
+
+    },
+    "%@%@%@" : {
+
+    },
+    "%@×" : {
+
+    },
+    "%@h" : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld %@" : {
+
+    },
+    "%lld %@ · %@" : {
+
+    },
+    "%lld episode%@" : {
+
+    },
+    "%lld episode%@ downloaded" : {
+
+    },
+    "%lld episodes" : {
+
+    },
+    "%lld found" : {
+
+    },
+    "%lld GB" : {
+
+    },
+    "%lld min" : {
+
+    },
+    "%lld min left" : {
+
+    },
+    "%lld minutes" : {
+
+    },
+    "%lld Minutes" : {
+
+    },
+    "%lld of %lld" : {
+
+    },
+    "%lld of %lld watched" : {
+
+    },
+    "%lld Seerr titles" : {
+
+    },
+    "%lld titles" : {
+
+    },
+    "%lld." : {
+
+    },
+    "%lld%%" : {
+
+    },
+    "%lldm" : {
+
+    },
+    "%llds" : {
+
+    },
+    "•" : {
+
+    },
+    "★ %@" : {
+
+    },
+    "1 title" : {
+
+    },
+    "4K" : {
+
+    },
+    "4K Ultra HD" : {
+
+    },
+    "7 Days" : {
+
+    },
+    "30 Days" : {
+
+    },
+    "480p" : {
+
+    },
+    "720p" : {
+
+    },
+    "1080p HD" : {
+
+    },
+    "A 4-digit PIN is required when switching to this profile." : {
+
+    },
+    "A button in the player to jump between chapters, when the title has them." : {
+
+    },
+    "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too." : {
+
+    },
+    "A light vibration on key actions, like requesting a title." : {
+
+    },
+    "A top result, shelves by kind and a Discover list. Off shows plain poster grids." : {
+
+    },
+    "About" : {
+
+    },
+    "Account" : {
+
+    },
+    "Account Type" : {
+
+    },
+    "Active Sessions" : {
+
+    },
+    "Add" : {
+
+    },
+    "Add %lld" : {
+
+    },
+    "Add a PIN to require verification before switching to this profile." : {
+
+    },
+    "Add Header" : {
+
+    },
+    "Add movies, shows and episodes, or long-press any title and choose Add to Playlist." : {
+
+    },
+    "Add Profile" : {
+
+    },
+    "Add Server" : {
+
+    },
+    "Add Titles" : {
+
+    },
+    "Add to favorites" : {
+
+    },
+    "Add to Favorites" : {
+
+    },
+    "Add to Playlist" : {
+
+    },
+    "Add to Playlist…" : {
+
+    },
+    "Add to watchlist" : {
+
+    },
+    "Add to Watchlist" : {
+
+    },
+    "Add your Seerr server in Settings → Plugins → Seerr." : {
+
+    },
+    "Add your Seerr server URL and credentials in Settings → Plugins → Seerr." : {
+
+    },
+    "Adding up what you've watched…" : {
+
+    },
+    "Addresses, home Wi-Fi, custom headers and settings sync." : {
+
+    },
+    "Adds %lld episodes of %@." : {
+
+    },
+    "Adds a Stats tab with your watch time, habits and favourites." : {
+
+    },
+    "Adds your Seerr watchlist and its trending and popular rows to Home." : {
+
+    },
+    "After 30 minutes the Apple TV's own screensaver and sleep settings take over." : {
+
+    },
+    "Afternoon" : {
+
+    },
+    "Age ratings" : {
+
+    },
+    "AirPlay" : {
+
+    },
+    "All" : {
+
+    },
+    "All watched" : {
+
+    },
+    "Allowed" : {
+
+    },
+    "Allowed times" : {
+
+    },
+    "Allowed Times" : {
+
+    },
+    "Any" : {
+
+    },
+    "API Key" : {
+
+    },
+    "API key or read access token" : {
+
+    },
+    "App Lock" : {
+
+    },
+    "Appearance" : {
+
+    },
+    "Approved" : {
+
+    },
+    "Arcfin" : {
+
+    },
+    "Arcfin couldn't load anything from your Jellyfin server." : {
+
+    },
+    "Arcfin Sync" : {
+
+    },
+    "Arcfin's language is set in System Settings › General › Language & Region." : {
+
+    },
+    "Arcfin's language is set in the Settings app." : {
+
+    },
+    "Are you still watching?" : {
+
+    },
+    "Ask" : {
+
+    },
+    "At 80%" : {
+
+    },
+    "At 85%" : {
+
+    },
+    "Audio" : {
+
+    },
+    "Audio & Subtitles…" : {
+
+    },
+    "Audio Language" : {
+
+    },
+    "Audio Only" : {
+
+    },
+    "Auth Failed" : {
+
+    },
+    "Authentication Failed" : {
+
+    },
+    "Authorize" : {
+
+    },
+    "Auto" : {
+
+    },
+    "Auto (Recommended)" : {
+
+    },
+    "Auto picks from your connection; a fixed choice caps every stream." : {
+
+    },
+    "Auto prefers Aether, which plays the most formats, HDR and surround. If a video won't play, try AVFoundation or VLC." : {
+
+    },
+    "Auto-play Next Episode" : {
+
+    },
+    "Automatic (%@)" : {
+
+    },
+    "Automatic uses the region set in Seerr, the same one its own pages use. Choose a country to see what streams there instead." : {
+
+    },
+    "Availability from JustWatch" : {
+
+    },
+    "Available" : {
+
+    },
+    "Available in %@" : {
+
+    },
+    "Background" : {
+
+    },
+    "Because You Watched" : {
+
+    },
+    "Bitrate" : {
+
+    },
+    "Blurs the pictures and hides the descriptions of episodes you haven't started." : {
+
+    },
+    "Both are optional." : {
+
+    },
+    "Bottom Navigation" : {
+
+    },
+    "Box" : {
+
+    },
+    "Browse" : {
+
+    },
+    "Browse Files" : {
+
+    },
+    "Browsing" : {
+
+    },
+    "Build" : {
+
+    },
+    "By day of the week" : {
+
+    },
+    "By decade" : {
+
+    },
+    "by PSMattas" : {
+
+    },
+    "By time of day" : {
+
+    },
+    "Can't Play This" : {
+
+    },
+    "Can't reach your server" : {
+
+    },
+    "Can't Reach Your Server" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel All" : {
+
+    },
+    "Cancel All Downloads" : {
+
+    },
+    "Cancel all downloads?" : {
+
+    },
+    "Cancel download" : {
+
+    },
+    "Cancel Download" : {
+
+    },
+    "Cast" : {
+
+    },
+    "Casting to %@" : {
+
+    },
+    "Change audio or subtitles once and the rest of that show starts the same way." : {
+
+    },
+    "Change PIN" : {
+
+    },
+    "Change these, and the limits above, from the server's dashboard." : {
+
+    },
+    "Chapter List" : {
+
+    },
+    "Chapters" : {
+
+    },
+    "Check your connection or Server Settings, then retry." : {
+
+    },
+    "Check your connection to the server, then try again." : {
+
+    },
+    "Check your connection, then open it again." : {
+
+    },
+    "Check your Seerr credentials in Settings → Plugins → Seerr." : {
+
+    },
+    "Chromecast" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Clear All Filters" : {
+
+    },
+    "Clear Image Cache" : {
+
+    },
+    "Clear Selection" : {
+
+    },
+    "Close" : {
+
+    },
+    "Close and reopen the app for URL or Wi-Fi network changes to take effect." : {
+
+    },
+    "Close player" : {
+
+    },
+    "Close Player" : {
+
+    },
+    "Close trailer" : {
+
+    },
+    "Close X-Ray" : {
+
+    },
+    "Code" : {
+
+    },
+    "Code %@" : {
+
+    },
+    "Codec" : {
+
+    },
+    "Codec Compatibility" : {
+
+    },
+    "COLLECTION" : {
+
+    },
+    "Colour" : {
+
+    },
+    "Comfortable" : {
+
+    },
+    "Coming soon." : {
+
+    },
+    "Compact" : {
+
+    },
+    "Confirm the PIN" : {
+
+    },
+    "Connect" : {
+
+    },
+    "Connect Seerr" : {
+
+    },
+    "Connected" : {
+
+    },
+    "Connecting to your server…" : {
+
+    },
+    "Connection" : {
+
+    },
+    "Contact Support" : {
+
+    },
+    "Container" : {
+
+    },
+    "Content Rating" : {
+
+    },
+    "Continue Watching" : {
+
+    },
+    "Couldn't load Discover from Seerr" : {
+
+    },
+    "Couldn't Load Stats" : {
+
+    },
+    "Couldn't load streaming services." : {
+
+    },
+    "Couldn't Reach That Session" : {
+
+    },
+    "Countdown" : {
+
+    },
+    "Country" : {
+
+    },
+    "Counts from the day it downloaded, watched or not." : {
+
+    },
+    "Create" : {
+
+    },
+    "Create a Group" : {
+
+    },
+    "Create or join a group that keeps playback in sync with others." : {
+
+    },
+    "Credentials" : {
+
+    },
+    "Critics score %lld percent" : {
+
+    },
+    "Current profile" : {
+
+    },
+    "Current Profile" : {
+
+    },
+    "Currently Using" : {
+
+    },
+    "Custom Headers" : {
+
+    },
+    "Cyan" : {
+
+    },
+    "Data Protection" : {
+
+    },
+    "Date" : {
+
+    },
+    "Day" : {
+
+    },
+    "Decade" : {
+
+    },
+    "Declined" : {
+
+    },
+    "Default Speed" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete (%lld)" : {
+
+    },
+    "Delete %@?" : {
+
+    },
+    "Delete %lld selected download%@?" : {
+
+    },
+    "Delete %lld selected episode%@?" : {
+
+    },
+    "Delete After Watching" : {
+
+    },
+    "Delete All Episodes" : {
+
+    },
+    "Delete Download" : {
+
+    },
+    "Delete Playlist" : {
+
+    },
+    "Delete this download?" : {
+
+    },
+    "Delete this episode?" : {
+
+    },
+    "Delete this show's downloads?" : {
+
+    },
+    "Details" : {
+
+    },
+    "Direct Play HEVC (H.265)" : {
+
+    },
+    "Direct Play Surround Audio (AC3/EAC3/DTS)" : {
+
+    },
+    "Discover" : {
+
+    },
+    "Dislike" : {
+
+    },
+    "Disliked" : {
+
+    },
+    "Dismiss" : {
+
+    },
+    "Dismiss suggestions" : {
+
+    },
+    "Done" : {
+
+    },
+    "Double-click a side of the video to skip back or forward." : {
+
+    },
+    "Double-Click to Skip" : {
+
+    },
+    "Double-tap a side of the video to skip back or forward." : {
+
+    },
+    "Double-Tap to Skip" : {
+
+    },
+    "Download" : {
+
+    },
+    "Download Complete" : {
+
+    },
+    "Download Failed" : {
+
+    },
+    "Download movies and episodes to watch them without a connection." : {
+
+    },
+    "Download Next" : {
+
+    },
+    "Download Next Episode" : {
+
+    },
+    "Download Now?" : {
+
+    },
+    "Download on Mobile Data" : {
+
+    },
+    "Download on Mobile Data?" : {
+
+    },
+    "Download Quality" : {
+
+    },
+    "Download queue options" : {
+
+    },
+    "Download Season" : {
+
+    },
+    "Downloaded" : {
+
+    },
+    "Downloaded movies and shows will appear here once you have some." : {
+
+    },
+    "Downloaded, tap to delete" : {
+
+    },
+    "Downloading" : {
+
+    },
+    "Downloading %@." : {
+
+    },
+    "Downloading a season leaves out episodes you've watched." : {
+
+    },
+    "Downloads" : {
+
+    },
+    "Downloads at Once" : {
+
+    },
+    "Downloads start when Low Data Mode is off." : {
+
+    },
+    "Downloads start when Low Power Mode is off." : {
+
+    },
+    "Downloads start when you're on Wi-Fi." : {
+
+    },
+    "Downloads the next episode of a series to watch." : {
+
+    },
+    "Downloads wait until Low Data Mode is off." : {
+
+    },
+    "Downloads wait until Low Power Mode is off." : {
+
+    },
+    "Drag to reorder. Up to %lld tabs can be active at once — the rest stay hidden but keep their place in the order if you turn them back on." : {
+
+    },
+    "E%lld" : {
+
+    },
+    "Each gets a Popular on … row on Home, in this order." : {
+
+    },
+    "Each gets a Popular on … row on Home, in this order. Press and hold one to move it." : {
+
+    },
+    "Earlier by 0.1 s" : {
+
+    },
+    "Earlier by 0.5 s" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Empty Playlist" : {
+
+    },
+    "End of Episode" : {
+
+    },
+    "Ends %@" : {
+
+    },
+    "Enter a new PIN" : {
+
+    },
+    "Enter current PIN" : {
+
+    },
+    "Enter PIN" : {
+
+    },
+    "Enter PIN to remove it" : {
+
+    },
+    "Enter the code shown on another device to sign it in instantly using this account." : {
+
+    },
+    "Enter Your Password" : {
+
+    },
+    "Ep %lld" : {
+
+    },
+    "Episodes" : {
+
+    },
+    "Episodes to Keep" : {
+
+    },
+    "Evening" : {
+
+    },
+    "Everyone in a group needs %@ already open in their own player — SyncPlay keeps play, pause, and seek in sync from there." : {
+
+    },
+    "Extra headers for a server behind an access gateway, such as Cloudflare Access." : {
+
+    },
+    "Extra Large" : {
+
+    },
+    "Faster" : {
+
+    },
+    "Favorites" : {
+
+    },
+    "Favourites Only" : {
+
+    },
+    "Featured" : {
+
+    },
+    "Feedback" : {
+
+    },
+    "Fewer animations and transitions throughout the app." : {
+
+    },
+    "Fill screen" : {
+
+    },
+    "Fill Screen" : {
+
+    },
+    "Filter & Sort" : {
+
+    },
+    "Filter requests" : {
+
+    },
+    "Filters on" : {
+
+    },
+    "Find movies, shows, and more." : {
+
+    },
+    "Find…" : {
+
+    },
+    "Finish a movie or an episode and your stats start here." : {
+
+    },
+    "Fit to screen" : {
+
+    },
+    "Fit to Screen" : {
+
+    },
+    "For a server behind an access gateway" : {
+
+    },
+    "For the skip buttons, double-tap and the arrow keys." : {
+
+    },
+    "Forget %lld Remembered %@" : {
+
+    },
+    "Free Up Space (%lld)" : {
+
+    },
+    "Free up space by deleting %lld selected download%@?" : {
+
+    },
+    "From" : {
+
+    },
+    "General" : {
+
+    },
+    "Genre" : {
+
+    },
+    "Genre Picks" : {
+
+    },
+    "Genres" : {
+
+    },
+    "Get a New Code" : {
+
+    },
+    "Get your server running in a few steps" : {
+
+    },
+    "Go" : {
+
+    },
+    "Go Back Online" : {
+
+    },
+    "Green" : {
+
+    },
+    "Grid density" : {
+
+    },
+    "Grid Density" : {
+
+    },
+    "Group" : {
+
+    },
+    "Group name" : {
+
+    },
+    "Haptic Feedback" : {
+
+    },
+    "Has Subtitles" : {
+
+    },
+    "HD" : {
+
+    },
+    "Header name" : {
+
+    },
+    "Hero Video Backdrops" : {
+
+    },
+    "Hidden Tags" : {
+
+    },
+    "Hide %@" : {
+
+    },
+    "Hide password" : {
+
+    },
+    "Hide Watched in Libraries" : {
+
+    },
+    "Higher takes more space." : {
+
+    },
+    "Home" : {
+
+    },
+    "Home Shelves" : {
+
+    },
+    "Home Wi-Fi Network" : {
+
+    },
+    "Hours" : {
+
+    },
+    "How long the button fills before an automatic skip or the next episode." : {
+
+    },
+    "How many download at the same time." : {
+
+    },
+    "How many upcoming episodes of each show to keep." : {
+
+    },
+    "http://10.0.1.50:8096" : {
+
+    },
+    "http://10.0.1.122:5055" : {
+
+    },
+    "https://your-server.example.com" : {
+
+    },
+    "Idle · last active %@" : {
+
+    },
+    "Image Cache" : {
+
+    },
+    "In %@" : {
+
+    },
+    "In this Collection" : {
+
+    },
+    "Integrations" : {
+
+    },
+    "Jellyfin Setup Guide" : {
+
+    },
+    "Join a Group" : {
+
+    },
+    "Keep Downloaded" : {
+
+    },
+    "Keep Downloading" : {
+
+    },
+    "Keeps the episode you're up to and the next ones of each show you've downloaded, removing watched ones." : {
+
+    },
+    "Keeps the video playing in a small window when you go Home. Not offered when Aether decodes in software." : {
+
+    },
+    "Kept Downloaded" : {
+
+    },
+    "Kind" : {
+
+    },
+    "Language" : {
+
+    },
+    "Large" : {
+
+    },
+    "Largest First" : {
+
+    },
+    "Last Active" : {
+
+    },
+    "Last Sign-In" : {
+
+    },
+    "Last Synced" : {
+
+    },
+    "Late night" : {
+
+    },
+    "Later by 0.1 s" : {
+
+    },
+    "Later by 0.5 s" : {
+
+    },
+    "Leave Group" : {
+
+    },
+    "Leave SharePlay" : {
+
+    },
+    "Leave SharePlay (%lld)" : {
+
+    },
+    "Lets Smart Downloads download on mobile data. Charges may apply." : {
+
+    },
+    "Libraries" : {
+
+    },
+    "Library" : {
+
+    },
+    "Library grids start filtered to unwatched; you can still change it there." : {
+
+    },
+    "Library Screensaver" : {
+
+    },
+    "Licenses & Third-Party Notices" : {
+
+    },
+    "Licenses and other third-party components Arcfin uses." : {
+
+    },
+    "Like" : {
+
+    },
+    "Liked" : {
+
+    },
+    "Local Address" : {
+
+    },
+    "Local URL" : {
+
+    },
+    "Locked Settings" : {
+
+    },
+    "Looking for groups…" : {
+
+    },
+    "Looking for servers on your network…" : {
+
+    },
+    "Low Data Mode Is On" : {
+
+    },
+    "Low Data Mode is on. Downloading uses data your device is trying to save." : {
+
+    },
+    "Low Power Mode Is On" : {
+
+    },
+    "Low Power Mode is on. Downloading uses more battery." : {
+
+    },
+    "Made by Arcfin" : {
+
+    },
+    "Made by PSMattas" : {
+
+    },
+    "Make a playlist, then add movies, shows and episodes to it." : {
+
+    },
+    "Manage" : {
+
+    },
+    "Manage Storage" : {
+
+    },
+    "Mark as Unwatched" : {
+
+    },
+    "Mark as Watched" : {
+
+    },
+    "Mark Season Unwatched" : {
+
+    },
+    "Mark Season Watched" : {
+
+    },
+    "Mark Series Unwatched" : {
+
+    },
+    "Mark Series Watched" : {
+
+    },
+    "Mark Unwatched" : {
+
+    },
+    "Mark Watched" : {
+
+    },
+    "Mark watched options" : {
+
+    },
+    "Match" : {
+
+    },
+    "Match Content Frame Rate" : {
+
+    },
+    "Maturity" : {
+
+    },
+    "Max Quality" : {
+
+    },
+    "Maximum content rating" : {
+
+    },
+    "Maximum Rating" : {
+
+    },
+    "Media Info" : {
+
+    },
+    "Media Status" : {
+
+    },
+    "Media Type" : {
+
+    },
+    "Medium" : {
+
+    },
+    "Merge Continue Watching & Up Next" : {
+
+    },
+    "Message" : {
+
+    },
+    "Minimum score" : {
+
+    },
+    "Minimum Score" : {
+
+    },
+    "Modern Search" : {
+
+    },
+    "More" : {
+
+    },
+    "More Info" : {
+
+    },
+    "More Like This" : {
+
+    },
+    "More options" : {
+
+    },
+    "Morning" : {
+
+    },
+    "Motion" : {
+
+    },
+    "Move Down" : {
+
+    },
+    "Move to another server you've signed in to." : {
+
+    },
+    "Move Up" : {
+
+    },
+    "Movie" : {
+
+    },
+    "MOVIE" : {
+
+    },
+    "Movies" : {
+
+    },
+    "Movies and episodes saved for offline playback" : {
+
+    },
+    "Movies and series" : {
+
+    },
+    "Movies, series, people…" : {
+
+    },
+    "Movies, shows, episodes" : {
+
+    },
+    "Movies, shows, people…" : {
+
+    },
+    "Mute" : {
+
+    },
+    "My %@" : {
+
+    },
+    "My %@ on Arcfin" : {
+
+    },
+    "My Requests" : {
+
+    },
+    "Name" : {
+
+    },
+    "Name (A–Z)" : {
+
+    },
+    "Name (Z–A)" : {
+
+    },
+    "Navigation" : {
+
+    },
+    "Never" : {
+
+    },
+    "New Content Added" : {
+
+    },
+    "New order each time you open Home; Continue Watching and Next Up stay on top. Turns off reordering." : {
+
+    },
+    "New playlist" : {
+
+    },
+    "New Playlist" : {
+
+    },
+    "New videos start at the speed you last picked." : {
+
+    },
+    "Next" : {
+
+    },
+    "Next %lld Episodes" : {
+
+    },
+    "Next Episode" : {
+
+    },
+    "Next Up" : {
+
+    },
+    "Next: %@" : {
+
+    },
+    "No %@ Requests" : {
+
+    },
+    "No active sessions." : {
+
+    },
+    "No audio track selected." : {
+
+    },
+    "No content limits are set for this profile." : {
+
+    },
+    "No Downloads" : {
+
+    },
+    "No joinable groups right now." : {
+
+    },
+    "No Libraries" : {
+
+    },
+    "No playback info available." : {
+
+    },
+    "No Playlists" : {
+
+    },
+    "No Requests" : {
+
+    },
+    "No Subtitles Found" : {
+
+    },
+    "No trailer available" : {
+
+    },
+    "None" : {
+
+    },
+    "Normal" : {
+
+    },
+    "Normal Speed" : {
+
+    },
+    "Not allowed" : {
+
+    },
+    "Not Available Right Now" : {
+
+    },
+    "Not in your library yet · from Seerr" : {
+
+    },
+    "Not Now" : {
+
+    },
+    "Not rated" : {
+
+    },
+    "Not Right Now" : {
+
+    },
+    "Not watched" : {
+      "comment" : "A label for an episode that hasn't been watched.",
+      "isCommentAutoGenerated" : true
+    },
+    "Nothing found in this library." : {
+
+    },
+    "Nothing Here" : {
+
+    },
+    "Nothing Watched in %@" : {
+
+    },
+    "Nothing Watched Yet" : {
+
+    },
+    "Nothing you finished was last played then. Try another %@." : {
+
+    },
+    "Notifications" : {
+
+    },
+    "Notifications in these hours go to Notification Center without a sound or banner." : {
+
+    },
+    "Now Available" : {
+
+    },
+    "of movies and TV" : {
+
+    },
+    "Off" : {
+
+    },
+    "Off, downloads wait for Wi-Fi. Charges may apply." : {
+
+    },
+    "Offline Mode" : {
+
+    },
+    "OK" : {
+
+    },
+    "Only for audio always going to a receiver over AirPlay or HDMI. This device can't play these itself, so they'd be silent." : {
+
+    },
+    "Only Tagged" : {
+
+    },
+    "Open a video file" : {
+
+    },
+    "Open Arcfin and sign in first." : {
+
+    },
+    "Open Discover" : {
+
+    },
+    "Open Downloads" : {
+
+    },
+    "Open in New Window" : {
+
+    },
+    "Open local file" : {
+
+    },
+    "Open On" : {
+
+    },
+    "Open Seerr Title" : {
+
+    },
+    "Open Title" : {
+
+    },
+    "Open Video File…" : {
+
+    },
+    "Opening %@." : {
+
+    },
+    "Opening your library…" : {
+
+    },
+    "Opens a movie, series or episode in Arcfin." : {
+
+    },
+    "Opens a random collection" : {
+
+    },
+    "Opens a random title from this library using the current filters" : {
+
+    },
+    "Opens a title from your Seerr watchlist or requests." : {
+
+    },
+    "Opens Arcfin's issue tracker. You can sign in there with GitHub or GitLab." : {
+
+    },
+    "Opens Discover, to find something new to request." : {
+
+    },
+    "Opens their page" : {
+
+    },
+    "Opens whatever you were watching most recently." : {
+
+    },
+    "Opens your downloaded titles." : {
+
+    },
+    "Operating System" : {
+
+    },
+    "Optional. Get a free key at themoviedb.org under Settings → API. Arcfin uses it for where titles are streaming, title details and what's popular without Seerr, and when Seerr can't reach TMDB. Requests still go through Seerr. Stored in the Keychain on this device." : {
+
+    },
+    "Outline" : {
+
+    },
+    "Parental Controls" : {
+
+    },
+    "Password" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Pause download" : {
+
+    },
+    "Pause in Low Data Mode" : {
+
+    },
+    "Pause in Low Power Mode" : {
+
+    },
+    "Pause Queue" : {
+
+    },
+    "Paused" : {
+
+    },
+    "Pauses and asks after 3 episodes play in a row with no input." : {
+
+    },
+    "Pending" : {
+
+    },
+    "Period" : {
+
+    },
+    "Permissions" : {
+
+    },
+    "Pick a longer period, go back to an earlier one, or come back once you've finished something." : {
+
+    },
+    "Pick a video file from Files app" : {
+
+    },
+    "Pick the services you use to get a row of what's popular on each, from Seerr or TMDB." : {
+
+    },
+    "Picture in Picture" : {
+
+    },
+    "Picture in Picture When Leaving" : {
+
+    },
+    "Picture in Picture, gestures, chapters and more." : {
+
+    },
+    "PIN protected" : {
+
+    },
+    "Play" : {
+
+    },
+    "Play %@" : {
+
+    },
+    "Play a Random Movie" : {
+
+    },
+    "Play Downloaded" : {
+
+    },
+    "Play from Beginning" : {
+
+    },
+    "Play from the First Episode" : {
+
+    },
+    "Play Method" : {
+
+    },
+    "Play Title" : {
+
+    },
+    "Play Trailer" : {
+
+    },
+    "Playback" : {
+
+    },
+    "Playback Engine" : {
+
+    },
+    "Playback paused before %@" : {
+
+    },
+    "Playback position" : {
+
+    },
+    "Playback speed" : {
+
+    },
+    "Playback Speed" : {
+
+    },
+    "Player" : {
+
+    },
+    "Player Features" : {
+
+    },
+    "Playing %@." : {
+
+    },
+    "Playlist" : {
+
+    },
+    "PLAYLIST" : {
+
+    },
+    "Playlist options" : {
+
+    },
+    "Playlist Order" : {
+
+    },
+    "Plays a movie or episode from where you left off, or a series from its next episode." : {
+
+    },
+    "Plays a movie you haven't watched yet, picked at random." : {
+
+    },
+    "Plays a muted trailer behind the featured title when the server has one." : {
+
+    },
+    "Plays a YouTube trailer when the server has none." : {
+
+    },
+    "Plays whatever you were watching last." : {
+
+    },
+    "Please select your profile to continue" : {
+
+    },
+    "Popular Movies" : {
+
+    },
+    "Popular Series" : {
+
+    },
+    "Post" : {
+
+    },
+    "Posters and backdrops are kept to load faster. Clearing them never touches your downloads." : {
+
+    },
+    "Preferred Audio Language" : {
+
+    },
+    "Preferred Language" : {
+
+    },
+    "Preferred Language uses the one from Playback settings, or saves all when none is set." : {
+
+    },
+    "Preferred Subtitle Language" : {
+
+    },
+    "Preparing Diagnostics…" : {
+      "comment" : "The title of a button that is disabled while the diagnostics are being prepared.",
+      "isCommentAutoGenerated" : true
+    },
+    "Preparing download" : {
+
+    },
+    "Preparing…" : {
+
+    },
+    "Press to go back" : {
+
+    },
+    "Previous" : {
+
+    },
+    "Previous: %@" : {
+
+    },
+    "Privacy Policy" : {
+
+    },
+    "Product" : {
+
+    },
+    "Profile" : {
+
+    },
+    "Profiles" : {
+
+    },
+    "Public Server Info" : {
+
+    },
+    "Quality" : {
+
+    },
+    "Quality on Mobile Data" : {
+
+    },
+    "Quick Connect" : {
+
+    },
+    "Quick tips" : {
+
+    },
+    "Quiet Hours" : {
+
+    },
+    "Random Movie" : {
+
+    },
+    "Rate" : {
+
+    },
+    "Rated %@" : {
+
+    },
+    "Rating" : {
+
+    },
+    "Rating (Highest)" : {
+
+    },
+    "Read More" : {
+
+    },
+    "Recent" : {
+
+    },
+    "Recently Added" : {
+
+    },
+    "Recently Added Movies" : {
+
+    },
+    "Recently Added Shows" : {
+
+    },
+    "Recently Aired Episodes" : {
+
+    },
+    "Recently Released Movies" : {
+
+    },
+    "Recommended" : {
+
+    },
+    "Reduce Motion" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Release Date (Newest)" : {
+
+    },
+    "Release Date (Oldest)" : {
+
+    },
+    "Release Order" : {
+
+    },
+    "Remember Playback Speed" : {
+
+    },
+    "Remember Tracks Per Show" : {
+
+    },
+    "Remote Quality Limit" : {
+
+    },
+    "Remote URL" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove %lld Episodes from Playlist" : {
+
+    },
+    "Remove Connection" : {
+
+    },
+    "Remove Dislike" : {
+
+    },
+    "Remove Downloads After" : {
+
+    },
+    "Remove from Continue Watching" : {
+
+    },
+    "Remove from favorites" : {
+
+    },
+    "Remove from Favorites" : {
+
+    },
+    "Remove from Playlist" : {
+
+    },
+    "Remove from watchlist" : {
+
+    },
+    "Remove from Watchlist" : {
+
+    },
+    "Remove Key" : {
+
+    },
+    "Remove Like" : {
+
+    },
+    "Remove PIN" : {
+
+    },
+    "Remove Profile" : {
+
+    },
+    "Remove Request" : {
+
+    },
+    "Remove Seerr connection?" : {
+
+    },
+    "Remove this request?" : {
+
+    },
+    "Remove Watched When Low on Space" : {
+
+    },
+    "Removes a movie or episode once you finish it, here or on another device." : {
+
+    },
+    "Rename" : {
+
+    },
+    "Rename Playlist" : {
+
+    },
+    "Reorder or hide Home's rows." : {
+
+    },
+    "Report a Problem" : {
+
+    },
+    "Request" : {
+
+    },
+    "Request from Seerr" : {
+
+    },
+    "Request movies and shows, and keep a watchlist." : {
+
+    },
+    "Request Status" : {
+
+    },
+    "Request Updates" : {
+
+    },
+    "Request via Seerr" : {
+
+    },
+    "Requests" : {
+
+    },
+    "Reset" : {
+
+    },
+    "Resolution" : {
+
+    },
+    "Results" : {
+
+    },
+    "Resume" : {
+
+    },
+    "Resume %@" : {
+
+    },
+    "Resume download" : {
+
+    },
+    "Resume from %@" : {
+
+    },
+    "Resume Playback?" : {
+
+    },
+    "Resume Queue" : {
+
+    },
+    "Resume Watching" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Retrying…" : {
+
+    },
+    "Role" : {
+
+    },
+    "Rotate" : {
+
+    },
+    "S%lld · E%lld" : {
+
+    },
+    "S%lld · E%lld%@" : {
+
+    },
+    "Same as Wi-Fi" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save Search History" : {
+
+    },
+    "Saved on the Server" : {
+
+    },
+    "Score" : {
+
+    },
+    "Screensaver" : {
+
+    },
+    "Scrubbing Previews" : {
+
+    },
+    "Search" : {
+
+    },
+    "Search for Subtitles…" : {
+
+    },
+    "Search Results" : {
+
+    },
+    "Search services" : {
+
+    },
+    "Search Subtitles" : {
+
+    },
+    "Season" : {
+
+    },
+    "Season %@" : {
+
+    },
+    "Season Downloaded" : {
+
+    },
+    "Season Downloads Skip Watched" : {
+
+    },
+    "Seasons" : {
+
+    },
+    "Security" : {
+
+    },
+    "See All" : {
+
+    },
+    "Seerr" : {
+
+    },
+    "Seerr has no streaming services listed for this country." : {
+
+    },
+    "Seerr Not Connected" : {
+
+    },
+    "Seerr Title" : {
+
+    },
+    "Seerr uses the same Jellyfin account (%@) — this is only used to connect Seerr and isn't stored anywhere else." : {
+
+    },
+    "Select" : {
+
+    },
+    "Select All" : {
+
+    },
+    "Send" : {
+
+    },
+    "Send a Message" : {
+
+    },
+    "Send a request to your Seerr server. You'll be notified when it becomes available." : {
+
+    },
+    "Send Message…" : {
+
+    },
+    "Sent with every request to your Jellyfin server, its images and video streams. Use this for a server behind an access gateway, for example a Cloudflare Access service token (CF-Access-Client-Id and CF-Access-Client-Secret). Values are stored in the Keychain. The VLC player and casting can't send them." : {
+
+    },
+    "Series" : {
+
+    },
+    "SERIES" : {
+
+    },
+    "Server" : {
+
+    },
+    "Server Default" : {
+
+    },
+    "Server Name" : {
+
+    },
+    "Server Settings" : {
+
+    },
+    "Server URL" : {
+
+    },
+    "Set a PIN" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Settings Are Locked" : {
+
+    },
+    "Setup Completed" : {
+
+    },
+    "Setup Guide" : {
+
+    },
+    "Share" : {
+
+    },
+    "Share Diagnostics" : {
+
+    },
+    "Share Diagnostics File" : {
+      "comment" : "The title of a button that shares the diagnostics report.",
+      "isCommentAutoGenerated" : true
+    },
+    "Share Your Stats" : {
+
+    },
+    "SharePlay" : {
+
+    },
+    "Show %@" : {
+
+    },
+    "Show as grid" : {
+
+    },
+    "Show as list" : {
+
+    },
+    "Show Details" : {
+
+    },
+    "Show Discover" : {
+
+    },
+    "Show Discover on Home" : {
+
+    },
+    "Show Downloads" : {
+
+    },
+    "Show in Browse" : {
+
+    },
+    "Show in Recently Added" : {
+
+    },
+    "Show password" : {
+
+    },
+    "Show playback controls" : {
+
+    },
+    "Show Subtitles by Default" : {
+
+    },
+    "Show Video" : {
+
+    },
+    "Shows on %@ for 15 seconds." : {
+
+    },
+    "Shows only what's downloaded, without connecting to your server." : {
+
+    },
+    "Shows Play Trailer when the server has a trailer." : {
+
+    },
+    "Shows set to Keep Downloaded from their page download straight away, outside the storage budget, and stop under 2 GB free. Swipe to stop." : {
+
+    },
+    "Shows the Cast button when a Chromecast is on your network." : {
+
+    },
+    "Shows them as one row instead of two." : {
+
+    },
+    "Shows your library's artwork when the remote hasn't been used for a while, except during playback. Press any button to go back." : {
+
+    },
+    "Shuffle" : {
+
+    },
+    "Shuffle Shelves" : {
+
+    },
+    "Sign In Instead" : {
+
+    },
+    "Sign in or unlock Arcfin in its main window first." : {
+
+    },
+    "Sign in to another Jellyfin server." : {
+
+    },
+    "Sign Out" : {
+
+    },
+    "Sign out of this server?" : {
+
+    },
+    "Sign-in method" : {
+
+    },
+    "Simultaneous Streams" : {
+
+    },
+    "Size" : {
+
+    },
+    "Size, colour and background of subtitles." : {
+
+    },
+    "Skip Back" : {
+
+    },
+    "Skip back %lld seconds" : {
+
+    },
+    "Skip back 10 seconds" : {
+
+    },
+    "Skip Backward" : {
+
+    },
+    "Skip buttons show when your server knows where a recap, intro, credits or preview is, from the Intro Skipper, Chapter Segments Provider or SkipMe.db plugins." : {
+
+    },
+    "Skip Credits Automatically" : {
+
+    },
+    "Skip Forward" : {
+
+    },
+    "Skip forward %lld seconds" : {
+
+    },
+    "Skip forward 10 seconds" : {
+
+    },
+    "Skip Intro Automatically" : {
+
+    },
+    "Skip Recap Automatically" : {
+
+    },
+    "Skips a recap when the server knows where it is." : {
+
+    },
+    "Skips the credits, or moves on to what's next." : {
+
+    },
+    "Skips the intro when the server knows where it is." : {
+
+    },
+    "Sleep Timer" : {
+
+    },
+    "Sleep Timer (On)" : {
+
+    },
+    "Slower" : {
+
+    },
+    "Small" : {
+
+    },
+    "Smart Downloads" : {
+
+    },
+    "Smart Downloads checks after a download finishes, when you open the app, when the connection returns and when you close the player." : {
+
+    },
+    "Sort" : {
+
+    },
+    "Sort By" : {
+
+    },
+    "Sort by %@" : {
+
+    },
+    "Spoiler Protection" : {
+
+    },
+    "Start" : {
+
+    },
+    "Start After" : {
+
+    },
+    "Start from Beginning" : {
+
+    },
+    "Start over" : {
+
+    },
+    "Start Over" : {
+
+    },
+    "Starts on this language when a title has it." : {
+
+    },
+    "Starts the downloads now" : {
+
+    },
+    "Starts the next episode when the credits roll." : {
+
+    },
+    "Stats" : {
+
+    },
+    "Status" : {
+
+    },
+    "Still trying to reach your server" : {
+
+    },
+    "Stop" : {
+
+    },
+    "Stop casting" : {
+
+    },
+    "Stop Casting" : {
+
+    },
+    "Stop Playback" : {
+
+    },
+    "Storage Budget" : {
+
+    },
+    "Story" : {
+
+    },
+    "Stream" : {
+
+    },
+    "Stream Online" : {
+
+    },
+    "Streaming Services" : {
+
+    },
+    "Streaming services and title details, without Seerr." : {
+
+    },
+    "Studios and networks" : {
+
+    },
+    "Subtitle" : {
+
+    },
+    "Subtitle Language" : {
+
+    },
+    "Subtitle Style" : {
+
+    },
+    "Subtitle Timing" : {
+
+    },
+    "Subtitle Timing (%@ s)" : {
+
+    },
+    "Subtitles" : {
+
+    },
+    "Subtitles & Audio" : {
+
+    },
+    "Subtitles and audio" : {
+
+    },
+    "Suggested for You" : {
+
+    },
+    "Suggestions" : {
+
+    },
+    "Surprise me" : {
+
+    },
+    "Surprise Me" : {
+
+    },
+    "Swipe Gestures" : {
+
+    },
+    "Switch Profile" : {
+
+    },
+    "Switch Server" : {
+
+    },
+    "Switch To" : {
+
+    },
+    "Switches the display to the video's frame rate so motion doesn't judder. AVFoundation only; some TVs flash black when it switches." : {
+
+    },
+    "Sync Now" : {
+
+    },
+    "Syncing…" : {
+
+    },
+    "SyncPlay" : {
+
+    },
+    "Syncs supported app settings with the Arcfin Sync Jellyfin plugin, when your server has it installed. Locked settings are controlled by your admin and can't be changed here." : {
+
+    },
+    "Tabs" : {
+
+    },
+    "Terms of Use" : {
+
+    },
+    "Test Connection" : {
+
+    },
+    "Testing…" : {
+
+    },
+    "The most space Smart Downloads uses." : {
+
+    },
+    "The speed new videos start at." : {
+
+    },
+    "The tab Arcfin opens on. Discover and Watchlist need Seerr; without it, Home." : {
+
+    },
+    "The thumbnails shown while you scrub. Leaving them out saves space." : {
+
+    },
+    "The titles stay in your library." : {
+
+    },
+    "There's no next episode of %@ to download." : {
+
+    },
+    "This clears the saved server URL and credentials. You can reconnect any time." : {
+
+    },
+    "This download will be converted on your server before downloading — this may take longer than the file size alone suggests." : {
+
+    },
+    "This is downloaded — play the offline copy or stream from the server?" : {
+
+    },
+    "This is taking longer than usual." : {
+
+    },
+    "This is taking longer than usual. Your downloads work without a connection." : {
+
+    },
+    "This profile" : {
+
+    },
+    "This request will be approved automatically." : {
+
+    },
+    "This server only requests whole series at a time." : {
+
+    },
+    "This server uses Seerr to handle media requests and more. Would you like to connect it now?" : {
+
+    },
+    "This session's log and any crash reports, as a text file. It can include your server's address and the titles you played." : {
+      "comment" : "A description of the contents of the diagnostics file.",
+      "isCommentAutoGenerated" : true
+    },
+    "This trailer can't be played" : {
+
+    },
+    "Title" : {
+
+    },
+    "Titles" : {
+
+    },
+    "Titles outside these limits are hidden everywhere in Arcfin, including Discover and requests." : {
+
+    },
+    "Titles watched by decade" : {
+
+    },
+    "Titles you add to your watchlist will appear here." : {
+
+    },
+    "TMDB" : {
+
+    },
+    "To" : {
+
+    },
+    "Toggle full screen" : {
+
+    },
+    "Toggle Full Screen" : {
+
+    },
+    "Top Rated, Unwatched" : {
+
+    },
+    "TOP RESULT" : {
+
+    },
+    "Top result: %@, %@" : {
+
+    },
+    "Track" : {
+
+    },
+    "Trailers" : {
+
+    },
+    "Trending" : {
+
+    },
+    "Try a different status filter." : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Try another language." : {
+
+    },
+    "Turn off if HEVC videos stall or stay black on this device; they'll be converted to H.264 instead." : {
+
+    },
+    "Turn Off PIN" : {
+
+    },
+    "Turn On Offline Mode" : {
+
+    },
+    "Turn On PIN" : {
+
+    },
+    "Turn Subtitles Off" : {
+
+    },
+    "Turn Subtitles On" : {
+
+    },
+    "Turning it off also clears it." : {
+
+    },
+    "Turns on a subtitle track when a video starts." : {
+
+    },
+    "TV Shows" : {
+
+    },
+    "TV volume" : {
+
+    },
+    "Under 2 GB free, the oldest watched downloads go first." : {
+
+    },
+    "Unmute" : {
+
+    },
+    "Unrated Titles" : {
+
+    },
+    "Unwatched" : {
+
+    },
+    "Up Next" : {
+
+    },
+    "Up or down on the left for brightness, the right for volume; sideways to move through the video." : {
+
+    },
+    "Up to %@" : {
+
+    },
+    "Use %@" : {
+
+    },
+    "Use Current" : {
+
+    },
+    "Use Mobile Data" : {
+
+    },
+    "Used automatically when this device is connected to the saved home Wi-Fi network. Requires the Access Wi-Fi Information capability." : {
+
+    },
+    "Used instead when you're on mobile data." : {
+
+    },
+    "Used when you're not on the saved home Wi-Fi network below." : {
+
+    },
+    "Username" : {
+
+    },
+    "Uses the subtitle providers installed on your server, such as OpenSubtitles." : {
+
+    },
+    "Value" : {
+
+    },
+    "Version" : {
+
+    },
+    "Video" : {
+
+    },
+    "Video Quality" : {
+
+    },
+    "Video Range" : {
+
+    },
+    "View Details" : {
+
+    },
+    "View in Library" : {
+
+    },
+    "Volume Down" : {
+
+    },
+    "Volume Up" : {
+
+    },
+    "Waiting for approval" : {
+
+    },
+    "Waiting for Wi-Fi" : {
+
+    },
+    "Watch Again" : {
+
+    },
+    "Watch Downloads Instead" : {
+
+    },
+    "Watch Downloads Offline" : {
+
+    },
+    "Watch time by day of the week" : {
+
+    },
+    "Watch time, %@" : {
+
+    },
+    "Watched" : {
+
+    },
+    "Watched on Jellyfin" : {
+
+    },
+    "Watchlist" : {
+
+    },
+    "Watchlist Available" : {
+
+    },
+    "Watchlist Empty" : {
+
+    },
+    "Welcome to Arcfin" : {
+
+    },
+    "Welcome, %@!" : {
+
+    },
+    "What Play does for a title you've started." : {
+
+    },
+    "What's already downloaded of them is discarded." : {
+
+    },
+    "What's downloaded and how much space it takes." : {
+
+    },
+    "When a download finishes." : {
+
+    },
+    "When a new movie or episode lands in your libraries." : {
+
+    },
+    "When a Seerr request is approved, declined or available." : {
+
+    },
+    "When a title on your watchlist arrives in your library." : {
+
+    },
+    "When closing the player counts a title as watched. Server Default uses your server's setting, usually 90%." : {
+
+    },
+    "When Credits Start" : {
+
+    },
+    "When Resuming" : {
+
+    },
+    "Where to Watch" : {
+
+    },
+    "Where to Watch in %@" : {
+
+    },
+    "Which formats this device is told it can play." : {
+
+    },
+    "Which libraries show in Browse and in Recently Added." : {
+
+    },
+    "Which tabs show and in what order. Discover and Watchlist need Seerr connected." : {
+
+    },
+    "White" : {
+
+    },
+    "Who's watching on your server right now." : {
+
+    },
+    "With a PIN, Arcfin asks for it when it opens and before switching to this profile." : {
+
+    },
+    "Worked out from what's marked watched on your Jellyfin server. Inside a period, a title counts once, on the last day you played it; All Time counts every play. Watch time uses each title's full length." : {
+
+    },
+    "X-Ray" : {
+
+    },
+    "X-Ray: cast" : {
+
+    },
+    "X-Ray: Cast" : {
+
+    },
+    "Year" : {
+
+    },
+    "Yellow" : {
+
+    },
+    "Yes, Connect Now" : {
+
+    },
+    "You appear to be offline." : {
+
+    },
+    "You can also ask your admin to connect this for you — initial sign-in is the only time it can be set up here, since this setting is locked." : {
+
+    },
+    "You have nothing to continue watching." : {
+
+    },
+    "You'll need to sign in again to use it. Downloads stay on this device." : {
+
+    },
+    "You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply." : {
+
+    },
+    "You've watched every movie in your library." : {
+
+    },
+    "Your Code" : {
+
+    },
+    "Your Jellyfin libraries will appear here." : {
+
+    },
+    "Your Jellyfin media, beautifully." : {
+
+    },
+    "Your media requests will appear here." : {
+
+    },
+    "Your Playlists" : {
+
+    },
+    "Your Profile" : {
+
+    },
+    "Your Services" : {
+
+    },
+    "Your stats card for %@" : {
+
+    },
+    "Your Streaming Services" : {
+
+    },
+    "YouTube Fallback" : {
+
+    }
   },
-  "version" : "1.0"
+  "version" : "1.1"
 }
