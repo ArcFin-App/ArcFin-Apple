@@ -1,10 +1,10 @@
 # Arcfin
 
-<img src="assets/badges/app-store-badge-black.svg" alt="App Store — pending review, not yet available" height="48" style="opacity:0.45">
+<img src="assets/badges/app-store-badge-black.svg" alt="App Store — coming with 1.0.0, not yet available" height="48" style="opacity:0.45">
 
 [<img src="assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)
 
-> **Not yet on the App Store.** Arcfin is available through [TestFlight](https://testflight.apple.com/join/kkC58n2w). Version 0.1.0 is with Apple for review; 0.1.2 is in testing.
+> **Not yet on the App Store.** Arcfin is in beta on [TestFlight](https://testflight.apple.com/join/kkC58n2w), and 0.1.2 is the current build. It goes to Apple for review at 1.0.0.
 
 ![Version](https://img.shields.io/badge/version-0.1.2-blue)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS-lightgrey?logo=apple&logoColor=white)
