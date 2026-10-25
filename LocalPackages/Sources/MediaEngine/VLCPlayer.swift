@@ -61,7 +61,7 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
             log.error("VLC play(url:) failed: \(error.localizedDescription)")
             throw error
         }
-        log.info("Loading \(url.absoluteString)")
+        log.notice("Loading \(url.absoluteString)")
 
         // play(url:) starts playback immediately — wait for a real ready/error signal, then
         // normalize back to "loaded but paused" to match this protocol's load() contract

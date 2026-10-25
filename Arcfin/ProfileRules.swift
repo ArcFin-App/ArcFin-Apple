@@ -156,14 +156,14 @@ final class ProfileRules {
             if !answered.isEmpty { saveCertifications() }
             let unanswered = missing.count - answered.count
             if unanswered > 0 {
-                Self.log.info("Seerr rating lookups: \(answered.count, privacy: .public) answered, \(unanswered, privacy: .public) failed or timed out")
+                Self.log.notice("Seerr rating lookups: \(answered.count, privacy: .public) answered, \(unanswered, privacy: .public) failed or timed out")
             }
         }
         let kept = candidates.filter { item in
             let rating = certifications[key(item, region)] ?? nil
             return allows(rating: rating, kind: item.mediaType == .tv ? "Series" : "Movie")
         }
-        Self.log.info("Seerr list filtered for parental controls: kept \(kept.count, privacy: .public) of \(items.count, privacy: .public)")
+        Self.log.notice("Seerr list filtered for parental controls: kept \(kept.count, privacy: .public) of \(items.count, privacy: .public)")
         return kept
     }
 
