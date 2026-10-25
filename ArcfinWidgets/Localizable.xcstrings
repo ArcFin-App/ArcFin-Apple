@@ -51,6 +51,12 @@
             "value" : "%@ de %@"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ из %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -104,6 +110,12 @@
           }
         },
         "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -167,6 +179,12 @@
             "value" : "Continuar assistindo"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Продолжить просмотр"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -223,6 +241,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Descobrir"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Обзор"
           }
         },
         "zh-Hans" : {
@@ -283,6 +307,12 @@
             "value" : "Descobrir e solicitar"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Обзор и запросы"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -339,6 +369,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Descubra algo novo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Откройте для себя новое"
           }
         },
         "zh-Hans" : {
@@ -399,6 +435,12 @@
             "value" : "OK"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Готово"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -455,6 +497,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Termina às %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Закончится в %@"
           }
         },
         "zh-Hans" : {
@@ -515,6 +563,12 @@
             "value" : "Downloads"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Загрузки"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -571,6 +625,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Encontre algo novo para assistir e solicite."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Найдите что-то новое для просмотра и запросите это."
           }
         },
         "zh-Hans" : {
@@ -631,6 +691,12 @@
             "value" : "Novo"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Новое"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -687,6 +753,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Nada novo ainda"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Пока ничего нового"
           }
         },
         "zh-Hans" : {
@@ -747,6 +819,12 @@
             "value" : "Nada para retomar"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Нечего продолжать"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -805,6 +883,12 @@
             "value" : "Abra o Arcfin para retomar"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Откройте Arcfin, чтобы продолжить"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -861,6 +945,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Abra o Arcfin para usar dados celulares"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Откройте Arcfin, чтобы использовать сотовые данные"
           }
         },
         "zh-Hans" : {
@@ -923,6 +1013,12 @@
             "value" : "Abrir Descobrir"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Открыть «Обзор»"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -979,6 +1075,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Abrir downloads"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Открыть загрузки"
           }
         },
         "zh-Hans" : {
@@ -1041,6 +1143,12 @@
             "value" : "Abrir Downloads"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Открыть «Загрузки»"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1097,6 +1205,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Abra seus downloads para assistir offline."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Откройте загрузки, чтобы смотреть офлайн."
           }
         },
         "zh-Hans" : {
@@ -1157,6 +1271,12 @@
             "value" : "Continue de onde parou."
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Продолжите с того места, где остановились."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1213,6 +1333,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Reproduza o que você estava assistindo por último."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Воспроизведите то, что смотрели последним."
           }
         },
         "zh-Hans" : {
@@ -1275,6 +1401,12 @@
             "value" : "Reproduz o que você estava assistindo por último."
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Воспроизводит то, что вы смотрели последним."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1331,6 +1463,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Adicionados recentemente"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Недавно добавленные"
           }
         },
         "zh-Hans" : {
@@ -1391,6 +1529,12 @@
             "value" : "Continuar assistindo"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Продолжить просмотр"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1447,6 +1591,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Continuar assistindo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Продолжить просмотр"
           }
         },
         "zh-Hans" : {
@@ -1507,6 +1657,12 @@
             "value" : "Veja os filmes e séries mais novos do seu servidor."
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Посмотрите самые новые фильмы и сериалы на своём сервере."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -1563,6 +1719,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "A seguir"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Далее"
           }
         },
         "zh-Hans" : {

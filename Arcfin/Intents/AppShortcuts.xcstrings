@@ -94,6 +94,16 @@
             ]
           }
         },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Продолжить просмотр в ${applicationName}",
+              "Продолжить мой сериал в ${applicationName}",
+              "Что я смотрел в ${applicationName}"
+            ]
+          }
+        },
         "zh-Hans" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -187,6 +197,15 @@
             "values" : [
               "Baixar o próximo episódio de ${target} no ${applicationName}",
               "Baixar ${target} no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Загрузить следующий эпизод ${target} в ${applicationName}",
+              "Загрузить ${target} в ${applicationName}"
             ]
           }
         },
@@ -285,6 +304,15 @@
             ]
           }
         },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Открыть ${target} в ${applicationName}",
+              "Показать ${target} в ${applicationName}"
+            ]
+          }
+        },
         "zh-Hans" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -377,6 +405,15 @@
             "values" : [
               "Abrir Descobrir no ${applicationName}",
               "O que há de novo para solicitar no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Открыть «Обзор» в ${applicationName}",
+              "Что нового можно запросить в ${applicationName}"
             ]
           }
         },
@@ -481,6 +518,16 @@
               "Reproduzir ${target} no ${applicationName}",
               "Assistir ${target} no ${applicationName}",
               "Colocar ${target} no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Воспроизвести ${target} в ${applicationName}",
+              "Смотреть ${target} в ${applicationName}",
+              "Включить ${target} в ${applicationName}"
             ]
           }
         },
@@ -589,6 +636,16 @@
             ]
           }
         },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Воспроизвести случайный фильм в ${applicationName}",
+              "Удиви меня в ${applicationName}",
+              "Выбери фильм в ${applicationName}"
+            ]
+          }
+        },
         "zh-Hans" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -682,6 +739,15 @@
             "values" : [
               "Mostrar meus downloads no ${applicationName}",
               "Abrir downloads no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Показать мои загрузки в ${applicationName}",
+              "Открыть загрузки в ${applicationName}"
             ]
           }
         },

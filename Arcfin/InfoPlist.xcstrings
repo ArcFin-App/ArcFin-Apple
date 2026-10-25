@@ -59,6 +59,12 @@
             "value" : "ArcFin"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -120,6 +126,12 @@
           }
         },
         "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arcfin"
@@ -191,6 +203,12 @@
             "value" : "O suporte ao Chromecast do Arcfin pode usar o Bluetooth para ajudar a encontrar dispositivos de transmissão por perto."
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Поддержка Chromecast в Arcfin может использовать Bluetooth для поиска устройств Cast поблизости."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -255,6 +273,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "O Face ID é usado para desbloquear o Arcfin quando o Bloqueio do app está ativado para o seu perfil."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID используется для разблокировки Arcfin, когда для вашего профиля включена блокировка приложения."
           }
         },
         "zh-Hans" : {
@@ -323,6 +347,12 @@
             "value" : "O Arcfin usa sua rede local para encontrar e se conectar ao seu servidor Jellyfin e para transmitir mídia para dispositivos por perto."
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin использует локальную сеть, чтобы находить сервер Jellyfin и подключаться к нему, а также транслировать медиа на устройства поблизости."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -387,6 +417,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "O Arcfin usa o nome da sua rede Wi-Fi para alternar automaticamente entre o endereço local e o remoto do seu servidor quando você está em casa ou fora. Sua localização nunca é armazenada, rastreada nem compartilhada — ela só é usada para ler o nome do Wi-Fi atual."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin использует имя вашей сети Wi-Fi, чтобы автоматически переключаться между локальным и удалённым адресами сервера, когда вы дома или нет. Ваша геопозиция никогда не сохраняется, не отслеживается и не передаётся — она используется только для чтения имени текущей сети Wi-Fi."
           }
         },
         "zh-Hans" : {
