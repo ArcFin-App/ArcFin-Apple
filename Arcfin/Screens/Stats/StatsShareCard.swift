@@ -92,7 +92,7 @@ struct StatsShareSheet: View {
     }
 
     private func image(_ url: URL?) async -> CGImage? {
-        guard let url, let (data, _) = try? await URLSession.arcfin.data(from: url),
+        guard let url, let data = await URLSession.arcfin.imageData(from: url),
               let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }

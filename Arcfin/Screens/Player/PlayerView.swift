@@ -816,7 +816,7 @@ struct PlayerView: View {
     private func fetchAndApplyNowPlayingArtwork() async {
         guard nowPlayingArtwork == nil,
               let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600),
-              let (data, _) = try? await URLSession.arcfin.data(from: url),
+              let data = await URLSession.arcfin.imageData(from: url),
               let image = PlatformImage(data: data)
         else { return }
         // Only the current title's artwork is ever read, so a long session of back-to-back
