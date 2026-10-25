@@ -15,6 +15,7 @@ struct SeerrView: View {
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
     @State private var requestingItem: SeerrItem? = nil
+    @State private var openedItem: SeerrItem?
     /// Popular titles first made in this device's language, when it isn't English.
     @State private var languageItems: [SeerrItem] = []
 #if os(iOS)
@@ -65,6 +66,10 @@ struct SeerrView: View {
             .arcfinNavTitleLarge("Discover")
             .searchable(text: $searchText, prompt: "Movies, series, people…")
             .navigationDestination(for: SeerrItem.self) { item in
+                SeerrItemDetailView(item: item)
+            }
+            // On the Mac a card's NavigationLink(value:) can't find the destination above.
+            .navigationDestination(item: $openedItem) { item in
                 SeerrItemDetailView(item: item)
             }
         }
@@ -336,7 +341,7 @@ struct SeerrView: View {
     }
 
     private func discoverCard(_ item: SeerrItem) -> some View {
-        NavigationLink(value: item) {
+        Button { openedItem = item } label: {
             discoverCardContent(item)
         }
         .buttonStyle(.plain)
