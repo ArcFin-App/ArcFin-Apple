@@ -26,6 +26,7 @@ struct LibraryView: View {
     @State private var navigateToLocalPlayer = false
     @State private var navigateToDownloadsDeepLink = false
     @State private var searchQuery = ""
+    @State private var openedLibrary: JellyfinLibrary?
 #if os(macOS)
     @FocusState private var isSearchFocused: Bool
 
@@ -79,6 +80,10 @@ struct LibraryView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
+                LibraryDetailView(library: library)
+            }
+            // On the Mac a tile's NavigationLink(value:) can't find the destination above.
+            .navigationDestination(item: $openedLibrary) { library in
                 LibraryDetailView(library: library)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
@@ -229,7 +234,7 @@ struct LibraryView: View {
 #else
             LazyVGrid(columns: gridColumns, spacing: 12) {
                 ForEach(supportedLibraries) { library in
-                    NavigationLink(value: library) {
+                    Button { openedLibrary = library } label: {
                         LibraryCard(library: library, imageURL: mediaRepo.libraryBackdropURL(for: library))
                     }
                     .buttonStyle(.plain)
@@ -695,6 +700,7 @@ struct LocalPlayerView: View {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close")
             Text(url.deletingPathExtension().lastPathComponent)
                 .font(.system(.subheadline, design: .default, weight: .semibold))
                 .foregroundStyle(.white)
@@ -911,6 +917,13 @@ enum LibraryNavTarget: Hashable {
 enum LibraryWatchedFilter: String, CaseIterable, Identifiable {
     case all = "All", unwatched = "Unwatched", watched = "Watched"
     var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .all: String(localized: "All")
+        case .unwatched: String(localized: "Unwatched")
+        case .watched: String(localized: "Watched")
+        }
+    }
 }
 
 /// Filters beyond genre/year/watched/favorites: content rating and a minimum community
@@ -954,6 +967,13 @@ struct LibraryExtraFilters: Equatable {
 enum LibraryQualityFilter: String, CaseIterable, Identifiable {
     case any = "Any", hd = "HD", uhd = "4K"
     var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .any: String(localized: "Any")
+        case .hd: String(localized: "HD")
+        case .uhd: String(localized: "4K")
+        }
+    }
 }
 
 enum LibrarySortOption: String, CaseIterable, Identifiable {
@@ -968,6 +988,19 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
     case playlistOrder = "Playlist Order"
 
     var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .nameAsc: String(localized: "Name (A–Z)")
+        case .nameDesc: String(localized: "Name (Z–A)")
+        case .dateAddedDesc: String(localized: "Recently Added")
+        case .releaseDateDesc: String(localized: "Release Date (Newest)")
+        case .releaseDateAsc: String(localized: "Release Date (Oldest)")
+        case .ratingDesc: String(localized: "Rating (Highest)")
+        case .genreAsc: String(localized: "Genre")
+        case .playlistOrder: String(localized: "Playlist Order")
+        }
+    }
 
     static let standard = allCases.filter { $0 != .playlistOrder }
 
@@ -998,9 +1031,9 @@ enum LibraryGridDensity: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .compact: return "Compact"
-        case .normal: return "Normal"
-        case .comfortable: return "Comfortable"
+        case .compact: return String(localized: "Compact")
+        case .normal: return String(localized: "Normal")
+        case .comfortable: return String(localized: "Comfortable")
         }
     }
 
@@ -1278,6 +1311,8 @@ struct LibraryDetailView: View {
                 Button { showFilterSheet = true } label: {
                     Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                 }
+                .accessibilityLabel("Filter & Sort")
+                .accessibilityValue(filtersActive ? "Filters on" : "")
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -1483,7 +1518,12 @@ struct LibraryDetailView: View {
                 .menuStyle(.button)
                 .menuIndicator(.hidden)
         } else {
+            #if !os(macOS)
             NavigationLink(value: navTarget(for: item)) { label() }
+            #else
+            // On the Mac a NavigationLink(value:) can't find Browse's destination.
+            Button { randomPick = item } label: { label() }
+            #endif
         }
     }
 
@@ -1670,7 +1710,7 @@ struct LibraryDetailView: View {
         .focusSection()
     }
 
-    private func tvActionLabel(_ title: String, systemImage: String) -> some View {
+    private func tvActionLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
         TVHeroButtonLabel(icon: systemImage, text: title)
             .background(Capsule().fill(DT.Color.textPrimary.opacity(0.06)))
     }
@@ -2117,9 +2157,9 @@ struct LibraryFilterList: View {
             // tappable rows, same pattern as the Genre/Year sections below, work
             // identically everywhere since nothing depends on a platform picker style.
             Section {
-                FilterGroup(title: "Sort By", value: sortOption.rawValue) {
+                FilterGroup(title: "Sort By", value: sortOption.label) {
                     ForEach(sortOptions) { option in
-                        filterRow(option.rawValue, isSelected: sortOption == option) {
+                        filterRow(option.label, isSelected: sortOption == option) {
                             sortOption = option
                         }
                     }
@@ -2129,7 +2169,7 @@ struct LibraryFilterList: View {
             Section("Status") {
                 Picker("Status", selection: $watchedFilter) {
                     ForEach(LibraryWatchedFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
+                        Text(filter.label).tag(filter)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -2221,7 +2261,7 @@ struct LibraryFilterList: View {
 
             Section("Quality") {
                 Picker("Resolution", selection: $extraFilters.quality) {
-                    ForEach(LibraryQualityFilter.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(LibraryQualityFilter.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 Toggle("Has Subtitles", isOn: $extraFilters.hasSubtitles)

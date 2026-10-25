@@ -458,7 +458,7 @@ private struct TVLibraryFilterList: View {
         List {
             Section("Sort By") {
                 ForEach(LibrarySortOption.standard) { option in
-                    filterRow(option.rawValue, isSelected: sortOption == option) {
+                    filterRow(option.label, isSelected: sortOption == option) {
                         sortOption = option
                     }
                 }
@@ -467,7 +467,7 @@ private struct TVLibraryFilterList: View {
             Section("Status") {
                 Picker("Status", selection: $watchedFilter) {
                     ForEach(LibraryWatchedFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
+                        Text(filter.label).tag(filter)
                     }
                 }
                 Toggle("Favourites Only", isOn: $favoritesOnly)

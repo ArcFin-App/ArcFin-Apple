@@ -32,6 +32,13 @@ struct CollectionDetailView: View {
     enum CollectionSort: String, CaseIterable, Identifiable {
         case release = "Release Order", title = "Title", rating = "Rating"
         var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .release: String(localized: "Release Order")
+            case .title: String(localized: "Title")
+            case .rating: String(localized: "Rating")
+            }
+        }
     }
 
     private var credential: ServerCredential? { authManager.state.credential }
@@ -273,15 +280,15 @@ struct CollectionDetailView: View {
                 Spacer()
                 Menu {
                     Picker("Sort", selection: $sort) {
-                        ForEach(CollectionSort.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(CollectionSort.allCases) { Text($0.label).tag($0) }
                     }
                 } label: {
-                    Label(sort.rawValue, systemImage: "arrow.up.arrow.down")
+                    Label(sort.label, systemImage: "arrow.up.arrow.down")
                         .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
                         .frame(minHeight: 44)
                 }
-                .accessibilityLabel("Sort by \(sort.rawValue)")
+                .accessibilityLabel("Sort by \(sort.label)")
                 Button {
                     withAnimation(DT.Animation.fast) { showsGrid.toggle() }
                 } label: {

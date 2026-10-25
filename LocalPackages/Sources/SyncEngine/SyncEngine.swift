@@ -66,7 +66,7 @@ public enum OfflineProgressSync {
         }
         try? modelContext.save()
         if syncedCount > 0 {
-            log.info("Synced \(syncedCount) offline-played item(s) back to their server")
+            log.notice("Synced \(syncedCount) offline-played item(s) back to their server")
         }
     }
 

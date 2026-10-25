@@ -393,6 +393,13 @@ struct ContentView: View {
         // The profile's parental controls and permissions, from the server: on sign-in, a
         // profile switch, and each return to the app (an admin may have changed them).
         .task(id: authManager.state.credential?.id) { await loadProfileRules() }
+        .task(id: LiveUpdatesKey(credentialID: authManager.state.credential?.id, isActive: scenePhase == .active)) {
+            if scenePhase == .active, let credential = authManager.state.credential {
+                AppServices.liveUpdates.connect(credential: credential, authClient: authManager.authClient)
+            } else {
+                AppServices.liveUpdates.disconnect()
+            }
+        }
         .onChange(of: offlineModeEnabled) { _, isOffline in
             if !isOffline { syncOfflineProgress() }
         }
