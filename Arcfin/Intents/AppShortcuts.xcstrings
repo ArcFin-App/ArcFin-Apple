@@ -2,6 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "Continue watching in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringSet" : {
@@ -16,6 +17,7 @@
       }
     },
     "Download the next episode of ${target} in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringSet" : {
@@ -29,6 +31,7 @@
       }
     },
     "Open ${target} in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringSet" : {
@@ -42,6 +45,7 @@
       }
     },
     "Open Discover in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringSet" : {
@@ -55,6 +59,7 @@
       }
     },
     "Play ${target} in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringSet" : {
@@ -69,6 +74,7 @@
       }
     },
     "Play a random movie in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringSet" : {
@@ -83,6 +89,7 @@
       }
     },
     "Show my downloads in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringSet" : {
