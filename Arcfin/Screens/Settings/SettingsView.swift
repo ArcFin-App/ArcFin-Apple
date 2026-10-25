@@ -6,6 +6,7 @@ import JellyfinAPI
 import MediaEngine
 import Persistence
 import SeerrAPI
+import Telemetry
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -203,6 +204,8 @@ struct SettingsView: View {
                 .listRowBackground(Color.clear)
 #endif
 #if os(tvOS)
+                LabeledContent("Support", value: "arcfin.psmattas.com/support")
+                    .listRowBackground(Color.clear)
                 LabeledContent("Privacy Policy", value: "arcfin.psmattas.com/privacy")
                     .listRowBackground(Color.clear)
                 LabeledContent("Terms of Use", value: "arcfin.psmattas.com/terms")
@@ -210,6 +213,22 @@ struct SettingsView: View {
                 LabeledContent("Data Protection", value: "arcfin.psmattas.com/data-protection")
                     .listRowBackground(Color.clear)
 #else
+                DiagnosticsRow()
+                Link(destination: URL(string: "https://git.psmattas.com/ArcFin/ArcFin/issues/new/choose")!) {
+                    HStack {
+                        TVRowLabelText(title: "Report a Problem", detail: "Opens Arcfin's issue tracker. You can sign in there with GitHub or GitLab.")
+                            .foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+                Link(destination: URL(string: "https://arcfin.psmattas.com/support")!) {
+                    HStack {
+                        Text("Contact Support").foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
                 Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
                     HStack {
                         Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
@@ -949,3 +968,55 @@ private enum AppLanguage {
     }
 }
 #endif
+
+#if !os(tvOS)
+/// Builds the report before offering it, so the share sheet opens on a finished file rather
+/// than sitting blank while a day of log is read.
+private struct DiagnosticsRow: View {
+    @State private var report: URL?
+    @State private var isPreparing = false
+
+    var body: some View {
+        Group {
+            if let report {
+                ShareLink(item: report) {
+                    label(title: "Share Diagnostics File",
+                          detail: "\(report.lastPathComponent). Save or send it, then attach it to your issue or support request.")
+                }
+            } else {
+                Button(action: prepare) {
+                    label(title: isPreparing ? "Preparing Diagnostics…" : "Share Diagnostics",
+                          detail: "This session's log and any crash reports, as a text file. It can include your server's address and the titles you played.")
+                }
+                .disabled(isPreparing)
+            }
+        }
+        #if os(macOS)
+        .buttonStyle(.plain)
+        #endif
+    }
+
+    private func label(title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
+        HStack {
+            TVRowLabelText(title: title, detail: detail)
+                .foregroundStyle(DT.Color.textPrimary)
+            Spacer()
+            if isPreparing {
+                ProgressView().controlSize(.small)
+            } else {
+                Image(systemName: "square.and.arrow.up").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func prepare() {
+        isPreparing = true
+        Task {
+            report = await Diagnostics.makeReport()
+            isPreparing = false
+        }
+    }
+}
+#endif
+

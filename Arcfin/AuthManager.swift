@@ -323,16 +323,16 @@ final class AuthManager {
             guard let self else { return }
             defer { self.isSyncingArcfin = false }
             guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed else {
-                Self.syncLog.info("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
+                Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
                 return
             }
-            Self.syncLog.info("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
+            Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
             self.arcfinSyncStatus = status
             let header = self.authClient.authHeader(token: credential.accessToken)
             self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
             self.arcfinSyncLastSyncedAt = .now
             self.watchSettingsChanges()
-            Self.syncLog.info("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
+            Self.syncLog.notice("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
         }
     }
 

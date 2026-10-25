@@ -250,7 +250,7 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // a dip in bandwidth play from what's already here.
         item.preferredForwardBufferDuration = 180
         player.replaceCurrentItem(with: item)
-        log.info("Loading \(url.absoluteString)")
+        log.notice("Loading \(url.absoluteString)")
 
         do {
             let duration = try await asset.load(.duration)

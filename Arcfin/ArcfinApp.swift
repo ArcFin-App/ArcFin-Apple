@@ -6,6 +6,9 @@ import SwiftData
 import UserNotifications
 #endif
 import Persistence
+#if os(macOS)
+import Telemetry
+#endif
 
 @main
 struct ArcfinApp: App {
@@ -16,6 +19,7 @@ struct ArcfinApp: App {
         // Taps on a notification open the title, Discover or Downloads, as on iOS.
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         BackgroundRefresh.register()
+        Diagnostics.shared.start()
     }
     #endif
 
