@@ -21,6 +21,12 @@
             "value" : "%@ sur %@"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ de %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -44,6 +50,12 @@
           }
         },
         "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@%@"
+          }
+        },
+        "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@%@"
@@ -77,6 +89,12 @@
             "value" : "Reprendre la lecture"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continuar assistindo"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -103,6 +121,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrir"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descobrir"
           }
         },
         "zh-Hans" : {
@@ -133,6 +157,12 @@
             "value" : "Découvrir et demander"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descobrir e solicitar"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -159,6 +189,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Découvrez quelque chose de nouveau"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descubra algo novo"
           }
         },
         "zh-Hans" : {
@@ -189,6 +225,12 @@
             "value" : "Terminé"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "OK"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -215,6 +257,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Terminé à %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Termina às %@"
           }
         },
         "zh-Hans" : {
@@ -245,6 +293,12 @@
             "value" : "Téléchargements"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -271,6 +325,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Trouvez quelque chose de nouveau à regarder et demandez-le."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Encontre algo novo para assistir e solicite."
           }
         },
         "zh-Hans" : {
@@ -301,6 +361,12 @@
             "value" : "Nouveau"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Novo"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -327,6 +393,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Rien de nouveau pour l’instant"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada novo ainda"
           }
         },
         "zh-Hans" : {
@@ -357,6 +429,12 @@
             "value" : "Rien à reprendre"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada para retomar"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -385,6 +463,12 @@
             "value" : "Ouvrez Arcfin pour reprendre"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abra o Arcfin para retomar"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -411,6 +495,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez Arcfin pour utiliser les données cellulaires"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abra o Arcfin para usar dados celulares"
           }
         },
         "zh-Hans" : {
@@ -443,6 +533,12 @@
             "value" : "Ouvrir Découvrir"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abrir Descobrir"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -469,6 +565,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrir les téléchargements"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abrir downloads"
           }
         },
         "zh-Hans" : {
@@ -501,6 +603,12 @@
             "value" : "Ouvrir les téléchargements"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abrir Downloads"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -527,6 +635,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ouvrez vos téléchargements pour regarder hors ligne."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abra seus downloads para assistir offline."
           }
         },
         "zh-Hans" : {
@@ -557,6 +671,12 @@
             "value" : "Reprenez là où vous vous étiez arrêté."
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continue de onde parou."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -583,6 +703,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Lisez ce que vous regardiez en dernier."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduza o que você estava assistindo por último."
           }
         },
         "zh-Hans" : {
@@ -615,6 +741,12 @@
             "value" : "Lit ce que vous regardiez en dernier."
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduz o que você estava assistindo por último."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -641,6 +773,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Ajouts récents"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Adicionados recentemente"
           }
         },
         "zh-Hans" : {
@@ -671,6 +809,12 @@
             "value" : "Reprendre la lecture"
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continuar assistindo"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -697,6 +841,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Reprendre la lecture"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continuar assistindo"
           }
         },
         "zh-Hans" : {
@@ -727,6 +877,12 @@
             "value" : "Voyez les derniers films et séries de votre serveur."
           }
         },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Veja os filmes e séries mais novos do seu servidor."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
@@ -753,6 +909,12 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "À suivre"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A seguir"
           }
         },
         "zh-Hans" : {

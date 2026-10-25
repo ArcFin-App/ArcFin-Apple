@@ -44,6 +44,16 @@
             ]
           }
         },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Continuar assistindo no ${applicationName}",
+              "Retomar minha série no ${applicationName}",
+              "O que eu estava assistindo no ${applicationName}"
+            ]
+          }
+        },
         "zh-Hans" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -92,6 +102,15 @@
             "values" : [
               "Télécharger l’épisode suivant de ${target} dans ${applicationName}",
               "Télécharger ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Baixar o próximo episódio de ${target} no ${applicationName}",
+              "Baixar ${target} no ${applicationName}"
             ]
           }
         },
@@ -145,6 +164,15 @@
             ]
           }
         },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir ${target} no ${applicationName}",
+              "Mostrar ${target} no ${applicationName}"
+            ]
+          }
+        },
         "zh-Hans" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -192,6 +220,15 @@
             "values" : [
               "Ouvrir Découvrir dans ${applicationName}",
               "Quoi de neuf à demander dans ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir Descobrir no ${applicationName}",
+              "O que há de novo para solicitar no ${applicationName}"
             ]
           }
         },
@@ -246,6 +283,16 @@
               "Lire ${target} dans ${applicationName}",
               "Regarder ${target} dans ${applicationName}",
               "Mettre ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproduzir ${target} no ${applicationName}",
+              "Assistir ${target} no ${applicationName}",
+              "Colocar ${target} no ${applicationName}"
             ]
           }
         },
@@ -304,6 +351,16 @@
             ]
           }
         },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproduzir um filme aleatório no ${applicationName}",
+              "Me surpreenda no ${applicationName}",
+              "Escolha um filme no ${applicationName}"
+            ]
+          }
+        },
         "zh-Hans" : {
           "stringSet" : {
             "state" : "needs_review",
@@ -352,6 +409,15 @@
             "values" : [
               "Afficher mes téléchargements dans ${applicationName}",
               "Ouvrir les téléchargements dans ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Mostrar meus downloads no ${applicationName}",
+              "Abrir downloads no ${applicationName}"
             ]
           }
         },
