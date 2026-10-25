@@ -82,9 +82,12 @@ struct StatsShareSheet: View {
     /// ImageRenderer draws only what's already in memory, so the artwork is fetched first.
     private func loadArtwork() async -> StatsShareCard.Artwork {
         let backdropItem = stats.topShows.first?.item ?? stats.topMovies.first?.item
-        async let backdrop = image(backdropItem.flatMap { mediaRepo.imageURL(for: $0, type: .backdrop, fillWidth: 1200) })
-        async let show = image(stats.topShows.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) })
-        async let movie = image(stats.topMovies.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) })
+        let backdropURL = backdropItem.flatMap { mediaRepo.imageURL(for: $0, type: .backdrop, fillWidth: 1200) }
+        let showURL = stats.topShows.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) }
+        let movieURL = stats.topMovies.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) }
+        async let backdrop = image(backdropURL)
+        async let show = image(showURL)
+        async let movie = image(movieURL)
         return await .init(backdrop: backdrop, topShow: show, topMovie: movie)
     }
 
