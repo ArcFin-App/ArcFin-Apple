@@ -890,7 +890,7 @@ private struct DayPartBar: View {
                         Image(systemName: part.icon)
                             .foregroundStyle(DT.Color.palette(part.hex))
                             .accessibilityHidden(true)
-                        Text("\(part.title) \(Int((seconds / total * 100).rounded()))%")
+                        Text("\(part.title) \(Double(seconds / total), format: .percent.precision(.fractionLength(0)))")
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     .font(.system(.caption, weight: .medium))
@@ -1052,7 +1052,7 @@ private struct RankedBar: View {
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Spacer()
-                Text("\(detail) · \(Int((fraction * 100).rounded()))%")
+                Text("\(detail) · \(Double(fraction), format: .percent.precision(.fractionLength(0)))")
                     .font(.system(.caption).monospacedDigit())
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -1085,7 +1085,7 @@ private struct CompletionRing: View {
                     .trim(from: 0, to: fraction)
                     .stroke(DT.Color.palette(hex), style: StrokeStyle(lineWidth: 9, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                Text("\(Int((fraction * 100).rounded()))%")
+                Text(Double(fraction), format: .percent.precision(.fractionLength(0)))
                     .font(.system(.subheadline, weight: .bold).monospacedDigit())
                     .foregroundStyle(DT.Color.textPrimary)
             }

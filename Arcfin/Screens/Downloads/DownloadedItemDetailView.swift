@@ -264,7 +264,7 @@ struct DownloadedItemDetailView: View {
                 if let premiere = saved?.premiereDate ?? saved?.item.premiereDate {
                     detailRow("Released", premiere.formatted(date: .long, time: .omitted))
                 }
-                if let critics = saved?.criticRating { detailRow("Critics", "\(Int(critics))%") }
+                if let critics = saved?.criticRating { detailRow("Critics", (Double(critics) / 100).formatted(.percent.precision(.fractionLength(0)))) }
                 if !item.directors.isEmpty { detailRow("Director", item.directors.joined(separator: ", ")) }
                 if let writers = saved?.writers, !writers.isEmpty {
                     detailRow("Writers", writers.map(\.name).joined(separator: ", "))

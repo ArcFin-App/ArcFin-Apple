@@ -185,7 +185,7 @@ struct PlaybackSettingsView: View {
                         Text(option.label).tag(option)
                     }
                 } label: {
-                    TVRowLabelText(title: "Mark as Watched", detail: "When closing the player counts a title as watched. Server Default uses your server's setting, usually 90%.")
+                    TVRowLabelText(title: "Mark as Watched", detail: "When closing the player counts a title as watched. Server Default uses your server's setting, usually \(0.9.formatted(.percent)).")
                 }
                 .tvListRow()
                 .syncLocked(WatchedThreshold.key, authManager)
@@ -299,8 +299,8 @@ enum WatchedThreshold: String, CaseIterable, Identifiable {
         switch self {
         case .server: String(localized: "Server Default")
         case .credits: String(localized: "When Credits Start")
-        case .eighty: String(localized: "At 80%")
-        case .eightyFive: String(localized: "At 85%")
+        case .eighty: String(localized: "At \(0.8.formatted(.percent))")
+        case .eightyFive: String(localized: "At \(0.85.formatted(.percent))")
         }
     }
     static var current: WatchedThreshold {
