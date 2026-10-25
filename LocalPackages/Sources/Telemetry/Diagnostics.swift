@@ -2,8 +2,6 @@
 
 import Foundation
 import OSLog
-import CoreTransferable
-import UniformTypeIdentifiers
 #if canImport(MetricKit) && !os(tvOS)
 import MetricKit
 #endif
@@ -26,7 +24,7 @@ public final class Diagnostics: NSObject, Sendable {
     }
 
     /// A plain-text report of this session's log and the saved crash and hang reports.
-    public static func makeReport() async -> URL {
+    @concurrent public static func makeReport() async -> URL {
         var text = header()
         text += "\n== Log (this session, last 24 hours)\n"
         text += recentLog()
@@ -116,14 +114,3 @@ extension Diagnostics: MXMetricManagerSubscriber {
     }
 }
 #endif
-
-/// Shares a fresh diagnostics report, made only when the share sheet asks for it.
-public struct DiagnosticsReport: Transferable {
-    public init() {}
-
-    public static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .plainText) { _ in
-            SentTransferredFile(await Diagnostics.makeReport())
-        }
-    }
-}
