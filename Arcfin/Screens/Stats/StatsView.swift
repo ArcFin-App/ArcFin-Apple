@@ -647,10 +647,10 @@ private enum DayPart: CaseIterable {
 
     var title: String {
         switch self {
-        case .morning: "Morning"
-        case .afternoon: "Afternoon"
-        case .evening: "Evening"
-        case .night: "Late night"
+        case .morning: String(localized: "Morning")
+        case .afternoon: String(localized: "Afternoon")
+        case .evening: String(localized: "Evening")
+        case .night: String(localized: "Late night")
         }
     }
 

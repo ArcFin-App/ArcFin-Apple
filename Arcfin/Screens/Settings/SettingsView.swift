@@ -381,12 +381,12 @@ enum VideoQuality: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .max:   "Max Quality"
-        case .auto:  "Auto (Recommended)"
-        case .p4k:   "4K Ultra HD"
-        case .p1080: "1080p HD"
-        case .p720:  "720p"
-        case .p480:  "480p"
+        case .max:   String(localized: "Max Quality")
+        case .auto:  String(localized: "Auto (Recommended)")
+        case .p4k:   String(localized: "4K Ultra HD")
+        case .p1080: String(localized: "1080p HD")
+        case .p720:  String(localized: "720p")
+        case .p480:  String(localized: "480p")
         }
     }
     /// Source pixel height this tier requires — nil for Auto/Max, which have no fixed
@@ -819,10 +819,10 @@ private struct TVPINFlow: View {
 
     private var title: String {
         switch task.kind {
-        case .unlock: "Enter PIN"
-        case .remove: "Enter PIN to remove it"
-        case .change where !verified: "Enter current PIN"
-        case .set, .change: firstEntry == nil ? "Enter a new PIN" : "Confirm the PIN"
+        case .unlock: String(localized: "Enter PIN")
+        case .remove: String(localized: "Enter PIN to remove it")
+        case .change where !verified: String(localized: "Enter current PIN")
+        case .set, .change: firstEntry == nil ? String(localized: "Enter a new PIN") : String(localized: "Confirm the PIN")
         }
     }
 

@@ -97,16 +97,16 @@ final class DownloadManager: NSObject {
 
         var title: String {
             switch self {
-            case .mobileData: "Waiting for Wi-Fi"
-            case .lowDataMode: "Low Data Mode Is On"
-            case .lowPowerMode: "Low Power Mode Is On"
+            case .mobileData: String(localized: "Waiting for Wi-Fi")
+            case .lowDataMode: String(localized: "Low Data Mode Is On")
+            case .lowPowerMode: String(localized: "Low Power Mode Is On")
             }
         }
         var detail: String {
             switch self {
-            case .mobileData: "Downloads start when you're on Wi-Fi."
-            case .lowDataMode: "Downloads start when Low Data Mode is off."
-            case .lowPowerMode: "Downloads start when Low Power Mode is off."
+            case .mobileData: String(localized: "Downloads start when you're on Wi-Fi.")
+            case .lowDataMode: String(localized: "Downloads start when Low Data Mode is off.")
+            case .lowPowerMode: String(localized: "Downloads start when Low Power Mode is off.")
             }
         }
     }
