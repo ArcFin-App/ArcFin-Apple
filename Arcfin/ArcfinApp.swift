@@ -108,6 +108,7 @@ enum AppServices {
     static let downloadManager = DownloadManager()
     static let syncPlayManager = SyncPlayManager()
     static let sharePlayManager = SharePlayManager()
+    static let liveUpdates = LiveUpdates(mediaRepo: mediaRepo)
     /// Past the app lock (or there's none) this launch. A player window brought back on
     /// relaunch closes rather than play ahead of the lock.
     static var hasPassedLock = false
