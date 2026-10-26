@@ -175,10 +175,10 @@ struct SeerrSetupPromptView: View {
                 onConnected(jellyfinUsername, password)
                 dismiss()
             } catch SeerrError.authFailed {
-                errorMessage = "That password was incorrect — try again."
+                errorMessage = String(localized: "That password was incorrect — try again.")
                 step = .failed
             } catch {
-                errorMessage = "Couldn't reach Seerr right now — try again."
+                errorMessage = String(localized: "Couldn't reach Seerr right now — try again.")
                 step = .failed
             }
         }

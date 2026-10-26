@@ -26,7 +26,7 @@ struct ServerURLView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
-            if let onBack { LoginBackButton(title: "Back", action: onBack) }
+            if let onBack { LoginBackButton(title: String(localized: "Back"), action: onBack) }
 
             LoginHeader(
                 title: "Connect to Your Server",
@@ -36,7 +36,7 @@ struct ServerURLView: View {
 
             LoginTextField(
                 title: "Server Address",
-                prompt: "jellyfin.example.com",
+                prompt: Text(verbatim: "jellyfin.example.com"),
                 text: $serverURL,
                 kind: .url,
                 isValid: connected,
@@ -132,7 +132,7 @@ struct ServerURLView: View {
     private func handleConnect() async {
         let trimmed = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            showError = true; errorMessage = "Enter a server address."; return
+            showError = true; errorMessage = String(localized: "Enter a server address."); return
         }
         connecting = true
         showError = false
