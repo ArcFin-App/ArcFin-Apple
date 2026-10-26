@@ -193,134 +193,6 @@
         }
       }
     },
-    "Force Dolby Vision to Transcode" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dolby Vision immer transkodieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forzar transcodificación de Dolby Vision"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forcer le transcodage Dolby Vision"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forza la transcodifica Dolby Vision"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dolby Visionを常にトランスコード"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dolby Vision 강제 트랜스코딩"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dolby Vision altijd transcoderen"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forçar transcodificação de Dolby Vision"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Всегда перекодировать Dolby Vision"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "强制转码杜比视界"
-          }
-        }
-      }
-    },
-    "Force HDR to Transcode" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HDR immer transkodieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forzar transcodificación de HDR"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forcer le transcodage HDR"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forza la transcodifica HDR"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HDRを常にトランスコード"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HDR 강제 트랜스코딩"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HDR altijd transcoderen"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Forçar transcodificação de HDR"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Всегда перекодировать HDR"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "强制转码 HDR"
-          }
-        }
-      }
-    },
     "In Library" : {
       "localizations" : {
         "de" : {
@@ -637,134 +509,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "支持"
-          }
-        }
-      }
-    },
-    "The server converts HDR10, HDR10+, HLG and Dolby Vision videos to SDR. Turn on if HDR looks dim, washed out or off-colour on this screen. Needs tone mapping turned on in the server's playback settings." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Der Server wandelt HDR10-, HDR10+-, HLG- und Dolby-Vision-Videos in SDR um. Schalte das ein, wenn HDR auf diesem Bildschirm zu dunkel, blass oder farblich falsch aussieht. Dafür muss Tone Mapping in den Wiedergabeeinstellungen des Servers aktiviert sein."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "El servidor convierte los vídeos HDR10, HDR10+, HLG y Dolby Vision a SDR. Actívalo si el HDR se ve oscuro, desvaído o con colores raros en esta pantalla. Requiere activar el mapeo de tonos en los ajustes de reproducción del servidor."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Le serveur convertit les vidéos HDR10, HDR10+, HLG et Dolby Vision en SDR. Activez cette option si le HDR paraît sombre, délavé ou avec de mauvaises couleurs sur cet écran. Le mappage des tons doit être activé dans les réglages de lecture du serveur."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Il server converte in SDR i video HDR10, HDR10+, HLG e Dolby Vision. Attivalo se l'HDR appare scuro, slavato o con colori sbagliati su questo schermo. Richiede il tone mapping attivo nelle impostazioni di riproduzione del server."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "サーバーがHDR10、HDR10+、HLG、Dolby VisionのビデオをSDRに変換します。この画面でHDRが暗い、色あせている、色がおかしいときにオンにしてください。サーバーの再生設定でトーンマッピングをオンにする必要があります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "서버가 HDR10, HDR10+, HLG, Dolby Vision 동영상을 SDR로 변환합니다. 이 화면에서 HDR이 어둡거나, 바래 보이거나, 색이 이상하면 켜세요. 서버 재생 설정에서 톤 매핑을 켜야 합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De server zet HDR10-, HDR10+-, HLG- en Dolby Vision-video's om naar SDR. Zet dit aan als HDR op dit scherm te donker, flets of met verkeerde kleuren wordt weergegeven. Tone mapping moet aanstaan in de afspeelinstellingen van de server."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "O servidor converte vídeos HDR10, HDR10+, HLG e Dolby Vision para SDR. Ative se o HDR parecer escuro, desbotado ou com cores erradas nesta tela. É preciso ativar o mapeamento de tons nos ajustes de reprodução do servidor."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Сервер преобразует видео в HDR10, HDR10+, HLG и Dolby Vision в SDR. Включите, если HDR на этом экране выглядит тёмным, блёклым или с неправильными цветами. На сервере в настройках воспроизведения должно быть включено тональное отображение."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "服务器会将 HDR10、HDR10+、HLG 和杜比视界视频转换为 SDR。如果 HDR 在此屏幕上显得昏暗、发白或颜色不对，请打开此项。需要在服务器的播放设置中开启色调映射。"
-          }
-        }
-      }
-    },
-    "The server sends Dolby Vision videos as HDR10 or SDR instead. Turn on if they show purple or green colours." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Der Server sendet Dolby-Vision-Videos stattdessen als HDR10 oder SDR. Schalte das ein, wenn sie lila oder grüne Farben zeigen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "El servidor envía los vídeos Dolby Vision como HDR10 o SDR. Actívalo si se ven con colores morados o verdes."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Le serveur envoie les vidéos Dolby Vision en HDR10 ou en SDR à la place. Activez cette option si elles affichent des couleurs violettes ou vertes."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Il server invia i video Dolby Vision come HDR10 o SDR. Attivalo se mostrano colori viola o verdi."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "サーバーがDolby VisionのビデオをHDR10またはSDRとして送信します。紫や緑の色になるときにオンにしてください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "서버가 Dolby Vision 동영상을 HDR10 또는 SDR로 대신 보냅니다. 보라색이나 녹색으로 보이면 켜세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De server stuurt Dolby Vision-video's in plaats daarvan als HDR10 of SDR. Zet dit aan als ze paarse of groene kleuren tonen."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "O servidor envia vídeos Dolby Vision como HDR10 ou SDR. Ative se eles aparecerem com cores roxas ou verdes."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Сервер отправляет видео Dolby Vision в формате HDR10 или SDR. Включите, если они отображаются с фиолетовыми или зелёными цветами."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "服务器改为以 HDR10 或 SDR 发送杜比视界视频。如果画面出现紫色或绿色，请打开此项。"
           }
         }
       }
@@ -20031,6 +19775,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "用于跳转按钮、轻点两下和方向键。"
+          }
+        }
+      }
+    },
+    "Force Dolby Vision to Transcode" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Vision immer transkodieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forzar transcodificación de Dolby Vision"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forcer le transcodage Dolby Vision"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forza la transcodifica Dolby Vision"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Visionを常にトランスコード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Vision 강제 트랜스코딩"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Vision altijd transcoderen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forçar transcodificação de Dolby Vision"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Всегда перекодировать Dolby Vision"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "强制转码杜比视界"
+          }
+        }
+      }
+    },
+    "Force HDR to Transcode" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDR immer transkodieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forzar transcodificación de HDR"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forcer le transcodage HDR"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forza la transcodifica HDR"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDRを常にトランスコード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDR 강제 트랜스코딩"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDR altijd transcoderen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forçar transcodificação de HDR"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Всегда перекодировать HDR"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "强制转码 HDR"
           }
         }
       }
@@ -51909,6 +51781,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "智能下载使用的最大空间。"
+          }
+        }
+      }
+    },
+    "The server converts HDR10, HDR10+, HLG and Dolby Vision videos to SDR. Turn on if HDR looks dim, washed out or off-colour on this screen. Needs tone mapping turned on in the server's playback settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server wandelt HDR10-, HDR10+-, HLG- und Dolby-Vision-Videos in SDR um. Schalte das ein, wenn HDR auf diesem Bildschirm zu dunkel, blass oder farblich falsch aussieht. Dafür muss Tone Mapping in den Wiedergabeeinstellungen des Servers aktiviert sein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor convierte los vídeos HDR10, HDR10+, HLG y Dolby Vision a SDR. Actívalo si el HDR se ve oscuro, desvaído o con colores raros en esta pantalla. Requiere activar el mapeo de tonos en los ajustes de reproducción del servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur convertit les vidéos HDR10, HDR10+, HLG et Dolby Vision en SDR. Activez cette option si le HDR paraît sombre, délavé ou avec de mauvaises couleurs sur cet écran. Le mappage des tons doit être activé dans les réglages de lecture du serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server converte in SDR i video HDR10, HDR10+, HLG e Dolby Vision. Attivalo se l'HDR appare scuro, slavato o con colori sbagliati su questo schermo. Richiede il tone mapping attivo nelle impostazioni di riproduzione del server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがHDR10、HDR10+、HLG、Dolby VisionのビデオをSDRに変換します。この画面でHDRが暗い、色あせている、色がおかしいときにオンにしてください。サーバーの再生設定でトーンマッピングをオンにする必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 HDR10, HDR10+, HLG, Dolby Vision 동영상을 SDR로 변환합니다. 이 화면에서 HDR이 어둡거나, 바래 보이거나, 색이 이상하면 켜세요. 서버 재생 설정에서 톤 매핑을 켜야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server zet HDR10-, HDR10+-, HLG- en Dolby Vision-video's om naar SDR. Zet dit aan als HDR op dit scherm te donker, flets of met verkeerde kleuren wordt weergegeven. Tone mapping moet aanstaan in de afspeelinstellingen van de server."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor converte vídeos HDR10, HDR10+, HLG e Dolby Vision para SDR. Ative se o HDR parecer escuro, desbotado ou com cores erradas nesta tela. É preciso ativar o mapeamento de tons nos ajustes de reprodução do servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер преобразует видео в HDR10, HDR10+, HLG и Dolby Vision в SDR. Включите, если HDR на этом экране выглядит тёмным, блёклым или с неправильными цветами. На сервере в настройках воспроизведения должно быть включено тональное отображение."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器会将 HDR10、HDR10+、HLG 和杜比视界视频转换为 SDR。如果 HDR 在此屏幕上显得昏暗、发白或颜色不对，请打开此项。需要在服务器的播放设置中开启色调映射。"
+          }
+        }
+      }
+    },
+    "The server sends Dolby Vision videos as HDR10 or SDR instead. Turn on if they show purple or green colours." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server sendet Dolby-Vision-Videos stattdessen als HDR10 oder SDR. Schalte das ein, wenn sie lila oder grüne Farben zeigen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor envía los vídeos Dolby Vision como HDR10 o SDR. Actívalo si se ven con colores morados o verdes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur envoie les vidéos Dolby Vision en HDR10 ou en SDR à la place. Activez cette option si elles affichent des couleurs violettes ou vertes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server invia i video Dolby Vision come HDR10 o SDR. Attivalo se mostrano colori viola o verdi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがDolby VisionのビデオをHDR10またはSDRとして送信します。紫や緑の色になるときにオンにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 Dolby Vision 동영상을 HDR10 또는 SDR로 대신 보냅니다. 보라색이나 녹색으로 보이면 켜세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server stuurt Dolby Vision-video's in plaats daarvan als HDR10 of SDR. Zet dit aan als ze paarse of groene kleuren tonen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor envia vídeos Dolby Vision como HDR10 ou SDR. Ative se eles aparecerem com cores roxas ou verdes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер отправляет видео Dolby Vision в формате HDR10 или SDR. Включите, если они отображаются с фиолетовыми или зелёными цветами."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器改为以 HDR10 或 SDR 发送杜比视界视频。如果画面出现紫色或绿色，请打开此项。"
           }
         }
       }
