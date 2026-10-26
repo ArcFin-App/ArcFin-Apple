@@ -15,6 +15,9 @@ struct TitleInsights: View {
     /// One part of the section, for pages that place the scores apart from the rest; nil
     /// shows everything.
     var part: Part? = nil
+    /// Space under the section, left out while it has nothing to show so an empty one
+    /// doesn't open a gap in a stack of sections.
+    var spacingBelow: CGFloat = 0
 
     enum Part { case ratings, details }
 
@@ -46,7 +49,18 @@ struct TitleInsights: View {
                 #endif
             }
         }
+        .padding(.bottom, hasContent ? spacingBelow : 0)
         .task(id: tmdbId) { await load() }
+    }
+
+    private var hasContent: Bool {
+        let showsRatings = part != .details && !(ratings?.isEmpty ?? true)
+        guard part != .ratings else { return showsRatings }
+        var showsDetails = info?.nextEpisode != nil || !(info?.watch?.isEmpty ?? true) || !detailRows.isEmpty
+        #if !os(tvOS)
+        showsDetails = showsDetails || !links.isEmpty
+        #endif
+        return showsRatings || showsDetails
     }
 
     private func load() async {

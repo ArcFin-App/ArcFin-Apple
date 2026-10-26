@@ -1436,6 +1436,7 @@ struct PlayerView: View {
                                                   creditsStart: segments.credits?.lowerBound) {
                 _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
             }
+            NotificationCenter.default.post(name: .arcfinPlaybackReported, object: nil)
         }
         await player.stop()
         #if canImport(UIKit) && !os(tvOS)

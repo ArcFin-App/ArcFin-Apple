@@ -48,6 +48,10 @@ final class AuthManager {
     /// Not persisted — re-checked once per sign-in/cold launch (see checkStoredAuth/save).
     /// Gates the Active Sessions settings screen.
     var isAdmin: Bool = false
+    /// The profile whose sign-in the server stopped accepting (password changed, device
+    /// removed). The sign-in screen opens on its server and says why.
+    var expiredCredential: ServerCredential?
+    @ObservationIgnored private var lastSignInCheck: Date?
 
     /// nil until the first check completes, or if the server has no Arcfin Sync plugin /
     /// isn't reachable — both look identical on purpose, see ArcfinSyncClient.fetchStatus.
@@ -100,7 +104,10 @@ final class AuthManager {
         let isValid = await Self.withTimeout(seconds: 10, fallback: true) {
             await self.authClient.validateToken(credential: credForValidation)
         }
-        guard isValid else { return }
+        guard isValid else {
+            expiredCredential = cred
+            return
+        }
         state = .authenticated(cred)
         persist(active: cred)
 
@@ -272,7 +279,9 @@ final class AuthManager {
 
     // MARK: - Save & activate (initial sign-in)
 
-    func save(_ credential: ServerCredential) {
+    func save(_ newCredential: ServerCredential) {
+        let credential = keepingProfileID(newCredential)
+        expiredCredential = nil
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
@@ -282,7 +291,8 @@ final class AuthManager {
 
     // MARK: - Multi-profile management
 
-    func addProfile(_ credential: ServerCredential) {
+    func addProfile(_ newCredential: ServerCredential) {
+        let credential = keepingProfileID(newCredential)
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
@@ -400,6 +410,32 @@ final class AuthManager {
                 state = .unauthenticated
             }
         }
+    }
+
+    /// Signing in again as someone who already has a profile replaces that profile's token
+    /// instead of adding a second one, so its downloads, PIN and Seerr sign-in, all keyed by
+    /// the profile's id, carry over.
+    private func keepingProfileID(_ credential: ServerCredential) -> ServerCredential {
+        guard let existing = profiles.first(where: {
+            $0.userID == credential.userID && $0.baseURL == credential.baseURL
+        }), existing.id != credential.id else { return credential }
+        return ServerCredential(id: existing.id, baseURL: credential.baseURL, userID: credential.userID,
+                                accessToken: credential.accessToken, displayName: credential.displayName,
+                                userImageTag: credential.userImageTag ?? existing.userImageTag)
+    }
+
+    // MARK: - Expired sign-in
+
+    /// Called when the app comes back and when Home fails to load. An unreachable server
+    /// counts as still signed in, as at launch; only a rejected token signs out.
+    func checkSignInStillValid() async {
+        guard case .authenticated(let cred) = state else { return }
+        if let last = lastSignInCheck, Date().timeIntervalSince(last) < 30 { return }
+        lastSignInCheck = Date()
+        let isValid = await authClient.validateToken(credential: cred)
+        guard !isValid, state.credential?.id == cred.id else { return }
+        expiredCredential = cred
+        state = .unauthenticated
     }
 
     // MARK: - Sign out (removes current profile)
