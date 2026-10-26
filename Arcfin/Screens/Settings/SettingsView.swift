@@ -7,6 +7,9 @@ import MediaEngine
 import Persistence
 import SeerrAPI
 import Telemetry
+#if os(macOS)
+import AppKit
+#endif
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -190,6 +193,7 @@ struct SettingsView: View {
                 LabeledContent("Build") {
                     Text(buildNumber).foregroundStyle(.secondary)
                 }
+                introductionRows
                 NavigationLink {
                     LicensesView()
                 } label: {
@@ -297,6 +301,35 @@ struct SettingsView: View {
                 .presentationDragIndicator(.visible)
         }
 #endif
+    }
+
+    // MARK: - Tour and What's New
+
+    @ViewBuilder
+    private var introductionRows: some View {
+        Button { show(.whatsNew) } label: {
+            Text("What's New in Arcfin").foregroundStyle(DT.Color.textPrimary)
+        }
+#if os(tvOS)
+        .listRowBackground(Color.clear)
+#endif
+        Button { show(.onboarding) } label: {
+            Text("Take the Tour Again").foregroundStyle(DT.Color.textPrimary)
+        }
+#if os(tvOS)
+        .listRowBackground(Color.clear)
+#endif
+    }
+
+    private func show(_ presentation: AppIntroduction.Presentation) {
+        switch presentation {
+        case .onboarding: AppServices.introduction.showOnboarding()
+        case .whatsNew: AppServices.introduction.showWhatsNew()
+        }
+        #if os(macOS)
+        // Both show in the main window, so the Settings window steps aside.
+        NSApp.keyWindow?.close()
+        #endif
     }
 
     // MARK: - Profile section
