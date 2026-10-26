@@ -4,7 +4,7 @@
 
 [<img src="https://git.psmattas.com/ArcFin/ArcFin/media/branch/main/assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)
 
-> **Not yet on the App Store.** Arcfin is in beta on [TestFlight](https://testflight.apple.com/join/kkC58n2w), and 0.2.0 is the current build. It goes to Apple for review at 1.0.0.
+> **Not yet on the App Store.** Arcfin is in beta on [TestFlight](https://testflight.apple.com/join/kkC58n2w). It goes to Apple for review at 1.0.0.
 
 [![Build](https://git.psmattas.com/ArcFin/ArcFin/actions/workflows/build.yml/badge.svg?branch=main)](https://git.psmattas.com/ArcFin/ArcFin/actions?workflow=build.yml)
 ![Version](https://img.shields.io/badge/version-0.2.0-blue)
@@ -25,11 +25,20 @@ Each platform gets an interface of its own rather than a stretched phone app: Li
 
 ## Get Arcfin
 
-Arcfin is in public beta on **[TestFlight](https://testflight.apple.com/join/kkC58n2w)**. Install TestFlight from the App Store, open the invite on your iPhone, iPad, Mac or Apple TV, and you'll get every new build automatically.
+You need your own [Jellyfin](https://jellyfin.org) server, or an account on one. Every build first goes to a small internal beta, then to the public beta that anyone can join.
 
-New versions go through Apple's TestFlight review first, which usually takes 1 to 3 days; new builds of an existing version are usually through within a day. The [release notes](https://git.psmattas.com/ArcFin/ArcFin/releases) list what's in each build.
+### Public beta
 
-You need your own [Jellyfin](https://jellyfin.org) server, or an account on one.
+Anyone can join on **[TestFlight](https://testflight.apple.com/join/kkC58n2w)**. Install TestFlight from the App Store, open the invite on your iPhone, iPad, Mac or Apple TV, and you'll get each new build automatically.
+
+Public builds go through Apple's TestFlight review first. A new version usually takes 1 to 3 days; a new build of an existing version is usually through within a day, but can take as long. The [release notes](https://git.psmattas.com/ArcFin/ArcFin/releases) list what's in each build.
+
+### Internal beta
+
+Internal testers get each build **as soon as it's uploaded**, before it's sent to Apple's review for the public beta. They test it first, and only builds that pass go on to the public beta.
+
+- **Seats are limited.** To ask for one, email **[support.arcfin@psmattas.com](mailto:support.arcfin@psmattas.com)** with the Apple Account email to invite and the devices you'd test on.
+- **Expect rough edges.** Internal builds are the newest and least tested, so please report problems with **Settings › About › Report a Problem**.
 
 ## Features
 
@@ -102,6 +111,7 @@ Some features can't work on every platform:
 | Help using Arcfin | [arcfin.psmattas.com/support](https://arcfin.psmattas.com/support), or email **[support.arcfin@psmattas.com](mailto:support.arcfin@psmattas.com)** |
 | A security problem | Email **[security@psmattas.com](mailto:security@psmattas.com)**. Please don't open a public issue. See [SECURITY.md](SECURITY.md) |
 | Translating Arcfin | Open a **Translation** issue. See [Translating Arcfin](CONTRIBUTING.md#translating-arcfin) |
+| A seat in the internal beta | Email **[support.arcfin@psmattas.com](mailto:support.arcfin@psmattas.com)**. See [Internal beta](#internal-beta) |
 
 When you report a problem, **Settings › About › Share Diagnostics** makes a text file of the app's log to attach. It can include your server's address and the titles you played, so look it over before posting it publicly.
 
