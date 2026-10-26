@@ -43,6 +43,13 @@ struct AuthView: View {
                         : "Use your Jellyfin username and password for \(serverName)."
                 )
 
+                if authManager.expiredCredential?.baseURL == serverURL {
+                    Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
+                        .font(.footnote)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Picker("Sign-in method", selection: $mode) {
                     Text("Quick Connect").tag(AuthMode.quickConnect)
                     Text("Password").tag(AuthMode.credentials)
