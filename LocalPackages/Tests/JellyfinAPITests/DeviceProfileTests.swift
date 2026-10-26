@@ -99,3 +99,36 @@ struct SessionDecodingTests {
         #expect(!session.isPaused)
     }
 }
+
+extension DeviceProfileTests {
+    private func allowedRanges(_ profile: [String: Any]) -> String? {
+        (profile["CodecProfiles"] as? [[String: Any]])?
+            .compactMap { ($0["Conditions"] as? [[String: Any]])?.first { $0["Property"] as? String == "VideoRangeType" } }
+            .first?["Value"] as? String
+    }
+
+    @Test("HDR passes through untouched unless forced")
+    func hdrDefault() {
+        UserDefaults.standard.removeObject(forKey: "codecForceHDRTranscode")
+        UserDefaults.standard.removeObject(forKey: "codecForceDolbyVisionTranscode")
+        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false)) == nil)
+        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile) == nil)
+    }
+
+    @Test("Force HDR to Transcode allows only SDR, on every engine")
+    func forceHDR() {
+        UserDefaults.standard.set(true, forKey: "codecForceHDRTranscode")
+        defer { UserDefaults.standard.removeObject(forKey: "codecForceHDRTranscode") }
+        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false)) == "SDR")
+        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile) == "SDR")
+    }
+
+    @Test("Force Dolby Vision to Transcode keeps HDR10 and HLG but not Dolby Vision")
+    func forceDolbyVision() {
+        UserDefaults.standard.set(true, forKey: "codecForceDolbyVisionTranscode")
+        defer { UserDefaults.standard.removeObject(forKey: "codecForceDolbyVisionTranscode") }
+        let ranges = allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false))?.split(separator: "|") ?? []
+        #expect(ranges.contains("HDR10") && ranges.contains("HLG"))
+        #expect(!ranges.contains { $0.hasPrefix("DOVI") })
+    }
+}
