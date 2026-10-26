@@ -17,9 +17,6 @@ struct SettingsView: View {
     #if !os(tvOS)
     @State private var usersDetent: PresentationDetent = .medium
     #endif
-    #if os(tvOS)
-    @State private var listID = UUID()
-    #endif
 
     // MARK: - Persisted preferences (tvOS's single-page layout only — the iOS/iPadOS hub
     // below reads the same keys from each dedicated sub-screen instead).
@@ -29,269 +26,30 @@ struct SettingsView: View {
     @AppStorage("seerrURL")            private var seerrURL             = ""
 
     var body: some View {
-        List {
-            profileSection
-
 #if os(tvOS)
-            // ── Preferences ──────────────────────────────────────────────
-            Section {
-                NavigationLink {
-                    PlaybackSettingsView()
-                } label: {
-                    settingsRow("Playback", icon: "play.circle")
-                }
-                .listRowBackground(Color.clear)
-                NavigationLink {
-                    AppearanceView()
-                } label: {
-                    settingsRow("Appearance", icon: "paintbrush")
-                }
-                .listRowBackground(Color.clear)
-            } header: {
-                sectionHeader("Preferences", icon: "slider.horizontal.3")
+        // A ScrollView rather than a List: the List faded out its top rows under where the
+        // tab bar sits, even with the tab bar hidden.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                rows
             }
-
-            // ── Account & Server ─────────────────────────────────────────
-            Section {
-                serverRow
-                NavigationLink {
-                    ProfileAccessView()
-                } label: {
-                    HStack {
-                        Text("Your Profile")
-                        Spacer()
-                        if ProfileRules.shared.restrictsContent {
-                            Label("Parental Controls", systemImage: "lock.shield")
-                                .font(.caption2)
-                                .foregroundStyle(DT.Color.textSecondary)
-                        }
-                    }
-                }
-                .listRowBackground(Color.clear)
-                if let activeID = authManager.state.credential?.id {
-                    NavigationLink {
-                        ServerSettingsView(profileID: activeID)
-                    } label: {
-                        Text("Server Settings")
-                    }
-                    .listRowBackground(Color.clear)
-                }
-                Button { showUsersSheet = true } label: {
-                    Text("Switch Server")
-                }
-                .listRowBackground(Color.clear)
-                NavigationLink {
-                    AddServerFlowView()
-                } label: {
-                    Text("Add Server")
-                }
-                .listRowBackground(Color.clear)
-            } header: {
-                sectionHeader("Account & Server", icon: "person.badge.key")
-            }
-
-            // ── Plugins ──────────────────────────────────────────────────
-            Section {
-                Toggle(isOn: $seerrDiscoverEnabled) {
-                    TVRowLabelText(title: "Show Discover on Home", detail: "Adds your Seerr watchlist and its trending and popular rows to Home.")
-                }
-                NavigationLink {
-                    SeerrPluginView()
-                } label: {
-                    HStack {
-                        Text("Seerr")
-                        Spacer()
-                        seerrStatusPill
-                    }
-                }
-                .listRowBackground(Color.clear)
-                NavigationLink {
-                    TMDBSettingsView()
-                } label: {
-                    HStack {
-                        Text("TMDB")
-                        Spacer()
-                        if seerrRepo.hasTMDB {
-                            Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
-                        }
-                    }
-                }
-                .listRowBackground(Color.clear)
-            } header: {
-                sectionHeader("Plugins", icon: "puzzlepiece.extension")
-            }
-#elseif os(iOS)
-            // Grouped hub — each row below pushes to its own focused screen instead of
-            // stacking every preference into one long page. The Mac's Settings window lists
-            // these panes in its own sidebar.
-            Section {
-                NavigationLink {
-                    PlaybackSettingsView()
-                } label: {
-                    settingsRow("Playback", icon: "play.circle")
-                }
-                NavigationLink {
-                    DownloadsSettingsView()
-                } label: {
-                    settingsRow("Downloads", icon: "arrow.down.circle")
-                }
-                NavigationLink {
-                    AppearanceView()
-                } label: {
-                    settingsRow("Appearance", icon: "paintbrush")
-                }
-                NavigationLink {
-                    NotificationsSettingsView()
-                } label: {
-                    settingsRow("Notifications", icon: "bell")
-                }
-            }
-
-            Section {
-                NavigationLink {
-                    ServerAccountSettingsView()
-                } label: {
-                    settingsRow("Server", icon: "person.badge.key")
-                }
-                NavigationLink {
-                    IntegrationsSettingsView()
-                } label: {
-                    settingsRow("Integrations", icon: "puzzlepiece.extension")
-                }
-            }
-#endif
-
-            if AppLanguage.isChoosable {
-                Section {
-                    Picker(selection: $languageOverride) {
-                        Text("System Default").tag("")
-                        ForEach(AppLanguage.available, id: \.self) { code in
-                            Text(verbatim: AppLanguage.name(of: code)).tag(code)
-                        }
-                    } label: {
-                        settingsRow("Language", icon: "globe")
-                    }
-                    .tvListRow()
-                    .onChange(of: languageOverride) { _, code in
-                        AppLanguage.override = code.isEmpty ? nil : code
-                    }
-                } footer: {
-                    if languageOverride != AppLanguage.atLaunch {
-                        Text("Arcfin switches language the next time it opens.")
-                    }
-                }
-            }
-
-            // ── About ────────────────────────────────────────────────────
-            Section {
-                LabeledContent("Version") {
-                    Text(appVersion).foregroundStyle(.secondary)
-                }
-                LabeledContent("Build") {
-                    Text(buildNumber).foregroundStyle(.secondary)
-                }
-                NavigationLink {
-                    LicensesView()
-                } label: {
-                    Text("Licenses & Third-Party Notices")
-                }
-#if os(tvOS)
-                .listRowBackground(Color.clear)
-#endif
-#if os(tvOS)
-                LabeledContent("Support", value: "arcfin.psmattas.com/support")
-                    .listRowBackground(Color.clear)
-                LabeledContent("Privacy Policy", value: "arcfin.psmattas.com/privacy")
-                    .listRowBackground(Color.clear)
-                LabeledContent("Terms of Use", value: "arcfin.psmattas.com/terms")
-                    .listRowBackground(Color.clear)
-                LabeledContent("Data Protection", value: "arcfin.psmattas.com/data-protection")
-                    .listRowBackground(Color.clear)
-#else
-                DiagnosticsRow()
-                Link(destination: URL(string: "https://git.psmattas.com/ArcFin/ArcFin/issues/new/choose")!) {
-                    HStack {
-                        TVRowLabelText(title: "Report a Problem", detail: "Opens Arcfin's issue tracker. You can sign in there with GitHub or GitLab.")
-                            .foregroundStyle(DT.Color.textPrimary)
-                        Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                    }
-                }
-                Link(destination: URL(string: "https://arcfin.psmattas.com/support")!) {
-                    HStack {
-                        Text("Contact Support").foregroundStyle(DT.Color.textPrimary)
-                        Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                    }
-                }
-                Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
-                    HStack {
-                        Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
-                        Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                    }
-                }
-                Link(destination: URL(string: "https://arcfin.psmattas.com/terms")!) {
-                    HStack {
-                        Text("Terms of Use").foregroundStyle(DT.Color.textPrimary)
-                        Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                    }
-                }
-                Link(destination: URL(string: "https://arcfin.psmattas.com/data-protection")!) {
-                    HStack {
-                        Text("Data Protection").foregroundStyle(DT.Color.textPrimary)
-                        Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                    }
-                }
-#endif
-            } header: {
-                sectionHeader("About", icon: "info.circle")
-            } footer: {
-                // A footer, not a row — an extra row with a cleared background broke the
-                // section's rounded-corner silhouette at the bottom edge (a List quirk: the
-                // last row's background normally supplies that corner).
-                Text("Made by PSMattas")
-                    .font(.system(.caption2, design: .default, weight: .semibold))
-                    .tracking(1.5)
-                    .textCase(.uppercase)
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 8)
-            }
-
-            // ── Sign Out ─────────────────────────────────────────────────
-            Section {
-                Button(role: .destructive) {
-                    authManager.signOut()
-                } label: {
-                    Text("Sign Out")
-                        .foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-#if os(tvOS)
-                .listRowBackground(Color.clear)
-#endif
-            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.vertical, 40)
         }
-        .arcfinListStyle()
+        .buttonStyle(TVSettingsRowStyle())
         .screenBackground()
-#if os(tvOS)
-        // The page has no title, but its navigation bar still kept an empty band at the top,
-        // and on the first visit it didn't hide on scroll: rows stopped short of the top and a
-        // row focused up there was out of sight. A List also clips its rows to its frame, so
-        // they're let through to the top once the tab bar hides. Pushed pages keep their bars.
         .toolbar(.hidden, for: .navigationBar)
-        .scrollClipDisabled()
-        .id(listID)
-        .onAppear { listID = UUID() }
         .sheet(isPresented: $showUsersSheet) {
             // frame(minWidth: 900) used to force content wider than tvOS's own sheet
             // container, clipping the text on both edges — letting it size naturally fits.
             NavigationStack { TVUsersView() }
         }
 #else
+        List {
+            rows
+        }
+        .arcfinListStyle()
+        .screenBackground()
         .navigationTitle(authManager.state.credential?.displayName ?? "Settings")
 #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
@@ -305,6 +63,244 @@ struct SettingsView: View {
 #endif
     }
 
+    @ViewBuilder
+    private var rows: some View {
+        profileSection
+
+#if os(tvOS)
+        // ── Preferences ──────────────────────────────────────────────
+        Section {
+            NavigationLink {
+                PlaybackSettingsView()
+            } label: {
+                settingsRow("Playback", icon: "play.circle")
+            }
+            NavigationLink {
+                AppearanceView()
+            } label: {
+                settingsRow("Appearance", icon: "paintbrush")
+            }
+        } header: {
+            sectionHeader("Preferences", icon: "slider.horizontal.3")
+        }
+
+        // ── Account & Server ─────────────────────────────────────────
+        Section {
+            serverRow
+            NavigationLink {
+                ProfileAccessView()
+            } label: {
+                HStack {
+                    Text("Your Profile")
+                    Spacer()
+                    if ProfileRules.shared.restrictsContent {
+                        Label("Parental Controls", systemImage: "lock.shield")
+                            .font(.caption2)
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+            }
+            if let activeID = authManager.state.credential?.id {
+                NavigationLink {
+                    ServerSettingsView(profileID: activeID)
+                } label: {
+                    Text("Server Settings")
+                }
+            }
+            Button { showUsersSheet = true } label: {
+                Text("Switch Server")
+            }
+            NavigationLink {
+                AddServerFlowView()
+            } label: {
+                Text("Add Server")
+            }
+        } header: {
+            sectionHeader("Account & Server", icon: "person.badge.key")
+        }
+
+        // ── Plugins ──────────────────────────────────────────────────
+        Section {
+            Toggle(isOn: $seerrDiscoverEnabled) {
+                TVRowLabelText(title: "Show Discover on Home", detail: "Adds your Seerr watchlist and its trending and popular rows to Home.")
+            }
+            NavigationLink {
+                SeerrPluginView()
+            } label: {
+                HStack {
+                    Text("Seerr")
+                    Spacer()
+                    seerrStatusPill
+                }
+            }
+            NavigationLink {
+                TMDBSettingsView()
+            } label: {
+                HStack {
+                    Text("TMDB")
+                    Spacer()
+                    if seerrRepo.hasTMDB {
+                        Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
+                    }
+                }
+            }
+        } header: {
+            sectionHeader("Plugins", icon: "puzzlepiece.extension")
+        }
+#elseif os(iOS)
+        // Grouped hub — each row below pushes to its own focused screen instead of
+        // stacking every preference into one long page. The Mac's Settings window lists
+        // these panes in its own sidebar.
+        Section {
+            NavigationLink {
+                PlaybackSettingsView()
+            } label: {
+                settingsRow("Playback", icon: "play.circle")
+            }
+            NavigationLink {
+                DownloadsSettingsView()
+            } label: {
+                settingsRow("Downloads", icon: "arrow.down.circle")
+            }
+            NavigationLink {
+                AppearanceView()
+            } label: {
+                settingsRow("Appearance", icon: "paintbrush")
+            }
+            NavigationLink {
+                NotificationsSettingsView()
+            } label: {
+                settingsRow("Notifications", icon: "bell")
+            }
+        }
+
+        Section {
+            NavigationLink {
+                ServerAccountSettingsView()
+            } label: {
+                settingsRow("Server", icon: "person.badge.key")
+            }
+            NavigationLink {
+                IntegrationsSettingsView()
+            } label: {
+                settingsRow("Integrations", icon: "puzzlepiece.extension")
+            }
+        }
+#endif
+
+        if AppLanguage.isChoosable {
+            Section {
+                Picker(selection: $languageOverride) {
+                    Text("System Default").tag("")
+                    ForEach(AppLanguage.available, id: \.self) { code in
+                        Text(verbatim: AppLanguage.name(of: code)).tag(code)
+                    }
+                } label: {
+                    settingsRow("Language", icon: "globe")
+                }
+#if os(tvOS)
+                .pickerStyle(.navigationLink)
+#endif
+                .onChange(of: languageOverride) { _, code in
+                    AppLanguage.override = code.isEmpty ? nil : code
+                }
+            } footer: {
+                if languageOverride != AppLanguage.atLaunch {
+                    Text("Arcfin switches language the next time it opens.")
+                }
+            }
+        }
+
+        // ── About ────────────────────────────────────────────────────
+        Section {
+            LabeledContent("Version") {
+                Text(appVersion).foregroundStyle(.secondary)
+            }
+            .tvInfoRow()
+            LabeledContent("Build") {
+                Text(buildNumber).foregroundStyle(.secondary)
+            }
+            .tvInfoRow()
+            NavigationLink {
+                LicensesView()
+            } label: {
+                Text("Licenses & Third-Party Notices")
+            }
+#if os(tvOS)
+            LabeledContent("Support", value: "arcfin.psmattas.com/support")
+                .tvInfoRow()
+            LabeledContent("Privacy Policy", value: "arcfin.psmattas.com/privacy")
+                .tvInfoRow()
+            LabeledContent("Terms of Use", value: "arcfin.psmattas.com/terms")
+                .tvInfoRow()
+            LabeledContent("Data Protection", value: "arcfin.psmattas.com/data-protection")
+                .tvInfoRow()
+#else
+            DiagnosticsRow()
+            Link(destination: URL(string: "https://git.psmattas.com/ArcFin/ArcFin/issues/new/choose")!) {
+                HStack {
+                    TVRowLabelText(title: "Report a Problem", detail: "Opens Arcfin's issue tracker. You can sign in there with GitHub or GitLab.")
+                        .foregroundStyle(DT.Color.textPrimary)
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+            Link(destination: URL(string: "https://arcfin.psmattas.com/support")!) {
+                HStack {
+                    Text("Contact Support").foregroundStyle(DT.Color.textPrimary)
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+            Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
+                HStack {
+                    Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+            Link(destination: URL(string: "https://arcfin.psmattas.com/terms")!) {
+                HStack {
+                    Text("Terms of Use").foregroundStyle(DT.Color.textPrimary)
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+            Link(destination: URL(string: "https://arcfin.psmattas.com/data-protection")!) {
+                HStack {
+                    Text("Data Protection").foregroundStyle(DT.Color.textPrimary)
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+#endif
+        } header: {
+            sectionHeader("About", icon: "info.circle")
+        } footer: {
+            // A footer, not a row — an extra row with a cleared background broke the
+            // section's rounded-corner silhouette at the bottom edge (a List quirk: the
+            // last row's background normally supplies that corner).
+            Text("Made by PSMattas")
+                .font(.system(.caption2, design: .default, weight: .semibold))
+                .tracking(1.5)
+                .textCase(.uppercase)
+                .foregroundStyle(DT.Color.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 8)
+        }
+
+        // ── Sign Out ─────────────────────────────────────────────────
+        Section {
+            Button(role: .destructive) {
+                authManager.signOut()
+            } label: {
+                Text("Sign Out")
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+    }
+
     // MARK: - Profile section
 
     @ViewBuilder
@@ -313,9 +309,8 @@ struct SettingsView: View {
             Section {
 #if os(tvOS)
                 Button { showUsersSheet = true } label: {
-                    TVFocusRowLabel { Text(cred.displayName) }
+                    Text(cred.displayName)
                 }
-                .tvListRow()
 #else
                 Button { showUsersSheet = true } label: {
                     profileCard(cred: cred)
@@ -381,6 +376,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+            .tvInfoRow()
         }
     }
 
@@ -405,6 +401,10 @@ struct SettingsView: View {
         .foregroundStyle(DT.Color.textSecondary)
         .textCase(nil)
         .accessibilityAddTraits(.isHeader)
+#if os(tvOS)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+#endif
     }
 
     @ViewBuilder
@@ -1042,3 +1042,43 @@ private struct DiagnosticsRow: View {
 }
 #endif
 
+private extension View {
+    /// A row that only shows a value, lined up with the text of the rows around it.
+    func tvInfoRow() -> some View {
+#if os(tvOS)
+        padding(.horizontal, 24).padding(.vertical, 12)
+#else
+        self
+#endif
+    }
+}
+
+#if os(tvOS)
+// Settings rows in the tvOS ScrollView: plain text at rest and the light platter of the
+// system's own lists when focused.
+private struct TVSettingsRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        TVSettingsRow(label: configuration.label, isPressed: configuration.isPressed)
+    }
+}
+
+private struct TVSettingsRow<Label: View>: View {
+    let label: Label
+    let isPressed: Bool
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        label
+            .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous)
+                    .fill(isFocused ? Color.white.opacity(0.92) : Color.clear)
+            )
+            .scaleEffect(isPressed ? 0.98 : (isFocused ? 1.02 : 1))
+            .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
+    }
+}
+#endif
