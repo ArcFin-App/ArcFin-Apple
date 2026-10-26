@@ -756,13 +756,14 @@ extension PlayerView {
             // left/right to nudge the pending position (with the same trickplay preview),
             // then click to commit. Matches how Apple's own tvOS video player scrubber works.
             .focusable(true)
+            .focused($isScrubberFocused)
+            .onChange(of: isScrubberFocused) { _, focused in
+                if focused { startRemoteScrub() } else { remoteScrub.stop() }
+            }
+            .onDisappear { remoteScrub.stop() }
             .onMoveCommand { direction in
-                guard direction == .left || direction == .right else { return }
-                if !isScrubbing {
-                    isScrubbing = true
-                    scrubTicks = Double(pendingSeekTargetTicks ?? player.positionTicks)
-                    hideControlsTask?.cancel()
-                }
+                guard direction == .left || direction == .right, !remoteScrub.suppressesMoveCommands else { return }
+                beginTVScrub()
                 let stepTicks: Double = 10 * 10_000_000
                 scrubTicks = direction == .right
                     ? min(scrubTicks + stepTicks, Double(player.durationTicks))
@@ -786,6 +787,32 @@ extension PlayerView {
             seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
         }
     }
+
+    #if os(tvOS)
+    private func beginTVScrub() {
+        guard !isScrubbing else { return }
+        isScrubbing = true
+        scrubTicks = Double(pendingSeekTargetTicks ?? player.positionTicks)
+        hideControlsTask?.cancel()
+    }
+
+    /// A slide across the whole touch surface covers a tenth of the runtime, kept between one
+    /// and ten minutes so short episodes stay precise and long films stay quick to cross.
+    private func startRemoteScrub() {
+        remoteScrub.start(
+            began: {
+                beginTVScrub()
+                remoteScrubStartTicks = scrubTicks
+            },
+            moved: { travel in
+                let duration = Double(player.durationTicks)
+                let span = min(max(duration * 0.1, 60 * 10_000_000), 600 * 10_000_000)
+                scrubTicks = min(max(remoteScrubStartTicks + travel * span, 0), duration)
+                updateScrubThumbnail()
+            }
+        )
+    }
+    #endif
 
     private var trickplayPreview: some View {
         Group {

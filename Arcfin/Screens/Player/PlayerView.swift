@@ -65,6 +65,9 @@ struct PlayerView: View {
     // opacity, so hit-testing/focusability never turns off and there's never a moment with
     // nothing reachable for the remote to bring back, even while fully invisible.
     @State var tvControlsHidden = false
+    @State var remoteScrub = TVRemoteScrub()
+    @State var remoteScrubStartTicks: Double = 0
+    @FocusState var isScrubberFocused: Bool
     #endif
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false

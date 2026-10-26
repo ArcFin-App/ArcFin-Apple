@@ -1,0 +1,93 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+#if os(tvOS)
+import Foundation
+import GameController
+
+/// Follows a finger on the Siri Remote's touch surface while the scrubber is focused. The focus
+/// engine turns a swipe into one fixed-size move command whatever its length, so free scrubbing
+/// reads the surface's absolute position from GameController instead.
+@MainActor
+final class TVRemoteScrub {
+    /// Horizontal travel since the touch began, as a fraction of the surface's full width.
+    typealias Moved = @MainActor (Double) -> Void
+
+    private var began: (@MainActor () -> Void)?
+    private var moved: Moved?
+    private var pads: [GCMicroGamepad: Bool] = [:]
+    private var connectObserver: NSObjectProtocol?
+    private var startX: Float?
+    private var isPanning = false
+    private var panEndedAt: Date?
+
+    /// The swipe that ends a pan still arrives as a move command; it must not also step 10 s.
+    var suppressesMoveCommands: Bool {
+        if isPanning { return true }
+        guard let panEndedAt else { return false }
+        return Date().timeIntervalSince(panEndedAt) < 0.4
+    }
+
+    func start(began: @escaping @MainActor () -> Void, moved: @escaping Moved) {
+        self.began = began
+        self.moved = moved
+        GCController.controllers().forEach(attach)
+        connectObserver = NotificationCenter.default.addObserver(
+            forName: .GCControllerDidConnect, object: nil, queue: .main
+        ) { [weak self] note in
+            guard let controller = note.object as? GCController else { return }
+            MainActor.assumeIsolated { self?.attach(controller) }
+        }
+    }
+
+    func stop() {
+        if let connectObserver { NotificationCenter.default.removeObserver(connectObserver) }
+        connectObserver = nil
+        for (pad, wasAbsolute) in pads {
+            pad.dpad.valueChangedHandler = nil
+            pad.reportsAbsoluteDpadValues = wasAbsolute
+        }
+        pads = [:]
+        began = nil
+        moved = nil
+        reset()
+    }
+
+    private func attach(_ controller: GCController) {
+        guard let pad = controller.microGamepad, pads[pad] == nil else { return }
+        pads[pad] = pad.reportsAbsoluteDpadValues
+        pad.reportsAbsoluteDpadValues = true
+        // GameController calls this on its handler queue, which is the main queue by default.
+        pad.dpad.valueChangedHandler = { [weak self] _, x, y in
+            MainActor.assumeIsolated { self?.touch(x: x, y: y) }
+        }
+    }
+
+    private func touch(x: Float, y: Float) {
+        guard x != 0 || y != 0 else {
+            if isPanning { panEndedAt = Date() }
+            reset()
+            return
+        }
+        guard let startX else {
+            self.startX = x
+            return
+        }
+        // The surface spans -1...1, so this is the share of its width the finger has crossed.
+        let travel = Double(x - startX) / 2
+        if !isPanning {
+            // A resting or clicking finger drifts a little; only a real slide becomes a pan.
+            guard abs(travel) > 0.05 else { return }
+            isPanning = true
+            self.startX = x
+            began?()
+            return
+        }
+        moved?(travel)
+    }
+
+    private func reset() {
+        startX = nil
+        isPanning = false
+    }
+}
+#endif
