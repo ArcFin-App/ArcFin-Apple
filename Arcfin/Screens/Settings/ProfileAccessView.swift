@@ -168,16 +168,3 @@ struct ProfileAccessView: View {
         return Locale.current.localizedString(forLanguageCode: code) ?? code
     }
 }
-
-private extension View {
-    /// On tvOS a row has to take focus for the remote to reach it, and a page with nothing
-    /// focusable sent focus to the tab bar, where Back leaves the app. The rows stay read-only.
-    @ViewBuilder
-    func tvReadOnlyRow() -> some View {
-        #if os(tvOS)
-        Button {} label: { self }
-        #else
-        self
-        #endif
-    }
-}
