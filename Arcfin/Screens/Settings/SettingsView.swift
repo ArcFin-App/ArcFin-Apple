@@ -278,6 +278,10 @@ struct SettingsView: View {
         .arcfinListStyle()
         .screenBackground()
 #if os(tvOS)
+        // A List clips its rows to its frame, which starts below the space kept for the tab
+        // bar: once that hides on scroll, the top of the screen stayed empty and a row focused
+        // up there was out of sight.
+        .scrollClipDisabled()
         .id(listID)
         .onAppear { listID = UUID() }
         .sheet(isPresented: $showUsersSheet) {
