@@ -164,10 +164,18 @@ private struct TVListRowFocusTextModifier: ViewModifier {
 private struct TVFocusRingModifier: ViewModifier {
     let cornerRadius: CGFloat
     var prominent: Bool = false
-    @Environment(\.isFocused) private var isFocused
+    /// Set when the ring sits inside a focusable view (a button's label).
+    @Environment(\.isFocused) private var ancestorFocused
+    /// Set when the ring is applied to the focusable view itself, a button or a
+    /// `.focusable()` card: \.isFocused only reports an ancestor's focus, so on its own
+    /// it stayed false there and the ring never showed.
+    @FocusState private var selfFocused: Bool
+
+    private var isFocused: Bool { ancestorFocused || selfFocused }
 
     func body(content: Content) -> some View {
         content
+            .focused($selfFocused)
             .focusEffectDisabled()
             .scaleEffect(prominent && isFocused ? 1.12 : 1.0)
             .overlay(
