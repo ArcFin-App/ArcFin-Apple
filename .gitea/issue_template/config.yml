@@ -1,1 +1,8 @@
 blank_issues_enabled: false
+contact_links:
+  - name: 🔐 Report a security problem
+    url: https://git.psmattas.com/ArcFin/ArcFin/src/branch/main/SECURITY.md
+    about: Email security@psmattas.com instead of opening a public issue.
+  - name: 💬 Help using Arcfin
+    url: https://arcfin.psmattas.com/support
+    about: Guides and answers, or email support.arcfin@psmattas.com.

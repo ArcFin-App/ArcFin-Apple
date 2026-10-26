@@ -6,7 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Before opening this:** check the [README](../../) and [existing issues](../../issues).
+        **Before opening this:** check the [support page](https://arcfin.psmattas.com/support) and [existing issues](../../issues). You can also email support.arcfin@psmattas.com.
+
+        Questions about pirated content will be closed; see the [Disclaimer](../../#disclaimer).
 
   - type: textarea
     id: summary
