@@ -722,11 +722,14 @@ extension PlayerView {
                 Circle().fill(.white)
                     .frame(width: isScrubbing ? 16 : 10, height: isScrubbing ? 16 : 10)
                     .offset(x: thumbX - (isScrubbing ? 8 : 5))
-
+            }
+            // An overlay, so the preview floats above the track. Inside the stack its height
+            // made the stack taller and pushed the centred track down the screen.
+            .overlay(alignment: .leading) {
                 if isScrubbing, trickplayLoader != nil {
                     trickplayPreview
                         .offset(x: min(max(thumbX - Self.trickplaySize.width / 2, 0), proxy.size.width - Self.trickplaySize.width),
-                                y: -(Self.trickplaySize.height + 21))
+                                y: -(Self.trickplaySize.height / 2 + 21))
                 }
             }
             .frame(maxHeight: .infinity, alignment: .center)
