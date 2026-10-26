@@ -122,7 +122,7 @@ struct WatchlistView: View {
             .aspectRatio(2 / 3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.card).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
-            .tvFocusRing(cornerRadius: DT.Radius.card)
+            .tvLabelFocusRing(cornerRadius: DT.Radius.card)
             .contextMenu(menuItems: {
                 Button(role: .destructive) {
                     remove(item)
