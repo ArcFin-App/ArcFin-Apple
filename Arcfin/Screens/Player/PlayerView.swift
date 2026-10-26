@@ -1236,11 +1236,12 @@ struct PlayerView: View {
         }
 
         // Anything with an Up Next card already has something to watch next; the rest (movies,
-        // a series finale) get suggestions instead once the credits start.
+        // a series finale) get suggestions instead once the credits start. Trailers and other
+        // extras don't: the last four minutes would cover most of one.
         moreLikeThis = []
         showMoreLikeThis = false
         moreLikeThisDismissed = false
-        if nextEpisode == nil {
+        if nextEpisode == nil, item.type == .movie || item.type == .episode {
             moreLikeThis = ((try? await client.getSimilarItems(
                 credential: credential, authHeader: authHeader, itemId: item.id, limit: 12)) ?? [])
                 .filter { $0.id != item.id }
@@ -1438,6 +1439,7 @@ struct PlayerView: View {
                                                   creditsStart: segments.credits?.lowerBound) {
                 _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
             }
+            NotificationCenter.default.post(name: .arcfinPlaybackReported, object: nil)
         }
         await player.stop()
         #if canImport(UIKit) && !os(tvOS)
