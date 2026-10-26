@@ -121,6 +121,9 @@ struct TVCollectionDetailView: View {
                 .focusSection()
             }
             .focusScope(focusNamespace)
+            // Without it, focus landing on Play scrolled the page to centre the button and cut
+            // off the top of the title and text, as the title page and Home already avoid.
+            .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh * 0.88))
             .ignoresSafeArea()
         }
         .screenBackground()
@@ -405,6 +408,8 @@ struct TVCollectionDetailView: View {
             }
             .scrollClipDisabled()
         }
+        // Room under the hero's buttons, which grow when focused, so the heading isn't cut off.
+        .padding(.top, 48)
         .padding(.bottom, 40)
     }
 
