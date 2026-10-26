@@ -41,4 +41,22 @@ struct ServerAddressTests {
         let base = JellyfinAuthClient.base(answering: response("https://login.example.com/"), requested: typed)
         #expect(base == typed)
     }
+
+    @Test("A web page instead of Jellyfin's API reads as not Jellyfin")
+    func htmlIsNotJellyfin() {
+        let error = DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "HTML"))
+        #expect(JellyfinAuthClient.reason(for: error) == .notJellyfin)
+    }
+
+    @Test("Network failures map to their reasons", arguments: [
+        (URLError.Code.serverCertificateUntrusted, JellyfinAuthError.certificateProblem),
+        (.cannotFindHost, .hostNotFound),
+        (.cannotConnectToHost, .connectionRefused),
+        (.timedOut, .timedOut),
+        (.notConnectedToInternet, .offline),
+        (.badServerResponse, .serverUnreachable),
+    ])
+    func networkReasons(code: URLError.Code, reason: JellyfinAuthError) {
+        #expect(JellyfinAuthClient.reason(for: URLError(code)) == reason)
+    }
 }
