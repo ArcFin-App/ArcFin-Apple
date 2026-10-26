@@ -431,7 +431,7 @@ enum Thumbnails {
                     let url = JellyfinMediaClient.imageURL(
                         baseURL: credential.baseURL, itemID: item.id, tag: tag,
                         type: .primary, fillWidth: 240, token: credential.accessToken)
-                    guard let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty
+                    guard let data = await URLSession.arcfin.imageData(from: url)
                     else { return (item.id, nil) }
                     await store.set(data, for: item.id)
                     return (item.id, data)

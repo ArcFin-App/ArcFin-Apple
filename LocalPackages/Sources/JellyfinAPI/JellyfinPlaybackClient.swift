@@ -2,6 +2,8 @@
 
 import Foundation
 import AuthCore
+import Telemetry
+import os
 
 // MARK: - Playback models
 
@@ -137,6 +139,8 @@ public struct StreamQualityCap: Sendable, Equatable {
 }
 
 extension JellyfinMediaClient {
+    private static let playbackLog = Telemetry.logger(category: "Playback")
+
 
     // MARK: - Playback info (direct play / transcode decision)
 
@@ -229,6 +233,12 @@ extension JellyfinMediaClient {
             playURL = directComps.url!
             playMethod = .directPlay
         }
+
+        Self.playbackLog.notice("""
+            \(playMethod.rawValue, privacy: .public) for \(itemId, privacy: .public): \
+            container \(source.container ?? "?", privacy: .public), \
+            reasons \((source.transcodeReasons ?? []).joined(separator: ", "), privacy: .public)
+            """)
 
         let streams = source.mediaStreams ?? []
         let audioStreams = streams.filter { $0.type == "Audio" }.map { $0.toStream() }

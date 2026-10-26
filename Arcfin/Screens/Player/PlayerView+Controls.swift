@@ -2189,7 +2189,7 @@ extension PlayerView {
                         Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
                         Capsule().fill(.white).frame(width: 6, height: 90 * dragValue)
                     }
-                    Text("\(Int(dragValue * 100))%")
+                    Text(Double(dragValue), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                         .font(.system(.caption2, design: .monospaced, weight: .semibold))
                         .foregroundStyle(.white)
                 }
@@ -2240,7 +2240,7 @@ extension PlayerView {
                     Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
                     Capsule().fill(.white).frame(width: 6, height: 90 * volume)
                 }
-                Text("\(Int(volume * 100))%")
+                Text(Double(volume), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                     .font(.system(.caption2, design: .monospaced, weight: .semibold))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())

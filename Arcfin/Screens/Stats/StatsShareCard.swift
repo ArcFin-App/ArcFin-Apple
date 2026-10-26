@@ -92,7 +92,7 @@ struct StatsShareSheet: View {
     }
 
     private func image(_ url: URL?) async -> CGImage? {
-        guard let url, let (data, _) = try? await URLSession.arcfin.data(from: url),
+        guard let url, let data = await URLSession.arcfin.imageData(from: url),
               let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
@@ -103,7 +103,7 @@ struct StatsShareCard: View {
     enum Format: String, CaseIterable, Identifiable {
         case story, post
         var id: String { rawValue }
-        var title: String { self == .story ? "Story" : "Post" }
+        var title: String { self == .story ? String(localized: "Story") : String(localized: "Post") }
         var size: CGSize { self == .story ? CGSize(width: 360, height: 640) : CGSize(width: 360, height: 450) }
     }
 

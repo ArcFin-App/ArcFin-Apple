@@ -125,7 +125,7 @@ final class SyncPlayManager {
                     self.currentGroupId = nil
                     self.groupName = nil
                     self.disconnectSocket()
-                case .sessions:
+                case .sessions, .userDataChanged, .libraryChanged:
                     break
                 }
             }

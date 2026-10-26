@@ -233,6 +233,34 @@ final class MediaRepository {
         return succeeded
     }
 
+    /// Shelves that follow watched state and favourites, after a change on another device.
+    func refreshWatchState(credential: ServerCredential, authClient: JellyfinAuthClient) async {
+        guard loaded, !isLoading else { return }
+        let header = authClient.authHeader(token: credential.accessToken)
+        async let cw = client.getContinueWatching(credential: credential, authHeader: header)
+        async let nUp = client.getNextUp(credential: credential, authHeader: header)
+        async let wAgain = client.getWatchAgain(credential: credential, authHeader: header)
+        async let favs = client.getFavorites(credential: credential, authHeader: header)
+        if let value = try? await cw { continueWatching = value }
+        if let value = try? await nUp { nextUp = value }
+        if let value = try? await wAgain { watchAgain = value }
+        if let value = try? await favs { favorites = value }
+    }
+
+    /// Shelves that follow what's in the library, after titles are added or removed.
+    func refreshRecentlyAdded(credential: ServerCredential, authClient: JellyfinAuthClient) async {
+        guard loaded, !isLoading else { return }
+        let header = authClient.authHeader(token: credential.accessToken)
+        async let la = client.getLatestMedia(credential: credential, authHeader: header)
+        async let raMov = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")
+        async let raShow = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Series")
+        async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
+        if let value = try? await la { recentlyAdded = value }
+        if let value = try? await raMov { recentlyAddedMovies = value }
+        if let value = try? await raShow { recentlyAddedShows = value }
+        if let value = try? await tmdbKeys { libraryTMDBKeys = value }
+    }
+
     /// Whether the server already has a Seerr title: Seerr says so, or the library holds its
     /// TMDB id (Seerr's own status lags until it next scans the library).
     func hasInLibrary(_ item: SeerrItem) -> Bool {

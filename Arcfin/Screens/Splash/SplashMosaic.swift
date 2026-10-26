@@ -47,7 +47,7 @@ enum SplashMosaicStore {
         var images: [Data] = []
         for job in jobs {
             guard let url = job.url,
-                  let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty
+                  let data = await URLSession.arcfin.imageData(from: url)
             else { continue }
             images.append(data)
         }

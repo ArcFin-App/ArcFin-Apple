@@ -4,6 +4,7 @@
 import UIKit
 import UserNotifications
 import CastKit
+import Telemetry
 
 /// Two unrelated reasons this exists, both needing a real AppDelegate rather than a
 /// SwiftUI-only hook:
@@ -18,6 +19,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         CastManager.shared.start()
+        Diagnostics.shared.start()
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         BackgroundRefresh.register()
         return true

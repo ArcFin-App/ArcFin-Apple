@@ -6,12 +6,14 @@ import JellyfinAPI
 import MediaEngine
 import Persistence
 import SeerrAPI
+import Telemetry
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var showUsersSheet = false
+    @State private var languageOverride = AppLanguage.override ?? ""
     #if !os(tvOS)
     @State private var usersDetent: PresentationDetent = .medium
     #endif
@@ -159,6 +161,27 @@ struct SettingsView: View {
             }
 #endif
 
+            if AppLanguage.isChoosable {
+                Section {
+                    Picker(selection: $languageOverride) {
+                        Text("System Default").tag("")
+                        ForEach(AppLanguage.available, id: \.self) { code in
+                            Text(verbatim: AppLanguage.name(of: code)).tag(code)
+                        }
+                    } label: {
+                        settingsRow("Language", icon: "globe")
+                    }
+                    .tvListRow()
+                    .onChange(of: languageOverride) { _, code in
+                        AppLanguage.override = code.isEmpty ? nil : code
+                    }
+                } footer: {
+                    if languageOverride != AppLanguage.atLaunch {
+                        Text("Arcfin switches language the next time it opens.")
+                    }
+                }
+            }
+
             // ── About ────────────────────────────────────────────────────
             Section {
                 LabeledContent("Version") {
@@ -176,6 +199,8 @@ struct SettingsView: View {
                 .listRowBackground(Color.clear)
 #endif
 #if os(tvOS)
+                LabeledContent("Support", value: "arcfin.psmattas.com/support")
+                    .listRowBackground(Color.clear)
                 LabeledContent("Privacy Policy", value: "arcfin.psmattas.com/privacy")
                     .listRowBackground(Color.clear)
                 LabeledContent("Terms of Use", value: "arcfin.psmattas.com/terms")
@@ -183,6 +208,22 @@ struct SettingsView: View {
                 LabeledContent("Data Protection", value: "arcfin.psmattas.com/data-protection")
                     .listRowBackground(Color.clear)
 #else
+                DiagnosticsRow()
+                Link(destination: URL(string: "https://git.psmattas.com/ArcFin/ArcFin/issues/new/choose")!) {
+                    HStack {
+                        TVRowLabelText(title: "Report a Problem", detail: "Opens Arcfin's issue tracker. You can sign in there with GitHub or GitLab.")
+                            .foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+                Link(destination: URL(string: "https://arcfin.psmattas.com/support")!) {
+                    HStack {
+                        Text("Contact Support").foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
                 Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
                     HStack {
                         Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
@@ -279,7 +320,7 @@ struct SettingsView: View {
         }
     }
 
-    private func settingsRow(_ title: String, icon: String) -> some View {
+    private func settingsRow(_ title: LocalizedStringKey, icon: String) -> some View {
         Label {
             Text(title).foregroundStyle(DT.Color.textPrimary)
         } icon: {
@@ -340,7 +381,7 @@ struct SettingsView: View {
         }
     }
 
-    private func sectionHeader(_ title: String, icon: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, icon: String) -> some View {
         Label(title, systemImage: icon)
             .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(DT.Color.textSecondary)
@@ -381,12 +422,12 @@ enum VideoQuality: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .max:   "Max Quality"
-        case .auto:  "Auto (Recommended)"
-        case .p4k:   "4K Ultra HD"
-        case .p1080: "1080p HD"
-        case .p720:  "720p"
-        case .p480:  "480p"
+        case .max:   String(localized: "Max Quality")
+        case .auto:  String(localized: "Auto (Recommended)")
+        case .p4k:   String(localized: "4K Ultra HD")
+        case .p1080: String(localized: "1080p HD")
+        case .p720:  String(localized: "720p")
+        case .p480:  String(localized: "480p")
         }
     }
     /// Source pixel height this tier requires — nil for Auto/Max, which have no fixed
@@ -819,10 +860,10 @@ private struct TVPINFlow: View {
 
     private var title: String {
         switch task.kind {
-        case .unlock: "Enter PIN"
-        case .remove: "Enter PIN to remove it"
-        case .change where !verified: "Enter current PIN"
-        case .set, .change: firstEntry == nil ? "Enter a new PIN" : "Confirm the PIN"
+        case .unlock: String(localized: "Enter PIN")
+        case .remove: String(localized: "Enter PIN to remove it")
+        case .change where !verified: String(localized: "Enter current PIN")
+        case .set, .change: firstEntry == nil ? String(localized: "Enter a new PIN") : String(localized: "Confirm the PIN")
         }
     }
 
@@ -895,6 +936,89 @@ private struct TVAddProfileFlowView: View {
                 }
             )
             .navigationTitle("Add Profile")
+        }
+    }
+}
+#endif
+
+/// An in-app choice writes AppleLanguages into Arcfin's own defaults, the same key the
+/// system's per-app language setting uses; Foundation reads it at launch.
+private enum AppLanguage {
+    private static let key = "AppleLanguages"
+
+    static let available = Bundle.main.localizations
+        .filter { $0 != "Base" }
+        .sorted { name(of: $0).localizedStandardCompare(name(of: $1)) == .orderedAscending }
+
+    static var isChoosable: Bool { available.count > 1 }
+
+    /// The choice this launch is running with, so a change can say it applies next time.
+    static let atLaunch = override ?? ""
+
+    static var override: String? {
+        get {
+            let domain = Bundle.main.bundleIdentifier.flatMap(UserDefaults.standard.persistentDomain(forName:))
+            return (domain?[key] as? [String])?.first.flatMap { available.contains($0) ? $0 : nil }
+        }
+        set {
+            if let newValue { UserDefaults.standard.set([newValue], forKey: key) }
+            else { UserDefaults.standard.removeObject(forKey: key) }
+        }
+    }
+
+    /// Each language in its own words, as language pickers show them.
+    static func name(of code: String) -> String {
+        let locale = Locale(identifier: code)
+        return locale.localizedString(forIdentifier: code)?.capitalized(with: locale) ?? code
+    }
+}
+
+#if !os(tvOS)
+/// Builds the report before offering it, so the share sheet opens on a finished file rather
+/// than sitting blank while a day of log is read.
+private struct DiagnosticsRow: View {
+    @State private var report: URL?
+    @State private var isPreparing = false
+
+    var body: some View {
+        Group {
+            if let report {
+                ShareLink(item: report) {
+                    label(title: "Share Diagnostics File",
+                          detail: "\(report.lastPathComponent). Save or send it, then attach it to your issue or support request.")
+                }
+            } else {
+                Button(action: prepare) {
+                    label(title: isPreparing ? "Preparing Diagnostics…" : "Share Diagnostics",
+                          detail: "This session's log and any crash reports, as a text file. It can include your server's address and the titles you played.")
+                }
+                .disabled(isPreparing)
+            }
+        }
+        #if os(macOS)
+        .buttonStyle(.plain)
+        #endif
+    }
+
+    private func label(title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
+        HStack {
+            TVRowLabelText(title: title, detail: detail)
+                .foregroundStyle(DT.Color.textPrimary)
+            Spacer()
+            if isPreparing {
+                ProgressView().controlSize(.small)
+            } else {
+                Image(systemName: "square.and.arrow.up").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func prepare() {
+        isPreparing = true
+        Task {
+            report = await Diagnostics.makeReport()
+            isPreparing = false
         }
     }
 }
