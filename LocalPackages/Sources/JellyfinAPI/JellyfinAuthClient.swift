@@ -246,7 +246,22 @@ public struct JellyfinAuthClient: Sendable {
             throw JellyfinAuthError.serverUnreachable
         }
         let info = try JSONDecoder().decode(PublicInfo.self, from: data)
-        return (base, info.serverName)
+        return (Self.base(answering: resp, requested: base), info.serverName)
+    }
+
+    /// The address the server actually answered from. A proxy that redirects http:// to
+    /// https:// (or adds a path) works for these requests, which follow redirects, but not
+    /// for the players, downloads or the WebSocket, so the redirected address is the one saved.
+    static func base(answering response: URLResponse, requested: URL) -> URL {
+        let suffix = "/System/Info/Public"
+        guard let final = response.url,
+              var parts = URLComponents(url: final, resolvingAgainstBaseURL: false),
+              parts.percentEncodedPath.hasSuffix(suffix)
+        else { return requested }
+        parts.percentEncodedPath = String(parts.percentEncodedPath.dropLast(suffix.count))
+        parts.query = nil
+        parts.fragment = nil
+        return parts.url ?? requested
     }
 
     // MARK: - Password auth
