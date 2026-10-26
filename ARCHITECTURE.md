@@ -115,3 +115,5 @@ All user-facing text goes through String Catalogs (`LocalizedStringKey` or `Stri
 - **sign-off:** every commit in a pull request has a `Signed-off-by` line.
 
 Package versions are pinned in the committed `Package.resolved` files, and CI builds only those versions.
+
+`.gitea/workflows/testflight.yml` runs when a release tag such as `iOS-0.2.0-build-2` is pushed. It checks that the tag is signed, on `main` and matches the project's version and build, then archives that platform and uploads it to TestFlight with an App Store Connect API key. The key comes from the `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8_BASE64` secrets, and the team from the `DEVELOPMENT_TEAM` variable.
