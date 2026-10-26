@@ -332,13 +332,14 @@ struct TVCollectionDetailView: View {
 
     // MARK: - Below fold
 
-    @ViewBuilder
     private var belowFoldSection: some View {
-        if !items.isEmpty {
-            itemsSection.focusSection()
-        }
-        if let people = detail?.people, !people.isEmpty {
-            castSection(people).focusSection()
+        VStack(alignment: .leading, spacing: 56) {
+            if !items.isEmpty {
+                itemsSection.focusSection()
+            }
+            if let people = detail?.people, !people.isEmpty {
+                castSection(people).focusSection()
+            }
         }
     }
 

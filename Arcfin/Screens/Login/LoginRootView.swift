@@ -10,13 +10,19 @@ private enum LoginStep {
 
 struct LoginRootView: View {
     @Environment(AuthManager.self) private var authManager
-    @State private var step: LoginStep = .serverURL
+    @State private var step: LoginStep?
+
+    private var currentStep: LoginStep {
+        if let step { return step }
+        guard let expired = authManager.expiredCredential else { return .serverURL }
+        return .auth(serverURL: expired.baseURL, serverName: expired.baseURL.host() ?? expired.baseURL.absoluteString)
+    }
 
     var body: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
 
-            switch step {
+            switch currentStep {
             case .serverURL:
                 ServerURLView(onConnected: { url, name in
                     withAnimation(DT.Animation.standard) {
@@ -42,7 +48,7 @@ struct LoginRootView: View {
     }
 
     private var stepTag: Int {
-        switch step {
+        switch currentStep {
         case .serverURL: return 0
         case .auth: return 1
         }
