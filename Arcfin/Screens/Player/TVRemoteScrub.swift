@@ -14,12 +14,14 @@ final class TVRemoteScrub {
 
     private var began: (@MainActor () -> Void)?
     private var moved: Moved?
+    private var selected: (@MainActor () -> Void)?
     private var pads: [GCMicroGamepad: Bool] = [:]
     private var connectObserver: NSObjectProtocol?
     private var startX: Float?
     private var isPanning = false
     private var panEndedAt: Date?
     private var samples: [(time: Date, travel: Double)] = []
+    private var lastX: Float = 0
 
     /// The swipe that ends a pan still arrives as a move command; it must not also step 10 s.
     var suppressesMoveCommands: Bool {
@@ -28,9 +30,13 @@ final class TVRemoteScrub {
         return Date().timeIntervalSince(panEndedAt) < 0.6
     }
 
-    func start(began: @escaping @MainActor () -> Void, moved: @escaping Moved) {
+    /// `selected` fires on a click of the touch surface's centre. SwiftUI's tap gesture doesn't
+    /// reliably get the remote's click on a plain focusable view, so it's read here too.
+    func start(began: @escaping @MainActor () -> Void, moved: @escaping Moved,
+               selected: @escaping @MainActor () -> Void) {
         self.began = began
         self.moved = moved
+        self.selected = selected
         GCController.controllers().forEach(attach)
         connectObserver = NotificationCenter.default.addObserver(
             forName: .GCControllerDidConnect, object: nil, queue: .main
@@ -45,11 +51,13 @@ final class TVRemoteScrub {
         connectObserver = nil
         for (pad, wasAbsolute) in pads {
             pad.dpad.valueChangedHandler = nil
+            pad.buttonA.pressedChangedHandler = nil
             pad.reportsAbsoluteDpadValues = wasAbsolute
         }
         pads = [:]
         began = nil
         moved = nil
+        selected = nil
         reset()
     }
 
@@ -61,9 +69,20 @@ final class TVRemoteScrub {
         pad.dpad.valueChangedHandler = { [weak self] _, x, y in
             MainActor.assumeIsolated { self?.touch(x: x, y: y) }
         }
+        pad.buttonA.pressedChangedHandler = { [weak self] _, _, pressed in
+            guard pressed else { return }
+            MainActor.assumeIsolated { self?.click() }
+        }
+    }
+
+    // A click near the left or right edge is a 10-second step, handled as a move command.
+    private func click() {
+        guard abs(lastX) < 0.5 else { return }
+        selected?()
     }
 
     private func touch(x: Float, y: Float) {
+        if x != 0 || y != 0 { lastX = x }
         guard x != 0 || y != 0 else {
             if isPanning {
                 // A lifting finger rolls back a little in its last few readings; settle on where

@@ -725,7 +725,8 @@ extension PlayerView {
 
                 if isScrubbing, trickplayLoader != nil {
                     trickplayPreview
-                        .offset(x: min(max(thumbX - 70, 0), proxy.size.width - 140), y: -100)
+                        .offset(x: min(max(thumbX - Self.trickplaySize.width / 2, 0), proxy.size.width - Self.trickplaySize.width),
+                                y: -(Self.trickplaySize.height + 21))
                 }
             }
             .frame(maxHeight: .infinity, alignment: .center)
@@ -820,9 +821,19 @@ extension PlayerView {
                 let span = min(max(duration * 0.1, 60 * 10_000_000), 600 * 10_000_000)
                 scrubTicks = min(max(remoteScrubStartTicks + travel * span, 0), duration)
                 updateScrubThumbnail()
+            },
+            selected: {
+                if isScrubbing { commitTVScrub() }
             }
         )
     }
+    #endif
+
+    // Viewed from across a room, the preview needs to be much larger on a TV.
+    #if os(tvOS)
+    static let trickplaySize = CGSize(width: 400, height: 225)
+    #else
+    static let trickplaySize = CGSize(width: 140, height: 79)
     #endif
 
     private var trickplayPreview: some View {
@@ -835,7 +846,7 @@ extension PlayerView {
                 Color.black
             }
         }
-        .frame(width: 140, height: 79)
+        .frame(width: Self.trickplaySize.width, height: Self.trickplaySize.height)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(.white.opacity(0.3), lineWidth: 1))
         .shadow(radius: 8)
