@@ -485,15 +485,16 @@ struct TVMediaDetailView: View {
 
     // MARK: - Below fold
 
-    // One stack, so the page's padding wraps the sections once instead of padding each of them.
+    // One stack, so the page's padding wraps the sections once instead of padding each of
+    // them. Each section brings its own 56 pt below it.
     private var belowFoldSection: some View {
-        VStack(alignment: .leading, spacing: 56) {
+        VStack(alignment: .leading, spacing: 0) {
             if !seasons.isEmpty { seriesSection.trackSectionOffset().focusSection() }
             if let seriesItem, item.type == .episode {
                 itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
             }
             if !trailers.isEmpty { trailersSection.trackSectionOffset().focusSection() }
-            TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings)
+            TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings, spacingBelow: 56)
                 .padding(.horizontal, 80)
                 .focusSection()
             if let d = detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
