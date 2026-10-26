@@ -18,8 +18,12 @@ struct StatsView: View {
     @State private var counts = StatsLibraryCounts()
     @State private var stats: WatchStats?
     @State private var phase = Phase.loading
-    /// Landscape and iPad: the cards go in two columns instead of one long, stretched one.
+    /// Landscape, iPad and TV: the cards go in two columns instead of one long, stretched one.
+    #if os(tvOS)
+    @State private var isWide = true
+    #else
     @State private var isWide = false
+    #endif
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     #if !os(tvOS)
     @State private var showShare = false
@@ -31,8 +35,12 @@ struct StatsView: View {
         NavigationStack {
             content
                 .screenBackground()
+                #if os(tvOS)
+                // The page carries its own heading, so it scrolls away with the cards
+                // instead of staying over them.
+                .toolbar(.hidden, for: .navigationBar)
+                #else
                 .arcfinNavTitleLarge("Stats")
-                #if !os(tvOS)
                 .toolbar {
                     if let stats, !stats.isEmpty {
                         ToolbarItem(placement: .primaryAction) {
@@ -89,6 +97,12 @@ struct StatsView: View {
         default:
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
+                    #if os(tvOS)
+                    Text("Stats")
+                        .font(.title2.bold())
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                    #endif
                     periodPicker
                     if period != .allTime, let stats { periodStepper(stats) }
                     if let stats {
@@ -102,8 +116,12 @@ struct StatsView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.top, 8)
                 .padding(.bottom, 40)
+                #if os(tvOS)
+                .frame(maxWidth: .infinity)
+                #else
                 .frame(maxWidth: isWide ? 1300 : 900)
                 .frame(maxWidth: .infinity)
+                #endif
             }
             #if !os(tvOS)
             .refreshable { await load() }
