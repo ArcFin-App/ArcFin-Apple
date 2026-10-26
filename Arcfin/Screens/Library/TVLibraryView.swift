@@ -407,6 +407,8 @@ struct TVCollectionDetailView: View {
             }
             .scrollClipDisabled()
         }
+        // Room under the hero's buttons, which grow when focused, so the heading isn't cut off.
+        .padding(.top, 48)
         .padding(.bottom, 40)
     }
 
