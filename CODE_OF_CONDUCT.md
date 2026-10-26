@@ -1,29 +1,42 @@
 # Code of Conduct
 
-## Our Pledge
+## Our pledge
 
-We are committed to making participation in this project a respectful experience for everyone, regardless of background or experience level.
+We want taking part in Arcfin to be a welcoming, harassment-free experience for everyone, whatever their age, body, ability, ethnicity, gender identity and expression, level of experience, education, nationality, appearance, race, religion, or sexual identity and orientation.
 
-## Standards
+## Our standards
 
-**Expected behavior:**
-- Use welcoming, constructive language
-- Respect differing viewpoints and technical approaches
-- Accept and give constructive criticism gracefully
-- Focus on what is best for the project
+**Do:**
+- be kind, patient and welcoming, especially to newcomers;
+- respect different viewpoints, experiences and technical approaches;
+- give and take constructive feedback gracefully;
+- own your mistakes, apologise to anyone affected and learn from them;
+- focus on what's best for the people who use Arcfin.
 
-**Unacceptable behavior:**
-- Harassment, trolling, or personal attacks
-- Publishing others' private information without consent
-- Dismissive or condescending responses to questions or contributions
+**Don't:**
+- harass, insult or make personal or political attacks;
+- use sexualised language or imagery, or make unwelcome advances;
+- troll, or deliberately derail discussions;
+- publish someone's private information, such as a home address, email or server address, without their permission;
+- discuss piracy, ask for help with pirated content, or share piracy tools or sites (see the [Disclaimer](README.md#disclaimer));
+- do anything else that would reasonably be considered inappropriate in a professional setting.
 
 ## Scope
 
-Applies to all project spaces — issues, pull requests, code review comments, and any direct communication related to the project.
+This applies in every project space: issues, pull requests, code review, commit messages, release notes, and email or other communication about the project. It also applies when you represent the project elsewhere.
+
+## Reporting
+
+Report unacceptable behaviour to **[support.arcfin@psmattas.com](mailto:support.arcfin@psmattas.com)**. Every report will be reviewed promptly and fairly, and the reporter's privacy will be respected.
 
 ## Enforcement
 
-Violations can be reported to the maintainer at support@psmattas.com. All reports will be reviewed and responded to. The maintainer reserves the right to remove, edit, or reject contributions that violate this code of conduct.
+The maintainer may remove, edit or reject comments, commits, code, issues and other contributions that break this code of conduct. Depending on how serious and repeated the behaviour is, the response can be:
+
+1. **A correction:** a private, written explanation of what was inappropriate. A public apology may be requested.
+2. **A warning:** with consequences for continued behaviour, and no interaction with the people involved for a set time.
+3. **A temporary ban** from any interaction with the project.
+4. **A permanent ban** for a pattern of violations, harassment, or aggression towards a person or group.
 
 ## Attribution
 
