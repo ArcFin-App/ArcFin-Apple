@@ -389,7 +389,7 @@ struct PlayerView: View {
         .onAppear { ScreensaverHold.count += 1 }
         .onDisappear { ScreensaverHold.count -= 1 }
         .focusScope(tvFocusNamespace)
-        .onPlayPauseCommand { togglePlayPause() }
+        .onPlayPauseCommand { if isScrubbing { commitTVScrub() } else { togglePlayPause() } }
         .onExitCommand { handleTVExit() }
         // Hands focus to whichever control should have it now (the catcher, play/pause, Skip,
         // Up Next) instead of leaving it on something that just disappeared.

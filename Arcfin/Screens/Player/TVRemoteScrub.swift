@@ -19,12 +19,13 @@ final class TVRemoteScrub {
     private var startX: Float?
     private var isPanning = false
     private var panEndedAt: Date?
+    private var samples: [(time: Date, travel: Double)] = []
 
     /// The swipe that ends a pan still arrives as a move command; it must not also step 10 s.
     var suppressesMoveCommands: Bool {
         if isPanning { return true }
         guard let panEndedAt else { return false }
-        return Date().timeIntervalSince(panEndedAt) < 0.4
+        return Date().timeIntervalSince(panEndedAt) < 0.6
     }
 
     func start(began: @escaping @MainActor () -> Void, moved: @escaping Moved) {
@@ -64,7 +65,16 @@ final class TVRemoteScrub {
 
     private func touch(x: Float, y: Float) {
         guard x != 0 || y != 0 else {
-            if isPanning { panEndedAt = Date() }
+            if isPanning {
+                // A lifting finger rolls back a little in its last few readings; settle on where
+                // it was just before letting go so a quick flick doesn't land short.
+                let now = Date()
+                if let settled = samples.last(where: { now.timeIntervalSince($0.time) > 0.06 }),
+                   settled.travel != samples.last?.travel {
+                    moved?(settled.travel)
+                }
+                panEndedAt = now
+            }
             reset()
             return
         }
@@ -82,12 +92,15 @@ final class TVRemoteScrub {
             began?()
             return
         }
+        samples.append((Date(), travel))
+        if samples.count > 30 { samples.removeFirst(samples.count - 30) }
         moved?(travel)
     }
 
     private func reset() {
         startX = nil
         isPanning = false
+        samples = []
     }
 }
 #endif

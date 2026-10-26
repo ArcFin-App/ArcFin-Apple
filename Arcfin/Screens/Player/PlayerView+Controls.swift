@@ -772,10 +772,7 @@ extension PlayerView {
             }
             .onTapGesture {
                 guard isScrubbing else { return }
-                performSeek(to: Int64(scrubTicks))
-                isScrubbing = false
-                scrubThumbnail = nil
-                scheduleAutoHide()
+                commitTVScrub()
             }
             #endif
         }
@@ -789,6 +786,20 @@ extension PlayerView {
     }
 
     #if os(tvOS)
+    /// Clicking or pressing Play/Pause on a scrubbed position plays from there, as Apple's
+    /// player does, even if playback was paused.
+    func commitTVScrub() {
+        let ticks = Int64(scrubTicks)
+        isScrubbing = false
+        scrubThumbnail = nil
+        performSeek(to: ticks)
+        if player.status != .playing {
+            if sharePlay.isActive { sharePlay.send(.play, itemId: item.id, positionTicks: ticks) }
+            Task { await player.play() }
+        }
+        scheduleAutoHide()
+    }
+
     private func beginTVScrub() {
         guard !isScrubbing else { return }
         isScrubbing = true
