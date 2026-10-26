@@ -45,6 +45,8 @@ extension Notification.Name {
     static let arcfinSelectTab = Notification.Name("arcfinSelectTab")
     /// View › Refresh on the Mac.
     static let arcfinRefresh = Notification.Name("arcfinRefresh")
+    /// Posted once the player's stop report and watched mark have reached the server.
+    static let arcfinPlaybackReported = Notification.Name("arcfinPlaybackReported")
     /// File › Open Video File… on the Mac.
     static let arcfinOpenFile = Notification.Name("arcfinOpenFile")
 }
@@ -329,9 +331,13 @@ struct ContentView: View {
             Text(sharePlayManager.notice ?? "")
         }
         .task { seerrRepo.reloadTMDB() }
+        .onChange(of: mediaRepo.connectionFailed) { _, failed in
+            if failed { Task { await authManager.checkSignInStillValid() } }
+        }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                Task { await authManager.checkSignInStillValid() }
                 startHeartbeat()
                 startArcfinSyncLoop()
                 authManager.syncArcfinNow()

@@ -345,6 +345,10 @@ struct MediaDetailView: View {
             }
         }
         #endif
+        // The fixed wait after the player closes can beat the stop report to the server.
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinPlaybackReported)) { _ in
+            Task { await refreshAfterPlayback(waitForReport: false) }
+        }
 #if os(iOS)
         .fullScreenCover(item: $playbackRequest, onDismiss: playerDismissed) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in

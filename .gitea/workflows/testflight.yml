@@ -1,0 +1,135 @@
+name: TestFlight
+
+# Pushing a signed release tag, e.g. iOS-0.2.0-build-2, archives that platform and uploads it.
+on:
+  push:
+    tags:
+      - 'iOS-*-build-*'
+      - 'macOS-*-build-*'
+      - 'tvOS-*-build-*'
+
+concurrency:
+  group: testflight-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: macos
+    defaults:
+      run:
+        shell: bash
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read the tag
+        run: |
+          if [[ ! "$TAG" =~ ^(iOS|macOS|tvOS)-([0-9]+\.[0-9]+\.[0-9]+)-build-([0-9]+)$ ]]; then
+            echo "::error::$TAG isn't <Platform>-<version>-build-<N>"
+            exit 1
+          fi
+          echo "PLATFORM=${BASH_REMATCH[1]}" >> "$GITHUB_ENV"
+          echo "VERSION=${BASH_REMATCH[2]}" >> "$GITHUB_ENV"
+          echo "BUILD=${BASH_REMATCH[3]}" >> "$GITHUB_ENV"
+
+      - name: Tag is signed and on main
+        run: |
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG" main
+          if ! git cat-file -p "refs/tags/$TAG" | grep -q 'BEGIN PGP SIGNATURE'; then
+            echo "::error::$TAG isn't an annotated, signed tag (git tag -s)"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$TAG points at a commit that isn't on main"
+            exit 1
+          fi
+
+      - name: Version and build match the tag
+        run: |
+          settings=$(xcodebuild -scheme Arcfin -destination "generic/platform=$PLATFORM" -configuration Release -showBuildSettings 2>/dev/null)
+          version=$(awk -F' = ' '/ MARKETING_VERSION = /{print $2; exit}' <<< "$settings")
+          build=$(awk -F' = ' '/ CURRENT_PROJECT_VERSION = /{print $2; exit}' <<< "$settings")
+          if [ "$version" != "$VERSION" ] || [ "$build" != "$BUILD" ]; then
+            echo "::error::Project is $version ($build) but the tag says $VERSION ($BUILD)"
+            exit 1
+          fi
+          echo "Uploading Arcfin $VERSION ($BUILD) for $PLATFORM"
+
+      - name: App Store Connect key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$key"
+          chmod 600 "$key"
+          echo "ASC_KEY_PATH=$key" >> "$GITHUB_ENV"
+
+      - name: Archive
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          DEVELOPMENT_TEAM: ${{ vars.DEVELOPMENT_TEAM }}
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -scheme Arcfin \
+            -configuration Release \
+            -destination "generic/platform=$PLATFORM" \
+            -archivePath "$RUNNER_TEMP/Arcfin.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/dd-archive" \
+            -disableAutomaticPackageResolution \
+            -skipMacroValidation \
+            -skipPackagePluginValidation \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            archive | tee "$RUNNER_TEMP/archive.log" | grep -E ' error:|\*\* ARCHIVE'
+
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          DEVELOPMENT_TEAM: ${{ vars.DEVELOPMENT_TEAM }}
+        run: |
+          set -o pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$DEVELOPMENT_TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$RUNNER_TEMP/Arcfin.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            | tee "$RUNNER_TEMP/export.log" | grep -E 'error|Upload|EXPORT'
+
+      - name: Logs
+        if: failure()
+        run: |
+          for log in "$RUNNER_TEMP/archive.log" "$RUNNER_TEMP/export.log"; do
+            [ -f "$log" ] && { echo "== $log"; tail -n 80 "$log"; }
+          done
+          exit 0
+
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
