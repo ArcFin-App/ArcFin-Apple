@@ -65,6 +65,9 @@ struct PlayerView: View {
     // opacity, so hit-testing/focusability never turns off and there's never a moment with
     // nothing reachable for the remote to bring back, even while fully invisible.
     @State var tvControlsHidden = false
+    @State var remoteScrub = TVRemoteScrub()
+    @State var remoteScrubStartTicks: Double = 0
+    @FocusState var isScrubberFocused: Bool
     #endif
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false
@@ -386,7 +389,7 @@ struct PlayerView: View {
         .onAppear { ScreensaverHold.count += 1 }
         .onDisappear { ScreensaverHold.count -= 1 }
         .focusScope(tvFocusNamespace)
-        .onPlayPauseCommand { togglePlayPause() }
+        .onPlayPauseCommand { if isScrubbing { commitTVScrub() } else { togglePlayPause() } }
         .onExitCommand { handleTVExit() }
         // Hands focus to whichever control should have it now (the catcher, play/pause, Skip,
         // Up Next) instead of leaving it on something that just disappeared.
@@ -1233,11 +1236,12 @@ struct PlayerView: View {
         }
 
         // Anything with an Up Next card already has something to watch next; the rest (movies,
-        // a series finale) get suggestions instead once the credits start.
+        // a series finale) get suggestions instead once the credits start. Trailers and other
+        // extras don't: the last four minutes would cover most of one.
         moreLikeThis = []
         showMoreLikeThis = false
         moreLikeThisDismissed = false
-        if nextEpisode == nil {
+        if nextEpisode == nil, item.type == .movie || item.type == .episode {
             moreLikeThis = ((try? await client.getSimilarItems(
                 credential: credential, authHeader: authHeader, itemId: item.id, limit: 12)) ?? [])
                 .filter { $0.id != item.id }
