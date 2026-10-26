@@ -9283,6 +9283,70 @@
         }
       }
     },
+    "Can't reach the server. Check the address and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server ist nicht erreichbar. Prüfe die Adresse und versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se puede conectar con el servidor. Revisa la dirección e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de joindre le serveur. Vérifiez l'adresse et réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile raggiungere il server. Controlla l'indirizzo e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーに接続できません。アドレスを確認して、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 연결할 수 없습니다. 주소를 확인하고 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan de server niet bereiken. Controleer het adres en probeer het opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível acessar o servidor. Verifique o endereço e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удаётся связаться с сервером. Проверьте адрес и попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法连接到服务器。请检查地址后重试。"
+          }
+        }
+      }
+    },
     "Can't reach your server" : {
       "localizations" : {
         "de" : {
@@ -12415,6 +12479,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "继续观看"
+          }
+        }
+      }
+    },
+    "Couldn't find a server with that name. Check the spelling, or try its IP address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kein Server mit diesem Namen gefunden. Prüfe die Schreibweise oder versuche es mit der IP-Adresse."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se encontró ningún servidor con ese nombre. Revisa cómo está escrito o prueba con su dirección IP."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aucun serveur trouvé avec ce nom. Vérifiez l'orthographe, ou essayez son adresse IP."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessun server trovato con quel nome. Controlla come è scritto, oppure prova con il suo indirizzo IP."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "その名前のサーバーが見つかりませんでした。スペルを確認するか、IPアドレスを試してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "그 이름의 서버를 찾을 수 없습니다. 철자를 확인하거나 IP 주소로 시도해 보세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geen server met die naam gevonden. Controleer de spelling of probeer het IP-adres."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi encontrado nenhum servidor com esse nome. Confira a grafia ou tente o endereço IP."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер с таким именем не найден. Проверьте написание или попробуйте его IP-адрес."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "找不到该名称的服务器。请检查拼写，或尝试使用其 IP 地址。"
           }
         }
       }
@@ -30593,6 +30721,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未观看"
+          }
+        }
+      }
+    },
+    "Nothing answered at that address. Check the port (Jellyfin uses 8096 unless it's been changed) and that the server is running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Unter dieser Adresse hat nichts geantwortet. Prüfe den Port (Jellyfin nutzt 8096, sofern nicht geändert) und ob der Server läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada respondió en esa dirección. Comprueba el puerto (Jellyfin usa el 8096 salvo que se haya cambiado) y que el servidor esté en marcha."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rien n'a répondu à cette adresse. Vérifiez le port (Jellyfin utilise 8096 sauf s'il a été modifié) et que le serveur est en cours d'exécution."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessuna risposta a quell'indirizzo. Controlla la porta (Jellyfin usa la 8096 se non è stata cambiata) e che il server sia in esecuzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "そのアドレスからは応答がありません。ポート（変更していなければJellyfinは8096）と、サーバーが起動しているか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "그 주소에서 응답이 없습니다. 포트(변경하지 않았다면 Jellyfin은 8096 사용)와 서버가 실행 중인지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Er reageerde niets op dat adres. Controleer de poort (Jellyfin gebruikt 8096, tenzij dat is gewijzigd) en of de server draait."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada respondeu nesse endereço. Verifique a porta (o Jellyfin usa a 8096, a menos que tenha sido alterada) e se o servidor está em execução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "По этому адресу никто не ответил. Проверьте порт (Jellyfin использует 8096, если его не меняли) и что сервер запущен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "该地址没有响应。请检查端口（除非已更改，Jellyfin 使用 8096）以及服务器是否正在运行。"
           }
         }
       }
@@ -51721,6 +51913,70 @@
         }
       }
     },
+    "That doesn't look like a server address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das sieht nicht nach einer Serveradresse aus."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eso no parece la dirección de un servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cela ne ressemble pas à une adresse de serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non sembra l'indirizzo di un server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーのアドレスではないようです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버 주소가 아닌 것 같습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dat lijkt geen serveradres."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Isso não parece um endereço de servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Это не похоже на адрес сервера."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这看起来不像服务器地址。"
+          }
+        }
+      }
+    },
     "The most space Smart Downloads uses." : {
       "localizations" : {
         "de" : {
@@ -51781,6 +52037,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "智能下载使用的最大空间。"
+          }
+        }
+      }
+    },
+    "The server answered with an error (HTTP %lld). If Jellyfin is behind a reverse proxy, check that Jellyfin is running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server hat mit einem Fehler geantwortet (HTTP %lld). Wenn Jellyfin hinter einem Reverse-Proxy läuft, prüfe, ob Jellyfin gestartet ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor respondió con un error (HTTP %lld). Si Jellyfin está detrás de un proxy inverso, comprueba que Jellyfin esté en marcha."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur a répondu par une erreur (HTTP %lld). Si Jellyfin est derrière un proxy inverse, vérifiez que Jellyfin est en cours d'exécution."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server ha risposto con un errore (HTTP %lld). Se Jellyfin è dietro un reverse proxy, controlla che Jellyfin sia in esecuzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがエラーを返しました（HTTP %lld）。Jellyfinがリバースプロキシの背後にある場合は、Jellyfinが起動しているか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 오류로 응답했습니다(HTTP %lld). Jellyfin이 리버스 프록시 뒤에 있다면 Jellyfin이 실행 중인지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server reageerde met een fout (HTTP %lld). Als Jellyfin achter een reverse proxy staat, controleer dan of Jellyfin draait."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor respondeu com um erro (HTTP %lld). Se o Jellyfin estiver atrás de um proxy reverso, verifique se o Jellyfin está em execução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер ответил ошибкой (HTTP %lld). Если Jellyfin работает за обратным прокси, проверьте, что Jellyfin запущен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器返回了错误（HTTP %lld）。如果 Jellyfin 位于反向代理之后，请检查 Jellyfin 是否正在运行。"
           }
         }
       }
@@ -51849,6 +52169,70 @@
         }
       }
     },
+    "The server didn't answer in time. Check that it's on and reachable from this network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server hat nicht rechtzeitig geantwortet. Prüfe, ob er eingeschaltet und aus diesem Netzwerk erreichbar ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor no respondió a tiempo. Comprueba que esté encendido y accesible desde esta red."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur n'a pas répondu à temps. Vérifiez qu'il est allumé et accessible depuis ce réseau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non ha risposto in tempo. Controlla che sia acceso e raggiungibile da questa rete."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーが時間内に応答しませんでした。電源が入っていて、このネットワークから接続できるか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 제시간에 응답하지 않았습니다. 서버가 켜져 있고 이 네트워크에서 연결할 수 있는지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server reageerde niet op tijd. Controleer of hij aan staat en bereikbaar is vanaf dit netwerk."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não respondeu a tempo. Verifique se ele está ligado e acessível a partir desta rede."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер не ответил вовремя. Проверьте, что он включён и доступен из этой сети."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器未及时响应。请检查它是否已开启，并且可以从此网络访问。"
+          }
+        }
+      }
+    },
     "The server sends Dolby Vision videos as HDR10 or SDR instead. Turn on if they show purple or green colours." : {
       "localizations" : {
         "de" : {
@@ -51909,6 +52293,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "服务器改为以 HDR10 或 SDR 发送杜比视界视频。如果画面出现紫色或绿色，请打开此项。"
+          }
+        }
+      }
+    },
+    "The server's security certificate isn't trusted. Use an address with a valid certificate, or http:// on your home network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dem Sicherheitszertifikat des Servers wird nicht vertraut. Verwende eine Adresse mit gültigem Zertifikat oder http:// in deinem Heimnetz."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El certificado de seguridad del servidor no es de confianza. Usa una dirección con un certificado válido, o http:// en tu red doméstica."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le certificat de sécurité du serveur n'est pas fiable. Utilisez une adresse avec un certificat valide, ou http:// sur votre réseau domestique."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il certificato di sicurezza del server non è attendibile. Usa un indirizzo con un certificato valido, oppure http:// sulla rete di casa."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーのセキュリティ証明書が信頼されていません。有効な証明書のあるアドレスを使うか、自宅のネットワークでは http:// を使ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버의 보안 인증서를 신뢰할 수 없습니다. 유효한 인증서가 있는 주소를 사용하거나, 집 네트워크에서는 http://를 사용하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Het beveiligingscertificaat van de server wordt niet vertrouwd. Gebruik een adres met een geldig certificaat, of http:// op je thuisnetwerk."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O certificado de segurança do servidor não é confiável. Use um endereço com um certificado válido, ou http:// na sua rede doméstica."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сертификату безопасности сервера нельзя доверять. Используйте адрес с действительным сертификатом или http:// в домашней сети."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器的安全证书不受信任。请使用有有效证书的地址，或在家庭网络中使用 http://。"
           }
         }
       }
@@ -52233,6 +52681,70 @@
         }
       }
     },
+    "This address answered, but it isn't a Jellyfin server. If Jellyfin is set up under a path like /jellyfin, add it to the address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Diese Adresse hat geantwortet, ist aber kein Jellyfin-Server. Wenn Jellyfin unter einem Pfad wie /jellyfin eingerichtet ist, füge ihn zur Adresse hinzu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Esta dirección respondió, pero no es un servidor de Jellyfin. Si Jellyfin está configurado en una ruta como /jellyfin, añádela a la dirección."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cette adresse a répondu, mais ce n'est pas un serveur Jellyfin. Si Jellyfin est configuré sous un chemin comme /jellyfin, ajoutez-le à l'adresse."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo indirizzo ha risposto, ma non è un server Jellyfin. Se Jellyfin è configurato in un percorso come /jellyfin, aggiungilo all'indirizzo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このアドレスは応答しましたが、Jellyfinサーバーではありません。Jellyfinが /jellyfin のようなパスで設定されている場合は、アドレスに追加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 주소가 응답했지만 Jellyfin 서버가 아닙니다. Jellyfin이 /jellyfin 같은 경로에 설정되어 있다면 주소에 추가하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit adres reageerde, maar het is geen Jellyfin-server. Als Jellyfin onder een pad zoals /jellyfin is ingesteld, voeg dat dan toe aan het adres."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este endereço respondeu, mas não é um servidor Jellyfin. Se o Jellyfin estiver configurado em um caminho como /jellyfin, adicione-o ao endereço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "По этому адресу ответил не сервер Jellyfin. Если Jellyfin настроен на путь вроде /jellyfin, добавьте его к адресу."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此地址有响应，但不是 Jellyfin 服务器。如果 Jellyfin 设置在 /jellyfin 这样的路径下，请把它加到地址中。"
+          }
+        }
+      }
+    },
     "This clears the saved server URL and credentials. You can reconnect any time." : {
       "localizations" : {
         "de" : {
@@ -52293,6 +52805,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这会清除已存储的服务器 URL 和凭证。你可以随时重新连接。"
+          }
+        }
+      }
+    },
+    "This device isn't connected to the internet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieses Gerät ist nicht mit dem Internet verbunden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este dispositivo no está conectado a internet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cet appareil n'est pas connecté à Internet."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo dispositivo non è connesso a Internet."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このデバイスはインターネットに接続されていません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 기기는 인터넷에 연결되어 있지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit apparaat is niet verbonden met internet."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este dispositivo não está conectado à internet."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Это устройство не подключено к интернету."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此设备未连接到互联网。"
           }
         }
       }
