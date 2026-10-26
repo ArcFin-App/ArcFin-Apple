@@ -489,7 +489,8 @@ struct TVMediaDetailView: View {
     // them. Each section brings its own 56 pt below it.
     private var belowFoldSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if !seasons.isEmpty { seriesSection.trackSectionOffset().focusSection() }
+            // Room under the hero's buttons, which grow when focused, so they don't cover the heading.
+            if !seasons.isEmpty { seriesSection.padding(.top, 48).trackSectionOffset().focusSection() }
             if let seriesItem, item.type == .episode {
                 itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
             }
