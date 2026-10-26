@@ -65,6 +65,9 @@ struct PlayerView: View {
     // opacity, so hit-testing/focusability never turns off and there's never a moment with
     // nothing reachable for the remote to bring back, even while fully invisible.
     @State var tvControlsHidden = false
+    @State var remoteScrub = TVRemoteScrub()
+    @State var remoteScrubStartTicks: Double = 0
+    @FocusState var isScrubberFocused: Bool
     #endif
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false
@@ -386,7 +389,7 @@ struct PlayerView: View {
         .onAppear { ScreensaverHold.count += 1 }
         .onDisappear { ScreensaverHold.count -= 1 }
         .focusScope(tvFocusNamespace)
-        .onPlayPauseCommand { togglePlayPause() }
+        .onPlayPauseCommand { if isScrubbing { commitTVScrub() } else { togglePlayPause() } }
         .onExitCommand { handleTVExit() }
         // Hands focus to whichever control should have it now (the catcher, play/pause, Skip,
         // Up Next) instead of leaving it on something that just disappeared.
