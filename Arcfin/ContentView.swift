@@ -331,9 +331,13 @@ struct ContentView: View {
             Text(sharePlayManager.notice ?? "")
         }
         .task { seerrRepo.reloadTMDB() }
+        .onChange(of: mediaRepo.connectionFailed) { _, failed in
+            if failed { Task { await authManager.checkSignInStillValid() } }
+        }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                Task { await authManager.checkSignInStillValid() }
                 startHeartbeat()
                 startArcfinSyncLoop()
                 authManager.syncArcfinNow()
