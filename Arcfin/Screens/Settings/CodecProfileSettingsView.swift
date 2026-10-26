@@ -10,6 +10,7 @@ struct CodecProfileSettingsView: View {
     @AppStorage("codecAllowSurroundAudioDirectPlay") private var allowSurroundAudio = false
     @AppStorage("codecForceHDRTranscode") private var forceHDR = false
     @AppStorage("codecForceDolbyVisionTranscode") private var forceDolbyVision = false
+    @AppStorage("codecCompatibilityMode") private var compatibilityMode = false
 
     var body: some View {
         List {
@@ -37,6 +38,13 @@ struct CodecProfileSettingsView: View {
                 }
                 .tvListRow()
                 .disabled(forceHDR)
+            }
+
+            Section {
+                Toggle(isOn: $compatibilityMode) {
+                    TVRowLabelText(title: "Compatibility Mode", detail: "For videos that won't play at all. The server converts anything that isn't H.264 and AAC, in SDR with stereo sound. Uses more of the server's power, so turn it off once the video plays.")
+                }
+                .tvListRow()
             }
         }
         .arcfinListStyle()

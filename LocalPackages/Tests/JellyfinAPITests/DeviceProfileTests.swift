@@ -131,4 +131,18 @@ extension DeviceProfileTests {
         #expect(ranges.contains("HDR10") && ranges.contains("HLG"))
         #expect(!ranges.contains { $0.hasPrefix("DOVI") })
     }
+
+    @Test("Compatibility Mode sends H.264 and AAC in SDR on every engine, but leaves casting alone")
+    func compatibilityMode() {
+        UserDefaults.standard.set(true, forKey: "codecCompatibilityMode")
+        defer { UserDefaults.standard.removeObject(forKey: "codecCompatibilityMode") }
+        for profile in [JellyfinMediaClient.deviceProfile(forCast: false), JellyfinMediaClient.nativeDecoderProfile] {
+            #expect(directPlay(profile).map { $0["VideoCodec"] as? String } == ["h264"])
+            #expect(transcoding(profile)["VideoCodec"] as? String == "h264")
+            #expect(transcoding(profile)["AudioCodec"] as? String == "aac")
+            #expect(allowedRanges(profile) == "SDR")
+        }
+        #expect(transcoding(JellyfinMediaClient.deviceProfile(forCast: true))["Container"] as? String == "ts")
+    }
 }
+

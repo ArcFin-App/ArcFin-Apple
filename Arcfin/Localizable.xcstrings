@@ -3203,6 +3203,134 @@
         }
       }
     },
+    "Compatibility Mode" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kompatibilitätsmodus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modo de compatibilidad"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mode compatibilité"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modalità compatibilità"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "互換モード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "호환 모드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Compatibiliteitsmodus"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modo de compatibilidade"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Режим совместимости"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "兼容模式"
+          }
+        }
+      }
+    },
+    "For videos that won't play at all. The server converts anything that isn't H.264 and AAC, in SDR with stereo sound. Uses more of the server's power, so turn it off once the video plays." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Für Videos, die gar nicht abspielen. Der Server wandelt alles, was nicht H.264 und AAC ist, um – in SDR mit Stereoton. Das beansprucht den Server stärker, also schalte es wieder aus, sobald das Video läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Para vídeos que no se reproducen. El servidor convierte todo lo que no sea H.264 y AAC, en SDR y con sonido estéreo. Usa más recursos del servidor, así que desactívalo cuando el vídeo funcione."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pour les vidéos qui ne se lisent pas du tout. Le serveur convertit tout ce qui n'est pas en H.264 et AAC, en SDR avec un son stéréo. Cela sollicite davantage le serveur : désactivez-le une fois la vidéo lue."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Per i video che non si riproducono affatto. Il server converte tutto ciò che non è H.264 e AAC, in SDR con audio stereo. Usa più risorse del server, quindi disattivalo quando il video funziona."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "まったく再生できないビデオ向けです。H.264とAAC以外のものはサーバーがSDR・ステレオ音声に変換します。サーバーの負荷が増えるので、再生できたらオフにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "전혀 재생되지 않는 동영상용입니다. H.264와 AAC가 아닌 것은 서버가 SDR과 스테레오 사운드로 변환합니다. 서버 자원을 더 사용하므로 동영상이 재생되면 끄세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Voor video's die helemaal niet afspelen. De server zet alles wat geen H.264 en AAC is om, in SDR met stereogeluid. Dit vraagt meer van de server, dus zet het uit zodra de video afspeelt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Para vídeos que não reproduzem de jeito nenhum. O servidor converte tudo o que não for H.264 e AAC, em SDR com som estéreo. Usa mais recursos do servidor, então desative quando o vídeo funcionar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Для видео, которые не воспроизводятся совсем. Сервер преобразует всё, что не в H.264 и AAC, в SDR со стереозвуком. Это сильнее нагружает сервер, поэтому выключите режим, когда видео заработает."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用于完全无法播放的视频。服务器会把所有非 H.264 和 AAC 的内容转换为 SDR 和立体声。这会占用更多服务器资源，视频能播放后请关闭。"
+          }
+        }
+      }
+    },
     "Force Dolby Vision to Transcode" : {
       "localizations" : {
         "de" : {
