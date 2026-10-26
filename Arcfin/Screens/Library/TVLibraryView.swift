@@ -121,6 +121,9 @@ struct TVCollectionDetailView: View {
                 .focusSection()
             }
             .focusScope(focusNamespace)
+            // Without it, focus landing on Play scrolled the page to centre the button and cut
+            // off the top of the title and text, as the title page and Home already avoid.
+            .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh * 0.88))
             .ignoresSafeArea()
         }
         .screenBackground()
