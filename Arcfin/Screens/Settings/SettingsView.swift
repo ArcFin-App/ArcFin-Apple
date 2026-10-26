@@ -278,9 +278,11 @@ struct SettingsView: View {
         .arcfinListStyle()
         .screenBackground()
 #if os(tvOS)
-        // A List clips its rows to its frame, which starts below the space kept for the tab
-        // bar: once that hides on scroll, the top of the screen stayed empty and a row focused
-        // up there was out of sight.
+        // The page has no title, but its navigation bar still kept an empty band at the top,
+        // and on the first visit it didn't hide on scroll: rows stopped short of the top and a
+        // row focused up there was out of sight. A List also clips its rows to its frame, so
+        // they're let through to the top once the tab bar hides. Pushed pages keep their bars.
+        .toolbar(.hidden, for: .navigationBar)
         .scrollClipDisabled()
         .id(listID)
         .onAppear { listID = UUID() }
