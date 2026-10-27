@@ -208,19 +208,19 @@ struct PlaybackSettingsView: View {
 
             Section {
                 NavigationLink {
-                    CodecProfileSettingsView()
+                    CodecProfileSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Codec Compatibility", detail: "Which formats this device is told it can play.")
                 }
                 .tvListRow()
                 NavigationLink {
-                    PlayerFeaturesSettingsView()
+                    PlayerFeaturesSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Player Features", detail: "Picture in Picture, gestures, chapters and more.")
                 }
                 .tvListRow()
                 NavigationLink {
-                    SubtitleStyleSettingsView()
+                    SubtitleStyleSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Subtitle Style", detail: "Size, colour and background of subtitles.")
                 }

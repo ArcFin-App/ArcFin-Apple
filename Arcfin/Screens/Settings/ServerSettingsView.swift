@@ -156,7 +156,7 @@ struct ServerSettingsView: View {
             }
 
             Section {
-                NavigationLink { CustomHeadersView() } label: {
+                NavigationLink { CustomHeadersView().tvSettingsPage() } label: {
                     TVRowLabelText(title: "Custom Headers", detail: "Extra headers for a server behind an access gateway, such as Cloudflare Access.")
                 }
             }

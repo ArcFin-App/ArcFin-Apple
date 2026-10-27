@@ -52,7 +52,7 @@ struct AppearanceView: View {
                 .tvListRow()
                 .syncLocked("heroVideoBackdropsEnabled", authManager)
                 NavigationLink {
-                    HomeShelfSettingsView()
+                    HomeShelfSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Home Shelves", detail: "Reorder or hide Home's rows.")
                 }
@@ -89,7 +89,7 @@ struct AppearanceView: View {
                     if !isOn { UserDefaults.standard.removeObject(forKey: "recentSearches") }
                 }
                 NavigationLink {
-                    LibraryVisibilityView()
+                    LibraryVisibilityView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Libraries", detail: "Which libraries show in Browse and in Recently Added.")
                 }
@@ -142,7 +142,7 @@ struct AppearanceView: View {
             #if !os(tvOS)
             Section {
                 NavigationLink {
-                    BottomNavSettingsView()
+                    BottomNavSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: navSectionTitle, detail: "Which tabs show and in what order. Discover and Watchlist need Seerr connected.")
                 }

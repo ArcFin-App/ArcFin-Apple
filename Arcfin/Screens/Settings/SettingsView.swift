@@ -310,8 +310,12 @@ struct SettingsView: View {
 #endif
 
 #if os(tvOS)
-    @ViewBuilder
     private func page(_ page: TVSettingsPage) -> some View {
+        pageContent(page).tvSettingsPage()
+    }
+
+    @ViewBuilder
+    private func pageContent(_ page: TVSettingsPage) -> some View {
         switch page {
         case .playback: PlaybackSettingsView()
         case .appearance: AppearanceView()

@@ -164,6 +164,16 @@ extension View {
         #endif
     }
 
+    /// For a page opened from Settings on Apple TV. With the tab bar showing, Up from the top
+    /// row moved focus onto it, and Back from there left the app instead of going back.
+    func tvSettingsPage() -> some View {
+#if os(tvOS)
+        toolbar(.hidden, for: .tabBar)
+#else
+        self
+#endif
+    }
+
     func tvListRow() -> some View {
 #if os(tvOS)
         self

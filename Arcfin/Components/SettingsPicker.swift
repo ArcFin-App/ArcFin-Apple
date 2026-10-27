@@ -87,6 +87,7 @@ struct TVChoicePage<Value: Hashable>: View {
         .arcfinListStyle()
         .screenBackground()
         .navigationTitle(title)
+        .tvSettingsPage()
     }
 }
 #endif
