@@ -60,8 +60,7 @@ struct SetupGuideSheet: View {
                     .padding(DT.Spacing.lg)
             }
             .accessibilityLabel("Close")
-            .buttonStyle(.plain)
-            .tvFocusRing(cornerRadius: DT.Radius.pill)
+            .arcfinPlainButton(cornerRadius: DT.Radius.pill, prominent: false)
         }
         .background(DT.Color.backgroundPrimary.ignoresSafeArea())
     }
