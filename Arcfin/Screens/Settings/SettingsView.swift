@@ -37,6 +37,8 @@ struct SettingsView: View {
             .padding(.vertical, 40)
         }
         .buttonStyle(TVSettingsRowStyle())
+        // Declared outside the row style so the pages it opens keep the system styles.
+        .navigationDestination(for: TVSettingsPage.self, destination: page)
         .screenBackground()
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showUsersSheet) {
@@ -70,14 +72,10 @@ struct SettingsView: View {
 #if os(tvOS)
         // ── Preferences ──────────────────────────────────────────────
         Section {
-            NavigationLink {
-                PlaybackSettingsView()
-            } label: {
+            NavigationLink(value: TVSettingsPage.playback) {
                 settingsRow("Playback", icon: "play.circle")
             }
-            NavigationLink {
-                AppearanceView()
-            } label: {
+            NavigationLink(value: TVSettingsPage.appearance) {
                 settingsRow("Appearance", icon: "paintbrush")
             }
         } header: {
@@ -87,9 +85,7 @@ struct SettingsView: View {
         // ── Account & Server ─────────────────────────────────────────
         Section {
             serverRow
-            NavigationLink {
-                ProfileAccessView()
-            } label: {
+            NavigationLink(value: TVSettingsPage.profile) {
                 HStack {
                     Text("Your Profile")
                     Spacer()
@@ -101,18 +97,14 @@ struct SettingsView: View {
                 }
             }
             if let activeID = authManager.state.credential?.id {
-                NavigationLink {
-                    ServerSettingsView(profileID: activeID)
-                } label: {
+                NavigationLink(value: TVSettingsPage.serverSettings(activeID)) {
                     Text("Server Settings")
                 }
             }
             Button { showUsersSheet = true } label: {
                 Text("Switch Server")
             }
-            NavigationLink {
-                AddServerFlowView()
-            } label: {
+            NavigationLink(value: TVSettingsPage.addServer) {
                 Text("Add Server")
             }
         } header: {
@@ -124,18 +116,14 @@ struct SettingsView: View {
             Toggle(isOn: $seerrDiscoverEnabled) {
                 TVRowLabelText(title: "Show Discover on Home", detail: "Adds your Seerr watchlist and its trending and popular rows to Home.")
             }
-            NavigationLink {
-                SeerrPluginView()
-            } label: {
+            NavigationLink(value: TVSettingsPage.seerr) {
                 HStack {
                     Text("Seerr")
                     Spacer()
                     seerrStatusPill
                 }
             }
-            NavigationLink {
-                TMDBSettingsView()
-            } label: {
+            NavigationLink(value: TVSettingsPage.tmdb) {
                 HStack {
                     Text("TMDB")
                     Spacer()
@@ -190,20 +178,18 @@ struct SettingsView: View {
 
         if AppLanguage.isChoosable {
             Section {
-                Picker(selection: $languageOverride) {
-                    Text("System Default").tag("")
-                    ForEach(AppLanguage.available, id: \.self) { code in
-                        Text(verbatim: AppLanguage.name(of: code)).tag(code)
-                    }
-                } label: {
-                    settingsRow("Language", icon: "globe")
-                }
 #if os(tvOS)
-                .pickerStyle(.navigationLink)
-#endif
-                .onChange(of: languageOverride) { _, code in
-                    AppLanguage.override = code.isEmpty ? nil : code
+                NavigationLink(value: TVSettingsPage.language) {
+                    HStack {
+                        Text("Language")
+                        Spacer()
+                        Text(languageOverride.isEmpty ? String(localized: "System Default") : AppLanguage.name(of: languageOverride))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
                 }
+#else
+                languagePicker
+#endif
             } footer: {
                 if languageOverride != AppLanguage.atLaunch {
                     Text("Arcfin switches language the next time it opens.")
@@ -221,11 +207,17 @@ struct SettingsView: View {
                 Text(buildNumber).foregroundStyle(.secondary)
             }
             .tvInfoRow()
+#if os(tvOS)
+            NavigationLink(value: TVSettingsPage.licenses) {
+                Text("Licenses & Third-Party Notices")
+            }
+#else
             NavigationLink {
                 LicensesView()
             } label: {
                 Text("Licenses & Third-Party Notices")
             }
+#endif
 #if os(tvOS)
             LabeledContent("Support", value: "arcfin.psmattas.com/support")
                 .tvInfoRow()
@@ -300,6 +292,45 @@ struct SettingsView: View {
             }
         }
     }
+
+#if !os(tvOS)
+    private var languagePicker: some View {
+        Picker(selection: $languageOverride) {
+            Text("System Default").tag("")
+            ForEach(AppLanguage.available, id: \.self) { code in
+                Text(verbatim: AppLanguage.name(of: code)).tag(code)
+            }
+        } label: {
+            settingsRow("Language", icon: "globe")
+        }
+        .onChange(of: languageOverride) { _, code in
+            AppLanguage.override = code.isEmpty ? nil : code
+        }
+    }
+#endif
+
+#if os(tvOS)
+    @ViewBuilder
+    private func page(_ page: TVSettingsPage) -> some View {
+        switch page {
+        case .playback: PlaybackSettingsView()
+        case .appearance: AppearanceView()
+        case .profile: ProfileAccessView()
+        case .serverSettings(let profileID): ServerSettingsView(profileID: profileID)
+        case .addServer: AddServerFlowView()
+        case .seerr: SeerrPluginView()
+        case .tmdb: TMDBSettingsView()
+        case .licenses: LicensesView()
+        case .language:
+            TVChoicePage(title: "Language", selection: $languageOverride, options: [""] + AppLanguage.available) { code in
+                code.isEmpty ? Text("System Default") : Text(verbatim: AppLanguage.name(of: code))
+            }
+            .onChange(of: languageOverride) { _, code in
+                AppLanguage.override = code.isEmpty ? nil : code
+            }
+        }
+    }
+#endif
 
     // MARK: - Profile section
 
@@ -1058,6 +1089,10 @@ private extension View {
 }
 
 #if os(tvOS)
+private enum TVSettingsPage: Hashable {
+    case playback, appearance, profile, serverSettings(UUID), addServer, seerr, tmdb, language, licenses
+}
+
 // Settings rows in the tvOS ScrollView: plain text at rest and the light platter of the
 // system's own lists when focused.
 private struct TVSettingsRowStyle: ButtonStyle {
