@@ -540,10 +540,14 @@ struct SeerrPluginView: View {
     @ViewBuilder
     private var connectedSummary: some View {
         Section {
+            // Focusable on tvOS so the page doesn't open with focus on Remove Connection.
             LabeledContent("Server URL", value: seerrURL)
                 .lineLimit(1)
+                .tvReadOnlyRow()
             LabeledContent("Account Type", value: seerrAuthMethod.label)
+                .tvReadOnlyRow()
             LabeledContent("Username", value: seerrUsername)
+                .tvReadOnlyRow()
         } header: {
             Label("Connection", systemImage: "server.rack")
                 .font(.system(.caption, design: .default, weight: .semibold))
