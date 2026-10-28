@@ -1302,10 +1302,9 @@ struct LibraryDetailView: View {
                     .scrollPosition(id: $scrolledItemID)
                     .modifier(PlaylistPageStyle(isPlaylist: playlist != nil, tint: playlistTint))
                     #if !os(tvOS)
-                    .overlay(alignment: .trailing) {
+                    .overlay {
                         if showsLetterIndex {
                             LetterIndexBar { letter in Task { await jump(to: letter) } }
-                                .padding(.trailing, 2)
                         }
                     }
                     #endif
@@ -1752,13 +1751,10 @@ struct LibraryDetailView: View {
 
     private var tvLetterRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: 16) {
                 ForEach(LibraryLetterIndex.letters, id: \.self) { letter in
                     Button { Task { await jump(to: letter) } } label: {
-                        Text(verbatim: letter)
-                            .font(.headline)
-                            .frame(width: 64, height: 64)
-                            .background(Circle().fill(DT.Color.textPrimary.opacity(0.06)))
+                        TVLetterLabel(letter: letter)
                     }
                     .accessibilityLabel(Text("Jump to \(letter)"))
                 }
