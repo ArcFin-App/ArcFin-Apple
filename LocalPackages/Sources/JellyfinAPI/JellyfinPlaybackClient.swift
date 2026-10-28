@@ -466,7 +466,22 @@ extension JellyfinMediaClient {
             ["Format": "dvdsub", "Method": "Embed"],
             ["Format": "dvbsub", "Method": "Embed"],
         ],
+        "CodecProfiles": [videoRangeProfile].compactMap { $0 },
     ] }
+
+    /// The video ranges the server may send as is, from the Force HDR / Dolby Vision to
+    /// Transcode settings. Anything else is tone mapped by the server, which fixes HDR that
+    /// looks wrong on a device or display that claims support. nil when both are off.
+    static var videoRangeProfile: [String: Any]? {
+        let forceHDR = UserDefaults.standard.bool(forKey: "codecForceHDRTranscode")
+        let forceDolbyVision = UserDefaults.standard.bool(forKey: "codecForceDolbyVisionTranscode")
+        guard forceHDR || forceDolbyVision else { return nil }
+        let allowed = forceHDR ? ["SDR"] : ["SDR", "HDR10", "HDR10Plus", "HLG"]
+        return ["Type": "Video", "Conditions": [[
+            "Condition": "EqualsAny", "Property": "VideoRangeType",
+            "Value": allowed.joined(separator: "|"), "IsRequired": true,
+        ]]]
+    }
 
     /// Two escape hatches for device-specific codec issues, surfaced as user-facing toggles
     /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
@@ -523,7 +538,7 @@ extension JellyfinMediaClient {
             // unnecessary transcode; it still guides the tag Jellyfin writes when transcoding.
             ["Type": "Video", "Codec": "hevc",
              "Conditions": [["Condition": "EqualsAny", "Property": "VideoCodecTag", "Value": "hvc1", "IsRequired": false]]],
-        ],
+        ] + [videoRangeProfile].compactMap { $0 },
         // vtt only — the client parses/renders subtitles itself (see SubtitleLoader), so a
         // single consistent, easily-parsed format is preferable to juggling srt/ass too.
         // Jellyfin converts any source subtitle format to vtt on request.
