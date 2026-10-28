@@ -18,7 +18,7 @@ Thanks for helping. Arcfin is maintained by one person, so replies can take a fe
 - **Report a bug or suggest a feature** with the [issue templates](https://git.psmattas.com/ArcFin/ArcFin/issues/new/choose).
 - **Test the beta** on [TestFlight](https://testflight.apple.com/join/kkC58n2w) and report what breaks.
 - **Translate**, or check one of the machine-made translations. See [Translating Arcfin](#translating-arcfin).
-- **Fix or build something.** Issues labelled `Kind/Bug` with a priority are a good place to start.
+- **Fix or build something.** New here? Start with [Start here: good first issues](https://git.psmattas.com/ArcFin/ArcFin/issues/255), pinned at the top of the issue list. It links every open issue labelled [`Good First Issue`](https://git.psmattas.com/ArcFin/ArcFin/issues?state=open&labels=1253): small, already agreed, and saying where to start. After that, any issue labelled `Reviewed/Confirmed` with a priority is open for work.
 - **Improve the docs.** Typos and unclear wording count.
 
 ## Before you start
@@ -64,13 +64,13 @@ How the code is organised is described in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Branch | Purpose |
 |---|---|
-| `main` | What's on TestFlight. Changes only through release and hotfix pull requests |
-| `develop` | The next release. Feature and fix branches start here |
-| `feat/…`, `fix/…`, `docs/…`, `ci/…`, `l10n/…` | Your work, branched from an up-to-date `develop` |
-| `release/X.Y.Z` | The version bump for a release, merged into `develop` |
-| `hotfix/…` | An urgent fix for the build on TestFlight, branched from `main` |
+| `main` | The only long-lived branch. Everything merges here through pull requests, and it should always build and run |
+| `feat/…`, `fix/…`, `docs/…`, `ci/…`, `l10n/…` | Your work, branched from an up-to-date `main` |
+| `hotfix/…` | An urgent fix for a build already on TestFlight, branched from that build's tag |
 
-Branch from `develop` unless you're asked otherwise, and open your pull request against `develop`.
+Branch from `main` and open your pull request against `main`.
+
+**Releases** aren't branches. A release is a small pull request that sets the version and build number, followed by signed tags on the merged commit, one per platform (for example `iOS-0.3.0-build-1`). The tags mark exactly what shipped.
 
 ## Pull requests
 
@@ -169,7 +169,7 @@ git commit -s
 To sign off commits you've already made on your branch:
 
 ```sh
-git rebase --signoff develop
+git rebase --signoff main
 ```
 
 The Arcfin name and logo aren't covered by the code license. If you're forking rather than contributing back, see [TRADEMARK.md](TRADEMARK.md).

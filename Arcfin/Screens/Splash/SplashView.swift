@@ -32,7 +32,13 @@ struct SplashView: View {
     @State private var minimumTimeElapsed = false
     @State private var isExiting = false
 
-    private let logoSize: CGFloat = 132
+    #if os(tvOS)
+    // Seen from the sofa, the phone's size reads as a small badge on a TV.
+    private static let scale: CGFloat = 2
+    #else
+    private static let scale: CGFloat = 1
+    #endif
+    private let logoSize: CGFloat = 132 * scale
 
     var body: some View {
         bodyContent.alwaysDark()
@@ -52,7 +58,7 @@ struct SplashView: View {
                 // Darken toward the middle and the edges so the mark reads clearly on top.
                 RadialGradient(
                     colors: [DT.Color.backgroundPrimary.opacity(0.92), DT.Color.backgroundPrimary.opacity(0.25)],
-                    center: .center, startRadius: 40, endRadius: 360
+                    center: .center, startRadius: 40 * Self.scale, endRadius: 360 * Self.scale
                 )
                 .ignoresSafeArea()
                 LinearGradient(
@@ -65,9 +71,9 @@ struct SplashView: View {
             // Soft light that blooms behind the mark
             RadialGradient(
                 colors: [DT.Color.accent.opacity(0.32), DT.Color.accentDeep.opacity(0.10), .clear],
-                center: .center, startRadius: 0, endRadius: 280
+                center: .center, startRadius: 0, endRadius: 280 * Self.scale
             )
-            .frame(width: 560, height: 560)
+            .frame(width: 560 * Self.scale, height: 560 * Self.scale)
             .scaleEffect(glowScale * (breathing ? 1.12 : 1))
             .opacity(glowOpacity)
             .blur(radius: 24)
@@ -82,7 +88,7 @@ struct SplashView: View {
                         .scaledToFit()
                         .frame(width: logoSize, height: logoSize)
                         .saturation(1.6)
-                        .blur(radius: 34)
+                        .blur(radius: 34 * Self.scale)
                         .scaleEffect(backlightScale * (breathing ? 1.1 : 1))
                         .opacity(backlightOpacity * (breathing ? 0.85 : 1))
                         .blendMode(.plusLighter)
@@ -133,8 +139,8 @@ struct SplashView: View {
                 .allowsHitTesting(false)
             }
             .clipShape(RoundedRectangle(cornerRadius: logoSize * 0.25, style: .continuous))
-            .shadow(color: DT.Color.accent.opacity(0.5), radius: 40)
-            .shadow(color: .black.opacity(0.6), radius: 22, y: 12)
+            .shadow(color: DT.Color.accent.opacity(0.5), radius: 40 * Self.scale)
+            .shadow(color: .black.opacity(0.6), radius: 22 * Self.scale, y: 12 * Self.scale)
             .blur(radius: logoBlur)
             .scaleEffect(logoScale)
             .opacity(logoOpacity)

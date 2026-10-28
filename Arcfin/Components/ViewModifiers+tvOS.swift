@@ -109,6 +109,7 @@ extension View {
     // `prominent` adds its own scale bump plus a thicker/brighter ring, for small controls
     // (player buttons) that have no other focus feedback of their own and sit over a busy,
     // low-contrast video background where the plain ring alone is easy to miss.
+    // Apply it to the focusable view itself: a button or a `.focusable()` view.
     func tvFocusRing(cornerRadius: CGFloat = DT.Radius.md, prominent: Bool = false) -> some View {
 #if os(tvOS)
         self.modifier(TVFocusRingModifier(cornerRadius: cornerRadius, prominent: prominent))
@@ -117,14 +118,32 @@ extension View {
 #endif
     }
 
+    /// The same ring for part of a button's label, e.g. just the artwork of a tile whose
+    /// title sits underneath, so the ring hugs the picture instead of the whole label.
+    func tvLabelFocusRing(cornerRadius: CGFloat = DT.Radius.md, prominent: Bool = false) -> some View {
+#if os(tvOS)
+        self.modifier(TVLabelFocusRingModifier(cornerRadius: cornerRadius, prominent: prominent))
+#else
+        self
+#endif
+    }
+
     /// A button with no chrome of its own: plain (or pressable) for touch and pointer, and on
     /// tvOS, where the app turns off the system focus effect, a focus ring so it shows focus.
     @ViewBuilder
-    func arcfinPlainButton(cornerRadius: CGFloat = DT.Radius.md, pressable: Bool = false) -> some View {
+    /// `ring: false` leaves the ring to the label (`tvLabelFocusRing`); `prominent: false`
+    /// keeps wide rows from growing past their column when focused.
+    func arcfinPlainButton(cornerRadius: CGFloat = DT.Radius.md, pressable: Bool = false,
+                           ring: Bool = true, prominent: Bool = true) -> some View {
         #if os(tvOS)
-        buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: cornerRadius, prominent: true)
+        if ring {
+            buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .tvFocusRing(cornerRadius: cornerRadius, prominent: prominent)
+        } else {
+            buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+        }
         #else
         if pressable {
             buttonStyle(PressableButtonStyle())
@@ -161,20 +180,46 @@ private struct TVListRowFocusTextModifier: ViewModifier {
 }
 
 // Accent ring + glow only. No scaleEffect — avoids "out padding" on full-width buttons.
+// \.isFocused only reports a focusable ancestor's focus, so applied to the focusable view
+// itself it stays false (or lights up for an enclosing focusable card): the view's own
+// focus comes from @FocusState instead.
 private struct TVFocusRingModifier: ViewModifier {
+    let cornerRadius: CGFloat
+    var prominent: Bool = false
+    @FocusState private var isFocused: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .focusEffectDisabled()
+            .modifier(TVFocusRingDrawing(cornerRadius: cornerRadius, prominent: prominent, isFocused: isFocused))
+            .focused($isFocused)
+    }
+}
+
+private struct TVLabelFocusRingModifier: ViewModifier {
     let cornerRadius: CGFloat
     var prominent: Bool = false
     @Environment(\.isFocused) private var isFocused
 
     func body(content: Content) -> some View {
+        content.modifier(TVFocusRingDrawing(cornerRadius: cornerRadius, prominent: prominent, isFocused: isFocused))
+    }
+}
+
+// The ring and glow are drawn before the scale, so they grow with the view and stay on its edge.
+private struct TVFocusRingDrawing: ViewModifier {
+    let cornerRadius: CGFloat
+    let prominent: Bool
+    let isFocused: Bool
+
+    func body(content: Content) -> some View {
         content
-            .focusEffectDisabled()
-            .scaleEffect(prominent && isFocused ? 1.12 : 1.0)
             .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: prominent ? 4 : 2)
             )
             .shadow(color: isFocused ? DT.Color.accent.opacity(prominent ? 0.6 : 0.45) : .clear, radius: prominent ? 16 : 10)
+            .scaleEffect(prominent && isFocused ? 1.12 : 1.0)
             .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
