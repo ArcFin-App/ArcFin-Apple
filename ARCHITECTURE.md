@@ -107,7 +107,7 @@ All user-facing text goes through String Catalogs (`LocalizedStringKey` or `Stri
 
 ## CI
 
-`.gitea/workflows/build.yml` runs on pull requests into `develop` and `main`, and on pushes to them:
+`.gitea/workflows/build.yml` runs on pull requests into `main` and on pushes to it:
 
 - **package tests:** `swift test` for `LocalPackages/`;
 - **build:** iOS, macOS and tvOS, with the String Catalog check and a warnings report;
