@@ -513,6 +513,70 @@
         }
       }
     },
+    "This video had no picture, so Arcfin switched to another player." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieses Video hatte kein Bild, deshalb hat Arcfin zu einem anderen Player gewechselt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este vídeo no tenía imagen, así que Arcfin cambió a otro reproductor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cette vidéo n’avait pas d’image, Arcfin est donc passé à un autre lecteur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo video non aveva immagine, quindi Arcfin è passato a un altro player."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このビデオに映像がなかったため、Arcfinは別のプレーヤーに切り替えました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 동영상에 화면이 나오지 않아 Arcfin이 다른 플레이어로 전환했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze video had geen beeld, dus Arcfin is overgestapt op een andere speler."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este vídeo estava sem imagem, então o Arcfin mudou para outro player."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "У этого видео не было изображения, поэтому Arcfin переключился на другой плеер."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此视频没有画面，因此 Arcfin 已切换到其他播放器。"
+          }
+        }
+      }
+    },
     "·" : {
       "localizations" : {
         "de" : {
