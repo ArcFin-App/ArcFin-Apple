@@ -447,7 +447,9 @@ extension JellyfinMediaClient {
     /// For engines that demux and decode on the device (Aether's FFmpeg + VideoToolbox, VLC):
     /// any container and codec plays as is, so the server only steps in when the bitrate
     /// cap forces a transcode, and image subtitles stay in the file for the engine to draw.
-    static var nativeDecoderProfile: [String: Any] { [
+    static var nativeDecoderProfile: [String: Any] {
+        if UserDefaults.standard.bool(forKey: "codecCompatibilityMode") { return compatibilityProfile }
+        return [
         "MaxStreamingBitrate": 120_000_000,
         "DirectPlayProfiles": [
             ["Container": "mkv,webm,mp4,m4v,mov,avi,ts,m2ts,mpegts,mts,wmv,asf,flv,ogg,ogv,3gp,mpg,mpeg,vob",
@@ -466,13 +468,58 @@ extension JellyfinMediaClient {
             ["Format": "dvdsub", "Method": "Embed"],
             ["Format": "dvbsub", "Method": "Embed"],
         ],
+        "CodecProfiles": [videoRangeProfile].compactMap { $0 },
     ] }
+
+    /// Compatibility Mode, the last resort for a file that won't play: direct play only
+    /// H.264 and AAC in MP4, and have the server convert everything else to that, in SDR
+    /// and stereo, with image subtitles burned in.
+    static var compatibilityProfile: [String: Any] { [
+        "MaxStreamingBitrate": 120_000_000,
+        "DirectPlayProfiles": [
+            ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": "h264", "AudioCodec": "aac,mp3"],
+        ],
+        "TranscodingProfiles": [
+            [
+                "Container": "mp4", "Type": "Video", "AudioCodec": "aac",
+                "VideoCodec": "h264", "Context": "Streaming", "Protocol": "hls",
+                "MaxAudioChannels": "2", "MinSegments": "2", "BreakOnNonKeyFrames": true,
+            ],
+        ],
+        "CodecProfiles": [
+            ["Type": "Video", "Codec": "h264", "Conditions": [
+                ["Condition": "LessThanEqual", "Property": "VideoBitDepth", "Value": "8"],
+                ["Condition": "EqualsAny", "Property": "VideoRangeType", "Value": "SDR", "IsRequired": true],
+            ]],
+        ],
+        "SubtitleProfiles": [
+            ["Format": "vtt", "Method": "External"],
+            ["Format": "pgssub", "Method": "Encode"],
+            ["Format": "dvdsub", "Method": "Encode"],
+            ["Format": "dvbsub", "Method": "Encode"],
+        ],
+    ] }
+
+    /// The video ranges the server may send as is, from the Force HDR / Dolby Vision to
+    /// Transcode settings. Anything else is tone mapped by the server, which fixes HDR that
+    /// looks wrong on a device or display that claims support. nil when both are off.
+    static var videoRangeProfile: [String: Any]? {
+        let forceHDR = UserDefaults.standard.bool(forKey: "codecForceHDRTranscode")
+        let forceDolbyVision = UserDefaults.standard.bool(forKey: "codecForceDolbyVisionTranscode")
+        guard forceHDR || forceDolbyVision else { return nil }
+        let allowed = forceHDR ? ["SDR"] : ["SDR", "HDR10", "HDR10Plus", "HLG"]
+        return ["Type": "Video", "Conditions": [[
+            "Condition": "EqualsAny", "Property": "VideoRangeType",
+            "Value": allowed.joined(separator: "|"), "IsRequired": true,
+        ]]]
+    }
 
     /// Two escape hatches for device-specific codec issues, surfaced as user-facing toggles
     /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
     /// hardcoded — a struct, not a View, so read straight from UserDefaults like the rest
     /// of the playback code's own settings reads (skipIntro/autoPlayNext etc.) already do.
     static func deviceProfile(forCast: Bool) -> [String: Any] {
+        if !forCast, UserDefaults.standard.bool(forKey: "codecCompatibilityMode") { return compatibilityProfile }
         let allowHEVC = (UserDefaults.standard.object(forKey: "codecAllowHEVCDirectPlay") as? Bool) ?? true
         let allowSurroundAudio = UserDefaults.standard.bool(forKey: "codecAllowSurroundAudioDirectPlay")
         let videoCodecs = allowHEVC ? "h264,hevc" : "h264"
@@ -523,7 +570,7 @@ extension JellyfinMediaClient {
             // unnecessary transcode; it still guides the tag Jellyfin writes when transcoding.
             ["Type": "Video", "Codec": "hevc",
              "Conditions": [["Condition": "EqualsAny", "Property": "VideoCodecTag", "Value": "hvc1", "IsRequired": false]]],
-        ],
+        ] + [videoRangeProfile].compactMap { $0 },
         // vtt only — the client parses/renders subtitles itself (see SubtitleLoader), so a
         // single consistent, easily-parsed format is preferable to juggling srt/ass too.
         // Jellyfin converts any source subtitle format to vtt on request.

@@ -145,7 +145,30 @@ struct ServerURLView: View {
         } catch {
             connecting = false
             showError = true
-            errorMessage = error.localizedDescription
+            errorMessage = Self.message(for: error)
+        }
+    }
+
+    private static func message(for error: Error) -> String {
+        switch error as? JellyfinAuthError {
+        case .notJellyfin?:
+            return String(localized: "This address answered, but it isn't a Jellyfin server. If Jellyfin is set up under a path like /jellyfin, add it to the address.")
+        case .serverError(let statusCode)?:
+            return String(localized: "The server answered with an error (HTTP \(statusCode)). If Jellyfin is behind a reverse proxy, check that Jellyfin is running.")
+        case .certificateProblem?:
+            return String(localized: "The server's security certificate isn't trusted. Use an address with a valid certificate, or http:// on your home network.")
+        case .hostNotFound?:
+            return String(localized: "Couldn't find a server with that name. Check the spelling, or try its IP address.")
+        case .connectionRefused?:
+            return String(localized: "Nothing answered at that address. Check the port (Jellyfin uses 8096 unless it's been changed) and that the server is running.")
+        case .timedOut?:
+            return String(localized: "The server didn't answer in time. Check that it's on and reachable from this network.")
+        case .offline?:
+            return String(localized: "This device isn't connected to the internet.")
+        case .invalidServerURL?:
+            return String(localized: "That doesn't look like a server address.")
+        default:
+            return String(localized: "Can't reach the server. Check the address and try again.")
         }
     }
 }

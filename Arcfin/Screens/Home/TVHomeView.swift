@@ -103,10 +103,10 @@ struct TVHomeView: View {
             }
         }
         .task { await load() }
-        .onChange(of: mediaRepo.continueWatching) { _, items in
-            if focusedItemID == nil {
-                focusedItemID = items.first?.id
-            }
+        // The hero already shows the first Continue Watching item until something's focused.
+        // Assigning focus to it here pulled the page down to that row once Home loaded.
+        .onChange(of: mediaRepo.continueWatching) { _, _ in
+            if focusedItemID == nil { loadHeroVideoBackdrop() }
         }
         .onChange(of: focusedItemID) { _, newValue in
             if let newValue { lastFocusedItemID = newValue }

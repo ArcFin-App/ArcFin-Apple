@@ -320,7 +320,12 @@ struct SettingsView: View {
         }
     }
 
+    // Apple TV's Settings app has no icons, so rows there are plain text like the rest of the list.
+    @ViewBuilder
     private func settingsRow(_ title: LocalizedStringKey, icon: String) -> some View {
+        #if os(tvOS)
+        Text(title).foregroundStyle(DT.Color.textPrimary)
+        #else
         Label {
             Text(title).foregroundStyle(DT.Color.textPrimary)
         } icon: {
@@ -328,6 +333,7 @@ struct SettingsView: View {
                 .foregroundStyle(DT.Color.accent)
                 .frame(width: 22)
         }
+        #endif
     }
 
     private func profileCard(cred: ServerCredential) -> some View {
@@ -382,11 +388,17 @@ struct SettingsView: View {
     }
 
     private func sectionHeader(_ title: LocalizedStringKey, icon: String) -> some View {
-        Label(title, systemImage: icon)
-            .scaledFont(size: 12, weight: .semibold)
-            .foregroundStyle(DT.Color.textSecondary)
-            .textCase(nil)
-            .accessibilityAddTraits(.isHeader)
+        Group {
+            #if os(tvOS)
+            Text(title)
+            #else
+            Label(title, systemImage: icon)
+            #endif
+        }
+        .scaledFont(size: 12, weight: .semibold)
+        .foregroundStyle(DT.Color.textSecondary)
+        .textCase(nil)
+        .accessibilityAddTraits(.isHeader)
     }
 
     @ViewBuilder

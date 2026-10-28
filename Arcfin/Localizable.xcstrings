@@ -9283,6 +9283,70 @@
         }
       }
     },
+    "Can't reach the server. Check the address and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server ist nicht erreichbar. Prüfe die Adresse und versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se puede conectar con el servidor. Revisa la dirección e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de joindre le serveur. Vérifiez l'adresse et réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile raggiungere il server. Controlla l'indirizzo e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーに接続できません。アドレスを確認して、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 연결할 수 없습니다. 주소를 확인하고 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan de server niet bereiken. Controleer het adres en probeer het opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível acessar o servidor. Verifique o endereço e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удаётся связаться с сервером. Проверьте адрес и попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法连接到服务器。请检查地址后重试。"
+          }
+        }
+      }
+    },
     "Can't reach your server" : {
       "localizations" : {
         "de" : {
@@ -11779,6 +11843,70 @@
         }
       }
     },
+    "Compatibility Mode" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kompatibilitätsmodus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modo de compatibilidad"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mode compatibilité"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modalità compatibilità"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "互換モード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "호환 모드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Compatibiliteitsmodus"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modo de compatibilidade"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Режим совместимости"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "兼容模式"
+          }
+        }
+      }
+    },
     "Confirm the PIN" : {
       "localizations" : {
         "de" : {
@@ -12415,6 +12543,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "继续观看"
+          }
+        }
+      }
+    },
+    "Couldn't find a server with that name. Check the spelling, or try its IP address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kein Server mit diesem Namen gefunden. Prüfe die Schreibweise oder versuche es mit der IP-Adresse."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se encontró ningún servidor con ese nombre. Revisa cómo está escrito o prueba con su dirección IP."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aucun serveur trouvé avec ce nom. Vérifiez l'orthographe, ou essayez son adresse IP."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessun server trovato con quel nome. Controlla come è scritto, oppure prova con il suo indirizzo IP."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "その名前のサーバーが見つかりませんでした。スペルを確認するか、IPアドレスを試してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "그 이름의 서버를 찾을 수 없습니다. 철자를 확인하거나 IP 주소로 시도해 보세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geen server met die naam gevonden. Controleer de spelling of probeer het IP-adres."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi encontrado nenhum servidor com esse nome. Confira a grafia ou tente o endereço IP."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер с таким именем не найден. Проверьте написание или попробуйте его IP-адрес."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "找不到该名称的服务器。请检查拼写，或尝试使用其 IP 地址。"
           }
         }
       }
@@ -19775,6 +19967,198 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "用于跳转按钮、轻点两下和方向键。"
+          }
+        }
+      }
+    },
+    "For videos that won't play at all. The server converts anything that isn't H.264 and AAC, in SDR with stereo sound. Uses more of the server's power, so turn it off once the video plays." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Für Videos, die gar nicht abspielen. Der Server wandelt alles, was nicht H.264 und AAC ist, um – in SDR mit Stereoton. Das beansprucht den Server stärker, also schalte es wieder aus, sobald das Video läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Para vídeos que no se reproducen. El servidor convierte todo lo que no sea H.264 y AAC, en SDR y con sonido estéreo. Usa más recursos del servidor, así que desactívalo cuando el vídeo funcione."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pour les vidéos qui ne se lisent pas du tout. Le serveur convertit tout ce qui n'est pas en H.264 et AAC, en SDR avec un son stéréo. Cela sollicite davantage le serveur : désactivez-le une fois la vidéo lue."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Per i video che non si riproducono affatto. Il server converte tutto ciò che non è H.264 e AAC, in SDR con audio stereo. Usa più risorse del server, quindi disattivalo quando il video funziona."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "まったく再生できないビデオ向けです。H.264とAAC以外のものはサーバーがSDR・ステレオ音声に変換します。サーバーの負荷が増えるので、再生できたらオフにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "전혀 재생되지 않는 동영상용입니다. H.264와 AAC가 아닌 것은 서버가 SDR과 스테레오 사운드로 변환합니다. 서버 자원을 더 사용하므로 동영상이 재생되면 끄세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Voor video's die helemaal niet afspelen. De server zet alles wat geen H.264 en AAC is om, in SDR met stereogeluid. Dit vraagt meer van de server, dus zet het uit zodra de video afspeelt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Para vídeos que não reproduzem de jeito nenhum. O servidor converte tudo o que não for H.264 e AAC, em SDR com som estéreo. Usa mais recursos do servidor, então desative quando o vídeo funcionar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Для видео, которые не воспроизводятся совсем. Сервер преобразует всё, что не в H.264 и AAC, в SDR со стереозвуком. Это сильнее нагружает сервер, поэтому выключите режим, когда видео заработает."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用于完全无法播放的视频。服务器会把所有非 H.264 和 AAC 的内容转换为 SDR 和立体声。这会占用更多服务器资源，视频能播放后请关闭。"
+          }
+        }
+      }
+    },
+    "Force Dolby Vision to Transcode" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Vision immer transkodieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forzar transcodificación de Dolby Vision"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forcer le transcodage Dolby Vision"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forza la transcodifica Dolby Vision"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Visionを常にトランスコード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Vision 강제 트랜스코딩"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dolby Vision altijd transcoderen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forçar transcodificação de Dolby Vision"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Всегда перекодировать Dolby Vision"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "强制转码杜比视界"
+          }
+        }
+      }
+    },
+    "Force HDR to Transcode" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDR immer transkodieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forzar transcodificación de HDR"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forcer le transcodage HDR"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forza la transcodifica HDR"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDRを常にトランスコード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDR 강제 트랜스코딩"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "HDR altijd transcoderen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forçar transcodificação de HDR"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Всегда перекодировать HDR"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "强制转码 HDR"
           }
         }
       }
@@ -30593,6 +30977,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未观看"
+          }
+        }
+      }
+    },
+    "Nothing answered at that address. Check the port (Jellyfin uses 8096 unless it's been changed) and that the server is running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Unter dieser Adresse hat nichts geantwortet. Prüfe den Port (Jellyfin nutzt 8096, sofern nicht geändert) und ob der Server läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada respondió en esa dirección. Comprueba el puerto (Jellyfin usa el 8096 salvo que se haya cambiado) y que el servidor esté en marcha."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rien n'a répondu à cette adresse. Vérifiez le port (Jellyfin utilise 8096 sauf s'il a été modifié) et que le serveur est en cours d'exécution."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessuna risposta a quell'indirizzo. Controlla la porta (Jellyfin usa la 8096 se non è stata cambiata) e che il server sia in esecuzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "そのアドレスからは応答がありません。ポート（変更していなければJellyfinは8096）と、サーバーが起動しているか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "그 주소에서 응답이 없습니다. 포트(변경하지 않았다면 Jellyfin은 8096 사용)와 서버가 실행 중인지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Er reageerde niets op dat adres. Controleer de poort (Jellyfin gebruikt 8096, tenzij dat is gewijzigd) en of de server draait."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada respondeu nesse endereço. Verifique a porta (o Jellyfin usa a 8096, a menos que tenha sido alterada) e se o servidor está em execução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "По этому адресу никто не ответил. Проверьте порт (Jellyfin использует 8096, если его не меняли) и что сервер запущен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "该地址没有响应。请检查端口（除非已更改，Jellyfin 使用 8096）以及服务器是否正在运行。"
           }
         }
       }
@@ -51721,6 +52169,70 @@
         }
       }
     },
+    "That doesn't look like a server address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das sieht nicht nach einer Serveradresse aus."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eso no parece la dirección de un servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cela ne ressemble pas à une adresse de serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non sembra l'indirizzo di un server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーのアドレスではないようです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버 주소가 아닌 것 같습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dat lijkt geen serveradres."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Isso não parece um endereço de servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Это не похоже на адрес сервера."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这看起来不像服务器地址。"
+          }
+        }
+      }
+    },
     "The most space Smart Downloads uses." : {
       "localizations" : {
         "de" : {
@@ -51781,6 +52293,326 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "智能下载使用的最大空间。"
+          }
+        }
+      }
+    },
+    "The server answered with an error (HTTP %lld). If Jellyfin is behind a reverse proxy, check that Jellyfin is running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server hat mit einem Fehler geantwortet (HTTP %lld). Wenn Jellyfin hinter einem Reverse-Proxy läuft, prüfe, ob Jellyfin gestartet ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor respondió con un error (HTTP %lld). Si Jellyfin está detrás de un proxy inverso, comprueba que Jellyfin esté en marcha."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur a répondu par une erreur (HTTP %lld). Si Jellyfin est derrière un proxy inverse, vérifiez que Jellyfin est en cours d'exécution."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server ha risposto con un errore (HTTP %lld). Se Jellyfin è dietro un reverse proxy, controlla che Jellyfin sia in esecuzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがエラーを返しました（HTTP %lld）。Jellyfinがリバースプロキシの背後にある場合は、Jellyfinが起動しているか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 오류로 응답했습니다(HTTP %lld). Jellyfin이 리버스 프록시 뒤에 있다면 Jellyfin이 실행 중인지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server reageerde met een fout (HTTP %lld). Als Jellyfin achter een reverse proxy staat, controleer dan of Jellyfin draait."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor respondeu com um erro (HTTP %lld). Se o Jellyfin estiver atrás de um proxy reverso, verifique se o Jellyfin está em execução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер ответил ошибкой (HTTP %lld). Если Jellyfin работает за обратным прокси, проверьте, что Jellyfin запущен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器返回了错误（HTTP %lld）。如果 Jellyfin 位于反向代理之后，请检查 Jellyfin 是否正在运行。"
+          }
+        }
+      }
+    },
+    "The server converts HDR10, HDR10+, HLG and Dolby Vision videos to SDR. Turn on if HDR looks dim, washed out or off-colour on this screen. Needs tone mapping turned on in the server's playback settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server wandelt HDR10-, HDR10+-, HLG- und Dolby-Vision-Videos in SDR um. Schalte das ein, wenn HDR auf diesem Bildschirm zu dunkel, blass oder farblich falsch aussieht. Dafür muss Tone Mapping in den Wiedergabeeinstellungen des Servers aktiviert sein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor convierte los vídeos HDR10, HDR10+, HLG y Dolby Vision a SDR. Actívalo si el HDR se ve oscuro, desvaído o con colores raros en esta pantalla. Requiere activar el mapeo de tonos en los ajustes de reproducción del servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur convertit les vidéos HDR10, HDR10+, HLG et Dolby Vision en SDR. Activez cette option si le HDR paraît sombre, délavé ou avec de mauvaises couleurs sur cet écran. Le mappage des tons doit être activé dans les réglages de lecture du serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server converte in SDR i video HDR10, HDR10+, HLG e Dolby Vision. Attivalo se l'HDR appare scuro, slavato o con colori sbagliati su questo schermo. Richiede il tone mapping attivo nelle impostazioni di riproduzione del server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがHDR10、HDR10+、HLG、Dolby VisionのビデオをSDRに変換します。この画面でHDRが暗い、色あせている、色がおかしいときにオンにしてください。サーバーの再生設定でトーンマッピングをオンにする必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 HDR10, HDR10+, HLG, Dolby Vision 동영상을 SDR로 변환합니다. 이 화면에서 HDR이 어둡거나, 바래 보이거나, 색이 이상하면 켜세요. 서버 재생 설정에서 톤 매핑을 켜야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server zet HDR10-, HDR10+-, HLG- en Dolby Vision-video's om naar SDR. Zet dit aan als HDR op dit scherm te donker, flets of met verkeerde kleuren wordt weergegeven. Tone mapping moet aanstaan in de afspeelinstellingen van de server."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor converte vídeos HDR10, HDR10+, HLG e Dolby Vision para SDR. Ative se o HDR parecer escuro, desbotado ou com cores erradas nesta tela. É preciso ativar o mapeamento de tons nos ajustes de reprodução do servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер преобразует видео в HDR10, HDR10+, HLG и Dolby Vision в SDR. Включите, если HDR на этом экране выглядит тёмным, блёклым или с неправильными цветами. На сервере в настройках воспроизведения должно быть включено тональное отображение."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器会将 HDR10、HDR10+、HLG 和杜比视界视频转换为 SDR。如果 HDR 在此屏幕上显得昏暗、发白或颜色不对，请打开此项。需要在服务器的播放设置中开启色调映射。"
+          }
+        }
+      }
+    },
+    "The server didn't answer in time. Check that it's on and reachable from this network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server hat nicht rechtzeitig geantwortet. Prüfe, ob er eingeschaltet und aus diesem Netzwerk erreichbar ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor no respondió a tiempo. Comprueba que esté encendido y accesible desde esta red."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur n'a pas répondu à temps. Vérifiez qu'il est allumé et accessible depuis ce réseau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non ha risposto in tempo. Controlla che sia acceso e raggiungibile da questa rete."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーが時間内に応答しませんでした。電源が入っていて、このネットワークから接続できるか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 제시간에 응답하지 않았습니다. 서버가 켜져 있고 이 네트워크에서 연결할 수 있는지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server reageerde niet op tijd. Controleer of hij aan staat en bereikbaar is vanaf dit netwerk."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não respondeu a tempo. Verifique se ele está ligado e acessível a partir desta rede."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер не ответил вовремя. Проверьте, что он включён и доступен из этой сети."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器未及时响应。请检查它是否已开启，并且可以从此网络访问。"
+          }
+        }
+      }
+    },
+    "The server sends Dolby Vision videos as HDR10 or SDR instead. Turn on if they show purple or green colours." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server sendet Dolby-Vision-Videos stattdessen als HDR10 oder SDR. Schalte das ein, wenn sie lila oder grüne Farben zeigen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor envía los vídeos Dolby Vision como HDR10 o SDR. Actívalo si se ven con colores morados o verdes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur envoie les vidéos Dolby Vision en HDR10 ou en SDR à la place. Activez cette option si elles affichent des couleurs violettes ou vertes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server invia i video Dolby Vision come HDR10 o SDR. Attivalo se mostrano colori viola o verdi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがDolby VisionのビデオをHDR10またはSDRとして送信します。紫や緑の色になるときにオンにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 Dolby Vision 동영상을 HDR10 또는 SDR로 대신 보냅니다. 보라색이나 녹색으로 보이면 켜세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server stuurt Dolby Vision-video's in plaats daarvan als HDR10 of SDR. Zet dit aan als ze paarse of groene kleuren tonen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor envia vídeos Dolby Vision como HDR10 ou SDR. Ative se eles aparecerem com cores roxas ou verdes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер отправляет видео Dolby Vision в формате HDR10 или SDR. Включите, если они отображаются с фиолетовыми или зелёными цветами."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器改为以 HDR10 或 SDR 发送杜比视界视频。如果画面出现紫色或绿色，请打开此项。"
+          }
+        }
+      }
+    },
+    "The server's security certificate isn't trusted. Use an address with a valid certificate, or http:// on your home network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dem Sicherheitszertifikat des Servers wird nicht vertraut. Verwende eine Adresse mit gültigem Zertifikat oder http:// in deinem Heimnetz."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El certificado de seguridad del servidor no es de confianza. Usa una dirección con un certificado válido, o http:// en tu red doméstica."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le certificat de sécurité du serveur n'est pas fiable. Utilisez une adresse avec un certificat valide, ou http:// sur votre réseau domestique."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il certificato di sicurezza del server non è attendibile. Usa un indirizzo con un certificato valido, oppure http:// sulla rete di casa."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーのセキュリティ証明書が信頼されていません。有効な証明書のあるアドレスを使うか、自宅のネットワークでは http:// を使ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버의 보안 인증서를 신뢰할 수 없습니다. 유효한 인증서가 있는 주소를 사용하거나, 집 네트워크에서는 http://를 사용하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Het beveiligingscertificaat van de server wordt niet vertrouwd. Gebruik een adres met een geldig certificaat, of http:// op je thuisnetwerk."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O certificado de segurança do servidor não é confiável. Use um endereço com um certificado válido, ou http:// na sua rede doméstica."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сертификату безопасности сервера нельзя доверять. Используйте адрес с действительным сертификатом или http:// в домашней сети."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器的安全证书不受信任。请使用有有效证书的地址，或在家庭网络中使用 http://。"
           }
         }
       }
@@ -52105,6 +52937,70 @@
         }
       }
     },
+    "This address answered, but it isn't a Jellyfin server. If Jellyfin is set up under a path like /jellyfin, add it to the address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Diese Adresse hat geantwortet, ist aber kein Jellyfin-Server. Wenn Jellyfin unter einem Pfad wie /jellyfin eingerichtet ist, füge ihn zur Adresse hinzu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Esta dirección respondió, pero no es un servidor de Jellyfin. Si Jellyfin está configurado en una ruta como /jellyfin, añádela a la dirección."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cette adresse a répondu, mais ce n'est pas un serveur Jellyfin. Si Jellyfin est configuré sous un chemin comme /jellyfin, ajoutez-le à l'adresse."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo indirizzo ha risposto, ma non è un server Jellyfin. Se Jellyfin è configurato in un percorso come /jellyfin, aggiungilo all'indirizzo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このアドレスは応答しましたが、Jellyfinサーバーではありません。Jellyfinが /jellyfin のようなパスで設定されている場合は、アドレスに追加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 주소가 응답했지만 Jellyfin 서버가 아닙니다. Jellyfin이 /jellyfin 같은 경로에 설정되어 있다면 주소에 추가하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit adres reageerde, maar het is geen Jellyfin-server. Als Jellyfin onder een pad zoals /jellyfin is ingesteld, voeg dat dan toe aan het adres."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este endereço respondeu, mas não é um servidor Jellyfin. Se o Jellyfin estiver configurado em um caminho como /jellyfin, adicione-o ao endereço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "По этому адресу ответил не сервер Jellyfin. Если Jellyfin настроен на путь вроде /jellyfin, добавьте его к адресу."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此地址有响应，但不是 Jellyfin 服务器。如果 Jellyfin 设置在 /jellyfin 这样的路径下，请把它加到地址中。"
+          }
+        }
+      }
+    },
     "This clears the saved server URL and credentials. You can reconnect any time." : {
       "localizations" : {
         "de" : {
@@ -52165,6 +53061,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这会清除已存储的服务器 URL 和凭证。你可以随时重新连接。"
+          }
+        }
+      }
+    },
+    "This device isn't connected to the internet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieses Gerät ist nicht mit dem Internet verbunden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este dispositivo no está conectado a internet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cet appareil n'est pas connecté à Internet."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo dispositivo non è connesso a Internet."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このデバイスはインターネットに接続されていません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 기기는 인터넷에 연결되어 있지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit apparaat is niet verbonden met internet."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este dispositivo não está conectado à internet."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Это устройство не подключено к интернету."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此设备未连接到互联网。"
           }
         }
       }
@@ -59463,6 +60423,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你的服务"
+          }
+        }
+      }
+    },
+    "Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Anmeldung bei diesem Server ist abgelaufen, meist weil das Passwort geändert oder dieses Gerät vom Server entfernt wurde. Melde dich erneut an, um weiterzumachen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu sesión en este servidor ha terminado, normalmente porque cambió la contraseña o se eliminó este dispositivo del servidor. Vuelve a iniciar sesión para continuar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre connexion à ce serveur a pris fin, généralement parce que le mot de passe a changé ou que cet appareil a été retiré du serveur. Reconnectez-vous pour continuer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L'accesso a questo server è terminato, di solito perché la password è cambiata o questo dispositivo è stato rimosso dal server. Accedi di nuovo per continuare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このサーバーへのサインインが終了しました。パスワードが変更されたか、このデバイスがサーバーから削除された可能性があります。続けるにはもう一度サインインしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 서버의 로그인이 만료되었습니다. 보통 비밀번호가 변경되었거나 이 기기가 서버에서 제거된 경우입니다. 계속하려면 다시 로그인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je aanmelding bij deze server is beëindigd, meestal omdat het wachtwoord is gewijzigd of dit apparaat van de server is verwijderd. Meld je opnieuw aan om verder te gaan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seu login neste servidor terminou, geralmente porque a senha mudou ou este dispositivo foi removido do servidor. Entre novamente para continuar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход на этот сервер завершён — обычно потому, что изменился пароль или это устройство удалили с сервера. Войдите снова, чтобы продолжить."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你在此服务器上的登录已结束，通常是因为密码已更改或此设备已从服务器中移除。请重新登录以继续。"
           }
         }
       }
