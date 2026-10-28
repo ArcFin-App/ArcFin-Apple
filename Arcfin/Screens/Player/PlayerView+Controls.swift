@@ -2357,7 +2357,8 @@ extension PlayerView {
                 onSelectSubtitle: { index in
                     showTrackMenu = false
                     changeTrack(subtitleIndex: .some(index))
-                }
+                },
+                audioDescriptionIndices: audioDescriptionIndices
             )
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
@@ -2431,13 +2432,15 @@ struct TrackSelectionSheet: View {
     /// Set to offer a search of the server's subtitle providers for this item.
     var subtitleSearchItemId: String? = nil
     var onSubtitleDownloaded: () -> Void = {}
+    /// Stream indexes of the audio tracks the engine reports as audio description.
+    var audioDescriptionIndices: Set<Int> = []
 
     var body: some View {
         List {
             if !audioStreams.isEmpty {
                 Section("Audio") {
                     ForEach(audioStreams, id: \.index) { stream in
-                        trackRow(label(for: stream), isSelected: stream.index == selectedAudioIndex) {
+                        trackRow(audioLabel(for: stream), isSelected: stream.index == selectedAudioIndex) {
                             onSelectAudio(stream.index)
                         }
                     }
@@ -2485,6 +2488,11 @@ struct TrackSelectionSheet: View {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
         return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+    }
+
+    private func audioLabel(for stream: JellyfinMediaStream) -> String {
+        guard audioDescriptionIndices.contains(stream.index) else { return label(for: stream) }
+        return String(localized: "\(label(for: stream)) · Audio Description")
     }
 }
 

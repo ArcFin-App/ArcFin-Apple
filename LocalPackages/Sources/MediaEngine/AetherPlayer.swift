@@ -119,7 +119,8 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         }.store(in: &cancellables)
         engine.$audioTracks.sink { [weak self] tracks in
             self?.availableAudioTracks = tracks.map {
-                AudioTrack(id: $0.id, displayName: $0.name, language: $0.language)
+                AudioTrack(id: $0.id, displayName: $0.name, language: $0.language,
+                           isAudioDescription: $0.isVisualImpaired)
             }
         }.store(in: &cancellables)
         engine.$subtitleTracks.sink { [weak self] tracks in

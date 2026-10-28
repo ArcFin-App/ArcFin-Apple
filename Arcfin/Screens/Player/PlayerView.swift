@@ -878,7 +878,8 @@ struct PlayerView: View {
                 onSubtitleDownloaded: {
                     showTrackMenu = false
                     adoptDownloadedSubtitle()
-                }
+                },
+                audioDescriptionIndices: audioDescriptionIndices
             )
             .navigationTitle("Subtitles & Audio")
             #if os(iOS)
@@ -980,6 +981,11 @@ struct PlayerView: View {
     }
 
     private var decodesNatively: Bool { player is AetherEnginePlayer || player is VLCEnginePlayer }
+
+    /// Aether numbers its tracks by stream index, the same numbers Jellyfin's streams carry.
+    var audioDescriptionIndices: Set<Int> {
+        Set(player.availableAudioTracks.filter(\.isAudioDescription).map(\.id))
+    }
 
     /// The AVFoundation/VLC split Auto used before Aether existed — now only reached when
     /// Aether itself fails to construct or load a source (see setup()'s runtime fallback).
