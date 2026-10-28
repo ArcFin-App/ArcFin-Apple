@@ -722,10 +722,14 @@ extension PlayerView {
                 Circle().fill(.white)
                     .frame(width: isScrubbing ? 16 : 10, height: isScrubbing ? 16 : 10)
                     .offset(x: thumbX - (isScrubbing ? 8 : 5))
-
+            }
+            // An overlay, so the preview floats above the track. Inside the stack its height
+            // made the stack taller and pushed the centred track down the screen.
+            .overlay(alignment: .leading) {
                 if isScrubbing, trickplayLoader != nil {
                     trickplayPreview
-                        .offset(x: min(max(thumbX - 70, 0), proxy.size.width - 140), y: -100)
+                        .offset(x: min(max(thumbX - Self.trickplaySize.width / 2, 0), proxy.size.width - Self.trickplaySize.width),
+                                y: -(Self.trickplaySize.height / 2 + 21))
                 }
             }
             .frame(maxHeight: .infinity, alignment: .center)
@@ -756,13 +760,14 @@ extension PlayerView {
             // left/right to nudge the pending position (with the same trickplay preview),
             // then click to commit. Matches how Apple's own tvOS video player scrubber works.
             .focusable(true)
+            .focused($isScrubberFocused)
+            .onChange(of: isScrubberFocused) { _, focused in
+                if focused { startRemoteScrub() } else { remoteScrub.stop() }
+            }
+            .onDisappear { remoteScrub.stop() }
             .onMoveCommand { direction in
-                guard direction == .left || direction == .right else { return }
-                if !isScrubbing {
-                    isScrubbing = true
-                    scrubTicks = Double(pendingSeekTargetTicks ?? player.positionTicks)
-                    hideControlsTask?.cancel()
-                }
+                guard direction == .left || direction == .right, !remoteScrub.suppressesMoveCommands else { return }
+                beginTVScrub()
                 let stepTicks: Double = 10 * 10_000_000
                 scrubTicks = direction == .right
                     ? min(scrubTicks + stepTicks, Double(player.durationTicks))
@@ -771,10 +776,7 @@ extension PlayerView {
             }
             .onTapGesture {
                 guard isScrubbing else { return }
-                performSeek(to: Int64(scrubTicks))
-                isScrubbing = false
-                scrubThumbnail = nil
-                scheduleAutoHide()
+                commitTVScrub()
             }
             #endif
         }
@@ -787,6 +789,56 @@ extension PlayerView {
         }
     }
 
+    #if os(tvOS)
+    /// Clicking or pressing Play/Pause on a scrubbed position plays from there, as Apple's
+    /// player does, even if playback was paused.
+    func commitTVScrub() {
+        let ticks = Int64(scrubTicks)
+        isScrubbing = false
+        scrubThumbnail = nil
+        performSeek(to: ticks)
+        if player.status != .playing {
+            if sharePlay.isActive { sharePlay.send(.play, itemId: item.id, positionTicks: ticks) }
+            Task { await player.play() }
+        }
+        scheduleAutoHide()
+    }
+
+    private func beginTVScrub() {
+        guard !isScrubbing else { return }
+        isScrubbing = true
+        scrubTicks = Double(pendingSeekTargetTicks ?? player.positionTicks)
+        hideControlsTask?.cancel()
+    }
+
+    /// A slide across the whole touch surface covers a tenth of the runtime, kept between one
+    /// and ten minutes so short episodes stay precise and long films stay quick to cross.
+    private func startRemoteScrub() {
+        remoteScrub.start(
+            began: {
+                beginTVScrub()
+                remoteScrubStartTicks = scrubTicks
+            },
+            moved: { travel in
+                let duration = Double(player.durationTicks)
+                let span = min(max(duration * 0.1, 60 * 10_000_000), 600 * 10_000_000)
+                scrubTicks = min(max(remoteScrubStartTicks + travel * span, 0), duration)
+                updateScrubThumbnail()
+            },
+            selected: {
+                if isScrubbing { commitTVScrub() }
+            }
+        )
+    }
+    #endif
+
+    // Viewed from across a room, the preview needs to be much larger on a TV.
+    #if os(tvOS)
+    static let trickplaySize = CGSize(width: 400, height: 225)
+    #else
+    static let trickplaySize = CGSize(width: 140, height: 79)
+    #endif
+
     private var trickplayPreview: some View {
         Group {
             if let scrubThumbnail {
@@ -797,7 +849,7 @@ extension PlayerView {
                 Color.black
             }
         }
-        .frame(width: 140, height: 79)
+        .frame(width: Self.trickplaySize.width, height: Self.trickplaySize.height)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(.white.opacity(0.3), lineWidth: 1))
         .shadow(radius: 8)

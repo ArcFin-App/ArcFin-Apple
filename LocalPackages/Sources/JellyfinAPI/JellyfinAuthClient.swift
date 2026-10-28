@@ -140,7 +140,8 @@ private struct QCStatusResponse: Decodable {
 
 public struct JellyfinAuthClient: Sendable {
 
-    public static let appVersion = "0.0.1"
+    /// Sent as the auth header's Version, which the server shows in Dashboard › Devices.
+    public static let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     private static let log = Telemetry.logger(category: "JellyfinAuth")
 
     private let deviceId: String

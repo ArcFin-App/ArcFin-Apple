@@ -60171,6 +60171,70 @@
         }
       }
     },
+    "Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Anmeldung bei diesem Server ist abgelaufen, meist weil das Passwort geändert oder dieses Gerät vom Server entfernt wurde. Melde dich erneut an, um weiterzumachen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu sesión en este servidor ha terminado, normalmente porque cambió la contraseña o se eliminó este dispositivo del servidor. Vuelve a iniciar sesión para continuar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre connexion à ce serveur a pris fin, généralement parce que le mot de passe a changé ou que cet appareil a été retiré du serveur. Reconnectez-vous pour continuer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L'accesso a questo server è terminato, di solito perché la password è cambiata o questo dispositivo è stato rimosso dal server. Accedi di nuovo per continuare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このサーバーへのサインインが終了しました。パスワードが変更されたか、このデバイスがサーバーから削除された可能性があります。続けるにはもう一度サインインしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 서버의 로그인이 만료되었습니다. 보통 비밀번호가 변경되었거나 이 기기가 서버에서 제거된 경우입니다. 계속하려면 다시 로그인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je aanmelding bij deze server is beëindigd, meestal omdat het wachtwoord is gewijzigd of dit apparaat van de server is verwijderd. Meld je opnieuw aan om verder te gaan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seu login neste servidor terminou, geralmente porque a senha mudou ou este dispositivo foi removido do servidor. Entre novamente para continuar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход на этот сервер завершён — обычно потому, что изменился пароль или это устройство удалили с сервера. Войдите снова, чтобы продолжить."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你在此服务器上的登录已结束，通常是因为密码已更改或此设备已从服务器中移除。请重新登录以继续。"
+          }
+        }
+      }
+    },
     "Your stats card for %@" : {
       "localizations" : {
         "de" : {
