@@ -53,7 +53,7 @@ private final class PathWait: @unchecked Sendable {
 
 // MARK: - Errors
 
-public enum JellyfinAuthError: Error, LocalizedError, Sendable {
+public enum JellyfinAuthError: Error, LocalizedError, Sendable, Equatable {
     case invalidServerURL
     case serverUnreachable
     case authFailed(String)
@@ -67,6 +67,16 @@ public enum JellyfinAuthError: Error, LocalizedError, Sendable {
     /// actively misleading when the real cause was something else. Carries the real status
     /// code so it's at least honest about what actually happened.
     case quickConnectFailed(statusCode: Int)
+    /// Something answered, but not with Jellyfin's API: usually a web page because the
+    /// server's base URL (e.g. /jellyfin) was left off the address.
+    case notJellyfin
+    /// A reverse proxy answered with an error, e.g. 502 while Jellyfin itself is down.
+    case serverError(statusCode: Int)
+    case certificateProblem
+    case hostNotFound
+    case connectionRefused
+    case timedOut
+    case offline
 
     public var errorDescription: String? {
         switch self {
@@ -77,6 +87,13 @@ public enum JellyfinAuthError: Error, LocalizedError, Sendable {
         case .quickConnectDisabled:   return "Quick Connect is not enabled on this server."
         case .quickConnectFailed(let statusCode):
             return "Quick Connect request failed (server returned HTTP \(statusCode)). If Quick Connect is enabled in Dashboard > General, check the server URL and try again."
+        case .notJellyfin:            return "The address answered, but not as a Jellyfin server."
+        case .serverError(let statusCode): return "The server answered with HTTP \(statusCode)."
+        case .certificateProblem:     return "The server's certificate isn't trusted."
+        case .hostNotFound:           return "No server found with that name."
+        case .connectionRefused:      return "Nothing answered at that address and port."
+        case .timedOut:               return "The server didn't answer in time."
+        case .offline:                return "Not connected to the internet."
         }
     }
 }
@@ -215,11 +232,14 @@ public struct JellyfinAuthClient: Sendable {
         await Self.waitForNetworkPath()
 
         var lastError: Error = JellyfinAuthError.serverUnreachable
+        var reported = JellyfinAuthError.serverUnreachable
         for base in candidates {
             do {
                 return try await fetchPublicInfo(base: base)
             } catch {
                 lastError = error
+                let reason = Self.reason(for: error)
+                if Self.rank(reason) >= Self.rank(reported) { reported = reason }
             }
         }
         // Whichever candidate failed last is the one worth logging — the real reason
@@ -229,7 +249,34 @@ public struct JellyfinAuthClient: Sendable {
         Self.log.error(
             "validateServer failed for \(trimmed, privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
         )
-        throw JellyfinAuthError.serverUnreachable
+        throw reported
+    }
+
+    static func reason(for error: Error) -> JellyfinAuthError {
+        if let error = error as? JellyfinAuthError { return error }
+        if error is DecodingError { return .notJellyfin }
+        switch (error as? URLError)?.code {
+        case .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot,
+             .serverCertificateNotYetValid, .clientCertificateRejected, .clientCertificateRequired:
+            return .certificateProblem
+        case .cannotFindHost, .dnsLookupFailed: return .hostNotFound
+        case .cannotConnectToHost: return .connectionRefused
+        case .timedOut, .networkConnectionLost: return .timedOut
+        case .notConnectedToInternet: return .offline
+        default: return .serverUnreachable
+        }
+    }
+
+    /// With no scheme typed, both https:// and http:// are tried. The failure worth showing
+    /// is the one that got furthest: an answer from the server beats a certificate problem,
+    /// which beats a connection that never happened.
+    private static func rank(_ reason: JellyfinAuthError) -> Int {
+        switch reason {
+        case .notJellyfin, .serverError: return 3
+        case .certificateProblem: return 2
+        case .serverUnreachable: return 0
+        default: return 1
+        }
     }
 
     private static func waitForNetworkPath(timeoutSeconds: Double = 6) async {
@@ -243,11 +290,29 @@ public struct JellyfinAuthClient: Sendable {
         req.setValue(authHeader(), forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 10
         let (data, resp) = try await URLSession.arcfin.data(for: req)
-        guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
-            throw JellyfinAuthError.serverUnreachable
+        switch (resp as? HTTPURLResponse)?.statusCode {
+        case 200: break
+        case 404: throw JellyfinAuthError.notJellyfin
+        case let status?: throw JellyfinAuthError.serverError(statusCode: status)
+        case nil: throw JellyfinAuthError.serverUnreachable
         }
         let info = try JSONDecoder().decode(PublicInfo.self, from: data)
-        return (base, info.serverName)
+        return (Self.base(answering: resp, requested: base), info.serverName)
+    }
+
+    /// The address the server actually answered from. A proxy that redirects http:// to
+    /// https:// (or adds a path) works for these requests, which follow redirects, but not
+    /// for the players, downloads or the WebSocket, so the redirected address is the one saved.
+    static func base(answering response: URLResponse, requested: URL) -> URL {
+        let suffix = "/System/Info/Public"
+        guard let final = response.url,
+              var parts = URLComponents(url: final, resolvingAgainstBaseURL: false),
+              parts.percentEncodedPath.hasSuffix(suffix)
+        else { return requested }
+        parts.percentEncodedPath = String(parts.percentEncodedPath.dropLast(suffix.count))
+        parts.query = nil
+        parts.fragment = nil
+        return parts.url ?? requested
     }
 
     // MARK: - Password auth
