@@ -255,6 +255,7 @@ final class ScreenshotTests: XCTestCase {
         for direction in [XCUIRemote.Button.right, .left] {
             for _ in 0..<8 where !tab.hasFocus {
                 XCUIRemote.shared.press(direction)
+                Thread.sleep(forTimeInterval: 0.3)
             }
         }
         XCUIRemote.shared.press(.select)
