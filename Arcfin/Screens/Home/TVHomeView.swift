@@ -44,6 +44,8 @@ struct TVHomeView: View {
     @State private var heroVideoBackdropURL: URL?
     @State private var heroVideoBackdropTask: Task<Void, Never>?
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    @AppStorage("heroTrailerSound") private var heroTrailerSound = false
+    @State private var isHomeShowing = false
 
     private var focusedItem: MediaItem? {
         guard let id = lastFocusedItemID else { return nil }
@@ -63,6 +65,10 @@ struct TVHomeView: View {
         var seen = Set<String>()
         return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
     }
+
+    /// Only while Home itself is on screen: with sound on, a trailer left running under a
+    /// title's page, the player or another tab would be heard there.
+    private var heroVideoAllowed: Bool { isHomeShowing && playbackRequest == nil }
 
     private var heroDisplayItem: MediaItem? {
         focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
@@ -87,6 +93,8 @@ struct TVHomeView: View {
                 .ignoresSafeArea()
             }
             .screenBackground()
+            .onAppear { isHomeShowing = true }
+            .onDisappear { isHomeShowing = false }
             .navigationDestination(item: $heroDetailItem) { item in
                 TVMediaDetailView(item: item)
             }
@@ -112,7 +120,7 @@ struct TVHomeView: View {
             if let newValue { lastFocusedItemID = newValue }
             loadHeroVideoBackdrop()
         }
-        .onAppear { loadHeroVideoBackdrop() }
+        .onChange(of: heroVideoAllowed) { _, _ in loadHeroVideoBackdrop() }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
@@ -249,8 +257,10 @@ struct TVHomeView: View {
                 .clipped()
 
             if let videoURL = heroVideoBackdropURL, heroVideoBackdropItemID == heroDisplayItem?.id {
-                HeroVideoBackdropView(url: videoURL)
-                    .transition(.opacity)
+                HeroVideoBackdropView(url: videoURL, loops: false, muted: !heroTrailerSound) {
+                    endHeroVideoBackdrop(itemID: heroDisplayItem?.id)
+                }
+                .transition(.opacity)
             }
         }
     }
@@ -368,14 +378,13 @@ struct TVHomeView: View {
     /// item has a local trailer indexed on the server, and if so resolves it to a real
     /// playable stream URL the same way the main player does. Unlike iOS's hero, tvOS's
     /// hero doesn't auto-rotate on a timer — focus only changes via explicit remote
-    /// navigation — so there's no rotation timer to skip past a playing trailer, and no
-    /// slide to auto-advance to once the trailer's 15s preview ends.
+    /// navigation — so the trailer plays to its end, then the still backdrop returns.
     private func loadHeroVideoBackdrop() {
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
         heroVideoBackdropTask?.cancel()
         heroVideoBackdropURL = nil
         heroVideoBackdropItemID = nil
-        guard heroVideoBackdropsEnabled, let item = heroDisplayItem,
+        guard heroVideoBackdropsEnabled, heroVideoAllowed, let item = heroDisplayItem,
               case .authenticated(let credential) = authManager.state
         else { return }
         let itemID = item.id
@@ -407,14 +416,14 @@ struct TVHomeView: View {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropItemID = itemID
             }
-            // Loops indefinitely otherwise — auto-reverts to the still backdrop after a
-            // short preview instead, same idea as tvOS's own featured-app hero rotators.
-            try? await Task.sleep(for: .seconds(15))
-            guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
-            withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
-                heroVideoBackdropURL = nil
-                heroVideoBackdropItemID = nil
-            }
+        }
+    }
+
+    private func endHeroVideoBackdrop(itemID: String?) {
+        guard heroVideoBackdropItemID == itemID else { return }
+        withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
+            heroVideoBackdropURL = nil
+            heroVideoBackdropItemID = nil
         }
     }
 

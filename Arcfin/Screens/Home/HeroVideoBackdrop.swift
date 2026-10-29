@@ -15,9 +15,13 @@ import UIKit
 
 struct HeroVideoBackdropView: UIViewRepresentable {
     let url: URL
+    var loops = true
+    var muted = true
+    /// Called when a trailer that doesn't loop reaches its end.
+    var onEnd: (() -> Void)? = nil
 
     func makeUIView(context: Context) -> LoopingPlayerUIView {
-        LoopingPlayerUIView(url: url)
+        LoopingPlayerUIView(url: url, loops: loops, muted: muted, onEnd: onEnd)
     }
     func updateUIView(_ uiView: LoopingPlayerUIView, context: Context) {}
     // A .transition(.opacity) crossfade can keep the outgoing view (and this one's ARC
@@ -39,15 +43,19 @@ final class LoopingPlayerUIView: UIView {
     private var statusObservation: NSKeyValueObservation?
     private var timeControlObservation: NSKeyValueObservation?
     private var hasFadedIn = false
+    private let loops: Bool
+    private let onEnd: (() -> Void)?
 
-    init(url: URL) {
+    init(url: URL, loops: Bool, muted: Bool, onEnd: (() -> Void)?) {
+        self.loops = loops
+        self.onEnd = onEnd
         super.init(frame: .zero)
         let headers = CustomHTTPHeaders.current
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: item)
-        player.isMuted = true
-        player.actionAtItemEnd = .none
+        player.isMuted = muted
+        player.actionAtItemEnd = loops ? .none : .pause
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
@@ -71,17 +79,18 @@ final class LoopingPlayerUIView: UIView {
         // small hitch at the loop point beats a silent decorative video never playing.
         loopObserver = NotificationCenter.default.addObserver(
             forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main
-        ) { [weak player] _ in
-            player?.seek(to: .zero)
-            player?.play()
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.itemDidEnd() }
         }
 
         // isMuted only zeroes the output — the player still opens a CoreAudio HAL slot
         // for the audio track. Deselecting it outright means there's no audio render
-        // pipeline at all, since this backdrop is always silent anyway.
-        Task { @MainActor in
-            guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
-            item.select(nil, in: group)
+        // pipeline at all when the backdrop is silent.
+        if muted {
+            Task { @MainActor in
+                guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
+                item.select(nil, in: group)
+            }
         }
 
         // readyToPlay only means the asset is minimally parsed, not that enough has
@@ -98,6 +107,15 @@ final class LoopingPlayerUIView: UIView {
             self.hasFadedIn = true
             UIView.animate(withDuration: 0.3) { self.alpha = 1 }
         }
+    }
+
+    private func itemDidEnd() {
+        guard loops else {
+            onEnd?()
+            return
+        }
+        player?.seek(to: .zero)
+        player?.play()
     }
 
     required init?(coder: NSCoder) {
