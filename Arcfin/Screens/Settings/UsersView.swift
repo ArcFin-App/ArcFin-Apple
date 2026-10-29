@@ -20,6 +20,7 @@ struct UsersView: View {
     @State private var switchPINError: String? = nil
     @State private var switchStoredPIN: String? = nil
     @State private var showAddProfile = false
+    @State private var removeTarget: ServerCredential?
     @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
 
     private var activeID: UUID? { authManager.state.credential?.id }
@@ -68,8 +69,7 @@ struct UsersView: View {
                         #if os(macOS)
                         .contextMenu {
                             Button(role: .destructive) {
-                                authManager.removeProfile(id: profile.id)
-                                Task { await loadPINStates() }
+                                removeTarget = profile
                             } label: {
                                 Label("Remove Profile", systemImage: "trash")
                             }
@@ -77,10 +77,7 @@ struct UsersView: View {
                         #endif
                     }
                     .onDelete { indices in
-                        for i in indices {
-                            authManager.removeProfile(id: otherProfiles[i].id)
-                        }
-                        Task { await loadPINStates() }
+                        removeTarget = indices.first.map { otherProfiles[$0] }
                     }
                 } header: { Text("Switch To") }
             }
@@ -119,6 +116,9 @@ struct UsersView: View {
         }
         .task { await loadPINStates() }
         .onChange(of: authManager.profiles) { _, _ in Task { await loadPINStates() } }
+        .confirmingProfileRemoval($removeTarget, signingOut: false, isLastProfile: false) { target in
+            authManager.removeProfile(id: target.id)
+        }
         // PIN entry sheet for switching to a protected profile
         .sheet(item: $switchTarget) { target in
             PINEntrySheet(
@@ -250,6 +250,7 @@ struct ProfileDetailView: View {
 
     @State private var hasPIN = false
     @State private var pinFlow: PINFlow? = nil
+    @State private var removeTarget: ServerCredential?
 
     enum PINFlow: Identifiable {
         case setNew, changeVerifyCurrent, disableVerifyCurrent
@@ -291,11 +292,14 @@ struct ProfileDetailView: View {
             if authManager.state.credential?.id != profile.id {
                 Section {
                     Button("Remove Profile", role: .destructive) {
-                        authManager.removeProfile(id: profile.id)
-                        dismiss()
+                        removeTarget = profile
                     }
                 }
             }
+        }
+        .confirmingProfileRemoval($removeTarget, signingOut: false, isLastProfile: false) { target in
+            authManager.removeProfile(id: target.id)
+            dismiss()
         }
         .arcfinListStyle()
         .screenBackground()

@@ -419,6 +419,16 @@ public struct JellyfinAuthClient: Sendable {
         return http.statusCode != 401 && http.statusCode != 403
     }
 
+    /// Ends this sign-in on the server, so its token stops working and the device leaves
+    /// the server's device list. Best effort: an unreachable server just keeps the session.
+    public func logout(credential: ServerCredential) async {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions/Logout"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader(token: credential.accessToken), forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 8
+        _ = try? await URLSession.arcfin.data(for: req)
+    }
+
     /// Refreshes just the avatar tag for an already-authenticated credential — used to pick
     /// up a server-side avatar change (or backfill it for a credential saved before this
     /// field existed) without forcing a fresh sign-in.

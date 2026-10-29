@@ -2049,6 +2049,70 @@
         }
       }
     },
+    "Remove %@?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ entfernen?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Eliminar a %@?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Supprimer %@ ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rimuovere %@?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@を削除しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@을(를) 제거하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ verwijderen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Remover %@?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Удалить профиль %@?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "要移除“%@”吗？"
+          }
+        }
+      }
+    },
     "Requested" : {
       "localizations" : {
         "de" : {
@@ -2241,6 +2305,70 @@
         }
       }
     },
+    "Sign Out of %@?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ abmelden?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Cerrar la sesión de %@?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Déconnecter %@ ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Disconnettere %@?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@からサインアウトしますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@에서 로그아웃하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ afmelden?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sair de %@?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выйти из профиля %@?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "要退出“%@”吗？"
+          }
+        }
+      }
+    },
     "Signing In…" : {
       "localizations" : {
         "de" : {
@@ -2429,6 +2557,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "密码不正确，请重试。"
+          }
+        }
+      }
+    },
+    "This is the last profile on this device, so its PIN, the Seerr sign-in, the TMDB key and the custom headers are all removed. Downloads stay." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dies ist das letzte Profil auf diesem Gerät, daher werden seine PIN, die Seerr-Anmeldung, der TMDB-Schlüssel und die eigenen Header entfernt. Downloads bleiben erhalten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este es el último perfil de este dispositivo, así que se eliminarán su PIN, el inicio de sesión de Seerr, la clave de TMDB y los encabezados personalizados. Las descargas se conservan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "C'est le dernier profil de cet appareil : son code PIN, la connexion Seerr, la clé TMDB et les en-têtes personnalisés seront tous supprimés. Les téléchargements sont conservés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo è l'ultimo profilo su questo dispositivo, quindi il suo PIN, l'accesso a Seerr, la chiave TMDB e le intestazioni personalizzate verranno rimossi. I download restano."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "これはこのデバイスで最後のプロファイルのため、PIN、Seerrのサインイン情報、TMDBキー、カスタムヘッダはすべて削除されます。ダウンロードは残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 기기의 마지막 프로필이므로 PIN, Seerr 로그인 정보, TMDB 키, 사용자 지정 헤더가 모두 제거됩니다. 다운로드는 유지됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit is het laatste profiel op dit apparaat, dus de pincode, de Seerr-aanmelding, de TMDB-sleutel en de eigen headers worden allemaal verwijderd. Downloads blijven staan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este é o último perfil deste dispositivo, então o PIN, o login do Seerr, a chave do TMDB e os cabeçalhos personalizados serão removidos. Os downloads continuam."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Это последний профиль на устройстве, поэтому его PIN-код, вход в Seerr, ключ TMDB и пользовательские заголовки будут удалены. Загрузки останутся."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这是此设备上的最后一个个人资料，因此其 PIN 码、Seerr 登录信息、TMDB 密钥和自定义标头都将被移除。下载内容会保留。"
+          }
+        }
+      }
+    },
+    "This profile's PIN and Seerr sign-in are removed from this device. Downloads stay." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die PIN und die Seerr-Anmeldung dieses Profils werden von diesem Gerät entfernt. Downloads bleiben erhalten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El PIN y el inicio de sesión de Seerr de este perfil se eliminarán de este dispositivo. Las descargas se conservan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le code PIN et la connexion Seerr de ce profil seront supprimés de cet appareil. Les téléchargements sont conservés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il PIN e l'accesso a Seerr di questo profilo verranno rimossi da questo dispositivo. I download restano."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このプロファイルのPINとSeerrのサインイン情報はこのデバイスから削除されます。ダウンロードは残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 프로필의 PIN과 Seerr 로그인 정보가 이 기기에서 제거됩니다. 다운로드는 유지됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De pincode en Seerr-aanmelding van dit profiel worden van dit apparaat verwijderd. Downloads blijven staan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O PIN e o login do Seerr deste perfil serão removidos deste dispositivo. Os downloads continuam."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "PIN-код и вход в Seerr для этого профиля будут удалены с устройства. Загрузки останутся."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此个人资料的 PIN 码和 Seerr 登录信息将从此设备中移除。下载内容会保留。"
           }
         }
       }

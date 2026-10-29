@@ -416,6 +416,9 @@ struct ContentView: View {
         // any stuck auth-failure cooldown and retries directly (see
         // SeerrRepository.retryAfterProfileSwitch).
         .onChange(of: authManager.state) { Task { await seerrRepo.retryAfterProfileSwitch() } }
+        .onChange(of: authManager.profiles.isEmpty) { _, isEmpty in
+            if isEmpty { seerrRepo.reloadTMDB() }
+        }
         .onChange(of: authManager.state) { _, newState in
             if case .authenticated = newState { syncOfflineProgress() }
         }

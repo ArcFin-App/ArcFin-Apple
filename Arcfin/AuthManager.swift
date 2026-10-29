@@ -3,6 +3,7 @@
 import Foundation
 import Observation
 import AuthCore
+import ImageCache
 import JellyfinAPI
 import SyncEngine
 import Telemetry
@@ -384,6 +385,10 @@ final class AuthManager {
     }
 
     func removeProfile(id: UUID) {
+        if let removed = profiles.first(where: { $0.id == id }) {
+            let client = authClient
+            Task.detached { await client.logout(credential: removed) }
+        }
         let k = keychain
         Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id); try? k.deleteSeerrPassword(profile: id) }
         UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
@@ -401,6 +406,7 @@ final class AuthManager {
         SplashMosaicStore.clear()
         PlaylistStore.shared.clear()
         ProfileRules.shared.clear()
+        if profiles.isEmpty { clearDeviceSignIns() }
         if case .authenticated(let current) = state, current.id == id {
             if let next = profiles.first {
                 persist(active: next)
@@ -410,6 +416,23 @@ final class AuthManager {
                 state = .unauthenticated
             }
         }
+    }
+
+    /// With no profile left, the sign-ins kept for the whole device go too: Seerr (its active
+    /// slot only moves when another profile takes over), the TMDB key, the gateway headers,
+    /// and what was searched and watched. Downloads stay, as the sign-out prompt says.
+    private func clearDeviceSignIns() {
+        let defaults = UserDefaults.standard
+        for key in ["seerrURL", "seerrUsername", "seerrAuthMethod", Self.seerrOwnerKey, "recentSearches"] {
+            defaults.removeObject(forKey: key)
+        }
+        seerrPassword = ""
+        let k = keychain
+        Task.detached { try? k.deleteSeerrPassword() }
+        try? TMDBCredential.save("")
+        CustomHTTPHeaders.removeAll()
+        ShowTrackMemory.clear()
+        ImageCache.clear()
     }
 
     /// Signing in again as someone who already has a profile replaces that profile's token
