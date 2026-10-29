@@ -57,7 +57,7 @@ final class ScreenshotTests: XCTestCase {
 
     @MainActor
     func test02Movie() throws {
-        try openShelfItem("recentlyAddedMovies")
+        try openMovie()
         try waitFor(app.buttons["detail.play"])
         settle()
         capture("02-movie")
@@ -76,7 +76,7 @@ final class ScreenshotTests: XCTestCase {
 
     @MainActor
     func test04Player() throws {
-        try openShelfItem("recentlyAddedMovies")
+        try openMovie()
         let play = app.buttons["detail.play"]
         try waitFor(play)
         #if os(iOS)
@@ -177,13 +177,21 @@ final class ScreenshotTests: XCTestCase {
         let item = shelfItem(shelf)
         try waitFor(item)
         press(item)
-        #if os(macOS)
-        // Shelves still loading can move the poster between finding it and clicking it.
-        for _ in 0..<2 where !app.buttons["detail.play"].waitForExistence(timeout: 10) {
-            press(item)
-        }
-        #endif
         settle()
+    }
+
+    private func openMovie() throws {
+        #if os(macOS)
+        // Home's shelves come in a different order each launch, and a test can't scroll the
+        // Mac's Home page down to one, so the Mac opens the first movie in the library.
+        try openLibrary("Movies")
+        let movie = app.descendants(matching: .any)["library.grid"].buttons.firstMatch
+        try waitFor(movie)
+        press(movie)
+        settle()
+        #else
+        try openShelfItem("recentlyAddedMovies")
+        #endif
     }
 
     private func openLibrary(_ name: String) throws {
@@ -243,30 +251,12 @@ final class ScreenshotTests: XCTestCase {
         focus(element)
         XCUIRemote.shared.press(.select)
         #elseif os(macOS)
-        // Poster buttons inside a shelf don't report a hit point, so click their centre.
-        scrollIntoView(element)
+        // Poster buttons don't report a hit point on the Mac, so click their centre.
         element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
         #else
         element.tap()
         #endif
     }
-
-    #if os(macOS)
-    /// A click doesn't scroll to its target the way a tap does on iPhone. If a scroll moves
-    /// the target the wrong way, the direction flips.
-    private func scrollIntoView(_ element: XCUIElement) {
-        let window = app.windows.firstMatch
-        var sign: CGFloat = -1
-        for _ in 0..<20 {
-            let frame = element.frame, visible = window.frame
-            let below = frame.maxY > visible.maxY
-            guard below || frame.minY < visible.minY + 60 else { return }
-            window.scroll(byDeltaX: 0, deltaY: (below ? sign : -sign) * 400)
-            let moved = element.frame.minY - frame.minY
-            if below ? moved > 0 : moved < 0 { sign = -sign }
-        }
-    }
-    #endif
 
     #if os(tvOS)
     /// Moves focus with the remote until it reaches `element`: down, then right, up and left.
