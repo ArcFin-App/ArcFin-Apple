@@ -11,6 +11,8 @@ import XCTest
 /// stop the rest. UI tests need XCTest: Swift Testing can't drive an app.
 final class ScreenshotTests: XCTestCase {
     private var app: XCUIApplication!
+    /// Set when the test turns the device, whose screen captures then need turning back.
+    private var turned = false
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -76,17 +78,20 @@ final class ScreenshotTests: XCTestCase {
 
     @MainActor
     func test04Player() throws {
-        try openMovie()
+        try openFeatureFilm()
         let play = app.buttons["detail.play"]
         try waitFor(play)
+        press(play)
         #if os(iOS)
-        // iPad stays upright: its screen captures don't follow a rotation.
+        // Turned only once the player is up: a tap just after a turn lands where the button
+        // used to be. iPad stays upright.
         if UIDevice.current.userInterfaceIdiom == .phone {
             XCUIDevice.shared.orientation = .landscapeLeft
+            turned = true
         }
         #endif
-        press(play)
-        sleep(12)
+        // The demo server transcodes, so the picture can take a while to start.
+        sleep(20)
         showPlayerControls()
         capture("04-player")
         openPlayerMenu()
@@ -156,15 +161,18 @@ final class ScreenshotTests: XCTestCase {
 
     @MainActor
     func test10Settings() throws {
-        #if os(tvOS)
-        try selectTab("Settings")
-        #else
-        let settings = app.buttons["Settings"].firstMatch
-        try waitFor(settings)
-        press(settings)
-        #endif
-        settle()
+        try openSettings()
         capture("10-settings")
+    }
+
+    @MainActor
+    func test11Profiles() throws {
+        try openSettings()
+        let profile = app.buttons["settings.profile"].firstMatch
+        try waitFor(profile)
+        press(profile)
+        settle()
+        capture("11-profiles")
     }
 
     // MARK: - Navigation
@@ -194,6 +202,31 @@ final class ScreenshotTests: XCTestCase {
         #endif
     }
 
+    /// The demo's short films are over before the player is captured, so the player opens
+    /// one of its feature films when there is one.
+    private func openFeatureFilm() throws {
+        try openLibrary("Movies")
+        let grid = app.descendants(matching: .any)["library.grid"]
+        try waitFor(grid.buttons.firstMatch)
+        let film = ["Night of the Living Dead", "Dracula", "King Lear", "Sahara"]
+            .lazy
+            .map { grid.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", $0)).firstMatch }
+            .first { $0.exists } ?? grid.buttons.firstMatch
+        press(film)
+        settle()
+    }
+
+    private func openSettings() throws {
+        #if os(tvOS)
+        try selectTab("Settings")
+        #else
+        let settings = app.buttons["Settings"].firstMatch
+        try waitFor(settings)
+        press(settings)
+        #endif
+        settle()
+    }
+
     private func openLibrary(_ name: String) throws {
         #if os(tvOS)
         try selectTab("Library")
@@ -210,10 +243,13 @@ final class ScreenshotTests: XCTestCase {
         #if os(tvOS)
         // The tab bar only takes focus once focus moves up past the top of the page. Its
         // buttons exist in the tree even while it's hidden, so wait for focus, not existence.
+        // Home's hidden hero takes a press, and a moment, to come back, so the presses are
+        // spaced out.
         let tab = app.tabBars.buttons[title].firstMatch
         let focusedTab = app.tabBars.buttons.matching(NSPredicate(format: "hasFocus == true")).firstMatch
-        for _ in 0..<15 where !focusedTab.exists {
+        for _ in 0..<20 where !focusedTab.exists {
             XCUIRemote.shared.press(.up)
+            Thread.sleep(forTimeInterval: 0.4)
         }
         try waitFor(focusedTab, timeout: 5)
         for direction in [XCUIRemote.Button.right, .left] {
@@ -287,7 +323,10 @@ final class ScreenshotTests: XCTestCase {
         sleep(8)
         XCUIRemote.shared.press(.down)
         #else
-        let tracks = app.buttons["captions.bubble"].firstMatch
+        let tracks = app.buttons["Subtitles and audio"].firstMatch
+        if !tracks.exists {
+            showPlayerControls()
+        }
         if tracks.exists {
             tracks.tap()
         } else {
@@ -316,6 +355,8 @@ final class ScreenshotTests: XCTestCase {
         // Only the window: the rest of the screen is the menu bar and desktop of whoever's Mac
         // this runs on.
         let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        #elseif os(iOS)
+        let shot = XCTAttachment(image: upright(XCUIScreen.main.screenshot().image))
         #else
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         #endif
@@ -323,6 +364,26 @@ final class ScreenshotTests: XCTestCase {
         shot.lifetime = .keepAlways
         add(shot)
     }
+
+    #if os(iOS)
+    /// After the device turns, the screen capture is still the portrait image, marked as
+    /// rotated. PNG export drops that mark, so the turn is drawn into the pixels here.
+    private func upright(_ image: UIImage) -> UIImage {
+        guard turned else { return image }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        if image.size.width > image.size.height {
+            return UIGraphicsImageRenderer(size: image.size, format: format).image { _ in image.draw(at: .zero) }
+        }
+        let size = CGSize(width: image.size.height, height: image.size.width)
+        return UIGraphicsImageRenderer(size: size, format: format).image { context in
+            // A quarter turn anticlockwise, which undoes .landscapeLeft.
+            context.cgContext.translateBy(x: 0, y: size.height)
+            context.cgContext.rotate(by: -.pi / 2)
+            image.draw(at: .zero)
+        }
+    }
+    #endif
 
     private func attachTree(_ name: String) {
         let tree = XCTAttachment(string: app.debugDescription)

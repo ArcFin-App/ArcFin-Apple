@@ -388,11 +388,13 @@ struct SettingsView: View {
                 Button { showUsersSheet = true } label: {
                     Text(cred.displayName)
                 }
+                .accessibilityIdentifier("settings.profile")
 #else
                 Button { showUsersSheet = true } label: {
                     profileCard(cred: cred)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("settings.profile")
 #endif
             }
         }
