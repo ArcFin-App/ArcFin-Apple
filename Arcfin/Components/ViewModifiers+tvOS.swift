@@ -153,6 +153,27 @@ extension View {
         #endif
     }
 
+    /// On tvOS a row has to take focus for the remote to reach it, and a page with nothing
+    /// focusable sent focus to the tab bar, where Back leaves the app. The rows stay read-only.
+    @ViewBuilder
+    func tvReadOnlyRow() -> some View {
+        #if os(tvOS)
+        Button {} label: { self }
+        #else
+        self
+        #endif
+    }
+
+    /// For a page opened from Settings on Apple TV. With the tab bar showing, Up from the top
+    /// row moved focus onto it, and Back from there left the app instead of going back.
+    func tvSettingsPage() -> some View {
+#if os(tvOS)
+        toolbar(.hidden, for: .tabBar)
+#else
+        self
+#endif
+    }
+
     func tvListRow() -> some View {
 #if os(tvOS)
         self
@@ -169,11 +190,14 @@ extension View {
 // system's own focus platter the way a NavigationLink/Button row's custom styling does —
 // they kept rendering in the app's plain white/primary text color even while focused,
 // unreadable against the light platter. Every tvListRow() row gets this for free.
+// The row's own focus comes from @FocusState: \.isFocused read here, on the focusable row
+// itself, stayed false and kept the text white on the platter (see TVFocusRingModifier).
 private struct TVListRowFocusTextModifier: ViewModifier {
-    @Environment(\.isFocused) private var isFocused
+    @FocusState private var isFocused: Bool
 
     func body(content: Content) -> some View {
         content
+            .focused($isFocused)
             .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
             .animation(DT.Animation.fast, value: isFocused)
     }
