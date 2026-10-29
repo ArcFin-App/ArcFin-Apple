@@ -13,21 +13,45 @@ struct WhatsNewItem {
 enum WhatsNew {
     static var items: [WhatsNewItem] {
         var items: [WhatsNewItem] = []
+        items.append(WhatsNewItem(icon: "forward.end",
+                                  title: "Skip Intros in Downloads",
+                                  detail: "Downloaded movies and episodes now offer to skip the recap, intro, credits and preview, just like streaming, and skip them for you if you've turned that on."))
+        #if os(tvOS)
+        items.append(WhatsNewItem(icon: "play.tv",
+                                  title: "Trailers on Home",
+                                  detail: "The featured title's trailer now plays all the way through while the details fade away. For sound, turn on Hero Trailer Sound in Settings › Appearance."))
+        items.append(WhatsNewItem(icon: "textformat.abc",
+                                  title: "Jump to a Letter",
+                                  detail: "In a library sorted by name, pick a letter under Filter & Sort to jump straight to it."))
+        #else
+        items.append(WhatsNewItem(icon: "textformat.abc",
+                                  title: "Jump to a Letter",
+                                  detail: "In a library sorted by name, use the A to Z index at the edge to jump straight to a letter."))
+        #endif
+        items.append(WhatsNewItem(icon: "wand.and.rays",
+                                  title: "Help for Videos That Won't Play",
+                                  detail: "If a video won't play, or HDR or Dolby Vision looks dim or off-colour, new switches in Settings › Playback › Codec Compatibility have your server convert it."))
+        items.append(WhatsNewItem(icon: "checkmark.circle",
+                                  title: "Already in Your Library",
+                                  detail: "Discover, Search and Seerr pages show which titles you already have, so you won't request them twice."))
         #if os(tvOS)
         items.append(WhatsNewItem(icon: "hand.draw",
                                   title: "Scrub with the Touch Surface",
                                   detail: "Glide across the Siri Remote's touch surface to move freely through a movie or episode, then click to jump there."))
         #endif
         items.append(WhatsNewItem(icon: "person.badge.key",
-                                  title: "Signed Out? Sign Straight Back In",
-                                  detail: "When your server stops accepting your sign-in, for example after a password change, Arcfin asks you to sign in again instead of showing empty pages."))
+                                  title: "Signing In and Out",
+                                  detail: "If your server stops accepting your sign-in, Arcfin asks you to sign in again instead of showing empty pages. Signing out of your last profile asks first and removes your sign-ins from this device. Downloads stay."))
+        items.append(WhatsNewItem(icon: "server.rack",
+                                  title: "Clearer Server Setup",
+                                  detail: "When an address doesn't work, setup tells you why, and servers that redirect to another address now play reliably."))
         items.append(WhatsNewItem(icon: "clock.arrow.circlepath",
                                   title: "Progress That Keeps Up",
                                   detail: "Title pages show where you stopped as soon as you close the player."))
         #if os(tvOS)
         items.append(WhatsNewItem(icon: "tv",
                                   title: "Tidier Apple TV Pages",
-                                  detail: "Home stays on the featured title while it loads, and title, collection and Settings pages are evenly spaced and easier to read."))
+                                  detail: "Home, title pages, Stats and Settings are evenly spaced, easier to read and simpler to get around with the remote."))
         #endif
         items.append(WhatsNewItem(icon: "sparkles",
                                   title: "A Tour of Arcfin",
