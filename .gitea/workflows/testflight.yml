@@ -130,7 +130,7 @@ jobs:
         continue-on-error: true
         run: .gitea/scripts/release-screenshots.sh "$PLATFORM" "$RUNNER_TEMP/screenshots-$PLATFORM.zip"
 
-      - name: Attach screenshots to the release
+      - name: Draft release and screenshots
         continue-on-error: true
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,7 +138,6 @@ jobs:
         run: |
           zip="$RUNNER_TEMP/screenshots-$PLATFORM.zip"
           name="screenshots-$PLATFORM.zip"
-          [ -f "$zip" ] || { echo "No screenshots to attach"; exit 0; }
           auth="Authorization: token $TOKEN"
           # The tag lookup skips drafts, and the release is a draft until it's published.
           id=$(curl -fsS -H "$auth" "$API/releases?limit=50" | python3 -I -c '
@@ -152,6 +151,7 @@ jobs:
               | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["id"])')
             echo "Created a draft release for $TAG"
           fi
+          [ -f "$zip" ] || { echo "No screenshots to attach"; exit 0; }
           # A re-run replaces the zip rather than adding a second one.
           for old in $(curl -fsS -H "$auth" "$API/releases/$id/assets" | python3 -I -c '
           import json, sys
