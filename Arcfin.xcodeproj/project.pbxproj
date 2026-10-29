@@ -98,6 +98,12 @@
 			membershipExceptions = (
 				Info.plist,
 			);
+			platformFiltersByRelativePath = {
+				Intents/AppShortcuts.xcstrings = (
+					ios,
+					macos,
+				);
+			};
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 		};
 		FA70FDB5305CEA9F00C55248 /* Exceptions for "Arcfin" folder in "ArcfinWidgetsExtension" target */ = {
