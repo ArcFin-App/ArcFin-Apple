@@ -122,6 +122,43 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             | tee "$RUNNER_TEMP/export.log" | grep -E 'error|Upload|EXPORT'
 
+      # The release's screenshots, which the website shows. The upload above is already done,
+      # so nothing from here on can fail it.
+      - name: Screenshots
+        continue-on-error: true
+        run: .gitea/scripts/release-screenshots.sh "$PLATFORM" "$RUNNER_TEMP/screenshots-$PLATFORM.zip"
+
+      - name: Attach screenshots to the release
+        continue-on-error: true
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}
+        run: |
+          zip="$RUNNER_TEMP/screenshots-$PLATFORM.zip"
+          name="screenshots-$PLATFORM.zip"
+          [ -f "$zip" ] || { echo "No screenshots to attach"; exit 0; }
+          auth="Authorization: token $TOKEN"
+          # The tag lookup skips drafts, and the release is a draft until it's published.
+          id=$(curl -fsS -H "$auth" "$API/releases?limit=50" | python3 -I -c '
+          import json, sys
+          print(next((r["id"] for r in json.load(sys.stdin) if r["tag_name"] == sys.argv[1]), ""))' "$TAG")
+          if [ -z "$id" ]; then
+            case "$PLATFORM" in iOS) label="iOS & iPadOS" ;; *) label="$PLATFORM" ;; esac
+            id=$(curl -fsS -H "$auth" -H "Content-Type: application/json" "$API/releases" \
+              -d "$(python3 -I -c 'import json, sys; print(json.dumps({"tag_name": sys.argv[1], "name": sys.argv[2], "draft": True, "prerelease": True}))' \
+                "$TAG" "Arcfin $VERSION (Build $BUILD) · $label")" \
+              | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["id"])')
+            echo "Created a draft release for $TAG"
+          fi
+          # A re-run replaces the zip rather than adding a second one.
+          for old in $(curl -fsS -H "$auth" "$API/releases/$id/assets" | python3 -I -c '
+          import json, sys
+          print(" ".join(str(a["id"]) for a in json.load(sys.stdin) if a["name"] == sys.argv[1]))' "$name"); do
+            curl -fsS -X DELETE -H "$auth" "$API/releases/$id/assets/$old"
+          done
+          curl -fsS -H "$auth" -F "attachment=@$zip" "$API/releases/$id/assets?name=$name" > /dev/null
+          echo "Attached $name to $TAG"
+
       - name: Logs
         if: failure()
         run: |
