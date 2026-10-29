@@ -67,11 +67,14 @@ public struct AudioTrack: Sendable, Equatable, Identifiable {
     public let id: Int
     public var displayName: String
     public var language: String?
+    /// A narrator describing the picture, for blind and low-vision viewers. Only Aether reads it.
+    public var isAudioDescription: Bool
 
-    public init(id: Int, displayName: String, language: String? = nil) {
+    public init(id: Int, displayName: String, language: String? = nil, isAudioDescription: Bool = false) {
         self.id = id
         self.displayName = displayName
         self.language = language
+        self.isAudioDescription = isAudioDescription
     }
 }
 
@@ -250,7 +253,7 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // a dip in bandwidth play from what's already here.
         item.preferredForwardBufferDuration = 180
         player.replaceCurrentItem(with: item)
-        log.info("Loading \(url.absoluteString)")
+        log.notice("Loading \(url.absoluteString)")
 
         do {
             let duration = try await asset.load(.duration)

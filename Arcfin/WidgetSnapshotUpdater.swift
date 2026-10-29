@@ -54,7 +54,7 @@ enum WidgetSnapshotUpdater {
     private static func storeImage(prefix: String, item: MediaItem, url: URL?) async -> String? {
         let name = "\(prefix)-\(item.id).jpg"
         if WidgetSnapshotStore.hasPoster(fileName: name) { return name }
-        guard let url, let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty else { return nil }
+        guard let url, let data = await URLSession.arcfin.imageData(from: url) else { return nil }
         WidgetSnapshotStore.writePoster(data, fileName: name)
         return name
     }

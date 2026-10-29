@@ -1052,17 +1052,19 @@ struct HomeView: View {
     }
 
     private func seerrShelfSubtitle(for item: SeerrItem) -> String? {
-        [item.year, mediaRepo.hasInLibrary(item) ? "In Library" : nil]
-            .compactMap { $0 }.joined(separator: " · ").nilIfEmpty
+        let status: String? = mediaRepo.hasInLibrary(item) ? String(localized: "In Library")
+            : seerrRepo.isRequested(item) ? String(localized: "Requested") : nil
+        return [item.year, status].compactMap { $0 }.joined(separator: " · ").nilIfEmpty
     }
 
     /// The library's own copy when the server has the title, even where Seerr hasn't caught up
-    /// yet; otherwise the request sheet, or the title's page without Seerr to request from.
+    /// yet; the title's page when it's already requested, or there's no Seerr to request from;
+    /// otherwise the request sheet.
     private func openSeerrShelfItem(_ item: SeerrItem) {
         Task {
             if let local = await libraryCopy(of: item) {
                 heroDetailItem = local
-            } else if seerrRepo.isConfigured {
+            } else if seerrRepo.isConfigured, !seerrRepo.isRequested(item) {
                 seerrRequestItem = item
             } else {
                 seerrDeepLinkItem = item
@@ -1489,7 +1491,7 @@ struct HomeView: View {
         if let year = item.year {
             Label(year, systemImage: "calendar")
         }
-        if !mediaRepo.hasInLibrary(item) {
+        if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item) {
             Button {
                 Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
             } label: {

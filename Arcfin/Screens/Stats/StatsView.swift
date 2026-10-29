@@ -18,8 +18,12 @@ struct StatsView: View {
     @State private var counts = StatsLibraryCounts()
     @State private var stats: WatchStats?
     @State private var phase = Phase.loading
-    /// Landscape and iPad: the cards go in two columns instead of one long, stretched one.
+    /// Landscape, iPad and TV: the cards go in two columns instead of one long, stretched one.
+    #if os(tvOS)
+    @State private var isWide = true
+    #else
     @State private var isWide = false
+    #endif
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     #if !os(tvOS)
     @State private var showShare = false
@@ -31,8 +35,12 @@ struct StatsView: View {
         NavigationStack {
             content
                 .screenBackground()
+                #if os(tvOS)
+                // The page carries its own heading, so it scrolls away with the cards
+                // instead of staying over them.
+                .toolbar(.hidden, for: .navigationBar)
+                #else
                 .arcfinNavTitleLarge("Stats")
-                #if !os(tvOS)
                 .toolbar {
                     if let stats, !stats.isEmpty {
                         ToolbarItem(placement: .primaryAction) {
@@ -89,6 +97,12 @@ struct StatsView: View {
         default:
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
+                    #if os(tvOS)
+                    Text("Stats")
+                        .font(.title2.bold())
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                    #endif
                     periodPicker
                     if period != .allTime, let stats { periodStepper(stats) }
                     if let stats {
@@ -102,8 +116,12 @@ struct StatsView: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.top, 8)
                 .padding(.bottom, 40)
+                #if os(tvOS)
+                .frame(maxWidth: .infinity)
+                #else
                 .frame(maxWidth: isWide ? 1300 : 900)
                 .frame(maxWidth: .infinity)
+                #endif
             }
             #if !os(tvOS)
             .refreshable { await load() }
@@ -331,7 +349,7 @@ struct StatsView: View {
                     NavigationLink(value: show.item) {
                         ShowRow(rank: index + 1, show: show)
                     }
-                    .arcfinPlainButton(cornerRadius: DT.Radius.lg)
+                    .arcfinPlainButton(cornerRadius: DT.Radius.lg, prominent: false)
                 }
             }
         }
@@ -347,7 +365,7 @@ struct StatsView: View {
                             PosterTile(item: title.item, rank: index + 1,
                                        caption: title.playCount > 1 ? "Watched \(title.playCount) times" : title.item.productionYear.map(String.init))
                         }
-                        .arcfinPlainButton(cornerRadius: DT.Radius.md)
+                        .arcfinPlainButton(ring: false)
                     }
                 }
                 .padding(.vertical, 4)
@@ -368,7 +386,7 @@ struct StatsView: View {
                                        rank: nil, caption: "\(title.playCount) plays",
                                        title: title.item.type == .episode ? StatsFormat.episodeName(title.item) : nil)
                         }
-                        .arcfinPlainButton(cornerRadius: DT.Radius.md)
+                        .arcfinPlainButton(ring: false)
                     }
                 }
                 .padding(.vertical, 4)
@@ -382,13 +400,20 @@ struct StatsView: View {
 
     private func genresCard(_ stats: WatchStats) -> some View {
         let total = stats.genres.reduce(0) { $0 + $1.seconds }
-        return StatsCard(title: "Genres", subtitle: stats.genres.first.map { "Mostly \($0.name)" }) {
+        // A long list: on tvOS each genre takes focus, so the remote can walk down it and the
+        // page scrolls with it, instead of the whole card being one stop taller than the screen.
+        return StatsCard(title: "Genres", subtitle: stats.genres.first.map { "Mostly \($0.name)" }, isFocusTarget: false) {
             VStack(spacing: 12) {
                 ForEach(Array(stats.genres.enumerated()), id: \.element.id) { index, genre in
                     RankedBar(name: genre.name,
                               detail: StatsFormat.duration(genre.seconds),
                               fraction: total > 0 ? genre.seconds / total : 0,
                               color: StatsFormat.palette[index % StatsFormat.palette.count])
+                    #if os(tvOS)
+                    .padding(10)
+                    .focusable()
+                    .tvFocusRing(cornerRadius: DT.Radius.md)
+                    #endif
                 }
             }
         }
@@ -415,7 +440,7 @@ struct StatsView: View {
                     NavigationLink(value: entry.person) {
                         PersonTile(entry: entry)
                     }
-                    .arcfinPlainButton(cornerRadius: 50 * StatsMetrics.scale)
+                    .arcfinPlainButton(ring: false)
                 }
             }
             .padding(.vertical, 4)
@@ -481,7 +506,7 @@ struct StatsView: View {
     // MARK: - Highlights and library
 
     private func highlightsCard(_ stats: WatchStats) -> some View {
-        StatsCard(title: "Highlights", subtitle: nil) {
+        StatsCard(title: "Highlights", subtitle: nil, isFocusTarget: false) {
             VStack(spacing: 14) {
                 if let rating = stats.averageMovieRating {
                     FactRow(icon: "star.fill", hex: "EAB308", title: "Average movie rating",
@@ -531,7 +556,7 @@ struct StatsView: View {
                     NavigationLink(value: title.item) {
                         RecentRow(title: title)
                     }
-                    .arcfinPlainButton(cornerRadius: DT.Radius.md)
+                    .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
                 }
             }
         }
@@ -558,8 +583,9 @@ struct StatsView: View {
         }
         let movieIds = titles.filter { $0.item.type == .movie }.prefix(150).map(\.id)
         let creditIds = Array(seriesIds.prefix(60)) + movieIds
+        let showIds = Array(seriesIds.prefix(500))
         async let showDetails = client.getStatsDetails(credential: credential, authHeader: header,
-                                                       ids: Array(seriesIds.prefix(500)), includePeople: false)
+                                                       ids: showIds, includePeople: false)
         async let creditDetails = client.getStatsDetails(credential: credential, authHeader: header,
                                                          ids: creditIds, includePeople: true)
         var merged = (try? await showDetails) ?? [:]
@@ -592,7 +618,7 @@ enum StatsMetrics {
 }
 
 enum StatsFormat {
-    static let palette = ["06b6d4", "8b5cf6", "10b981", "F97316", "EC4899", "EAB308", "3B82F6", "EF4444"].map(DT.Color.palette)
+    static var palette: [Color] { ["06b6d4", "8b5cf6", "10b981", "F97316", "EC4899", "EAB308", "3B82F6", "EF4444"].map { DT.Color.palette($0) } }
 
     static func duration(_ seconds: Double) -> String {
         let formatter = DateComponentsFormatter()
@@ -646,10 +672,10 @@ private enum DayPart: CaseIterable {
 
     var title: String {
         switch self {
-        case .morning: "Morning"
-        case .afternoon: "Afternoon"
-        case .evening: "Evening"
-        case .night: "Late night"
+        case .morning: String(localized: "Morning")
+        case .afternoon: String(localized: "Afternoon")
+        case .evening: String(localized: "Evening")
+        case .night: String(localized: "Late night")
         }
     }
 
@@ -684,6 +710,10 @@ private enum DayPart: CaseIterable {
 private struct StatsCard<Content: View>: View {
     let title: String
     let subtitle: String?
+    /// The whole card is one focus stop on tvOS, so the remote can scroll to it. Off for a
+    /// card with links or focusable rows inside, which take focus themselves; a focusable
+    /// card around them showed two rings and hid the rows from the remote.
+    var isFocusTarget = true
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -710,11 +740,26 @@ private struct StatsCard<Content: View>: View {
                     .stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
         )
         #if os(tvOS)
-        .focusable()
-        .tvFocusRing(cornerRadius: DT.Radius.xl)
+        .modifier(StatsCardFocus(isFocusTarget: isFocusTarget))
         #endif
     }
 }
+
+#if os(tvOS)
+private struct StatsCardFocus: ViewModifier {
+    let isFocusTarget: Bool
+
+    func body(content: Content) -> some View {
+        if isFocusTarget {
+            content
+                .focusable()
+                .tvFocusRing(cornerRadius: DT.Radius.xl)
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 private struct StatsSectionHeader: View {
     let title: String
@@ -889,7 +934,7 @@ private struct DayPartBar: View {
                         Image(systemName: part.icon)
                             .foregroundStyle(DT.Color.palette(part.hex))
                             .accessibilityHidden(true)
-                        Text("\(part.title) \(Int((seconds / total * 100).rounded()))%")
+                        Text("\(part.title) \(Double(seconds / total), format: .percent.precision(.fractionLength(0)))")
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     .font(.system(.caption, weight: .medium))
@@ -970,6 +1015,7 @@ private struct PosterTile: View {
             .clipped()
             .contentShape(Rectangle())
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
+            .tvLabelFocusRing(cornerRadius: DT.Radius.md, prominent: true)
             .overlay(alignment: .topLeading) {
                 if let rank {
                     Text("\(rank)")
@@ -1015,6 +1061,7 @@ private struct PersonTile: View {
             .clipped()
             .contentShape(Rectangle())
             .clipShape(Circle())
+            .tvLabelFocusRing(cornerRadius: 42 * StatsMetrics.scale, prominent: true)
             Text(entry.person.name)
                 .font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
@@ -1051,7 +1098,7 @@ private struct RankedBar: View {
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Spacer()
-                Text("\(detail) · \(Int((fraction * 100).rounded()))%")
+                Text("\(detail) · \(Double(fraction), format: .percent.precision(.fractionLength(0)))")
                     .font(.system(.caption).monospacedDigit())
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -1084,7 +1131,7 @@ private struct CompletionRing: View {
                     .trim(from: 0, to: fraction)
                     .stroke(DT.Color.palette(hex), style: StrokeStyle(lineWidth: 9, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                Text("\(Int((fraction * 100).rounded()))%")
+                Text(Double(fraction), format: .percent.precision(.fractionLength(0)))
                     .font(.system(.subheadline, weight: .bold).monospacedDigit())
                     .foregroundStyle(DT.Color.textPrimary)
             }
@@ -1144,9 +1191,12 @@ private struct FactLink: View {
     var body: some View {
         NavigationLink(value: item) {
             FactRow(icon: icon, hex: hex, title: title, value: value)
+                #if os(tvOS)
+                .padding(8)
+                #endif
                 .contentShape(Rectangle())
         }
-        .arcfinPlainButton(cornerRadius: DT.Radius.sm)
+        .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
     }
 }
 

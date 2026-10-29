@@ -45,6 +45,8 @@ extension Notification.Name {
     static let arcfinSelectTab = Notification.Name("arcfinSelectTab")
     /// View › Refresh on the Mac.
     static let arcfinRefresh = Notification.Name("arcfinRefresh")
+    /// Posted once the player's stop report and watched mark have reached the server.
+    static let arcfinPlaybackReported = Notification.Name("arcfinPlaybackReported")
     /// File › Open Video File… on the Mac.
     static let arcfinOpenFile = Notification.Name("arcfinOpenFile")
 }
@@ -329,9 +331,13 @@ struct ContentView: View {
             Text(sharePlayManager.notice ?? "")
         }
         .task { seerrRepo.reloadTMDB() }
+        .onChange(of: mediaRepo.connectionFailed) { _, failed in
+            if failed { Task { await authManager.checkSignInStillValid() } }
+        }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                Task { await authManager.checkSignInStillValid() }
                 startHeartbeat()
                 startArcfinSyncLoop()
                 authManager.syncArcfinNow()
@@ -393,6 +399,13 @@ struct ContentView: View {
         // The profile's parental controls and permissions, from the server: on sign-in, a
         // profile switch, and each return to the app (an admin may have changed them).
         .task(id: authManager.state.credential?.id) { await loadProfileRules() }
+        .task(id: LiveUpdatesKey(credentialID: authManager.state.credential?.id, isActive: scenePhase == .active)) {
+            if scenePhase == .active, let credential = authManager.state.credential {
+                AppServices.liveUpdates.connect(credential: credential, authClient: authManager.authClient)
+            } else {
+                AppServices.liveUpdates.disconnect()
+            }
+        }
         .onChange(of: offlineModeEnabled) { _, isOffline in
             if !isOffline { syncOfflineProgress() }
         }

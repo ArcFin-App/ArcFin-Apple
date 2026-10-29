@@ -4,7 +4,7 @@ import Foundation
 import AuthCore
 
 /// Anything Arcfin currently cares about from Jellyfin's WebSocket feed. Everything else
-/// the server sends (library change notifications, etc.) is intentionally not modeled.
+/// the server sends is intentionally not modeled.
 public enum JellyfinWSEvent: Sendable {
     case syncPlayCommand(SyncPlayCommand)
     /// Fired for every SyncPlayGroupUpdate regardless of its nested Type — the payload
@@ -15,25 +15,30 @@ public enum JellyfinWSEvent: Sendable {
     case syncPlayGroupGone
     /// Pushed by the server after `startSessionUpdates` — the same list GET /Sessions returns.
     case sessions([JellyfinSession])
+    /// Watched state, progress, favourite or rating changed for these items, on any device.
+    case userDataChanged(itemIds: [String])
+    /// Titles were added to, removed from or updated in the library.
+    case libraryChanged
 }
 
 /// Thin wrapper over URLSessionWebSocketTask for Jellyfin's `/socket` feed. One instance
-/// per active connection; the owner (SyncPlayManager, AdminSessionsView) closes it.
+/// per active connection; the owner (SyncPlayManager, AdminSessionsView, LiveUpdates) closes
+/// it. `events` finishes when the connection drops, so an owner can reconnect.
 public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
     private let task: URLSessionWebSocketTask
     private let continuation: AsyncStream<JellyfinWSEvent>.Continuation
     private let keepAliveTask = KeepAliveBox()
     public let events: AsyncStream<JellyfinWSEvent>
 
-    public init(credential: ServerCredential, deviceId: String) {
+    public init(credential: ServerCredential, authHeader: String, deviceId: String) {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("socket"), resolvingAgainstBaseURL: false)!
         comps.scheme = comps.scheme == "https" ? "wss" : "ws"
-        comps.queryItems = [
-            .init(name: "api_key", value: credential.accessToken),
-            .init(name: "deviceId", value: deviceId),
-        ]
+        comps.queryItems = [.init(name: "deviceId", value: deviceId)]
+        // Servers with legacy authorization turned off refuse an api_key query parameter.
+        var request = URLRequest(url: comps.url!)
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         let session = URLSession(configuration: .default)
-        task = session.webSocketTask(with: comps.url!)
+        task = session.webSocketTask(with: request)
         (events, continuation) = AsyncStream.makeStream(of: JellyfinWSEvent.self)
         super.init()
         task.resume()
@@ -64,7 +69,11 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
 
     private func receiveLoop() async {
         while true {
-            guard let message = try? await task.receive() else { return }
+            guard let message = try? await task.receive() else {
+                keepAliveTask.cancel()
+                continuation.finish()
+                return
+            }
             switch message {
             case .string(let text):
                 handle(text)
@@ -96,6 +105,11 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
         case "Sessions":
             guard let payload = try? JSONDecoder().decode(SessionsPayload.self, from: raw) else { return }
             continuation.yield(.sessions(payload.data.map { $0.toSession() }))
+        case "UserDataChanged":
+            let ids = (try? JSONDecoder().decode(UserDataPayload.self, from: raw))?.data?.userDataList?.compactMap(\.itemId) ?? []
+            continuation.yield(.userDataChanged(itemIds: ids))
+        case "LibraryChanged":
+            continuation.yield(.libraryChanged)
         case "ForceKeepAlive":
             // The server drops a socket that stays silent past this timeout (seconds).
             let timeout = (try? JSONDecoder().decode(KeepAlivePayload.self, from: raw))?.data ?? 60
@@ -131,6 +145,19 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
 
     private struct SessionsPayload: Decodable {
         let data: [SessionResponse]
+        enum CodingKeys: String, CodingKey { case data = "Data" }
+    }
+
+    private struct UserDataPayload: Decodable {
+        struct Data: Decodable {
+            struct Entry: Decodable {
+                let itemId: String?
+                enum CodingKeys: String, CodingKey { case itemId = "ItemId" }
+            }
+            let userDataList: [Entry]?
+            enum CodingKeys: String, CodingKey { case userDataList = "UserDataList" }
+        }
+        let data: Data?
         enum CodingKeys: String, CodingKey { case data = "Data" }
     }
 

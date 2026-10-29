@@ -18,6 +18,9 @@ struct SearchView: View {
     @State private var isSearchingDiscover = false
     @State private var searchTask: Task<Void, Never>?
     @State private var requestingSeerrItem: SeerrItem?
+    #if os(macOS)
+    @State private var openedItem: MediaItem?
+    #endif
     @AppStorage("recentSearches") private var recentSearchesData = Data()
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
     /// Off brings back the plain Library and Discover poster grids.
@@ -118,6 +121,11 @@ struct SearchView: View {
         .onChange(of: query) { _, newValue in
             performSearch(query: newValue)
         }
+        #if os(macOS)
+        .navigationDestination(item: $openedItem) { item in
+            MediaDetailView(item: item)
+        }
+        #endif
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
                 // presentationDetents is a portrait card-sheet concept sized for iPhone/iPad —
@@ -154,7 +162,7 @@ struct SearchView: View {
                             .foregroundStyle(DT.Color.textPrimary)
                         LazyVGrid(columns: classicColumns, spacing: 16) {
                             ForEach(jellyfinResults) { item in
-                                NavigationLink(value: item) {
+                                resultLink(item) {
                                     SearchResultCard(title: item.name, subtitle: item.productionYear.map { String($0) },
                                                      imageURL: posterImageURL(for: item))
                                 }
@@ -268,6 +276,16 @@ struct SearchView: View {
         }
     }
 
+    @ViewBuilder
+    private func resultLink<Label: View>(_ item: MediaItem, @ViewBuilder label: () -> Label) -> some View {
+        #if os(macOS)
+        // On the Mac a NavigationLink(value:) can't always find the stack's destination.
+        Button { openedItem = item } label: { label() }
+        #else
+        NavigationLink(value: item) { label() }
+        #endif
+    }
+
     private func episodeCode(_ item: MediaItem) -> String? {
         guard let s = item.parentIndexNumber, let e = item.indexNumber else { return nil }
         return "S\(s)E\(e)"
@@ -275,7 +293,7 @@ struct SearchView: View {
 
     private func topResult(_ item: MediaItem) -> some View {
         let details = [kindLabel(item), item.seriesName, episodeCode(item), item.productionYear.map(String.init)].compactMap { $0 }
-        return NavigationLink(value: item) {
+        return resultLink(item) {
             ZStack(alignment: .bottomLeading) {
                 RetryingAsyncImage(
                     url: mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1000) ?? posterImageURL(for: item),
@@ -322,7 +340,7 @@ struct SearchView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: Self.shelfSpacing) {
                     ForEach(group.items) { item in
-                        NavigationLink(value: item) {
+                        resultLink(item) {
                             if group.isLandscape {
                                 SearchResultCard(title: item.name,
                                                  subtitle: [item.seriesName, episodeCode(item)].compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
@@ -383,9 +401,9 @@ struct SearchView: View {
 
     // MARK: - Discover (Seerr)
 
-    /// What's already on the server last: those are mostly in the library results above.
+    /// Only what isn't on the server: anything it has is in the library results above.
     private var discoverResults: [SeerrItem] {
-        seerrResults.filter { $0.availabilityStatus != .available } + seerrResults.filter { $0.availabilityStatus == .available }
+        seerrResults.filter { !mediaRepo.hasInLibrary($0) }
     }
 
     private var discoverSection: some View {

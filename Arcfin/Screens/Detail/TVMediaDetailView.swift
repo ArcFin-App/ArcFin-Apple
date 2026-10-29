@@ -121,6 +121,10 @@ struct TVMediaDetailView: View {
         .fullScreenCover(isPresented: $showFullDescription) {
             fullDescriptionCover
         }
+        // The fixed wait after the player closes can beat the stop report to the server.
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinPlaybackReported)) { _ in
+            Task { await refreshAfterPlayback(waitForReport: false) }
+        }
         .fullScreenCover(item: $playbackRequest, onDismiss: { Task { await refreshAfterPlayback() } }) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
@@ -231,7 +235,7 @@ struct TVMediaDetailView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill").font(.system(size: 16))
-                    Text("\(Int(critics.rounded()))%").font(.system(size: 23, weight: .bold))
+                    Text(Double(critics) / 100, format: .percent.precision(.fractionLength(0))).font(.system(size: 23, weight: .bold))
                 }
                 .foregroundStyle(critics >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"))
                 .accessibilityElement(children: .ignore)
@@ -481,37 +485,40 @@ struct TVMediaDetailView: View {
 
     // MARK: - Below fold
 
-    @ViewBuilder
+    // One stack, so the page's padding wraps the sections once instead of padding each of
+    // them. Each section brings its own 56 pt below it.
     private var belowFoldSection: some View {
-        if !seasons.isEmpty { seriesSection.trackSectionOffset().focusSection() }
-        if let seriesItem, item.type == .episode {
-            itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
+        VStack(alignment: .leading, spacing: 0) {
+            // Room under the hero's buttons, which grow when focused, so they don't cover the heading.
+            if !seasons.isEmpty { seriesSection.padding(.top, 48).trackSectionOffset().focusSection() }
+            if let seriesItem, item.type == .episode {
+                itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
+            }
+            if !trailers.isEmpty { trailersSection.trackSectionOffset().focusSection() }
+            TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings, spacingBelow: 56)
+                .padding(.horizontal, 80)
+                .focusSection()
+            if let d = detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
+            if !seerrRelatedItems.isEmpty {
+                seerrRelatedSection.trackSectionOffset().focusSection()
+            } else if !similarItems.isEmpty {
+                similarSection.trackSectionOffset().focusSection()
+            }
+            if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
+                itemRow(jellyfinRecommended.title, jellyfinRecommended.items).trackSectionOffset().focusSection()
+            }
+            if !containingCollections.isEmpty {
+                setRow(containingCollections.count == 1 ? "Collection" : "Collections", containingCollections) { openedCollection = $0 }
+                    .trackSectionOffset().focusSection()
+            }
+            if !containingPlaylists.isEmpty {
+                setRow("In Your Playlists", containingPlaylists) { openedPlaylist = $0 }
+                    .trackSectionOffset().focusSection()
+            }
+            TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
+                .padding(.horizontal, 80)
+                .focusSection()
         }
-        if !trailers.isEmpty { trailersSection.trackSectionOffset().focusSection() }
-        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings)
-            .padding(.horizontal, 80)
-            .padding(.bottom, 56)
-            .focusSection()
-        if let d = detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
-        if !seerrRelatedItems.isEmpty {
-            seerrRelatedSection.trackSectionOffset().focusSection()
-        } else if !similarItems.isEmpty {
-            similarSection.trackSectionOffset().focusSection()
-        }
-        if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-            itemRow(jellyfinRecommended.title, jellyfinRecommended.items).trackSectionOffset().focusSection()
-        }
-        if !containingCollections.isEmpty {
-            setRow(containingCollections.count == 1 ? "Collection" : "Collections", containingCollections) { openedCollection = $0 }
-                .trackSectionOffset().focusSection()
-        }
-        if !containingPlaylists.isEmpty {
-            setRow("In Your Playlists", containingPlaylists) { openedPlaylist = $0 }
-                .trackSectionOffset().focusSection()
-        }
-        TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
-            .padding(.horizontal, 80)
-            .focusSection()
     }
 
     /// An episode's TMDB id is the episode's own, which the title lookups don't take.

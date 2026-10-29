@@ -121,6 +121,9 @@ struct TVCollectionDetailView: View {
                 .focusSection()
             }
             .focusScope(focusNamespace)
+            // Without it, focus landing on Play scrolled the page to centre the button and cut
+            // off the top of the title and text, as the title page and Home already avoid.
+            .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh * 0.88))
             .ignoresSafeArea()
         }
         .screenBackground()
@@ -329,13 +332,14 @@ struct TVCollectionDetailView: View {
 
     // MARK: - Below fold
 
-    @ViewBuilder
     private var belowFoldSection: some View {
-        if !items.isEmpty {
-            itemsSection.focusSection()
-        }
-        if let people = detail?.people, !people.isEmpty {
-            castSection(people).focusSection()
+        VStack(alignment: .leading, spacing: 56) {
+            if !items.isEmpty {
+                itemsSection.focusSection()
+            }
+            if let people = detail?.people, !people.isEmpty {
+                castSection(people).focusSection()
+            }
         }
     }
 
@@ -404,6 +408,8 @@ struct TVCollectionDetailView: View {
             }
             .scrollClipDisabled()
         }
+        // Room under the hero's buttons, which grow when focused, so the heading isn't cut off.
+        .padding(.top, 48)
         .padding(.bottom, 40)
     }
 
@@ -458,7 +464,7 @@ private struct TVLibraryFilterList: View {
         List {
             Section("Sort By") {
                 ForEach(LibrarySortOption.standard) { option in
-                    filterRow(option.rawValue, isSelected: sortOption == option) {
+                    filterRow(option.label, isSelected: sortOption == option) {
                         sortOption = option
                     }
                 }
@@ -467,7 +473,7 @@ private struct TVLibraryFilterList: View {
             Section("Status") {
                 Picker("Status", selection: $watchedFilter) {
                     ForEach(LibraryWatchedFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
+                        Text(filter.label).tag(filter)
                     }
                 }
                 Toggle("Favourites Only", isOn: $favoritesOnly)
