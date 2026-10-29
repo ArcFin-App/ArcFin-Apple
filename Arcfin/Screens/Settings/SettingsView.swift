@@ -360,7 +360,8 @@ struct SettingsView: View {
     @ViewBuilder
     private func settingsRow(_ title: LocalizedStringKey, icon: String) -> some View {
         #if os(tvOS)
-        Text(title).foregroundStyle(DT.Color.textPrimary)
+        // No colour of its own: the row style turns it dark on the focused row's platter.
+        Text(title)
         #else
         Label {
             Text(title).foregroundStyle(DT.Color.textPrimary)
