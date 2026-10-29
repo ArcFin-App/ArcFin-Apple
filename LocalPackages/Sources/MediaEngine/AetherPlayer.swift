@@ -119,7 +119,8 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         }.store(in: &cancellables)
         engine.$audioTracks.sink { [weak self] tracks in
             self?.availableAudioTracks = tracks.map {
-                AudioTrack(id: $0.id, displayName: $0.name, language: $0.language)
+                AudioTrack(id: $0.id, displayName: $0.name, language: $0.language,
+                           isAudioDescription: $0.isVisualImpaired)
             }
         }.store(in: &cancellables)
         engine.$subtitleTracks.sink { [weak self] tracks in
@@ -205,6 +206,12 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         engine.setRate(rate)
     }
     public func stop() async { engine.stop() }
+
+    /// Whether this load has put a frame on screen, read from the presenting layer or renderer
+    /// rather than from readiness.
+    public func hasRenderedVideoFrame() async -> Bool {
+        await engine.hasRenderedVideoFrame()
+    }
 
     public func setAudioTrack(index: Int) async {
         engine.selectAudioTrack(index: index)

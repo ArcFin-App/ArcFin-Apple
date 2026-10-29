@@ -18,7 +18,7 @@ Thanks for helping. Arcfin is maintained by one person, so replies can take a fe
 - **Report a bug or suggest a feature** with the [issue templates](https://git.psmattas.com/ArcFin/ArcFin/issues/new/choose).
 - **Test the beta** on [TestFlight](https://testflight.apple.com/join/kkC58n2w) and report what breaks.
 - **Translate**, or check one of the machine-made translations. See [Translating Arcfin](#translating-arcfin).
-- **Fix or build something.** Issues labelled `Kind/Bug` with a priority are a good place to start.
+- **Fix or build something.** New here? Start with [Start here: good first issues](https://git.psmattas.com/ArcFin/ArcFin/issues/255), pinned at the top of the issue list. It links every open issue labelled [`Good First Issue`](https://git.psmattas.com/ArcFin/ArcFin/issues?state=open&labels=1253): small, already agreed, and saying where to start. After that, any issue labelled `Reviewed/Confirmed` with a priority is open for work.
 - **Improve the docs.** Typos and unclear wording count.
 
 ## Before you start

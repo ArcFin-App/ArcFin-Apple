@@ -109,7 +109,7 @@ final class SyncPlayManager {
 
     private func connectSocket(credential: ServerCredential, authHeader: String) {
         disconnectSocket()
-        let socket = JellyfinWebSocketClient(credential: credential, deviceId: deviceId)
+        let socket = JellyfinWebSocketClient(credential: credential, authHeader: authHeader, deviceId: deviceId)
         self.socket = socket
         listenTask = Task { [weak self] in
             for await event in socket.events {

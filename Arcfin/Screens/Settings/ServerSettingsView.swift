@@ -42,18 +42,26 @@ struct ServerSettingsView: View {
             Section {
                 if isLoadingInfo {
                     HStack { Spacer(); ProgressView(); Spacer() }
+                        .tvReadOnlyRow()
                 } else if let info = publicInfo {
                     LabeledContent("Server Name", value: info.serverName ?? "—")
+                        .tvReadOnlyRow()
                     LabeledContent("Version", value: info.version ?? "—")
+                        .tvReadOnlyRow()
                     LabeledContent("Product", value: info.productName ?? "—")
+                        .tvReadOnlyRow()
                     LabeledContent("Operating System", value: info.operatingSystem ?? "—")
+                        .tvReadOnlyRow()
                     LabeledContent("Local Address", value: info.localAddress ?? "—")
                         .lineLimit(1)
+                        .tvReadOnlyRow()
                     LabeledContent("Setup Completed", value: (info.startupWizardCompleted ?? false) ? "Yes" : "No")
+                        .tvReadOnlyRow()
                 } else if let infoError {
                     Text(infoError)
                         .font(.caption)
                         .foregroundStyle(DT.Color.palette("EF4444"))
+                        .tvReadOnlyRow()
                 }
             } header: {
                 Label("Public Server Info", systemImage: "server.rack")
@@ -65,17 +73,23 @@ struct ServerSettingsView: View {
             Section {
                 if authManager.isSyncingArcfin {
                     HStack { Spacer(); ProgressView(); Spacer() }
+                        .tvReadOnlyRow()
                 } else if let status = authManager.arcfinSyncStatus {
                     LabeledContent("Status", value: "Connected")
+                        .tvReadOnlyRow()
                     LabeledContent("Version", value: status.version)
+                        .tvReadOnlyRow()
                     LabeledContent("Locked Settings", value: "\(authManager.arcfinSyncLockedKeys.count)")
+                        .tvReadOnlyRow()
                     if let lastSynced = authManager.arcfinSyncLastSyncedAt {
                         LabeledContent("Last Synced") {
                             Text(lastSynced, style: .relative)
                         }
+                        .tvReadOnlyRow()
                     }
                 } else {
                     LabeledContent("Status", value: "Not Installed")
+                        .tvReadOnlyRow()
                 }
                 Button {
                     authManager.syncArcfinNow()
@@ -156,13 +170,14 @@ struct ServerSettingsView: View {
             }
 
             Section {
-                NavigationLink { CustomHeadersView() } label: {
+                NavigationLink { CustomHeadersView().tvSettingsPage() } label: {
                     TVRowLabelText(title: "Custom Headers", detail: "Extra headers for a server behind an access gateway, such as Cloudflare Access.")
                 }
             }
 
             Section {
                 LabeledContent("Currently Using", value: currentlyUsing)
+                    .tvReadOnlyRow()
             } footer: {
                 Text("Close and reopen the app for URL or Wi-Fi network changes to take effect.")
                     .font(.caption)

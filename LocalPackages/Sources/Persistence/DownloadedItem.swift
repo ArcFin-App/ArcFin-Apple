@@ -44,6 +44,15 @@ public final class DownloadedItem {
     public var trickplayThumbnailCount: Int?
     public var introEndSeconds: Double?
     public var creditsStartSeconds: Double?
+    // The rest of the skip markers. Downloads from before these existed have only the two
+    // above until they're filled in from the server.
+    public var introStartSeconds: Double?
+    public var creditsEndSeconds: Double?
+    public var recapStartSeconds: Double?
+    public var recapEndSeconds: Double?
+    public var previewStartSeconds: Double?
+    public var previewEndSeconds: Double?
+    public var skipSegmentsSaved: Bool = false
 
     public var fileSizeBytes: Int64
     public var downloadedAt: Date

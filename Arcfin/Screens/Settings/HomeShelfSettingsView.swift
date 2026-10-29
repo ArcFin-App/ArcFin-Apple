@@ -86,7 +86,7 @@ struct HomeShelfSettingsView: View {
 
             if seerrRepo.hasCatalog {
                 Section {
-                    NavigationLink("Streaming Services") { StreamingServicesView() }
+                    NavigationLink("Streaming Services") { StreamingServicesView().tvSettingsPage() }
                 } footer: {
                     Text("Pick the services you use to get a row of what's popular on each, from Seerr or TMDB.")
                 }

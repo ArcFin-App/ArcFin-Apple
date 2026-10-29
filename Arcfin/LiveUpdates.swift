@@ -50,7 +50,8 @@ final class LiveUpdates {
 
     private func listen(credential: ServerCredential, authClient: JellyfinAuthClient) async {
         let deviceId = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
-        let socket = JellyfinWebSocketClient(credential: credential, deviceId: deviceId)
+        let authHeader = authClient.authHeader(token: credential.accessToken)
+        let socket = JellyfinWebSocketClient(credential: credential, authHeader: authHeader, deviceId: deviceId)
         self.socket = socket
         await withTaskCancellationHandler {
             for await event in socket.events {

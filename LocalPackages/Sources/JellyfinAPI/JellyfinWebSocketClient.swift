@@ -30,15 +30,15 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
     private let keepAliveTask = KeepAliveBox()
     public let events: AsyncStream<JellyfinWSEvent>
 
-    public init(credential: ServerCredential, deviceId: String) {
+    public init(credential: ServerCredential, authHeader: String, deviceId: String) {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("socket"), resolvingAgainstBaseURL: false)!
         comps.scheme = comps.scheme == "https" ? "wss" : "ws"
-        comps.queryItems = [
-            .init(name: "api_key", value: credential.accessToken),
-            .init(name: "deviceId", value: deviceId),
-        ]
+        comps.queryItems = [.init(name: "deviceId", value: deviceId)]
+        // Servers with legacy authorization turned off refuse an api_key query parameter.
+        var request = URLRequest(url: comps.url!)
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         let session = URLSession(configuration: .default)
-        task = session.webSocketTask(with: comps.url!)
+        task = session.webSocketTask(with: request)
         (events, continuation) = AsyncStream.makeStream(of: JellyfinWSEvent.self)
         super.init()
         task.resume()

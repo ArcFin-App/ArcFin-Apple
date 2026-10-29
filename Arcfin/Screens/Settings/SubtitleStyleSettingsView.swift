@@ -24,32 +24,20 @@ struct SubtitleStyleSettingsView: View {
             }
 
             Section {
-                Picker(selection: $size) {
-                    ForEach(SubtitleTextSize.allCases) { option in
-                        Text(option.label).tag(option)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Size")
+                SettingsPicker("Size", selection: $size,
+                               options: SubtitleTextSize.allCases) { option in
+                    Text(option.label)
                 }
-                .tvListRow()
                 .syncLocked("subtitleTextSize", authManager)
-                Picker(selection: $color) {
-                    ForEach(SubtitleTextColorOption.allCases) { option in
-                        Text(option.label).tag(option)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Colour")
+                SettingsPicker("Colour", selection: $color,
+                               options: SubtitleTextColorOption.allCases) { option in
+                    Text(option.label)
                 }
-                .tvListRow()
                 .syncLocked("subtitleTextColor", authManager)
-                Picker(selection: $background) {
-                    ForEach(SubtitleBackgroundStyle.allCases) { option in
-                        Text(option.label).tag(option)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Background")
+                SettingsPicker("Background", selection: $background,
+                               options: SubtitleBackgroundStyle.allCases) { option in
+                    Text(option.label)
                 }
-                .tvListRow()
                 .syncLocked("subtitleBackgroundStyle", authManager)
             }
         }

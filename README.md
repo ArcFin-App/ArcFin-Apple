@@ -119,7 +119,7 @@ When you report a problem, **Settings › About › Share Diagnostics** makes a 
 
 Code, translations, bug reports and testing are all welcome.
 
-- **Code:** read [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, the project's conventions and the pull request process. [ARCHITECTURE.md](ARCHITECTURE.md) explains how the app fits together.
+- **Code:** new here? Pick an issue from [Start here: good first issues](https://git.psmattas.com/ArcFin/ArcFin/issues/255). Then read [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, the project's conventions and the pull request process. [ARCHITECTURE.md](ARCHITECTURE.md) explains how the app fits together.
 - **Translations:** Arcfin's first ten translations were machine made and need native speakers to check them. See [Translating Arcfin](CONTRIBUTING.md#translating-arcfin).
 - **Testing:** join the [TestFlight beta](https://testflight.apple.com/join/kkC58n2w) and report what you find.
 
