@@ -7,6 +7,9 @@ import MediaEngine
 import Persistence
 import SeerrAPI
 import Telemetry
+#if os(macOS)
+import AppKit
+#endif
 
 struct SettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -207,6 +210,7 @@ struct SettingsView: View {
                 Text(buildNumber).foregroundStyle(.secondary)
             }
             .tvInfoRow()
+            introductionRows
 #if os(tvOS)
             NavigationLink(value: TVSettingsPage.licenses) {
                 Text("Licenses & Third-Party Notices")
@@ -335,6 +339,39 @@ struct SettingsView: View {
         }
     }
 #endif
+
+    // MARK: - Tour and What's New
+
+    @ViewBuilder
+    private var introductionRows: some View {
+        Button { show(.whatsNew) } label: {
+            introductionLabel("What's New in Arcfin")
+        }
+        Button { show(.onboarding) } label: {
+            introductionLabel("Take the Tour Again")
+        }
+    }
+
+    @ViewBuilder
+    private func introductionLabel(_ title: LocalizedStringKey) -> some View {
+#if os(tvOS)
+        // TVSettingsRowStyle sets the colour, dark on the focused platter.
+        Text(title)
+#else
+        Text(title).foregroundStyle(DT.Color.textPrimary)
+#endif
+    }
+
+    private func show(_ presentation: AppIntroduction.Presentation) {
+        switch presentation {
+        case .onboarding: AppServices.introduction.showOnboarding()
+        case .whatsNew: AppServices.introduction.showWhatsNew()
+        }
+        #if os(macOS)
+        // Both show in the main window, so the Settings window steps aside.
+        NSApp.keyWindow?.close()
+        #endif
+    }
 
     // MARK: - Profile section
 
