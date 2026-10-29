@@ -197,6 +197,10 @@ final class ScreenshotTests: XCTestCase {
             }
         }
         XCUIRemote.shared.press(.select)
+        #elseif os(macOS)
+        let tab = app.outlines["Sidebar"].staticTexts[title].firstMatch
+        try waitFor(tab)
+        tab.tap()
         #else
         let tab = app.buttons[title].firstMatch
         try waitFor(tab)
@@ -213,10 +217,27 @@ final class ScreenshotTests: XCTestCase {
         #if os(tvOS)
         focus(element)
         XCUIRemote.shared.press(.select)
+        #elseif os(macOS)
+        scrollIntoView(element)
+        element.tap()
         #else
         element.tap()
         #endif
     }
+
+    #if os(macOS)
+    /// A click doesn't scroll to its target the way a tap does on iPhone. The targets sit
+    /// below the window, so the scroll flips direction if it moved them further down.
+    private func scrollIntoView(_ element: XCUIElement) {
+        let window = app.windows.firstMatch
+        var delta: CGFloat = -300
+        for _ in 0..<40 where !element.isHittable {
+            let before = element.frame.minY
+            window.scroll(byDeltaX: 0, deltaY: delta)
+            if element.frame.minY > before { delta = -delta }
+        }
+    }
+    #endif
 
     #if os(tvOS)
     /// Moves focus with the remote until it reaches `element`: down, then right, up and left.
