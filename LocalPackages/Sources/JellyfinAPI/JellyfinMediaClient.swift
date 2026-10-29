@@ -924,6 +924,7 @@ public struct JellyfinMediaClient: Sendable {
         hasSubtitles: Bool? = nil,
         isPlayed: Bool? = nil,
         isFavorite: Bool? = nil,
+        nameLessThan: String? = nil,
         sortBy: String = "SortName",
         sortOrder: String = "Ascending"
     ) async throws -> (items: [MediaItem], total: Int, consumed: Int) {
@@ -973,6 +974,9 @@ public struct JellyfinMediaClient: Sendable {
         }
         if let isFavorite {
             queryItems.append(.init(name: "IsFavorite", value: isFavorite ? "true" : "false"))
+        }
+        if let nameLessThan {
+            queryItems.append(.init(name: "NameLessThan", value: nameLessThan))
         }
         comps.queryItems = queryItems
         var req = URLRequest(url: comps.url!)

@@ -99,3 +99,50 @@ struct SessionDecodingTests {
         #expect(!session.isPaused)
     }
 }
+
+extension DeviceProfileTests {
+    private func allowedRanges(_ profile: [String: Any]) -> String? {
+        (profile["CodecProfiles"] as? [[String: Any]])?
+            .compactMap { ($0["Conditions"] as? [[String: Any]])?.first { $0["Property"] as? String == "VideoRangeType" } }
+            .first?["Value"] as? String
+    }
+
+    @Test("HDR passes through untouched unless forced")
+    func hdrDefault() {
+        UserDefaults.standard.removeObject(forKey: "codecForceHDRTranscode")
+        UserDefaults.standard.removeObject(forKey: "codecForceDolbyVisionTranscode")
+        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false)) == nil)
+        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile) == nil)
+    }
+
+    @Test("Force HDR to Transcode allows only SDR, on every engine")
+    func forceHDR() {
+        UserDefaults.standard.set(true, forKey: "codecForceHDRTranscode")
+        defer { UserDefaults.standard.removeObject(forKey: "codecForceHDRTranscode") }
+        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false)) == "SDR")
+        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile) == "SDR")
+    }
+
+    @Test("Force Dolby Vision to Transcode keeps HDR10 and HLG but not Dolby Vision")
+    func forceDolbyVision() {
+        UserDefaults.standard.set(true, forKey: "codecForceDolbyVisionTranscode")
+        defer { UserDefaults.standard.removeObject(forKey: "codecForceDolbyVisionTranscode") }
+        let ranges = allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false))?.split(separator: "|") ?? []
+        #expect(ranges.contains("HDR10") && ranges.contains("HLG"))
+        #expect(!ranges.contains { $0.hasPrefix("DOVI") })
+    }
+
+    @Test("Compatibility Mode sends H.264 and AAC in SDR on every engine, but leaves casting alone")
+    func compatibilityMode() {
+        UserDefaults.standard.set(true, forKey: "codecCompatibilityMode")
+        defer { UserDefaults.standard.removeObject(forKey: "codecCompatibilityMode") }
+        for profile in [JellyfinMediaClient.deviceProfile(forCast: false), JellyfinMediaClient.nativeDecoderProfile] {
+            #expect(directPlay(profile).map { $0["VideoCodec"] as? String } == ["h264"])
+            #expect(transcoding(profile)["VideoCodec"] as? String == "h264")
+            #expect(transcoding(profile)["AudioCodec"] as? String == "aac")
+            #expect(allowedRanges(profile) == "SDR")
+        }
+        #expect(transcoding(JellyfinMediaClient.deviceProfile(forCast: true))["Container"] as? String == "ts")
+    }
+}
+

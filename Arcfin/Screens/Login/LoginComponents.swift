@@ -8,8 +8,8 @@ import SwiftUI
 
 /// The app icon, a title and a sentence of explanation.
 struct LoginHeader: View {
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
 
     var body: some View {
         VStack(spacing: 14) {
@@ -41,8 +41,8 @@ enum LoginFieldKind {
 /// A labelled text field at body size with room to tap, an optional error underneath, and
 /// the content type set so Passwords and AutoFill can help.
 struct LoginTextField: View {
-    let title: String
-    let prompt: String
+    let title: LocalizedStringKey
+    let prompt: Text
     @Binding var text: String
     var kind: LoginFieldKind = .username
     var isValid = false
@@ -106,9 +106,9 @@ struct LoginTextField: View {
     @ViewBuilder
     private var field: some View {
         if kind == .password && !revealsPassword {
-            SecureField(prompt, text: $text)
+            SecureField(text: $text, prompt: prompt) { Text(title) }
         } else {
-            TextField(prompt, text: $text)
+            TextField(text: $text, prompt: prompt) { Text(title) }
         }
     }
 
@@ -125,7 +125,7 @@ struct LoginTextField: View {
 
 /// Rows in one rounded group, divided like a grouped list.
 struct LoginRowGroup<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -187,17 +187,35 @@ struct LoginRow: View {
 
 /// The screen's one main action, pinned above the keyboard.
 struct LoginPrimaryButton: View {
-    let title: String
-    var busyTitle: String?
+    let title: Text
+    var busyTitle: Text?
     var isBusy = false
     var isDisabled = false
     let action: () -> Void
+
+    init(title: LocalizedStringKey, busyTitle: LocalizedStringKey? = nil, isBusy: Bool = false,
+         isDisabled: Bool = false, action: @escaping () -> Void) {
+        self.title = Text(title)
+        self.busyTitle = busyTitle.map { Text($0) }
+        self.isBusy = isBusy
+        self.isDisabled = isDisabled
+        self.action = action
+    }
+
+    /// Text that's already localized, shown as is.
+    @_disfavoredOverload
+    init(title: String, isBusy: Bool = false, isDisabled: Bool = false, action: @escaping () -> Void) {
+        self.title = Text(verbatim: title)
+        self.isBusy = isBusy
+        self.isDisabled = isDisabled
+        self.action = action
+    }
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if isBusy { ProgressView().tint(DT.Color.onAccent) }
-                Text(isBusy ? (busyTitle ?? title) : title)
+                (isBusy ? (busyTitle ?? title) : title)
                     .font(.headline)
             }
             .frame(maxWidth: .infinity)
