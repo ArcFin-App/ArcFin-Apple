@@ -494,7 +494,9 @@ struct TVMediaDetailView: View {
             if let seriesItem, item.type == .episode {
                 itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
             }
-            if !trailers.isEmpty { trailersSection.trackSectionOffset().focusSection() }
+            if !trailers.isEmpty {
+                trailersSection.padding(.top, trailersFollowHero ? 48 : 0).trackSectionOffset().focusSection()
+            }
             TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings, spacingBelow: 56)
                 .padding(.horizontal, 80)
                 .focusSection()
@@ -639,6 +641,10 @@ struct TVMediaDetailView: View {
             }
         }
         .padding(.bottom, 56)
+    }
+
+    private var trailersFollowHero: Bool {
+        seasons.isEmpty && !(seriesItem != nil && item.type == .episode)
     }
 
     private var trailersSection: some View {

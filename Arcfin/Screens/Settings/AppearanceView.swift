@@ -52,7 +52,7 @@ struct AppearanceView: View {
                 .tvListRow()
                 .syncLocked("heroVideoBackdropsEnabled", authManager)
                 NavigationLink {
-                    HomeShelfSettingsView()
+                    HomeShelfSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Home Shelves", detail: "Reorder or hide Home's rows.")
                 }
@@ -89,7 +89,7 @@ struct AppearanceView: View {
                     if !isOn { UserDefaults.standard.removeObject(forKey: "recentSearches") }
                 }
                 NavigationLink {
-                    LibraryVisibilityView()
+                    LibraryVisibilityView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Libraries", detail: "Which libraries show in Browse and in Recently Added.")
                 }
@@ -108,12 +108,8 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
                 if screensaverEnabled {
-                    Picker(selection: $screensaverMinutes) {
-                        ForEach([2, 3, 5, 10], id: \.self) { Text("\($0) Minutes").tag($0) }
-                    } label: {
-                        TVRowLabelText(title: "Start After", detail: "After 30 minutes the Apple TV's own screensaver and sleep settings take over.")
-                    }
-                    .tvListRow()
+                    SettingsPicker("Start After", detail: "After 30 minutes the Apple TV's own screensaver and sleep settings take over.",
+                                   selection: $screensaverMinutes, options: [2, 3, 5, 10]) { Text("\($0) Minutes") }
                 }
             } header: {
                 Text("Screensaver")
@@ -146,7 +142,7 @@ struct AppearanceView: View {
             #if !os(tvOS)
             Section {
                 NavigationLink {
-                    BottomNavSettingsView()
+                    BottomNavSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: navSectionTitle, detail: "Which tabs show and in what order. Discover and Watchlist need Seerr connected.")
                 }

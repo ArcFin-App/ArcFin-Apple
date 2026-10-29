@@ -181,8 +181,7 @@ struct LoginRow: View {
             .frame(minHeight: 60)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .tvFocusRing(cornerRadius: 14)
+        .arcfinPlainButton(cornerRadius: 14, prominent: false)
     }
 }
 
@@ -244,9 +243,11 @@ struct LoginBackButton: View {
             .font(.body)
             .foregroundStyle(DT.Color.accent)
             .frame(minHeight: 44)
+            #if os(tvOS)
+            .padding(.horizontal, 16)
+            #endif
         }
-        .buttonStyle(.plain)
-        .tvFocusRing(cornerRadius: DT.Radius.pill)
+        .arcfinPlainButton(cornerRadius: DT.Radius.pill, prominent: false)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
