@@ -112,9 +112,11 @@ final class ScreenshotTests: XCTestCase {
         #else
         try selectTab("Browse")
         let field = app.searchFields.firstMatch
+        #if os(iOS)
         if !field.waitForExistence(timeout: 3) {
             app.swipeDown()
         }
+        #endif
         try waitFor(field)
         field.tap()
         // Return dismisses the keyboard, which would cover the results.
@@ -127,10 +129,14 @@ final class ScreenshotTests: XCTestCase {
     #if !os(tvOS)
     @MainActor
     func test08Downloads() throws {
+        #if os(macOS)
+        try chooseFromGoMenu("Downloads")
+        #else
         try selectTab("Browse")
         let downloads = button(startingWith: "Downloads")
         try waitFor(downloads)
         press(downloads)
+        #endif
         settle()
         capture("08-downloads")
     }
@@ -198,9 +204,8 @@ final class ScreenshotTests: XCTestCase {
         }
         XCUIRemote.shared.press(.select)
         #elseif os(macOS)
-        let tab = app.outlines["Sidebar"].staticTexts[title].firstMatch
-        try waitFor(tab)
-        tab.tap()
+        // Clicking a sidebar row's text doesn't select it; the Go menu has every tab.
+        try chooseFromGoMenu(title)
         #else
         let tab = app.buttons[title].firstMatch
         try waitFor(tab)
@@ -208,6 +213,15 @@ final class ScreenshotTests: XCTestCase {
         #endif
         settle()
     }
+
+    #if os(macOS)
+    private func chooseFromGoMenu(_ title: String) throws {
+        app.menuBars.menuBarItems["Go"].click()
+        let item = app.menuBars.menuItems[title].firstMatch
+        try waitFor(item, timeout: 5)
+        item.click()
+    }
+    #endif
 
     private func button(startingWith prefix: String) -> XCUIElement {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", prefix)).firstMatch
@@ -218,23 +232,27 @@ final class ScreenshotTests: XCTestCase {
         focus(element)
         XCUIRemote.shared.press(.select)
         #elseif os(macOS)
+        // Poster buttons inside a shelf don't report a hit point, so click their centre.
         scrollIntoView(element)
-        element.tap()
+        element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
         #else
         element.tap()
         #endif
     }
 
     #if os(macOS)
-    /// A click doesn't scroll to its target the way a tap does on iPhone. The targets sit
-    /// below the window, so the scroll flips direction if it moved them further down.
+    /// A click doesn't scroll to its target the way a tap does on iPhone. If a scroll moves
+    /// the target the wrong way, the direction flips.
     private func scrollIntoView(_ element: XCUIElement) {
         let window = app.windows.firstMatch
-        var delta: CGFloat = -300
-        for _ in 0..<40 where !element.isHittable {
-            let before = element.frame.minY
-            window.scroll(byDeltaX: 0, deltaY: delta)
-            if element.frame.minY > before { delta = -delta }
+        var sign: CGFloat = -1
+        for _ in 0..<20 {
+            let frame = element.frame, visible = window.frame
+            let below = frame.maxY > visible.maxY
+            guard below || frame.minY < visible.minY + 60 else { return }
+            window.scroll(byDeltaX: 0, deltaY: (below ? sign : -sign) * 400)
+            let moved = element.frame.minY - frame.minY
+            if below ? moved > 0 : moved < 0 { sign = -sign }
         }
     }
     #endif
