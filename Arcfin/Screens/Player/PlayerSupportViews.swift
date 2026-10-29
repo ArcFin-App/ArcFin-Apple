@@ -251,6 +251,14 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
         isSupported = controller != nil
     }
 
+    /// Lets go of a player that's been swapped out, so the one replacing it can take PiP.
+    func detach() {
+        controller?.stopPictureInPicture()
+        controller = nil
+        pendingLayer = nil
+        isSupported = false
+    }
+
     func toggle() {
         guard let controller else { return }
         if controller.isPictureInPictureActive {
