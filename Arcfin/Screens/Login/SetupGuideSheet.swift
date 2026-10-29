@@ -8,8 +8,8 @@ struct SetupGuideSheet: View {
     private struct Step: Identifiable {
         let id: Int
         let icon: String
-        let title: String
-        let detail: String
+        let title: LocalizedStringKey
+        let detail: LocalizedStringKey
     }
 
     private let steps: [Step] = [
@@ -27,7 +27,7 @@ struct SetupGuideSheet: View {
              detail: "In the Jellyfin Dashboard go to Administration → Users → Add User. Give it a username and password, then set library access permissions."),
         Step(id: 5, icon: "wifi",
              title: "Local discovery",
-             detail: "If your phone is on the same network as the server, Arcfin will automatically detect it via UDP broadcast. Just tap the server in the Found on network list."),
+             detail: "When this device is on the same network as the server, Arcfin finds it by itself. Pick it under On Your Network."),
     ]
 
     var body: some View {
@@ -152,7 +152,7 @@ struct SetupGuideSheet: View {
         .padding(.horizontal, DT.Spacing.pagePad)
     }
 
-    private func tipRow(icon: String, text: String) -> some View {
+    private func tipRow(icon: String, text: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: icon)
                 .font(.system(.caption2))
