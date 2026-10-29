@@ -322,7 +322,13 @@ final class ScreenshotTests: XCTestCase {
     }
 
     private func capture(_ name: String) {
+        #if os(macOS)
+        // Only the window: the rest of the screen is the menu bar and desktop of whoever's Mac
+        // this runs on.
+        let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        #else
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        #endif
         shot.name = "\(Self.device)-\(name)"
         shot.lifetime = .keepAlways
         add(shot)
