@@ -287,6 +287,8 @@ struct TVHomeView: View {
                     .padding(.bottom, 48)
                 cwShelf
                     .padding(.bottom, 60)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("shelf.\(HomeShelf.continueWatching.rawValue)")
             }
         }
         .focusSection()
@@ -632,6 +634,8 @@ struct TVHomeView: View {
         VStack(spacing: 0) {
             ForEach(orderedShelves) { shelf in
                 shelfView(for: shelf)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("shelf.\(shelf.rawValue)")
             }
         }
         .focusSection()
