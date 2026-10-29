@@ -103,6 +103,8 @@ final class SeerrRepository {
               let url = URL(string: trimURL) else {
             client = nil
             configuredURL = ""; configuredUsername = ""; configuredPassword = ""
+            trending = []; popularMovies = []; popularTV = []; requests = []
+            upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
             return
         }
         // Skip recreation when nothing changed — preserves isAuthenticated state
