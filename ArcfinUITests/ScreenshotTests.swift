@@ -80,7 +80,10 @@ final class ScreenshotTests: XCTestCase {
         let play = app.buttons["detail.play"]
         try waitFor(play)
         #if os(iOS)
-        XCUIDevice.shared.orientation = .landscapeLeft
+        // iPad stays upright: its screen captures don't follow a rotation.
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            XCUIDevice.shared.orientation = .landscapeLeft
+        }
         #endif
         press(play)
         sleep(12)
