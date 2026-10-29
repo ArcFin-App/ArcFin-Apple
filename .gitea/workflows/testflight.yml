@@ -123,8 +123,10 @@ jobs:
             | tee "$RUNNER_TEMP/export.log" | grep -E 'error|Upload|EXPORT'
 
       # The release's screenshots, which the website shows. The upload above is already done,
-      # so nothing from here on can fail it.
+      # so nothing from here on can fail it. The Mac's run needs an unlocked, logged-in session,
+      # so it only happens when the MAC_SCREENSHOTS repository variable is true.
       - name: Screenshots
+        if: env.PLATFORM != 'macOS' || vars.MAC_SCREENSHOTS == 'true'
         continue-on-error: true
         run: .gitea/scripts/release-screenshots.sh "$PLATFORM" "$RUNNER_TEMP/screenshots-$PLATFORM.zip"
 
