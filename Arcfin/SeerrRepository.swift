@@ -288,6 +288,13 @@ final class SeerrRepository {
         requests.first { $0.mediaType == item.mediaType && ($0.tmdbId.map { $0 == item.id } ?? ($0.mediaTitle == item.title)) }
     }
 
+    /// Requested and not yet available: Seerr marks it pending or processing, or it's in the
+    /// requests already loaded.
+    func isRequested(_ item: SeerrItem) -> Bool {
+        item.availabilityStatus == .pending || item.availabilityStatus == .processing
+            || matchingRequest(for: item) != nil
+    }
+
     func addToWatchlist(_ item: SeerrItem) async throws {
         guard let client else { throw URLError(.badURL) }
         do {

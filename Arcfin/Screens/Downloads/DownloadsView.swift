@@ -416,7 +416,7 @@ struct DownloadsView: View {
                     .lineLimit(1)
                 Spacer()
                 if let stats, stats.totalBytes > 0 {
-                    Text("\(Int(fraction * 100))%")
+                    Text(Double(fraction), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                         .font(.system(.caption, weight: .semibold))
                         .monospacedDigit()
                         .foregroundStyle(DT.Color.textSecondary)
@@ -711,7 +711,7 @@ private struct ContinueCard: View {
         var parts: [String] = []
         if let season = item.seasonNumber, let episode = item.episodeNumber { parts.append("S\(season) E\(episode)") }
         if item.runtimeTicks > item.playbackPositionTicks {
-            parts.append("\(max(Int(Double(item.runtimeTicks - item.playbackPositionTicks) / 600_000_000), 1)) min left")
+            parts.append(String(localized: "\(max(Int(Double(item.runtimeTicks - item.playbackPositionTicks) / 600_000_000), 1)) min left"))
         }
         return parts.joined(separator: " · ")
     }

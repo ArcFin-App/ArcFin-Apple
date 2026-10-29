@@ -1,0 +1,767 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Continue watching in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "In ${applicationName} weiterschauen",
+              "Meine Serie in ${applicationName} fortsetzen",
+              "Was habe ich in ${applicationName} geschaut"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Continue watching in ${applicationName}",
+              "Resume my show in ${applicationName}",
+              "What was I watching in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Seguir viendo en ${applicationName}",
+              "Reanudar mi serie en ${applicationName}",
+              "Qué estaba viendo en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reprendre la lecture dans ${applicationName}",
+              "Reprendre ma série dans ${applicationName}",
+              "Qu’est-ce que je regardais dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Continua a guardare su ${applicationName}",
+              "Riprendi la mia serie su ${applicationName}",
+              "Cosa stavo guardando su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で視聴を続ける",
+              "${applicationName}で番組を再開",
+              "${applicationName}で何を見ていた"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 이어서 시청하기",
+              "${applicationName}에서 내 시리즈 이어서 보기",
+              "${applicationName}에서 뭘 보고 있었지"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Kijk verder in ${applicationName}",
+              "Hervat mijn serie in ${applicationName}",
+              "Waar keek ik naar in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Continuar assistindo no ${applicationName}",
+              "Retomar minha série no ${applicationName}",
+              "O que eu estava assistindo no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Продолжить просмотр в ${applicationName}",
+              "Продолжить мой сериал в ${applicationName}",
+              "Что я смотрел в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中继续观看",
+              "在${applicationName}中继续看我的剧",
+              "我在${applicationName}中看到哪了"
+            ]
+          }
+        }
+      }
+    },
+    "Download the next episode of ${target} in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Nächste Folge von ${target} in ${applicationName} laden",
+              "${target} in ${applicationName} laden"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Download the next episode of ${target} in ${applicationName}",
+              "Download ${target} in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Descargar el siguiente episodio de ${target} en ${applicationName}",
+              "Descargar ${target} en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Télécharger l’épisode suivant de ${target} dans ${applicationName}",
+              "Télécharger ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Scarica il prossimo episodio di ${target} su ${applicationName}",
+              "Scarica ${target} su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で${target}の次のエピソードをダウンロード",
+              "${applicationName}で${target}をダウンロード"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 ${target} 다음 에피소드 다운로드",
+              "${applicationName}에서 ${target} 다운로드"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Download de volgende aflevering van ${target} in ${applicationName}",
+              "Download ${target} in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Baixar o próximo episódio de ${target} no ${applicationName}",
+              "Baixar ${target} no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Загрузить следующий эпизод ${target} в ${applicationName}",
+              "Загрузить ${target} в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中下载${target}的下一集",
+              "在${applicationName}中下载${target}"
+            ]
+          }
+        }
+      }
+    },
+    "Open ${target} in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${target} in ${applicationName} öffnen",
+              "${target} in ${applicationName} anzeigen"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Open ${target} in ${applicationName}",
+              "Show ${target} in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir ${target} en ${applicationName}",
+              "Mostrar ${target} en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Ouvrir ${target} dans ${applicationName}",
+              "Afficher ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Apri ${target} su ${applicationName}",
+              "Mostra ${target} su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で${target}を開く",
+              "${applicationName}で${target}を表示"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 ${target} 열기",
+              "${applicationName}에서 ${target} 보기"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Open ${target} in ${applicationName}",
+              "Toon ${target} in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir ${target} no ${applicationName}",
+              "Mostrar ${target} no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Открыть ${target} в ${applicationName}",
+              "Показать ${target} в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中打开${target}",
+              "在${applicationName}中显示${target}"
+            ]
+          }
+        }
+      }
+    },
+    "Open Discover in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Entdecken in ${applicationName} öffnen",
+              "Was gibt es Neues zum Anfragen in ${applicationName}"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Open Discover in ${applicationName}",
+              "What's new to request in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir Descubrir en ${applicationName}",
+              "Qué hay nuevo para solicitar en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Ouvrir Découvrir dans ${applicationName}",
+              "Quoi de neuf à demander dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Apri Scopri su ${applicationName}",
+              "Cosa c’è di nuovo da richiedere su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}でディスカバーを開く",
+              "${applicationName}で新しくリクエストできる作品"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 탐색 열기",
+              "${applicationName}에서 새로 요청할 작품"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Open Ontdek in ${applicationName}",
+              "Wat is er nieuw om aan te vragen in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Abrir Descobrir no ${applicationName}",
+              "O que há de novo para solicitar no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Открыть «Обзор» в ${applicationName}",
+              "Что нового можно запросить в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中打开发现",
+              "${applicationName}中有什么新内容可以请求"
+            ]
+          }
+        }
+      }
+    },
+    "Play ${target} in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${target} in ${applicationName} abspielen",
+              "${target} in ${applicationName} ansehen",
+              "${target} in ${applicationName} starten"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Play ${target} in ${applicationName}",
+              "Watch ${target} in ${applicationName}",
+              "Put on ${target} in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproducir ${target} en ${applicationName}",
+              "Ver ${target} en ${applicationName}",
+              "Poner ${target} en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Lire ${target} dans ${applicationName}",
+              "Regarder ${target} dans ${applicationName}",
+              "Mettre ${target} dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Riproduci ${target} su ${applicationName}",
+              "Guarda ${target} su ${applicationName}",
+              "Metti ${target} su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}で${target}を再生",
+              "${applicationName}で${target}を見る",
+              "${applicationName}で${target}をかける"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 ${target} 재생",
+              "${applicationName}에서 ${target} 시청",
+              "${applicationName}에서 ${target} 틀어 줘"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Speel ${target} af in ${applicationName}",
+              "Kijk ${target} in ${applicationName}",
+              "Zet ${target} op in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproduzir ${target} no ${applicationName}",
+              "Assistir ${target} no ${applicationName}",
+              "Colocar ${target} no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Воспроизвести ${target} в ${applicationName}",
+              "Смотреть ${target} в ${applicationName}",
+              "Включить ${target} в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中播放${target}",
+              "在${applicationName}中观看${target}",
+              "在${applicationName}中放${target}"
+            ]
+          }
+        }
+      }
+    },
+    "Play a random movie in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Einen zufälligen Film in ${applicationName} abspielen",
+              "Überrasch mich in ${applicationName}",
+              "Wähl einen Film in ${applicationName}"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Play a random movie in ${applicationName}",
+              "Surprise me in ${applicationName}",
+              "Pick a movie in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproducir una película al azar en ${applicationName}",
+              "Sorpréndeme en ${applicationName}",
+              "Elige una película en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Lire un film au hasard dans ${applicationName}",
+              "Surprends-moi dans ${applicationName}",
+              "Choisis un film dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Riproduci un film a caso su ${applicationName}",
+              "Sorprendimi su ${applicationName}",
+              "Scegli un film su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}でランダムに映画を再生",
+              "${applicationName}でおまかせ",
+              "${applicationName}で映画を選んで"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 무작위 영화 재생",
+              "${applicationName}에서 아무거나 추천해 줘",
+              "${applicationName}에서 영화 골라 줘"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Speel een willekeurige film af in ${applicationName}",
+              "Verras me in ${applicationName}",
+              "Kies een film in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproduzir um filme aleatório no ${applicationName}",
+              "Me surpreenda no ${applicationName}",
+              "Escolha um filme no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Воспроизвести случайный фильм в ${applicationName}",
+              "Удиви меня в ${applicationName}",
+              "Выбери фильм в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中随机播放一部电影",
+              "在${applicationName}中给我惊喜",
+              "在${applicationName}中挑一部电影"
+            ]
+          }
+        }
+      }
+    },
+    "Show my downloads in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Meine Downloads in ${applicationName} anzeigen",
+              "Downloads in ${applicationName} öffnen"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Show my downloads in ${applicationName}",
+              "Open downloads in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Mostrar mis descargas en ${applicationName}",
+              "Abrir descargas en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Afficher mes téléchargements dans ${applicationName}",
+              "Ouvrir les téléchargements dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Mostra i miei download su ${applicationName}",
+              "Apri i download su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}でダウンロードを表示",
+              "${applicationName}でダウンロードを開く"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 내 다운로드 보기",
+              "${applicationName}에서 다운로드 열기"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Toon mijn downloads in ${applicationName}",
+              "Open downloads in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Mostrar meus downloads no ${applicationName}",
+              "Abrir downloads no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Показать мои загрузки в ${applicationName}",
+              "Открыть загрузки в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中显示我的下载",
+              "在${applicationName}中打开下载"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
