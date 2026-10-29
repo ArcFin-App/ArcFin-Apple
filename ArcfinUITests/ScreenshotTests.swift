@@ -109,14 +109,19 @@ final class ScreenshotTests: XCTestCase {
         try waitFor(field)
         XCUIRemote.shared.press(.down)
         field.typeText("night")
+        #elseif os(macOS)
+        try selectTab("Browse")
+        try waitFor(app.searchFields.firstMatch)
+        // Clicking the toolbar field doesn't give it keyboard focus; Edit › Find… does.
+        app.typeKey("f", modifierFlags: .command)
+        sleep(1)
+        app.typeText("night\n")
         #else
         try selectTab("Browse")
         let field = app.searchFields.firstMatch
-        #if os(iOS)
         if !field.waitForExistence(timeout: 3) {
             app.swipeDown()
         }
-        #endif
         try waitFor(field)
         field.tap()
         // Return dismisses the keyboard, which would cover the results.
@@ -172,6 +177,12 @@ final class ScreenshotTests: XCTestCase {
         let item = shelfItem(shelf)
         try waitFor(item)
         press(item)
+        #if os(macOS)
+        // Shelves still loading can move the poster between finding it and clicking it.
+        for _ in 0..<2 where !app.buttons["detail.play"].waitForExistence(timeout: 10) {
+            press(item)
+        }
+        #endif
         settle()
     }
 
