@@ -8,7 +8,10 @@ import CoreSpotlight
 import Foundation
 import JellyfinAPI
 import Vision
+// Not in the simulator SDK.
+#if canImport(VisualIntelligence)
 import VisualIntelligence
+#endif
 
 // MARK: - Session for intents
 
@@ -446,6 +449,7 @@ enum Thumbnails {
 
 // MARK: - Visual intelligence
 
+#if canImport(VisualIntelligence)
 /// Point the camera at a movie poster, a DVD case or a screenshot and the titles it spells out
 /// are looked up in the library. Visual intelligence only supplies generic labels ("poster",
 /// "book"), never a title, so the text in the picture is read instead and searched.
@@ -493,4 +497,5 @@ struct ArcfinVisualSearchQuery: IntentValueQuery {
         }
     }
 }
+#endif
 #endif

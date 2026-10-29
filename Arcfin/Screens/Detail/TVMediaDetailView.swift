@@ -304,6 +304,7 @@ struct TVMediaDetailView: View {
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
             .prefersDefaultFocus(true, in: focusNamespace)
+            .accessibilityIdentifier("detail.play")
 
             if isResumable {
                 Button {

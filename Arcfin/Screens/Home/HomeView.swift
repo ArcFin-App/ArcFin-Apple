@@ -583,6 +583,8 @@ struct HomeView: View {
                                     ShelfRow(title: shelf.title) { mediaShelfContent([]) }
                                 } else {
                                     shelfView(for: shelf)
+                                        .accessibilityElement(children: .contain)
+                                        .accessibilityIdentifier("shelf.\(shelf.rawValue)")
                                 }
                             }
                         }

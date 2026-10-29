@@ -81,6 +81,12 @@ final class AuthManager {
 
     func checkStoredAuth() async {
         defer { isChecking = false }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-ArcfinScreenshotDemo") {
+            await signInToDemoServerForScreenshots()
+            return
+        }
+        #endif
         let k = keychain
         seerrPassword = await Task.detached(priority: .userInitiated) {
             (try? k.loadSeerrPassword()) ?? ""
@@ -126,6 +132,20 @@ final class AuthManager {
         refreshIsAdmin(for: cred)
         refreshArcfinSync(for: cred)
     }
+
+    #if DEBUG
+    /// For the screenshot UI test: Jellyfin's public demo server, so the run needs no account
+    /// or secrets. Kept in memory and never falls back to stored profiles, so a run on a Mac
+    /// leaves that Mac's own sign-ins alone and can't capture its library. If the demo server
+    /// can't be reached the app stays on the sign-in screen and the test skips.
+    private func signInToDemoServerForScreenshots() async {
+        guard let url = URL(string: "https://demo.jellyfin.org/stable"),
+              let credential = try? await authClient.authenticate(baseURL: url, username: "demo", password: "")
+        else { return }
+        profiles = [credential]
+        state = .authenticated(credential)
+    }
+    #endif
 
     // MARK: - Live Wi-Fi switching
 

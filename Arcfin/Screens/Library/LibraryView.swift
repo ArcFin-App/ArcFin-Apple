@@ -1294,6 +1294,8 @@ struct LibraryDetailView: View {
                             }
                         }
                         .padding(DT.Spacing.pagePad)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("library.grid")
 #if os(tvOS)
                         .focusSection()
                         .scrollClipDisabled()

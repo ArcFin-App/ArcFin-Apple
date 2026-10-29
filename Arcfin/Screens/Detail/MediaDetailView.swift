@@ -985,6 +985,7 @@ struct MediaDetailView: View {
                 .shadow(color: DT.Color.accent.opacity(0.35), radius: 12)
             }
             .buttonStyle(PressableButtonStyle())
+            .accessibilityIdentifier("detail.play")
 
             if isResumable {
                 Button {
