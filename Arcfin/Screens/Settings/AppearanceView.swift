@@ -14,6 +14,7 @@ struct AppearanceView: View {
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
     @AppStorage("modernSearch") private var modernSearch = true
     #if os(tvOS)
+    @AppStorage("heroTrailerSound") private var heroTrailerSound = false
     @AppStorage("libraryScreensaverEnabled") private var screensaverEnabled = true
     @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
     @AppStorage(BottomNavPrefs.activeKey) private var activeTabs = ""
@@ -51,6 +52,14 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
                 .syncLocked("heroVideoBackdropsEnabled", authManager)
+                #if os(tvOS)
+                Toggle(isOn: $heroTrailerSound) {
+                    TVRowLabelText(title: "Hero Trailer Sound", detail: "Plays the trailer behind the featured title with sound.")
+                }
+                .tvListRow()
+                .disabled(!heroVideoBackdropsEnabled)
+                .syncLocked("heroTrailerSound", authManager)
+                #endif
                 NavigationLink {
                     HomeShelfSettingsView().tvSettingsPage()
                 } label: {
