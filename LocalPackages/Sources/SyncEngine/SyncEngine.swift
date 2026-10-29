@@ -221,6 +221,7 @@ public enum SettingsSyncRegistry {
         .init("hapticsEnabled", .bool),
         .init("mergeContinueWatchingAndUpNext", .bool),
         .init("heroVideoBackdropsEnabled", .bool),
+        .init("heroTrailerSound", .bool),
         .init("shuffleHomeShelves", .bool),
         .init("spoilerProtection", .bool),
         .init("libraryHideWatched", .bool),

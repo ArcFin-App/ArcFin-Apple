@@ -25091,6 +25091,70 @@
         }
       }
     },
+    "Hero Trailer Sound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ton für Trailer im Hero-Bereich"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sonido del tráiler en destacados"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Son de la bande-annonce à la une"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio del trailer in evidenza"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "注目作品の予告編の音声"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "추천 영역 예고편 소리"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geluid van trailer bij uitgelicht"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Som do trailer no destaque"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Звук трейлера в рекомендуемом"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "精选区预告片声音"
+          }
+        }
+      }
+    },
     "Hero Video Backdrops" : {
       "localizations" : {
         "de" : {
@@ -40641,6 +40705,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "当服务器没有预告片时，播放 YouTube 预告片。"
+          }
+        }
+      }
+    },
+    "Plays the trailer behind the featured title with sound." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Spielt den Trailer hinter dem hervorgehobenen Titel mit Ton."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduce con sonido el tráiler detrás del título destacado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lit la bande-annonce derrière le titre à la une avec le son."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riproduce con l'audio il trailer dietro il titolo in evidenza."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "注目作品の背景の予告編を音声付きで再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "추천 작품 뒤의 예고편을 소리와 함께 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Speelt de trailer achter de uitgelichte titel met geluid."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduz com som o trailer atrás do título em destaque."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Воспроизводит трейлер позади рекомендуемого тайтла со звуком."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "有声播放精选作品背后的预告片。"
           }
         }
       }
