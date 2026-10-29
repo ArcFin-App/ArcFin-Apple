@@ -48,7 +48,9 @@ struct SeerrItemDetailView: View {
         return !SeerrSeasonSelection.unrequested(rows).isEmpty
     }
 
-    private var isAvailable: Bool { item.availabilityStatus == .available }
+    private var isAvailable: Bool {
+        item.availabilityStatus == .available || (item.mediaType == .movie && libraryItem != nil)
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {

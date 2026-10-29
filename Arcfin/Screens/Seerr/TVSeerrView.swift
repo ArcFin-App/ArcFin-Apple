@@ -393,15 +393,16 @@ private struct TVSeerrResultsGrid: View {
 private struct TVSeerrCard: View {
     let item: SeerrItem
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(MediaRepository.self) private var mediaRepo
     @Environment(\.isFocused) private var isFocused
 
     // Matched by tmdbId, not title — see SeerrRepository.matchingRequest.
     private var matchingRequest: SeerrRequestItem? {
-        item.availabilityStatus == .available ? nil : seerrRepo.matchingRequest(for: item)
+        mediaRepo.hasInLibrary(item) ? nil : seerrRepo.matchingRequest(for: item)
     }
 
     private var badge: (label: String, colorHex: String)? {
-        if item.availabilityStatus == .available { return ("Available", "10b981") }
+        if mediaRepo.hasInLibrary(item) { return ("Available", "10b981") }
         return matchingRequest?.displayStatus
     }
 
