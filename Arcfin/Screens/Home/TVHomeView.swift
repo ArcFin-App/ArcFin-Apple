@@ -46,6 +46,15 @@ struct TVHomeView: View {
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     @AppStorage("heroTrailerSound") private var heroTrailerSound = false
     @State private var isHomeShowing = false
+    @State private var heroVideoRequestedItemID: String?
+    @State private var heroVideoIsPlaying = false
+    @State private var heroChromeHidden = false
+    @State private var heroChromeTask: Task<Void, Never>?
+    @FocusState private var focusedHeroButton: HeroButton?
+
+    private enum HeroButton { case play, info }
+
+    private var heroChromeOpacity: Double { heroChromeHidden ? 0 : 1 }
 
     private var focusedItem: MediaItem? {
         guard let id = lastFocusedItemID else { return nil }
@@ -114,12 +123,14 @@ struct TVHomeView: View {
         // The hero already shows the first Continue Watching item until something's focused.
         // Assigning focus to it here pulled the page down to that row once Home loaded.
         .onChange(of: mediaRepo.continueWatching) { _, _ in
-            if focusedItemID == nil { loadHeroVideoBackdrop() }
+            if focusedItemID == nil { reloadHeroVideoIfItemChanged() }
         }
         .onChange(of: focusedItemID) { _, newValue in
             if let newValue { lastFocusedItemID = newValue }
-            loadHeroVideoBackdrop()
+            showHeroChrome()
+            reloadHeroVideoIfItemChanged()
         }
+        .onChange(of: focusedHeroButton) { _, _ in showHeroChrome() }
         .onChange(of: heroVideoAllowed) { _, _ in loadHeroVideoBackdrop() }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
@@ -234,6 +245,7 @@ struct TVHomeView: View {
                 .frame(width: screenW * 0.6)
                 Spacer()
             }
+            .opacity(heroChromeOpacity)
 
             VStack(alignment: .leading, spacing: 0) {
                 Spacer()
@@ -256,10 +268,12 @@ struct TVHomeView: View {
             LazyHeroImage(url: url) { heroFallbackGradient }
                 .clipped()
 
-            if let videoURL = heroVideoBackdropURL, heroVideoBackdropItemID == heroDisplayItem?.id {
-                HeroVideoBackdropView(url: videoURL, loops: false, muted: !heroTrailerSound) {
-                    endHeroVideoBackdrop(itemID: heroDisplayItem?.id)
-                }
+            if let videoURL = heroVideoBackdropURL, let itemID = heroVideoBackdropItemID, itemID == heroDisplayItem?.id {
+                HeroVideoBackdropView(
+                    url: videoURL, loops: false, muted: !heroTrailerSound,
+                    onStart: { heroVideoDidStart(itemID: itemID) },
+                    onEnd: { endHeroVideoBackdrop(itemID: itemID) }
+                )
                 .transition(.opacity)
             }
         }
@@ -291,11 +305,14 @@ struct TVHomeView: View {
                 .id(item.id)
                 .transition(.opacity)
                 .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
+                .opacity(heroChromeOpacity)
 
                 heroMetaRow(item)
+                    .opacity(heroChromeOpacity)
 
                 if let pct = item.userData?.playedPercentage, pct > 1 {
                     progressBar(pct: pct / 100)
+                        .opacity(heroChromeOpacity)
                 }
 
                 HStack(spacing: 20) {
@@ -308,15 +325,19 @@ struct TVHomeView: View {
                         playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
+                            .opacity(heroChromeOpacity)
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    .focused($focusedHeroButton, equals: .play)
 
                     Button { heroDetailItem = item } label: {
                         TVHeroButtonLabel(icon: "info.circle", text: "More Info")
+                            .opacity(heroChromeOpacity)
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    .focused($focusedHeroButton, equals: .info)
                 }
                 .padding(.top, 4)
             }
@@ -384,10 +405,14 @@ struct TVHomeView: View {
         heroVideoBackdropTask?.cancel()
         heroVideoBackdropURL = nil
         heroVideoBackdropItemID = nil
+        heroVideoRequestedItemID = nil
+        heroVideoIsPlaying = false
+        showHeroChrome()
         guard heroVideoBackdropsEnabled, heroVideoAllowed, let item = heroDisplayItem,
               case .authenticated(let credential) = authManager.state
         else { return }
         let itemID = item.id
+        heroVideoRequestedItemID = itemID
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         heroVideoBackdropTask = Task {
             try? await Task.sleep(for: .seconds(1))
@@ -419,12 +444,51 @@ struct TVHomeView: View {
         }
     }
 
-    private func endHeroVideoBackdrop(itemID: String?) {
+    private func endHeroVideoBackdrop(itemID: String) {
         guard heroVideoBackdropItemID == itemID else { return }
+        heroVideoIsPlaying = false
+        showHeroChrome()
         withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
             heroVideoBackdropURL = nil
             heroVideoBackdropItemID = nil
         }
+    }
+
+    /// Moving between a title's card and its Play/More Info buttons, or Continue Watching
+    /// refreshing in the background, keeps the same title in the hero: its trailer carries
+    /// on instead of starting over.
+    private func reloadHeroVideoIfItemChanged() {
+        guard heroDisplayItem?.id != heroVideoRequestedItemID else { return }
+        loadHeroVideoBackdrop()
+    }
+
+    private func heroVideoDidStart(itemID: String) {
+        guard heroVideoBackdropItemID == itemID else { return }
+        heroVideoIsPlaying = true
+        hideHeroChromeSoon()
+    }
+
+    /// Gives the trailer the screen after a few seconds. Only what's drawn fades: the buttons
+    /// and cards stay where they are, so Up from Continue Watching still lands on Play or
+    /// More Info instead of the tab bar.
+    private func hideHeroChromeSoon() {
+        heroChromeTask?.cancel()
+        heroChromeTask = Task {
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled, heroVideoIsPlaying else { return }
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.6))) { heroChromeHidden = true }
+        }
+    }
+
+    /// Any focus move brings the hero back. While the trailer keeps playing it fades again
+    /// after the same few seconds.
+    private func showHeroChrome() {
+        heroChromeTask?.cancel()
+        heroChromeTask = nil
+        if heroChromeHidden {
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
+        }
+        if heroVideoIsPlaying { hideHeroChromeSoon() }
     }
 
     // MARK: - Continue Watching shelf (inside hero)
@@ -438,6 +502,7 @@ struct TVHomeView: View {
                     .font(.system(size: 23, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .padding(.horizontal, 80)
+                    .opacity(heroChromeOpacity)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
@@ -449,6 +514,7 @@ struct TVHomeView: View {
                                     progress: item.userData?.playedPercentage.map { $0 / 100 },
                                     imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
                                 )
+                                .opacity(heroChromeOpacity)
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()

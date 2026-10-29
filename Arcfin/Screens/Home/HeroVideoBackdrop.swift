@@ -17,11 +17,13 @@ struct HeroVideoBackdropView: UIViewRepresentable {
     let url: URL
     var loops = true
     var muted = true
+    /// Called once, when the video is actually playing and has faded in.
+    var onStart: (() -> Void)? = nil
     /// Called when a trailer that doesn't loop reaches its end.
     var onEnd: (() -> Void)? = nil
 
     func makeUIView(context: Context) -> LoopingPlayerUIView {
-        LoopingPlayerUIView(url: url, loops: loops, muted: muted, onEnd: onEnd)
+        LoopingPlayerUIView(url: url, loops: loops, muted: muted, onStart: onStart, onEnd: onEnd)
     }
     func updateUIView(_ uiView: LoopingPlayerUIView, context: Context) {}
     // A .transition(.opacity) crossfade can keep the outgoing view (and this one's ARC
@@ -44,10 +46,12 @@ final class LoopingPlayerUIView: UIView {
     private var timeControlObservation: NSKeyValueObservation?
     private var hasFadedIn = false
     private let loops: Bool
+    private let onStart: (() -> Void)?
     private let onEnd: (() -> Void)?
 
-    init(url: URL, loops: Bool, muted: Bool, onEnd: (() -> Void)?) {
+    init(url: URL, loops: Bool, muted: Bool, onStart: (() -> Void)?, onEnd: (() -> Void)?) {
         self.loops = loops
+        self.onStart = onStart
         self.onEnd = onEnd
         super.init(frame: .zero)
         let headers = CustomHTTPHeaders.current
@@ -106,6 +110,7 @@ final class LoopingPlayerUIView: UIView {
             guard player.timeControlStatus == .playing, let self, !self.hasFadedIn else { return }
             self.hasFadedIn = true
             UIView.animate(withDuration: 0.3) { self.alpha = 1 }
+            Task { @MainActor [weak self] in self?.onStart?() }
         }
     }
 
