@@ -113,6 +113,7 @@
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
 				iOS/Player/DisplayCriteriaMatcher.swift = (ios, );
+				iOS/Player/PlayerSupportViews.swift = (ios, );
 				iOS/Player/YouTubeTrailerPlayerView.swift = (ios, );
 				iOS/Search/SearchView.swift = (ios, );
 				macOS/Library/CollectionCardButtonStyle.swift = (macos, );
@@ -126,6 +127,7 @@
 				macOS/Platform/InsetGroupedList.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/ScrubGesture.swift = (macos, );
+				macOS/Player/PlayerSupportViews.swift = (macos, );
 				macOS/Player/YouTubeTrailerPlayerView.swift = (macos, );
 				macOS/Search/SearchView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
@@ -141,6 +143,7 @@
 				tvOS/Platform/InsetGroupedList.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/ScrubGesture.swift = (tvos, );
+				tvOS/Player/PlayerSupportViews.swift = (tvos, );
 				tvOS/Player/TVRemoteScrub.swift = (tvos, );
 				tvOS/Search/SearchView.swift = (tvos, );
 				tvOS/Seerr/TVSeerrItemDetailView.swift = (tvos, );
