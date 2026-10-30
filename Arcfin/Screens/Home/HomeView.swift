@@ -60,7 +60,7 @@ struct MainTabView: View {
                     TVHomeView()
                 }
                 Tab("Library", systemImage: "square.grid.2x2") {
-                    TVLibraryView()
+                    LibraryView()
                 }
                 // Declared right after Library so it renders right after Library — on-device
                 // testing showed role: .search does NOT always pin to the far end of the bar

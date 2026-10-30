@@ -70,7 +70,7 @@ struct MediaDetailView: View {
                              trailers: .withPage, seriesOpensOnSeasonInProgress: false)
         }
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
-        .navigationDestination(item: $openedCollection) { TVCollectionDetailView(item: $0) }
+        .navigationDestination(item: $openedCollection) { CollectionDetailView(collection: $0) }
         .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .task(id: item.tmdbId) { await model.loadAwards() }
         .onChange(of: model.selectedSeason) { _, season in

@@ -62,9 +62,7 @@ struct AddToPlaylistSheet: View {
                 }
             }
             .navigationTitle("Add to Playlist")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
@@ -193,9 +191,7 @@ struct AddTitlesToPlaylistSheet: View {
             .screenBackground()
             .searchable(text: $query, prompt: "Movies, shows, episodes")
             .navigationTitle("Add Titles")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
