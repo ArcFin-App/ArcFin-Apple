@@ -71,6 +71,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build | grep -E ' error:|\*\* BUILD'
 
+  # Each platform folder compiles only for its platform, through per-file filters in the project.
+  platform-folders:
+    runs-on: macos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Platform folders build only for their platform
+        run: python3 .gitea/scripts/check-platform-folders.py
+
   # Merge commits are skipped: Gitea makes them when a PR is merged or its branch updated.
   sign-off:
     if: github.event_name == 'pull_request'
