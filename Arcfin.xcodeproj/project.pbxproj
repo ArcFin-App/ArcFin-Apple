@@ -105,6 +105,7 @@
 				iOS/Downloads/DownloadedItemDetailView.swift = (ios, );
 				iOS/Downloads/DownloadedSeriesDetailView.swift = (ios, );
 				iOS/Downloads/DownloadsView.swift = (ios, );
+				iOS/Downloads/OfflinePlayerView.swift = (ios, );
 				iOS/Downloads/StorageManagementView.swift = (ios, );
 				iOS/Home/HeroVideoBackdrop.swift = (ios, );
 				iOS/Home/HomeView.swift = (ios, );
@@ -172,6 +173,7 @@
 				macOS/Downloads/DownloadedItemDetailView.swift = (macos, );
 				macOS/Downloads/DownloadedSeriesDetailView.swift = (macos, );
 				macOS/Downloads/DownloadsView.swift = (macos, );
+				macOS/Downloads/OfflinePlayerView.swift = (macos, );
 				macOS/Downloads/StorageManagementView.swift = (macos, );
 				macOS/Home/HeroVideoBackdrop.swift = (macos, );
 				macOS/Home/HomeView.swift = (macos, );
