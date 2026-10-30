@@ -7,8 +7,14 @@ How Arcfin is put together: the project layout, the stack, the design system and
 ```
 Arcfin.xcodeproj
 Arcfin/                 the app target, shared by iOS, iPadOS, macOS and tvOS
-├── Screens/            Home, Library, Detail, Player, Search, Seerr, Downloads,
-│                       Stats, Settings, Login, Lock and Splash
+├── Shared/             per-screen state and views used on every platform
+├── iOS/                iPhone and iPad screens (built for iOS only)
+├── iPadOS/             iPad screens that differ from iPhone (built for iOS only)
+├── macOS/              Mac screens (built for macOS only)
+├── tvOS/               Apple TV screens (built for tvOS only)
+├── Screens/            screens not split per platform yet: Home, Library, Detail,
+│                       Player, Search, Seerr, Downloads, Stats, Settings, Login,
+│                       Lock and Splash
 ├── Components/         shared views and modifiers
 ├── Intents/            App Intents, Siri phrases and Spotlight
 ├── TopShelf/           data shared with the Top Shelf extension
@@ -24,7 +30,7 @@ assets/                 badges and App Store artwork (not under the code license
 fastlane/metadata/      App Store Connect metadata (not under the code license)
 ```
 
-Each platform has its own screens where the interface differs, for example `TVHomeView` and `TVMediaDetailView` on Apple TV, over the same repositories and state. Separating every screen per platform is planned for 0.4.0 ([#198](https://git.psmattas.com/ArcFin/ArcFin/issues/198)).
+Each file in a platform folder compiles only for that platform through its Target Membership in the project, so the files in it have no `#if os(...)`, and editing one platform's screen can't change another's. Loading, filtering and playback decisions live once in `Shared/`, and each platform's view lays them out. iPad uses the iOS build: an iOS screen shows its `iPadOS/` view when the window is wide. Screens are moving out of `Screens/` one at a time for 0.4.0 ([#198](https://git.psmattas.com/ArcFin/ArcFin/issues/198)); [CONTRIBUTING.md](CONTRIBUTING.md#where-platform-code-goes) has the rules.
 
 ## Packages
 

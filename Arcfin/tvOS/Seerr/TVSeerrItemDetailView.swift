@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(tvOS)
 import SwiftUI
 import SeerrAPI
 import JellyfinAPI
@@ -403,4 +402,3 @@ struct TVSeerrItemDetailView: View {
         }
     }
 }
-#endif

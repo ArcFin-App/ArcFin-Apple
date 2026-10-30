@@ -60,6 +60,27 @@ How the code is organised is described in [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Networking:** a new HTTP client needs `waitsForConnectivity` and the network-path wait ([ARCHITECTURE.md](ARCHITECTURE.md#networking)).
 - **Keep changes focused.** Avoid refactoring code your change doesn't need.
 
+## Where platform code goes
+
+Each screen is moving to its own view per platform over shared logic ([#198](https://git.psmattas.com/ArcFin/ArcFin/issues/198)), so a change for one platform can't break another. Xcode compiles each platform folder only for that platform, so files there need no `#if os(...)`:
+
+| Folder | Builds for | Holds |
+|---|---|---|
+| `Arcfin/Shared/` | Every platform | Per-screen state (`@Observable`), loading, sorting, filtering and playback decisions, and views that look the same everywhere |
+| `Arcfin/iOS/` | iPhone and iPad | iPhone screens, and the iPad ones until an iPad layout needs its own view |
+| `Arcfin/iPadOS/` | iPhone and iPad | iPad screens whose layout differs from iPhone |
+| `Arcfin/macOS/` | Mac | Mac screens |
+| `Arcfin/tvOS/` | Apple TV | Apple TV screens |
+
+- Inside each folder, one subfolder per screen: `Shared/Home/`, `iOS/Home/`, `tvOS/Home/` and so on.
+- **Each platform names the screen the same**: `iOS/Search/SearchView.swift`, `macOS/Search/SearchView.swift` and `tvOS/Search/SearchView.swift` all define `SearchView`. Only one of them builds for each platform, so code that opens Search writes `SearchView(...)` and gets that platform's screen with no `#if`.
+- **No `#if os(...)` in a platform folder.** CI fails if one appears. If two platforms need the same code, it belongs in `Shared/`.
+- **Small differences inside a shared view** (pointer hover, focus) go through a modifier that each platform defines under the same name in its `Platform/` folder. For example, `onPointerHover` in `iOS/Platform/PointerHover.swift` uses `onHover`, and the tvOS one does nothing. The shared view calls it without `#if`.
+- **Logic goes in `Shared/`.** A platform view lays the screen out and calls the shared state; it doesn't load, filter or decide anything itself.
+- **iPad** isn't a separate platform to the compiler: `#if os(iOS)` is true on iPad and it's one app. The iOS screen shows the iPad view when the window is wide (`horizontalSizeClass == .regular`), so Split View, Slide Over and Stage Manager get the right layout. Add an iPad view only when its layout differs.
+- Screens that haven't moved yet are still in `Arcfin/Screens/`, with `#if os(...)` inside. They move one at a time.
+- **New files in a platform folder** need that platform set in the project: in Xcode, select the file and under Target Membership choose only that platform (Xcode filters platforms per file, not per folder). `.gitea/scripts/check-platform-folders.py --fix` sets it for every file at once, and CI fails while one is missing.
+
 ## Branches
 
 | Branch | Purpose |
