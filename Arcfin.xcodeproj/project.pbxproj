@@ -101,6 +101,7 @@
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
+				iOS/App/ArcfinScenes.swift = (ios, );
 				iOS/App/ContentView.swift = (ios, );
 				iOS/App/PlayerFirstResponder.swift = (ios, );
 				iOS/App/PlayerWindow.swift = (ios, );
@@ -195,7 +196,9 @@
 				iOS/Stats/StatsShareSheet.swift = (ios, );
 				iOS/Stats/StatsView.swift = (ios, );
 				macOS/App/AppRootPlatform.swift = (macos, );
+				macOS/App/ArcfinScenes.swift = (macos, );
 				macOS/App/ContentView.swift = (macos, );
+				macOS/App/PlaybackCommands.swift = (macos, );
 				macOS/App/PlayerFirstResponder.swift = (macos, );
 				macOS/App/PlayerWindow.swift = (macos, );
 				macOS/Components/LetterIndexBar.swift = (macos, );
@@ -288,6 +291,7 @@
 				macOS/Stats/StatsShareSheet.swift = (macos, );
 				macOS/Stats/StatsView.swift = (macos, );
 				tvOS/App/AppRootPlatform.swift = (tvos, );
+				tvOS/App/ArcfinScenes.swift = (tvos, );
 				tvOS/App/ContentView.swift = (tvos, );
 				tvOS/App/PlayerFirstResponder.swift = (tvos, );
 				tvOS/Components/PINPadPlatform.swift = (tvos, );
