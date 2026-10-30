@@ -66,7 +66,7 @@ struct CollectionDetailView: View {
         }
         .screenBackground()
         .navigationDestination(item: $selectedItem) { i in
-            TVMediaDetailView(item: i)
+            MediaDetailView(item: i)
         }
         .navigationDestination(item: $selectedPerson) { PersonDetailView(person: $0) }
         .fullScreenCover(isPresented: $showFullDescription) { fullDescription }

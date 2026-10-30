@@ -125,7 +125,7 @@ struct LibraryDetailView: View {
             } else if pick.type == .playlist {
                 LibraryDetailView(playlistItem: pick)
             } else {
-                TVMediaDetailView(item: pick)
+                MediaDetailView(item: pick)
             }
         }
         .onChange(of: model.sortOption) { _, _ in

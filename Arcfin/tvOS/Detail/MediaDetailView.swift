@@ -3,9 +3,8 @@
 import SwiftUI
 import JellyfinAPI
 import SeerrAPI
-import AuthCore
 
-struct TVMediaDetailView: View {
+struct MediaDetailView: View {
     static let scrollSpace = "tvDetailScroll"
 
     let item: MediaItem
@@ -14,42 +13,23 @@ struct TVMediaDetailView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
 
-    @State private var detail: MediaItemDetail?
-    @State private var awards: [WikidataAward] = []
-    @State private var seasons: [MediaItem] = []
-    @State private var selectedSeason: MediaItem?
-    @State private var episodes: [MediaItem] = []
-    @State private var trailers: [MediaItem] = []
-    @State private var similarItems: [MediaItem] = []
-    @State private var seerrRelatedItems: [SeerrItem] = []
-    @State private var isLoading = true
+    @State private var model: MediaDetailModel
     @State private var showFullDescription = false
     @State private var selectedEpisode: MediaItem?
     @State private var selectedPerson: MediaPerson?
-    @State private var initialEpisodeID: String?
-    @State private var nextEpisode: MediaItem?
-    @State private var playbackRequest: PlaybackRequest?
+    // The app-wide request, not this page's own MediaDetailView.PlaybackRequest: a new
+    // identity per title re-presents the player for the next one.
+    @State private var playbackRequest: Arcfin.PlaybackRequest?
     @State private var openSeerrItem: SeerrItem?
     @State private var sectionOffsets: [CGFloat] = []
-    @State private var isFavorite = false
-    @State private var likes: Bool?
-    @State private var isWatched = false
     @State private var showSubtitleSearch = false
-    @State private var seriesItem: MediaItem?
-    @State private var jellyfinRecommended: MovieRecommendationCategory?
-    /// Collections and playlists this title (or an episode's show) is in.
-    @State private var containingCollections: [MediaItem] = []
-    @State private var containingPlaylists: [MediaItem] = []
     @State private var openedCollection: MediaItem?
     @State private var openedPlaylist: MediaItem?
-    @State private var loadedSeasonId: String?
     @Namespace private var focusNamespace
 
-    private let client = JellyfinMediaClient()
-
-    private var credential: ServerCredential? { authManager.state.credential }
-    private var authHeader: String? {
-        credential.map { authManager.authClient.authHeader(token: $0.accessToken) }
+    init(item: MediaItem) {
+        self.item = item
+        _model = State(initialValue: MediaDetailModel(item: item))
     }
 
     var body: some View {
@@ -85,34 +65,19 @@ struct TVMediaDetailView: View {
             .ignoresSafeArea()
         }
         .screenBackground()
-        .task { await load() }
-        .task(id: item.id) {
-            guard let credential, let authHeader else { return }
-            let found = await ContainingSets.shared.sets(containing: [item.id, item.seriesId].compactMap { $0 },
-                                                         credential: credential, authHeader: authHeader)
-            containingCollections = found.collections
-            containingPlaylists = found.playlists
+        .task {
+            await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: nil,
+                             trailers: .withPage, seriesOpensOnSeasonInProgress: false)
         }
+        .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
         .navigationDestination(item: $openedCollection) { CollectionDetailView(collection: $0) }
         .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
-        .task(id: item.tmdbId) {
-            guard let tmdbId = item.tmdbId else { return }
-            awards = await WikidataAwardsClient.shared.awards(
-                tmdbId: tmdbId, mediaType: item.type == .series ? .tv : .movie
-            )
-        }
-        .onChange(of: selectedSeason) { _, season in
-            guard let season, season.id != loadedSeasonId, let seriesId = seasonSeriesId,
-                  let cred = credential, let header = authHeader else { return }
-            Task {
-                loadedSeasonId = season.id
-                episodes = (try? await client.getEpisodes(
-                    credential: cred, authHeader: header,
-                    seriesId: seriesId, seasonId: season.id)) ?? []
-            }
+        .task(id: item.tmdbId) { await model.loadAwards() }
+        .onChange(of: model.selectedSeason) { _, season in
+            model.showSeason(season, authManager: authManager)
         }
         .navigationDestination(item: $selectedEpisode) { ep in
-            TVMediaDetailView(item: ep)
+            MediaDetailView(item: ep)
         }
         .navigationDestination(item: $selectedPerson) { person in
             PersonDetailView(person: person)
@@ -122,11 +87,11 @@ struct TVMediaDetailView: View {
         }
         // The fixed wait after the player closes can beat the stop report to the server.
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlaybackReported)) { _ in
-            Task { await refreshAfterPlayback(waitForReport: false) }
+            Task { await model.refreshAfterPlayback(waitForReport: false, authManager: authManager) }
         }
-        .fullScreenCover(item: $playbackRequest, onDismiss: { Task { await refreshAfterPlayback() } }) { request in
+        .fullScreenCover(item: $playbackRequest, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
+                playbackRequest = Arcfin.PlaybackRequest(item: next, startTicks: 0)
             }
         }
         .navigationDestination(item: $openSeerrItem) { TVSeerrItemDetailView(item: $0) }
@@ -210,7 +175,7 @@ struct TVMediaDetailView: View {
             if let year = item.productionYear {
                 Text(String(year)).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
-            if let rating = detail?.officialRating, !rating.isEmpty {
+            if let rating = model.detail?.officialRating, !rating.isEmpty {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text(rating)
                     .font(.system(size: 23, weight: .semibold))
@@ -218,7 +183,7 @@ struct TVMediaDetailView: View {
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.3), lineWidth: 1))
             }
-            if let mins = detail?.runtimeMinutes {
+            if let mins = model.detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text("\(mins)m").font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
@@ -230,7 +195,7 @@ struct TVMediaDetailView: View {
                         .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
-            if let critics = detail?.criticRating {
+            if let critics = model.detail?.criticRating {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill").font(.system(size: 16))
@@ -240,9 +205,9 @@ struct TVMediaDetailView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Critics score \(Int(critics.rounded())) percent")
             }
-            if detail?.is4K == true { qualityBadge("4K", color: DT.Color.accent) }
-            if detail?.isHDR == true { qualityBadge("HDR", color: DT.Color.palette("F59E0B")) }
-            if !awards.isEmpty {
+            if model.detail?.is4K == true { qualityBadge("4K", color: DT.Color.accent) }
+            if model.detail?.isHDR == true { qualityBadge("HDR", color: DT.Color.palette("F59E0B")) }
+            if !model.awards.isEmpty {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "trophy.fill").font(.system(size: 16))
@@ -255,7 +220,7 @@ struct TVMediaDetailView: View {
 
     /// One entry → that award's own name; a few → joined; many → just the count.
     private var awardsLabel: String {
-        let names = Array(Set(awards.map(\.name))).sorted()
+        let names = Array(Set(model.awards.map(\.name))).sorted()
         if names.count == 1 { return "Won \(names[0])" }
         if names.count <= 3 { return "Won \(names.joined(separator: ", "))" }
         return "Won \(names.count) Awards"
@@ -269,20 +234,11 @@ struct TVMediaDetailView: View {
         }
     }
 
-    /// A series itself isn't playable; Play on its page starts the episode the server says is next.
-    private var playTarget: MediaItem {
-        item.type == .series ? (nextEpisode ?? item) : (detail?.item ?? item)
-    }
-
-    private var isResumable: Bool {
-        guard let ud = playTarget.userData else { return false }
-        return ud.playbackPositionTicks > 0 && !ud.played
-    }
-
     private var playLabel: String {
+        let playTarget = model.playTarget
         let episode = playTarget.type == .episode ? playTarget.indexNumber.map { "E\($0)" } : nil
-        if isResumable {
-            if let total = item.type == .series ? nil : detail?.runTimeTicks,
+        if model.isResumable {
+            if let total = item.type == .series ? nil : model.detail?.runTimeTicks,
                let position = playTarget.userData?.playbackPositionTicks, total > position {
                 let minutes = Int(Double(total - position) / 10_000_000 / 60)
                 let left = minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
@@ -294,9 +250,11 @@ struct TVMediaDetailView: View {
     }
 
     private var actionColumn: some View {
-        VStack(spacing: 14) {
+        let playTarget = model.playTarget
+        let isResumable = model.isResumable
+        return VStack(spacing: 14) {
             Button {
-                playbackRequest = PlaybackRequest(item: playTarget, startTicks: isResumable ? (playTarget.userData?.playbackPositionTicks ?? 0) : 0)
+                playbackRequest = Arcfin.PlaybackRequest(item: playTarget, startTicks: isResumable ? (playTarget.userData?.playbackPositionTicks ?? 0) : 0)
             } label: {
                 TVDetailButtonLabel(icon: "play.fill", text: playLabel, isPrimary: true)
             }
@@ -307,7 +265,7 @@ struct TVMediaDetailView: View {
 
             if isResumable {
                 Button {
-                    playbackRequest = PlaybackRequest(item: playTarget, startTicks: 0)
+                    playbackRequest = Arcfin.PlaybackRequest(item: playTarget, startTicks: 0)
                 } label: {
                     TVDetailButtonLabel(icon: "arrow.counterclockwise", text: "Start Over")
                 }
@@ -316,10 +274,10 @@ struct TVMediaDetailView: View {
             }
 
             HStack(spacing: 14) {
-                Button { toggleFavorite() } label: {
-                    TVDetailButtonLabel(icon: isFavorite ? "heart.fill" : "heart", text: "")
+                Button { model.toggleFavorite(authManager: authManager) } label: {
+                    TVDetailButtonLabel(icon: model.isFavorite ? "heart.fill" : "heart", text: "")
                 }
-                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                .accessibilityLabel(model.isFavorite ? "Remove from favorites" : "Add to favorites")
                 Menu {
                     moreMenuContent
                 } label: {
@@ -334,14 +292,16 @@ struct TVMediaDetailView: View {
 
     @ViewBuilder
     private var moreMenuContent: some View {
-        Button { setRating(true) } label: {
+        let likes = model.likes
+        let isWatched = model.isWatched
+        Button { model.setRating(true, authManager: authManager) } label: {
             Label(likes == true ? "Remove Like" : "Like", systemImage: likes == true ? "hand.thumbsup.fill" : "hand.thumbsup")
         }
-        Button { setRating(false) } label: {
+        Button { model.setRating(false, authManager: authManager) } label: {
             Label(likes == false ? "Remove Dislike" : "Dislike", systemImage: likes == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
         }
         if item.type == .movie || item.type == .episode {
-            Button { markWatched(!isWatched) } label: {
+            Button { model.markWatched(!isWatched, authManager: authManager) } label: {
                 Label(isWatched ? "Mark as Unwatched" : "Mark as Watched", systemImage: isWatched ? "eye.slash" : "checkmark")
             }
         }
@@ -355,84 +315,9 @@ struct TVMediaDetailView: View {
         }
     }
 
-    private func setRating(_ value: Bool) {
-        guard let cred = credential, let header = authHeader else { return }
-        let newValue: Bool? = likes == value ? nil : value
-        likes = newValue
-        Task { try? await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue) }
-    }
-
-    private func toggleFavorite() {
-        guard let cred = credential, let header = authHeader else { return }
-        isFavorite.toggle()
-        let newValue = isFavorite
-        Task { try? await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: newValue) }
-    }
-
-    private func markWatched(_ watched: Bool) {
-        guard let cred = credential, let header = authHeader else { return }
-        isWatched = watched
-        Task {
-            try? await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: watched)
-            await refreshAfterPlayback(waitForReport: false)
-        }
-    }
-
-    private func markEpisodeWatched(_ ep: MediaItem, watched: Bool) {
-        guard let cred = credential, let header = authHeader else { return }
-        Task {
-            try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
-            await refreshAfterPlayback(waitForReport: false)
-        }
-    }
-
-    private enum WatchScope { case season, series }
-
-    private func markScopeWatched(_ scope: WatchScope, watched: Bool) {
-        guard let cred = credential, let header = authHeader, let seriesId = seasonSeriesId else { return }
-        let seasonEpisodes = episodes
-        let allSeasons = seasons
-        Task {
-            switch scope {
-            case .season:
-                for ep in seasonEpisodes {
-                    try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
-                }
-            case .series:
-                for season in allSeasons {
-                    let eps = (try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: season.id)) ?? []
-                    for ep in eps {
-                        try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
-                    }
-                }
-            }
-            await refreshAfterPlayback(waitForReport: false)
-        }
-    }
-
-    /// Re-reads progress after the player closes, so Play becomes Resume and the episodes show
-    /// what was watched.
-    private func refreshAfterPlayback(waitForReport: Bool = true) async {
-        guard let cred = credential, let header = authHeader else { return }
-        if waitForReport { try? await Task.sleep(for: .milliseconds(700)) }
-        if let fresh = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id) {
-            detail = fresh
-            isWatched = fresh.item.userData?.played ?? false
-        }
-        guard let seriesId = seasonSeriesId else { return }
-        if item.type == .series,
-           let next = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
-            nextEpisode = next
-        }
-        if let seasonId = loadedSeasonId,
-           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId) {
-            episodes = fresh
-        }
-    }
-
     @ViewBuilder
     private var descriptionColumn: some View {
-        let overview = detail?.item.overview ?? item.overview
+        let overview = model.detail?.item.overview ?? item.overview
         if let overview, !overview.isEmpty {
             Button { showFullDescription = true } label: {
                 TVDescriptionLabel(text: overview)
@@ -444,7 +329,7 @@ struct TVMediaDetailView: View {
 
     @ViewBuilder
     private var infoColumn: some View {
-        if let d = detail {
+        if let d = model.detail {
             VStack(alignment: .leading, spacing: 18) {
                 if !d.directors.isEmpty {
                     infoRow(
@@ -490,42 +375,37 @@ struct TVMediaDetailView: View {
     private var belowFoldSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Room under the hero's buttons, which grow when focused, so they don't cover the heading.
-            if !seasons.isEmpty { seriesSection.padding(.top, 48).trackSectionOffset().focusSection() }
-            if let seriesItem, item.type == .episode {
+            if !model.seasons.isEmpty { seriesSection.padding(.top, 48).trackSectionOffset().focusSection() }
+            if let seriesItem = model.seriesItem, item.type == .episode {
                 itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
             }
-            if !trailers.isEmpty {
+            if !model.trailers.isEmpty {
                 trailersSection.padding(.top, trailersFollowHero ? 48 : 0).trackSectionOffset().focusSection()
             }
-            TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), part: .ratings, spacingBelow: 56)
+            TitleInsights(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item), part: .ratings, spacingBelow: 56)
                 .padding(.horizontal, 80)
                 .focusSection()
-            if let d = detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
-            if !seerrRelatedItems.isEmpty {
+            if let d = model.detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
+            if !model.seerrRelatedItems.isEmpty {
                 seerrRelatedSection.trackSectionOffset().focusSection()
-            } else if !similarItems.isEmpty {
+            } else if !model.similarItems.isEmpty {
                 similarSection.trackSectionOffset().focusSection()
             }
-            if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
+            if let jellyfinRecommended = model.jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
                 itemRow(jellyfinRecommended.title, jellyfinRecommended.items).trackSectionOffset().focusSection()
             }
-            if !containingCollections.isEmpty {
-                setRow(containingCollections.count == 1 ? "Collection" : "Collections", containingCollections) { openedCollection = $0 }
+            if !model.containingCollections.isEmpty {
+                setRow(model.containingCollections.count == 1 ? "Collection" : "Collections", model.containingCollections) { openedCollection = $0 }
                     .trackSectionOffset().focusSection()
             }
-            if !containingPlaylists.isEmpty {
-                setRow("In Your Playlists", containingPlaylists) { openedPlaylist = $0 }
+            if !model.containingPlaylists.isEmpty {
+                setRow("In Your Playlists", model.containingPlaylists) { openedPlaylist = $0 }
                     .trackSectionOffset().focusSection()
             }
-            TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
+            TitleInsights(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item), detail: model.detail, part: .details)
                 .padding(.horizontal, 80)
                 .focusSection()
         }
-    }
-
-    /// An episode's TMDB id is the episode's own, which the title lookups don't take.
-    private var insightsTmdbId: Int? {
-        item.type == .episode ? nil : (detail?.item.tmdbId ?? item.tmdbId)
     }
 
     private func itemRow(_ title: String, _ items: [MediaItem]) -> some View {
@@ -593,11 +473,11 @@ struct TVMediaDetailView: View {
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
                 Menu {
-                    ForEach(seasons) { season in
-                        Button(season.name) { selectedSeason = season }
+                    ForEach(model.seasons) { season in
+                        Button(season.name) { model.selectedSeason = season }
                     }
                 } label: {
-                    TVSeasonPickerLabel(name: selectedSeason?.name ?? "Season")
+                    TVSeasonPickerLabel(name: model.selectedSeason?.name ?? "Season")
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -607,20 +487,22 @@ struct TVMediaDetailView: View {
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(episodes) { ep in
+                        ForEach(model.episodes) { ep in
                             let watched = ep.userData?.played == true
                             Button { selectedEpisode = ep } label: {
-                                TVEpisodeCard(ep: ep, badge: episodeBadge(ep))
+                                TVEpisodeCard(ep: ep, badge: model.episodeBadge(ep, marksUnavailable: false))
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
                             .contextMenu {
                                 Button {
-                                    playbackRequest = PlaybackRequest(item: ep, startTicks: ep.userData?.playbackPositionTicks ?? 0)
+                                    playbackRequest = Arcfin.PlaybackRequest(item: ep, startTicks: ep.userData?.playbackPositionTicks ?? 0)
                                 } label: {
                                     Label("Play", systemImage: "play.fill")
                                 }
-                                Button { markEpisodeWatched(ep, watched: !watched) } label: {
+                                Button {
+                                    model.markEpisodeWatched(ep, watched: !watched, update: .reload, authManager: authManager)
+                                } label: {
                                     Label(watched ? "Mark as Unwatched" : "Mark as Watched", systemImage: watched ? "eye.slash" : "checkmark")
                                 }
                             }
@@ -632,19 +514,23 @@ struct TVMediaDetailView: View {
                     .focusSection()
                 }
                 .scrollClipDisabled()
-                .onChange(of: episodes) { _, newEps in
-                    guard let target = initialEpisodeID,
+                .onChange(of: model.episodes) { _, newEps in
+                    guard let target = model.initialEpisodeID,
                           newEps.contains(where: { $0.id == target }) else { return }
                     proxy.scrollTo(target, anchor: .leading)
-                    initialEpisodeID = nil
+                    model.initialEpisodeID = nil
                 }
             }
         }
         .padding(.bottom, 56)
     }
 
+    private func markScopeWatched(_ scope: MediaDetailModel.WatchScope, watched: Bool) {
+        model.markScopeWatched(scope, watched: watched, update: .reload, authManager: authManager)
+    }
+
     private var trailersFollowHero: Bool {
-        seasons.isEmpty && !(seriesItem != nil && item.type == .episode)
+        model.seasons.isEmpty && !(model.seriesItem != nil && item.type == .episode)
     }
 
     private var trailersSection: some View {
@@ -652,9 +538,9 @@ struct TVMediaDetailView: View {
             sectionTitle("Trailers").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(trailers) { trailer in
+                    ForEach(model.trailers) { trailer in
                         Button {
-                            playbackRequest = PlaybackRequest(item: trailer, startTicks: 0)
+                            playbackRequest = Arcfin.PlaybackRequest(item: trailer, startTicks: 0)
                         } label: {
                             PosterCard(
                                 title: trailer.name,
@@ -716,7 +602,7 @@ struct TVMediaDetailView: View {
             sectionTitle("More Like This").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(similarItems) { sim in
+                    ForEach(model.similarItems) { sim in
                         NavigationLink(value: sim) {
                             PosterCard(
                                 title: sim.name,
@@ -742,7 +628,7 @@ struct TVMediaDetailView: View {
             sectionTitle("Recommended").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(seerrRelatedItems) { sim in
+                    ForEach(model.seerrRelatedItems) { sim in
                         Button { openSeerrItem = sim } label: {
                             PosterCard(
                                 title: sim.title,
@@ -773,7 +659,7 @@ struct TVMediaDetailView: View {
                     Text(item.name)
                         .font(.system(size: 40, weight: .heavy))
                         .foregroundStyle(.white)
-                    if let overview = detail?.item.overview ?? item.overview {
+                    if let overview = model.detail?.item.overview ?? item.overview {
                         Text(overview)
                             .font(.system(size: 26))
                             .foregroundStyle(DT.Color.textSecondary)
@@ -788,82 +674,6 @@ struct TVMediaDetailView: View {
                 }
                 .padding(80)
             }
-        }
-    }
-
-    // MARK: - Load
-
-    private func load() async {
-        isLoading = true
-        defer { isLoading = false }
-        guard let cred = credential, let header = authHeader else { return }
-
-        let fetchedDetail = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
-        detail = fetchedDetail
-        isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
-        likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
-        isWatched = fetchedDetail?.item.userData?.played ?? item.userData?.played ?? false
-        if item.type == .episode, let seriesId = item.seriesId {
-            seriesItem = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
-        }
-
-        if let fetchedDetail, let mediaType = seerrMediaType(for: fetchedDetail.item),
-           let tmdbId = fetchedDetail.item.tmdbId {
-            seerrRelatedItems = await seerrRepo.relatedMedia(mediaType: mediaType, mediaId: tmdbId)
-        }
-        if seerrRelatedItems.isEmpty {
-            similarItems = (try? await client.getSimilarItems(credential: cred, authHeader: header, itemId: item.id)) ?? []
-        }
-        if seerrRelatedItems.isEmpty, item.type == .movie {
-            let categories = (try? await client.getMovieRecommendations(credential: cred, authHeader: header)) ?? []
-            let shown = Set(similarItems.map(\.id))
-            if let match = categories.first(where: { $0.baselineItemName?.caseInsensitiveCompare(item.name) == .orderedSame }) {
-                let fresh = match.items.filter { !shown.contains($0.id) && $0.id != item.id }
-                if fresh.count >= 3 {
-                    jellyfinRecommended = MovieRecommendationCategory(
-                        id: match.id, recommendationType: match.recommendationType,
-                        baselineItemName: match.baselineItemName, items: fresh)
-                }
-            }
-        }
-
-        // Awaited like every other section's fetch above — a detached Task here let the
-        // page finish loading and render (isLoading already false) before trailers arrived,
-        // so trailersSection popped in late and shoved Cast/Recommended down into an
-        // already-settled, already-focused layout, reading as an unexplained gap.
-        trailers = (try? await client.getTrailers(
-            credential: cred, authHeader: header, itemId: item.id, limit: 6)) ?? []
-
-        if let seriesId = seasonSeriesId {
-            seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
-            guard let first = seasons.first else { return }
-
-            var target = first
-            switch item.type {
-            case .series:
-                // Ask the server which episode is next — use its season and scroll to it.
-                if let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
-                    if let seasonNum = nextEp.parentIndexNumber,
-                       let matched = seasons.first(where: { $0.indexNumber == seasonNum }) {
-                        target = matched
-                    }
-                    initialEpisodeID = nextEp.id
-                    nextEpisode = nextEp
-                }
-            case .episode:
-                target = selectedSeasonForCurrentItem(from: seasons) ?? first
-                initialEpisodeID = item.id
-            case .season:
-                target = selectedSeasonForCurrentItem(from: seasons) ?? first
-            default:
-                break
-            }
-
-            selectedSeason = target
-            loadedSeasonId = target.id
-            episodes = (try? await client.getEpisodes(
-                credential: cred, authHeader: header,
-                seriesId: seriesId, seasonId: target.id)) ?? []
         }
     }
 
@@ -889,42 +699,6 @@ struct TVMediaDetailView: View {
         Text(title)
             .font(.system(size: 28, weight: .bold))
             .foregroundStyle(DT.Color.textPrimary)
-    }
-
-    /// "NEW" for an unwatched episode out in the last two weeks; "FINALE" for the season's last.
-    private func episodeBadge(_ ep: MediaItem) -> String? {
-        if ep.userData?.played != true, let premiere = ep.premiereDate,
-           premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
-            return "NEW"
-        }
-        if episodes.count > 1, ep.id == episodes.last?.id { return "FINALE" }
-        return nil
-    }
-
-    private func seerrMediaType(for item: MediaItem) -> RequestMediaType? {
-        switch item.type {
-        case .movie: .movie
-        case .series, .season, .episode: .tv
-        default: nil
-        }
-    }
-
-    private var seasonSeriesId: String? {
-        switch item.type {
-        case .series: item.id
-        case .season, .episode: item.seriesId
-        default: nil
-        }
-    }
-
-    private func selectedSeasonForCurrentItem(from seasons: [MediaItem]) -> MediaItem? {
-        if item.type == .episode, let seasonNumber = item.parentIndexNumber {
-            return seasons.first { $0.indexNumber == seasonNumber }
-        }
-        if item.type == .season {
-            return seasons.first { $0.id == item.id } ?? seasons.first
-        }
-        return seasons.first
     }
 }
 
@@ -1097,7 +871,7 @@ private extension View {
             GeometryReader { geo in
                 Color.clear.preference(
                     key: TVSectionOffsetKey.self,
-                    value: [geo.frame(in: .named(TVMediaDetailView.scrollSpace)).minY]
+                    value: [geo.frame(in: .named(MediaDetailView.scrollSpace)).minY]
                 )
             }
         )
@@ -1131,7 +905,7 @@ private struct TVSectionSnappingBehavior: ScrollTargetBehavior {
 
 #Preview {
     NavigationStack {
-        TVMediaDetailView(item: MediaItem(
+        MediaDetailView(item: MediaItem(
             id: "1", name: "Severance", type: .series,
             backdropImageTags: [], productionYear: 2022, communityRating: 8.7
         ))
