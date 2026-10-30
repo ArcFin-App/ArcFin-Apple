@@ -2,11 +2,6 @@
 
 import SwiftUI
 import Foundation
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 // MARK: - Design token system for Arcfin
 // Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass. Every colour
@@ -44,11 +39,7 @@ public enum DT {
         /// plumbing needed. textPrimary/textActive/accent are already 8:1+ against every
         /// background (computed from their actual hex values) and don't need a second tier.
         private static var increaseContrast: Bool {
-#if os(macOS)
-            NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-#else
-            UIAccessibility.isDarkerSystemColorsEnabled
-#endif
+            PlatformAccessibility.increaseContrast
         }
 
         /// #8E8E93 (5.2–6.1:1 on the three backgrounds) / Increase Contrast: #AEAEB4
@@ -118,15 +109,9 @@ public enum DT {
         public static let xxxl: CGFloat = 64
 
         /// Standard horizontal page margin
-#if os(macOS)
-        public static let pagePad: CGFloat = 28
+        public static let pagePad: CGFloat = PlatformMetrics.pagePad
         /// Shelf row internal item gap
-        public static let shelfGap: CGFloat = 16
-#else
-        public static let pagePad: CGFloat = 20
-        /// Shelf row internal item gap
-        public static let shelfGap: CGFloat = 12
-#endif
+        public static let shelfGap: CGFloat = PlatformMetrics.shelfGap
         /// Section header → shelf gap
         public static let sectionGap: CGFloat = 8
     }
@@ -148,24 +133,11 @@ public enum DT {
 
     public enum Size {
         /// Poster card — portrait 2:3 on iOS, landscape 16:9 thumb on tvOS
-#if os(tvOS)
-        public static let posterCard        = CGSize(width: 320, height: 180)
-#elseif os(macOS)
-        // Seen from further away than a phone, in a window several times wider.
-        public static let posterCard        = CGSize(width: 150, height: 225)
-#else
-        public static let posterCard        = CGSize(width: 110, height: 165)
-#endif
+        public static let posterCard        = PlatformMetrics.posterCard
         /// Backdrop card: landscape 16:9
-#if os(macOS)
-        public static let backdropCard      = CGSize(width: 320, height: 180)
+        public static let backdropCard      = PlatformMetrics.backdropCard
         /// Continue Watching and other landscape shelf cards.
-        public static let wideCard          = CGSize(width: 280, height: 158)
-#else
-        public static let backdropCard      = CGSize(width: 240, height: 135)
-        /// Continue Watching and other landscape shelf cards.
-        public static let wideCard          = CGSize(width: 200, height: 113)
-#endif
+        public static let wideCard          = PlatformMetrics.wideCard
         /// Hero banner height
         public static let heroBannerHeight: CGFloat = 520
         /// Tab bar height (approx, under Liquid Glass)
@@ -181,13 +153,7 @@ public enum DT {
         /// collapses to a near-instant linear fade instead of its spring/duration.
         private static var reduceMotion: Bool {
             if UserDefaults.standard.bool(forKey: "reduceMotion") { return true }
-            #if canImport(UIKit)
-            return UIAccessibility.isReduceMotionEnabled
-            #elseif canImport(AppKit)
-            return NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-            #else
-            return false
-            #endif
+            return PlatformAccessibility.reduceMotion
         }
         private static let reducedFallback = SwiftUI.Animation.linear(duration: 0.01)
 
@@ -213,11 +179,7 @@ public enum DT {
 
     public enum Scale {
         /// Multiply hardcoded pt sizes by this for 10-foot TV readability.
-        #if os(tvOS)
-        public static let font: CGFloat = 2.0
-        #else
-        public static let font: CGFloat = 1.0
-        #endif
+        public static let font: CGFloat = PlatformMetrics.fontScale
     }
 
     // MARK: - Glass
@@ -231,20 +193,6 @@ public enum DT {
 }
 
 // MARK: - Hex colour initialiser
-
-extension SwiftUI.Color {
-    /// One colour for the light appearance and one for the dark, switching with the system.
-    init(light: String, dark: String) {
-        let light = SwiftUI.Color(hex: light), dark = SwiftUI.Color(hex: dark)
-        #if canImport(UIKit)
-        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light) })
-        #else
-        self.init(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(dark) : NSColor(light)
-        })
-        #endif
-    }
-}
 
 extension SwiftUI.Color {
     init(hex: String) {
@@ -276,12 +224,7 @@ private struct ScaledSystemFont: ViewModifier {
         case ..<28.5: .title
         default: .largeTitle
         }
-        #if os(tvOS)
-        // 23 pt is tvOS's smallest text style; anything under it is unreadable from the couch.
-        _size = ScaledMetric(wrappedValue: max(size * DT.Scale.font, 23), relativeTo: style)
-        #else
-        _size = ScaledMetric(wrappedValue: size * DT.Scale.font, relativeTo: style)
-        #endif
+        _size = ScaledMetric(wrappedValue: PlatformMetrics.scaledFontSize(size), relativeTo: style)
         self.weight = weight
         self.design = design
     }
@@ -297,16 +240,6 @@ extension View {
     /// of the app keeps following the system.
     func alwaysDark() -> some View {
         environment(\.colorScheme, .dark)
-    }
-
-    /// The players, which on iPhone, iPad and Apple TV are their own full-screen presentation:
-    /// that presentation is dark too, so its menus and alerts match.
-    func alwaysDarkPlayer() -> some View {
-        #if os(macOS)
-        alwaysDark()
-        #else
-        alwaysDark().preferredColorScheme(.dark)
-        #endif
     }
 
     /// `DT.Scale.font` sizing that also tracks Dynamic Type — plain `.font(.system(size:))`

@@ -133,6 +133,8 @@
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );
+				iOS/Platform/AdaptiveColor.swift = (ios, );
+				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
 				iOS/Platform/FieldBackground.swift = (ios, );
@@ -143,6 +145,8 @@
 				iOS/Platform/LargeNavigationTitle.swift = (ios, );
 				iOS/Platform/ListStyle.swift = (ios, );
 				iOS/Platform/PlainButton.swift = (ios, );
+				iOS/Platform/PlatformAccessibility.swift = (ios, );
+				iOS/Platform/PlatformMetrics.swift = (ios, );
 				iOS/Platform/PlayerOverlayButton.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/PressableHover.swift = (ios, );
@@ -219,6 +223,8 @@
 				macOS/Onboarding/OnboardingView.swift = (macos, );
 				macOS/Onboarding/WhatsNew.swift = (macos, );
 				macOS/Onboarding/WhatsNewView.swift = (macos, );
+				macOS/Platform/AdaptiveColor.swift = (macos, );
+				macOS/Platform/AlwaysDarkPlayer.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
 				macOS/Platform/FieldBackground.swift = (macos, );
@@ -229,6 +235,8 @@
 				macOS/Platform/LargeNavigationTitle.swift = (macos, );
 				macOS/Platform/ListStyle.swift = (macos, );
 				macOS/Platform/PlainButton.swift = (macos, );
+				macOS/Platform/PlatformAccessibility.swift = (macos, );
+				macOS/Platform/PlatformMetrics.swift = (macos, );
 				macOS/Platform/PlayerOverlayButton.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/PressableHover.swift = (macos, );
@@ -301,6 +309,8 @@
 				tvOS/Onboarding/OnboardingView.swift = (tvos, );
 				tvOS/Onboarding/WhatsNew.swift = (tvos, );
 				tvOS/Onboarding/WhatsNewView.swift = (tvos, );
+				tvOS/Platform/AdaptiveColor.swift = (tvos, );
+				tvOS/Platform/AlwaysDarkPlayer.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
 				tvOS/Platform/FieldBackground.swift = (tvos, );
@@ -311,6 +321,8 @@
 				tvOS/Platform/LargeNavigationTitle.swift = (tvos, );
 				tvOS/Platform/ListStyle.swift = (tvos, );
 				tvOS/Platform/PlainButton.swift = (tvos, );
+				tvOS/Platform/PlatformAccessibility.swift = (tvos, );
+				tvOS/Platform/PlatformMetrics.swift = (tvos, );
 				tvOS/Platform/PlayerOverlayButton.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/PressableHover.swift = (tvos, );
