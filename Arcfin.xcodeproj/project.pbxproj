@@ -102,6 +102,7 @@
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
 				iOS/Detail/MediaDetailView.swift = (ios, );
 				iOS/Detail/PersonDetailView.swift = (ios, );
+				iOS/Home/HeroVideoBackdrop.swift = (ios, );
 				iOS/Home/HomeView.swift = (ios, );
 				iOS/Home/MainTabView.swift = (ios, );
 				iOS/Home/NoConnectionView.swift = (ios, );
@@ -121,6 +122,7 @@
 				iOS/Search/SearchView.swift = (ios, );
 				macOS/Detail/MediaDetailView.swift = (macos, );
 				macOS/Detail/PersonDetailView.swift = (macos, );
+				macOS/Home/HeroVideoBackdrop.swift = (macos, );
 				macOS/Home/HomeView.swift = (macos, );
 				macOS/Home/MainTabView.swift = (macos, );
 				macOS/Home/NoConnectionView.swift = (macos, );
@@ -140,6 +142,7 @@
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
 				tvOS/Detail/MediaDetailView.swift = (tvos, );
 				tvOS/Detail/PersonDetailView.swift = (tvos, );
+				tvOS/Home/HeroVideoBackdrop.swift = (tvos, );
 				tvOS/Home/HomeView.swift = (tvos, );
 				tvOS/Home/LibraryScreensaverView.swift = (tvos, );
 				tvOS/Home/MainTabView.swift = (tvos, );
