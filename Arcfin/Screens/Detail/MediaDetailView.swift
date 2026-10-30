@@ -108,6 +108,16 @@ struct MediaDetailView: View {
 
     private var credential: ServerCredential? { authManager.state.credential }
 
+    private var headerMetrics: DetailHeaderMetrics {
+#if os(macOS)
+        DetailHeaderMetrics(heroHeight: 420, posterSize: CGSize(width: 170, height: 250), titleStyle: .largeTitle,
+                            backdropFillWidth: 1800, posterFillWidth: 400)
+#else
+        DetailHeaderMetrics(heroHeight: 260, posterSize: CGSize(width: 90, height: 132), titleStyle: .title3,
+                            backdropFillWidth: 900, posterFillWidth: 200)
+#endif
+    }
+
     private var shelfZoomNamespace: Namespace.ID? {
         #if os(tvOS)
         nil
@@ -135,8 +145,8 @@ struct MediaDetailView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                MediaDetailHero(item: item)
-                MediaDetailTitleBlock(item: item, detail: detail, awards: awards)
+                MediaDetailHero(item: item, metrics: headerMetrics)
+                MediaDetailTitleBlock(item: item, detail: detail, awards: awards, metrics: headerMetrics)
                 if isLoading { loadingContent }
                 else { detailContent }
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
@@ -857,7 +867,13 @@ struct MediaDetailView: View {
         }
 
         if let seriesItem, item.type == .episode {
-            DetailSeriesLink(series: seriesItem) { selectedEpisode = $0 }
+            DetailSeriesLink(series: seriesItem) { label in
+#if os(macOS)
+                Button { selectedEpisode = seriesItem } label: { label }
+#else
+                NavigationLink(value: seriesItem) { label }
+#endif
+            }
         }
 
         // Series: seasons + episodes
@@ -869,10 +885,10 @@ struct MediaDetailView: View {
         if !seerrRelatedItems.isEmpty {
             DetailSeerrShelf(items: seerrRelatedItems, subtitle: seerrRelatedSubtitle, onSelect: openSeerrRelated)
         } else if !similarItems.isEmpty {
-            DetailTitleShelf(title: "More Like This", items: similarItems, zoomNamespace: shelfZoomNamespace) { selectedEpisode = $0 }
+            DetailTitleShelf(title: "More Like This", items: similarItems) { rec, poster in titleLink(rec, poster) }
         }
         if let jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-            DetailTitleShelf(title: jellyfinRecommended.title, items: jellyfinRecommended.items, zoomNamespace: shelfZoomNamespace) { selectedEpisode = $0 }
+            DetailTitleShelf(title: jellyfinRecommended.title, items: jellyfinRecommended.items) { rec, poster in titleLink(rec, poster) }
         }
         if !containingCollections.isEmpty {
             DetailSetShelf(title: containingCollections.count == 1 ? "Collection" : "Collections", sets: containingCollections) { openedCollection = $0 }
@@ -887,6 +903,23 @@ struct MediaDetailView: View {
         TitleInsights(tmdbId: insightsTmdbId, mediaType: seerrMediaType(for: item), detail: detail, part: .details)
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, DT.Spacing.md)
+    }
+
+    @ViewBuilder
+    private func titleLink(_ rec: MediaItem, _ poster: PosterCard) -> some View {
+#if os(macOS)
+        Button { selectedEpisode = rec } label: { poster }
+            .buttonStyle(.plain)
+            .zoomTransitionSource(id: rec.id, in: shelfZoomNamespace)
+#elseif os(tvOS)
+        NavigationLink(value: rec) { poster }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+#else
+        NavigationLink(value: rec) { poster }
+            .buttonStyle(.plain)
+            .zoomTransitionSource(id: rec.id, in: shelfZoomNamespace)
+#endif
     }
 
     // MARK: - Series seasons + episodes
@@ -1208,57 +1241,6 @@ struct MediaDetailView: View {
             return seasons[lastPlayedIdx + 1]
         }
         return seasons.first
-    }
-}
-
-// MARK: - Cast card
-
-struct CastPersonCard<Placeholder: View>: View {
-    let imageURL: URL?
-    let name: String
-    let role: String?
-    @ViewBuilder let placeholder: () -> Placeholder
-
-    @State private var hovered = false
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Group {
-                if let imageURL {
-                    RetryingAsyncImage(
-                        url: imageURL,
-                        logCategory: "CastPersonCard",
-                        logContext: "name=\(name)",
-                        content: { img in img.resizable().scaledToFill() },
-                        placeholder: { placeholder() }
-                    )
-                } else {
-                    placeholder()
-                }
-            }
-            .frame(width: 60, height: 60)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : DT.Color.textPrimary.opacity(0.1), lineWidth: hovered ? 2 : 1))
-            .scaleEffect(hovered ? 1.06 : 1)
-
-            Text(name)
-                .font(.system(.caption2, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-
-            if let role, !role.isEmpty {
-                Text(role)
-                    .font(.system(.caption2, design: .default))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(1)
-            }
-        }
-        .frame(width: 70, alignment: .top)
-        .animation(DT.Animation.fast, value: hovered)
-        #if !os(tvOS)
-        .onHover { hovered = $0 }
-        #endif
     }
 }
 

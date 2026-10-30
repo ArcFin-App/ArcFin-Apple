@@ -7,10 +7,11 @@ import Persistence
 struct MediaDetailHero: View {
     @Environment(MediaRepository.self) private var mediaRepo
     let item: MediaItem
+    let metrics: DetailHeaderMetrics
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: DetailHeaderMetrics.backdropFillWidth) {
+            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: metrics.backdropFillWidth) {
                 RetryingAsyncImage(
                     url: url,
                     logCategory: "MediaDetailView",
@@ -39,7 +40,7 @@ struct MediaDetailHero: View {
                     )
                 )
         }
-        .frame(height: DetailHeaderMetrics.heroHeight)
+        .frame(height: metrics.heroHeight)
         // Exactly the screen's width: a fill-scaled backdrop is wider than a small phone, and
         // sized by its own width it pushed the whole page out past both edges.
         .containerRelativeFrame(.horizontal)
@@ -69,15 +70,12 @@ private struct DetailFallbackHero: View {
                 colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
-            #if !os(tvOS)
             SavedDownloadArtwork(item: item, fileName: "backdrop.jpg")
-            #endif
         }
     }
 
 }
 
-#if !os(tvOS)
 /// Artwork kept with a download, for when the server's can't be reached.
 private struct SavedDownloadArtwork: View {
     let item: MediaItem
@@ -94,7 +92,6 @@ private struct SavedDownloadArtwork: View {
         }
     }
 }
-#endif
 
 /// Poster, name, year, rating, runtime, scores, quality and awards, overlapping the hero.
 struct MediaDetailTitleBlock: View {
@@ -102,11 +99,12 @@ struct MediaDetailTitleBlock: View {
     let item: MediaItem
     let detail: MediaItemDetail?
     let awards: [WikidataAward]
+    let metrics: DetailHeaderMetrics
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             // Portrait poster
-            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: DetailHeaderMetrics.posterFillWidth) {
+            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: metrics.posterFillWidth) {
                 RetryingAsyncImage(
                     url: url,
                     logCategory: "MediaDetailView",
@@ -115,25 +113,23 @@ struct MediaDetailTitleBlock: View {
                     placeholder: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
-                            #if !os(tvOS)
                             SavedDownloadArtwork(item: item, fileName: "poster.jpg")
-                            #endif
                         }
                     }
                 )
-                .frame(width: DetailHeaderMetrics.posterSize.width, height: DetailHeaderMetrics.posterSize.height)
+                .frame(width: metrics.posterSize.width, height: metrics.posterSize.height)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
             } else {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(DT.Color.backgroundSecondary)
-                    .frame(width: DetailHeaderMetrics.posterSize.width, height: DetailHeaderMetrics.posterSize.height)
+                    .frame(width: metrics.posterSize.width, height: metrics.posterSize.height)
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
-                    .font(.system(DetailHeaderMetrics.titleStyle, design: .default, weight: .heavy))
+                    .font(.system(metrics.titleStyle, design: .default, weight: .heavy))
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.5)
                     .lineLimit(3)
@@ -145,7 +141,7 @@ struct MediaDetailTitleBlock: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, -DetailHeaderMetrics.posterSize.height * 0.38)
+        .padding(.top, -metrics.posterSize.height * 0.38)
         .padding(.bottom, DT.Spacing.md)
     }
 
@@ -269,20 +265,11 @@ private struct DetailQualityBadge: View {
     }
 }
 
-enum DetailHeaderMetrics {
-    // A Mac window is far wider than a phone: a 260 pt strip of backdrop and a 90 pt
-    // poster left the top of the page looking like a banner ad.
-    #if os(macOS)
-    static let heroHeight: CGFloat = 420
-    static let posterSize = CGSize(width: 170, height: 250)
-    static let titleStyle: Font.TextStyle = .largeTitle
-    static let backdropFillWidth = 1800
-    static let posterFillWidth = 400
-    #else
-    static let heroHeight: CGFloat = 260
-    static let posterSize = CGSize(width: 90, height: 132)
-    static let titleStyle: Font.TextStyle = .title3
-    static let backdropFillWidth = 900
-    static let posterFillWidth = 200
-    #endif
+/// Sizes of the hero and the title block, set by each platform's title page.
+struct DetailHeaderMetrics {
+    let heroHeight: CGFloat
+    let posterSize: CGSize
+    let titleStyle: Font.TextStyle
+    let backdropFillWidth: Int
+    let posterFillWidth: Int
 }

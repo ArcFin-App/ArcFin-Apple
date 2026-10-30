@@ -37,9 +37,6 @@ struct DetailGenreChips: View {
         }
         .shelfScrollButtons()
         .padding(.bottom, DT.Spacing.md)
-#if os(tvOS)
-        .focusSection()
-#endif
     }
 }
 
@@ -89,12 +86,7 @@ struct DetailCastSection: View {
                                 placeholder: { DetailPersonPlaceholder() }
                             )
                         }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
                         .buttonStyle(.plain)
-#endif
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -102,9 +94,6 @@ struct DetailCastSection: View {
             .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
-#if os(tvOS)
-        .focusSection()
-#endif
     }
 }
 
@@ -115,6 +104,53 @@ private struct DetailPersonPlaceholder: View {
             .overlay(Image(systemName: "person.fill")
                 .font(.system(.title2))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
+    }
+}
+
+struct CastPersonCard<Placeholder: View>: View {
+    let imageURL: URL?
+    let name: String
+    let role: String?
+    @ViewBuilder let placeholder: () -> Placeholder
+
+    @State private var hovered = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Group {
+                if let imageURL {
+                    RetryingAsyncImage(
+                        url: imageURL,
+                        logCategory: "CastPersonCard",
+                        logContext: "name=\(name)",
+                        content: { img in img.resizable().scaledToFill() },
+                        placeholder: { placeholder() }
+                    )
+                } else {
+                    placeholder()
+                }
+            }
+            .frame(width: 60, height: 60)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : DT.Color.textPrimary.opacity(0.1), lineWidth: hovered ? 2 : 1))
+            .scaleEffect(hovered ? 1.06 : 1)
+
+            Text(name)
+                .font(.system(.caption2, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+
+            if let role, !role.isEmpty {
+                Text(role)
+                    .font(.system(.caption2, design: .default))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(width: 70, alignment: .top)
+        .animation(DT.Animation.fast, value: hovered)
+        .onPointerHover { hovered = $0 }
     }
 }
 
@@ -156,13 +192,12 @@ private struct DetailCrewRow: View {
 
 /// A row of library titles that open their own pages: More Like This and the server's
 /// recommendation rows.
-struct DetailTitleShelf: View {
+struct DetailTitleShelf<Link: View>: View {
     @Environment(MediaRepository.self) private var mediaRepo
     let title: String
     let items: [MediaItem]
-    /// Unused on Apple TV, which has no zoom transition.
-    var zoomNamespace: Namespace.ID?
-    let open: (MediaItem) -> Void
+    /// Each platform's link around a title's poster.
+    @ViewBuilder let link: (MediaItem, PosterCard) -> Link
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -170,26 +205,14 @@ struct DetailTitleShelf: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(items) { rec in
-                        DetailTitleLink(item: rec, open: open) {
-                            PosterCard(
-                                title: rec.name,
-                                subtitle: rec.productionYear.map { String($0) },
-                                imageURL: mediaRepo.imageURL(for: rec)
-                            )
-                        }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
-                        .buttonStyle(.plain)
-                        .zoomTransitionSource(id: rec.id, in: zoomNamespace)
-#endif
+                        link(rec, PosterCard(
+                            title: rec.name,
+                            subtitle: rec.productionYear.map { String($0) },
+                            imageURL: mediaRepo.imageURL(for: rec)
+                        ))
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
-#if os(tvOS)
-                .focusSection()
-#endif
             }
             .shelfScrollButtons()
         }
@@ -213,18 +236,10 @@ struct DetailSetShelf: View {
                         Button { open(set) } label: {
                             PosterCard(title: set.name, imageURL: mediaRepo.imageURL(for: set))
                         }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
                         .buttonStyle(.plain)
-#endif
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
-#if os(tvOS)
-                .focusSection()
-#endif
             }
             .shelfScrollButtons()
         }
@@ -259,21 +274,5 @@ struct DetailSeerrShelf: View {
             .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
-    }
-}
-
-/// Opens a library title from the page. On the Mac a NavigationLink(value:) can't always find
-/// the stack's destination, so it sets the page's own destination instead.
-struct DetailTitleLink<Label: View>: View {
-    let item: MediaItem
-    let open: (MediaItem) -> Void
-    @ViewBuilder let label: () -> Label
-
-    var body: some View {
-        #if os(macOS)
-        Button { open(item) } label: { label() }
-        #else
-        NavigationLink(value: item) { label() }
-        #endif
     }
 }

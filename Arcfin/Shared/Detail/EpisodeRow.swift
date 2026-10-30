@@ -82,9 +82,7 @@ struct EpisodeRow: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    #if !os(tvOS)
                     if !ep.isVirtual { DownloadButton(item: ep) }
-                    #endif
                 }
 
                 if !hidesSpoilers, let overview = ep.overview, !overview.isEmpty {
@@ -160,42 +158,43 @@ private struct EpisodeThumbPlaceholder: View {
 }
 
 /// From an episode's page, a link to its show.
-struct DetailSeriesLink: View {
+struct DetailSeriesLink<Link: View>: View {
     let series: MediaItem
-    let open: (MediaItem) -> Void
+    /// Each platform's link around the show's row.
+    @ViewBuilder let link: (DetailSeriesLabel) -> Link
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             DetailSectionTitle(title: "Series")
-            DetailTitleLink(item: series, open: open) {
-                HStack(spacing: 10) {
-                    Image(systemName: "tv")
-                        .font(.system(.subheadline))
-                        .foregroundStyle(DT.Color.accent)
-                    Text(series.name)
-                        .font(.system(.footnote, design: .default, weight: .semibold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(1)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(.caption2))
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(DT.Color.textPrimary.opacity(0.03))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
-            }
-#if os(tvOS)
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: 10)
-#else
-            .buttonStyle(.plain)
-#endif
+            link(DetailSeriesLabel(series: series))
+                .buttonStyle(.plain)
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
+    }
+}
+
+struct DetailSeriesLabel: View {
+    let series: MediaItem
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "tv")
+                .font(.system(.subheadline))
+                .foregroundStyle(DT.Color.accent)
+            Text(series.name)
+                .font(.system(.footnote, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(.caption2))
+                .foregroundStyle(DT.Color.textSecondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(DT.Color.textPrimary.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
     }
 }
