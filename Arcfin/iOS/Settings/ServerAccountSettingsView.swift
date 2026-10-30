@@ -2,15 +2,12 @@
 
 import SwiftUI
 import AuthCore
-import JellyfinAPI
 
 struct ServerAccountSettingsView: View {
     @Environment(AuthManager.self) private var authManager
 
     @State private var showSwitchServerSheet = false
-    @State private var quickConnectCode = ""
-    @State private var isAuthorizingQC = false
-    @State private var quickConnectResult: String?
+    @State private var quickConnect = QuickConnectModel()
 
     private var distinctServerCount: Int {
         Set(authManager.profiles.map { $0.baseURL.host ?? $0.baseURL.absoluteString }).count
@@ -20,12 +17,10 @@ struct ServerAccountSettingsView: View {
         List {
             Section {
                 serverRow
-                #if !os(tvOS)
                 Button { showSwitchServerSheet = true } label: {
                     TVRowLabelText(title: "Switch Server", detail: "Move to another server you've signed in to.")
                 }
                 .disabled(distinctServerCount <= 1)
-                #endif
                 NavigationLink {
                     AddServerFlowView()
                 } label: {
@@ -49,21 +44,19 @@ struct ServerAccountSettingsView: View {
 
             Section {
                 HStack(spacing: 10) {
-                    TextField("Code", text: $quickConnectCode)
-                        #if os(iOS)
+                    TextField("Code", text: $quickConnect.code)
                         .keyboardType(.numberPad)
                         .textInputAutocapitalization(.characters)
-                        #endif
                         .autocorrectionDisabled()
                     Button {
-                        authorizeQuickConnect()
+                        quickConnect.authorize(authManager: authManager)
                     } label: {
-                        if isAuthorizingQC { ProgressView().scaleEffect(0.8) }
+                        if quickConnect.isAuthorizing { ProgressView().scaleEffect(0.8) }
                         else { Text("Authorize") }
                     }
-                    .disabled(quickConnectCode.isEmpty || isAuthorizingQC)
+                    .disabled(quickConnect.code.isEmpty || quickConnect.isAuthorizing)
                 }
-                if let quickConnectResult {
+                if let quickConnectResult = quickConnect.result {
                     Text(quickConnectResult)
                         .font(.caption)
                         .foregroundStyle(quickConnectResult.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
@@ -79,13 +72,11 @@ struct ServerAccountSettingsView: View {
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Server")
-        #if !os(tvOS)
         .sheet(isPresented: $showSwitchServerSheet) {
             NavigationStack { SwitchServerView() }
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
-        #endif
     }
 
     @ViewBuilder
@@ -96,26 +87,6 @@ struct ServerAccountSettingsView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-        }
-    }
-
-    private func authorizeQuickConnect() {
-        guard case .authenticated(let cred) = authManager.state else { return }
-        isAuthorizingQC = true
-        quickConnectResult = nil
-        let code = quickConnectCode
-        Task {
-            let header = authManager.authClient.authHeader(token: cred.accessToken)
-            do {
-                let ok = try await authManager.authClient.authorizeQuickConnect(
-                    baseURL: cred.baseURL, authHeader: header, code: code
-                )
-                quickConnectResult = ok ? "✓ Device authorized" : "✗ Invalid or expired code"
-                if ok { quickConnectCode = "" }
-            } catch {
-                quickConnectResult = "✗ \(error.localizedDescription)"
-            }
-            isAuthorizingQC = false
         }
     }
 }

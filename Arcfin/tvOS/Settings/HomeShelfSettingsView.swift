@@ -11,16 +11,8 @@ struct HomeShelfSettingsView: View {
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
-    #if os(iOS)
-    private var editMode: EditMode { shuffleShelves ? .inactive : .active }
-    #endif
-
     private var footerText: String {
-        #if os(tvOS)
         let reorder = "Press and hold a shelf to move it."
-        #else
-        let reorder = "Drag to reorder."
-        #endif
         return shuffleShelves
             ? "Turning a shelf off hides it from Home — it still only shows when it actually has content."
             : "\(reorder) Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before."
@@ -35,7 +27,6 @@ struct HomeShelfSettingsView: View {
             }
 
             Section {
-                #if os(tvOS)
                 // No dragging on tvOS: select turns a shelf on or off, and a long press moves it.
                 ForEach(Array(order.enumerated()), id: \.element) { index, shelf in
                     Button { toggle(shelf) } label: {
@@ -54,30 +45,6 @@ struct HomeShelfSettingsView: View {
                         }
                     }
                 }
-                #else
-                ForEach(order) { shelf in
-                    HStack(spacing: 12) {
-                        Image(systemName: shelf.icon)
-                            .font(.system(.callout))
-                            .foregroundStyle(active.contains(shelf) ? DT.Color.accent : DT.Color.textSecondary)
-                            .frame(width: 24)
-                        Text(shelf.title)
-                            .foregroundStyle(DT.Color.textPrimary)
-                        Spacer()
-                        Button {
-                            toggle(shelf)
-                        } label: {
-                            Image(systemName: active.contains(shelf) ? "checkmark.circle.fill" : "circle")
-                                .font(.system(.title3))
-                                .foregroundStyle(active.contains(shelf) ? DT.Color.accent : DT.Color.textSecondary.opacity(0.5))
-                        }
-                        .accessibilityLabel(active.contains(shelf) ? "Hide \(shelf.title)" : "Show \(shelf.title)")
-                        .buttonStyle(.plain)
-                    }
-                }
-                .onMove(perform: move)
-                .moveDisabled(shuffleShelves)
-                #endif
             } header: {
                 Text("Home Shelves")
             } footer: {
@@ -92,9 +59,6 @@ struct HomeShelfSettingsView: View {
                 }
             }
         }
-        #if os(iOS)
-        .environment(\.editMode, Binding<EditMode>.constant(editMode))
-        #endif
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Home Shelves")
@@ -102,12 +66,6 @@ struct HomeShelfSettingsView: View {
             if orderString.isEmpty { orderString = HomeShelfPrefs.encode(order) }
             if activeString.isEmpty { activeString = HomeShelfPrefs.encode(active) }
         }
-    }
-
-    private func move(from source: IndexSet, to destination: Int) {
-        var items = order
-        items.move(fromOffsets: source, toOffset: destination)
-        orderString = HomeShelfPrefs.encode(items)
     }
 
     private func moveShelf(at index: Int, by offset: Int) {

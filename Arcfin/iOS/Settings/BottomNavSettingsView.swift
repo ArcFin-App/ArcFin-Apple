@@ -6,9 +6,7 @@ struct BottomNavSettingsView: View {
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     @AppStorage(BottomNavPrefs.launchTabKey) private var launchTab = BottomNavItem.home
-    #if canImport(UIKit) && !os(tvOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
-    #endif
 
     private var order: [BottomNavItem] { BottomNavPrefs.order(from: orderString) }
     private var active: Set<BottomNavItem> { BottomNavPrefs.active(from: activeString) }
@@ -16,13 +14,7 @@ struct BottomNavSettingsView: View {
     /// Same reasoning as AppearanceView.usesBottomBar — iPad/Mac show this exact order as
     /// a sidebar, not a bottom bar, so the screen title needs to stop claiming otherwise.
     private var usesBottomBar: Bool {
-        #if os(macOS)
-        false
-        #elseif os(iOS)
         sizeClass == .compact
-        #else
-        false
-        #endif
     }
 
     private var navTitle: String { usesBottomBar ? "Bottom Navigation" : "Navigation" }
@@ -67,9 +59,7 @@ struct BottomNavSettingsView: View {
                 }
             }
         }
-        #if os(iOS)
         .environment(\.editMode, .constant(.active))
-        #endif
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge(navTitle)

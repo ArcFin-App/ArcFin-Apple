@@ -19,9 +19,7 @@ struct IntegrationsSettingsView: View {
                 .syncLocked("seerrDiscoverEnabled", authManager)
                 NavigationLink {
                     SeerrPluginView()
-                        #if os(iOS)
                         .toolbar(.hidden, for: .tabBar)
-                        #endif
                 } label: {
                     HStack {
                         TVRowLabelText(title: "Seerr", detail: "Request movies and shows, and keep a watchlist.")

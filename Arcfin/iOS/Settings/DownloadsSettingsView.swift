@@ -6,9 +6,7 @@ import ImageCache
 struct DownloadsSettingsView: View {
     @AppStorage("wifiOnly")        private var wifiOnly        = true
     @AppStorage("downloadQuality") private var downloadQuality = VideoQuality.max
-    #if !os(tvOS)
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
-    #endif
     @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
     @AppStorage("smartDownloadsEnabled")       private var smartDownloadsEnabled       = false
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
@@ -167,14 +165,12 @@ struct DownloadsSettingsView: View {
                 Section {
                     ForEach(keptShows.sorted { $0.value.name < $1.value.name }, id: \.key) { seriesId, show in
                         LabeledContent(show.name, value: show.episodeCount == 1 ? "Next episode" : "Next \(show.episodeCount)")
-                            #if !os(tvOS)
                             .swipeActions {
                                 Button("Stop", role: .destructive) {
                                     downloadManager.setKeptShow(seriesId: seriesId, name: show.name, episodeCount: nil)
                                     keptShows = DownloadManager.keptShows
                                 }
                             }
-                            #endif
                     }
                 } header: {
                     Text("Kept Downloaded")
@@ -185,14 +181,12 @@ struct DownloadsSettingsView: View {
                 }
             }
 
-            #if !os(tvOS)
             Section {
                 Toggle(isOn: $offlineModeEnabled) {
                     TVRowLabelText(title: "Offline Mode", detail: "Shows only what's downloaded, without connecting to your server.")
                 }
                 .syncLocked("offlineModeEnabled", authManager)
             }
-            #endif
         }
         .arcfinListStyle()
         .screenBackground()

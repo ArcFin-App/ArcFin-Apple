@@ -6,29 +6,26 @@ import AuthCore
 /// Extra headers sent to the Jellyfin server, for one behind an access gateway such as
 /// Cloudflare Access or Pangolin.
 struct CustomHeadersView: View {
-    @State private var headers = CustomHTTPHeaders.all
-    @State private var errorMessage: String?
+    @State private var model = CustomHeadersModel()
 
     var body: some View {
         List {
             Section {
-                ForEach($headers) { $header in
+                ForEach($model.headers) { $header in
                     VStack(alignment: .leading, spacing: 6) {
                         TextField("Header name", text: $header.name)
                             .font(.system(.subheadline, design: .monospaced, weight: .semibold))
                         SecureField("Value", text: $header.value)
                             .font(.system(.subheadline, design: .monospaced))
                     }
-                    #if os(iOS)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    #endif
                     .padding(.vertical, 4)
                 }
-                .onDelete { headers.remove(atOffsets: $0); save() }
+                .onDelete { model.headers.remove(atOffsets: $0); model.save() }
 
                 Button {
-                    headers.append(.init(name: "", value: ""))
+                    model.headers.append(.init(name: "", value: ""))
                 } label: {
                     Label("Add Header", systemImage: "plus.circle.fill")
                 }
@@ -38,24 +35,14 @@ struct CustomHeadersView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
-            if let errorMessage {
+            if let errorMessage = model.errorMessage {
                 Text(errorMessage).font(.footnote).foregroundStyle(.red)
             }
         }
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Custom Headers")
-        .onDisappear(perform: save)
-        .onSubmit(save)
-    }
-
-    private func save() {
-        let kept = headers.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty || !$0.value.isEmpty }
-        do {
-            try CustomHTTPHeaders.save(kept)
-            errorMessage = nil
-        } catch {
-            errorMessage = "Couldn't save the headers: \(error.localizedDescription)"
-        }
+        .onDisappear(perform: model.save)
+        .onSubmit(model.save)
     }
 }

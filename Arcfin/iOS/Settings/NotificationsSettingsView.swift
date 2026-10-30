@@ -12,7 +12,6 @@ struct NotificationsSettingsView: View {
     @AppStorage(QuietHours.startKey) private var quietStart = QuietHours.defaultStart
     @AppStorage(QuietHours.endKey) private var quietEnd = QuietHours.defaultEnd
 
-    #if !os(tvOS)
     /// A time picker over minutes after midnight.
     private func time(_ minutes: Binding<Int>) -> Binding<Date> {
         Binding(
@@ -23,7 +22,6 @@ struct NotificationsSettingsView: View {
             }
         )
     }
-    #endif
 
     var body: some View {
         List {
@@ -41,16 +39,12 @@ struct NotificationsSettingsView: View {
                     TVRowLabelText(title: "Watchlist Available", detail: "When a title on your watchlist arrives in your library.")
                 }
                 .syncLocked("notifyWatchlistAvailable", authManager)
-                // No downloads on macOS — nothing would ever trigger this notification there.
-                #if !os(tvOS)
                 Toggle(isOn: $notifyDownload) {
                     TVRowLabelText(title: "Download Complete", detail: "When a download finishes.")
                 }
                 .syncLocked("notifyDownload", authManager)
-                #endif
             }
 
-            #if !os(tvOS)
             Section {
                 Toggle(isOn: $quietHoursEnabled) {
                     TVRowLabelText(title: "Quiet Hours", detail: "Notifications in these hours go to Notification Center without a sound or banner.")
@@ -61,7 +55,6 @@ struct NotificationsSettingsView: View {
                     DatePicker("To", selection: time($quietEnd), displayedComponents: .hourAndMinute)
                 }
             }
-            #endif
         }
         .arcfinListStyle()
         .screenBackground()

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
-import AuthCore
-import SeerrAPI
 
 /// The user's own TMDB key. With it, title pages, streaming rows and Home's catalogue shelves
 /// work without Seerr, and keep working when Seerr's requests fail. Laid out like the Seerr
@@ -10,19 +8,14 @@ import SeerrAPI
 struct TMDBSettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
-    @State private var key = TMDBCredential.load() ?? ""
-    @State private var savedKey = TMDBCredential.load() ?? ""
-    @State private var testResult: String?
-    @State private var isTesting = false
+    @State private var model = TMDBKeyModel()
 
     var body: some View {
         List {
             Section {
-                SecureField("API key or read access token", text: $key)
+                SecureField("API key or read access token", text: $model.key)
                     .autocorrectionDisabled()
-                    #if os(iOS)
                     .textInputAutocapitalization(.never)
-                    #endif
                     .onSubmit(save)
             } header: {
                 Label("API Key", systemImage: "key")
@@ -37,21 +30,21 @@ struct TMDBSettingsView: View {
 
             Section {
                 Button {
-                    testConnection()
+                    model.testConnection(seerrRepo: seerrRepo)
                 } label: {
                     HStack {
-                        if isTesting {
+                        if model.isTesting {
                             ProgressView().scaleEffect(0.8)
                         } else {
                             Image(systemName: "network")
                         }
-                        Text(isTesting ? "Testing…" : "Test Connection")
+                        Text(model.isTesting ? "Testing…" : "Test Connection")
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .disabled(key.trimmingCharacters(in: .whitespaces).isEmpty || isTesting)
+                .disabled(model.key.trimmingCharacters(in: .whitespaces).isEmpty || model.isTesting)
 
-                if let result = testResult {
+                if let result = model.testResult {
                     Text(result)
                         .font(.caption)
                         .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
@@ -59,12 +52,12 @@ struct TMDBSettingsView: View {
                 }
             }
 
-            if !savedKey.isEmpty {
+            if !model.savedKey.isEmpty {
                 Section {
                     Button(role: .destructive) {
-                        key = ""
+                        model.key = ""
                         save()
-                        testResult = nil
+                        model.testResult = nil
                     } label: {
                         Text("Remove Key").frame(maxWidth: .infinity, alignment: .center)
                     }
@@ -79,27 +72,6 @@ struct TMDBSettingsView: View {
     }
 
     private func save() {
-        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed != savedKey else { return }
-        try? TMDBCredential.save(trimmed)
-        savedKey = trimmed
-        seerrRepo.reloadTMDB()
-        if !trimmed.isEmpty { Task { await seerrRepo.loadDiscover() } }
-    }
-
-    private func testConnection() {
-        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        isTesting = true
-        testResult = nil
-        Task {
-            do {
-                _ = try await TMDBClient(key: trimmed).trending()
-                testResult = "✓ Connected to TMDB"
-                save()
-            } catch {
-                testResult = "✗ \(error.localizedDescription)"
-            }
-            isTesting = false
-        }
+        model.save(seerrRepo: seerrRepo)
     }
 }

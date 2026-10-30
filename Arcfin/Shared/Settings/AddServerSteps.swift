@@ -10,8 +10,9 @@ private enum AddServerStep {
 
 /// Same two-step flow as the initial sign-in (LoginRootView) — server URL, then
 /// credentials — but wired to add a new profile alongside existing ones instead of
-/// replacing the current session. Mirrors tvOS's TVAddProfileFlowView.
-struct AddServerFlowView: View {
+/// replacing the current session. Mirrors tvOS's TVAddProfileFlowView. Each platform's
+/// AddServerFlowView shows it.
+struct AddServerSteps: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
     @State private var step: AddServerStep = .serverURL
@@ -46,10 +47,6 @@ struct AddServerFlowView: View {
             }
         }
         .animation(DT.Animation.standard, value: stepTag)
-        .navigationBarBackButtonHidden(true)
-        #if os(iOS)
-        .toolbar(.hidden, for: .navigationBar)
-        #endif
     }
 
     private var stepTag: Int {
