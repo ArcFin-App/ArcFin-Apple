@@ -100,12 +100,15 @@
 			);
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
+				iOS/Detail/PersonDetailView.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
 				iOS/Search/SearchView.swift = (ios, );
+				macOS/Detail/PersonDetailView.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Search/SearchView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
+				tvOS/Detail/PersonDetailView.swift = (tvos, );
 				tvOS/Detail/TVMediaDetailView.swift = (tvos, );
 				tvOS/Home/LibraryScreensaverView.swift = (tvos, );
 				tvOS/Home/TVHomeView.swift = (tvos, );
