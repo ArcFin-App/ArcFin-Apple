@@ -7,13 +7,14 @@ import AuthCore
 /// be reached at all and there's nothing already loaded to fall back to showing. A half-drawn
 /// tab bar and empty shelves look broken and leak the fact that content exists server-side to
 /// anyone glancing at the screen; a single deliberate blank state reads as "offline," not "bug."
-struct NoConnectionView: View {
+///
+/// Each platform's `NoConnectionView` adds its own ways out between Retry and Sign Out.
+struct NoConnectionContent<MoreActions: View>: View {
+    let signOut: () -> Void
+    @ViewBuilder let moreActions: MoreActions
+
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
-
-    @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
-    @State private var showSwitchServer = false
-    @State private var confirmSignOut = false
 
     private let tips = [
         "Check that Wi-Fi or Mobile Data is turned on",
@@ -77,30 +78,9 @@ struct NoConnectionView: View {
                         }
                         .disabled(mediaRepo.isLoading)
 
-                        #if !os(tvOS)
-                        Button {
-                            offlineModeEnabled = true
-                        } label: {
-                            Text("Turn On Offline Mode")
-                                .font(.system(.subheadline, design: .default, weight: .semibold))
-                                .foregroundStyle(DT.Color.textPrimary)
-                                .frame(maxWidth: 340)
-                                .frame(height: 48)
-                                .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.md))
-                        }
-                        #endif
+                        moreActions
 
-                        // A way out when the server is gone for good: another saved server,
-                        // or back to sign-in.
-                        #if !os(tvOS)
-                        Button { showSwitchServer = true } label: {
-                            Text("Switch Server")
-                                .font(.system(.subheadline, weight: .semibold))
-                                .foregroundStyle(DT.Color.accent)
-                                .frame(minHeight: 44)
-                        }
-                        #endif
-                        Button("Sign Out", role: .destructive) { confirmSignOut = true }
+                        Button("Sign Out", role: .destructive) { signOut() }
                             .font(.system(.subheadline, weight: .semibold))
                             .frame(minHeight: 44)
                     }
@@ -109,32 +89,10 @@ struct NoConnectionView: View {
                 .padding(.bottom, 40)
             }
         }
-        #if os(iOS)
-        // This screen can replace the app while a landscape player was open.
-        .onAppear { resetPlayerOrientation() }
-        #endif
-        #if !os(tvOS)
-        .sheet(isPresented: $showSwitchServer) {
-            NavigationStack { SwitchServerView() }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        }
-        #endif
-        .confirmationDialog("Sign out of this server?", isPresented: $confirmSignOut, titleVisibility: .visible) {
-            Button("Sign Out", role: .destructive) { authManager.signOut() }
-        } message: {
-            Text("You'll need to sign in again to use it. Downloads stay on this device.")
-        }
     }
 
     private func retry() {
         guard case .authenticated(let credential) = authManager.state else { return }
         Task { await mediaRepo.load(credential: credential, authClient: authManager.authClient, force: true) }
     }
-}
-
-#Preview {
-    NoConnectionView()
-        .environment(AuthManager())
-        .environment(MediaRepository())
 }

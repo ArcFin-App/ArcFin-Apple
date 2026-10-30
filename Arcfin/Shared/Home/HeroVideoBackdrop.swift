@@ -166,7 +166,7 @@ final class LoopingPlayerUIView: UIView {
     }
 }
 
-#elseif os(macOS)
+#elseif canImport(AppKit)
 import AppKit
 
 // AppKit equivalent of LoopingPlayerUIView above — see PlayerSurfaceView in
