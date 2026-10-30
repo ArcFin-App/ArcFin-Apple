@@ -116,6 +116,8 @@
 				iOS/Library/LibraryView.swift = (ios, );
 				iOS/Library/LocalPlayerView.swift = (ios, );
 				iOS/Lock/AppLockView.swift = (ios, );
+				iOS/Login/LoginPlatform.swift = (ios, );
+				iOS/Login/SetupGuideSheet.swift = (ios, );
 				iOS/Platform/InlineNavigationTitle.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/ScrubGesture.swift = (ios, );
@@ -138,6 +140,8 @@
 				macOS/Library/LocalPlayerView.swift = (macos, );
 				macOS/Library/PlayableVideo.swift = (macos, );
 				macOS/Lock/AppLockView.swift = (macos, );
+				macOS/Login/LoginPlatform.swift = (macos, );
+				macOS/Login/SetupGuideSheet.swift = (macos, );
 				macOS/Platform/InlineNavigationTitle.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/ScrubGesture.swift = (macos, );
@@ -157,6 +161,8 @@
 				tvOS/Library/LibraryFilterControls.swift = (tvos, );
 				tvOS/Library/LibraryView.swift = (tvos, );
 				tvOS/Lock/AppLockView.swift = (tvos, );
+				tvOS/Login/LoginPlatform.swift = (tvos, );
+				tvOS/Login/SetupGuideSheet.swift = (tvos, );
 				tvOS/Platform/InlineNavigationTitle.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/ScrubGesture.swift = (tvos, );

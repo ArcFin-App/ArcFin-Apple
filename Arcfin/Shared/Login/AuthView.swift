@@ -111,9 +111,7 @@ struct AuthView: View {
                         .monospacedDigit()
                         .tracking(6)
                         .foregroundStyle(DT.Color.textPrimary)
-                        #if !os(tvOS)
-                        .textSelection(.enabled)
-                        #endif
+                        .quickConnectCodeSelection()
                         .accessibilityLabel("Code \(qcCode.map(String.init).joined(separator: " "))")
                 }
                 if qcPolling {

@@ -45,16 +45,10 @@ struct SeerrSetupPromptView: View {
             }
             .padding(32)
             .background(DT.Color.backgroundPrimary)
-            #if !os(tvOS)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Not Now") {
-                        onDismiss()
-                        dismiss()
-                    }
-                }
+            .seerrPromptNotNowButton {
+                onDismiss()
+                dismiss()
             }
-            #endif
         }
         .interactiveDismissDisabled()
     }
@@ -113,13 +107,7 @@ struct SeerrSetupPromptView: View {
                 .multilineTextAlignment(.center)
 
             SecureField("Password", text: $password)
-                #if !os(tvOS)
-                // .roundedBorder is unavailable on tvOS — its SecureField already renders
-                // with the system's own default appearance there, no style needed.
-                .textFieldStyle(.roundedBorder)
-                .submitLabel(.go)
-                .onSubmit(testPassword)
-                #endif
+                .seerrPasswordFieldStyle(onSubmit: testPassword)
                 .frame(maxWidth: 280)
 
             if let errorMessage {

@@ -61,11 +61,7 @@ struct LoginTextField: View {
                     .font(.body)
                     .foregroundStyle(DT.Color.textPrimary)
                     .autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(kind == .url ? .URL : .default)
-                    .textContentType(contentType)
-                    #endif
+                    .loginFieldInput(kind)
                     .submitLabel(kind == .password || kind == .url ? .go : .next)
                     .onSubmit(onSubmit)
                 if kind == .password {
@@ -111,16 +107,6 @@ struct LoginTextField: View {
             TextField(text: $text, prompt: prompt) { Text(title) }
         }
     }
-
-    #if os(iOS)
-    private var contentType: UITextContentType {
-        switch kind {
-        case .url: .URL
-        case .username: .username
-        case .password: .password
-        }
-    }
-    #endif
 }
 
 /// Rows in one rounded group, divided like a grouped list.
@@ -243,9 +229,7 @@ struct LoginBackButton: View {
             .font(.body)
             .foregroundStyle(DT.Color.accent)
             .frame(minHeight: 44)
-            #if os(tvOS)
-            .padding(.horizontal, 16)
-            #endif
+            .loginBackButtonPadding()
         }
         .arcfinPlainButton(cornerRadius: DT.Radius.pill, prominent: false)
         .frame(maxWidth: .infinity, alignment: .leading)

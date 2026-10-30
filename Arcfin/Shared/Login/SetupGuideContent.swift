@@ -2,9 +2,9 @@
 
 import SwiftUI
 
-struct SetupGuideSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
+/// The steps to get a Jellyfin server running, and tips for its address, in each platform's
+/// `SetupGuideSheet`.
+struct SetupGuideContent: View {
     private struct Step: Identifiable {
         let id: Int
         let icon: String
@@ -31,42 +31,6 @@ struct SetupGuideSheet: View {
     ]
 
     var body: some View {
-#if os(tvOS)
-        tvOSBody
-#else
-        NavigationStack {
-            scrollContent
-                .background(DT.Color.backgroundPrimary.ignoresSafeArea())
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { dismiss() }
-                            .foregroundStyle(DT.Color.accent)
-                            .fontWeight(.semibold)
-                    }
-                }
-        }
-#endif
-    }
-
-#if os(tvOS)
-    private var tvOSBody: some View {
-        ZStack(alignment: .topTrailing) {
-            scrollContent
-
-            Button { dismiss() } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .scaledFont(size: 36)
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .padding(DT.Spacing.lg)
-            }
-            .accessibilityLabel("Close")
-            .arcfinPlainButton(cornerRadius: DT.Radius.pill, prominent: false)
-        }
-        .background(DT.Color.backgroundPrimary.ignoresSafeArea())
-    }
-#endif
-
-    private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -163,8 +127,4 @@ struct SetupGuideSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
-}
-
-#Preview {
-    SetupGuideSheet()
 }
