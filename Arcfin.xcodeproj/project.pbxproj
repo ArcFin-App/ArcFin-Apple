@@ -132,6 +132,9 @@
 				iOS/Seerr/SeerrView.swift = (ios, );
 				iOS/Seerr/WatchlistView.swift = (ios, );
 				iOS/Splash/SplashScale.swift = (ios, );
+				iOS/Stats/StatsPlatform.swift = (ios, );
+				iOS/Stats/StatsShareSheet.swift = (ios, );
+				iOS/Stats/StatsView.swift = (ios, );
 				macOS/Detail/MediaDetailView.swift = (macos, );
 				macOS/Detail/PersonDetailView.swift = (macos, );
 				macOS/Home/HeroVideoBackdrop.swift = (macos, );
@@ -164,6 +167,9 @@
 				macOS/Seerr/WatchlistView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
 				macOS/Splash/SplashScale.swift = (macos, );
+				macOS/Stats/StatsPlatform.swift = (macos, );
+				macOS/Stats/StatsShareSheet.swift = (macos, );
+				macOS/Stats/StatsView.swift = (macos, );
 				tvOS/Detail/MediaDetailView.swift = (tvos, );
 				tvOS/Detail/PersonDetailView.swift = (tvos, );
 				tvOS/Home/HeroVideoBackdrop.swift = (tvos, );
@@ -193,6 +199,8 @@
 				tvOS/Seerr/SeerrView.swift = (tvos, );
 				tvOS/Seerr/WatchlistView.swift = (tvos, );
 				tvOS/Splash/SplashScale.swift = (tvos, );
+				tvOS/Stats/StatsPlatform.swift = (tvos, );
+				tvOS/Stats/StatsView.swift = (tvos, );
 			};
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 		};
