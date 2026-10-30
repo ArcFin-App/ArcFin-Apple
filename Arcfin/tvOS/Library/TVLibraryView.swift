@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(tvOS)
 import SwiftUI
 import JellyfinAPI
 import AuthCore
@@ -644,4 +643,3 @@ private struct TVBigLibraryCard: View {
         .contentShape(Rectangle())
     }
 }
-#endif
