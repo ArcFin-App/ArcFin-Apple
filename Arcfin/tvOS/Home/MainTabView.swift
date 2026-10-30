@@ -18,7 +18,7 @@ struct MainTabView: View {
         } else {
             TabView {
                 Tab("Home", systemImage: "house") {
-                    TVHomeView()
+                    HomeView()
                 }
                 Tab("Library", systemImage: "square.grid.2x2") {
                     TVLibraryView()

@@ -6,7 +6,7 @@ import SeerrAPI
 import AuthCore
 import ImageCache
 
-struct TVHomeView: View {
+struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -766,7 +766,7 @@ struct TVHomeView: View {
 }
 
 #Preview {
-    TVHomeView()
+    HomeView()
         .environment(AuthManager())
         .environment(MediaRepository())
         .environment(SeerrRepository())
