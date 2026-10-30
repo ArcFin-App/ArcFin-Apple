@@ -3,39 +3,21 @@
 import SwiftUI
 import JellyfinAPI
 
-struct ShelfSeeAllView: View {
-    let title: String
+/// Every title on one of Home's shelves, as a grid. Each platform's `ShelfSeeAllView` picks
+/// the columns.
+struct ShelfSeeAllGrid: View {
     let items: [MediaItem]
-    var isLandscape: Bool = false
+    let isLandscape: Bool
+    let columns: [GridItem]
+    let select: (MediaItem) -> Void
 
     @Environment(MediaRepository.self) private var mediaRepo
-    @State private var selectedItem: MediaItem?
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    private var isWide: Bool { horizontalSizeClass == .regular }
-#else
-    private let isWide = false
-#endif
-
-    private var columns: [GridItem] {
-#if os(macOS)
-        // Fixed 2/3-up columns leave a resizable Mac window either cramped or with cards
-        // stretched absurdly wide — adaptive reflows the grid as the window resizes instead.
-        [GridItem(.adaptive(minimum: isLandscape ? 280 : 150), spacing: 16)]
-#else
-        if isWide {
-            return [GridItem(.adaptive(minimum: isLandscape ? 260 : 150), spacing: 12)]
-        }
-        let count = isLandscape ? 2 : 3
-        return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
-#endif
-    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(items) { item in
-                    Button { selectedItem = item } label: {
+                    Button { select(item) } label: {
                         ShelfSeeAllCard(
                             imageURL: imageURL(for: item),
                             isLandscape: isLandscape,
@@ -49,16 +31,6 @@ struct ShelfSeeAllView: View {
             .padding(DT.Spacing.pagePad)
         }
         .screenBackground()
-        .navigationTitle(title)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        // Self-contained rather than relying on an ancestor's navigationDestination(for:) —
-        // a NavigationLink pushed from a view that itself was pushed via
-        // navigationDestination(item:) could silently fail to navigate until popping back.
-        .navigationDestination(item: $selectedItem) { item in
-            MediaDetailView(item: item)
-        }
     }
 
     private func imageURL(for item: MediaItem) -> URL? {
@@ -131,8 +103,6 @@ private struct ShelfSeeAllCard: View {
             }
         }
         .animation(DT.Animation.fast, value: hovered)
-        #if !os(tvOS)
-        .onHover { hovered = $0 }
-        #endif
+        .onPointerHover { hovered = $0 }
     }
 }

@@ -5,14 +5,8 @@ import JellyfinAPI
 import SeerrAPI
 import AuthCore
 import ImageCache
-import Telemetry
-// Needed for the privacy-annotated string interpolation in loadHeroVideoBackdrop()'s
-// logging below — Telemetry wraps os.Logger, but that doesn't re-export the OSLogMessage
-// interpolation machinery to callers (see MediaRepository.swift/JellyfinAuthClient.swift,
-// which hit the identical "missing import of defining module 'os'" error for the same reason).
-import os
 
-struct TVHomeView: View {
+struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -22,12 +16,9 @@ struct TVHomeView: View {
     @AppStorage(HomeShelfPrefs.orderKey) private var homeShelfOrderString = ""
     @AppStorage(HomeShelfPrefs.activeKey) private var homeShelfActiveString = ""
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
-    @State private var shuffledShelves = HomeShelfPrefs.shuffledOrder()
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
-    @State private var serviceRows: [Int: [SeerrItem]] = [:]
-    @State private var nowAvailable: [MediaItem] = []
-    @State private var openSeerrItem: SeerrItem?
+    @State private var model = HomeModel()
 
     @FocusState private var focusedItemID: String?
     // @FocusState clears to nil the instant focus moves to anything not bound to it (e.g.
@@ -36,9 +27,6 @@ struct TVHomeView: View {
     // continueWatching.first, discarding whatever the user had actually focused. This
     // mirrors the last real focus instead and is never cleared, only updated.
     @State private var lastFocusedItemID: String?
-    @State private var heroDetailItem: MediaItem?
-    @State private var deepLinkItemID: String? = nil
-    @State private var playbackRequest: PlaybackRequest?
     @State private var heroVideoBackdropItemID: String?
     @State private var heroVideoBackdropURL: URL?
     @State private var heroVideoBackdropTask: Task<Void, Never>?
@@ -62,7 +50,7 @@ struct TVHomeView: View {
     private var heroChromeOpacity: Double { heroChromeHidden ? 0 : 1 }
 
     private var cwItems: [MediaItem] {
-        mergeContinueWatchingAndUpNext ? mergedContinueAndNextItems : mediaRepo.continueWatching
+        mergeContinueWatchingAndUpNext ? HomeModel.continueAndNext(in: mediaRepo) : mediaRepo.continueWatching
     }
 
     /// Focus on the hero's buttons or its Continue Watching row, the only places the hero
@@ -80,7 +68,7 @@ struct TVHomeView: View {
     private var focusedItem: MediaItem? {
         guard let id = lastFocusedItemID else { return nil }
         // When Merge Continue Watching & Up Next is on, cwShelf renders items sourced from
-        // both arrays (mergedContinueAndNextItems) — this lookup only checked
+        // both arrays (HomeModel.continueAndNext) — this lookup only checked
         // continueWatching, so focusing a nextUp-sourced card in that merged row found no
         // match here, fell through to the fallback below, and left the hero stuck on the
         // first item instead of following focus along the row.
@@ -89,16 +77,9 @@ struct TVHomeView: View {
             ?? mediaRepo.recentlyAdded.first { $0.id == id }
     }
 
-    // Matches HomeView's own mergedContinueAndNextItems (iOS/iPadOS/macOS) — same dedup,
-    // same ordering (Continue Watching first).
-    private var mergedContinueAndNextItems: [MediaItem] {
-        var seen = Set<String>()
-        return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
-    }
-
     /// Only while Home itself is on screen: with sound on, a trailer left running under a
     /// title's page, the player or another tab would be heard there.
-    private var heroVideoAllowed: Bool { isHomeShowing && playbackRequest == nil }
+    private var heroVideoAllowed: Bool { isHomeShowing && model.playbackRequest == nil }
 
     private var heroDisplayItem: MediaItem? {
         focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
@@ -126,19 +107,19 @@ struct TVHomeView: View {
             .screenBackground()
             .onAppear { isHomeShowing = true }
             .onDisappear { isHomeShowing = false }
-            .navigationDestination(item: $heroDetailItem) { item in
+            .navigationDestination(item: $model.detailItem) { item in
                 MediaDetailView(item: item)
             }
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
             }
-            .navigationDestination(item: $openSeerrItem) { item in
+            .navigationDestination(item: $model.seerrDetailItem) { item in
                 TVSeerrItemDetailView(item: item)
             }
         }
-        .fullScreenCover(item: $playbackRequest) { request in
+        .fullScreenCover(item: $model.playbackRequest) { request in
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                playbackRequest = PlaybackRequest(item: next, startTicks: 0)
+                model.playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
         }
         .task { await load() }
@@ -167,90 +148,44 @@ struct TVHomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-                deepLinkItemID = id
-                heroDetailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
+                model.deepLinkItemID = id
+                model.detailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
-            playPendingWatch()
+            model.playPendingWatch(authManager: authManager)
         }
         .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
-            serviceRows = await HomeShelfLoader.serviceRows(seerrRepo: seerrRepo, previous: serviceRows)
+            await model.loadServiceRows(seerrRepo: seerrRepo)
         }
-        .task(id: HomeShelfLoader.recentlyAvailable(seerrRepo.requests).map(\.id)) { await loadNowAvailable() }
-        .onDisappear { if shuffleHomeShelves { shuffledShelves = HomeShelfPrefs.shuffledOrder() } }
+        .task(id: HomeShelfLoader.recentlyAvailable(seerrRepo.requests).map(\.id)) {
+            await model.loadNowAvailable(HomeShelfLoader.recentlyAvailable(seerrRepo.requests), authManager: authManager)
+        }
+        .onDisappear { if shuffleHomeShelves { model.reshuffleShelves() } }
     }
 
     // MARK: - Load
 
     private func load() async {
-        guard case .authenticated(let cred) = authManager.state else { return }
-        await mediaRepo.load(credential: cred, authClient: authManager.authClient)
-        mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
+        guard await model.loadShelves(force: false, authManager: authManager, mediaRepo: mediaRepo) else { return }
         // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
         // backdrop transitions are instant with no load jump.
         let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
              mediaRepo.logoURL(for: item)].compactMap { $0 }
         }
         ImageCache.preheat(urls: heroURLs)
-        TopShelfBridge.save(
-            continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
-                TopShelfMediaItem(
-                    id: item.id,
-                    title: topShelfTitle(item),
-                    subtitle: itemSubtitle(item),
-                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
-                    progress: item.userData?.playedPercentage.map { $0 / 100 } ?? 0
-                )
-            },
-            recentlyAdded: mediaRepo.recentlyAdded.prefix(3).map { item in
-                TopShelfMediaItem(
-                    id: item.id, title: item.name, subtitle: nil,
-                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
-                    progress: 0
-                )
-            }
-        )
-        let pendingID = deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
+        model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
+        let pendingID = model.deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
         if let id = pendingID {
             UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-            deepLinkItemID = nil
-            heroDetailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
+            model.deepLinkItemID = nil
+            model.detailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
         }
-        playPendingWatch()
-        if seerrRepo.hasCatalog && seerrDiscoverEnabled {
-            await seerrRepo.loadDiscover()
-            await seerrRepo.loadWatchlist()
-            let seerrURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist)
-                .flatMap { [$0.backdropURL, $0.posterURL].compactMap { $0 } }
-            mediaRepo.prefetch(urls: seerrURLs)
-        }
+        model.playPendingWatch(authManager: authManager)
+        await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
         if focusedItemID == nil {
             focusedItemID = mediaRepo.continueWatching.first?.id
         }
-    }
-
-    /// A SharePlay title: straight into the player.
-    private func playPendingWatch() {
-        guard let cred = authManager.state.credential, let id = WatchRoute.takePending() else { return }
-        let header = authManager.authClient.authHeader(token: cred.accessToken)
-        Task {
-            if let request = await WatchRoute.resolve(id: id, credential: cred, authHeader: header) {
-                playbackRequest = request
-            }
-        }
-    }
-
-    private func loadNowAvailable() async {
-        let requests = HomeShelfLoader.recentlyAvailable(seerrRepo.requests)
-        guard !requests.isEmpty, let cred = authManager.state.credential else {
-            nowAvailable = []
-            return
-        }
-        let header = authManager.authClient.authHeader(token: cred.accessToken)
-        let found = await HomeShelfLoader.nowAvailable(requests, credential: cred, authHeader: header)
-        guard !Task.isCancelled, found != nil || nowAvailable.isEmpty else { return }
-        nowAvailable = found ?? []
     }
 
     // MARK: - Hero section
@@ -360,7 +295,7 @@ struct TVHomeView: View {
                         // focus target stuck on this (now-hidden) screen instead of the
                         // player, which claims its own initial focus via .prefersDefaultFocus.
                         focusedItemID = nil
-                        playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                        model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
                             .opacity(heroChromeOpacity)
@@ -372,7 +307,7 @@ struct TVHomeView: View {
 
                     Button {
                         if heroTargetsLocked { wakeHeroChrome(); return }
-                        heroDetailItem = item
+                        model.detailItem = item
                     } label: {
                         TVHeroButtonLabel(icon: "info.circle", text: "More Info")
                             .opacity(heroChromeOpacity)
@@ -444,7 +379,6 @@ struct TVHomeView: View {
     /// hero doesn't auto-rotate on a timer — focus only changes via explicit remote
     /// navigation — so the trailer plays to its end, then the still backdrop returns.
     private func loadHeroVideoBackdrop() {
-        let log = Telemetry.logger(category: "HeroVideoBackdrop")
         heroVideoBackdropTask?.cancel()
         heroVideoBackdropURL = nil
         heroVideoBackdropItemID = nil
@@ -461,28 +395,11 @@ struct TVHomeView: View {
         heroVideoBackdropTask = Task {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
-            let client = JellyfinMediaClient()
-            let trailer: MediaItem?
-            do {
-                trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1).first
-            } catch {
-                log.error("getTrailers failed for \(item.id, privacy: .public): \(error, privacy: .public)")
-                return
-            }
-            guard let trailer, !Task.isCancelled else {
-                log.debug("no local trailer indexed for \(item.id, privacy: .public)")
-                return
-            }
-            let info: JellyfinPlaybackInfo
-            do {
-                info = try await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: trailer.id)
-            } catch {
-                log.error("getPlaybackInfo failed for trailer \(trailer.id, privacy: .public): \(error, privacy: .public)")
-                return
-            }
+            guard let url = await HomeModel.heroTrailerURL(for: item, credential: credential, authHeader: authHeader)
+            else { return }
             guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
             withAnimation(DT.Animation.motion(.easeIn(duration: 0.6))) {
-                heroVideoBackdropURL = info.playURL
+                heroVideoBackdropURL = url
                 heroVideoBackdropItemID = itemID
             }
         }
@@ -593,7 +510,7 @@ struct TVHomeView: View {
                         ForEach(items) { item in
                             Button {
                                 if heroTargetsLocked { wakeHeroChrome(); return }
-                                heroDetailItem = item
+                                model.detailItem = item
                             } label: {
                                 PosterCard(
                                     title: itemTitle(item),
@@ -624,9 +541,8 @@ struct TVHomeView: View {
     /// The user's shelves from Settings › Appearance › Home Shelves, in their order.
     /// Continue Watching lives in the hero, so it's left out here.
     private var orderedShelves: [HomeShelf] {
-        let active = HomeShelfPrefs.active(from: homeShelfActiveString)
-        let order = shuffleHomeShelves ? shuffledShelves : HomeShelfPrefs.order(from: homeShelfOrderString)
-        return order.filter { active.contains($0) && $0 != .continueWatching }
+        model.shelves(order: homeShelfOrderString, active: homeShelfActiveString, shuffled: shuffleHomeShelves)
+            .filter { $0 != .continueWatching }
     }
 
     private var belowFoldSection: some View {
@@ -694,13 +610,13 @@ struct TVHomeView: View {
                 mediaShelf(title: HomeShelfLoader.recommendationTitle(category), items: category.items)
             }
         case .nowAvailable:
-            if seerrRepo.isConfigured, !nowAvailable.isEmpty {
-                mediaShelf(title: "Now Available", items: nowAvailable)
+            if seerrRepo.isConfigured, !model.nowAvailable.isEmpty {
+                mediaShelf(title: "Now Available", items: model.nowAvailable)
             }
         case .streamingServices:
             if seerrRepo.hasCatalog {
                 ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
-                    if let items = serviceRows[provider.id], !items.isEmpty {
+                    if let items = model.serviceRows[provider.id], !items.isEmpty {
                         seerrShelf(title: "Popular on \(provider.name)", items: items)
                     }
                 }
@@ -797,12 +713,8 @@ struct TVHomeView: View {
     /// up yet; otherwise the title's Seerr page.
     private func openSeerrShelfItem(_ item: SeerrItem) {
         Task {
-            guard let credential = authManager.state.credential else { openSeerrItem = item; return }
-            let header = authManager.authClient.authHeader(token: credential.accessToken)
-            let local = try? await JellyfinMediaClient().findItem(
-                credential: credential, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
-                title: item.title, year: item.year.flatMap { Int($0.prefix(4)) })
-            if let local { heroDetailItem = local } else { openSeerrItem = item }
+            let local = await model.libraryCopy(of: item, authManager: authManager)
+            if let local { model.detailItem = local } else { model.seerrDetailItem = item }
         }
     }
 
@@ -814,7 +726,7 @@ struct TVHomeView: View {
             let ticks = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
             Button {
                 focusedItemID = nil
-                playbackRequest = PlaybackRequest(item: item, startTicks: ticks)
+                model.playbackRequest = PlaybackRequest(item: item, startTicks: ticks)
             } label: {
                 Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
             }
@@ -854,7 +766,7 @@ struct TVHomeView: View {
 }
 
 #Preview {
-    TVHomeView()
+    HomeView()
         .environment(AuthManager())
         .environment(MediaRepository())
         .environment(SeerrRepository())
