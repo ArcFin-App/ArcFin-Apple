@@ -114,7 +114,7 @@ struct HomeView: View {
                 MediaDetailView(item: item)
             }
             .navigationDestination(item: $model.seerrDetailItem) { item in
-                TVSeerrItemDetailView(item: item)
+                SeerrItemDetailView(item: item)
             }
         }
         .fullScreenCover(item: $model.playbackRequest) { request in
