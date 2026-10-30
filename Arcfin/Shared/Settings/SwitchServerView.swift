@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if !os(tvOS)
 import SwiftUI
 import AuthCore
 
@@ -14,7 +13,7 @@ struct SwitchServerView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
 
-    @State private var pinStates: [UUID: Bool] = [:]
+    @State private var pins = ProfilePINStates()
     @State private var switchTarget: ServerCredential?
     @State private var switchPINResetToken = 0
     @State private var switchPINError: String?
@@ -54,14 +53,12 @@ struct SwitchServerView: View {
         .arcfinListStyle()
         .screenBackground()
         .navigationTitle("Switch Server")
-    #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-    #endif
+        .inlineNavigationTitle()
         .navigationDestination(for: ServerGroup.self) { group in
             List {
                 ForEach(group.profiles) { profile in
                     Button { handleTap(profile) } label: {
-                        ProfileRowContent(profile: profile, isActive: profile.id == activeID, hasPIN: pinStates[profile.id] == true)
+                        ProfileRowContent(profile: profile, isActive: profile.id == activeID, hasPIN: pins.hasPIN(profile.id))
                     }
                     .buttonStyle(.plain)
                 }
@@ -69,11 +66,9 @@ struct SwitchServerView: View {
             .arcfinListStyle()
             .screenBackground()
             .navigationTitle(group.host)
-#if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
+            .inlineNavigationTitle()
         }
-        .task { await loadPINStates() }
+        .task { await pins.load(authManager: authManager) }
         .sheet(item: $switchTarget) { target in
             PINEntrySheet(
                 title: "Switch to \(target.displayName)",
@@ -135,7 +130,7 @@ struct SwitchServerView: View {
 
     private func handleTap(_ profile: ServerCredential) {
         guard profile.id != activeID else { dismiss(); return }
-        if pinStates[profile.id] == true {
+        if pins.hasPIN(profile.id) {
             switchPINError = nil
             switchPINResetToken = 0
             Task {
@@ -147,13 +142,4 @@ struct SwitchServerView: View {
             dismiss()
         }
     }
-
-    private func loadPINStates() async {
-        var states: [UUID: Bool] = [:]
-        for profile in authManager.profiles {
-            states[profile.id] = await authManager.pin(for: profile.id) != nil
-        }
-        pinStates = states
-    }
 }
-#endif

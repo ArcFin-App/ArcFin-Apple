@@ -115,11 +115,13 @@
 				iOS/Library/LibraryFilterControls.swift = (ios, );
 				iOS/Library/LibraryView.swift = (ios, );
 				iOS/Library/LocalPlayerView.swift = (ios, );
+				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/InlineNavigationTitle.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
 				iOS/Search/SearchView.swift = (ios, );
+				iOS/Settings/UsersView.swift = (ios, );
 				macOS/Detail/MediaDetailView.swift = (macos, );
 				macOS/Detail/PersonDetailView.swift = (macos, );
 				macOS/Home/HeroVideoBackdrop.swift = (macos, );
@@ -135,11 +137,13 @@
 				macOS/Library/LibraryView.swift = (macos, );
 				macOS/Library/LocalPlayerView.swift = (macos, );
 				macOS/Library/PlayableVideo.swift = (macos, );
+				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/InlineNavigationTitle.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/ScrubGesture.swift = (macos, );
 				macOS/Search/SearchView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
+				macOS/Settings/UsersView.swift = (macos, );
 				tvOS/Detail/MediaDetailView.swift = (tvos, );
 				tvOS/Detail/PersonDetailView.swift = (tvos, );
 				tvOS/Home/HeroVideoBackdrop.swift = (tvos, );
@@ -152,6 +156,7 @@
 				tvOS/Library/LibraryDetailView.swift = (tvos, );
 				tvOS/Library/LibraryFilterControls.swift = (tvos, );
 				tvOS/Library/LibraryView.swift = (tvos, );
+				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/InlineNavigationTitle.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/ScrubGesture.swift = (tvos, );
@@ -160,6 +165,7 @@
 				tvOS/Seerr/TVSeerrItemDetailView.swift = (tvos, );
 				tvOS/Seerr/TVSeerrView.swift = (tvos, );
 				tvOS/Settings/ProfileAccessView.swift = (tvos, );
+				tvOS/Settings/UsersView.swift = (tvos, );
 			};
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 		};
