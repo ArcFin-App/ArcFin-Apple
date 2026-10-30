@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
-#if !os(tvOS)
 import YouTubePlayerKit
 
 /// Fallback when a title has no local trailer indexed on the server but does have a
@@ -76,9 +75,5 @@ struct YouTubeTrailerPlayerView: View {
             .padding(.top, 16)
             .padding(.trailing, 16)
         }
-        #if canImport(UIKit)
-        .statusBarHidden()
-        #endif
     }
 }
-#endif

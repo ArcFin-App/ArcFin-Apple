@@ -2,9 +2,7 @@
 
 import Foundation
 import MediaPlayer
-#if os(macOS)
-import AppKit
-#endif
+import SwiftUI
 
 /// Lock screen / Control Center / AirPods "Now Playing" surface — driven off whichever
 /// engine (AVFoundation or VLC) is actually playing via MediaPlayerProtocol, not tied to

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AVFoundation
-#if canImport(UIKit) && !os(tvOS)
 import UIKit
 import AVKit
 
@@ -35,4 +34,3 @@ final class DisplayCriteriaMatcher {
         attachedWindow = nil
     }
 }
-#endif
