@@ -16,7 +16,7 @@ struct TVLibraryView: View {
         let hidden = LibraryVisibility.hiddenIDs
         let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && !hidden.contains($0.id) }
         guard !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) else { return libraries }
-        return libraries + [JellyfinLibrary(id: LibraryDetailView.allPlaylistsID, name: "Playlists", collectionType: .playlists)]
+        return libraries + [JellyfinLibrary(id: LibraryDetailModel.allPlaylistsID, name: "Playlists", collectionType: .playlists)]
     }
 
     var body: some View {
