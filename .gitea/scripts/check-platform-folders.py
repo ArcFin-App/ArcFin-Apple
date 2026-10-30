@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Checks that each platform folder builds only for its platform, with no platform checks inside.
+"""Checks that each platform folder builds only for its platform, with no platform checks inside,
+and that Arcfin/Shared has no compile-time checks at all.
 
 usage: check-platform-folders.py [--fix]
 
 Xcode filters platforms per file, not per folder, so every file in Arcfin/iOS, iPadOS, macOS
 and tvOS needs its own entry in the project. In Xcode that's the file's Target Membership,
 set to the one platform. --fix adds missing entries to the project instead of failing.
+
+Shared code builds for every platform the same way, so any #if in Arcfin/Shared (os(...),
+canImport(...) or anything else) fails: platform differences go in the platform folders.
 """
 import os
 import re
@@ -16,6 +20,7 @@ APP = os.path.join(REPO, "Arcfin")
 PROJECT = os.path.join(REPO, "Arcfin.xcodeproj", "project.pbxproj")
 FOLDERS = {"iOS": "ios", "iPadOS": "ios", "macOS": "macos", "tvOS": "tvos"}
 PLATFORM_CHECK = re.compile(r"^\s*#(if|elseif)\b.*\bos\(")
+ANY_CHECK = re.compile(r"^\s*#(if|elseif)\b")
 # The app target's exception set for the Arcfin folder.
 BLOCK = re.compile(r'(/\* Exceptions for "Arcfin" folder in "Arcfin" target \*/ = \{.*?'
                    r"platformFiltersByRelativePath = \{\n)(.*?)(\t*\};)", re.S)
@@ -55,6 +60,17 @@ for folder, platform in FOLDERS.items():
                         problems.append(f"Arcfin/{path}:{number}: platform check in a platform folder; "
                                         f"code more than one platform needs goes in Arcfin/Shared/")
 
+for directory, _, files in os.walk(os.path.join(APP, "Shared")):
+    for name in sorted(files):
+        if not name.endswith(".swift"):
+            continue
+        file = os.path.join(directory, name)
+        for number, text in enumerate(open(file), 1):
+            if ANY_CHECK.match(text):
+                problems.append(f"Arcfin/{os.path.relpath(file, APP)}:{number}: #if in Arcfin/Shared/; shared code "
+                                f"builds the same on every platform, so put each platform's part in "
+                                f"Arcfin/<platform>/ (a Platform/ hook under the same name) instead")
+
 for path, platforms in list(entries.items()):
     folder = path.split("/")[0]
     if folder in FOLDERS and not os.path.exists(os.path.join(APP, path)):
@@ -71,5 +87,5 @@ if fix:
 for problem in problems:
     print(f"::error::{problem}")
 if not problems:
-    print("Platform folders build only for their own platform.")
+    print("Platform folders build only for their own platform, and Arcfin/Shared has no #if.")
 sys.exit(1 if problems else 0)

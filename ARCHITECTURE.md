@@ -7,20 +7,23 @@ How Arcfin is put together: the project layout, the stack, the design system and
 ```
 Arcfin.xcodeproj
 Arcfin/                 the app target, shared by iOS, iPadOS, macOS and tvOS
-├── Shared/             per-screen state and views used on every platform
-├── iOS/                iPhone and iPad screens (built for iOS only)
+├── Shared/             code that builds the same on every platform, with no #if
+│   ├── App/            the app, its root state and deep links
+│   ├── Components/     views used across screens: shelf row, sheets, PIN pad
+│   ├── <Screen>/       each screen's state, and the views it shows on every platform
+│   └── DesignTokens.swift  the DT design system
+├── iOS/                iPhone and iPad (built for iOS only)
+│   ├── App/            the root view and the app's scenes
+│   ├── Components/     this platform's version of a shared component
+│   ├── Platform/       hooks each platform defines under the same name
+│   └── <Screen>/       the platform's screens
 ├── iPadOS/             iPad screens that differ from iPhone (built for iOS only)
-├── macOS/              Mac screens (built for macOS only)
-├── tvOS/               Apple TV screens (built for tvOS only)
-├── Screens/            screens not split per platform yet: Home, Library, Detail,
-│                       Player, Search, Seerr, Downloads, Stats, Settings, Login,
-│                       Lock and Splash
-├── Components/         shared views and modifiers
+├── macOS/              the Mac, laid out like iOS/ (built for macOS only)
+├── tvOS/               Apple TV, laid out like iOS/ (built for tvOS only)
 ├── Intents/            App Intents, Siri phrases and Spotlight
 ├── TopShelf/           data shared with the Top Shelf extension
 ├── *Repository.swift   data for the screens (Jellyfin, Seerr)
 ├── *Manager.swift      auth, downloads, notifications, SharePlay, SyncPlay
-├── DesignTokens.swift  the DT design system
 └── *.xcstrings         String Catalogs
 ArcfinWidgets/          widgets, Control Center controls and Live Activities
 ArcfinTopShelf/         the Apple TV Top Shelf extension
@@ -30,7 +33,7 @@ assets/                 badges and App Store artwork (not under the code license
 fastlane/metadata/      App Store Connect metadata (not under the code license)
 ```
 
-Each file in a platform folder compiles only for that platform through its Target Membership in the project, so the files in it have no `#if os(...)`, and editing one platform's screen can't change another's. Loading, filtering and playback decisions live once in `Shared/`, and each platform's view lays them out. iPad uses the iOS build: an iOS screen shows its `iPadOS/` view when the window is wide. Screens are moving out of `Screens/` one at a time for 0.4.0 ([#198](https://git.psmattas.com/ArcFin/ArcFin/issues/198)); [CONTRIBUTING.md](CONTRIBUTING.md#where-platform-code-goes) has the rules.
+Each file in a platform folder compiles only for that platform through its Target Membership in the project, so the files in it have no `#if os(...)`, and editing one platform's screen can't change another's. Loading, filtering and playback decisions live once in `Shared/`, and each platform's view lays them out. iPad uses the iOS build: an iOS screen shows its `iPadOS/` view when the window is wide. Small differences inside a shared view go through hooks in each platform's `Platform/` folder. Every screen was split this way for 0.4.0 ([#198](https://git.psmattas.com/ArcFin/ArcFin/issues/198)); a few logic files at the top of `Arcfin/` and in `Intents/` still have `#if`. [CONTRIBUTING.md](CONTRIBUTING.md#where-platform-code-goes) has the rules.
 
 ## Packages
 
@@ -78,7 +81,7 @@ Every HTTP client uses a session with `waitsForConnectivity` turned on, plus a w
 
 ## Design system
 
-Tokens live under `DT` in `Arcfin/DesignTokens.swift`. iPhone, iPad and Mac follow the system's light or dark appearance. The players, splash and lock screens, and all of Apple TV, stay dark.
+Tokens live under `DT` in `Arcfin/Shared/DesignTokens.swift`; the sizes that differ per platform (page margin, card sizes, font scale) come from each platform's `Platform/PlatformMetrics.swift`. iPhone, iPad and Mac follow the system's light or dark appearance. The players, splash and lock screens, and all of Apple TV, stay dark.
 
 | Token | Dark | Light |
 |---|---|---|

@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import SwiftUI
+
+extension View {
+    /// The Apple TV remote's Back button; there's none here.
+    func tvExitCommand(perform action: @escaping () -> Void) -> some View {
+        self
+    }
+}
