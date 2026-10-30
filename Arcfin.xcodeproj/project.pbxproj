@@ -100,12 +100,15 @@
 			);
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
+				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
+				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
 				tvOS/Detail/TVMediaDetailView.swift = (tvos, );
 				tvOS/Home/LibraryScreensaverView.swift = (tvos, );
 				tvOS/Home/TVHomeView.swift = (tvos, );
 				tvOS/Library/TVLibraryView.swift = (tvos, );
+				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Player/TVRemoteScrub.swift = (tvos, );
 				tvOS/Seerr/TVSeerrItemDetailView.swift = (tvos, );
 				tvOS/Seerr/TVSeerrView.swift = (tvos, );
