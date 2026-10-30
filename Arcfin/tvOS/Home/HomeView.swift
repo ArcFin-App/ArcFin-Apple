@@ -1,0 +1,773 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import SwiftUI
+import JellyfinAPI
+import SeerrAPI
+import AuthCore
+import ImageCache
+
+struct HomeView: View {
+    @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(SeerrRepository.self) private var seerrRepo
+
+    @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
+    @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
+    @AppStorage(HomeShelfPrefs.orderKey) private var homeShelfOrderString = ""
+    @AppStorage(HomeShelfPrefs.activeKey) private var homeShelfActiveString = ""
+    @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
+    @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
+    @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
+    @State private var model = HomeModel()
+
+    @FocusState private var focusedItemID: String?
+    // @FocusState clears to nil the instant focus moves to anything not bound to it (e.g.
+    // the hero's own Play/More Info buttons) — using it directly for heroDisplayItem meant
+    // moving focus up off a shelf card immediately reset the hero back to
+    // continueWatching.first, discarding whatever the user had actually focused. This
+    // mirrors the last real focus instead and is never cleared, only updated.
+    @State private var lastFocusedItemID: String?
+    @State private var heroVideoBackdropItemID: String?
+    @State private var heroVideoBackdropURL: URL?
+    @State private var heroVideoBackdropTask: Task<Void, Never>?
+    @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    @AppStorage("heroTrailerSound") private var heroTrailerSound = false
+    @State private var isHomeShowing = false
+    @State private var heroVideoRequestedItemID: String?
+    @State private var heroVideoIsPlaying = false
+    @State private var heroChromeHidden = false
+    @State private var heroChromeTask: Task<Void, Never>?
+    // While the hero is hidden, only the element focus was on stays focusable, so the first
+    // press has nowhere to go: it brings the hero back with focus where it was.
+    @State private var heroTargetsLocked = false
+    @State private var heroFocusToRestore: HeroFocus?
+    @State private var heroUnlockTask: Task<Void, Never>?
+    @FocusState private var focusedHeroButton: HeroButton?
+
+    private enum HeroButton { case play, info }
+    private enum HeroFocus: Equatable { case item(String), button(HeroButton) }
+
+    private var heroChromeOpacity: Double { heroChromeHidden ? 0 : 1 }
+
+    private var cwItems: [MediaItem] {
+        mergeContinueWatchingAndUpNext ? HomeModel.continueAndNext(in: mediaRepo) : mediaRepo.continueWatching
+    }
+
+    /// Focus on the hero's buttons or its Continue Watching row, the only places the hero
+    /// hides from.
+    private var currentHeroFocus: HeroFocus? {
+        if let focusedHeroButton { return .button(focusedHeroButton) }
+        if let focusedItemID, cwItems.contains(where: { $0.id == focusedItemID }) { return .item(focusedItemID) }
+        return nil
+    }
+
+    private func heroTargetLocked(_ target: HeroFocus) -> Bool {
+        heroTargetsLocked && heroFocusToRestore != target
+    }
+
+    private var focusedItem: MediaItem? {
+        guard let id = lastFocusedItemID else { return nil }
+        // When Merge Continue Watching & Up Next is on, cwShelf renders items sourced from
+        // both arrays (HomeModel.continueAndNext) — this lookup only checked
+        // continueWatching, so focusing a nextUp-sourced card in that merged row found no
+        // match here, fell through to the fallback below, and left the hero stuck on the
+        // first item instead of following focus along the row.
+        return mediaRepo.continueWatching.first { $0.id == id }
+            ?? mediaRepo.nextUp.first { $0.id == id }
+            ?? mediaRepo.recentlyAdded.first { $0.id == id }
+    }
+
+    /// Only while Home itself is on screen: with sound on, a trailer left running under a
+    /// title's page, the player or another tab would be heard there.
+    private var heroVideoAllowed: Bool { isHomeShowing && model.playbackRequest == nil }
+
+    private var heroDisplayItem: MediaItem? {
+        focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
+    }
+
+    var body: some View {
+        NavigationStack {
+            GeometryReader { proxy in
+                let sh = proxy.size.height
+                let sw = proxy.size.width
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        heroSection(screenW: sw, screenH: sh)
+                            .frame(height: sh)
+                        belowFoldSection
+                            .padding(.vertical, 72)
+                            .disabled(heroTargetsLocked)
+                    }
+                    .focusSection()
+                }
+                .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
+                .ignoresSafeArea()
+            }
+            .screenBackground()
+            .onAppear { isHomeShowing = true }
+            .onDisappear { isHomeShowing = false }
+            .navigationDestination(item: $model.detailItem) { item in
+                MediaDetailView(item: item)
+            }
+            .navigationDestination(for: MediaItem.self) { item in
+                MediaDetailView(item: item)
+            }
+            .navigationDestination(item: $model.seerrDetailItem) { item in
+                SeerrItemDetailView(item: item)
+            }
+        }
+        .fullScreenCover(item: $model.playbackRequest) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                model.playbackRequest = PlaybackRequest(item: next, startTicks: 0)
+            }
+        }
+        .task { await load() }
+        // The hero already shows the first Continue Watching item until something's focused.
+        // Assigning focus to it here pulled the page down to that row once Home loaded.
+        .onChange(of: mediaRepo.continueWatching) { _, _ in
+            if focusedItemID == nil { reloadHeroVideoIfItemChanged() }
+        }
+        .onChange(of: focusedItemID) { _, newValue in
+            if heroTargetsLocked {
+                heroFocusDidChangeWhileLocked()
+                return
+            }
+            if let newValue { lastFocusedItemID = newValue }
+            showHeroChrome()
+            reloadHeroVideoIfItemChanged()
+        }
+        .onChange(of: focusedHeroButton) { _, _ in
+            if heroTargetsLocked {
+                heroFocusDidChangeWhileLocked()
+                return
+            }
+            showHeroChrome()
+        }
+        .onChange(of: heroVideoAllowed) { _, _ in loadHeroVideoBackdrop() }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
+            if let id = note.userInfo?["itemID"] as? String {
+                UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+                model.deepLinkItemID = id
+                model.detailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+            model.playPendingWatch(authManager: authManager)
+        }
+        .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
+            await model.loadServiceRows(seerrRepo: seerrRepo)
+        }
+        .task(id: HomeShelfLoader.recentlyAvailable(seerrRepo.requests).map(\.id)) {
+            await model.loadNowAvailable(HomeShelfLoader.recentlyAvailable(seerrRepo.requests), authManager: authManager)
+        }
+        .onDisappear { if shuffleHomeShelves { model.reshuffleShelves() } }
+    }
+
+    // MARK: - Load
+
+    private func load() async {
+        guard await model.loadShelves(force: false, authManager: authManager, mediaRepo: mediaRepo) else { return }
+        // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
+        // backdrop transitions are instant with no load jump.
+        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
+             mediaRepo.logoURL(for: item)].compactMap { $0 }
+        }
+        ImageCache.preheat(urls: heroURLs)
+        model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
+        let pendingID = model.deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
+        if let id = pendingID {
+            UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+            model.deepLinkItemID = nil
+            model.detailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
+        }
+        model.playPendingWatch(authManager: authManager)
+        await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
+        if focusedItemID == nil {
+            focusedItemID = mediaRepo.continueWatching.first?.id
+        }
+    }
+
+    // MARK: - Hero section
+
+    private func heroSection(screenW: CGFloat, screenH: CGFloat) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
+            backdropLayer()
+
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.0),
+                    .init(color: DT.Color.backgroundPrimary.opacity(0.4), location: 0.5),
+                    .init(color: DT.Color.backgroundPrimary, location: 1.0)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+
+            HStack(spacing: 0) {
+                LinearGradient(
+                    colors: [DT.Color.backgroundPrimary.opacity(0.75), .clear],
+                    startPoint: .leading, endPoint: .trailing
+                )
+                .frame(width: screenW * 0.6)
+                Spacer()
+            }
+            .opacity(heroChromeOpacity)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer()
+                heroInfoBlock
+                    .padding(.horizontal, 80)
+                    .padding(.bottom, 48)
+                cwShelf
+                    .padding(.bottom, 60)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("shelf.\(HomeShelf.continueWatching.rawValue)")
+            }
+        }
+        .focusSection()
+        .onMoveCommand { _ in
+            if heroTargetsLocked { wakeHeroChrome() }
+        }
+    }
+
+    @ViewBuilder
+    private func backdropLayer() -> some View {
+        let url = heroDisplayItem.flatMap {
+            mediaRepo.imageURL(for: $0, type: .backdrop, fillWidth: 1920)
+        }
+        ZStack {
+            LazyHeroImage(url: url) { heroFallbackGradient }
+                .clipped()
+
+            if let videoURL = heroVideoBackdropURL, let itemID = heroVideoBackdropItemID, itemID == heroDisplayItem?.id {
+                HeroVideoBackdropView(
+                    url: videoURL, loops: false, muted: !heroTrailerSound,
+                    onStart: { heroVideoDidStart(itemID: itemID) },
+                    onEnd: { endHeroVideoBackdrop(itemID: itemID) }
+                )
+                .transition(.opacity)
+            }
+        }
+    }
+
+    private var heroFallbackGradient: some View {
+        LinearGradient(
+            colors: [DT.Color.accentDeep.opacity(0.35), DT.Color.backgroundPrimary],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    }
+
+    @ViewBuilder
+    private var heroInfoBlock: some View {
+        if let item = heroDisplayItem {
+            VStack(alignment: .leading, spacing: 16) {
+                CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                    if case .success(let img) = phase {
+                        img.resizable().scaledToFit()
+                            .frame(maxWidth: 300, maxHeight: 90)
+                            .shadow(color: .black.opacity(0.7), radius: 12)
+                    } else {
+                        Text(item.name)
+                            .font(.system(size: 36, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.9), radius: 10)
+                    }
+                }
+                .id(item.id)
+                .transition(.opacity)
+                .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
+                .opacity(heroChromeOpacity)
+
+                heroMetaRow(item)
+                    .opacity(heroChromeOpacity)
+
+                if let pct = item.userData?.playedPercentage, pct > 1 {
+                    progressBar(pct: pct / 100)
+                        .opacity(heroChromeOpacity)
+                }
+
+                HStack(spacing: 20) {
+                    Button {
+                        if heroTargetsLocked { wakeHeroChrome(); return }
+                        // Releases this screen's own focus claim before the player appears —
+                        // a lingering @FocusState here can otherwise keep the remote's actual
+                        // focus target stuck on this (now-hidden) screen instead of the
+                        // player, which claims its own initial focus via .prefersDefaultFocus.
+                        focusedItemID = nil
+                        model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                    } label: {
+                        TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
+                            .opacity(heroChromeOpacity)
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .focused($focusedHeroButton, equals: .play)
+                    .disabled(heroTargetLocked(.button(.play)))
+
+                    Button {
+                        if heroTargetsLocked { wakeHeroChrome(); return }
+                        model.detailItem = item
+                    } label: {
+                        TVHeroButtonLabel(icon: "info.circle", text: "More Info")
+                            .opacity(heroChromeOpacity)
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .focused($focusedHeroButton, equals: .info)
+                    .disabled(heroTargetLocked(.button(.info)))
+                }
+                .padding(.top, 4)
+            }
+            .frame(maxWidth: 540, alignment: .leading)
+            .id(item.id)
+            .transition(.opacity)
+            .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
+        } else {
+            brandingBlock
+        }
+    }
+
+    private var brandingBlock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Arcfin")
+                .font(.system(size: 48, weight: .black))
+                .foregroundStyle(DT.Color.accent)
+            Text("Your Jellyfin media, beautifully.")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+    }
+
+    private func heroMetaRow(_ item: MediaItem) -> some View {
+        HStack(spacing: 12) {
+            if let year = item.productionYear {
+                Text(String(year)).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+            }
+            if let rating = item.communityRating {
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
+                HStack(spacing: 5) {
+                    Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
+                    Text(String(format: "%.1f", rating))
+                        .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
+                }
+            }
+            Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
+            Text(item.type == .series ? "Series" : "Movie")
+                .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+        }
+    }
+
+    private func progressBar(pct: Double) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2).fill(DT.Color.progressTrack).frame(height: 4)
+                RoundedRectangle(cornerRadius: 2).fill(DT.Color.progressFill)
+                    .frame(width: geo.size.width * min(pct, 1), height: 4)
+            }
+        }
+        .frame(maxWidth: 280)
+        .frame(height: 4)
+    }
+
+    // MARK: - Hero video backdrop
+
+    /// Fetches (after a short pause, so quickly moving focus across several Continue
+    /// Watching cards doesn't fire a burst of these) whether the currently-focused hero
+    /// item has a local trailer indexed on the server, and if so resolves it to a real
+    /// playable stream URL the same way the main player does. Unlike iOS's hero, tvOS's
+    /// hero doesn't auto-rotate on a timer — focus only changes via explicit remote
+    /// navigation — so the trailer plays to its end, then the still backdrop returns.
+    private func loadHeroVideoBackdrop() {
+        heroVideoBackdropTask?.cancel()
+        heroVideoBackdropURL = nil
+        heroVideoBackdropItemID = nil
+        heroVideoRequestedItemID = nil
+        heroVideoIsPlaying = false
+        unlockHeroTargets()
+        showHeroChrome()
+        guard heroVideoBackdropsEnabled, heroVideoAllowed, let item = heroDisplayItem,
+              case .authenticated(let credential) = authManager.state
+        else { return }
+        let itemID = item.id
+        heroVideoRequestedItemID = itemID
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        heroVideoBackdropTask = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            guard let url = await HomeModel.heroTrailerURL(for: item, credential: credential, authHeader: authHeader)
+            else { return }
+            guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
+            withAnimation(DT.Animation.motion(.easeIn(duration: 0.6))) {
+                heroVideoBackdropURL = url
+                heroVideoBackdropItemID = itemID
+            }
+        }
+    }
+
+    private func endHeroVideoBackdrop(itemID: String) {
+        guard heroVideoBackdropItemID == itemID else { return }
+        heroVideoIsPlaying = false
+        unlockHeroTargets()
+        showHeroChrome()
+        withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
+            heroVideoBackdropURL = nil
+            heroVideoBackdropItemID = nil
+        }
+    }
+
+    /// Moving between a title's card and its Play/More Info buttons, or Continue Watching
+    /// refreshing in the background, keeps the same title in the hero: its trailer carries
+    /// on instead of starting over.
+    private func reloadHeroVideoIfItemChanged() {
+        guard heroDisplayItem?.id != heroVideoRequestedItemID else { return }
+        loadHeroVideoBackdrop()
+    }
+
+    private func heroVideoDidStart(itemID: String) {
+        guard heroVideoBackdropItemID == itemID else { return }
+        heroVideoIsPlaying = true
+        hideHeroChromeSoon()
+    }
+
+    /// Gives the trailer the screen after a few seconds, if focus is on the hero. Only what's
+    /// drawn fades; the focused button or card stays in place and keeps focus.
+    private func hideHeroChromeSoon() {
+        heroChromeTask?.cancel()
+        heroChromeTask = Task {
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled, heroVideoIsPlaying, let target = currentHeroFocus else { return }
+            heroFocusToRestore = target
+            heroTargetsLocked = true
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.6))) { heroChromeHidden = true }
+        }
+    }
+
+    /// The first press after the hero hid: bring it back and keep focus where it was. Up can
+    /// still reach the tab bar, which can't be locked, so focus is put back on the element.
+    /// The targets unlock a moment later, once that press has been handled.
+    private func wakeHeroChrome() {
+        heroChromeTask?.cancel()
+        if heroChromeHidden {
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
+        }
+        restoreHeroFocus()
+        heroUnlockTask?.cancel()
+        heroUnlockTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            restoreHeroFocus()
+            unlockHeroTargets()
+            if heroVideoIsPlaying { hideHeroChromeSoon() }
+        }
+    }
+
+    private func heroFocusDidChangeWhileLocked() {
+        if currentHeroFocus != heroFocusToRestore { wakeHeroChrome() }
+    }
+
+    private func restoreHeroFocus() {
+        switch heroFocusToRestore {
+        case .item(let id): focusedItemID = id
+        case .button(let button): focusedHeroButton = button
+        case nil: break
+        }
+    }
+
+    private func unlockHeroTargets() {
+        heroUnlockTask?.cancel()
+        heroUnlockTask = nil
+        heroTargetsLocked = false
+        heroFocusToRestore = nil
+    }
+
+    /// Any focus move brings the hero back. While the trailer keeps playing it fades again
+    /// after the same few seconds.
+    private func showHeroChrome() {
+        heroChromeTask?.cancel()
+        heroChromeTask = nil
+        if heroChromeHidden {
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
+        }
+        if heroVideoIsPlaying { hideHeroChromeSoon() }
+    }
+
+    // MARK: - Continue Watching shelf (inside hero)
+
+    @ViewBuilder
+    private var cwShelf: some View {
+        let items = cwItems
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Continue Watching")
+                    .font(.system(size: 23, weight: .bold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .padding(.horizontal, 80)
+                    .opacity(heroChromeOpacity)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(items) { item in
+                            Button {
+                                if heroTargetsLocked { wakeHeroChrome(); return }
+                                model.detailItem = item
+                            } label: {
+                                PosterCard(
+                                    title: itemTitle(item),
+                                    subtitle: itemSubtitle(item),
+                                    progress: item.userData?.playedPercentage.map { $0 / 100 },
+                                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                                )
+                                .opacity(heroChromeOpacity)
+                            }
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                            .focused($focusedItemID, equals: item.id)
+                            .disabled(heroTargetLocked(.item(item.id)))
+                            .contextMenu { cwContextMenu(item) }
+                        }
+                    }
+                    .padding(.horizontal, 80)
+                    .padding(.top, 20)
+                    .focusSection()
+                }
+                .scrollClipDisabled()
+            }
+        }
+    }
+
+    // MARK: - Below fold
+
+    /// The user's shelves from Settings › Appearance › Home Shelves, in their order.
+    /// Continue Watching lives in the hero, so it's left out here.
+    private var orderedShelves: [HomeShelf] {
+        model.shelves(order: homeShelfOrderString, active: homeShelfActiveString, shuffled: shuffleHomeShelves)
+            .filter { $0 != .continueWatching }
+    }
+
+    private var belowFoldSection: some View {
+        VStack(spacing: 0) {
+            ForEach(orderedShelves) { shelf in
+                shelfView(for: shelf)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("shelf.\(shelf.rawValue)")
+            }
+        }
+        .focusSection()
+    }
+
+    @ViewBuilder
+    private func shelfView(for shelf: HomeShelf) -> some View {
+        switch shelf {
+        case .continueWatching:
+            EmptyView()
+        case .nextUp:
+            if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
+                mediaShelf(title: "Next Up", items: mediaRepo.nextUp)
+            }
+        case .recentlyAddedMovies:
+            if !mediaRepo.recentlyAddedMovies.isEmpty {
+                mediaShelf(title: "Recently Added Movies", badge: "NEW", items: mediaRepo.recentlyAddedMovies)
+            }
+        case .recentlyAddedShows:
+            if !mediaRepo.recentlyAddedShows.isEmpty {
+                mediaShelf(title: "Recently Added Shows", badge: "NEW", items: mediaRepo.recentlyAddedShows)
+            }
+        case .recentlyReleasedMovies:
+            if !mediaRepo.recentlyReleasedMovies.isEmpty {
+                mediaShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
+            }
+        case .recentlyAiredEpisodes:
+            if !mediaRepo.recentlyAiredEpisodes.isEmpty {
+                mediaShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
+            }
+        case .watchAgain:
+            if !mediaRepo.watchAgain.isEmpty {
+                mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+            }
+        case .genreShelves:
+            ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
+                mediaShelf(title: "More \(shelf.genre)", items: shelf.items)
+            }
+        case .becauseYouWatched:
+            if let recommendation = mediaRepo.becauseYouWatched {
+                mediaShelf(title: "Because You Watched \(recommendation.source.name)", items: recommendation.items)
+            }
+        case .favorites:
+            if !mediaRepo.favorites.isEmpty {
+                mediaShelf(title: "Favorites", items: mediaRepo.favorites)
+            }
+        case .topRatedUnwatched:
+            if !mediaRepo.topRatedUnwatched.isEmpty {
+                mediaShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
+            }
+        case .suggested:
+            if !mediaRepo.suggestions.isEmpty {
+                mediaShelf(title: "Suggested for You", items: mediaRepo.suggestions)
+            }
+        case .recommendations:
+            ForEach(mediaRepo.recommendations) { category in
+                mediaShelf(title: HomeShelfLoader.recommendationTitle(category), items: category.items)
+            }
+        case .nowAvailable:
+            if seerrRepo.isConfigured, !model.nowAvailable.isEmpty {
+                mediaShelf(title: "Now Available", items: model.nowAvailable)
+            }
+        case .streamingServices:
+            if seerrRepo.hasCatalog {
+                ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
+                    if let items = model.serviceRows[provider.id], !items.isEmpty {
+                        seerrShelf(title: "Popular on \(provider.name)", items: items)
+                    }
+                }
+            }
+        case .seerrWatchlist:
+            if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
+                seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
+            }
+        case .seerrTrending:
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
+                seerrShelf(title: "Trending", items: seerrRepo.trending)
+            }
+        case .seerrPopularMovies:
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
+                seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
+            }
+        case .seerrPopularSeries:
+            if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
+                seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
+            }
+        }
+    }
+
+    private func mediaShelf(title: String, badge: String? = nil, items: [MediaItem]) -> some View {
+        tvShelfRow(title: title, badge: badge) {
+            ForEach(items) { item in
+                NavigationLink(value: item) {
+                    PosterCard(
+                        title: item.name,
+                        subtitle: item.productionYear.map { String($0) },
+                        imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                    )
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .focused($focusedItemID, equals: item.id)
+                .contextMenu { cwContextMenu(item) }
+            }
+        }
+    }
+
+    private func tvShelfRow<Content: View>(
+        title: String,
+        badge: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 23, weight: .bold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                if let badge {
+                    Text(badge)
+                        .font(.system(size: 23, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10).padding(.vertical, 3)
+                        .background(Capsule().fill(DT.Color.accent.opacity(0.3)))
+                        .overlay(Capsule().stroke(DT.Color.accent.opacity(0.5), lineWidth: 1))
+                }
+            }
+            .padding(.horizontal, 80)
+            .padding(.bottom, 14)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) { content() }
+                    .padding(.horizontal, 80)
+                    .padding(.top, 20)
+                    .focusSection()
+            }
+            .scrollClipDisabled()
+        }
+        .padding(.bottom, 40)
+        .focusSection()
+    }
+
+    private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
+        tvShelfRow(title: title) {
+            ForEach(items) { item in
+                Button { openSeerrShelfItem(item) } label: {
+                    PosterCard(
+                        title: item.title,
+                        subtitle: [item.year, mediaRepo.hasInLibrary(item) ? "In Library" : nil]
+                            .compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
+                        imageURL: item.backdropURL ?? item.posterURL
+                    )
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+            }
+        }
+    }
+
+    /// The library's own copy when the server has the title, even where Seerr hasn't caught
+    /// up yet; otherwise the title's Seerr page.
+    private func openSeerrShelfItem(_ item: SeerrItem) {
+        Task {
+            let local = await model.libraryCopy(of: item, authManager: authManager)
+            if let local { model.detailItem = local } else { model.seerrDetailItem = item }
+        }
+    }
+
+    // MARK: - Context menu
+
+    @ViewBuilder
+    private func cwContextMenu(_ item: MediaItem) -> some View {
+        if item.type == .movie || item.type == .episode {
+            let ticks = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+            Button {
+                focusedItemID = nil
+                model.playbackRequest = PlaybackRequest(item: item, startTicks: ticks)
+            } label: {
+                Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+            }
+        }
+        ItemQuickActions(item: item)
+        Label(item.name, systemImage: item.type == .series ? "tv" : "film")
+        if let year = item.productionYear { Label(String(year), systemImage: "calendar") }
+        if let rating = item.communityRating {
+            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+        }
+    }
+
+    // MARK: - Helpers
+
+    // "S1 · E4 · Episode Name" for episodes, show title for movies/series
+    private func itemTitle(_ item: MediaItem) -> String {
+        guard item.type == .episode else { return item.name }
+        let s = item.parentIndexNumber.map { "S\($0)" }
+        let e = item.indexNumber.map { "E\($0)" }
+        let badge = [s, e].compactMap { $0 }.joined(separator: " · ")
+        return badge.isEmpty ? item.name : "\(badge) · \(item.name)"
+    }
+
+    // Show name as subtitle for episodes, year for everything else
+    private func itemSubtitle(_ item: MediaItem) -> String? {
+        if item.type == .episode { return item.seriesName }
+        return item.productionYear.map { String($0) }
+    }
+
+    // Top Shelf title includes S/E so users see context without needing a subtitle row
+    private func topShelfTitle(_ item: MediaItem) -> String {
+        guard item.type == .episode else { return item.name }
+        let show = item.seriesName ?? item.name
+        guard let sub = itemSubtitle(item) else { return show }
+        return "\(show) – \(sub)"
+    }
+}
+
+#Preview {
+    HomeView()
+        .environment(AuthManager())
+        .environment(MediaRepository())
+        .environment(SeerrRepository())
+}
