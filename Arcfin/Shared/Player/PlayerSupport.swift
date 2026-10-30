@@ -28,6 +28,35 @@ func skipIconName(seconds: Int, forward: Bool) -> String {
     return "\(base).\(seconds)"
 }
 
+extension PlayerView {
+    struct AutoActionCountdown: Equatable {
+        let kind: String
+        let startedAt: Date
+        let seconds: Double
+    }
+
+    struct SeekFeedback: Identifiable, Equatable {
+        let id = UUID()
+        let forward: Bool
+        /// Which side of the screen was actually tapped — kept separate from `forward` so the
+        /// indicator's on-screen position is driven by where the tap landed, not by which
+        /// direction that tap happens to seek.
+        let onRight: Bool
+        /// Forward and backward can be configured to different skip amounts (Settings >
+        /// Playback), so the indicator has to show whichever one this particular tap used.
+        let seconds: Int
+    }
+
+    /// Set when the player is about to be replaced by the next title in the same cover, so
+    /// the outgoing instance doesn't unlock the orientation the viewer had chosen.
+    static var keepOrientationOnNextDisappear = false
+
+    /// How long an automatic skip or Up Next waits, so it can be seen and cancelled first.
+    static var autoActionSeconds: Double {
+        Double(min(max(UserDefaults.standard.object(forKey: "upNextCountdownSeconds") as? Int ?? 5, 3), 5))
+    }
+}
+
 extension View {
     /// Keeps the display on while a player is loading, buffering or playing; once paused,
     /// ended or failed the device can sleep as usual.

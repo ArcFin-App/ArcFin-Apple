@@ -2,13 +2,8 @@
 
 import SwiftUI
 import MediaEngine
-#if canImport(UIKit) && !os(tvOS)
 import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 
-#if canImport(UIKit) && !os(tvOS)
 extension PlayerView {
 
     var activeWindowScene: UIWindowScene? {
@@ -21,7 +16,7 @@ extension PlayerView {
             .onEnded { value in handleDoubleTap(at: value.location, width: width) }
             .exclusively(before:
                 SpatialTapGesture(count: 1)
-                    .onEnded { _ in toggleControls() }
+                    .onEnded { _ in model.toggleControls() }
             )
     }
 
@@ -50,8 +45,8 @@ extension PlayerView {
                 if dragAxis == .seek {
                     // A swipe across the whole screen moves 90 seconds.
                     let delta = Double(value.translation.width / width) * 90 * 10_000_000
-                    scrubTicks = min(max(Double(dragBaseline) + delta, 0), Double(player.durationTicks))
-                    updateScrubThumbnail()
+                    model.scrubTicks = min(max(Double(dragBaseline) + delta, 0), Double(model.player.durationTicks))
+                    model.updateScrubThumbnail()
                     return
                 }
                 let delta = -value.translation.height / 250
@@ -72,10 +67,10 @@ extension PlayerView {
             .onEnded { _ in
                 if dragAxis == .seek {
                     dragAxis = nil
-                    performSeek(to: Int64(scrubTicks))
-                    isScrubbing = false
-                    scrubThumbnail = nil
-                    scheduleAutoHide()
+                    model.performSeek(to: Int64(model.scrubTicks))
+                    model.isScrubbing = false
+                    model.scrubThumbnail = nil
+                    model.scheduleAutoHide()
                     return
                 }
                 dragAxis = nil
@@ -98,13 +93,13 @@ extension PlayerView {
     /// Sideways swipes scrub, with the controls up so the scrubber and its preview show where
     /// the swipe will land.
     private func beginSwipeSeek() {
-        guard player.durationTicks > 0 else { return }
+        guard model.player.durationTicks > 0 else { return }
         dragAxis = .seek
-        dragBaseline = CGFloat(pendingSeekTargetTicks ?? player.positionTicks)
-        scrubTicks = Double(dragBaseline)
-        isScrubbing = true
-        hideControlsTask?.cancel()
-        withAnimation(DT.Animation.fast) { isControlsVisible = true }
+        dragBaseline = CGFloat(model.pendingSeekTargetTicks ?? model.player.positionTicks)
+        model.scrubTicks = Double(dragBaseline)
+        model.isScrubbing = true
+        model.hideControlsTask?.cancel()
+        withAnimation(DT.Animation.fast) { model.isControlsVisible = true }
         HapticManager.impact(.light)
     }
 
@@ -113,84 +108,16 @@ extension PlayerView {
     }
 
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {
-        guard doubleTapToSkip else { toggleControls(); return }
+        guard doubleTapToSkip else { model.toggleControls(); return }
         let tappedRight = location.x > width / 2
         let forward = tappedRight
         let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
         HapticManager.impact(.medium)
-        seek(by: forward ? seconds : -seconds)
-        seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight, seconds: seconds)
+        model.seek(by: forward ? seconds : -seconds)
+        model.seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight, seconds: seconds)
         Task {
             try? await Task.sleep(for: .seconds(0.6))
-            seekFeedback = nil
+            model.seekFeedback = nil
         }
     }
 }
-#elseif os(macOS)
-extension PlayerView {
-
-    /// Mouse-pointer analog of the iOS tapGesture above: click toggles controls the same as
-    /// a tap, double-click seeks by the configured skip amount (Settings > Playback). No
-    /// drag-to-adjust-brightness/volume gesture on macOS
-    /// (that's a touch-surface idiom) — Up/Down arrow keys cover volume instead (see
-    /// adjustMacVolume), and there's no equivalent brightness control at all outside System
-    /// Settings, so it's simply not offered.
-    func macTapGesture(width: CGFloat) -> some Gesture {
-        SpatialTapGesture(count: 2)
-            .onEnded { value in handleMacDoubleClick(at: value.location, width: width) }
-            .exclusively(before:
-                SpatialTapGesture(count: 1)
-                    .onEnded { _ in toggleControls() }
-            )
-    }
-
-    private func handleMacDoubleClick(at location: CGPoint, width: CGFloat) {
-        guard doubleTapToSkip else { toggleControls(); return }
-        let tappedRight = location.x > width / 2
-        let forward = tappedRight
-        let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
-        seek(by: forward ? seconds : -seconds)
-        seekFeedback = SeekFeedback(forward: forward, onRight: tappedRight, seconds: seconds)
-        Task {
-            try? await Task.sleep(for: .seconds(0.6))
-            seekFeedback = nil
-        }
-    }
-
-    /// Hover is the pointer-driven equivalent of a touch tap revealing controls — there's no
-    /// "the finger just touched the glass" moment with a mouse, so any mouse movement over
-    /// the video surface re-shows the controls and restarts the same auto-hide timer a tap
-    /// would.
-    func handleMacMouseActivity() {
-        if !isControlsVisible {
-            withAnimation(DT.Animation.fast) { isControlsVisible = true }
-        }
-        scheduleAutoHide()
-    }
-
-    /// Sets output volume directly through the active engine (setEngineVolume, PlayerView.swift)
-    /// rather than through a hidden system slider — macOS has no per-app "hidden MPVolumeView"
-    /// trick to reach for the way iOS does.
-    func adjustMacVolume(by delta: Double) {
-        macVolume = min(max(macVolume + delta, 0), 1)
-        setEngineVolume(Float(macVolume))
-        macVolumeHUD = macVolume
-        macVolumeHUDTask?.cancel()
-        macVolumeHUDTask = Task {
-            try? await Task.sleep(for: .seconds(1.2))
-            guard !Task.isCancelled else { return }
-            macVolumeHUD = nil
-        }
-    }
-
-    func toggleMacMute() {
-        if macVolume == 0 {
-            adjustMacVolume(by: macVolumeBeforeMute ?? 1)
-            macVolumeBeforeMute = nil
-        } else {
-            macVolumeBeforeMute = macVolume
-            adjustMacVolume(by: -macVolume)
-        }
-    }
-}
-#endif

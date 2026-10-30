@@ -1,0 +1,497 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import SwiftUI
+import AuthCore
+import JellyfinAPI
+import MediaEngine
+import CastKit
+import GroupActivities
+
+extension PlayerView {
+
+    // MARK: - Controls overlay
+
+    var controlsOverlay: some View {
+        // GeometryReader here does NOT ignoresSafeArea() itself, so proxy.size reports the
+        // safe-area-inset region — topBar/bottomBar still position exactly as before, only
+        // the background below bleeds past it. Needed for the width tapGesture takes, and
+        // to give the middle gap below an actual frame to fill.
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                topBar
+                // A plain Spacer() here left the whole middle of the screen hit-testable
+                // (via the background below) but with nothing wired to handle a touch that
+                // landed on it — once controls were visible, double-tapping to seek again or
+                // tapping to dismiss them early just silently did nothing, since the tap
+                // never reached videoSurface's gesture underneath. Giving this region the
+                // exact same gesture lets it behave like the video surface whenever it's the
+                // one actually receiving the touch.
+                Color.clear
+                    .contentShape(Rectangle())
+                bottomBar
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.55), location: 0),
+                        .init(color: .clear, location: 0.22),
+                        .init(color: .clear, location: 0.7),
+                        .init(color: .black.opacity(0.65), location: 1),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            )
+        }
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 16) {
+            Button { closePlayer() } label: {
+                TVPlayerControlLabel(systemImage: "chevron.down", size: 15, diameter: 34)
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(item.name)
+                        .scaledFont(size: 15, weight: .semibold)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    if let hdrLabel = model.hdrLabel {
+                        Text(hdrLabel)
+                            .font(.system(.caption2, design: .default, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundStyle(model.hdrIsToneMapped ? .black : .white)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(
+                                model.hdrIsToneMapped ? DT.Color.palette("F59E0B") : Color.clear,
+                                in: Capsule()
+                            )
+                            .overlay(
+                                Capsule().stroke(.white.opacity(model.hdrIsToneMapped ? 0 : 0.4), lineWidth: 1)
+                            )
+                    }
+                }
+                if let subtitle = model.episodeSubtitle {
+                    Text(subtitle)
+                        .scaledFont(size: 12)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            // Everything the touch and Mac players' moreMenu holds (Subtitles & Audio, Speed,
+            // Quality, Chapters, Info) lives as its own reachable button in bottomBar's
+            // leftSecondaryActions/rightSecondaryActions instead — a remote shouldn't need
+            // to open a menu just to find them.
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, 8)
+        .focusSection()
+    }
+
+    @ViewBuilder
+    private var subtitleTimingMenu: some View {
+        if !model.subtitleCues.isEmpty {
+            Menu {
+                Button("Later by 0.5 s") { model.subtitleDelay += 0.5 }
+                Button("Earlier by 0.5 s") { model.subtitleDelay -= 0.5 }
+                Button("Later by 0.1 s") { model.subtitleDelay += 0.1 }
+                Button("Earlier by 0.1 s") { model.subtitleDelay -= 0.1 }
+                Button("Reset", role: .destructive) { model.subtitleDelay = 0 }
+                    .disabled(model.subtitleDelay == 0)
+            } label: {
+                Label(
+                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
+                    systemImage: "clock.arrow.2.circlepath")
+            }
+        }
+    }
+
+    private var sleepTimerMenu: some View {
+        Menu {
+            Button("Off") { model.setSleepTimer(minutes: nil) }
+            ForEach([15, 30, 45, 60], id: \.self) { minutes in
+                Button("\(minutes) minutes") { model.setSleepTimer(minutes: minutes) }
+            }
+            if item.type == .episode {
+                Button("End of Episode") { model.setSleepTimer(minutes: nil, atEndOfItem: true) }
+            }
+        } label: {
+            Label(
+                model.sleepTimerEndsAt != nil || model.sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
+                systemImage: "moon.zzz")
+        }
+    }
+
+    /// Every button already has a 44 pt target; the gaps keep thumbs off the neighbouring one.
+    /// A phone held upright with Previous and Next too is the one layout short on room.
+    private var transportSpacing: CGFloat {
+        let crowded = model.previousItem != nil || model.nextEpisode != nil
+        return crowded ? 12 : 20
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 10) {
+            scrubber
+
+            // Time labels moved off the buttons row when that row's left/right slots became
+            // leftSecondaryActions/rightSecondaryActions — they belong at the scrubber's own
+            // two ends regardless of what's in the row below it.
+            HStack {
+                Text(model.timeLabel(ticks: model.elapsedTicks))
+                    .scaledFont(size: 12, weight: .medium, design: .monospaced)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .contentTransition(.numericText())
+                    .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
+                Spacer()
+                Text(model.remainingLabel)
+                    .scaledFont(size: 12, weight: .medium, design: .monospaced)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .contentTransition(.numericText())
+                    .animation(.default, value: model.remainingTicks)
+            }
+
+            HStack {
+                leftSecondaryActions
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(spacing: transportSpacing) {
+                    if model.previousItem != nil {
+                        Button { model.playPrevious() } label: {
+                            TVPlayerControlLabel(systemImage: "backward.end.fill", size: 16, diameter: 38)
+                        }
+                        .accessibilityLabel(model.previousItem.map { "Previous: \($0.name)" } ?? "Previous")
+                    }
+                    Button { model.seek(by: -skipBackwardSeconds) } label: {
+                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
+                    }
+                    Button { model.togglePlayPause() } label: {
+                        TVPlayerControlLabel(systemImage: playPauseIconIsPlaying ? "pause.fill" : "play.fill", size: 22, diameter: 48)
+                    }
+                    .prefersDefaultFocus(!model.tvControlsHidden, in: tvFocusNamespace)
+                    Button { model.seek(by: skipForwardSeconds) } label: {
+                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 16, diameter: 38)
+                    }
+                    if let nextEpisode = model.nextEpisode {
+                        Button { model.playNextEpisode() } label: {
+                            TVPlayerControlLabel(systemImage: "forward.end.fill", size: 16, diameter: 38)
+                        }
+                        .accessibilityLabel("Next: \(nextEpisode.name)")
+                    }
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .focusSection()
+
+                rightSecondaryActions
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.bottom, 24)
+    }
+
+    // Everything that used to live inside moreMenu on tvOS, promoted to its own reachable
+    // button, split across both sides of the transport controls in the same row rather than
+    // a separate row of its own. Both side groups are pinned to an equal-width .infinity
+    // frame (leading/trailing aligned) rather than plain Spacers, so the transport controls
+    // in the middle land at the true center regardless of the two sides holding a different
+    // number of buttons (left has 2, right has 3) — a Spacer-only layout would have skewed
+    // the transport group off-center toward whichever side was narrower.
+    private var leftSecondaryActions: some View {
+        HStack(spacing: 12) {
+            Button { showTrackMenu = true } label: {
+                TVPlayerControlLabel(systemImage: "captions.bubble", size: 14, diameter: 32)
+            }
+            Button { showRateMenu = true } label: {
+                TVPlayerControlLabel(systemImage: "gauge.with.dots.needle.67percent", size: 14, diameter: 32)
+            }
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .focusSection()
+    }
+
+    private var rightSecondaryActions: some View {
+        HStack(spacing: 12) {
+            Button { showQualityMenu = true } label: {
+                TVPlayerControlLabel(systemImage: "slider.horizontal.3", size: 14, diameter: 32)
+            }
+            if chapterListEnabled, !model.chapters.isEmpty {
+                Button { showChapterMenu = true } label: {
+                    TVPlayerControlLabel(systemImage: "list.bullet", size: 14, diameter: 32)
+                }
+            }
+            Button { showInfoSheet = true } label: {
+                TVPlayerControlLabel(systemImage: "info.circle", size: 14, diameter: 32)
+            }
+            Menu {
+                tvMoreMenuContent
+            } label: {
+                TVPlayerControlLabel(systemImage: "ellipsis", size: 14, diameter: 32)
+            }
+            .accessibilityLabel("More options")
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .focusSection()
+    }
+
+    /// Something besides the transport controls that the remote should land on.
+    private var tvOverlayHasFocusTarget: Bool {
+        model.showStillWatchingPrompt || (model.showUpNext && model.nextEpisode != nil)
+            || (model.showMoreLikeThis && !model.moreLikeThis.isEmpty) || showXRay
+    }
+
+    /// With the controls hidden, an invisible catcher holds focus, so a click never presses a
+    /// button nobody can see.
+    var tvCatcherActive: Bool {
+        model.tvControlsHidden && !tvOverlayHasFocusTarget && model.skipButtonLabel == nil
+    }
+
+    /// Changes whenever a different control should hold focus.
+    var tvFocusContext: String {
+        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)"
+    }
+
+    /// The remote while the controls are hidden, as in the system player: a click or a swipe
+    /// up shows them, down opens subtitles and audio, left and right skip back and forward.
+    var tvRemoteCatcher: some View {
+        Button { model.toggleControlsVisibilityOnAction() } label: {
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .prefersDefaultFocus(true, in: tvFocusNamespace)
+        .onMoveCommand { direction in
+            switch direction {
+            case .left: tvQuickSeek(forward: false)
+            case .right: tvQuickSeek(forward: true)
+            // Down opens subtitles and audio, as the system player's info panel does.
+            case .down: showTrackMenu = true
+            default: model.toggleControlsVisibilityOnAction()
+            }
+        }
+        .accessibilityLabel("Show playback controls")
+        .ignoresSafeArea()
+    }
+
+    private func tvQuickSeek(forward: Bool) {
+        let seconds = forward ? skipForwardSeconds : skipBackwardSeconds
+        let base = model.pendingSeekTargetTicks ?? model.player.positionTicks
+        model.performSeek(to: min(max(0, base + Int64(forward ? seconds : -seconds) * 10_000_000), model.player.durationTicks))
+        let feedback = SeekFeedback(forward: forward, onRight: forward, seconds: seconds)
+        model.seekFeedback = feedback
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            if model.seekFeedback == feedback { model.seekFeedback = nil }
+        }
+    }
+
+    /// Menu steps back one layer at a time: out of a scrub, then hides the controls, then
+    /// leaves the player.
+    func handleTVExit() {
+        if model.isScrubbing {
+            model.isScrubbing = false
+            model.scrubThumbnail = nil
+            model.scheduleAutoHide()
+        } else if !model.tvControlsHidden {
+            model.hideControlsTask?.cancel()
+            withAnimation(DT.Animation.fast) { model.tvControlsHidden = true }
+        } else {
+            closePlayer()
+        }
+    }
+
+    /// What the touch and Mac players keep in their More menu and have no button of their own here.
+    @ViewBuilder
+    private var tvMoreMenuContent: some View {
+        if !model.castMembers.isEmpty {
+            Button { openXRay() } label: {
+                Label("X-Ray: Cast", systemImage: "person.2")
+            }
+        }
+        if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
+            Button { showSyncPlayMenu = true } label: {
+                Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
+            }
+        }
+        sharePlayMenuItem
+        Button { withAnimation { audioOnly.toggle() } } label: {
+            Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
+        }
+        if let info = model.playbackInfo, info.versions.count > 1 {
+            Picker(selection: Binding(get: { info.mediaSourceId }, set: { model.changeVersion($0) })) {
+                ForEach(info.versions) { Text($0.name).tag($0.id) }
+            } label: {
+                Label("Version", systemImage: "square.stack")
+            }
+            .pickerStyle(.menu)
+        }
+        subtitleTimingMenu
+        sleepTimerMenu
+    }
+
+    private var scrubber: some View {
+        // tvOS has no drag-to-scrub (see the remote handling below) so the bar
+        // itself is the only feedback a remote-driven seek gets — thicker here than the
+        // touch/mouse platforms, where the gesture itself is the primary feedback.
+        let trackHeight: CGFloat = 8
+        return GeometryReader { proxy in
+            let duration = max(model.player.durationTicks, 1)
+            let fraction = Double(model.isScrubbing ? Int64(model.scrubTicks) : (model.pendingSeekTargetTicks ?? model.player.positionTicks)) / Double(duration)
+            let thumbX = proxy.size.width * min(max(fraction, 0), 1)
+
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.25)).frame(height: trackHeight)
+                Capsule().fill(DT.Color.accent)
+                    .frame(width: thumbX, height: trackHeight)
+
+                // Some sources report duplicate chapter start times — id'd by array offset
+                // rather than startPositionTicks so SwiftUI never sees a colliding identity.
+                ForEach(Array(model.chapters.dropFirst().enumerated()), id: \.offset) { _, chapter in
+                    let x = proxy.size.width * min(max(Double(chapter.startPositionTicks) / Double(duration), 0), 1)
+                    Rectangle()
+                        .fill(.black.opacity(0.5))
+                        .frame(width: 2, height: trackHeight)
+                        .offset(x: x - 1)
+                }
+
+                Circle().fill(.white)
+                    .frame(width: model.isScrubbing ? 16 : 10, height: model.isScrubbing ? 16 : 10)
+                    .offset(x: thumbX - (model.isScrubbing ? 8 : 5))
+            }
+            // An overlay, so the preview floats above the track. Inside the stack its height
+            // made the stack taller and pushed the centred track down the screen.
+            .overlay(alignment: .leading) {
+                if model.isScrubbing, model.trickplayLoader != nil {
+                    TrickplayPreview(image: model.scrubThumbnail, size: Self.trickplaySize)
+                        .offset(x: min(max(thumbX - Self.trickplaySize.width / 2, 0), proxy.size.width - Self.trickplaySize.width),
+                                y: -(Self.trickplaySize.height / 2 + 21))
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .center)
+            .contentShape(Rectangle())
+            // No drag surface on tvOS — focus the bar and swipe the remote's touch surface
+            // left/right to nudge the pending position (with the same trickplay preview),
+            // then click to commit. Matches how Apple's own tvOS video player scrubber works.
+            .focusable(true)
+            .focused($isScrubberFocused)
+            .onChange(of: isScrubberFocused) { _, focused in
+                if focused { startRemoteScrub() } else { remoteScrub.stop() }
+            }
+            .onDisappear { remoteScrub.stop() }
+            .onMoveCommand { direction in
+                guard direction == .left || direction == .right, !remoteScrub.suppressesMoveCommands else { return }
+                beginTVScrub()
+                let stepTicks: Double = 10 * 10_000_000
+                model.scrubTicks = direction == .right
+                    ? min(model.scrubTicks + stepTicks, Double(model.player.durationTicks))
+                    : max(model.scrubTicks - stepTicks, 0)
+                model.updateScrubThumbnail()
+            }
+            .onTapGesture {
+                guard model.isScrubbing else { return }
+                commitTVScrub()
+            }
+        }
+        .frame(height: 20)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(model.timeLabel(ticks: model.elapsedTicks)) of \(model.timeLabel(ticks: model.player.durationTicks))")
+        .accessibilityAdjustableAction { direction in
+            model.seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+        }
+    }
+
+    /// Clicking or pressing Play/Pause on a scrubbed position plays from there, as Apple's
+    /// player does, even if playback was paused.
+    func commitTVScrub() {
+        let ticks = Int64(model.scrubTicks)
+        model.isScrubbing = false
+        model.scrubThumbnail = nil
+        model.performSeek(to: ticks)
+        if model.player.status != .playing {
+            if sharePlay.isActive { sharePlay.send(.play, itemId: item.id, positionTicks: ticks) }
+            Task { await model.player.play() }
+        }
+        model.scheduleAutoHide()
+    }
+
+    private func beginTVScrub() {
+        guard !model.isScrubbing else { return }
+        model.isScrubbing = true
+        model.scrubTicks = Double(model.pendingSeekTargetTicks ?? model.player.positionTicks)
+        model.hideControlsTask?.cancel()
+    }
+
+    /// A slide across the whole touch surface covers a tenth of the runtime, kept between one
+    /// and ten minutes so short episodes stay precise and long films stay quick to cross.
+    private func startRemoteScrub() {
+        remoteScrub.start(
+            began: {
+                beginTVScrub()
+                remoteScrubStartTicks = model.scrubTicks
+            },
+            moved: { travel in
+                let duration = Double(model.player.durationTicks)
+                let span = min(max(duration * 0.1, 60 * 10_000_000), 600 * 10_000_000)
+                model.scrubTicks = min(max(remoteScrubStartTicks + travel * span, 0), duration)
+                model.updateScrubThumbnail()
+            },
+            selected: {
+                if model.isScrubbing { commitTVScrub() }
+            }
+        )
+    }
+
+    // Viewed from across a room, the preview needs to be much larger on a TV.
+    static let trickplaySize = CGSize(width: 400, height: 225)
+
+    /// `player.status` alone stays `.paused` for the whole duration of a Cast session (see
+    /// startCasting) — on platforms that support Cast, the icon needs to reflect the
+    /// receiver's actual state instead, or it reads as "stuck paused" while casting.
+    var playPauseIconIsPlaying: Bool {
+        model.player.status == .playing
+    }
+
+    // MARK: - X-Ray
+
+    func openXRay() {
+        withAnimation(DT.Animation.fast) {
+            showXRay = true
+            model.isControlsVisible = false
+        }
+    }
+
+    func openXRayPerson(_ person: MediaPerson) {
+        Task { await model.player.pause() }
+        xRayPerson = person
+    }
+
+    // MARK: - SharePlay
+
+    /// In a FaceTime call SharePlay starts straight away; otherwise the share sheet offers it.
+    /// Apple TV has no share sheet, so there it only shows during a call.
+    @ViewBuilder
+    var sharePlayMenuItem: some View {
+        if sharePlay.isActive {
+            Button(role: .destructive) { sharePlay.leave() } label: {
+                Label(sharePlay.participantCount > 1 ? "Leave SharePlay (\(sharePlay.participantCount))" : "Leave SharePlay",
+                      systemImage: "shareplay.slash")
+            }
+        } else if groupState.isEligibleForGroupSession {
+            Button { sharePlay.start(item) } label: {
+                Label("SharePlay", systemImage: "shareplay")
+            }
+        }
+    }
+}
