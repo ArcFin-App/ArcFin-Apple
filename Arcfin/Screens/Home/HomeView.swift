@@ -71,7 +71,7 @@ struct MainTabView: View {
                             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
                             .screenBackground()
                             .navigationDestination(for: MediaItem.self) { item in
-                                TVMediaDetailView(item: item)
+                                MediaDetailView(item: item)
                             }
                             .navigationDestination(for: SeerrItem.self) { item in
                                 TVSeerrItemDetailView(item: item)

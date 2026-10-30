@@ -1470,11 +1470,7 @@ struct LibraryDetailView: View {
             } else if pick.type == .playlist {
                 LibraryDetailView(playlistItem: pick)
             } else {
-                #if os(tvOS)
-                TVMediaDetailView(item: pick)
-                #else
                 MediaDetailView(item: pick)
-                #endif
             }
         }
         .onChange(of: sortOption) { _, newValue in

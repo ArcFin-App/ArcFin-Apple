@@ -42,7 +42,7 @@ struct PersonDetailView: View {
                 .presentationBackground(.ultraThinMaterial)
         }
         .navigationDestination(item: $selectedItem) { item in
-            TVMediaDetailView(item: item)
+            MediaDetailView(item: item)
         }
         .navigationDestination(item: $openCredit) { TVSeerrItemDetailView(item: $0) }
         .task { await model.load(authManager: authManager, seerrRepo: seerrRepo) }

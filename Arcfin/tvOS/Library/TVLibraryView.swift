@@ -52,11 +52,11 @@ struct TVLibraryView: View {
                 LibraryDetailView(library: library)
             }
             .navigationDestination(for: MediaItem.self) { item in
-                TVMediaDetailView(item: item)
+                MediaDetailView(item: item)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
                 switch target {
-                case .media(let item):       TVMediaDetailView(item: item)
+                case .media(let item):       MediaDetailView(item: item)
                 case .collection(let item):  TVCollectionDetailView(item: item)
                 case .playlist(let item):    LibraryDetailView(playlistItem: item)
                 }
@@ -127,7 +127,7 @@ struct TVCollectionDetailView: View {
         }
         .screenBackground()
         .navigationDestination(item: $selectedItem) { i in
-            TVMediaDetailView(item: i)
+            MediaDetailView(item: i)
         }
         .navigationDestination(item: $selectedPerson) { PersonDetailView(person: $0) }
         .fullScreenCover(isPresented: $showFullDescription) { fullDescription }
