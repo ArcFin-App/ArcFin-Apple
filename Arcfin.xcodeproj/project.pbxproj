@@ -100,6 +100,8 @@
 			);
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
+				iOS/Library/CollectionCardButtonStyle.swift = (ios, );
+				iOS/Library/CollectionDetailView.swift = (ios, );
 				iOS/Library/DocumentPickerView.swift = (ios, );
 				iOS/Library/LibraryDetailView.swift = (ios, );
 				iOS/Library/LibraryFilterControls.swift = (ios, );
@@ -110,6 +112,8 @@
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
 				iOS/Search/SearchView.swift = (ios, );
+				macOS/Library/CollectionCardButtonStyle.swift = (macos, );
+				macOS/Library/CollectionDetailView.swift = (macos, );
 				macOS/Library/LibraryDetailView.swift = (macos, );
 				macOS/Library/LibraryFilterControls.swift = (macos, );
 				macOS/Library/LibraryView.swift = (macos, );
@@ -123,6 +127,8 @@
 				tvOS/Detail/TVMediaDetailView.swift = (tvos, );
 				tvOS/Home/LibraryScreensaverView.swift = (tvos, );
 				tvOS/Home/TVHomeView.swift = (tvos, );
+				tvOS/Library/CollectionCardButtonStyle.swift = (tvos, );
+				tvOS/Library/CollectionDetailView.swift = (tvos, );
 				tvOS/Library/LibraryDetailView.swift = (tvos, );
 				tvOS/Library/LibraryFilterControls.swift = (tvos, );
 				tvOS/Library/LibraryView.swift = (tvos, );

@@ -2,97 +2,31 @@
 
 import SwiftUI
 import JellyfinAPI
-import AuthCore
 
 /// A Jellyfin BoxSet (Collection): a tall tinted hero, play-through and shuffle for the
 /// whole collection, how much of it has been watched, and its titles in release order as a
-/// numbered list (or a poster grid), sortable.
-struct CollectionDetailView: View {
+/// numbered list (or a poster grid), sortable. The page's content, shared by the iPhone,
+/// iPad and Mac `CollectionDetailView`.
+struct CollectionContent: View {
     let collection: MediaItem
+    let model: CollectionModel
+    @Binding var sort: CollectionSort
+    @Binding var showsGrid: Bool
+    let columns: [GridItem]
+    let zoomNamespace: Namespace.ID?
 
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(AuthManager.self) private var authManager
-    @Environment(PlaybackPresenter.self) private var playbackPresenter
 
-    @State private var detail: MediaItemDetail?
-    @State private var items: [MediaItem] = []
-    @State private var isLoading = true
-    @State private var selectedItem: MediaItem?
-    @State private var selectedPerson: MediaPerson?
-    @State private var heroTint: Color?
-    @State private var playbackRequest: MediaDetailView.PlaybackRequest?
-    @AppStorage("collectionSort") private var sort = CollectionSort.release
-    @AppStorage("collectionShowsGrid") private var showsGrid = false
-    #if !os(tvOS)
-    @Namespace private var zoomNamespace
-    #endif
-
-    private let client = JellyfinMediaClient()
-
-    enum CollectionSort: String, CaseIterable, Identifiable {
-        case release = "Release Order", title = "Title", rating = "Rating"
-        var id: String { rawValue }
-        var label: String {
-            switch self {
-            case .release: String(localized: "Release Order")
-            case .title: String(localized: "Title")
-            case .rating: String(localized: "Rating")
-            }
-        }
-    }
-
-    private var credential: ServerCredential? { authManager.state.credential }
-    private var authHeader: String? {
-        credential.map { authManager.authClient.authHeader(token: $0.accessToken) }
-    }
-
-    private var sortedItems: [MediaItem] {
-        switch sort {
-        case .release:
-            items.sorted { ($0.premiereDate ?? .distantFuture, $0.productionYear ?? .max) < ($1.premiereDate ?? .distantFuture, $1.productionYear ?? .max) }
-        case .title:
-            items.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        case .rating:
-            items.sorted { ($0.communityRating ?? 0) > ($1.communityRating ?? 0) }
-        }
-    }
-
-    /// Movies and episodes can be played straight through; a series in a collection opens instead.
-    private var playable: [MediaItem] {
-        sortedItems.filter { $0.type == .movie || $0.type == .episode }
-    }
-
-    private var watchedCount: Int { items.filter { $0.userData?.played == true }.count }
-
-    private var yearSpan: String? {
-        let years = items.compactMap(\.productionYear)
-        guard let first = years.min(), let last = years.max() else { return nil }
-        return first == last ? "\(first)" : "\(first)–\(last)"
-    }
-
-    private var columns: [GridItem] {
-#if os(macOS)
-        [GridItem(.adaptive(minimum: 150), spacing: 16)]
-#else
-        if isWide {
-            return [GridItem(.adaptive(minimum: 150), spacing: 12)]
-        }
-        return Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
-#endif
-    }
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    private var isWide: Bool { horizontalSizeClass == .regular }
-#else
-    private let isWide = false
-#endif
+    private var items: [MediaItem] { model.items }
+    private var sortedItems: [MediaItem] { model.sortedItems(by: sort) }
+    private var watchedCount: Int { model.watchedCount }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
 
-                if isLoading {
+                if model.isLoading {
                     ProgressView()
                         .tint(DT.Color.accent)
                         .frame(maxWidth: .infinity, minHeight: 240)
@@ -100,7 +34,7 @@ struct CollectionDetailView: View {
                     VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                         actionRow
                         if !items.isEmpty { progressSection }
-                        if let overview = detail?.item.overview ?? collection.overview, !overview.isEmpty {
+                        if let overview = model.detail?.item.overview ?? collection.overview, !overview.isEmpty {
                             Text(overview)
                                 .font(.system(.footnote))
                                 .foregroundStyle(DT.Color.textPrimary.opacity(0.8))
@@ -109,7 +43,7 @@ struct CollectionDetailView: View {
                                 .padding(.horizontal, DT.Spacing.pagePad)
                         }
                         if !items.isEmpty { titlesSection }
-                        if let people = detail?.people, !people.isEmpty { castSection(people) }
+                        if let people = model.detail?.people, !people.isEmpty { castSection(people) }
                     }
                     .padding(.top, DT.Spacing.md)
                 }
@@ -119,50 +53,6 @@ struct CollectionDetailView: View {
             // Re-fits after the player hands the screen back in landscape (see MediaDetailView).
             .containerRelativeFrame(.horizontal)
         }
-        .detailPageBackground(tint: heroTint)
-        .ignoresSafeArea(edges: .top)
-        .navigationTitle("")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        #endif
-        .navigationDestination(item: $selectedItem) { item in
-#if os(tvOS)
-            MediaDetailView(item: item)
-#else
-            MediaDetailView(item: item, zoomNamespace: zoomNamespace)
-                .zoomNavigationTransition(id: item.id, in: zoomNamespace)
-#endif
-        }
-        .navigationDestination(item: $selectedPerson) { person in
-            PersonDetailView(person: person)
-        }
-        .task { await load() }
-        .task(id: collection.id) {
-            guard let url = mediaRepo.imageURL(for: collection, type: .backdrop, fillWidth: 120) else { return }
-            heroTint = await AverageColor.load(from: url)
-        }
-        #if os(macOS)
-        .onChange(of: playbackRequest) { _, request in
-            guard let request else { return }
-            playbackPresenter.present(request.item, startTicks: request.startTicks)
-            playbackRequest = nil
-        }
-        .onChange(of: playbackPresenter.request == nil) { _, closed in
-            if closed { PlayQueue.clear(); Task { await load() } }
-        }
-        #else
-        .fullScreenCover(item: $playbackRequest, onDismiss: {
-            PlayQueue.clear()
-            Task { await load() }
-        }) { request in
-            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                PlayerView.keepOrientationOnNextDisappear = true
-                playbackRequest = MediaDetailView.PlaybackRequest(item: next, startTicks: 0)
-            }
-            .id(request.item.id)
-        }
-        #endif
     }
 
     // MARK: - Hero
@@ -200,7 +90,7 @@ struct CollectionDetailView: View {
     private var metaLine: String {
         var parts: [String] = []
         if !items.isEmpty { parts.append("\(items.count) title\(items.count == 1 ? "" : "s")") }
-        if let yearSpan { parts.append(yearSpan) }
+        if let yearSpan = model.yearSpan { parts.append(yearSpan) }
         if let rating = collection.communityRating { parts.append("★ \(String(format: "%.1f", rating))") }
         return parts.joined(separator: " · ")
     }
@@ -215,21 +105,17 @@ struct CollectionDetailView: View {
 
     // MARK: - Actions & progress
 
-    private var nextToPlay: MediaItem? {
-        playable.first { $0.userData?.played != true }
-    }
-
     private var actionRow: some View {
         HStack(spacing: 12) {
-            Button { playThrough() } label: {
-                Label(playLabel, systemImage: "play.fill")
+            Button { model.playThrough(by: sort) } label: {
+                Label(model.playLabel(by: sort), systemImage: "play.fill")
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.backgroundPrimary)
                     .frame(maxWidth: .infinity, minHeight: 46)
                     .background(DT.Color.textPrimary, in: RoundedRectangle(cornerRadius: DT.Radius.md))
             }
             .buttonStyle(PressableButtonStyle())
-            Button { shuffle() } label: {
+            Button { model.shuffle(by: sort) } label: {
                 Label("Shuffle", systemImage: "shuffle")
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
@@ -238,14 +124,8 @@ struct CollectionDetailView: View {
             }
             .buttonStyle(PressableButtonStyle())
         }
-        .disabled(playable.isEmpty)
+        .disabled(model.playable(by: sort).isEmpty)
         .padding(.horizontal, DT.Spacing.pagePad)
-    }
-
-    private var playLabel: String {
-        guard let next = nextToPlay else { return "Play from Start" }
-        if (next.userData?.playbackPositionTicks ?? 0) > 0 { return "Resume \(next.name)" }
-        return watchedCount == 0 ? "Play" : "Continue with \(next.name)"
     }
 
     private var progressSection: some View {
@@ -305,7 +185,7 @@ struct CollectionDetailView: View {
             if showsGrid {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(sortedItems) { item in
-                        Button { selectedItem = item } label: {
+                        Button { model.selectedItem = item } label: {
                             PosterCard(
                                 title: item.name,
                                 subtitle: item.productionYear.map { String($0) },
@@ -314,28 +194,20 @@ struct CollectionDetailView: View {
                             )
                             .overlay(alignment: .topTrailing) { watchedBadge(item) }
                         }
-                        .modifier(CardButtonStyle(id: item.id, namespace: namespace))
+                        .modifier(CollectionCardButtonStyle(id: item.id, namespace: zoomNamespace))
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             } else {
                 LazyVStack(spacing: 14) {
                     ForEach(Array(sortedItems.enumerated()), id: \.element.id) { index, item in
-                        Button { selectedItem = item } label: { titleRow(item, number: index + 1) }
-                            .modifier(CardButtonStyle(id: item.id, namespace: namespace))
+                        Button { model.selectedItem = item } label: { titleRow(item, number: index + 1) }
+                            .modifier(CollectionCardButtonStyle(id: item.id, namespace: zoomNamespace))
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
         }
-    }
-
-    private var namespace: Namespace.ID? {
-        #if os(tvOS)
-        nil
-        #else
-        zoomNamespace
-        #endif
     }
 
     private func titleRow(_ item: MediaItem, number: Int) -> some View {
@@ -416,7 +288,7 @@ struct CollectionDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(people) { person in
-                        Button { selectedPerson = person } label: {
+                        Button { model.selectedPerson = person } label: {
                             CastPersonCard(
                                 imageURL: person.primaryImageTag.flatMap {
                                     mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120)
@@ -426,12 +298,7 @@ struct CollectionDetailView: View {
                                 placeholder: { personPlaceholder }
                             )
                         }
-#if os(tvOS)
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-#else
                         .buttonStyle(.plain)
-#endif
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -446,60 +313,5 @@ struct CollectionDetailView: View {
             .overlay(Image(systemName: "person.fill")
                 .font(.system(.title2))
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
-    }
-
-    // MARK: - Playback
-
-    private func playThrough() {
-        guard let start = nextToPlay ?? playable.first, let index = playable.firstIndex(of: start) else { return }
-        PlayQueue.start(Array(playable[index...]))
-        let resume = start.userData?.played == true ? 0 : (start.userData?.playbackPositionTicks ?? 0)
-        playbackRequest = MediaDetailView.PlaybackRequest(item: start, startTicks: resume)
-    }
-
-    private func shuffle() {
-        let shuffled = playable.shuffled()
-        guard let first = shuffled.first else { return }
-        PlayQueue.start(shuffled)
-        playbackRequest = MediaDetailView.PlaybackRequest(item: first, startTicks: 0)
-    }
-
-    // MARK: - Load
-
-    private func load() async {
-        guard let cred = credential, let header = authHeader else {
-            isLoading = false
-            return
-        }
-        async let fetchedDetail = client.getItemDetail(credential: cred, authHeader: header, itemId: collection.id)
-        async let fetchedItems = client.getLibraryItems(
-            credential: cred, authHeader: header, libraryId: collection.id, limit: 200,
-            recursive: false, sortBy: "PremiereDate,ProductionYear,SortName"
-        )
-        detail = try? await fetchedDetail
-        if let fetched = try? await fetchedItems { items = fetched.items }
-        isLoading = false
-    }
-}
-
-/// Pressable on iOS/macOS with the zoom transition source; the focus card style on tvOS.
-private struct CardButtonStyle: ViewModifier {
-    let id: String
-    let namespace: Namespace.ID?
-
-    func body(content: Content) -> some View {
-#if os(tvOS)
-        content
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-#else
-        if let namespace {
-            content
-                .buttonStyle(PressableButtonStyle())
-                .zoomTransitionSource(id: id, in: namespace)
-        } else {
-            content.buttonStyle(PressableButtonStyle())
-        }
-#endif
     }
 }

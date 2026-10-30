@@ -121,7 +121,7 @@ struct LibraryDetailView: View {
         }
         .navigationDestination(item: $model.randomPick) { pick in
             if pick.type == .boxSet {
-                TVCollectionDetailView(item: pick)
+                CollectionDetailView(collection: pick)
             } else if pick.type == .playlist {
                 LibraryDetailView(playlistItem: pick)
             } else {

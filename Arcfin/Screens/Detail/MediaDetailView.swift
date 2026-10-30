@@ -258,11 +258,7 @@ struct MediaDetailView: View {
         }
         #endif
         .navigationDestination(item: $openedCollection) { collection in
-#if os(tvOS)
-            TVCollectionDetailView(item: collection)
-#else
             CollectionDetailView(collection: collection)
-#endif
         }
         .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .navigationDestination(item: $selectedEpisode) { ep in

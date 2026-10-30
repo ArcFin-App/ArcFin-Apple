@@ -93,7 +93,7 @@ struct TVMediaDetailView: View {
             containingCollections = found.collections
             containingPlaylists = found.playlists
         }
-        .navigationDestination(item: $openedCollection) { TVCollectionDetailView(item: $0) }
+        .navigationDestination(item: $openedCollection) { CollectionDetailView(collection: $0) }
         .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .task(id: item.tmdbId) {
             guard let tmdbId = item.tmdbId else { return }
