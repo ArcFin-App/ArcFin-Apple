@@ -172,3 +172,57 @@ struct LibraryItemCard: View {
         .contentShape(Rectangle())
     }
 }
+
+// MARK: - Browse sections
+
+struct LibrarySectionHeader: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(DT.Font.cardTitle)
+            .foregroundStyle(DT.Color.textPrimary)
+            .tracking(-0.2)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// A full-width row on Browse that leads somewhere: Downloads, or a file on this device.
+struct LibraryLinkRow: View {
+    let systemImage: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(.title3))
+                .foregroundStyle(DT.Color.accent)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(.subheadline, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                Text(subtitle)
+                    .font(.system(.caption))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(.footnote))
+                .foregroundStyle(DT.Color.textSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: DT.Radius.card)
+                .fill(DT.Color.backgroundSecondary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DT.Radius.card)
+                        .stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
+                )
+        )
+    }
+}
