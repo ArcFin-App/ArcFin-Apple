@@ -102,6 +102,10 @@
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
 				iOS/Detail/MediaDetailView.swift = (ios, );
 				iOS/Detail/PersonDetailView.swift = (ios, );
+				iOS/Downloads/DownloadedItemDetailView.swift = (ios, );
+				iOS/Downloads/DownloadedSeriesDetailView.swift = (ios, );
+				iOS/Downloads/DownloadsView.swift = (ios, );
+				iOS/Downloads/StorageManagementView.swift = (ios, );
 				iOS/Home/HeroVideoBackdrop.swift = (ios, );
 				iOS/Home/HomeView.swift = (ios, );
 				iOS/Home/MainTabView.swift = (ios, );
@@ -165,6 +169,10 @@
 				iOS/Stats/StatsView.swift = (ios, );
 				macOS/Detail/MediaDetailView.swift = (macos, );
 				macOS/Detail/PersonDetailView.swift = (macos, );
+				macOS/Downloads/DownloadedItemDetailView.swift = (macos, );
+				macOS/Downloads/DownloadedSeriesDetailView.swift = (macos, );
+				macOS/Downloads/DownloadsView.swift = (macos, );
+				macOS/Downloads/StorageManagementView.swift = (macos, );
 				macOS/Home/HeroVideoBackdrop.swift = (macos, );
 				macOS/Home/HomeView.swift = (macos, );
 				macOS/Home/MainTabView.swift = (macos, );
@@ -227,6 +235,9 @@
 				macOS/Stats/StatsView.swift = (macos, );
 				tvOS/Detail/MediaDetailView.swift = (tvos, );
 				tvOS/Detail/PersonDetailView.swift = (tvos, );
+				tvOS/Downloads/DownloadedItemDetailView.swift = (tvos, );
+				tvOS/Downloads/DownloadedSeriesDetailView.swift = (tvos, );
+				tvOS/Downloads/DownloadsView.swift = (tvos, );
 				tvOS/Home/HeroVideoBackdrop.swift = (tvos, );
 				tvOS/Home/HomeView.swift = (tvos, );
 				tvOS/Home/LibraryScreensaverView.swift = (tvos, );

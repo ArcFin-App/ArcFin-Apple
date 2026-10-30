@@ -1,63 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
-import SwiftData
 import Persistence
-import JellyfinAPI
-import AuthCore
 
-/// Navigation payload for a series container row — a thin wrapper instead of a bare String
-/// so `.navigationDestination(for:)` can dispatch to the series detail view specifically,
-/// without colliding with any other String-based destination elsewhere in the app.
-struct DownloadedSeriesRef: Hashable {
-    let seriesId: String
-}
+/// The Downloads list: storage, the queue, Continue Watching, shows and movies. `play` starts a
+/// download the way the platform does, and `manage` sits at the end of the storage card.
+struct DownloadsContent<Manage: View>: View {
+    let items: [DownloadedItem]
+    let model: DownloadsModel
+    let isOnline: Bool
+    let play: (DownloadedItem) -> Void
+    @ViewBuilder let manage: () -> Manage
 
-struct DownloadsView: View {
-    /// Non-nil only when this is standing in for the whole app (offline mode) — shows a
-    /// "Go Back Online" affordance and skips the normal nav chrome.
-    var goBackOnline: (() -> Void)? = nil
-
-    @Environment(\.modelContext) private var modelContext
     @Environment(DownloadManager.self) private var downloadManager
-    @Environment(AuthManager.self) private var authManager
-    @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var items: [DownloadedItem]
 
-    @State private var pendingDelete: DownloadedItem?
-    @State private var pendingDeleteSeriesId: String?
-    // Owned here rather than relying on an ancestor's navigationDestination(for:) — this
-    // view is itself pushed non-root (Library's Downloads row, offline mode's stack), and a
-    // NavigationLink(value:) pushed from a nested view can silently fail to resolve against
-    // a destination declared further up the stack (see the See All fix, 306aaf3).
-    @State private var selectedItem: DownloadedItem?
-    @State private var selectedSeriesRef: DownloadedSeriesRef?
-    @State private var selectedMedia: MediaItem?
-    @State private var playingItem: DownloadedItem?
-    @State private var isSelecting = false
-    @State private var selection = Set<String>()
-    @State private var showBulkDeleteConfirm = false
-    @State private var showMobileDataConfirm = false
-    @State private var showCancelAllConfirm = false
-    @State private var freeBytes: Int64?
-
-    /// With a connection, a download opens the title's full page; offline, the saved one.
-    private var isOnline: Bool { goBackOnline == nil && authManager.state.credential != nil }
-
-    private var movies: [DownloadedItem] { items.filter { $0.seriesId == nil }.sorted { $0.name < $1.name } }
-
-    private var seriesGroups: [(seriesId: String, seriesName: String, episodes: [DownloadedItem])] {
-        let grouped = Dictionary(grouping: items.filter { $0.seriesId != nil }) { $0.seriesId! }
-        return grouped.map { (id, episodes) in
-            (seriesId: id, seriesName: episodes.first?.seriesName ?? "Unknown Series",
-             episodes: episodes.sorted { ($0.seasonNumber ?? 0, $0.episodeNumber ?? 0) < ($1.seasonNumber ?? 0, $1.episodeNumber ?? 0) })
-        }.sorted { $0.seriesName < $1.seriesName }
-    }
-
-    private var inProgress: [DownloadedItem] {
-        items.filter { $0.playbackPositionTicks > 0 && !$0.played }
-    }
-
-    private var totalSizeBytes: Int64 { items.reduce(0) { $0 + $1.fileSizeBytes } }
+    private var movies: [DownloadedItem] { DownloadsModel.movies(in: items) }
+    private var seriesGroups: [DownloadsModel.SeriesGroup] { DownloadsModel.seriesGroups(in: items) }
+    private var inProgress: [DownloadedItem] { DownloadsModel.inProgress(in: items) }
+    private var totalSizeBytes: Int64 { DownloadsModel.totalSizeBytes(of: items) }
 
     private let gridColumns = [GridItem(.adaptive(minimum: 104, maximum: 150), spacing: 14, alignment: .top)]
 
@@ -75,7 +35,7 @@ struct DownloadsView: View {
                         storageCard
                         if let hold = downloadManager.queueHold { heldCard(hold) }
                         if !downloadManager.activeItemTitles.isEmpty { downloadingSection }
-                        if !inProgress.isEmpty, !isSelecting { continueSection }
+                        if !inProgress.isEmpty, !model.isSelecting { continueSection }
                         if !seriesGroups.isEmpty { showsSection }
                         if !movies.isEmpty { moviesSection }
                     }
@@ -86,172 +46,21 @@ struct DownloadsView: View {
                 }
             }
         }
-        .screenBackground()
-        .onAppear {
-            downloadManager.removeExpiredDownloads()
-            downloadManager.purgeWatchedDownloads()
-        }
-        .task(id: items.count) { freeBytes = Self.availableBytes() }
-        .task { if isOnline { await downloadManager.saveMissingDetails() } }
-        .navigationTitle("Downloads")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
-        .toolbar { toolbarContent }
-        .navigationDestination(item: $selectedItem) { item in
-            DownloadedItemDetailView(item: item)
-        }
-        .navigationDestination(item: $selectedSeriesRef) { ref in
-            DownloadedSeriesDetailView(seriesId: ref.seriesId)
-        }
-        .navigationDestination(item: $selectedMedia) { item in
-            MediaDetailView(item: item)
-        }
-        #if os(iOS)
-        .fullScreenCover(item: $playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
-        }
-        #elseif os(macOS)
-        .sheet(item: $playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
-                .frame(minWidth: 900, minHeight: 560)
-        }
-        #endif
-        .alert("Delete this download?", isPresented: Binding(
-            get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
-        )) {
-            Button("Delete", role: .destructive) {
-                if let pendingDelete { downloadManager.deleteDownload(pendingDelete) }
-                pendingDelete = nil
-            }
-            Button("Cancel", role: .cancel) { pendingDelete = nil }
-        }
-        .alert("Delete this show's downloads?", isPresented: Binding(
-            get: { pendingDeleteSeriesId != nil }, set: { if !$0 { pendingDeleteSeriesId = nil } }
-        )) {
-            Button("Delete All Episodes", role: .destructive) {
-                if let seriesId = pendingDeleteSeriesId {
-                    downloadManager.deleteDownloads(items.filter { $0.seriesId == seriesId })
-                }
-                pendingDeleteSeriesId = nil
-            }
-            Button("Cancel", role: .cancel) { pendingDeleteSeriesId = nil }
-        }
-        .alert(downloadManager.queueHold == .mobileData ? "Download on Mobile Data?" : "Download Now?",
-               isPresented: $showMobileDataConfirm) {
-            Button("Download") { downloadManager.startHeldDownloads() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            switch downloadManager.queueHold {
-            case .mobileData: Text("You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply.")
-            case .lowDataMode: Text("Low Data Mode is on. Downloading uses data your device is trying to save.")
-            default: Text("Low Power Mode is on. Downloading uses more battery.")
-            }
-        }
-        .confirmationDialog("Cancel all downloads?", isPresented: $showCancelAllConfirm, titleVisibility: .visible) {
-            Button("Cancel All Downloads", role: .destructive) { downloadManager.cancelAllDownloads() }
-            Button("Keep Downloading", role: .cancel) {}
-        } message: {
-            Text("What's already downloaded of them is discarded.")
-        }
-        .alert("Delete \(selection.count) selected download\(selection.count == 1 ? "" : "s")?", isPresented: $showBulkDeleteConfirm) {
-            Button("Delete", role: .destructive) {
-                deleteSelection()
-            }
-            Button("Cancel", role: .cancel) {}
-        }
     }
-
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        if let goBackOnline {
-            ToolbarItem(placement: .primaryAction) {
-                Button("Go Back Online", action: goBackOnline)
-            }
-        }
-        #if !os(tvOS)
-        if goBackOnline == nil, !items.isEmpty {
-            if isSelecting && !selection.isEmpty {
-                ToolbarItem(placement: .destructiveAction) {
-                    Button("Delete (\(selection.count))", role: .destructive) {
-                        showBulkDeleteConfirm = true
-                    }
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button(isSelecting ? "Done" : "Select") {
-                    withAnimation(DT.Animation.fast) { isSelecting.toggle() }
-                    selection.removeAll()
-                }
-            }
-        }
-        #endif
-    }
-
-    private func deleteSelection() {
-        var toDelete: [DownloadedItem] = []
-        for id in selection {
-            if id.hasPrefix("series:") {
-                let seriesId = String(id.dropFirst("series:".count))
-                toDelete.append(contentsOf: items.filter { $0.seriesId == seriesId })
-            } else if id.hasPrefix("movie:") {
-                let itemId = String(id.dropFirst("movie:".count))
-                if let item = items.first(where: { $0.itemId == itemId }) { toDelete.append(item) }
-            }
-        }
-        downloadManager.deleteDownloads(toDelete)
-        selection.removeAll()
-        isSelecting = false
-    }
-
-    // MARK: - Navigation
 
     private func open(_ item: DownloadedItem) {
-        if isOnline {
-            selectedMedia = downloadManager.savedDetail(itemId: item.itemId)?.item ?? Self.mediaItem(for: item)
-        } else {
-            selectedItem = item
-        }
+        model.open(item, isOnline: isOnline, downloadManager: downloadManager)
     }
 
     private func openSeries(_ seriesId: String, name: String) {
-        if isOnline {
-            selectedMedia = downloadManager.savedDetail(itemId: seriesId)?.item
-                ?? MediaItem(id: seriesId, name: name, type: .series)
-        } else {
-            selectedSeriesRef = DownloadedSeriesRef(seriesId: seriesId)
-        }
-    }
-
-    private static func mediaItem(for item: DownloadedItem) -> MediaItem {
-        MediaItem(
-            id: item.itemId, name: item.name, overview: item.overview,
-            type: MediaType(rawValue: item.typeRaw) ?? .movie,
-            productionYear: item.productionYear, communityRating: item.communityRating,
-            seriesName: item.seriesName, indexNumber: item.episodeNumber,
-            parentIndexNumber: item.seasonNumber, seriesId: item.seriesId
-        )
-    }
-
-    private func play(_ item: DownloadedItem) {
-        #if os(tvOS)
-        open(item)
-        #else
-        playingItem = item
-        #endif
+        model.openSeries(seriesId, name: name, isOnline: isOnline, downloadManager: downloadManager)
     }
 
     // MARK: - Storage
 
-    private static func availableBytes() -> Int64? {
-        let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
-            .resourceValues(forKeys: [.volumeAvailableCapacityKey])
-        return values?.volumeAvailableCapacity.map(Int64.init)
-    }
-
     private var storageCard: some View {
         let used = totalSizeBytes
-        let free = freeBytes ?? 0
+        let free = model.freeBytes ?? 0
         let share = used + free > 0 ? Double(used) / Double(used + free) : 0
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
@@ -263,22 +72,14 @@ struct DownloadsView: View {
                     Text(items.count == 1 ? "1 title" : "\(items.count) titles")
                         .font(.system(.headline, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text(storageCaption(used: used))
+                    Text(model.storageCaption(used: used))
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
-                #if !os(tvOS)
-                NavigationLink {
-                    StorageManagementView()
-                } label: {
-                    Text("Manage")
-                        .font(.system(.subheadline, weight: .semibold))
-                }
-                .buttonStyle(.glass)
-                #endif
+                manage()
             }
-            if freeBytes != nil {
+            if model.freeBytes != nil {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(DT.Color.textPrimary.opacity(0.1))
@@ -294,12 +95,6 @@ struct DownloadsView: View {
         .padding(16)
         .background(cardBackground)
         .accessibilityElement(children: .combine)
-    }
-
-    private func storageCaption(used: Int64) -> String {
-        let usedText = ByteCountFormatter.string(fromByteCount: used, countStyle: .file)
-        guard let freeBytes else { return "\(usedText) used" }
-        return "\(usedText) used · \(ByteCountFormatter.string(fromByteCount: freeBytes, countStyle: .file)) free"
     }
 
     private var cardBackground: some View {
@@ -341,7 +136,7 @@ struct DownloadsView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             Spacer()
-            Button("Start") { showMobileDataConfirm = true }
+            Button("Start") { model.showMobileDataConfirm = true }
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
                 .foregroundStyle(DT.Color.onAccent)
@@ -368,7 +163,7 @@ struct DownloadsView: View {
                             Label("Pause Queue", systemImage: "pause.fill")
                         }
                     }
-                    Button(role: .destructive) { showCancelAllConfirm = true } label: {
+                    Button(role: .destructive) { model.showCancelAllConfirm = true } label: {
                         Label("Cancel All", systemImage: "xmark.circle")
                     }
                 } label: {
@@ -520,24 +315,24 @@ struct DownloadsView: View {
                     let id = "series:\(group.seriesId)"
                     let size = group.episodes.reduce(0) { $0 + $1.fileSizeBytes }
                     Button {
-                        if isSelecting { toggleSelection(id) } else { openSeries(group.seriesId, name: group.seriesName) }
+                        if model.isSelecting { model.toggleSelection(id) } else { openSeries(group.seriesId, name: group.seriesName) }
                     } label: {
                         PosterTile(
-                            artwork: seriesPosterURL(group.seriesId, fallback: group.episodes.first),
+                            artwork: DownloadsModel.seriesPosterURL(group.seriesId, fallback: group.episodes.first),
                             title: group.seriesName,
                             caption: "\(group.episodes.count) episode\(group.episodes.count == 1 ? "" : "s") · \(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))",
                             badge: "\(group.episodes.count)",
                             progress: nil, isWatched: group.episodes.allSatisfy(\.played),
-                            selection: isSelecting ? selection.contains(id) : nil
+                            selection: model.isSelecting ? model.selection.contains(id) : nil
                         )
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
-                        if !isSelecting {
+                        if !model.isSelecting {
                             Button { openSeries(group.seriesId, name: group.seriesName) } label: {
                                 Label("Details", systemImage: "info.circle")
                             }
-                            Button(role: .destructive) { pendingDeleteSeriesId = group.seriesId } label: {
+                            Button(role: .destructive) { model.pendingDeleteSeriesId = group.seriesId } label: {
                                 Label("Delete All Episodes", systemImage: "trash")
                             }
                         }
@@ -554,10 +349,10 @@ struct DownloadsView: View {
                 ForEach(movies) { item in
                     let id = "movie:\(item.itemId)"
                     Button {
-                        if isSelecting { toggleSelection(id) } else { open(item) }
+                        if model.isSelecting { model.toggleSelection(id) } else { open(item) }
                     } label: {
                         PosterTile(
-                            artwork: fileURL(item.posterFileName, in: item.itemId),
+                            artwork: DownloadsModel.fileURL(item.posterFileName, in: item.itemId),
                             title: item.name,
                             caption: [item.productionYear.map(String.init), ByteCountFormatter.string(fromByteCount: item.fileSizeBytes, countStyle: .file)]
                                 .compactMap { $0 }.joined(separator: " · "),
@@ -565,17 +360,17 @@ struct DownloadsView: View {
                             progress: item.played || item.runtimeTicks <= 0 || item.playbackPositionTicks <= 0
                                 ? nil : min(Double(item.playbackPositionTicks) / Double(item.runtimeTicks), 1),
                             isWatched: item.played,
-                            selection: isSelecting ? selection.contains(id) : nil
+                            selection: model.isSelecting ? model.selection.contains(id) : nil
                         )
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
-                        if !isSelecting {
+                        if !model.isSelecting {
                             Button { play(item) } label: {
                                 Label(item.playbackPositionTicks > 0 && !item.played ? "Resume" : "Play", systemImage: "play.fill")
                             }
                             Button { open(item) } label: { Label("Details", systemImage: "info.circle") }
-                            Button(role: .destructive) { pendingDelete = item } label: {
+                            Button(role: .destructive) { model.pendingDelete = item } label: {
                                 Label("Delete Download", systemImage: "trash")
                             }
                         }
@@ -584,22 +379,86 @@ struct DownloadsView: View {
             }
         }
     }
+}
 
-    private func toggleSelection(_ id: String) {
-        if selection.contains(id) { selection.remove(id) } else { selection.insert(id) }
+/// Downloads' confirmations: deleting a title, a show or the selection, starting held
+/// downloads and cancelling the queue.
+struct DownloadsAlerts: ViewModifier {
+    let items: [DownloadedItem]
+    @Bindable var model: DownloadsModel
+
+    @Environment(DownloadManager.self) private var downloadManager
+
+    func body(content: Content) -> some View {
+        content
+            .alert("Delete this download?", isPresented: Binding(
+                get: { model.pendingDelete != nil }, set: { if !$0 { model.pendingDelete = nil } }
+            )) {
+                Button("Delete", role: .destructive) {
+                    if let pendingDelete = model.pendingDelete { downloadManager.deleteDownload(pendingDelete) }
+                    model.pendingDelete = nil
+                }
+                Button("Cancel", role: .cancel) { model.pendingDelete = nil }
+            }
+            .alert("Delete this show's downloads?", isPresented: Binding(
+                get: { model.pendingDeleteSeriesId != nil }, set: { if !$0 { model.pendingDeleteSeriesId = nil } }
+            )) {
+                Button("Delete All Episodes", role: .destructive) {
+                    if let seriesId = model.pendingDeleteSeriesId {
+                        downloadManager.deleteDownloads(items.filter { $0.seriesId == seriesId })
+                    }
+                    model.pendingDeleteSeriesId = nil
+                }
+                Button("Cancel", role: .cancel) { model.pendingDeleteSeriesId = nil }
+            }
+            .alert(downloadManager.queueHold == .mobileData ? "Download on Mobile Data?" : "Download Now?",
+                   isPresented: $model.showMobileDataConfirm) {
+                Button("Download") { downloadManager.startHeldDownloads() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                switch downloadManager.queueHold {
+                case .mobileData: Text("You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply.")
+                case .lowDataMode: Text("Low Data Mode is on. Downloading uses data your device is trying to save.")
+                default: Text("Low Power Mode is on. Downloading uses more battery.")
+                }
+            }
+            .confirmationDialog("Cancel all downloads?", isPresented: $model.showCancelAllConfirm, titleVisibility: .visible) {
+                Button("Cancel All Downloads", role: .destructive) { downloadManager.cancelAllDownloads() }
+                Button("Keep Downloading", role: .cancel) {}
+            } message: {
+                Text("What's already downloaded of them is discarded.")
+            }
+            .alert("Delete \(model.selection.count) selected download\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {
+                Button("Delete", role: .destructive) {
+                    model.deleteSelection(in: items, downloadManager: downloadManager)
+                }
+                Button("Cancel", role: .cancel) {}
+            }
     }
+}
 
-    // MARK: - Artwork
+/// Select and Delete for picking several downloads at once, where the platform offers it.
+struct DownloadsSelectionToolbar: ToolbarContent {
+    let isOffline: Bool
+    let hasItems: Bool
+    let model: DownloadsModel
 
-    private func fileURL(_ name: String?, in itemId: String) -> URL? {
-        guard let name, !name.isEmpty else { return nil }
-        return DownloadStore.directory(for: itemId).appendingPathComponent(name)
-    }
-
-    private func seriesPosterURL(_ seriesId: String, fallback: DownloadedItem?) -> URL? {
-        let poster = DownloadStore.directory(for: seriesId).appendingPathComponent("poster.jpg")
-        if FileManager.default.fileExists(atPath: poster.path) { return poster }
-        return fallback.flatMap { fileURL($0.posterFileName, in: $0.itemId) }
+    var body: some ToolbarContent {
+        if !isOffline, hasItems {
+            if model.isSelecting && !model.selection.isEmpty {
+                ToolbarItem(placement: .destructiveAction) {
+                    Button("Delete (\(model.selection.count))", role: .destructive) {
+                        model.showBulkDeleteConfirm = true
+                    }
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button(model.isSelecting ? "Done" : "Select") {
+                    withAnimation(DT.Animation.fast) { model.isSelecting.toggle() }
+                    model.selection.removeAll()
+                }
+            }
+        }
     }
 }
 
