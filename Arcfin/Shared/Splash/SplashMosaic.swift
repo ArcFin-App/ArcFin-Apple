@@ -3,11 +3,6 @@
 import Foundation
 import JellyfinAPI
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 /// Posters of recently added titles, saved to disk so the next launch's splash can show them
 /// instantly: at that moment nothing is signed in or loaded yet, so they can't come from the

@@ -32,15 +32,6 @@ struct SplashView: View {
     @State private var minimumTimeElapsed = false
     @State private var isExiting = false
 
-    #if os(tvOS)
-    // Seen from the sofa, the phone's size reads as a small badge on a TV.
-    private static let scale: CGFloat = 2
-    #elseif os(macOS)
-    // A Mac window is far larger than a phone screen; at phone size the mark looks lost.
-    private static let scale: CGFloat = 1.6
-    #else
-    private static let scale: CGFloat = 1
-    #endif
     private let logoSize: CGFloat = 132 * scale
 
     var body: some View {

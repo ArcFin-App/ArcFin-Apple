@@ -120,6 +120,7 @@
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
 				iOS/Search/SearchView.swift = (ios, );
+				iOS/Splash/SplashScale.swift = (ios, );
 				macOS/Detail/MediaDetailView.swift = (macos, );
 				macOS/Detail/PersonDetailView.swift = (macos, );
 				macOS/Home/HeroVideoBackdrop.swift = (macos, );
@@ -140,6 +141,7 @@
 				macOS/Platform/ScrubGesture.swift = (macos, );
 				macOS/Search/SearchView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
+				macOS/Splash/SplashScale.swift = (macos, );
 				tvOS/Detail/MediaDetailView.swift = (tvos, );
 				tvOS/Detail/PersonDetailView.swift = (tvos, );
 				tvOS/Home/HeroVideoBackdrop.swift = (tvos, );
@@ -159,6 +161,7 @@
 				tvOS/Search/SearchView.swift = (tvos, );
 				tvOS/Seerr/TVSeerrItemDetailView.swift = (tvos, );
 				tvOS/Seerr/TVSeerrView.swift = (tvos, );
+				tvOS/Splash/SplashScale.swift = (tvos, );
 			};
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 		};
