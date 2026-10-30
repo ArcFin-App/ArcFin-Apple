@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(tvOS)
 import Foundation
 import GameController
 
@@ -122,4 +121,3 @@ final class TVRemoteScrub {
         samples = []
     }
 }
-#endif

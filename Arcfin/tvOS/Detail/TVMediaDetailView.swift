@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(tvOS)
 import SwiftUI
 import JellyfinAPI
 import SeerrAPI
@@ -1141,4 +1140,3 @@ private struct TVSectionSnappingBehavior: ScrollTargetBehavior {
         .environment(SeerrRepository())
     }
 }
-#endif

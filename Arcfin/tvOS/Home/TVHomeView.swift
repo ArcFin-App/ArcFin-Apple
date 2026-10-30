@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(tvOS)
 import SwiftUI
 import JellyfinAPI
 import SeerrAPI
@@ -860,4 +859,3 @@ struct TVHomeView: View {
         .environment(MediaRepository())
         .environment(SeerrRepository())
 }
-#endif

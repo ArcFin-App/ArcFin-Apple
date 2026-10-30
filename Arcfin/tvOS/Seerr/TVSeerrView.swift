@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#if os(tvOS)
 import SwiftUI
 import SeerrAPI
 import JellyfinAPI
@@ -541,4 +540,3 @@ private struct TVRequestRow: View {
             .overlay(Capsule().stroke(DT.Color.palette(hex).opacity(0.3), lineWidth: 1))
     }
 }
-#endif
