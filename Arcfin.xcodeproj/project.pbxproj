@@ -100,6 +100,10 @@
 			);
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
+				iOS/App/AppRootPlatform.swift = (ios, );
+				iOS/App/ContentView.swift = (ios, );
+				iOS/App/PlayerFirstResponder.swift = (ios, );
+				iOS/App/PlayerWindow.swift = (ios, );
 				iOS/Components/LetterIndexBar.swift = (ios, );
 				iOS/Components/PINPadPlatform.swift = (ios, );
 				iOS/Components/PosterCard.swift = (ios, );
@@ -190,6 +194,10 @@
 				iOS/Stats/StatsPlatform.swift = (ios, );
 				iOS/Stats/StatsShareSheet.swift = (ios, );
 				iOS/Stats/StatsView.swift = (ios, );
+				macOS/App/AppRootPlatform.swift = (macos, );
+				macOS/App/ContentView.swift = (macos, );
+				macOS/App/PlayerFirstResponder.swift = (macos, );
+				macOS/App/PlayerWindow.swift = (macos, );
 				macOS/Components/LetterIndexBar.swift = (macos, );
 				macOS/Components/PINPadPlatform.swift = (macos, );
 				macOS/Components/PosterCard.swift = (macos, );
@@ -279,6 +287,9 @@
 				macOS/Stats/StatsPlatform.swift = (macos, );
 				macOS/Stats/StatsShareSheet.swift = (macos, );
 				macOS/Stats/StatsView.swift = (macos, );
+				tvOS/App/AppRootPlatform.swift = (tvos, );
+				tvOS/App/ContentView.swift = (tvos, );
+				tvOS/App/PlayerFirstResponder.swift = (tvos, );
 				tvOS/Components/PINPadPlatform.swift = (tvos, );
 				tvOS/Components/PosterCard.swift = (tvos, );
 				tvOS/Components/SeerrRequestCancel.swift = (tvos, );
