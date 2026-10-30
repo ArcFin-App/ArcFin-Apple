@@ -136,6 +136,7 @@
 				iOS/Settings/SeerrPluginView.swift = (ios, );
 				iOS/Settings/ServerAccountSettingsView.swift = (ios, );
 				iOS/Settings/ServerSettingsView.swift = (ios, );
+				iOS/Settings/SettingsView.swift = (ios, );
 				iOS/Settings/StreamingServicesView.swift = (ios, );
 				iOS/Settings/TMDBSettingsView.swift = (ios, );
 				iOS/Settings/UsersView.swift = (ios, );
@@ -175,6 +176,7 @@
 				macOS/Settings/SeerrPluginView.swift = (macos, );
 				macOS/Settings/ServerAccountSettingsView.swift = (macos, );
 				macOS/Settings/ServerSettingsView.swift = (macos, );
+				macOS/Settings/SettingsView.swift = (macos, );
 				macOS/Settings/StreamingServicesView.swift = (macos, );
 				macOS/Settings/TMDBSettingsView.swift = (macos, );
 				macOS/Settings/UsersView.swift = (macos, );
@@ -208,6 +210,7 @@
 				tvOS/Settings/ProfileAccessView.swift = (tvos, );
 				tvOS/Settings/SeerrPluginView.swift = (tvos, );
 				tvOS/Settings/ServerSettingsView.swift = (tvos, );
+				tvOS/Settings/SettingsView.swift = (tvos, );
 				tvOS/Settings/StreamingServicesView.swift = (tvos, );
 				tvOS/Settings/TMDBSettingsView.swift = (tvos, );
 				tvOS/Settings/UsersView.swift = (tvos, );
