@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import SwiftUI
+import AuthCore
+
+/// Full-screen gate shown when the active profile has a PIN set and the app just launched or
+/// returned from the background. Leads with a profile picker across every
+/// saved profile (not just the active one), same as switching profiles from Settings — so
+/// unlocking and switching who you are are the same screen instead of two. No cancel button
+/// on the PIN pad itself — there's no bypass, only unlock or pick a different profile.
+struct AppLockView: View {
+    @Environment(AuthManager.self) private var authManager
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    let useFaceID: Bool
+    let onUnlock: () -> Void
+
+    @State private var model = AppLockModel()
+
+    private var activeID: UUID? { authManager.state.credential?.id }
+
+    // Fixed, not .adaptive — an adaptive grid resolves its column count from measured width
+    // across layout passes, which is what caused the picker to visibly jump from left-packed
+    // to centered right after appearing. A size-class-driven fixed count never has to guess.
+    private var columnCount: Int { sizeClass == .compact ? 2 : 3 }
+    private let tileWidth: CGFloat = 220
+    private let avatarSize: CGFloat = 180
+    private let gridSpacing: CGFloat = 24
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: gridSpacing), count: columnCount)
+    }
+    private var gridMaxWidth: CGFloat {
+        CGFloat(columnCount) * tileWidth + CGFloat(columnCount - 1) * gridSpacing
+    }
+
+    var body: some View {
+        bodyContent.alwaysDark()
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
+        ZStack {
+            DT.Color.backgroundPrimary.ignoresSafeArea()
+
+            if let target = model.pinTarget {
+                PINPadView(
+                    title: "Enter PIN",
+                    subtitle: target.displayName,
+                    errorMessage: model.errorMessage,
+                    resetToken: model.resetToken,
+                    onCancel: { model.cancelPIN() }
+                ) { entered in
+                    model.enter(entered, for: target, authManager: authManager, onUnlock: onUnlock)
+                }
+            } else {
+                pickerBody
+            }
+        }
+        .task { await model.loadPINStates(authManager: authManager) }
+    }
+
+    // MARK: - Profile picker
+
+    private var pickerBody: some View {
+        VStack(spacing: 28) {
+            Spacer()
+
+            ArcfinLogoView(size: 84)
+
+            AppLockGreeting()
+
+            LazyVGrid(columns: gridColumns, spacing: gridSpacing) {
+                ForEach(authManager.profiles) { profile in
+                    Button { model.select(profile, authManager: authManager, onUnlock: onUnlock) } label: {
+                        ProfileLockTile(profile: profile, isActive: profile.id == activeID, hasPIN: model.hasPIN(profile),
+                                        tileWidth: tileWidth, avatarSize: avatarSize)
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
+                }
+            }
+            .frame(maxWidth: gridMaxWidth)
+
+            Spacer()
+            Spacer()
+        }
+    }
+
+}
