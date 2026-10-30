@@ -43,6 +43,13 @@ struct AuthView: View {
                         : "Use your Jellyfin username and password for \(serverName)."
                 )
 
+                if authManager.expiredCredential?.baseURL == serverURL {
+                    Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
+                        .font(.footnote)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Picker("Sign-in method", selection: $mode) {
                     Text("Quick Connect").tag(AuthMode.quickConnect)
                     Text("Password").tag(AuthMode.credentials)
@@ -138,7 +145,7 @@ struct AuthView: View {
         }
     }
 
-    private func step(_ number: Int, _ text: String) -> some View {
+    private func step(_ number: Int, _ text: LocalizedStringKey) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text("\(number)")
                 .font(.footnote.weight(.bold))
@@ -156,8 +163,8 @@ struct AuthView: View {
 
     private var credentialsView: some View {
         VStack(spacing: 18) {
-            LoginTextField(title: "Username", prompt: "Username", text: $username, kind: .username)
-            LoginTextField(title: "Password", prompt: "Password", text: $password, kind: .password,
+            LoginTextField(title: "Username", prompt: Text("Username"), text: $username, kind: .username)
+            LoginTextField(title: "Password", prompt: Text("Password"), text: $password, kind: .password,
                            onSubmit: submitCredentials)
         }
     }
@@ -277,7 +284,7 @@ struct AuthView: View {
             return
         }
         qcPolling = false
-        authError = "Quick Connect timed out — please try again."
+        authError = String(localized: "Quick Connect timed out — please try again.")
     }
 
     private func formatCode(_ raw: String) -> String {

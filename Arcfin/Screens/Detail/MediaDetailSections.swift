@@ -162,6 +162,7 @@ struct DetailTitleShelf: View {
     let items: [MediaItem]
     /// Unused on Apple TV, which has no zoom transition.
     var zoomNamespace: Namespace.ID?
+    let open: (MediaItem) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -169,7 +170,7 @@ struct DetailTitleShelf: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(items) { rec in
-                        NavigationLink(value: rec) {
+                        DetailTitleLink(item: rec, open: open) {
                             PosterCard(
                                 title: rec.name,
                                 subtitle: rec.productionYear.map { String($0) },
@@ -231,9 +232,10 @@ struct DetailSetShelf: View {
     }
 }
 
-/// Seerr's recommendations for a title the library doesn't have, each opening a request.
+/// Seerr's recommendations for a title the library doesn't have.
 struct DetailSeerrShelf: View {
     let items: [SeerrItem]
+    let subtitle: (SeerrItem) -> String?
     let onSelect: (SeerrItem) -> Void
 
     var body: some View {
@@ -245,7 +247,7 @@ struct DetailSeerrShelf: View {
                         Button { onSelect(sim) } label: {
                             PosterCard(
                                 title: sim.title,
-                                subtitle: sim.year,
+                                subtitle: subtitle(sim),
                                 imageURL: sim.posterURL
                             )
                         }
@@ -257,5 +259,21 @@ struct DetailSeerrShelf: View {
             .shelfScrollButtons()
         }
         .padding(.bottom, DT.Spacing.md)
+    }
+}
+
+/// Opens a library title from the page. On the Mac a NavigationLink(value:) can't always find
+/// the stack's destination, so it sets the page's own destination instead.
+struct DetailTitleLink<Label: View>: View {
+    let item: MediaItem
+    let open: (MediaItem) -> Void
+    @ViewBuilder let label: () -> Label
+
+    var body: some View {
+        #if os(macOS)
+        Button { open(item) } label: { label() }
+        #else
+        NavigationLink(value: item) { label() }
+        #endif
     }
 }

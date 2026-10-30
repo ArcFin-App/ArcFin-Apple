@@ -21,6 +21,7 @@ struct ProfileAccessView: View {
             } else {
                 Section {
                     HStack { Spacer(); ProgressView(); Spacer() }
+                        .tvReadOnlyRow()
                 }
             }
         }
@@ -40,15 +41,15 @@ struct ProfileAccessView: View {
 
     private func accountSection(_ profile: UserProfileDetails) -> some View {
         Section {
-            LabeledContent("Name", value: profile.name)
-            if let server = profile.serverName { LabeledContent("Server", value: server) }
-            LabeledContent("Role", value: profile.policy.isAdministrator ? "Administrator" : "User")
-            LabeledContent("Password", value: profile.hasPassword ? "Set" : "None")
+            LabeledContent("Name", value: profile.name).tvReadOnlyRow()
+            if let server = profile.serverName { LabeledContent("Server", value: server).tvReadOnlyRow() }
+            LabeledContent("Role", value: profile.policy.isAdministrator ? "Administrator" : "User").tvReadOnlyRow()
+            LabeledContent("Password", value: profile.hasPassword ? "Set" : "None").tvReadOnlyRow()
             if let date = profile.lastLoginDate {
-                LabeledContent("Last Sign-In", value: date.formatted(date: .abbreviated, time: .shortened))
+                LabeledContent("Last Sign-In", value: date.formatted(date: .abbreviated, time: .shortened)).tvReadOnlyRow()
             }
             if let date = profile.lastActivityDate {
-                LabeledContent("Last Active", value: date.formatted(.relative(presentation: .named)))
+                LabeledContent("Last Active", value: date.formatted(.relative(presentation: .named))).tvReadOnlyRow()
             }
         } header: {
             Text("Account")
@@ -57,19 +58,19 @@ struct ProfileAccessView: View {
 
     private func parentalSection(_ policy: UserPolicy) -> some View {
         Section {
-            LabeledContent("Maximum Rating", value: maxRatingText(policy))
-            LabeledContent("Unrated Titles", value: unratedText(policy))
+            LabeledContent("Maximum Rating", value: maxRatingText(policy)).tvReadOnlyRow()
+            LabeledContent("Unrated Titles", value: unratedText(policy)).tvReadOnlyRow()
             if !policy.allowedTags.isEmpty {
-                LabeledContent("Only Tagged", value: policy.allowedTags.joined(separator: ", "))
+                LabeledContent("Only Tagged", value: policy.allowedTags.joined(separator: ", ")).tvReadOnlyRow()
             }
             if !policy.blockedTags.isEmpty {
-                LabeledContent("Hidden Tags", value: policy.blockedTags.joined(separator: ", "))
+                LabeledContent("Hidden Tags", value: policy.blockedTags.joined(separator: ", ")).tvReadOnlyRow()
             }
             if policy.accessSchedules.isEmpty {
-                LabeledContent("Allowed Times", value: "Any time")
+                LabeledContent("Allowed Times", value: "Any time").tvReadOnlyRow()
             } else {
                 ForEach(Array(policy.accessSchedules.enumerated()), id: \.offset) { index, schedule in
-                    LabeledContent(index == 0 ? "Allowed Times" : "", value: ProfileRules.describe(schedule))
+                    LabeledContent(index == 0 ? "Allowed Times" : "", value: ProfileRules.describe(schedule)).tvReadOnlyRow()
                 }
             }
         } header: {
@@ -96,10 +97,10 @@ struct ProfileAccessView: View {
             permission("Manage Collections", policy.isAdministrator || policy.enableCollectionManagement)
             permission("Delete Media", policy.isAdministrator || policy.enableContentDeletion)
             if let limit = policy.remoteClientBitrateLimit, limit > 0 {
-                LabeledContent("Remote Quality Limit", value: "\(limit / 1_000_000) Mb/s")
+                LabeledContent("Remote Quality Limit", value: "\(limit / 1_000_000) Mb/s").tvReadOnlyRow()
             }
             if policy.maxActiveSessions > 0 {
-                LabeledContent("Simultaneous Streams", value: "\(policy.maxActiveSessions)")
+                LabeledContent("Simultaneous Streams", value: "\(policy.maxActiveSessions)").tvReadOnlyRow()
             }
         } header: {
             Text("Permissions")
@@ -108,9 +109,9 @@ struct ProfileAccessView: View {
 
     private func preferencesSection(_ profile: UserProfileDetails) -> some View {
         Section {
-            LabeledContent("Audio Language", value: languageName(profile.audioLanguagePreference) ?? "Default")
-            LabeledContent("Subtitle Language", value: languageName(profile.subtitleLanguagePreference) ?? "Default")
-            if let mode = profile.subtitleMode { LabeledContent("Subtitles", value: subtitleModeText(mode)) }
+            LabeledContent("Audio Language", value: languageName(profile.audioLanguagePreference) ?? "Default").tvReadOnlyRow()
+            LabeledContent("Subtitle Language", value: languageName(profile.subtitleLanguagePreference) ?? "Default").tvReadOnlyRow()
+            if let mode = profile.subtitleMode { LabeledContent("Subtitles", value: subtitleModeText(mode)).tvReadOnlyRow() }
             permission("Play Next Episode Automatically", profile.enableNextEpisodeAutoPlay)
             permission("Remember Audio Choices", profile.rememberAudioSelections)
             permission("Remember Subtitle Choices", profile.rememberSubtitleSelections)
@@ -133,6 +134,7 @@ struct ProfileAccessView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityValue(allowed ? "Allowed" : "Not allowed")
+        .tvReadOnlyRow()
     }
 
     private func maxRatingText(_ policy: UserPolicy) -> String {

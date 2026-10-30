@@ -45,6 +45,8 @@ extension Notification.Name {
     static let arcfinSelectTab = Notification.Name("arcfinSelectTab")
     /// View › Refresh on the Mac.
     static let arcfinRefresh = Notification.Name("arcfinRefresh")
+    /// Posted once the player's stop report and watched mark have reached the server.
+    static let arcfinPlaybackReported = Notification.Name("arcfinPlaybackReported")
     /// File › Open Video File… on the Mac.
     static let arcfinOpenFile = Notification.Name("arcfinOpenFile")
 }
@@ -60,12 +62,15 @@ struct ContentView: View {
     @State private var downloadManager = AppServices.downloadManager
     @State private var syncPlayManager = AppServices.syncPlayManager
     @State private var sharePlayManager = AppServices.sharePlayManager
+    @State private var introduction = AppServices.introduction
     @State private var splashDone   = false
     @State private var heartbeatTask: Task<Void, Never>?
     @State private var arcfinSyncTask: Task<Void, Never>?
     @State private var seerrPollTask: Task<Void, Never>?
     @State private var isAppLocked = false
     @State private var activeProfileHasPIN = false
+    /// The stored sign-in and the PIN lock have been checked this launch.
+    @State private var launchChecked = false
     @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
     #if !os(tvOS)
     @State private var showOfflineDocPicker = false
@@ -246,6 +251,15 @@ struct ContentView: View {
         ZStack {
             phaseContent
 
+            #if !os(tvOS)
+            if isShowing(.onboarding) {
+                OnboardingView(isSignedIn: phase == .main) { introduction.finishOnboarding() }
+                    .accessibilityAddTraits(.isModal)
+                    .transition(.opacity)
+                    .zIndex(5)
+            }
+            #endif
+
             if isAppLocked {
                 AppLockView(useFaceID: appLockUseFaceID) {
                     isAppLocked = false
@@ -273,6 +287,23 @@ struct ContentView: View {
         }
         .animation(DT.Animation.standard, value: phase)
         .animation(DT.Animation.standard, value: isAppLocked)
+        .animation(DT.Animation.standard, value: introduction.presentation)
+        #if os(tvOS)
+        // A cover, not an overlay: focus can't wander to the screen underneath.
+        .fullScreenCover(isPresented: introductionBinding(.onboarding)) {
+            OnboardingView(isSignedIn: phase == .main) { introduction.finishOnboarding() }
+        }
+        .fullScreenCover(isPresented: introductionBinding(.whatsNew)) {
+            WhatsNewView { introduction.finishWhatsNew() }
+        }
+        #else
+        .sheet(isPresented: introductionBinding(.whatsNew)) {
+            WhatsNewView { introduction.finishWhatsNew() }
+                #if os(macOS)
+                .frame(width: 520, height: 620)
+                #endif
+        }
+        #endif
 #if os(tvOS)
         .focusEffectDisabled()
         // Apple TV stays dark: its screens are full-bleed artwork, like the system TV app.
@@ -309,6 +340,7 @@ struct ContentView: View {
             await authManager.checkStoredAuth()
             await refreshLockRequirement()
             if activeProfileHasPIN { isAppLocked = true } else { AppServices.hasPassedLock = true }
+            launchChecked = true
             #if !os(tvOS)
             consumeControlLink()
             startPendingDownload()
@@ -329,9 +361,13 @@ struct ContentView: View {
             Text(sharePlayManager.notice ?? "")
         }
         .task { seerrRepo.reloadTMDB() }
+        .onChange(of: mediaRepo.connectionFailed) { _, failed in
+            if failed { Task { await authManager.checkSignInStillValid() } }
+        }
         .task { downloadManager.configure(modelContext: modelContext, authManager: authManager) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                Task { await authManager.checkSignInStillValid() }
                 startHeartbeat()
                 startArcfinSyncLoop()
                 authManager.syncArcfinNow()
@@ -380,6 +416,9 @@ struct ContentView: View {
         // any stuck auth-failure cooldown and retries directly (see
         // SeerrRepository.retryAfterProfileSwitch).
         .onChange(of: authManager.state) { Task { await seerrRepo.retryAfterProfileSwitch() } }
+        .onChange(of: authManager.profiles.isEmpty) { _, isEmpty in
+            if isEmpty { seerrRepo.reloadTMDB() }
+        }
         .onChange(of: authManager.state) { _, newState in
             if case .authenticated = newState { syncOfflineProgress() }
         }
@@ -393,6 +432,13 @@ struct ContentView: View {
         // The profile's parental controls and permissions, from the server: on sign-in, a
         // profile switch, and each return to the app (an admin may have changed them).
         .task(id: authManager.state.credential?.id) { await loadProfileRules() }
+        .task(id: LiveUpdatesKey(credentialID: authManager.state.credential?.id, isActive: scenePhase == .active)) {
+            if scenePhase == .active, let credential = authManager.state.credential {
+                AppServices.liveUpdates.connect(credential: credential, authClient: authManager.authClient)
+            } else {
+                AppServices.liveUpdates.disconnect()
+            }
+        }
         .onChange(of: offlineModeEnabled) { _, isOffline in
             if !isOffline { syncOfflineProgress() }
         }
@@ -434,6 +480,31 @@ struct ContentView: View {
         }
     }
     #endif
+
+    /// The tour and What's New wait for the splash, the sign-in check and the PIN lock, and
+    /// stay out of the way of a player.
+    private func isShowing(_ presentation: AppIntroduction.Presentation) -> Bool {
+        guard introduction.presentation == presentation, splashDone, launchChecked, !isAppLocked
+        else { return false }
+        #if os(macOS)
+        if playbackPresenter.request != nil { return false }
+        #endif
+        return phase == .login || phase == .main || phase == .offline
+    }
+
+    /// Any way the presentation closes counts as seen, a swipe down or Menu included.
+    private func introductionBinding(_ presentation: AppIntroduction.Presentation) -> Binding<Bool> {
+        Binding(
+            get: { isShowing(presentation) },
+            set: { shown in
+                guard !shown, introduction.presentation == presentation else { return }
+                switch presentation {
+                case .onboarding: introduction.finishOnboarding()
+                case .whatsNew: introduction.finishWhatsNew()
+                }
+            }
+        )
+    }
 
     private func seerrSetupPromptHandledKey(for credentialID: UUID) -> String {
         "arcfin.seerrSetupPromptHandled.\(credentialID.uuidString)"

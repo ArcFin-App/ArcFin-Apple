@@ -8,7 +8,10 @@ import CoreSpotlight
 import Foundation
 import JellyfinAPI
 import Vision
+// Not in the simulator SDK.
+#if canImport(VisualIntelligence)
 import VisualIntelligence
+#endif
 
 // MARK: - Session for intents
 
@@ -431,7 +434,7 @@ enum Thumbnails {
                     let url = JellyfinMediaClient.imageURL(
                         baseURL: credential.baseURL, itemID: item.id, tag: tag,
                         type: .primary, fillWidth: 240, token: credential.accessToken)
-                    guard let (data, _) = try? await URLSession.arcfin.data(from: url), !data.isEmpty
+                    guard let data = await URLSession.arcfin.imageData(from: url)
                     else { return (item.id, nil) }
                     await store.set(data, for: item.id)
                     return (item.id, data)
@@ -446,6 +449,7 @@ enum Thumbnails {
 
 // MARK: - Visual intelligence
 
+#if canImport(VisualIntelligence)
 /// Point the camera at a movie poster, a DVD case or a screenshot and the titles it spells out
 /// are looked up in the library. Visual intelligence only supplies generic labels ("poster",
 /// "book"), never a title, so the text in the picture is read instead and searched.
@@ -493,4 +497,5 @@ struct ArcfinVisualSearchQuery: IntentValueQuery {
         }
     }
 }
+#endif
 #endif

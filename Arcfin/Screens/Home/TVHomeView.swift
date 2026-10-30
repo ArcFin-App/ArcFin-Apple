@@ -44,6 +44,39 @@ struct TVHomeView: View {
     @State private var heroVideoBackdropURL: URL?
     @State private var heroVideoBackdropTask: Task<Void, Never>?
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
+    @AppStorage("heroTrailerSound") private var heroTrailerSound = false
+    @State private var isHomeShowing = false
+    @State private var heroVideoRequestedItemID: String?
+    @State private var heroVideoIsPlaying = false
+    @State private var heroChromeHidden = false
+    @State private var heroChromeTask: Task<Void, Never>?
+    // While the hero is hidden, only the element focus was on stays focusable, so the first
+    // press has nowhere to go: it brings the hero back with focus where it was.
+    @State private var heroTargetsLocked = false
+    @State private var heroFocusToRestore: HeroFocus?
+    @State private var heroUnlockTask: Task<Void, Never>?
+    @FocusState private var focusedHeroButton: HeroButton?
+
+    private enum HeroButton { case play, info }
+    private enum HeroFocus: Equatable { case item(String), button(HeroButton) }
+
+    private var heroChromeOpacity: Double { heroChromeHidden ? 0 : 1 }
+
+    private var cwItems: [MediaItem] {
+        mergeContinueWatchingAndUpNext ? mergedContinueAndNextItems : mediaRepo.continueWatching
+    }
+
+    /// Focus on the hero's buttons or its Continue Watching row, the only places the hero
+    /// hides from.
+    private var currentHeroFocus: HeroFocus? {
+        if let focusedHeroButton { return .button(focusedHeroButton) }
+        if let focusedItemID, cwItems.contains(where: { $0.id == focusedItemID }) { return .item(focusedItemID) }
+        return nil
+    }
+
+    private func heroTargetLocked(_ target: HeroFocus) -> Bool {
+        heroTargetsLocked && heroFocusToRestore != target
+    }
 
     private var focusedItem: MediaItem? {
         guard let id = lastFocusedItemID else { return nil }
@@ -64,6 +97,10 @@ struct TVHomeView: View {
         return (mediaRepo.continueWatching + mediaRepo.nextUp).filter { seen.insert($0.id).inserted }
     }
 
+    /// Only while Home itself is on screen: with sound on, a trailer left running under a
+    /// title's page, the player or another tab would be heard there.
+    private var heroVideoAllowed: Bool { isHomeShowing && playbackRequest == nil }
+
     private var heroDisplayItem: MediaItem? {
         focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
     }
@@ -80,6 +117,7 @@ struct TVHomeView: View {
                             .frame(height: sh)
                         belowFoldSection
                             .padding(.vertical, 72)
+                            .disabled(heroTargetsLocked)
                     }
                     .focusSection()
                 }
@@ -87,6 +125,8 @@ struct TVHomeView: View {
                 .ignoresSafeArea()
             }
             .screenBackground()
+            .onAppear { isHomeShowing = true }
+            .onDisappear { isHomeShowing = false }
             .navigationDestination(item: $heroDetailItem) { item in
                 TVMediaDetailView(item: item)
             }
@@ -103,16 +143,28 @@ struct TVHomeView: View {
             }
         }
         .task { await load() }
-        .onChange(of: mediaRepo.continueWatching) { _, items in
-            if focusedItemID == nil {
-                focusedItemID = items.first?.id
-            }
+        // The hero already shows the first Continue Watching item until something's focused.
+        // Assigning focus to it here pulled the page down to that row once Home loaded.
+        .onChange(of: mediaRepo.continueWatching) { _, _ in
+            if focusedItemID == nil { reloadHeroVideoIfItemChanged() }
         }
         .onChange(of: focusedItemID) { _, newValue in
+            if heroTargetsLocked {
+                heroFocusDidChangeWhileLocked()
+                return
+            }
             if let newValue { lastFocusedItemID = newValue }
-            loadHeroVideoBackdrop()
+            showHeroChrome()
+            reloadHeroVideoIfItemChanged()
         }
-        .onAppear { loadHeroVideoBackdrop() }
+        .onChange(of: focusedHeroButton) { _, _ in
+            if heroTargetsLocked {
+                heroFocusDidChangeWhileLocked()
+                return
+            }
+            showHeroChrome()
+        }
+        .onChange(of: heroVideoAllowed) { _, _ in loadHeroVideoBackdrop() }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
@@ -226,6 +278,7 @@ struct TVHomeView: View {
                 .frame(width: screenW * 0.6)
                 Spacer()
             }
+            .opacity(heroChromeOpacity)
 
             VStack(alignment: .leading, spacing: 0) {
                 Spacer()
@@ -234,9 +287,14 @@ struct TVHomeView: View {
                     .padding(.bottom, 48)
                 cwShelf
                     .padding(.bottom, 60)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("shelf.\(HomeShelf.continueWatching.rawValue)")
             }
         }
         .focusSection()
+        .onMoveCommand { _ in
+            if heroTargetsLocked { wakeHeroChrome() }
+        }
     }
 
     @ViewBuilder
@@ -248,9 +306,13 @@ struct TVHomeView: View {
             LazyHeroImage(url: url) { heroFallbackGradient }
                 .clipped()
 
-            if let videoURL = heroVideoBackdropURL, heroVideoBackdropItemID == heroDisplayItem?.id {
-                HeroVideoBackdropView(url: videoURL)
-                    .transition(.opacity)
+            if let videoURL = heroVideoBackdropURL, let itemID = heroVideoBackdropItemID, itemID == heroDisplayItem?.id {
+                HeroVideoBackdropView(
+                    url: videoURL, loops: false, muted: !heroTrailerSound,
+                    onStart: { heroVideoDidStart(itemID: itemID) },
+                    onEnd: { endHeroVideoBackdrop(itemID: itemID) }
+                )
+                .transition(.opacity)
             }
         }
     }
@@ -281,15 +343,19 @@ struct TVHomeView: View {
                 .id(item.id)
                 .transition(.opacity)
                 .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
+                .opacity(heroChromeOpacity)
 
                 heroMetaRow(item)
+                    .opacity(heroChromeOpacity)
 
                 if let pct = item.userData?.playedPercentage, pct > 1 {
                     progressBar(pct: pct / 100)
+                        .opacity(heroChromeOpacity)
                 }
 
                 HStack(spacing: 20) {
                     Button {
+                        if heroTargetsLocked { wakeHeroChrome(); return }
                         // Releases this screen's own focus claim before the player appears —
                         // a lingering @FocusState here can otherwise keep the remote's actual
                         // focus target stuck on this (now-hidden) screen instead of the
@@ -298,15 +364,24 @@ struct TVHomeView: View {
                         playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
+                            .opacity(heroChromeOpacity)
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    .focused($focusedHeroButton, equals: .play)
+                    .disabled(heroTargetLocked(.button(.play)))
 
-                    Button { heroDetailItem = item } label: {
+                    Button {
+                        if heroTargetsLocked { wakeHeroChrome(); return }
+                        heroDetailItem = item
+                    } label: {
                         TVHeroButtonLabel(icon: "info.circle", text: "More Info")
+                            .opacity(heroChromeOpacity)
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    .focused($focusedHeroButton, equals: .info)
+                    .disabled(heroTargetLocked(.button(.info)))
                 }
                 .padding(.top, 4)
             }
@@ -368,17 +443,21 @@ struct TVHomeView: View {
     /// item has a local trailer indexed on the server, and if so resolves it to a real
     /// playable stream URL the same way the main player does. Unlike iOS's hero, tvOS's
     /// hero doesn't auto-rotate on a timer — focus only changes via explicit remote
-    /// navigation — so there's no rotation timer to skip past a playing trailer, and no
-    /// slide to auto-advance to once the trailer's 15s preview ends.
+    /// navigation — so the trailer plays to its end, then the still backdrop returns.
     private func loadHeroVideoBackdrop() {
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
         heroVideoBackdropTask?.cancel()
         heroVideoBackdropURL = nil
         heroVideoBackdropItemID = nil
-        guard heroVideoBackdropsEnabled, let item = heroDisplayItem,
+        heroVideoRequestedItemID = nil
+        heroVideoIsPlaying = false
+        unlockHeroTargets()
+        showHeroChrome()
+        guard heroVideoBackdropsEnabled, heroVideoAllowed, let item = heroDisplayItem,
               case .authenticated(let credential) = authManager.state
         else { return }
         let itemID = item.id
+        heroVideoRequestedItemID = itemID
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         heroVideoBackdropTask = Task {
             try? await Task.sleep(for: .seconds(1))
@@ -407,43 +486,128 @@ struct TVHomeView: View {
                 heroVideoBackdropURL = info.playURL
                 heroVideoBackdropItemID = itemID
             }
-            // Loops indefinitely otherwise — auto-reverts to the still backdrop after a
-            // short preview instead, same idea as tvOS's own featured-app hero rotators.
-            try? await Task.sleep(for: .seconds(15))
-            guard !Task.isCancelled, heroDisplayItem?.id == itemID else { return }
-            withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
-                heroVideoBackdropURL = nil
-                heroVideoBackdropItemID = nil
-            }
         }
+    }
+
+    private func endHeroVideoBackdrop(itemID: String) {
+        guard heroVideoBackdropItemID == itemID else { return }
+        heroVideoIsPlaying = false
+        unlockHeroTargets()
+        showHeroChrome()
+        withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
+            heroVideoBackdropURL = nil
+            heroVideoBackdropItemID = nil
+        }
+    }
+
+    /// Moving between a title's card and its Play/More Info buttons, or Continue Watching
+    /// refreshing in the background, keeps the same title in the hero: its trailer carries
+    /// on instead of starting over.
+    private func reloadHeroVideoIfItemChanged() {
+        guard heroDisplayItem?.id != heroVideoRequestedItemID else { return }
+        loadHeroVideoBackdrop()
+    }
+
+    private func heroVideoDidStart(itemID: String) {
+        guard heroVideoBackdropItemID == itemID else { return }
+        heroVideoIsPlaying = true
+        hideHeroChromeSoon()
+    }
+
+    /// Gives the trailer the screen after a few seconds, if focus is on the hero. Only what's
+    /// drawn fades; the focused button or card stays in place and keeps focus.
+    private func hideHeroChromeSoon() {
+        heroChromeTask?.cancel()
+        heroChromeTask = Task {
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled, heroVideoIsPlaying, let target = currentHeroFocus else { return }
+            heroFocusToRestore = target
+            heroTargetsLocked = true
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.6))) { heroChromeHidden = true }
+        }
+    }
+
+    /// The first press after the hero hid: bring it back and keep focus where it was. Up can
+    /// still reach the tab bar, which can't be locked, so focus is put back on the element.
+    /// The targets unlock a moment later, once that press has been handled.
+    private func wakeHeroChrome() {
+        heroChromeTask?.cancel()
+        if heroChromeHidden {
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
+        }
+        restoreHeroFocus()
+        heroUnlockTask?.cancel()
+        heroUnlockTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            restoreHeroFocus()
+            unlockHeroTargets()
+            if heroVideoIsPlaying { hideHeroChromeSoon() }
+        }
+    }
+
+    private func heroFocusDidChangeWhileLocked() {
+        if currentHeroFocus != heroFocusToRestore { wakeHeroChrome() }
+    }
+
+    private func restoreHeroFocus() {
+        switch heroFocusToRestore {
+        case .item(let id): focusedItemID = id
+        case .button(let button): focusedHeroButton = button
+        case nil: break
+        }
+    }
+
+    private func unlockHeroTargets() {
+        heroUnlockTask?.cancel()
+        heroUnlockTask = nil
+        heroTargetsLocked = false
+        heroFocusToRestore = nil
+    }
+
+    /// Any focus move brings the hero back. While the trailer keeps playing it fades again
+    /// after the same few seconds.
+    private func showHeroChrome() {
+        heroChromeTask?.cancel()
+        heroChromeTask = nil
+        if heroChromeHidden {
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
+        }
+        if heroVideoIsPlaying { hideHeroChromeSoon() }
     }
 
     // MARK: - Continue Watching shelf (inside hero)
 
     @ViewBuilder
     private var cwShelf: some View {
-        let items = mergeContinueWatchingAndUpNext ? mergedContinueAndNextItems : mediaRepo.continueWatching
+        let items = cwItems
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Continue Watching")
                     .font(.system(size: 23, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .padding(.horizontal, 80)
+                    .opacity(heroChromeOpacity)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(items) { item in
-                            NavigationLink(value: item) {
+                            Button {
+                                if heroTargetsLocked { wakeHeroChrome(); return }
+                                heroDetailItem = item
+                            } label: {
                                 PosterCard(
                                     title: itemTitle(item),
                                     subtitle: itemSubtitle(item),
                                     progress: item.userData?.playedPercentage.map { $0 / 100 },
                                     imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
                                 )
+                                .opacity(heroChromeOpacity)
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
                             .focused($focusedItemID, equals: item.id)
+                            .disabled(heroTargetLocked(.item(item.id)))
                             .contextMenu { cwContextMenu(item) }
                         }
                     }
@@ -470,6 +634,8 @@ struct TVHomeView: View {
         VStack(spacing: 0) {
             ForEach(orderedShelves) { shelf in
                 shelfView(for: shelf)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("shelf.\(shelf.rawValue)")
             }
         }
         .focusSection()

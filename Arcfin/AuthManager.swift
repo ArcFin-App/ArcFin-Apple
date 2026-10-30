@@ -3,6 +3,7 @@
 import Foundation
 import Observation
 import AuthCore
+import ImageCache
 import JellyfinAPI
 import SyncEngine
 import Telemetry
@@ -48,6 +49,10 @@ final class AuthManager {
     /// Not persisted — re-checked once per sign-in/cold launch (see checkStoredAuth/save).
     /// Gates the Active Sessions settings screen.
     var isAdmin: Bool = false
+    /// The profile whose sign-in the server stopped accepting (password changed, device
+    /// removed). The sign-in screen opens on its server and says why.
+    var expiredCredential: ServerCredential?
+    @ObservationIgnored private var lastSignInCheck: Date?
 
     /// nil until the first check completes, or if the server has no Arcfin Sync plugin /
     /// isn't reachable — both look identical on purpose, see ArcfinSyncClient.fetchStatus.
@@ -76,6 +81,12 @@ final class AuthManager {
 
     func checkStoredAuth() async {
         defer { isChecking = false }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-ArcfinScreenshotDemo") {
+            await signInToDemoServerForScreenshots()
+            return
+        }
+        #endif
         let k = keychain
         seerrPassword = await Task.detached(priority: .userInitiated) {
             (try? k.loadSeerrPassword()) ?? ""
@@ -100,7 +111,10 @@ final class AuthManager {
         let isValid = await Self.withTimeout(seconds: 10, fallback: true) {
             await self.authClient.validateToken(credential: credForValidation)
         }
-        guard isValid else { return }
+        guard isValid else {
+            expiredCredential = cred
+            return
+        }
         state = .authenticated(cred)
         persist(active: cred)
 
@@ -118,6 +132,20 @@ final class AuthManager {
         refreshIsAdmin(for: cred)
         refreshArcfinSync(for: cred)
     }
+
+    #if DEBUG
+    /// For the screenshot UI test: Jellyfin's public demo server, so the run needs no account
+    /// or secrets. Kept in memory and never falls back to stored profiles, so a run on a Mac
+    /// leaves that Mac's own sign-ins alone and can't capture its library. If the demo server
+    /// can't be reached the app stays on the sign-in screen and the test skips.
+    private func signInToDemoServerForScreenshots() async {
+        guard let url = URL(string: "https://demo.jellyfin.org/stable"),
+              let credential = try? await authClient.authenticate(baseURL: url, username: "demo", password: "")
+        else { return }
+        profiles = [credential]
+        state = .authenticated(credential)
+    }
+    #endif
 
     // MARK: - Live Wi-Fi switching
 
@@ -272,7 +300,9 @@ final class AuthManager {
 
     // MARK: - Save & activate (initial sign-in)
 
-    func save(_ credential: ServerCredential) {
+    func save(_ newCredential: ServerCredential) {
+        let credential = keepingProfileID(newCredential)
+        expiredCredential = nil
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
@@ -282,7 +312,8 @@ final class AuthManager {
 
     // MARK: - Multi-profile management
 
-    func addProfile(_ credential: ServerCredential) {
+    func addProfile(_ newCredential: ServerCredential) {
+        let credential = keepingProfileID(newCredential)
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
@@ -323,16 +354,16 @@ final class AuthManager {
             guard let self else { return }
             defer { self.isSyncingArcfin = false }
             guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed else {
-                Self.syncLog.info("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
+                Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
                 return
             }
-            Self.syncLog.info("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
+            Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
             self.arcfinSyncStatus = status
             let header = self.authClient.authHeader(token: credential.accessToken)
             self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
             self.arcfinSyncLastSyncedAt = .now
             self.watchSettingsChanges()
-            Self.syncLog.info("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
+            Self.syncLog.notice("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
         }
     }
 
@@ -374,6 +405,10 @@ final class AuthManager {
     }
 
     func removeProfile(id: UUID) {
+        if let removed = profiles.first(where: { $0.id == id }) {
+            let client = authClient
+            Task.detached { await client.logout(credential: removed) }
+        }
         let k = keychain
         Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id); try? k.deleteSeerrPassword(profile: id) }
         UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
@@ -391,6 +426,7 @@ final class AuthManager {
         SplashMosaicStore.clear()
         PlaylistStore.shared.clear()
         ProfileRules.shared.clear()
+        if profiles.isEmpty { clearDeviceSignIns() }
         if case .authenticated(let current) = state, current.id == id {
             if let next = profiles.first {
                 persist(active: next)
@@ -400,6 +436,49 @@ final class AuthManager {
                 state = .unauthenticated
             }
         }
+    }
+
+    /// With no profile left, the sign-ins kept for the whole device go too: Seerr (its active
+    /// slot only moves when another profile takes over), the TMDB key, the gateway headers,
+    /// and what was searched and watched. Downloads stay, as the sign-out prompt says.
+    private func clearDeviceSignIns() {
+        let defaults = UserDefaults.standard
+        for key in ["seerrURL", "seerrUsername", "seerrAuthMethod", Self.seerrOwnerKey, "recentSearches"] {
+            defaults.removeObject(forKey: key)
+        }
+        seerrPassword = ""
+        let k = keychain
+        Task.detached { try? k.deleteSeerrPassword() }
+        try? TMDBCredential.save("")
+        CustomHTTPHeaders.removeAll()
+        ShowTrackMemory.clear()
+        ImageCache.clear()
+    }
+
+    /// Signing in again as someone who already has a profile replaces that profile's token
+    /// instead of adding a second one, so its downloads, PIN and Seerr sign-in, all keyed by
+    /// the profile's id, carry over.
+    private func keepingProfileID(_ credential: ServerCredential) -> ServerCredential {
+        guard let existing = profiles.first(where: {
+            $0.userID == credential.userID && $0.baseURL == credential.baseURL
+        }), existing.id != credential.id else { return credential }
+        return ServerCredential(id: existing.id, baseURL: credential.baseURL, userID: credential.userID,
+                                accessToken: credential.accessToken, displayName: credential.displayName,
+                                userImageTag: credential.userImageTag ?? existing.userImageTag)
+    }
+
+    // MARK: - Expired sign-in
+
+    /// Called when the app comes back and when Home fails to load. An unreachable server
+    /// counts as still signed in, as at launch; only a rejected token signs out.
+    func checkSignInStillValid() async {
+        guard case .authenticated(let cred) = state else { return }
+        if let last = lastSignInCheck, Date().timeIntervalSince(last) < 30 { return }
+        lastSignInCheck = Date()
+        let isValid = await authClient.validateToken(credential: cred)
+        guard !isValid, state.credential?.id == cred.id else { return }
+        expiredCredential = cred
+        state = .unauthenticated
     }
 
     // MARK: - Sign out (removes current profile)

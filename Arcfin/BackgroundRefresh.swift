@@ -128,7 +128,9 @@ nonisolated enum BackgroundRefresh {
     private static func checkSeerr(requestUpdates: Bool, watchlist: Bool) async {
         guard requestUpdates || watchlist else { return }
         let defaults = UserDefaults.standard
-        guard let urlString = defaults.string(forKey: "seerrURL"), let url = URL(string: urlString),
+        // Nobody signed in: the Seerr sign-in left behind isn't anyone's to check.
+        guard defaults.string(forKey: "arcfin.activeProfileID") != nil,
+              let urlString = defaults.string(forKey: "seerrURL"), let url = URL(string: urlString),
               let username = defaults.string(forKey: "seerrUsername"), !username.isEmpty,
               let password = (try? KeychainStore().loadSeerrPassword()) ?? nil, !password.isEmpty
         else { return }

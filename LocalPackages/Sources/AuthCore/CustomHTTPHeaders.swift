@@ -67,6 +67,19 @@ public enum CustomHTTPHeaders {
         lock.unlock()
     }
 
+    public static func removeAll() {
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+            kSecUseDataProtectionKeychain: true,
+        ]
+        SecItemDelete(query as CFDictionary)
+        lock.lock()
+        cache = []
+        lock.unlock()
+    }
+
     private static func load() -> [Header] {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,

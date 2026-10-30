@@ -26,6 +26,7 @@ struct LibraryView: View {
     @State private var navigateToLocalPlayer = false
     @State private var navigateToDownloadsDeepLink = false
     @State private var searchQuery = ""
+    @State private var openedLibrary: JellyfinLibrary?
 #if os(macOS)
     @FocusState private var isSearchFocused: Bool
 
@@ -79,6 +80,10 @@ struct LibraryView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
 #endif
             .navigationDestination(for: JellyfinLibrary.self) { library in
+                LibraryDetailView(library: library)
+            }
+            // On the Mac a tile's NavigationLink(value:) can't find the destination above.
+            .navigationDestination(item: $openedLibrary) { library in
                 LibraryDetailView(library: library)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
@@ -229,7 +234,7 @@ struct LibraryView: View {
 #else
             LazyVGrid(columns: gridColumns, spacing: 12) {
                 ForEach(supportedLibraries) { library in
-                    NavigationLink(value: library) {
+                    libraryLink(library) {
                         LibraryCard(library: library, imageURL: mediaRepo.libraryBackdropURL(for: library))
                     }
                     .buttonStyle(.plain)
@@ -237,6 +242,17 @@ struct LibraryView: View {
             }
 #endif
         }
+    }
+
+    @ViewBuilder
+    private func libraryLink<Label: View>(_ library: JellyfinLibrary, @ViewBuilder label: () -> Label) -> some View {
+        #if os(macOS)
+        Button { openedLibrary = library } label: { label() }
+        #else
+        // A library opened from a binding sits above the path, so titles pushed onto the
+        // path from inside it would land underneath.
+        NavigationLink(value: library) { label() }
+        #endif
     }
 
     // MARK: - Your Requests section
@@ -695,6 +711,7 @@ struct LocalPlayerView: View {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close")
             Text(url.deletingPathExtension().lastPathComponent)
                 .font(.system(.subheadline, design: .default, weight: .semibold))
                 .foregroundStyle(.white)
@@ -911,6 +928,13 @@ enum LibraryNavTarget: Hashable {
 enum LibraryWatchedFilter: String, CaseIterable, Identifiable {
     case all = "All", unwatched = "Unwatched", watched = "Watched"
     var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .all: String(localized: "All")
+        case .unwatched: String(localized: "Unwatched")
+        case .watched: String(localized: "Watched")
+        }
+    }
 }
 
 /// Filters beyond genre/year/watched/favorites: content rating and a minimum community
@@ -954,6 +978,13 @@ struct LibraryExtraFilters: Equatable {
 enum LibraryQualityFilter: String, CaseIterable, Identifiable {
     case any = "Any", hd = "HD", uhd = "4K"
     var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .any: String(localized: "Any")
+        case .hd: String(localized: "HD")
+        case .uhd: String(localized: "4K")
+        }
+    }
 }
 
 enum LibrarySortOption: String, CaseIterable, Identifiable {
@@ -968,6 +999,19 @@ enum LibrarySortOption: String, CaseIterable, Identifiable {
     case playlistOrder = "Playlist Order"
 
     var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .nameAsc: String(localized: "Name (A–Z)")
+        case .nameDesc: String(localized: "Name (Z–A)")
+        case .dateAddedDesc: String(localized: "Recently Added")
+        case .releaseDateDesc: String(localized: "Release Date (Newest)")
+        case .releaseDateAsc: String(localized: "Release Date (Oldest)")
+        case .ratingDesc: String(localized: "Rating (Highest)")
+        case .genreAsc: String(localized: "Genre")
+        case .playlistOrder: String(localized: "Playlist Order")
+        }
+    }
 
     static let standard = allCases.filter { $0 != .playlistOrder }
 
@@ -998,9 +1042,9 @@ enum LibraryGridDensity: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .compact: return "Compact"
-        case .normal: return "Normal"
-        case .comfortable: return "Comfortable"
+        case .compact: return String(localized: "Compact")
+        case .normal: return String(localized: "Normal")
+        case .comfortable: return String(localized: "Comfortable")
         }
     }
 
@@ -1094,6 +1138,12 @@ struct LibraryDetailView: View {
     @State private var serverOffset = 0
     @State private var hasLoaded = false
     @State private var scrolledItemID: MediaItem.ID? = nil
+    /// Set by the letter index; the grid scrolls (on Apple TV, moves focus) to this title.
+    @State private var jumpTarget: MediaItem.ID?
+    @State private var isJumping = false
+    #if os(tvOS)
+    @FocusState private var focusedItemID: MediaItem.ID?
+    #endif
     private let pageSize = 100
     /// Every filter/sort change spawns its own uncancelled fetchFirstPage() Task (see the
     /// onChange handlers below) — nothing stopped an older, still-in-flight request from
@@ -1130,6 +1180,9 @@ struct LibraryDetailView: View {
 
     private var matchesAllGenres: Bool { extraFilters.matchAllGenres && selectedGenres.count > 1 }
     private var hasMore: Bool { serverOffset < totalItems }
+    private var showsLetterIndex: Bool {
+        sortOption == .nameAsc && playlist == nil && !matchesAllGenres && totalItems >= 50
+    }
     private var isCollections: Bool { library.collectionType == .boxsets }
 
     // Maps the library type to the items it should show.
@@ -1211,41 +1264,61 @@ struct LibraryDetailView: View {
                                       description: Text("Nothing found in this library."))
                 .screenBackground()
             } else {
-                ScrollView(showsIndicators: false) {
-                    if playlist != nil { playlistHeader }
-                    #if os(tvOS)
-                    tvActionRow
-                    #endif
-                    LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
-                        ForEach(gridEntries) { entry in
-                            Group {
-                                if entry.items.count > 1 {
-                                    showGroupCell(entry.items)
-                                } else {
-                                    itemCell(entry.items[0])
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        if playlist != nil { playlistHeader }
+                        #if os(tvOS)
+                        tvActionRow
+                        if showsLetterIndex { tvLetterRow }
+                        #endif
+                        LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
+                            ForEach(gridEntries) { entry in
+                                Group {
+                                    if entry.items.count > 1 {
+                                        showGroupCell(entry.items)
+                                    } else {
+                                        itemCell(entry.items[0])
+                                    }
+                                }
+                                .onAppear {
+                                    if let last = entry.items.last, shouldLoadMore(after: last) {
+                                        Task { await loadMore() }
+                                    }
                                 }
                             }
-                            .onAppear {
-                                if let last = entry.items.last, shouldLoadMore(after: last) {
-                                    Task { await loadMore() }
-                                }
+
+                            if isLoadingMore {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
                             }
                         }
-
-                        if isLoadingMore {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                                .padding()
+                        .padding(DT.Spacing.pagePad)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("library.grid")
+#if os(tvOS)
+                        .focusSection()
+                        .scrollClipDisabled()
+#endif
+                    }
+                    .scrollPosition(id: $scrolledItemID)
+                    .modifier(PlaylistPageStyle(isPlaylist: playlist != nil, tint: playlistTint))
+                    #if !os(tvOS)
+                    .overlay {
+                        if showsLetterIndex {
+                            LetterIndexBar { letter in Task { await jump(to: letter) } }
                         }
                     }
-                    .padding(DT.Spacing.pagePad)
-#if os(tvOS)
-                    .focusSection()
-                    .scrollClipDisabled()
-#endif
+                    #endif
+                    .onChange(of: jumpTarget) { _, target in
+                        guard let target else { return }
+                        proxy.scrollTo(target, anchor: .top)
+                        #if os(tvOS)
+                        focusedItemID = target
+                        #endif
+                        jumpTarget = nil
+                    }
                 }
-                .scrollPosition(id: $scrolledItemID)
-                .modifier(PlaylistPageStyle(isPlaylist: playlist != nil, tint: playlistTint))
             }
         }
 #if os(macOS)
@@ -1278,6 +1351,8 @@ struct LibraryDetailView: View {
                 Button { showFilterSheet = true } label: {
                     Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                 }
+                .accessibilityLabel("Filter & Sort")
+                .accessibilityValue(filtersActive ? "Filters on" : "")
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -1483,7 +1558,12 @@ struct LibraryDetailView: View {
                 .menuStyle(.button)
                 .menuIndicator(.hidden)
         } else {
+            #if !os(macOS)
             NavigationLink(value: navTarget(for: item)) { label() }
+            #else
+            // On the Mac a NavigationLink(value:) can't find Browse's destination.
+            Button { randomPick = item } label: { label() }
+            #endif
         }
     }
 
@@ -1504,6 +1584,7 @@ struct LibraryDetailView: View {
 #if os(tvOS)
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
+        .focused($focusedItemID, equals: item.id)
 #else
         .buttonStyle(PressableButtonStyle())
 #endif
@@ -1670,7 +1751,26 @@ struct LibraryDetailView: View {
         .focusSection()
     }
 
-    private func tvActionLabel(_ title: String, systemImage: String) -> some View {
+    private var tvLetterRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                ForEach(LibraryLetterIndex.letters, id: \.self) { letter in
+                    Button { Task { await jump(to: letter) } } label: {
+                        TVLetterLabel(letter: letter)
+                    }
+                    .accessibilityLabel(Text("Jump to \(letter)"))
+                }
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.vertical, DT.Spacing.sm)
+        }
+        .scrollClipDisabled()
+        .focusSection()
+    }
+
+    private func tvActionLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
         TVHeroButtonLabel(icon: systemImage, text: title)
             .background(Capsule().fill(DT.Color.textPrimary.opacity(0.06)))
     }
@@ -1945,7 +2045,7 @@ struct LibraryDetailView: View {
     /// server pages are pulled until this one is reasonably full.
     private func fetchPage(
         credential: ServerCredential, header: String, startIndex: Int,
-        limit: Int? = nil, sortBy: String? = nil, sortOrder: String? = nil
+        limit: Int? = nil, sortBy: String? = nil, sortOrder: String? = nil, nameLessThan: String? = nil
     ) async throws -> (items: [MediaItem], nextOffset: Int, total: Int) {
         let limit = limit ?? pageSize
         var offset = startIndex
@@ -1967,6 +2067,7 @@ struct LibraryDetailView: View {
                 hasSubtitles: extraFilters.hasSubtitles ? true : nil,
                 isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
                 isFavorite: favoritesOnly ? true : nil,
+                nameLessThan: nameLessThan,
                 sortBy: sortBy ?? sortOption.sortBy, sortOrder: sortOrder ?? sortOption.sortOrder
             )
             total = page.total
@@ -1990,6 +2091,35 @@ struct LibraryDetailView: View {
             totalItems = fetched.total
         }
         isLoadingMore = false
+    }
+
+    /// The server counts the titles that sort before the letter, which is where it starts in
+    /// the grid; the grid loads through that point if it hasn't yet, then jumps there.
+    private func jump(to letter: String) async {
+        guard let cred = authManager.state.credential, !isJumping, !isLoadingMore else { return }
+        isJumping = true
+        defer { isJumping = false }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        let generation = fetchGeneration
+        var index = 0
+        if letter != "#" {
+            guard let counted = try? await fetchPage(
+                credential: cred, header: header, startIndex: 0, limit: 1, nameLessThan: letter)
+            else { return }
+            index = counted.total
+        }
+        if index >= items.count, hasMore {
+            isLoadingMore = true
+            let fetched = try? await fetchPage(
+                credential: cred, header: header, startIndex: serverOffset, limit: index - serverOffset + pageSize)
+            isLoadingMore = false
+            guard generation == fetchGeneration, let fetched else { return }
+            items.append(contentsOf: fetched.items)
+            serverOffset = fetched.nextOffset
+            totalItems = fetched.total
+        }
+        guard generation == fetchGeneration, !items.isEmpty else { return }
+        jumpTarget = items[min(index, items.count - 1)].id
     }
 
     /// Honors the active filters, so "Surprise me" on an unwatched-only view picks something
@@ -2117,9 +2247,9 @@ struct LibraryFilterList: View {
             // tappable rows, same pattern as the Genre/Year sections below, work
             // identically everywhere since nothing depends on a platform picker style.
             Section {
-                FilterGroup(title: "Sort By", value: sortOption.rawValue) {
+                FilterGroup(title: "Sort By", value: sortOption.label) {
                     ForEach(sortOptions) { option in
-                        filterRow(option.rawValue, isSelected: sortOption == option) {
+                        filterRow(option.label, isSelected: sortOption == option) {
                             sortOption = option
                         }
                     }
@@ -2129,7 +2259,7 @@ struct LibraryFilterList: View {
             Section("Status") {
                 Picker("Status", selection: $watchedFilter) {
                     ForEach(LibraryWatchedFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
+                        Text(filter.label).tag(filter)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -2221,7 +2351,7 @@ struct LibraryFilterList: View {
 
             Section("Quality") {
                 Picker("Resolution", selection: $extraFilters.quality) {
-                    ForEach(LibraryQualityFilter.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(LibraryQualityFilter.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 Toggle("Has Subtitles", isOn: $extraFilters.hasSubtitles)

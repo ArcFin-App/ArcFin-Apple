@@ -53,6 +53,9 @@ struct OfflinePlayerView: View {
     @AppStorage("skipForwardSeconds") private var skipForwardSeconds = 10
     @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
     @State private var progressSaveTask: Task<Void, Never>?
+    @State private var autoSkipCountdown: PlayerView.AutoActionCountdown?
+    @State private var autoSkipTask: Task<Void, Never>?
+    @State private var autoSkipped: Set<String> = []
     #if !os(tvOS)
     @State private var vlcPipController: SwiftVLC.PiPController?
     /// Aether's native routes play through an AVPlayerLayer, which PiP can take over.
@@ -153,6 +156,12 @@ struct OfflinePlayerView: View {
                 .opacity(isControlsVisible ? 1 : 0)
                 .allowsHitTesting(isControlsVisible)
 
+            // Outside the controls, so a segment can be skipped while they're hidden.
+            VStack {
+                Spacer()
+                skipButton
+            }
+
             #if os(macOS)
             if let macVolumeHUD {
                 macOfflineVolumeIndicator(macVolumeHUD)
@@ -193,6 +202,7 @@ struct OfflinePlayerView: View {
         }
         .onChange(of: player.positionTicks) { _, newValue in
             updateSubtitleText(forTicks: newValue)
+            autoSkipIfNeeded(positionTicks: newValue)
         }
         .onChange(of: player.status) { _, status in
             if status == .playing { scheduleAutoHide() }
@@ -441,7 +451,6 @@ struct OfflinePlayerView: View {
         VStack(spacing: 0) {
             topBar
             Spacer()
-            skipButton
             bottomBar
         }
         .background(
@@ -552,42 +561,87 @@ struct OfflinePlayerView: View {
 
     @ViewBuilder
     private var skipButton: some View {
-        if let label = skipButtonLabel {
+        if let current = currentSkippable {
             HStack {
                 Spacer()
-                Button { skipToSegmentEnd() } label: {
+                Button {
+                    autoSkipCountdown = nil
+                    skip(kind: current.kind, span: current.span)
+                } label: {
                     HStack(spacing: 6) {
-                        Text(label).font(.system(.footnote, design: .default, weight: .semibold))
+                        Text(current.label).font(.system(.footnote, design: .default, weight: .semibold))
                         Image(systemName: "forward.fill").font(.system(.caption))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 16).padding(.vertical, 10)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    .background {
+                        if let autoSkipCountdown, autoSkipCountdown.kind == current.kind {
+                            CountdownFill(countdown: autoSkipCountdown, color: .white.opacity(0.25))
+                        }
+                    }
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 }
+                .buttonStyle(.plain)
                 .padding(.trailing, DT.Spacing.pagePad)
                 .padding(.bottom, 100)
             }
         }
     }
 
-    private var skipButtonLabel: String? {
+    private var currentSkippable: (kind: String, label: String, span: ClosedRange<Double>)? {
         let seconds = Double(isScrubbing ? Int64(scrubTicks) : player.positionTicks) / 10_000_000
-        if let introEnd = downloadedItem.introEndSeconds, seconds < introEnd, seconds > 0.5 {
-            return "Skip Intro"
-        }
-        if let creditsStart = downloadedItem.creditsStartSeconds, seconds >= creditsStart {
-            return "Skip Credits"
-        }
+        guard seconds > 0.5 else { return nil }
+        let segments = downloadedItem.skipSegments
+        // Recap ("previously on") is the cold open ahead of the intro, so it's checked first.
+        if let span = segments.recap, span.contains(seconds) { return ("recap", "Skip Recap", span) }
+        if let span = segments.intro, span.contains(seconds) { return ("intro", "Skip Intro", span) }
+        if let span = segments.credits, span.contains(seconds) { return ("credits", "Skip Credits", span) }
+        if let span = segments.preview, span.contains(seconds) { return ("preview", "Skip Preview", span) }
         return nil
     }
 
-    private func skipToSegmentEnd() {
-        let seconds = Double(player.positionTicks) / 10_000_000
-        if let introEnd = downloadedItem.introEndSeconds, seconds < introEnd {
-            Task { await player.seek(to: Int64(introEnd * 10_000_000)) }
-        } else if let creditsStart = downloadedItem.creditsStartSeconds, seconds >= creditsStart {
+    /// The same Skip Intro, Recap and Credits settings, and countdown, as streaming.
+    private func autoSkipIfNeeded(positionTicks: Int64) {
+        let seconds = Double(positionTicks) / 10_000_000
+        let segments = downloadedItem.skipSegments
+        let defaults = UserDefaults.standard
+        for (kind, span, enabled) in [
+            ("recap", segments.recap, defaults.bool(forKey: "skipRecap")),
+            ("intro", segments.intro, defaults.bool(forKey: "skipIntro")),
+            ("credits", segments.credits, defaults.bool(forKey: "skipCredits")),
+        ] {
+            guard enabled, let span, span.contains(seconds), !autoSkipped.contains(kind) else { continue }
+            autoSkipped.insert(kind)
+            startAutoSkip(kind: kind)
+            return
+        }
+    }
+
+    private func startAutoSkip(kind: String) {
+        autoSkipTask?.cancel()
+        let countdown = PlayerView.AutoActionCountdown(kind: kind, startedAt: Date(), seconds: PlayerView.autoActionSeconds)
+        autoSkipCountdown = countdown
+        autoSkipTask = Task {
+            try? await Task.sleep(for: .seconds(countdown.seconds))
+            guard !Task.isCancelled, autoSkipCountdown == countdown else { return }
+            autoSkipCountdown = nil
+            // Seeking out of the segment, or skipping it by hand, calls the skip off.
+            guard let current = currentSkippable, current.kind == kind else { return }
+            skip(kind: kind, span: current.span)
+        }
+    }
+
+    /// Past the end of a segment. Credits or a preview running to the end finish the title;
+    /// credits with more after them (a mid-credits scene) seek to it.
+    private func skip(kind: String, span: ClosedRange<Double>) {
+        let duration = Double(player.durationTicks) / 10_000_000
+        let endsTitle = (kind == "credits" || kind == "preview") && (duration == 0 || span.upperBound >= duration - 5)
+        if endsTitle {
             savePosition(final: true)
             closeRotatedPlayer { dismiss() }
+        } else {
+            Task { await player.seek(to: Int64(span.upperBound * 10_000_000)) }
         }
     }
 
@@ -803,7 +857,7 @@ struct OfflinePlayerView: View {
                     Capsule().fill(.white.opacity(0.2)).frame(width: 6, height: 90)
                     Capsule().fill(.white).frame(width: 6, height: 90 * volume)
                 }
-                Text("\(Int(volume * 100))%")
+                Text(Double(volume), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                     .font(.system(.caption2, design: .monospaced, weight: .semibold))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())

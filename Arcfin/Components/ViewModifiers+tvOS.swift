@@ -11,16 +11,26 @@ import SwiftUI
 // on every other platform, so call sites don't need their own platform guard.
 /// `detail` is the line or two under a setting that says what it does.
 struct TVRowLabelText: View {
-    let title: String
-    var detail: String? = nil
+    let title: Text
+    var detail: LocalizedStringKey? = nil
 #if os(tvOS)
     @Environment(\.isFocused) private var isFocused
 #endif
 
+    init(title: LocalizedStringKey, detail: LocalizedStringKey? = nil) {
+        self.title = Text(title)
+        self.detail = detail
+    }
+
+    init(verbatim title: String, detail: LocalizedStringKey? = nil) {
+        self.title = Text(verbatim: title)
+        self.detail = detail
+    }
+
     var body: some View {
 #if os(tvOS)
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
+            title
                 .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
             if let detail {
                 Text(detail)
@@ -31,7 +41,7 @@ struct TVRowLabelText: View {
         .animation(DT.Animation.fast, value: isFocused)
 #else
         VStack(alignment: .leading, spacing: 2) {
-            Text(title)
+            title
             if let detail {
                 Text(detail)
                     .font(.caption)
@@ -99,6 +109,7 @@ extension View {
     // `prominent` adds its own scale bump plus a thicker/brighter ring, for small controls
     // (player buttons) that have no other focus feedback of their own and sit over a busy,
     // low-contrast video background where the plain ring alone is easy to miss.
+    // Apply it to the focusable view itself: a button or a `.focusable()` view.
     func tvFocusRing(cornerRadius: CGFloat = DT.Radius.md, prominent: Bool = false) -> some View {
 #if os(tvOS)
         self.modifier(TVFocusRingModifier(cornerRadius: cornerRadius, prominent: prominent))
@@ -107,14 +118,32 @@ extension View {
 #endif
     }
 
+    /// The same ring for part of a button's label, e.g. just the artwork of a tile whose
+    /// title sits underneath, so the ring hugs the picture instead of the whole label.
+    func tvLabelFocusRing(cornerRadius: CGFloat = DT.Radius.md, prominent: Bool = false) -> some View {
+#if os(tvOS)
+        self.modifier(TVLabelFocusRingModifier(cornerRadius: cornerRadius, prominent: prominent))
+#else
+        self
+#endif
+    }
+
     /// A button with no chrome of its own: plain (or pressable) for touch and pointer, and on
     /// tvOS, where the app turns off the system focus effect, a focus ring so it shows focus.
     @ViewBuilder
-    func arcfinPlainButton(cornerRadius: CGFloat = DT.Radius.md, pressable: Bool = false) -> some View {
+    /// `ring: false` leaves the ring to the label (`tvLabelFocusRing`); `prominent: false`
+    /// keeps wide rows from growing past their column when focused.
+    func arcfinPlainButton(cornerRadius: CGFloat = DT.Radius.md, pressable: Bool = false,
+                           ring: Bool = true, prominent: Bool = true) -> some View {
         #if os(tvOS)
-        buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .tvFocusRing(cornerRadius: cornerRadius, prominent: true)
+        if ring {
+            buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .tvFocusRing(cornerRadius: cornerRadius, prominent: prominent)
+        } else {
+            buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+        }
         #else
         if pressable {
             buttonStyle(PressableButtonStyle())
@@ -122,6 +151,27 @@ extension View {
             buttonStyle(.plain)
         }
         #endif
+    }
+
+    /// On tvOS a row has to take focus for the remote to reach it, and a page with nothing
+    /// focusable sent focus to the tab bar, where Back leaves the app. The rows stay read-only.
+    @ViewBuilder
+    func tvReadOnlyRow() -> some View {
+        #if os(tvOS)
+        Button {} label: { self }
+        #else
+        self
+        #endif
+    }
+
+    /// For a page opened from Settings on Apple TV. With the tab bar showing, Up from the top
+    /// row moved focus onto it, and Back from there left the app instead of going back.
+    func tvSettingsPage() -> some View {
+#if os(tvOS)
+        toolbar(.hidden, for: .tabBar)
+#else
+        self
+#endif
     }
 
     func tvListRow() -> some View {
@@ -140,31 +190,60 @@ extension View {
 // system's own focus platter the way a NavigationLink/Button row's custom styling does —
 // they kept rendering in the app's plain white/primary text color even while focused,
 // unreadable against the light platter. Every tvListRow() row gets this for free.
+// The row's own focus comes from @FocusState: \.isFocused read here, on the focusable row
+// itself, stayed false and kept the text white on the platter (see TVFocusRingModifier).
 private struct TVListRowFocusTextModifier: ViewModifier {
-    @Environment(\.isFocused) private var isFocused
+    @FocusState private var isFocused: Bool
 
     func body(content: Content) -> some View {
         content
+            .focused($isFocused)
             .foregroundStyle(isFocused ? Color.black : DT.Color.textPrimary)
             .animation(DT.Animation.fast, value: isFocused)
     }
 }
 
 // Accent ring + glow only. No scaleEffect — avoids "out padding" on full-width buttons.
+// \.isFocused only reports a focusable ancestor's focus, so applied to the focusable view
+// itself it stays false (or lights up for an enclosing focusable card): the view's own
+// focus comes from @FocusState instead.
 private struct TVFocusRingModifier: ViewModifier {
+    let cornerRadius: CGFloat
+    var prominent: Bool = false
+    @FocusState private var isFocused: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .focusEffectDisabled()
+            .modifier(TVFocusRingDrawing(cornerRadius: cornerRadius, prominent: prominent, isFocused: isFocused))
+            .focused($isFocused)
+    }
+}
+
+private struct TVLabelFocusRingModifier: ViewModifier {
     let cornerRadius: CGFloat
     var prominent: Bool = false
     @Environment(\.isFocused) private var isFocused
 
     func body(content: Content) -> some View {
+        content.modifier(TVFocusRingDrawing(cornerRadius: cornerRadius, prominent: prominent, isFocused: isFocused))
+    }
+}
+
+// The ring and glow are drawn before the scale, so they grow with the view and stay on its edge.
+private struct TVFocusRingDrawing: ViewModifier {
+    let cornerRadius: CGFloat
+    let prominent: Bool
+    let isFocused: Bool
+
+    func body(content: Content) -> some View {
         content
-            .focusEffectDisabled()
-            .scaleEffect(prominent && isFocused ? 1.12 : 1.0)
             .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(isFocused ? DT.Color.accent : Color.clear, lineWidth: prominent ? 4 : 2)
             )
             .shadow(color: isFocused ? DT.Color.accent.opacity(prominent ? 0.6 : 0.45) : .clear, radius: prominent ? 16 : 10)
+            .scaleEffect(prominent && isFocused ? 1.12 : 1.0)
             .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: isFocused)
     }
 }
@@ -200,7 +279,7 @@ struct TVPlayerControlLabel: View {
 // For inline text buttons (See All, etc.).
 // Shows accent fill only on focus; completely invisible at rest.
 struct TVFocusButtonLabel: View {
-    let title: String
+    let title: LocalizedStringKey
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
@@ -218,7 +297,7 @@ struct TVFocusButtonLabel: View {
 // No visible background at rest; accent or glass fill on focus.
 struct TVHeroButtonLabel: View {
     let icon: String
-    let text: String
+    let text: LocalizedStringKey
     var isPrimary: Bool = false
     @Environment(\.isFocused) private var isFocused
 

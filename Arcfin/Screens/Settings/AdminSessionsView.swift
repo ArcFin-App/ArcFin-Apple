@@ -183,7 +183,7 @@ struct AdminSessionsView: View {
     }
 
     /// "VideoCodecNotSupported" → "Video codec not supported".
-    private static func readableReason(_ reason: String) -> String {
+    nonisolated private static func readableReason(_ reason: String) -> String {
         var words: [String] = []
         for character in reason {
             if character.isUppercase || words.isEmpty {
@@ -250,7 +250,8 @@ struct AdminSessionsView: View {
         stopLiveUpdates()
         guard case .authenticated(let credential) = authManager.state else { return }
         let deviceId = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
-        let socket = JellyfinWebSocketClient(credential: credential, deviceId: deviceId)
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        let socket = JellyfinWebSocketClient(credential: credential, authHeader: authHeader, deviceId: deviceId)
         self.socket = socket
         socket.startSessionUpdates()
         socketTask = Task {

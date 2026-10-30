@@ -1,0 +1,438 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "ArcFin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ArcFin"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin"
+          }
+        }
+      }
+    },
+    "NSBluetoothAlwaysUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Chromecast-Unterstützung von Arcfin kann Bluetooth nutzen, um Cast-Geräte in der Nähe zu finden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La compatibilidad de Arcfin con Chromecast puede usar Bluetooth para encontrar dispositivos Cast cercanos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La prise en charge de Chromecast d’Arcfin peut utiliser le Bluetooth pour trouver les appareils Cast à proximité."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il supporto Chromecast di Arcfin può usare il Bluetooth per trovare i dispositivi Cast vicini."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ArcfinのChromecast対応では、近くのキャストデバイスを見つけるためにBluetoothを使用する場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin의 Chromecast 지원은 근처의 전송 기기를 찾기 위해 Bluetooth를 사용할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De Chromecast-ondersteuning van Arcfin kan Bluetooth gebruiken om Cast-apparaten in de buurt te vinden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O suporte ao Chromecast do Arcfin pode usar o Bluetooth para ajudar a encontrar dispositivos de transmissão por perto."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Поддержка Chromecast в Arcfin может использовать Bluetooth для поиска устройств Cast поблизости."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 的 Chromecast 支持可以使用蓝牙来帮助发现附近的投放设备。"
+          }
+        }
+      }
+    },
+    "NSFaceIDUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID wird genutzt, um Arcfin zu entsperren, wenn die App-Sperre für dein Profil aktiviert ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Face ID is used to unlock Arcfin when App Lock is enabled for your profile."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID se usa para desbloquear Arcfin cuando el bloqueo de la app está activado para tu perfil."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID sert à déverrouiller Arcfin quand le verrouillage de l’app est activé pour votre profil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID serve a sbloccare Arcfin quando il Blocco app è attivo per il tuo profilo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "プロファイルでアプリロックが有効になっている場合、Arcfinのロック解除にFace IDを使用します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "프로필에서 앱 잠금이 켜져 있으면 Face ID를 사용하여 Arcfin의 잠금을 해제합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID wordt gebruikt om Arcfin te ontgrendelen als app-vergrendeling aanstaat voor je profiel."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Face ID é usado para desbloquear o Arcfin quando o Bloqueio do app está ativado para o seu perfil."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Face ID используется для разблокировки Arcfin, когда для вашего профиля включена блокировка приложения."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "当你的描述文件启用了应用锁时，面容 ID 用于解锁 Arcfin。"
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin nutzt dein lokales Netzwerk, um deinen Jellyfin-Server zu finden und sich damit zu verbinden und um Medien an Geräte in der Nähe zu übertragen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa tu red local para encontrar tu servidor Jellyfin y conectarse a él, y para transmitir contenido a dispositivos cercanos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin utilise votre réseau local pour trouver votre serveur Jellyfin et s’y connecter, et pour diffuser des médias sur les appareils à proximité."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa la tua rete locale per trovare il server Jellyfin e connettersi, e per trasmettere contenuti ai dispositivi vicini."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinは、Jellyfinサーバを見つけて接続し、近くのデバイスにメディアをキャストするためにローカルネットワークを使用します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin은 로컬 네트워크를 사용하여 Jellyfin 서버를 찾아 연결하고 근처 기기로 미디어를 전송합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin gebruikt je lokale netwerk om je Jellyfin-server te vinden en ermee te verbinden, en om media naar apparaten in de buurt te casten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin usa sua rede local para encontrar e se conectar ao seu servidor Jellyfin e para transmitir mídia para dispositivos por perto."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin использует локальную сеть, чтобы находить сервер Jellyfin и подключаться к нему, а также транслировать медиа на устройства поблизости."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 使用你的本地网络来发现并连接你的 Jellyfin 服务器，以及将媒体投放到附近的设备。"
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin nutzt den Namen deines WLANs, um automatisch zwischen der lokalen und der externen Adresse deines Servers zu wechseln, je nachdem, ob du zu Hause oder unterwegs bist. Dein Standort wird nie gespeichert, verfolgt oder geteilt – er wird nur zum Lesen des aktuellen WLAN-Namens genutzt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa el nombre de tu red wifi para cambiar automáticamente entre la dirección local y la remota de tu servidor según estés en casa o fuera. Tu ubicación nunca se guarda, rastrea ni comparte; solo se usa para leer el nombre de la wifi actual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin utilise le nom de votre réseau Wi-Fi pour basculer automatiquement entre l’adresse locale et l’adresse distante de votre serveur selon que vous êtes chez vous ou non. Votre position n’est jamais enregistrée, suivie ni partagée — elle sert uniquement à lire le nom du Wi-Fi actuel."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa il nome della tua rete Wi-Fi per passare automaticamente dall’indirizzo locale a quello remoto del server a seconda che tu sia a casa o fuori. La tua posizione non viene mai salvata, tracciata o condivisa: serve solo a leggere il nome della rete Wi-Fi attuale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinは、自宅にいるか外出中かに応じてサーバのローカルアドレスとリモートアドレスを自動で切り替えるために、Wi-Fiネットワーク名を使用します。位置情報が保存、追跡、共有されることはなく、現在のWi-Fi名を読み取るためだけに使用されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin은 집에 있는지 외출 중인지에 따라 서버의 로컬 주소와 원격 주소를 자동으로 전환하기 위해 Wi-Fi 네트워크 이름을 사용합니다. 위치는 저장, 추적, 공유되지 않으며 현재 Wi-Fi 이름을 읽는 데만 사용됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin gebruikt de naam van je wifinetwerk om automatisch te wisselen tussen het lokale en externe adres van je server, afhankelijk van of je thuis bent of niet. Je locatie wordt nooit bewaard, gevolgd of gedeeld — hij wordt alleen gebruikt om de naam van het huidige wifinetwerk te lezen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin usa o nome da sua rede Wi-Fi para alternar automaticamente entre o endereço local e o remoto do seu servidor quando você está em casa ou fora. Sua localização nunca é armazenada, rastreada nem compartilhada — ela só é usada para ler o nome do Wi-Fi atual."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin использует имя вашей сети Wi-Fi, чтобы автоматически переключаться между локальным и удалённым адресами сервера, когда вы дома или нет. Ваша геопозиция никогда не сохраняется, не отслеживается и не передаётся — она используется только для чтения имени текущей сети Wi-Fi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 使用你的无线局域网名称，在你在家和外出时自动切换服务器的本地地址和远程地址。你的位置绝不会被存储、跟踪或共享——它仅用于读取当前的无线局域网名称。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

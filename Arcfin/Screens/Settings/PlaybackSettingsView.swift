@@ -57,14 +57,10 @@ struct PlaybackSettingsView: View {
     var body: some View {
         List {
             Section {
-                Picker(selection: $videoQuality) {
-                    ForEach(VideoQuality.allCases) { q in
-                        Text(q.label).tag(q)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Video Quality", detail: "Auto picks from your connection; a fixed choice caps every stream.")
+                SettingsPicker("Video Quality", detail: "Auto picks from your connection; a fixed choice caps every stream.", selection: $videoQuality,
+                               options: VideoQuality.allCases) { q in
+                    Text(q.label)
                 }
-                .tvListRow()
                 .syncLocked("videoQuality", authManager)
                 #if os(iOS)
                 Picker(selection: $mobileVideoQuality) {
@@ -77,35 +73,23 @@ struct PlaybackSettingsView: View {
                 }
                 .syncLocked("mobileVideoQuality", authManager)
                 #endif
-                Picker(selection: $playbackEngine) {
-                    ForEach(PlaybackEngineKind.allCases, id: \.self) { engine in
-                        Text(engine.rawValue).tag(engine)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Playback Engine", detail: "Auto prefers Aether, which plays the most formats, HDR and surround. If a video won't play, try AVFoundation or VLC.")
+                SettingsPicker("Playback Engine", detail: "Auto prefers Aether, which plays the most formats, HDR and surround. If a video won't play, try AVFoundation or VLC.", selection: $playbackEngine,
+                               options: PlaybackEngineKind.allCases) { engine in
+                    Text(engine == .auto ? String(localized: "Auto") : engine.rawValue)
                 }
-                .tvListRow()
                 .syncLocked("playbackEngine", authManager)
             }
 
             Section {
-                Picker(selection: $skipForwardSeconds) {
-                    ForEach(skipIntervalOptions, id: \.self) { seconds in
-                        Text("\(seconds)s").tag(seconds)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Skip Forward", detail: "For the skip buttons, double-tap and the arrow keys.")
+                SettingsPicker("Skip Forward", detail: "For the skip buttons, double-tap and the arrow keys.", selection: $skipForwardSeconds,
+                               options: skipIntervalOptions) { seconds in
+                    Text("\(seconds)s")
                 }
-                .tvListRow()
                 .syncLocked("skipForwardSeconds", authManager)
-                Picker(selection: $skipBackwardSeconds) {
-                    ForEach(skipIntervalOptions, id: \.self) { seconds in
-                        Text("\(seconds)s").tag(seconds)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Skip Backward", detail: "For the skip buttons, double-tap and the arrow keys.")
+                SettingsPicker("Skip Backward", detail: "For the skip buttons, double-tap and the arrow keys.", selection: $skipBackwardSeconds,
+                               options: skipIntervalOptions) { seconds in
+                    Text("\(seconds)s")
                 }
-                .tvListRow()
                 .syncLocked("skipBackwardSeconds", authManager)
             }
 
@@ -131,14 +115,10 @@ struct PlaybackSettingsView: View {
                 .tvListRow()
                 .syncLocked("skipCredits", authManager)
                 if autoPlayNext || skipRecap || skipIntro || skipCredits {
-                    Picker(selection: $upNextCountdownSeconds) {
-                        ForEach([3, 4, 5], id: \.self) { seconds in
-                            Text("\(seconds)s").tag(seconds)
-                        }
-                    } label: {
-                        TVRowLabelText(title: "Countdown", detail: "How long the button fills before an automatic skip or the next episode.")
+                    SettingsPicker("Countdown", detail: "How long the button fills before an automatic skip or the next episode.", selection: $upNextCountdownSeconds,
+                                   options: [3, 4, 5]) { seconds in
+                        Text("\(seconds)s")
                     }
-                    .tvListRow()
                     .syncLocked("upNextCountdownSeconds", authManager)
                     // Earlier versions offered up to 15 s.
                     .onAppear { upNextCountdownSeconds = min(max(upNextCountdownSeconds, 3), 5) }
@@ -154,14 +134,10 @@ struct PlaybackSettingsView: View {
                 .tvListRow()
                 .syncLocked("rememberPlaybackSpeed", authManager)
                 if !rememberPlaybackSpeed {
-                    Picker(selection: $defaultPlaybackSpeed) {
-                        ForEach([0.75, 1.0, 1.25, 1.5, 1.75, 2.0], id: \.self) { rate in
-                            Text(rate == 1 ? "Normal" : "\(rate.formatted())×").tag(rate)
-                        }
-                    } label: {
-                        TVRowLabelText(title: "Default Speed", detail: "The speed new videos start at.")
+                    SettingsPicker("Default Speed", detail: "The speed new videos start at.", selection: $defaultPlaybackSpeed,
+                                   options: [0.75, 1.0, 1.25, 1.5, 1.75, 2.0]) { rate in
+                        Text(rate == 1 ? "Normal" : "\(rate.formatted())×")
                     }
-                    .tvListRow()
                     .syncLocked("defaultPlaybackSpeed", authManager)
                 }
             } footer: {
@@ -171,23 +147,15 @@ struct PlaybackSettingsView: View {
             }
 
             Section {
-                Picker(selection: $resumeBehavior) {
-                    ForEach(ResumeBehavior.allCases) { option in
-                        Text(option.label).tag(option)
-                    }
-                } label: {
-                    TVRowLabelText(title: "When Resuming", detail: "What Play does for a title you've started.")
+                SettingsPicker("When Resuming", detail: "What Play does for a title you've started.", selection: $resumeBehavior,
+                               options: ResumeBehavior.allCases) { option in
+                    Text(option.label)
                 }
-                .tvListRow()
                 .syncLocked(ResumeBehavior.key, authManager)
-                Picker(selection: $watchedThreshold) {
-                    ForEach(WatchedThreshold.allCases) { option in
-                        Text(option.label).tag(option)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Mark as Watched", detail: "When closing the player counts a title as watched. Server Default uses your server's setting, usually 90%.")
+                SettingsPicker("Mark as Watched", detail: "When closing the player counts a title as watched. Server Default uses your server's setting, usually \(0.9.formatted(.percent)).", selection: $watchedThreshold,
+                               options: WatchedThreshold.allCases) { option in
+                    Text(option.label)
                 }
-                .tvListRow()
                 .syncLocked(WatchedThreshold.key, authManager)
             }
 
@@ -210,23 +178,15 @@ struct PlaybackSettingsView: View {
             }
 
             Section {
-                Picker(selection: $preferredAudioLanguage) {
-                    ForEach(Self.audioLanguageOptions, id: \.code) { option in
-                        Text(option.name).tag(option.code)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Preferred Audio Language", detail: "Starts on this language when a title has it.")
+                SettingsPicker("Preferred Audio Language", detail: "Starts on this language when a title has it.",
+                               selection: $preferredAudioLanguage, options: Self.audioLanguageOptions.map(\.code)) { code in
+                    Text(Self.audioLanguageOptions.first { $0.code == code }?.name ?? code)
                 }
-                .tvListRow()
                 .syncLocked("preferredAudioLanguage", authManager)
-                Picker(selection: $preferredSubtitleLanguage) {
-                    ForEach(Self.subtitleLanguageOptions, id: \.code) { option in
-                        Text(option.name).tag(option.code)
-                    }
-                } label: {
-                    TVRowLabelText(title: "Preferred Subtitle Language", detail: "Starts on this language when a title has it.")
+                SettingsPicker("Preferred Subtitle Language", detail: "Starts on this language when a title has it.",
+                               selection: $preferredSubtitleLanguage, options: Self.subtitleLanguageOptions.map(\.code)) { code in
+                    Text(Self.subtitleLanguageOptions.first { $0.code == code }?.name ?? code)
                 }
-                .tvListRow()
                 .syncLocked("preferredSubtitleLanguage", authManager)
             }
 
@@ -248,19 +208,19 @@ struct PlaybackSettingsView: View {
 
             Section {
                 NavigationLink {
-                    CodecProfileSettingsView()
+                    CodecProfileSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Codec Compatibility", detail: "Which formats this device is told it can play.")
                 }
                 .tvListRow()
                 NavigationLink {
-                    PlayerFeaturesSettingsView()
+                    PlayerFeaturesSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Player Features", detail: "Picture in Picture, gestures, chapters and more.")
                 }
                 .tvListRow()
                 NavigationLink {
-                    SubtitleStyleSettingsView()
+                    SubtitleStyleSettingsView().tvSettingsPage()
                 } label: {
                     TVRowLabelText(title: "Subtitle Style", detail: "Size, colour and background of subtitles.")
                 }
@@ -280,9 +240,9 @@ enum ResumeBehavior: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .ask: "Ask"
-        case .resume: "Resume"
-        case .startOver: "Start Over"
+        case .ask: String(localized: "Ask")
+        case .resume: String(localized: "Resume")
+        case .startOver: String(localized: "Start Over")
         }
     }
     static var current: ResumeBehavior {
@@ -297,10 +257,10 @@ enum WatchedThreshold: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .server: "Server Default"
-        case .credits: "When Credits Start"
-        case .eighty: "At 80%"
-        case .eightyFive: "At 85%"
+        case .server: String(localized: "Server Default")
+        case .credits: String(localized: "When Credits Start")
+        case .eighty: String(localized: "At \(0.8.formatted(.percent))")
+        case .eightyFive: String(localized: "At \(0.85.formatted(.percent))")
         }
     }
     static var current: WatchedThreshold {

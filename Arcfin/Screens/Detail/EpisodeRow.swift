@@ -162,11 +162,12 @@ private struct EpisodeThumbPlaceholder: View {
 /// From an episode's page, a link to its show.
 struct DetailSeriesLink: View {
     let series: MediaItem
+    let open: (MediaItem) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             DetailSectionTitle(title: "Series")
-            NavigationLink(value: series) {
+            DetailTitleLink(item: series, open: open) {
                 HStack(spacing: 10) {
                     Image(systemName: "tv")
                         .font(.system(.subheadline))

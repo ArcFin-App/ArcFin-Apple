@@ -7,7 +7,7 @@ import SwiftUI
 /// The average color of a remote image, used to tint a detail screen from its artwork.
 enum AverageColor {
     static func load(from url: URL) async -> Color? {
-        guard let (data, _) = try? await URLSession.arcfin.data(from: url),
+        guard let data = await URLSession.arcfin.imageData(from: url),
               let image = CIImage(data: data)
         else { return nil }
         let filter = CIFilter(name: "CIAreaAverage", parameters: [

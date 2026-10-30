@@ -1,37 +1,34 @@
 # Trademark Policy
 
-The AGPL-3.0 license in [`LICENSE`](LICENSE) covers Arcfin's **source code**. It
-does not grant any rights to Arcfin's **name, logo, icon, or branding**.
+The AGPL-3.0 license in [`LICENSE`](LICENSE) covers Arcfin's **source code**. It doesn't grant any rights to Arcfin's **name, logo, app icon or other branding**.
 
-"Arcfin" and the Arcfin app icon/logo are trademarks of the project maintainer,
-used independently of the code license, the same way the VLC and Mozilla
-projects separate their open-source code license from their trademark policy.
+"Arcfin" and the Arcfin app icon and logo are trademarks of the project maintainer. They're kept separate from the code license, the same way projects such as VLC and Mozilla Firefox separate their open-source code from their trademarks.
 
-## What this means in practice
+## What you can do
 
-You are free, under the AGPL, to fork, modify, self-host, and redistribute
-Arcfin's source code — including commercially — as long as you comply with
-the AGPL's terms (keep it open, provide source to users, etc.).
+Under the AGPL you're free to fork, modify, self-host and redistribute Arcfin's source code, including commercially, as long as you follow the license's terms (share the source with your users, keep the license and notices, and so on).
 
-You are **not** free to:
+You can also:
+- refer to Arcfin by name to describe it, review it or say your work is compatible with it;
+- say your project is "a fork of Arcfin" or "based on Arcfin".
 
-- Call your fork "Arcfin", or a name confusingly similar to it
-- Use the Arcfin app icon, logo, or App Store listing assets
-- Present your fork as being the official Arcfin app, or as being
-  affiliated with, endorsed by, or maintained by the Arcfin project
+## What you can't do
 
-If you fork or rebrand the project, please pick your own name and icon and
-say clearly in your README that it's a fork of Arcfin — that's not just
-allowed, it's appreciated.
+- Call your fork "Arcfin", or a name confusingly similar to it.
+- Use the Arcfin app icon, logo, screenshots or App Store listing assets.
+- Present your fork as the official Arcfin app, or as affiliated with, endorsed by or maintained by the Arcfin project.
+- Publish a build under the Arcfin name on the App Store, TestFlight or any other store.
+
+If you fork or rebrand the project, pick your own name and icon, and say clearly in your README that it's a fork of Arcfin. That's not just allowed, it's appreciated.
 
 ## Assets excluded from the code license
 
-App icons, marketing screenshots, and other brand assets under
-`assets/` (and any App Store Connect metadata under `fastlane/metadata/`)
-are **not** licensed under the AGPL. All rights to these are reserved unless
-stated otherwise in that specific file.
+App icons, marketing screenshots and other brand assets under `assets/`, and App Store Connect metadata under `fastlane/metadata/`, are **not** licensed under the AGPL. All rights to them are reserved unless a file says otherwise.
+
+## Other projects' trademarks
+
+Arcfin is an independent project. "Jellyfin" and the Jellyfin logo belong to the Jellyfin project, which doesn't endorse Arcfin. Arcfin uses the name only to say which server it works with, as the [Jellyfin branding guidelines](https://jellyfin.org/docs/general/contributing/branding/) allow. The same goes for Seerr, TMDB, Apple, and every other product named in this repository.
 
 ## Questions
 
-Reach out to support@psmattas.com if you're unsure whether a particular use
-is covered.
+Email [support.arcfin@psmattas.com](mailto:support.arcfin@psmattas.com) if you're unsure whether a particular use is covered.

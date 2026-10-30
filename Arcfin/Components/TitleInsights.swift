@@ -15,6 +15,9 @@ struct TitleInsights: View {
     /// One part of the section, for pages that place the scores apart from the rest; nil
     /// shows everything.
     var part: Part? = nil
+    /// Space under the section, left out while it has nothing to show so an empty one
+    /// doesn't open a gap in a stack of sections.
+    var spacingBelow: CGFloat = 0
 
     enum Part { case ratings, details }
 
@@ -46,7 +49,18 @@ struct TitleInsights: View {
                 #endif
             }
         }
+        .padding(.bottom, hasContent ? spacingBelow : 0)
         .task(id: tmdbId) { await load() }
+    }
+
+    private var hasContent: Bool {
+        let showsRatings = part != .details && !(ratings?.isEmpty ?? true)
+        guard part != .ratings else { return showsRatings }
+        var showsDetails = info?.nextEpisode != nil || !(info?.watch?.isEmpty ?? true) || !detailRows.isEmpty
+        #if !os(tvOS)
+        showsDetails = showsDetails || !links.isEmpty
+        #endif
+        return showsRatings || showsDetails
     }
 
     private func load() async {
@@ -69,14 +83,14 @@ struct TitleInsights: View {
                     scoreChip(
                         systemImage: score >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: "\(score)%", label: ratings.criticsRating ?? "Critics",
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: ratings.criticsRating ?? "Critics",
                         url: ratings.rottenTomatoesURL)
                 }
                 if let score = ratings.audienceScore {
                     scoreChip(
                         systemImage: "person.3.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: "\(score)%", label: "Audience", url: ratings.rottenTomatoesURL)
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: "Audience", url: ratings.rottenTomatoesURL)
                 }
                 if let imdb = ratings.imdbScore {
                     scoreChip(systemImage: "star.fill", tint: DT.Color.palette("f5c518"),

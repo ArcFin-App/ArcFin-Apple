@@ -6,6 +6,9 @@ import SwiftData
 import UserNotifications
 #endif
 import Persistence
+#if os(macOS)
+import Telemetry
+#endif
 
 @main
 struct ArcfinApp: App {
@@ -16,6 +19,7 @@ struct ArcfinApp: App {
         // Taps on a notification open the title, Discover or Downloads, as on iOS.
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         BackgroundRefresh.register()
+        Diagnostics.shared.start()
     }
     #endif
 
@@ -104,6 +108,8 @@ enum AppServices {
     static let downloadManager = DownloadManager()
     static let syncPlayManager = SyncPlayManager()
     static let sharePlayManager = SharePlayManager()
+    static let liveUpdates = LiveUpdates(mediaRepo: mediaRepo)
+    static let introduction = AppIntroduction()
     /// Past the app lock (or there's none) this launch. A player window brought back on
     /// relaunch closes rather than play ahead of the lock.
     static var hasPassedLock = false

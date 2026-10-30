@@ -13,7 +13,6 @@ DerivedData/
 .build/
 .swiftpm/
 Packages/.build/
-*.resolved
 
 # macOS
 .DS_Store
@@ -26,6 +25,8 @@ Packages/.build/
 # CocoaPods (not used, but just in case)
 Pods/
 *.xcworkspace
+# The project's own workspace holds the Xcode package lockfile.
+!Arcfin.xcodeproj/project.xcworkspace/
 
 # Fastlane
 fastlane/report.xml

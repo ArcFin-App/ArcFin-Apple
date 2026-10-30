@@ -65,6 +65,9 @@ struct PlayerView: View {
     // opacity, so hit-testing/focusability never turns off and there's never a moment with
     // nothing reachable for the remote to bring back, even while fully invisible.
     @State var tvControlsHidden = false
+    @State var remoteScrub = TVRemoteScrub()
+    @State var remoteScrubStartTicks: Double = 0
+    @FocusState var isScrubberFocused: Bool
     #endif
     @State var hideControlsTask: Task<Void, Never>?
     @State var isScrubbing = false
@@ -135,6 +138,7 @@ struct PlayerView: View {
     @State var autoRecoveryTask: Task<Void, Never>?
     @State var wasBackgrounded = false
     @State var foregroundCheckTask: Task<Void, Never>?
+    @State var pictureCheckTask: Task<Void, Never>?
     @State var lastStallHandledAt: Date?
     @State var recentStallTimestamps: [Date] = []
     @State var lastLoadStartedAt: Date?
@@ -386,7 +390,7 @@ struct PlayerView: View {
         .onAppear { ScreensaverHold.count += 1 }
         .onDisappear { ScreensaverHold.count -= 1 }
         .focusScope(tvFocusNamespace)
-        .onPlayPauseCommand { togglePlayPause() }
+        .onPlayPauseCommand { if isScrubbing { commitTVScrub() } else { togglePlayPause() } }
         .onExitCommand { handleTVExit() }
         // Hands focus to whichever control should have it now (the catcher, play/pause, Skip,
         // Up Next) instead of leaving it on something that just disappeared.
@@ -816,7 +820,7 @@ struct PlayerView: View {
     private func fetchAndApplyNowPlayingArtwork() async {
         guard nowPlayingArtwork == nil,
               let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: 600),
-              let (data, _) = try? await URLSession.arcfin.data(from: url),
+              let data = await URLSession.arcfin.imageData(from: url),
               let image = PlatformImage(data: data)
         else { return }
         // Only the current title's artwork is ever read, so a long session of back-to-back
@@ -874,7 +878,8 @@ struct PlayerView: View {
                 onSubtitleDownloaded: {
                     showTrackMenu = false
                     adoptDownloadedSubtitle()
-                }
+                },
+                audioDescriptionIndices: audioDescriptionIndices
             )
             .navigationTitle("Subtitles & Audio")
             #if os(iOS)
@@ -976,6 +981,11 @@ struct PlayerView: View {
     }
 
     private var decodesNatively: Bool { player is AetherEnginePlayer || player is VLCEnginePlayer }
+
+    /// Aether numbers its tracks by stream index, the same numbers Jellyfin's streams carry.
+    var audioDescriptionIndices: Set<Int> {
+        Set(player.availableAudioTracks.filter(\.isAudioDescription).map(\.id))
+    }
 
     /// The AVFoundation/VLC split Auto used before Aether existed — now only reached when
     /// Aether itself fails to construct or load a source (see setup()'s runtime fallback).
@@ -1208,6 +1218,7 @@ struct PlayerView: View {
                                              positionTicks: resumeFrom)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
             startAutoRecovery()
+            watchForMissingPicture()
         } catch {
             errorMessage = "Couldn't start playback: \(error.localizedDescription)"
         }
@@ -1233,11 +1244,12 @@ struct PlayerView: View {
         }
 
         // Anything with an Up Next card already has something to watch next; the rest (movies,
-        // a series finale) get suggestions instead once the credits start.
+        // a series finale) get suggestions instead once the credits start. Trailers and other
+        // extras don't: the last four minutes would cover most of one.
         moreLikeThis = []
         showMoreLikeThis = false
         moreLikeThisDismissed = false
-        if nextEpisode == nil {
+        if nextEpisode == nil, item.type == .movie || item.type == .episode {
             moreLikeThis = ((try? await client.getSimilarItems(
                 credential: credential, authHeader: authHeader, itemId: item.id, limit: 12)) ?? [])
                 .filter { $0.id != item.id }
@@ -1403,6 +1415,7 @@ struct PlayerView: View {
         autoRecoveryTask?.cancel()
         autoSkipTask?.cancel()
         foregroundCheckTask?.cancel()
+        pictureCheckTask?.cancel()
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
@@ -1435,6 +1448,7 @@ struct PlayerView: View {
                                                   creditsStart: segments.credits?.lowerBound) {
                 _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
             }
+            NotificationCenter.default.post(name: .arcfinPlaybackReported, object: nil)
         }
         await player.stop()
         #if canImport(UIKit) && !os(tvOS)
@@ -1556,6 +1570,42 @@ struct PlayerView: View {
                 try? await Task.sleep(for: .seconds(3))
                 networkToast = nil
             }
+        }
+    }
+
+    /// Auto only. Aether can open a source and play its sound while no frame ever reaches the
+    /// screen (#269), which setup()'s load-failure fallback never sees. After several seconds of
+    /// playback on screen with nothing rendered, that same AVFoundation/VLC fallback takes over
+    /// at the same position.
+    private func watchForMissingPicture() {
+        guard playbackEnginePreference == .auto, let aether = player as? AetherEnginePlayer,
+              let info = playbackInfo, info.videoStream != nil else { return }
+        pictureCheckTask?.cancel()
+        pictureCheckTask = Task {
+            var secondsPlayed = 0
+            while secondsPlayed < 8 {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled, player === aether else { return }
+                if scenePhase == .active, aether.status == .playing, !aether.isBuffering { secondsPlayed += 1 }
+            }
+            guard await !aether.hasRenderedVideoFrame(), !Task.isCancelled, player === aether else { return }
+            let resumeTicks = aether.positionTicks
+            await aether.stop()
+            #if !os(tvOS)
+            pip.detach()
+            #endif
+            player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
+            reload(errorContext: "switch player", resumeTicks: resumeTicks)
+            let notice = String(localized: "This video had no picture, so Arcfin switched to another player.")
+            networkToast = notice
+            #if !os(tvOS)
+            for _ in 0..<30 where player.status != .playing {
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+            if player is AVFoundationPlayer { pip.activateIfNeeded() }
+            #endif
+            try? await Task.sleep(for: .seconds(4))
+            if networkToast == notice { networkToast = nil }
         }
     }
 
@@ -2001,6 +2051,7 @@ struct PlayerView: View {
                 lastLoadStartedAt = Date()
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
+                watchForMissingPicture()
                 if selectedAudioIndex != nil { await selectAudioInEngine() }
                 await applyRememberedRate()
                 #if !os(tvOS) && !os(macOS)

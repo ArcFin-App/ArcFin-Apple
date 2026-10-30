@@ -14,13 +14,13 @@ struct MacSettingsWindow: View {
 
         var title: String {
             switch self {
-            case .general: "General"
-            case .playback: "Playback"
-            case .downloads: "Downloads"
-            case .appearance: "Appearance"
-            case .notifications: "Notifications"
-            case .server: "Server"
-            case .integrations: "Integrations"
+            case .general: String(localized: "General")
+            case .playback: String(localized: "Playback")
+            case .downloads: String(localized: "Downloads")
+            case .appearance: String(localized: "Appearance")
+            case .notifications: String(localized: "Notifications")
+            case .server: String(localized: "Server")
+            case .integrations: String(localized: "Integrations")
             }
         }
 

@@ -32,7 +32,8 @@ struct TVSeerrItemDetailView: View {
     }
 
     private var canRequest: Bool {
-        seerrRepo.isConfigured && item.availabilityStatus != .available && hasRequestableContent
+        seerrRepo.isConfigured && item.availabilityStatus != .available
+            && !(item.mediaType == .movie && libraryItem != nil) && hasRequestableContent
     }
 
     private var statusLabel: (label: String, colorHex: String)? {
