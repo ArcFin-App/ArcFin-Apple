@@ -71,15 +71,10 @@ struct SubtitleSearchView: View {
                 }
             }
         }
-        #if canImport(UIKit) && !os(tvOS)
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        #endif
+        .insetGroupedList()
         .screenBackground()
         .navigationTitle("Search Subtitles")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationTitle()
         .task(id: language) { await search() }
     }
 

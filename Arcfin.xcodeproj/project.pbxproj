@@ -108,9 +108,12 @@
 				iOS/Library/LibraryView.swift = (ios, );
 				iOS/Library/LocalPlayerView.swift = (ios, );
 				iOS/Platform/InlineNavigationTitle.swift = (ios, );
+				iOS/Platform/InsetGroupedList.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
+				iOS/Player/DisplayCriteriaMatcher.swift = (ios, );
+				iOS/Player/YouTubeTrailerPlayerView.swift = (ios, );
 				iOS/Search/SearchView.swift = (ios, );
 				macOS/Library/CollectionCardButtonStyle.swift = (macos, );
 				macOS/Library/CollectionDetailView.swift = (macos, );
@@ -120,8 +123,10 @@
 				macOS/Library/LocalPlayerView.swift = (macos, );
 				macOS/Library/PlayableVideo.swift = (macos, );
 				macOS/Platform/InlineNavigationTitle.swift = (macos, );
+				macOS/Platform/InsetGroupedList.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/ScrubGesture.swift = (macos, );
+				macOS/Player/YouTubeTrailerPlayerView.swift = (macos, );
 				macOS/Search/SearchView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
 				tvOS/Detail/TVMediaDetailView.swift = (tvos, );
@@ -133,6 +138,7 @@
 				tvOS/Library/LibraryFilterControls.swift = (tvos, );
 				tvOS/Library/LibraryView.swift = (tvos, );
 				tvOS/Platform/InlineNavigationTitle.swift = (tvos, );
+				tvOS/Platform/InsetGroupedList.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/ScrubGesture.swift = (tvos, );
 				tvOS/Player/TVRemoteScrub.swift = (tvos, );
