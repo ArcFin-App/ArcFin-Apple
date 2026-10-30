@@ -35,7 +35,7 @@ struct TVSeerrView: View {
             }
             .screenBackground()
             .navigationDestination(for: SeerrItem.self) { TVSeerrItemDetailView(item: $0) }
-            .navigationDestination(for: MediaItem.self) { TVMediaDetailView(item: $0) }
+            .navigationDestination(for: MediaItem.self) { MediaDetailView(item: $0) }
             .navigationDestination(for: SeerrGenre.self) { genre in
                 TVSeerrGridView(title: genre.name) {
                     await seerrRepo.discoverByGenre(genre.id, mediaType: mediaType)

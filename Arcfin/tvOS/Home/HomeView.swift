@@ -108,10 +108,10 @@ struct HomeView: View {
             .onAppear { isHomeShowing = true }
             .onDisappear { isHomeShowing = false }
             .navigationDestination(item: $model.detailItem) { item in
-                TVMediaDetailView(item: item)
+                MediaDetailView(item: item)
             }
             .navigationDestination(for: MediaItem.self) { item in
-                TVMediaDetailView(item: item)
+                MediaDetailView(item: item)
             }
             .navigationDestination(item: $model.seerrDetailItem) { item in
                 TVSeerrItemDetailView(item: item)

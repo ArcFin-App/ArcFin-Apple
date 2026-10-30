@@ -55,7 +55,7 @@ struct TVSeerrItemDetailView: View {
             .ignoresSafeArea()
         }
         .screenBackground()
-        .navigationDestination(item: $openLibraryItem) { TVMediaDetailView(item: $0) }
+        .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
         .navigationDestination(item: $openSeerrItem) { TVSeerrItemDetailView(item: $0) }
         .sheet(item: $requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)

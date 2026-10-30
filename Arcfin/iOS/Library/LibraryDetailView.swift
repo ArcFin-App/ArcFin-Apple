@@ -1,0 +1,268 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import SwiftUI
+import JellyfinAPI
+
+struct LibraryDetailView: View {
+    @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage("libraryGridDensity") private var gridDensity = LibraryGridDensity.normal
+
+    @State private var model: LibraryDetailModel
+    @State private var scrolledItemID: MediaItem.ID? = nil
+    @State private var trailerLaunchItem: MediaItem?
+    @State private var quickPlayRequest: PlaybackRequest?
+    @State private var showFilterSheet = false
+
+    init(library: JellyfinLibrary, playlist: MediaPlaylist? = nil, startsAddingTitles: Bool = false) {
+        _model = State(initialValue: LibraryDetailModel(library: library, playlist: playlist, startsAddingTitles: startsAddingTitles))
+    }
+
+    /// A playlist picked from the Playlists library.
+    init(playlistItem item: MediaItem, startsAddingTitles: Bool = false) {
+        self.init(
+            library: JellyfinLibrary(id: item.id, name: item.name, collectionType: .playlists),
+            playlist: MediaPlaylist(id: item.id, name: item.name, itemCount: 0, primaryImageTag: item.primaryImageTag),
+            startsAddingTitles: startsAddingTitles)
+    }
+
+    private var columns: [GridItem] {
+        // A wide window stretched a fixed 3-flexible-column grid into oversized posters —
+        // the same adaptive, density-driven sizing as macOS keeps cards a sane size there.
+        // By width, not device: an iPad in Split View or Slide Over is compact too.
+        if horizontalSizeClass == .regular {
+            return [GridItem(.adaptive(minimum: gridDensity.adaptiveMinimumWidth), spacing: 12)]
+        }
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: gridDensity.columnCount)
+    }
+
+    var body: some View {
+        Group {
+            if model.isLoading && model.items.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .screenBackground()
+            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive {
+                PlaylistEmptyState(
+                    title: "Empty Playlist",
+                    description: "Add movies, shows and episodes, or long-press any title and choose Add to Playlist.",
+                    buttonTitle: "Add Titles"
+                ) { model.showAddTitles = true }
+            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive {
+                PlaylistEmptyState(
+                    title: "No Playlists",
+                    description: "Make a playlist, then add movies, shows and episodes to it.",
+                    buttonTitle: "New Playlist"
+                ) { model.showNewPlaylist = true }
+            } else if model.items.isEmpty {
+                ContentUnavailableView(model.library.name,
+                                      systemImage: model.library.collectionType.systemIcon,
+                                      description: Text("Nothing found in this library."))
+                .screenBackground()
+            } else {
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        if model.playlist != nil { playlistHeader }
+                        LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
+                            ForEach(model.gridEntries) { entry in
+                                Group {
+                                    if entry.items.count > 1 {
+                                        showGroupCell(entry.items)
+                                    } else {
+                                        itemCell(entry.items[0])
+                                    }
+                                }
+                                .onAppear {
+                                    if let last = entry.items.last, model.shouldLoadMore(after: last) {
+                                        Task { await model.loadMore(authManager: authManager) }
+                                    }
+                                }
+                            }
+
+                            if model.isLoadingMore {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                            }
+                        }
+                        .padding(DT.Spacing.pagePad)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("library.grid")
+                    }
+                    .scrollPosition(id: $scrolledItemID)
+                    .modifier(PlaylistPageStyle(isPlaylist: model.playlist != nil, tint: model.playlistTint))
+                    .overlay {
+                        if model.showsLetterIndex {
+                            LetterIndexBar { letter in Task { await model.jump(to: letter, authManager: authManager) } }
+                        }
+                    }
+                    .onChange(of: model.jumpTarget) { _, target in
+                        guard let target else { return }
+                        proxy.scrollTo(target, anchor: .top)
+                        model.jumpTarget = nil
+                    }
+                }
+            }
+        }
+        // Large + pinned-on-scroll, matching Browse (the parent screen) — this used to fake
+        // its own title with a plain Text inside the ScrollView content instead, which just
+        // scrolled away with nothing left pinned once you scrolled past it.
+        // A playlist has its own title in the hero.
+        .navigationTitle(model.playlist != nil ? "" : (model.playlistName ?? model.library.name))
+        .navigationBarTitleDisplayMode(model.playlist != nil ? .inline : .large)
+        .toolbarBackground(model.playlist != nil ? .hidden : .automatic, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            LibraryDetailToolbar(model: model, gridDensity: $gridDensity, showFilterSheet: $showFilterSheet) {
+                Task { await model.pickRandom(authManager: authManager) }
+            }
+        }
+        .sheet(isPresented: $showFilterSheet) {
+            LibraryFilterSheet(
+                availableGenres: model.availableGenres, availableYears: model.availableYears, availableRatings: model.availableRatings, availableTags: model.availableTags,
+                selectedGenres: $model.selectedGenres, selectedYears: $model.selectedYears,
+                watchedFilter: $model.watchedFilter, favoritesOnly: $model.favoritesOnly, sortOption: $model.sortOption,
+                extraFilters: $model.extraFilters, sortOptions: model.sortOptions
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .onChange(of: model.selectedGenres) { _, _ in reload() }
+        .onChange(of: model.selectedYears) { _, _ in reload() }
+        .onChange(of: model.extraFilters) { _, _ in reload() }
+        .onChange(of: model.watchedFilter) { _, _ in reload() }
+        .onChange(of: model.favoritesOnly) { _, _ in reload() }
+        .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem)
+        .fullScreenCover(item: $model.playlistPlayback, onDismiss: {
+            PlayQueue.clear()
+            reload()
+        }) { request in
+            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                model.playlistPlayback = MediaDetailView.PlaybackRequest(item: next, startTicks: 0)
+            }
+            .id(request.item.id)
+        }
+        .navigationDestination(item: $model.randomPick) { pick in
+            if pick.type == .boxSet {
+                CollectionDetailView(collection: pick)
+            } else if pick.type == .playlist {
+                LibraryDetailView(playlistItem: pick)
+            } else {
+                MediaDetailView(item: pick)
+            }
+        }
+        .onChange(of: model.sortOption) { _, _ in
+            model.sortChanged(authManager: authManager, mediaRepo: mediaRepo)
+        }
+        .modifier(PlaylistModifiers(
+            isPlaylist: model.playlist != nil || model.isPlaylistsLibrary,
+            playback: $model.playlistPlayback,
+            showAddTitles: $model.showAddTitles,
+            showRename: $model.showRename,
+            renameText: $model.renameText,
+            confirmDelete: $model.confirmDeletePlaylist,
+            error: $model.playlistError,
+            playlistId: model.playlist?.id ?? "",
+            playlistName: model.playlistName ?? model.library.name,
+            existingIds: Set(model.items.map(\.id)),
+            onRename: { model.renamePlaylist($0, authManager: authManager) },
+            onDelete: { model.deletePlaylist(authManager: authManager) { dismiss() } },
+            onChanged: { reload() }
+        ))
+        .alert("New Playlist", isPresented: $model.showNewPlaylist) {
+            TextField("Name", text: $model.newPlaylistName)
+            Button("Cancel", role: .cancel) { model.newPlaylistName = "" }
+            Button("Create") { model.createPlaylist(authManager: authManager, mediaRepo: mediaRepo) }
+        }
+        .navigationDestination(item: $model.createdPlaylist) { created in
+            LibraryDetailView(
+                library: JellyfinLibrary(id: created.id, name: created.name, collectionType: .playlists),
+                playlist: created, startsAddingTitles: true)
+        }
+        .task { await model.load(authManager: authManager, mediaRepo: mediaRepo) }
+        .task { await model.loadFilterOptions(authManager: authManager) }
+        .task(id: model.playlistHeroURL(in: mediaRepo)) {
+            await model.loadPlaylistTint(mediaRepo: mediaRepo)
+        }
+    }
+
+    private func reload() {
+        Task { await model.reload(authManager: authManager, mediaRepo: mediaRepo) }
+    }
+
+    private var playlistHeader: some View {
+        PlaylistHeader(
+            heroURL: model.playlistHeroURL(in: mediaRepo),
+            posterURLs: model.items.prefix(3).map { LibraryItemText.posterURL($0, in: mediaRepo) },
+            name: model.playlistName ?? model.library.name,
+            count: model.items.count,
+            play: { model.playAllFromStart() },
+            shuffle: { model.shufflePlaylist() })
+    }
+
+    /// A playlist's titles open a Play / Show Details choice instead of their page.
+    @ViewBuilder
+    private func gridLink<Content: View>(for item: MediaItem, @ViewBuilder label: () -> Content) -> some View {
+        if model.playlist != nil {
+            // A menu opens the same way from every card; a confirmation dialog switched
+            // between a popover and a full sheet depending on the room around the card.
+            Menu { PlaylistItemActions(item: item, model: model) } label: { label() }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
+        } else {
+            NavigationLink(value: model.navTarget(for: item)) { label() }
+        }
+    }
+
+    private func itemCell(_ item: MediaItem) -> some View {
+        gridLink(for: item) {
+            LibraryItemCard(
+                imageURL: LibraryItemText.posterURL(item, in: mediaRepo),
+                title: LibraryItemText.title(item),
+                year: LibraryItemText.subtitle(item)
+            )
+        }
+        .buttonStyle(PressableButtonStyle())
+        .contextMenu(menuItems: { libraryMenu(item) }, preview: { LibraryItemPreview(item: item) })
+    }
+
+    private func showGroupCell(_ episodes: [MediaItem]) -> some View {
+        let first = episodes[0]
+        let subtitle = LibraryItemText.showGroupSubtitle(episodes)
+        return Menu {
+            PlaylistShowGroupActions(episodes: episodes, model: model)
+        } label: {
+            LibraryItemCard(imageURL: LibraryItemText.posterURL(first, in: mediaRepo), title: first.seriesName ?? first.name, year: subtitle)
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(PressableButtonStyle())
+        .contextMenu {
+            Button(role: .destructive) { model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo) } label: {
+                Label("Remove \(episodes.count) Episodes from Playlist", systemImage: "minus.circle")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func libraryMenu(_ item: MediaItem) -> some View {
+        if model.playlist != nil, model.entryIds[item.id] != nil {
+            Button(role: .destructive) { model.removeFromPlaylist(item, authManager: authManager, mediaRepo: mediaRepo) } label: {
+                Label("Remove from Playlist", systemImage: "minus.circle")
+            }
+        }
+        if item.type == .movie || item.type == .episode {
+            let ticks = (item.userData?.played == true) ? 0 : (item.userData?.playbackPositionTicks ?? 0)
+            Button { quickPlayRequest = PlaybackRequest(item: item, startTicks: ticks) } label: {
+                Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+            }
+        }
+        Button { trailerLaunchItem = item } label: {
+            Label("Play Trailer", systemImage: "play.rectangle")
+        }
+        LibraryQuickLookMenu(item: item)
+    }
+}

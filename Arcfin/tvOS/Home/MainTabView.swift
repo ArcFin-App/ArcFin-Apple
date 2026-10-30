@@ -21,7 +21,7 @@ struct MainTabView: View {
                     HomeView()
                 }
                 Tab("Library", systemImage: "square.grid.2x2") {
-                    TVLibraryView()
+                    LibraryView()
                 }
                 // Declared right after Library so it renders right after Library — on-device
                 // testing showed role: .search does NOT always pin to the far end of the bar
@@ -32,7 +32,7 @@ struct MainTabView: View {
                             .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
                             .screenBackground()
                             .navigationDestination(for: MediaItem.self) { item in
-                                TVMediaDetailView(item: item)
+                                MediaDetailView(item: item)
                             }
                             .navigationDestination(for: SeerrItem.self) { item in
                                 TVSeerrItemDetailView(item: item)

@@ -57,11 +57,7 @@ struct StatsView: View {
                 }
                 #endif
                 .navigationDestination(for: MediaItem.self) { item in
-                    #if os(tvOS)
-                    TVMediaDetailView(item: item)
-                    #else
                     MediaDetailView(item: item)
-                    #endif
                 }
                 .navigationDestination(for: MediaPerson.self) { PersonDetailView(person: $0) }
         }
