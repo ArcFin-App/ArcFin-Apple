@@ -233,52 +233,6 @@ struct PlaybackSettingsView: View {
     }
 }
 
-/// Settings › Playback › When Resuming: what Play does for a title that's part-watched.
-enum ResumeBehavior: String, CaseIterable, Identifiable {
-    case ask, resume, startOver
-    static let key = "resumeBehavior"
-    var id: String { rawValue }
-    var label: String {
-        switch self {
-        case .ask: String(localized: "Ask")
-        case .resume: String(localized: "Resume")
-        case .startOver: String(localized: "Start Over")
-        }
-    }
-    static var current: ResumeBehavior {
-        ResumeBehavior(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .resume
-    }
-}
-
-/// Settings › Playback › Mark as Watched: how far in closing the player counts as finished.
-enum WatchedThreshold: String, CaseIterable, Identifiable {
-    case server, credits, eighty, eightyFive
-    static let key = "markWatchedAt"
-    var id: String { rawValue }
-    var label: String {
-        switch self {
-        case .server: String(localized: "Server Default")
-        case .credits: String(localized: "When Credits Start")
-        case .eighty: String(localized: "At \(0.8.formatted(.percent))")
-        case .eightyFive: String(localized: "At \(0.85.formatted(.percent))")
-        }
-    }
-    static var current: WatchedThreshold {
-        WatchedThreshold(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .server
-    }
-
-    /// Whether stopping at `seconds` of `duration` counts, given where the credits start.
-    func isReached(seconds: Double, duration: Double, creditsStart: Double?) -> Bool {
-        guard duration > 0 else { return false }
-        switch self {
-        case .server: return false
-        case .credits: return seconds >= (creditsStart ?? duration * 0.95)
-        case .eighty: return seconds / duration >= 0.8
-        case .eightyFive: return seconds / duration >= 0.85
-        }
-    }
-}
-
 #Preview {
     NavigationStack { PlaybackSettingsView() }
         .environment(AuthManager())

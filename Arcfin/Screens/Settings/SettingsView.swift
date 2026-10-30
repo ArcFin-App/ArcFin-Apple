@@ -513,35 +513,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Settings models
-
-enum VideoQuality: String, CaseIterable, Identifiable {
-    case max = "Max", auto, p4k = "4K", p1080 = "1080p", p720 = "720p", p480 = "480p"
-    var id: String { rawValue }
-    var label: String {
-        switch self {
-        case .max:   String(localized: "Max Quality")
-        case .auto:  String(localized: "Auto (Recommended)")
-        case .p4k:   String(localized: "4K Ultra HD")
-        case .p1080: String(localized: "1080p HD")
-        case .p720:  String(localized: "720p")
-        case .p480:  String(localized: "480p")
-        }
-    }
-    /// Source pixel height this tier requires — nil for Auto/Max, which have no fixed
-    /// resolution floor. Used to hide tiers the current item's source can't actually supply
-    /// (no point offering 4K for a 1080p source).
-    var minSourceHeight: Int? {
-        switch self {
-        case .max, .auto: nil
-        case .p4k:   2160
-        case .p1080: 1080
-        case .p720:  720
-        case .p480:  480
-        }
-    }
-}
-
 // MARK: - Seerr plugin view
 
 struct SeerrPluginView: View {
@@ -1047,38 +1018,6 @@ private struct TVAddProfileFlowView: View {
     }
 }
 #endif
-
-/// An in-app choice writes AppleLanguages into Arcfin's own defaults, the same key the
-/// system's per-app language setting uses; Foundation reads it at launch.
-private enum AppLanguage {
-    private static let key = "AppleLanguages"
-
-    static let available = Bundle.main.localizations
-        .filter { $0 != "Base" }
-        .sorted { name(of: $0).localizedStandardCompare(name(of: $1)) == .orderedAscending }
-
-    static var isChoosable: Bool { available.count > 1 }
-
-    /// The choice this launch is running with, so a change can say it applies next time.
-    static let atLaunch = override ?? ""
-
-    static var override: String? {
-        get {
-            let domain = Bundle.main.bundleIdentifier.flatMap(UserDefaults.standard.persistentDomain(forName:))
-            return (domain?[key] as? [String])?.first.flatMap { available.contains($0) ? $0 : nil }
-        }
-        set {
-            if let newValue { UserDefaults.standard.set([newValue], forKey: key) }
-            else { UserDefaults.standard.removeObject(forKey: key) }
-        }
-    }
-
-    /// Each language in its own words, as language pickers show them.
-    static func name(of code: String) -> String {
-        let locale = Locale(identifier: code)
-        return locale.localizedString(forIdentifier: code)?.capitalized(with: locale) ?? code
-    }
-}
 
 #if !os(tvOS)
 /// Builds the report before offering it, so the share sheet opens on a finished file rather

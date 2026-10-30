@@ -159,6 +159,7 @@
 				tvOS/Search/SearchView.swift = (tvos, );
 				tvOS/Seerr/TVSeerrItemDetailView.swift = (tvos, );
 				tvOS/Seerr/TVSeerrView.swift = (tvos, );
+				tvOS/Settings/ProfileAccessView.swift = (tvos, );
 			};
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 		};
