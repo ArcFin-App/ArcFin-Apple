@@ -35,12 +35,12 @@ struct MainTabView: View {
                                 MediaDetailView(item: item)
                             }
                             .navigationDestination(for: SeerrItem.self) { item in
-                                TVSeerrItemDetailView(item: item)
+                                SeerrItemDetailView(item: item)
                             }
                     }
                 }
                 Tab("Requests", systemImage: "clock") {
-                    TVSeerrView()
+                    SeerrView()
                 }
                 if BottomNavPrefs.active(from: activeString).contains(.stats) {
                     Tab("Stats", systemImage: "chart.xyaxis.line") {
