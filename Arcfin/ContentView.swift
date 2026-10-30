@@ -280,6 +280,9 @@ struct ContentView: View {
                 PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                     playbackPresenter.present(next, onPlayNext: request.onPlayNext)
                 }
+                // A new request (the next episode) needs a new player: the same view would keep
+                // the finished episode's state and never set up the new one.
+                .id(request.id)
                 .transition(.opacity)
                 .zIndex(20)
             }
