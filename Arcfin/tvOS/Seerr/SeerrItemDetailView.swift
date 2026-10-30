@@ -7,33 +7,20 @@ import AuthCore
 
 /// A Seerr or TMDB title on tvOS, laid out like a library title's page: the artwork across
 /// the screen with the title's actions, then scores, where to watch, cast and related titles.
-struct TVSeerrItemDetailView: View {
-    let item: SeerrItem
-
+struct SeerrItemDetailView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
 
-    @State private var libraryItem: MediaItem?
-    @State private var openLibraryItem: MediaItem?
-    @State private var detail: SeerrMediaDetail?
-    @State private var certification: String?
-    @State private var moreLikeThis: [SeerrItem] = []
-    @State private var companyRow: (name: String, items: [SeerrItem])?
-    @State private var keywordRow: (name: String, items: [SeerrItem])?
-    @State private var openSeerrItem: SeerrItem?
-    @State private var requestingItem: SeerrItem?
+    @State private var model: SeerrItemDetailModel
     @State private var showFullDescription = false
     @Namespace private var focusNamespace
 
-    private var hasRequestableContent: Bool {
-        guard item.mediaType == .tv, let rows = detail?.seasonRows else { return seerrRepo.matchingRequest(for: item) == nil }
-        return !SeerrSeasonSelection.unrequested(rows).isEmpty
+    init(item: SeerrItem) {
+        _model = State(initialValue: SeerrItemDetailModel(item: item))
     }
 
-    private var canRequest: Bool {
-        seerrRepo.isConfigured && item.availabilityStatus != .available
-            && !(item.mediaType == .movie && libraryItem != nil) && hasRequestableContent
-    }
+    private var item: SeerrItem { model.item }
+    private var detail: SeerrMediaDetail? { model.detail }
 
     private var statusLabel: (label: String, colorHex: String)? {
         if let status = item.availabilityStatus { return (status.label, status.colorHex) }
@@ -55,18 +42,16 @@ struct TVSeerrItemDetailView: View {
             .ignoresSafeArea()
         }
         .screenBackground()
-        .navigationDestination(item: $openLibraryItem) { MediaDetailView(item: $0) }
-        .navigationDestination(item: $openSeerrItem) { TVSeerrItemDetailView(item: $0) }
-        .sheet(item: $requestingItem) { item in
-            SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
+        .navigationDestination(item: $model.openLibraryItem) { MediaDetailView(item: $0) }
+        .navigationDestination(item: $model.openSeerrItem) { SeerrItemDetailView(item: $0) }
+        .sheet(item: $model.requestingItem) { item in
+            SeerrRequestConfirmSheet(item: item, requestingItem: $model.requestingItem)
         }
         .fullScreenCover(isPresented: $showFullDescription) { fullDescription }
-        .task(id: item.id) {
-            detail = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
-        }
-        .task(id: item.id) { await loadDiscovery() }
-        .task(id: item.id) { await loadLibraryItem() }
-        .task(id: item.id) { certification = await seerrRepo.certification(for: item) }
+        .task(id: item.id) { await model.loadDetail(seerrRepo: seerrRepo) }
+        .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
+        .task(id: item.id) { await model.loadLibraryItem(authManager: authManager) }
+        .task(id: item.id) { await model.loadCertification(seerrRepo: seerrRepo) }
     }
 
     // MARK: - Showcase
@@ -124,7 +109,7 @@ struct TVSeerrItemDetailView: View {
                 dot
                 Text(year)
             }
-            if let certification, !certification.isEmpty {
+            if let certification = model.certification, !certification.isEmpty {
                 dot
                 Text(certification)
                     .font(.system(size: 23, weight: .semibold))
@@ -162,15 +147,15 @@ struct TVSeerrItemDetailView: View {
 
     private var actions: some View {
         VStack(spacing: 14) {
-            if canRequest {
-                Button { requestingItem = item } label: {
+            if model.canRequest(seerrRepo: seerrRepo) {
+                Button { model.requestingItem = item } label: {
                     TVDetailButtonLabel(icon: "plus.circle.fill", text: "Request", isPrimary: true)
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
                 .prefersDefaultFocus(true, in: focusNamespace)
-            } else if let libraryItem {
-                Button { openLibraryItem = libraryItem } label: {
+            } else if let libraryItem = model.libraryItem {
+                Button { model.openLibraryItem = libraryItem } label: {
                     TVDetailButtonLabel(icon: "play.rectangle.fill", text: "View in Library", isPrimary: true)
                 }
                 .buttonStyle(TVCardButtonStyle())
@@ -179,7 +164,7 @@ struct TVSeerrItemDetailView: View {
             }
             if seerrRepo.isConfigured {
                 let inWatchlist = seerrRepo.isInWatchlist(item)
-                Button { toggleWatchlist() } label: {
+                Button { model.toggleWatchlist(seerrRepo: seerrRepo) } label: {
                     TVDetailButtonLabel(icon: inWatchlist ? "bookmark.fill" : "bookmark",
                                         text: inWatchlist ? "On Watchlist" : "Watchlist")
                 }
@@ -238,9 +223,9 @@ struct TVSeerrItemDetailView: View {
                 .focusSection()
             if let seasons = detail?.seasons, !seasons.isEmpty { seasonsRow(seasons) }
             if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
-            if !moreLikeThis.isEmpty { discoveryRow("More Like This", moreLikeThis) }
-            if let companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
-            if let keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+            if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
+            if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
+            if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
             TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
                 .padding(.horizontal, 80)
                 .focusSection()
@@ -328,7 +313,7 @@ struct TVSeerrItemDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(items) { related in
-                        Button { openSeerrItem = related } label: {
+                        Button { model.openSeerrItem = related } label: {
                             PosterCard(title: related.title, subtitle: related.year,
                                        imageURL: related.backdropURL ?? related.posterURL)
                         }
@@ -364,41 +349,6 @@ struct TVSeerrItemDetailView: View {
                 }
                 .padding(80)
             }
-        }
-    }
-
-    // MARK: - Load
-
-    private func toggleWatchlist() {
-        Task {
-            if seerrRepo.isInWatchlist(item) {
-                try? await seerrRepo.removeFromWatchlist(item)
-            } else {
-                try? await seerrRepo.addToWatchlist(item)
-            }
-        }
-    }
-
-    private func loadLibraryItem() async {
-        guard let cred = authManager.state.credential else { return }
-        let header = authManager.authClient.authHeader(token: cred.accessToken)
-        libraryItem = try? await JellyfinMediaClient().findItem(
-            credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
-            title: item.title, year: item.year.flatMap { Int($0.prefix(4)) })
-    }
-
-    private func loadDiscovery() async {
-        async let related = seerrRepo.relatedMedia(mediaType: item.mediaType, mediaId: item.id)
-        async let info = seerrRepo.relatedInfo(mediaType: item.mediaType, tmdbId: item.id)
-        moreLikeThis = Array(await related.filter { $0.id != item.id }.prefix(20))
-        guard let info = await info else { return }
-        if let company = info.companies.first {
-            let items = await seerrRepo.discoverByCompany(company.id, mediaType: item.mediaType).filter { $0.id != item.id }
-            if items.count >= 3 { companyRow = (company.name, Array(items.prefix(20))) }
-        }
-        if item.mediaType == .movie, let keyword = info.keywords.first {
-            let items = await seerrRepo.discoverByKeyword(keyword.id).filter { $0.id != item.id }
-            if items.count >= 3 { keywordRow = (keyword.name, Array(items.prefix(20))) }
         }
     }
 }

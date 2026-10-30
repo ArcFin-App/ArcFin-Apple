@@ -44,7 +44,7 @@ struct PersonDetailView: View {
         .navigationDestination(item: $selectedItem) { item in
             MediaDetailView(item: item)
         }
-        .navigationDestination(item: $openCredit) { TVSeerrItemDetailView(item: $0) }
+        .navigationDestination(item: $openCredit) { SeerrItemDetailView(item: $0) }
         .task { await model.load(authManager: authManager, seerrRepo: seerrRepo) }
     }
 }

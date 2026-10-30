@@ -94,7 +94,7 @@ struct MediaDetailView: View {
                 playbackRequest = Arcfin.PlaybackRequest(item: next, startTicks: 0)
             }
         }
-        .navigationDestination(item: $openSeerrItem) { TVSeerrItemDetailView(item: $0) }
+        .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
         .sheet(isPresented: $showSubtitleSearch) {
             NavigationStack {
                 SubtitleSearchView(itemId: item.id)

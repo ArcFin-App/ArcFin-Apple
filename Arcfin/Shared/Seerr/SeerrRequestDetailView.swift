@@ -14,9 +14,6 @@ struct SeerrRequestDetailView: View {
     @State private var showCancelConfirm = false
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = false
-    #if !os(tvOS)
-    @State private var showTrailer = false
-    #endif
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -24,7 +21,9 @@ struct SeerrRequestDetailView: View {
                 heroSection
                 titleBlock
                 removeRequestButton
-                trailerButton
+                if let key = detail?.trailerYouTubeKey {
+                    SeerrTrailerButton(videoID: key, title: request.mediaTitle)
+                }
 
                 VStack(alignment: .leading, spacing: DT.Spacing.md) {
                     if let genres = detail?.genres, !genres.isEmpty {
@@ -76,10 +75,7 @@ struct SeerrRequestDetailView: View {
         .screenBackground()
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        #endif
+        .transparentInlineNavigationBar()
         .confirmationDialog(
             "Remove this request?",
             isPresented: $showCancelConfirm,
@@ -224,41 +220,6 @@ struct SeerrRequestDetailView: View {
         .disabled(isCancelling)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
-    }
-
-    @ViewBuilder
-    private var trailerButton: some View {
-        #if !os(tvOS)
-        if let key = detail?.trailerYouTubeKey {
-            Button {
-                showTrailer = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "film").font(.system(.subheadline))
-                    Text("Play Trailer").font(.system(.subheadline, design: .default, weight: .semibold))
-                }
-                .foregroundStyle(DT.Color.textPrimary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(DT.Color.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.bottom, DT.Spacing.md)
-            #if os(iOS)
-            .fullScreenCover(isPresented: $showTrailer) {
-                YouTubeTrailerPlayerView(videoID: key, title: request.mediaTitle)
-            }
-            #else
-            .sheet(isPresented: $showTrailer) {
-                YouTubeTrailerPlayerView(videoID: key, title: request.mediaTitle)
-                    .frame(minWidth: 800, minHeight: 450)
-            }
-            #endif
-        }
-        #endif
     }
 
     // MARK: - Title block

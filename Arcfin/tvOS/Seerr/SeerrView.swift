@@ -4,23 +4,14 @@ import SwiftUI
 import SeerrAPI
 import JellyfinAPI
 
-struct TVSeerrView: View {
+struct SeerrView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
-    @State private var mediaType: RequestMediaType = .movie
-    @State private var languageItems: [SeerrItem] = []
+    @State private var model = SeerrDiscoverModel()
 
-    private var trendingForType: [SeerrItem] {
-        let trending = seerrRepo.trending.filter { $0.mediaType == mediaType }
-        return trending.isEmpty ? (mediaType == .tv ? seerrRepo.popularTV : seerrRepo.popularMovies) : trending
-    }
+    private var trendingForType: [SeerrItem] { model.trending(in: seerrRepo) }
 
-    private var showsTrending: Bool { seerrRepo.trending.contains { $0.mediaType == mediaType } }
-
-    private var deviceLanguage: String? {
-        guard let code = Locale.current.language.languageCode?.identifier, code != "en" else { return nil }
-        return code
-    }
+    private var showsTrending: Bool { model.showsTrending(in: seerrRepo) }
 
     var body: some View {
         NavigationStack {
@@ -34,27 +25,20 @@ struct TVSeerrView: View {
                 }
             }
             .screenBackground()
-            .navigationDestination(for: SeerrItem.self) { TVSeerrItemDetailView(item: $0) }
+            .navigationDestination(for: SeerrItem.self) { SeerrItemDetailView(item: $0) }
             .navigationDestination(for: MediaItem.self) { MediaDetailView(item: $0) }
             .navigationDestination(for: SeerrGenre.self) { genre in
                 TVSeerrGridView(title: genre.name) {
-                    await seerrRepo.discoverByGenre(genre.id, mediaType: mediaType)
+                    await seerrRepo.discoverByGenre(genre.id, mediaType: model.mediaType)
                 }
             }
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
-            async let discover: Void = seerrRepo.loadDiscover()
-            async let genres: Void = seerrRepo.loadGenres()
-            async let upcoming: Void = seerrRepo.loadUpcoming()
-            async let watchlist: Void = seerrRepo.loadWatchlist()
-            _ = await (discover, genres, upcoming, watchlist)
+            await model.load(seerrRepo: seerrRepo)
             await seerrRepo.loadRequests()
         }
-        .task(id: mediaType) {
-            guard let deviceLanguage else { return }
-            languageItems = await seerrRepo.discoverByLanguage(deviceLanguage, mediaType: mediaType)
-        }
+        .task(id: model.mediaType) { await model.loadLanguageItems(seerrRepo: seerrRepo) }
     }
 
     // MARK: - Auth failed
@@ -116,17 +100,16 @@ struct TVSeerrView: View {
                 } else if !trendingForType.isEmpty {
                     tvShelf(title: showsTrending ? "Trending Now" : "Popular", items: trendingForType)
                 }
-                let upcoming = mediaType == .tv ? seerrRepo.upcomingTV : seerrRepo.upcomingMovies
+                let upcoming = model.upcoming(in: seerrRepo)
                 if !upcoming.isEmpty {
                     tvShelf(title: "Upcoming", items: upcoming)
                 }
-                let popular = mediaType == .tv ? seerrRepo.popularTV : seerrRepo.popularMovies
+                let popular = model.popular(in: seerrRepo)
                 if showsTrending, !popular.isEmpty {
-                    tvShelf(title: mediaType == .tv ? "Popular Series" : "Popular Movies", items: popular)
+                    tvShelf(title: model.mediaType == .tv ? "Popular Series" : "Popular Movies", items: popular)
                 }
-                if !languageItems.isEmpty, let deviceLanguage,
-                   let name = Locale.current.localizedString(forLanguageCode: deviceLanguage) {
-                    tvShelf(title: "Popular in \(name)", items: languageItems)
+                if !model.languageItems.isEmpty, let name = model.languageName {
+                    tvShelf(title: "Popular in \(name)", items: model.languageItems)
                 }
                 genreRow
 
@@ -142,7 +125,7 @@ struct TVSeerrView: View {
 
     private var topRow: some View {
         HStack(spacing: 20) {
-            Picker("Media Type", selection: $mediaType) {
+            Picker("Media Type", selection: $model.mediaType) {
                 Text("Movies").tag(RequestMediaType.movie)
                 Text("Series").tag(RequestMediaType.tv)
             }
@@ -204,7 +187,7 @@ struct TVSeerrView: View {
 
     @ViewBuilder
     private var genreRow: some View {
-        let genres = mediaType == .tv ? seerrRepo.tvGenres : seerrRepo.movieGenres
+        let genres = model.genres(in: seerrRepo)
         if !genres.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Genres")

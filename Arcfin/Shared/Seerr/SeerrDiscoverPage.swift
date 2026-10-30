@@ -3,55 +3,24 @@
 import SwiftUI
 import SeerrAPI
 
-struct SeerrView: View {
+/// Discover on iPhone, iPad and Mac: trending, upcoming and genre grids of request cards, and
+/// Seerr search. Each platform's `SeerrView` passes its grid columns and spacing.
+struct SeerrDiscoverPage: View {
+    @Bindable var model: SeerrDiscoverModel
+    let discoverColumns: [GridItem]
+    let gridSpacing: CGFloat
+
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
 
-    @State private var mediaType: RequestMediaType = .movie
-    @State private var selectedGenre: SeerrGenre? = nil
-    @State private var genreResults: [SeerrItem] = []
-    @State private var isLoadingGenre = false
     @State private var searchText = ""
-    @State private var searchResults: [SeerrItem] = []
-    @State private var isSearching = false
-    @State private var searchTask: Task<Void, Never>?
     @State private var requestingItem: SeerrItem? = nil
     @State private var openedItem: SeerrItem?
-    /// Popular titles first made in this device's language, when it isn't English.
-    @State private var languageItems: [SeerrItem] = []
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    /// Two across fits a phone; on a wider iPad two stretched each poster to half the
-    /// screen, so it fills the width with posters of a phone-like size instead.
-    private var discoverColumns: [GridItem] {
-        if horizontalSizeClass == .regular {
-            return [GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 8)]
-        }
-        return [.init(.flexible()), .init(.flexible())]
-    }
-#elseif os(macOS)
-    private let discoverColumns = [GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 12)]
-#else
-    private let discoverColumns: [GridItem] = [.init(.flexible()), .init(.flexible())]
-#endif
-
-    private var genresForType: [SeerrGenre] {
-        mediaType == .tv ? seerrRepo.tvGenres : seerrRepo.movieGenres
-    }
-
-    private var trendingForType: [SeerrItem] {
-        let trending = seerrRepo.trending.filter { $0.mediaType == mediaType }
-        // Seerr can fail trending on its own (500 when its TMDB request fails); popular
-        // titles stand in rather than an empty page.
-        return trending.isEmpty ? (mediaType == .tv ? seerrRepo.popularTV : seerrRepo.popularMovies) : trending
-    }
-
-    private var showsTrending: Bool { seerrRepo.trending.contains { $0.mediaType == mediaType } }
-
-    private var upcomingForType: [SeerrItem] {
-        mediaType == .tv ? seerrRepo.upcomingTV : seerrRepo.upcomingMovies
-    }
+    private var genresForType: [SeerrGenre] { model.genres(in: seerrRepo) }
+    private var trendingForType: [SeerrItem] { model.trending(in: seerrRepo) }
+    private var showsTrending: Bool { model.showsTrending(in: seerrRepo) }
+    private var upcomingForType: [SeerrItem] { model.upcoming(in: seerrRepo) }
 
     var body: some View {
         NavigationStack {
@@ -76,25 +45,16 @@ struct SeerrView: View {
         }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
-            // Refetches live every time this appears, but loadDiscover() only flips the
-            // loading flag (and so only shows a skeleton) when there's truly nothing cached
-            // yet — otherwise this updates the already-visible list in place.
-            async let discover: Void = seerrRepo.loadDiscover()
-            async let genres: Void = seerrRepo.loadGenres()
-            async let upcoming: Void = seerrRepo.loadUpcoming()
-            // The bookmarks on every card read it.
-            async let watchlist: Void = seerrRepo.loadWatchlist()
-            _ = await (discover, genres, upcoming, watchlist)
+            await model.load(seerrRepo: seerrRepo)
         }
         .onChange(of: searchText) { _, query in
-            performSearch(query: query)
+            model.search(query, seerrRepo: seerrRepo)
         }
-        .onChange(of: selectedGenre) { _, genre in
-            loadGenreResults(genre)
+        .onChange(of: model.selectedGenre) { _, genre in
+            model.loadGenreResults(genre, seerrRepo: seerrRepo)
         }
-        .onChange(of: mediaType) { _, _ in
-            selectedGenre = nil
-            genreResults = []
+        .onChange(of: model.mediaType) { _, _ in
+            model.mediaTypeChanged()
         }
         .sheet(item: $requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
@@ -131,7 +91,7 @@ struct SeerrView: View {
                 header
                 if !searchText.isEmpty {
                     searchResultsSection
-                } else if let selectedGenre {
+                } else if let selectedGenre = model.selectedGenre {
                     genreResultsSection(selectedGenre)
                 } else {
                     if seerrRepo.isLoadingDiscover && trendingForType.isEmpty {
@@ -144,21 +104,15 @@ struct SeerrView: View {
                     if !upcomingForType.isEmpty {
                         upcomingSection
                     }
-                    if !languageItems.isEmpty, let languageName {
-                        itemGrid(title: "Popular in \(languageName)", items: Array(languageItems.prefix(10)), isLoading: false)
+                    if !model.languageItems.isEmpty, let languageName = model.languageName {
+                        itemGrid(title: "Popular in \(languageName)", items: Array(model.languageItems.prefix(10)), isLoading: false)
                     }
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
         }
-        .refreshable {
-            async let discover: Void = seerrRepo.loadDiscover()
-            async let upcoming: Void = seerrRepo.loadUpcoming()
-            async let watchlist: Void = seerrRepo.loadWatchlist()
-            _ = await (discover, upcoming, watchlist)
-            await loadLanguageItems()
-        }
-        .task(id: mediaType) { await loadLanguageItems() }
+        .refreshable { await model.refresh(seerrRepo: seerrRepo) }
+        .task(id: model.mediaType) { await model.loadLanguageItems(seerrRepo: seerrRepo) }
     }
 
     // MARK: - Header
@@ -167,7 +121,7 @@ struct SeerrView: View {
         VStack(alignment: .leading, spacing: 0) {
             if searchText.isEmpty {
                 // Movies / TV Shows
-                Picker("Media Type", selection: $mediaType) {
+                Picker("Media Type", selection: $model.mediaType) {
                     Text("Movies").tag(RequestMediaType.movie)
                     Text("TV Shows").tag(RequestMediaType.tv)
                 }
@@ -177,12 +131,12 @@ struct SeerrView: View {
                 // Genre chips
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
-                        genreChip(label: "All", isSelected: selectedGenre == nil) {
-                            withAnimation(DT.Animation.fast) { selectedGenre = nil }
+                        genreChip(label: "All", isSelected: model.selectedGenre == nil) {
+                            withAnimation(DT.Animation.fast) { model.selectedGenre = nil }
                         }
                         ForEach(genresForType) { genre in
-                            genreChip(label: genre.name, isSelected: selectedGenre == genre) {
-                                withAnimation(DT.Animation.fast) { selectedGenre = genre }
+                            genreChip(label: genre.name, isSelected: model.selectedGenre == genre) {
+                                withAnimation(DT.Animation.fast) { model.selectedGenre = genre }
                             }
                         }
                     }
@@ -212,20 +166,6 @@ struct SeerrView: View {
     }
 
     // MARK: - Trending / Upcoming / Genre sections
-
-    private var deviceLanguage: String? {
-        guard let code = Locale.current.language.languageCode?.identifier, code != "en" else { return nil }
-        return code
-    }
-
-    private var languageName: String? {
-        deviceLanguage.flatMap { Locale.current.localizedString(forLanguageCode: $0) }
-    }
-
-    private func loadLanguageItems() async {
-        guard let deviceLanguage else { return }
-        languageItems = await seerrRepo.discoverByLanguage(deviceLanguage, mediaType: mediaType)
-    }
 
     private func discoverErrorCard(_ message: String) -> some View {
         VStack(spacing: 10) {
@@ -261,7 +201,7 @@ struct SeerrView: View {
     }
 
     private func genreResultsSection(_ genre: SeerrGenre) -> some View {
-        itemGrid(title: genre.name, items: genreResults, isLoading: isLoadingGenre)
+        itemGrid(title: genre.name, items: model.genreResults, isLoading: model.isLoadingGenre)
     }
 
     private func itemGrid(title: String, items: [SeerrItem], isLoading: Bool) -> some View {
@@ -281,64 +221,15 @@ struct SeerrView: View {
                 ContentUnavailableView("Nothing Here", systemImage: "film")
                     .frame(height: 160)
             } else {
-#if os(tvOS)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: DT.Spacing.shelfGap) {
-                        ForEach(items) { item in
-                            Button { requestingItem = item } label: {
-                                PosterCard(
-                                    title: item.title,
-                                    subtitle: item.year,
-                                    imageURL: item.backdropURL ?? item.posterURL
-                                )
-                            }
-                            .buttonStyle(TVCardButtonStyle())
-                            .focusEffectDisabled()
-                        }
-                    }
-                    .padding(.horizontal, DT.Spacing.pagePad)
-                    .focusSection()
-                }
-                .shelfScrollButtons()
-#elseif os(macOS)
-                LazyVGrid(columns: discoverColumns, spacing: 12) {
+                LazyVGrid(columns: discoverColumns, spacing: gridSpacing) {
                     ForEach(items) { item in
                         discoverCard(item)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
-#else
-                LazyVGrid(columns: discoverColumns, spacing: 8) {
-                    ForEach(items) { item in
-                        discoverCard(item)
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-#endif
             }
         }
         .padding(.bottom, DT.Spacing.md)
-    }
-
-    private func loadGenreResults(_ genre: SeerrGenre?) {
-        guard let genre else { genreResults = []; return }
-        isLoadingGenre = true
-        genreResults = []
-        Task {
-            genreResults = await seerrRepo.discoverByGenre(genre.id, mediaType: mediaType)
-            isLoadingGenre = false
-        }
-    }
-
-    private func toggleWatchlist(_ item: SeerrItem) {
-        HapticManager.impact(.light)
-        Task {
-            if seerrRepo.isInWatchlist(item) {
-                try? await seerrRepo.removeFromWatchlist(item)
-            } else {
-                try? await seerrRepo.addToWatchlist(item)
-            }
-        }
     }
 
     private func discoverCard(_ item: SeerrItem) -> some View {
@@ -350,7 +241,7 @@ struct SeerrView: View {
             let alreadyRequested = seerrRepo.matchingRequest(for: item) != nil
             let isAvailable = mediaRepo.hasInLibrary(item)
             Button {
-                toggleWatchlist(item)
+                model.toggleWatchlist(item, seerrRepo: seerrRepo)
             } label: {
                 Label(
                     seerrRepo.isInWatchlist(item) ? "Remove from Watchlist" : "Add to Watchlist",
@@ -426,7 +317,7 @@ struct SeerrView: View {
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                     Spacer()
-                    Button { toggleWatchlist(item) } label: {
+                    Button { model.toggleWatchlist(item, seerrRepo: seerrRepo) } label: {
                         Image(systemName: seerrRepo.isInWatchlist(item) ? "bookmark.fill" : "bookmark")
                             .font(.system(.caption2, weight: .semibold))
                             .foregroundStyle(.white)
@@ -521,21 +412,6 @@ struct SeerrView: View {
 
     // MARK: - Search
 
-    /// Debounced, and a response for an older query never replaces a newer one's results.
-    private func performSearch(query: String) {
-        searchTask?.cancel()
-        guard !query.isEmpty else { searchResults = []; isSearching = false; return }
-        isSearching = true
-        searchTask = Task {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            let results = await seerrRepo.search(query: query)
-            guard !Task.isCancelled else { return }
-            searchResults = results
-            isSearching = false
-        }
-    }
-
     private var searchResultsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -543,48 +419,20 @@ struct SeerrView: View {
                     .font(DT.Font.cardTitle)
                     .foregroundStyle(DT.Color.textPrimary)
                 Spacer()
-                if isSearching { ProgressView().scaleEffect(0.7) }
+                if model.isSearching { ProgressView().scaleEffect(0.7) }
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 
-            if !isSearching && searchResults.isEmpty {
+            if !model.isSearching && model.searchResults.isEmpty {
                 ContentUnavailableView.search(text: searchText)
                     .frame(height: 200)
             } else {
-#if os(tvOS)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: DT.Spacing.shelfGap) {
-                        ForEach(searchResults) { item in
-                            Button { requestingItem = item } label: {
-                                PosterCard(
-                                    title: item.title,
-                                    subtitle: item.year,
-                                    imageURL: item.backdropURL ?? item.posterURL
-                                )
-                            }
-                            .buttonStyle(TVCardButtonStyle())
-                            .focusEffectDisabled()
-                        }
-                    }
-                    .padding(.horizontal, DT.Spacing.pagePad)
-                    .focusSection()
-                }
-                .shelfScrollButtons()
-#elseif os(macOS)
-                LazyVGrid(columns: discoverColumns, spacing: 12) {
-                    ForEach(searchResults) { item in
+                LazyVGrid(columns: discoverColumns, spacing: gridSpacing) {
+                    ForEach(model.searchResults) { item in
                         discoverCard(item)
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
-#else
-                LazyVGrid(columns: discoverColumns, spacing: 8) {
-                    ForEach(searchResults) { item in
-                        discoverCard(item)
-                    }
-                }
-                .padding(.horizontal, DT.Spacing.pagePad)
-#endif
             }
         }
         .padding(.bottom, DT.Spacing.md)

@@ -126,6 +126,11 @@
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Player/CastMiniController.swift = (ios, );
 				iOS/Search/SearchView.swift = (ios, );
+				iOS/Seerr/SeerrItemDetailView.swift = (ios, );
+				iOS/Seerr/SeerrPlatform.swift = (ios, );
+				iOS/Seerr/SeerrTrailerButton.swift = (ios, );
+				iOS/Seerr/SeerrView.swift = (ios, );
+				iOS/Seerr/WatchlistView.swift = (ios, );
 				iOS/Splash/SplashScale.swift = (ios, );
 				macOS/Detail/MediaDetailView.swift = (macos, );
 				macOS/Detail/PersonDetailView.swift = (macos, );
@@ -152,6 +157,11 @@
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/ScrubGesture.swift = (macos, );
 				macOS/Search/SearchView.swift = (macos, );
+				macOS/Seerr/SeerrItemDetailView.swift = (macos, );
+				macOS/Seerr/SeerrPlatform.swift = (macos, );
+				macOS/Seerr/SeerrTrailerButton.swift = (macos, );
+				macOS/Seerr/SeerrView.swift = (macos, );
+				macOS/Seerr/WatchlistView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
 				macOS/Splash/SplashScale.swift = (macos, );
 				tvOS/Detail/MediaDetailView.swift = (tvos, );
@@ -177,8 +187,11 @@
 				tvOS/Platform/ScrubGesture.swift = (tvos, );
 				tvOS/Player/TVRemoteScrub.swift = (tvos, );
 				tvOS/Search/SearchView.swift = (tvos, );
-				tvOS/Seerr/TVSeerrItemDetailView.swift = (tvos, );
-				tvOS/Seerr/TVSeerrView.swift = (tvos, );
+				tvOS/Seerr/SeerrItemDetailView.swift = (tvos, );
+				tvOS/Seerr/SeerrPlatform.swift = (tvos, );
+				tvOS/Seerr/SeerrTrailerButton.swift = (tvos, );
+				tvOS/Seerr/SeerrView.swift = (tvos, );
+				tvOS/Seerr/WatchlistView.swift = (tvos, );
 				tvOS/Splash/SplashScale.swift = (tvos, );
 			};
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
