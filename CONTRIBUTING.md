@@ -75,6 +75,7 @@ Each screen is moving to its own view per platform over shared logic ([#198](htt
 - Inside each folder, one subfolder per screen: `Shared/Home/`, `iOS/Home/`, `tvOS/Home/` and so on.
 - **Each platform names the screen the same**: `iOS/Search/SearchView.swift`, `macOS/Search/SearchView.swift` and `tvOS/Search/SearchView.swift` all define `SearchView`. Only one of them builds for each platform, so code that opens Search writes `SearchView(...)` and gets that platform's screen with no `#if`.
 - **No `#if os(...)` in a platform folder.** CI fails if one appears. If two platforms need the same code, it belongs in `Shared/`.
+- **Small differences inside a shared view** (pointer hover, focus) go through a modifier that each platform defines under the same name in its `Platform/` folder. For example, `onPointerHover` in `iOS/Platform/PointerHover.swift` uses `onHover`, and the tvOS one does nothing. The shared view calls it without `#if`.
 - **Logic goes in `Shared/`.** A platform view lays the screen out and calls the shared state; it doesn't load, filter or decide anything itself.
 - **iPad** isn't a separate platform to the compiler: `#if os(iOS)` is true on iPad and it's one app. The iOS screen shows the iPad view when the window is wide (`horizontalSizeClass == .regular`), so Split View, Slide Over and Stage Manager get the right layout. Add an iPad view only when its layout differs.
 - Screens that haven't moved yet are still in `Arcfin/Screens/`, with `#if os(...)` inside. They move one at a time.
