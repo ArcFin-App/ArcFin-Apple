@@ -4,46 +4,60 @@ import SwiftUI
 import Persistence
 import JellyfinAPI
 
-/// A downloaded movie or episode, laid out like its page online (hero, poster and title,
-/// play, overview, details, cast) from what was saved with the download, so it reads the
-/// same with no connection.
-struct DownloadedItemDetailView: View {
-    let item: DownloadedItem
-
-    @Environment(DownloadManager.self) private var downloadManager
-    @Environment(\.dismiss) private var dismiss
-    @State private var playingItem: DownloadedItem?
-    @State private var startOverride: Int64?
-    @State private var showDeleteConfirm = false
-    @State private var heroTint: Color?
+/// A downloaded title's page state, shared by every platform's `DownloadedItemDetailView`.
+@MainActor @Observable
+final class DownloadedItemDetailModel {
+    var playingItem: DownloadedItem?
+    private(set) var startOverride: Int64?
+    var showDeleteConfirm = false
+    private(set) var heroTint: Color?
     /// The server's full page, kept with the download.
-    @State private var saved: MediaItemDetail?
+    private(set) var saved: MediaItemDetail?
 
-    private var isResumable: Bool { item.playbackPositionTicks > 0 && !item.played }
-    private var isEpisode: Bool { item.seriesId != nil }
+    func load(_ item: DownloadedItem, downloadManager: DownloadManager) async {
+        saved = downloadManager.savedDetail(itemId: item.itemId)
+        if let url = Self.heroURL(for: item) { heroTint = await AverageColor.load(from: url) }
+    }
 
-    private var dir: URL { DownloadStore.directory(for: item.itemId) }
+    /// Plays from the saved position, or from `startOverride` (0 for Start Over).
+    func play(_ item: DownloadedItem, startOverride: Int64?) {
+        self.startOverride = startOverride
+        playingItem = item
+    }
 
-    private func fileURL(_ name: String?) -> URL? {
+    static func fileURL(_ name: String?, of item: DownloadedItem) -> URL? {
         guard let name, !name.isEmpty else { return nil }
-        return dir.appendingPathComponent(name)
+        return DownloadStore.directory(for: item.itemId).appendingPathComponent(name)
     }
 
     /// An episode rarely has its own backdrop: the show's, saved with its first download, is
     /// the better hero; the episode's own still comes last.
-    private var heroURL: URL? {
-        if let backdrop = fileURL(item.backdropFileName) { return backdrop }
+    static func heroURL(for item: DownloadedItem) -> URL? {
+        if let backdrop = fileURL(item.backdropFileName, of: item) { return backdrop }
         if let seriesId = item.seriesId {
             let seriesBackdrop = DownloadStore.directory(for: seriesId).appendingPathComponent("backdrop.jpg")
             if FileManager.default.fileExists(atPath: seriesBackdrop.path) { return seriesBackdrop }
         }
-        return fileURL(item.posterFileName)
+        return fileURL(item.posterFileName, of: item)
     }
+}
+
+/// A downloaded movie or episode, laid out like its page online (hero, poster and title,
+/// play, overview, details, cast) from what was saved with the download, so it reads the
+/// same with no connection.
+struct DownloadedItemDetailPage: View {
+    let item: DownloadedItem
+    let model: DownloadedItemDetailModel
+
+    private var isResumable: Bool { item.playbackPositionTicks > 0 && !item.played }
+    private var isEpisode: Bool { item.seriesId != nil }
+
+    private func fileURL(_ name: String?) -> URL? { DownloadedItemDetailModel.fileURL(name, of: item) }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                DetailHeroBackdrop(url: heroURL)
+                DetailHeroBackdrop(url: DownloadedItemDetailModel.heroURL(for: item))
                 titleBlock
                 VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                     playRow
@@ -61,7 +75,7 @@ struct DownloadedItemDetailView: View {
                     }
                     if !item.castNames.isEmpty { castSection }
                     detailsSection
-                    Button(role: .destructive) { showDeleteConfirm = true } label: {
+                    Button(role: .destructive) { model.showDeleteConfirm = true } label: {
                         Label("Delete Download", systemImage: "trash")
                             .font(.system(.subheadline, weight: .semibold))
                             .frame(maxWidth: .infinity, minHeight: 44)
@@ -76,36 +90,9 @@ struct DownloadedItemDetailView: View {
             // Re-fits after the player hands the screen back in landscape (see MediaDetailView).
             .containerRelativeFrame(.horizontal)
         }
-        .detailPageBackground(tint: heroTint)
+        .detailPageBackground(tint: model.heroTint)
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        #endif
-        .task(id: item.itemId) {
-            saved = downloadManager.savedDetail(itemId: item.itemId)
-            if let url = heroURL { heroTint = await AverageColor.load(from: url) }
-        }
-        #if os(iOS)
-        .fullScreenCover(item: $playingItem) { item in
-            OfflinePlayerView(downloadedItem: item, startPositionOverride: startOverride)
-        }
-        #elseif os(macOS)
-        // fullScreenCover is unavailable on macOS — OfflinePlayerView has its own in-window
-        // fullscreen (F key) now that it has a real macOS video surface, so a sheet is enough.
-        .sheet(item: $playingItem) { item in
-            OfflinePlayerView(downloadedItem: item, startPositionOverride: startOverride)
-                .frame(minWidth: 900, minHeight: 560)
-        }
-        #endif
-        .alert("Delete this download?", isPresented: $showDeleteConfirm) {
-            Button("Delete", role: .destructive) {
-                downloadManager.deleteDownload(item)
-                dismiss()
-            }
-            Button("Cancel", role: .cancel) {}
-        }
     }
 
     // MARK: - Title
@@ -167,8 +154,7 @@ struct DownloadedItemDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Button {
-                    startOverride = nil
-                    playingItem = item
+                    model.play(item, startOverride: nil)
                 } label: {
                     Label(isResumable ? "Resume" : "Play", systemImage: "play.fill")
                         .font(.headline)
@@ -180,8 +166,7 @@ struct DownloadedItemDetailView: View {
 
                 if isResumable {
                     Button {
-                        startOverride = 0
-                        playingItem = item
+                        model.play(item, startOverride: 0)
                     } label: {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.headline)
@@ -257,6 +242,7 @@ struct DownloadedItemDetailView: View {
                 .font(DT.Font.cardTitle)
                 .foregroundStyle(DT.Color.textPrimary)
             VStack(spacing: 0) {
+                let saved = model.saved
                 if !item.genres.isEmpty { detailRow("Genres", item.genres.joined(separator: ", ")) }
                 if let original = saved?.originalTitle, !original.isEmpty, original != item.name {
                     detailRow("Original Title", original)
