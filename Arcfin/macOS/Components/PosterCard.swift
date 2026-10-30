@@ -28,9 +28,8 @@ struct PosterCard: View {
         ZStack(alignment: .bottom) {
             imageLayer
 
-            // Pointer-only affordance — mirrors the hover play-button treatment of the
-            // Apple TV and Plex Mac apps. Gated to macOS since iPadOS pointer hover
-            // already gets the scale/glow treatment below without needing an icon.
+            // Pointer-only affordance. Mac only: iPad pointer hover already gets the
+            // scale/glow treatment without needing an icon.
             if hovered {
                 Image(systemName: "play.fill")
                     .font(.system(.callout, weight: .bold))
