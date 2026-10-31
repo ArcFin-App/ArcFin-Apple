@@ -4,7 +4,7 @@ import SwiftUI
 import Foundation
 
 // MARK: - Design token system for Arcfin
-// Dark-first, cinematic black with cyan/ice accent and full iOS 26 Liquid Glass. Every colour
+// Dark-first, graphite black with a coral accent and full iOS 26 Liquid Glass. Every colour
 // follows the system appearance; the light values hold the same contrast as the dark ones.
 
 public enum DT {
@@ -12,24 +12,24 @@ public enum DT {
     // MARK: - Colour
 
     public enum Color {
-        /// Dark #0A0A0F, deep cinematic black / light #F2F2F7 — primary background
-        public static let backgroundPrimary   = SwiftUI.Color(light: "F2F2F7", dark: "0A0A0F")
-        /// Dark #12121A, midnight navy / light white — secondary surface
-        public static let backgroundSecondary = SwiftUI.Color(light: "FFFFFF", dark: "12121A")
-        /// Dark #1C1C26, deep charcoal / light #E5E5EA — tertiary surface
-        public static let backgroundTertiary  = SwiftUI.Color(light: "E5E5EA", dark: "1C1C26")
-        /// Dark #06B6D4, cyan/ice / light #0E7490 (cyan on white is 2.4:1; this is 4.3–5.4:1)
-        /// — active states, progress bars, focus rings, CTAs
-        public static let accent              = SwiftUI.Color(light: "0E7490", dark: "06B6D4")
-        /// Deeper cyan, gradient start for buttons and logo
-        public static let accentDeep          = SwiftUI.Color(light: "155E75", dark: "0891B2")
+        /// Dark #0B0B0C, graphite black / light #F4F4F5 — primary background
+        public static let backgroundPrimary   = SwiftUI.Color(light: "F4F4F5", dark: "0B0B0C")
+        /// Dark #141416 / light white — secondary surface
+        public static let backgroundSecondary = SwiftUI.Color(light: "FFFFFF", dark: "141416")
+        /// Dark #1E1E21 / light #E4E4E7 — tertiary surface
+        public static let backgroundTertiary  = SwiftUI.Color(light: "E4E4E7", dark: "1E1E21")
+        /// Dark #FF6A4D, coral (5.9–7.0:1) / light #B83A25 (coral on white is 2.8:1; this is
+        /// 4.5–5.7:1) — active states, progress bars, focus rings, CTAs
+        public static let accent              = SwiftUI.Color(light: "B83A25", dark: "FF6A4D")
+        /// Deeper coral, gradient start for buttons and logo
+        public static let accentDeep          = SwiftUI.Color(light: "962E1D", dark: "E5533A")
         /// Accent at reduced opacity for glass tinting
         public static let accentSubtle        = accent.opacity(0.15)
-        /// Text and symbols on an accent fill: dark on the bright cyan (8.1:1, where white was
-        /// 2.4:1), white on the deeper light-appearance cyan (5.4:1).
-        public static let onAccent            = SwiftUI.Color(light: "FFFFFF", dark: "0A0A0F")
-        /// White / light #0A0A0F — primary text
-        public static let textPrimary         = SwiftUI.Color(light: "0A0A0F", dark: "FFFFFF")
+        /// Text and symbols on an accent fill: dark on the bright coral (7.0:1, where white is
+        /// 2.8:1), white on the deeper light-appearance coral (5.7:1).
+        public static let onAccent            = SwiftUI.Color(light: "FFFFFF", dark: "0B0B0C")
+        /// White / light #0B0B0C — primary text
+        public static let textPrimary         = SwiftUI.Color(light: "0B0B0C", dark: "FFFFFF")
         /// Active/selected labels
         public static let textActive          = accent
 
@@ -42,28 +42,29 @@ public enum DT {
             PlatformAccessibility.increaseContrast
         }
 
-        /// #8E8E93 (5.2–6.1:1 on the three backgrounds) / Increase Contrast: #AEAEB4
-        /// (7.65–8.95:1) — secondary metadata (system grey)
-        /// Light #636366 (4.8–5.9:1) / Increase Contrast #48484C (7.3–9.1:1).
+        /// #8E8E93 (5.1–6.0:1 on the three backgrounds) / Increase Contrast: #AEAEB4
+        /// (7.5–8.9:1) — secondary metadata (system grey)
+        /// Light #636366 (4.7–6.0:1) / Increase Contrast #48484C (7.2–9.1:1).
         public static var textSecondary: SwiftUI.Color {
             increaseContrast ? SwiftUI.Color(light: "48484C", dark: "AEAEB4") : SwiftUI.Color(light: "636366", dark: "8E8E93")
         }
-        /// #3A3A4A (1.5–1.8:1, under the 3:1 UI-boundary floor) / Increase Contrast:
-        /// #6E6E82 (3.4–4.0:1) — separator / divider lines
+        /// #3A3A3E (1.5–1.7:1, under the 3:1 UI-boundary floor) / Increase Contrast:
+        /// #707076 (3.4–4.0:1) — separator / divider lines
         public static var separator: SwiftUI.Color {
-            increaseContrast ? SwiftUI.Color(light: "8A8A8E", dark: "6E6E82") : SwiftUI.Color(light: "C6C6C8", dark: "3A3A4A")
+            increaseContrast ? SwiftUI.Color(light: "8A8A8E", dark: "707076") : SwiftUI.Color(light: "C6C6C8", dark: "3A3A3E")
         }
         /// A status or category colour from the shared palette, with a darker partner for the
         /// light appearance (the bright dark-mode hues are 2.1–3.8:1 on white; these are 4.4:1
-        /// or better). Any other hex is used as is.
+        /// or better). Errors are rose rather than red so they don't read as the coral accent.
+        /// Any other hex is used as is.
         public static func palette(_ hex: String) -> SwiftUI.Color {
             switch hex.lowercased() {
             case "10b981": SwiftUI.Color(light: "047857", dark: "10B981")
             case "f59e0b": SwiftUI.Color(light: "B45309", dark: "F59E0B")
-            case "ef4444": SwiftUI.Color(light: "B91C1C", dark: "EF4444")
-            case "8b5cf6": SwiftUI.Color(light: "6D28D9", dark: "8B5CF6")
+            case "f43f5e": SwiftUI.Color(light: "BE123C", dark: "F43F5E")
+            case "60a5fa": SwiftUI.Color(light: "1D4ED8", dark: "60A5FA")
             case "f5c518": SwiftUI.Color(light: "A16207", dark: "F5C518")
-            case "06b6d4": accent
+            case "ff6a4d": accent
             default: SwiftUI.Color(hex: hex)
             }
         }

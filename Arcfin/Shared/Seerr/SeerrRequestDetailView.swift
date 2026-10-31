@@ -63,7 +63,7 @@ struct SeerrRequestDetailView: View {
                     if let error = errorMessage {
                         Text(error)
                             .font(.system(.caption))
-                            .foregroundStyle(DT.Color.palette("EF4444"))
+                            .foregroundStyle(DT.Color.palette("F43F5E"))
                     }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
@@ -214,7 +214,7 @@ struct SeerrRequestDetailView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(DT.Color.palette("EF4444").opacity(0.85))
+            .background(DT.Color.palette("F43F5E").opacity(0.85))
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
         }
         .disabled(isCancelling)
@@ -316,7 +316,7 @@ struct SeerrRequestDetailView: View {
     private var requestStatusPill: some View {
         let (label, hex): (String, String) = switch request.status {
         case .approved:  ("Approved", "10b981")
-        case .declined:  ("Declined", "EF4444")
+        case .declined:  ("Declined", "F43F5E")
         case .pending:   ("Pending", "f59e0b")
         }
         return statusPillView(label: label, hex: hex)

@@ -212,10 +212,10 @@ private struct DetailQualityRow: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            if detail?.is4K == true { DetailQualityBadge(label: "4K", color: DT.Color.palette("06B6D4")) }
+            if detail?.is4K == true { DetailQualityBadge(label: "4K", color: DT.Color.palette("FF6A4D")) }
             if detail?.isHDR == true { DetailQualityBadge(label: "HDR", color: DT.Color.palette("F59E0B")) }
             if let codec = detail?.videoStream?.codec?.uppercased() {
-                DetailQualityBadge(label: codec, color: DT.Color.palette("8B5CF6"))
+                DetailQualityBadge(label: codec, color: DT.Color.palette("60A5FA"))
             }
         }
     }

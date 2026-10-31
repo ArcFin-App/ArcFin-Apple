@@ -70,9 +70,9 @@ struct HomeHeroPlaceholder: View {
 
     var body: some View {
         let p: [[Color]] = [
-            [Color(hex: "1a0a2e"), Color(hex: "0a1628")],
+            [Color(hex: "2A1410"), Color(hex: "140C0B")],
             [Color(hex: "1c0e00"), Color(hex: "0e0a00")],
-            [Color(hex: "0a0a1c"), Color(hex: "060610")],
+            [Color(hex: "1A1A1D"), Color(hex: "0B0B0C")],
         ]
         return LinearGradient(colors: p[index % p.count] + [DT.Color.backgroundPrimary],
                               startPoint: .topLeading, endPoint: .bottomTrailing)

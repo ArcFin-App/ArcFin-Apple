@@ -36,7 +36,7 @@ struct PosterCardArtwork: View {
 
 #Preview {
     HStack(spacing: 12) {
-        PosterCard(title: "Dune: Part Two", subtitle: "2024", accentHue: Color(hex: "1a0a2e"), progress: 0.62)
+        PosterCard(title: "Dune: Part Two", subtitle: "2024", accentHue: Color(hex: "24140F"), progress: 0.62)
         PosterCard(title: "Oppenheimer", subtitle: "S2 E7", accentHue: Color(hex: "1c0e00"))
     }
     .padding()

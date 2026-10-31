@@ -152,7 +152,7 @@ public enum SeerrAvailabilityStatus: Int, Sendable, Equatable {
         switch self {
         case .available:         "10b981"
         case .pending:           "f59e0b"
-        case .processing:        "06B6D4"
+        case .processing:        "FF6A4D"
         default:                 "6B7280"
         }
     }
@@ -200,7 +200,7 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
         switch status {
         case .pending:  return ("Pending", "f59e0b")
         case .approved: return ("Approved", "10b981")
-        case .declined: return ("Declined", "EF4444")
+        case .declined: return ("Declined", "F43F5E")
         }
     }
 }

@@ -141,7 +141,7 @@ struct SeerrTestSection: View {
             if let result = form.testResult {
                 Text(result)
                     .font(.caption)
-                    .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
+                    .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("F43F5E"))
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }

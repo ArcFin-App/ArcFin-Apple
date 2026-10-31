@@ -240,7 +240,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var seerrStatusPill: some View {
         if seerrRepo.authFailed {
-            Text("Auth Failed").font(.caption2).foregroundStyle(DT.Color.palette("EF4444"))
+            Text("Auth Failed").font(.caption2).foregroundStyle(DT.Color.palette("F43F5E"))
         } else if !seerrURL.isEmpty {
             Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
         }

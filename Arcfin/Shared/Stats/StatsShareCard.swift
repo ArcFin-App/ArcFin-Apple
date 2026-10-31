@@ -23,7 +23,7 @@ struct StatsShareCard: View {
     let format: Format
     let artwork: Artwork
 
-    private let cyan = Color(red: 0.024, green: 0.714, blue: 0.831)
+    private let coral = Color(red: 1, green: 0.416, blue: 0.302)
 
     var body: some View {
         let headline = StatsFormat.headline(stats.seconds)
@@ -40,7 +40,7 @@ struct StatsShareCard: View {
                             .font(.system(size: format == .story ? 76 : 62, weight: .heavy, design: .rounded))
                         Text(headline.unit)
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(cyan)
+                            .foregroundStyle(coral)
                     }
                     .foregroundStyle(.white)
                     .lineLimit(1)
@@ -86,7 +86,7 @@ struct StatsShareCard: View {
 
     private var background: some View {
         ZStack {
-            Color(red: 0.04, green: 0.04, blue: 0.06)
+            Color(red: 0.043, green: 0.043, blue: 0.047)
             if let backdrop = artwork.backdrop {
                 Image(decorative: backdrop, scale: 1)
                     .resizable()
@@ -96,9 +96,9 @@ struct StatsShareCard: View {
                     .opacity(0.55)
                     .frame(maxHeight: .infinity, alignment: .top)
             }
-            LinearGradient(colors: [.black.opacity(0.2), Color(red: 0.04, green: 0.04, blue: 0.06)],
+            LinearGradient(colors: [.black.opacity(0.2), Color(red: 0.043, green: 0.043, blue: 0.047)],
                            startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.6))
-            RadialGradient(colors: [cyan.opacity(0.35), .clear], center: UnitPoint(x: 1, y: 1),
+            RadialGradient(colors: [coral.opacity(0.35), .clear], center: UnitPoint(x: 1, y: 1),
                            startRadius: 0, endRadius: format.size.width)
         }
     }
@@ -116,9 +116,9 @@ struct StatsShareCard: View {
             Text((stats.period == .allTime ? stats.heading : stats.name).uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .tracking(1.2)
-                .foregroundStyle(cyan)
+                .foregroundStyle(coral)
                 .padding(.horizontal, 10).padding(.vertical, 5)
-                .background(cyan.opacity(0.15), in: Capsule())
+                .background(coral.opacity(0.15), in: Capsule())
         }
     }
 
@@ -159,7 +159,7 @@ struct StatsShareCard: View {
                 Text(label.uppercased())
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1)
-                    .foregroundStyle(cyan)
+                    .foregroundStyle(coral)
                 Text(title)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.white)

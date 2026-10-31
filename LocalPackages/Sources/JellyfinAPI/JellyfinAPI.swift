@@ -388,14 +388,14 @@ public struct JellyfinLibrary: Sendable, Identifiable, Equatable, Hashable {
 
         public var accentHex: String {
             switch self {
-            case .movies:     "06B6D4"
-            case .tvshows:    "8B5CF6"
+            case .movies:     "FF6A4D"
+            case .tvshows:    "60A5FA"
             case .music:      "EC4899"
             case .homevideos: "F59E0B"
             case .photos:     "10B981"
             case .books:      "F97316"
-            case .livetv:     "EF4444"
-            case .playlists:  "06B6D4"
+            case .livetv:     "F43F5E"
+            case .playlists:  "FF6A4D"
             case .boxsets:    "F59E0B"
             case .unknown:    "6B7280"
             }

@@ -4,7 +4,7 @@ import SwiftUI
 import JellyfinAPI
 
 enum StatsFormat {
-    static var palette: [Color] { ["06b6d4", "8b5cf6", "10b981", "F97316", "EC4899", "EAB308", "3B82F6", "EF4444"].map { DT.Color.palette($0) } }
+    static var palette: [Color] { ["FF6A4D", "60A5FA", "10b981", "EAB308", "EC4899", "14B8A6", "F97316", "94A3B8"].map { DT.Color.palette($0) } }
 
     static func duration(_ seconds: Double) -> String {
         let formatter = DateComponentsFormatter()
@@ -87,7 +87,7 @@ enum DayPart: CaseIterable {
         switch self {
         case .morning: "EAB308"
         case .afternoon: "F97316"
-        case .evening: "8b5cf6"
+        case .evening: "60A5FA"
         case .night: "3B82F6"
         }
     }
@@ -157,7 +157,7 @@ struct StatsHero: View {
                 Text(stats.heading.uppercased())
                     .font(.system(.caption, weight: .bold))
                     .tracking(1.2)
-                    .foregroundStyle(DT.Color.palette("06b6d4"))
+                    .foregroundStyle(DT.Color.palette("FF6A4D"))
                 if !stats.name.isEmpty {
                     Text(stats.name)
                         .font(.system(.headline))
@@ -207,7 +207,7 @@ struct StatsHero: View {
     }
 
     private var heroFallback: some View {
-        LinearGradient(colors: [DT.Color.palette("0891B2"), DT.Color.palette("1C1C26")], startPoint: .topLeading, endPoint: .bottomTrailing)
+        LinearGradient(colors: [DT.Color.accentDeep, DT.Color.backgroundTertiary], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 

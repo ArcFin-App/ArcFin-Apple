@@ -116,7 +116,7 @@ struct SeerrRequestConfirmSheet: View {
                 if let submitError {
                     Text(submitError)
                         .font(.system(.caption))
-                        .foregroundStyle(DT.Color.palette("EF4444"))
+                        .foregroundStyle(DT.Color.palette("F43F5E"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, DT.Spacing.pagePad)
                         .padding(.bottom, DT.Spacing.sm)
@@ -381,7 +381,7 @@ struct SeerrRequestConfirmSheet: View {
         switch badge {
         case .notRequested:        "6B7280"
         case .pending:              "f59e0b"
-        case .requested:            "06B6D4"
+        case .requested:            "FF6A4D"
         case .partiallyAvailable:   "10b981"
         case .available:            "10b981"
         }
@@ -408,7 +408,7 @@ struct SeerrRequestConfirmSheet: View {
         let isWarning = overLimit || overQuota || remaining <= 0
         return Text(text)
             .font(.system(.caption2, design: .default, weight: .medium))
-            .foregroundStyle(isWarning ? DT.Color.palette("EF4444") : DT.Color.textSecondary)
+            .foregroundStyle(isWarning ? DT.Color.palette("F43F5E") : DT.Color.textSecondary)
             .padding(.horizontal, DT.Spacing.pagePad)
             .contentTransition(.numericText())
             .animation(.default, value: remaining)
