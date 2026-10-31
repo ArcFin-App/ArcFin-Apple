@@ -2049,6 +2049,70 @@
         }
       }
     },
+    "Keeps the featured title on screen while the rows slide up beneath it. Off scrolls the whole page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lässt den hervorgehobenen Titel auf dem Bildschirm, während die Reihen darunter nach oben gleiten. Aus scrollt die ganze Seite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantiene el título destacado en pantalla mientras las filas se deslizan hacia arriba debajo de él. Desactivado, se desplaza toda la página."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Garde le titre mis en avant à l’écran pendant que les rangées glissent vers le haut en dessous. Désactivé, toute la page défile."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantiene il titolo in evidenza sullo schermo mentre le righe scorrono verso l’alto sotto di esso. Disattivato, scorre l’intera pagina."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "注目のタイトルを画面に表示したまま、その下の列が上へスライドします。オフにするとページ全体がスクロールします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "추천 타이틀을 화면에 둔 채 그 아래의 줄이 위로 올라갑니다. 끄면 페이지 전체가 스크롤됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houdt de uitgelichte titel in beeld terwijl de rijen eronder omhoog schuiven. Uit scrolt de hele pagina."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantém o título em destaque na tela enquanto as fileiras deslizam para cima abaixo dele. Desativado, rola a página inteira."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Оставляет избранное на экране, а ряды под ним сдвигаются вверх. Если выключено, прокручивается вся страница."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "让精选内容保持在屏幕上，下方的行向上滑动。关闭后整页滚动。"
+          }
+        }
+      }
+    },
     "Local discovery" : {
       "localizations" : {
         "de" : {
@@ -2109,6 +2173,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "本地发现"
+          }
+        }
+      }
+    },
+    "Modern Home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modernes Home"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicio moderno"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accueil moderne"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Home moderna"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "モダンなホーム"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "모던 홈"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Modern startscherm"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Início moderno"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Современная главная"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "现代主页"
           }
         }
       }

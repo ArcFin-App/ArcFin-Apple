@@ -222,6 +222,7 @@ public enum SettingsSyncRegistry {
         .init("mergeContinueWatchingAndUpNext", .bool),
         .init("heroVideoBackdropsEnabled", .bool),
         .init("heroTrailerSound", .bool),
+        .init("modernHome", .bool),
         .init("shuffleHomeShelves", .bool),
         .init("spoilerProtection", .bool),
         .init("libraryHideWatched", .bool),
