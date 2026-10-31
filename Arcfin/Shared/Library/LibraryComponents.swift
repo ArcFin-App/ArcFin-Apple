@@ -9,108 +9,91 @@ struct LibraryCard: View {
     let library: JellyfinLibrary
     let imageURL: URL?
 
-    @State private var hovered = false
-
     var body: some View {
-        ZStack {
-            background
-
-            Rectangle()
-                .fill(.black.opacity(0.35))
-
-            VStack(spacing: 10) {
-                Image(systemName: library.collectionType.systemIcon)
-                    .font(.system(.title, weight: .light))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.6), radius: 6)
-
-                Text(library.name)
-                    .font(.system(.footnote, design: .default, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .shadow(color: .black.opacity(0.6), radius: 6)
-            }
-            .padding(16)
-        }
-        .frame(height: 110)
-        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-        .overlay(
-            RoundedRectangle(cornerRadius: DT.Radius.card)
-                .stroke(hovered ? DT.Color.accent.opacity(0.5) : Color(hex: library.collectionType.accentHex).opacity(0.18), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
-        .scaleEffect(hovered ? 1.02 : 1)
-        .animation(DT.Animation.fast, value: hovered)
-        .onPointerHover { hovered = $0 }
-    }
-
-    @ViewBuilder
-    private var background: some View {
-        if let imageURL {
-            CachedAsyncImage(url: imageURL) { phase in
-                switch phase {
-                case .success(let img):
-                    img.resizable().scaledToFill().blur(radius: 3)
-                default: gradientFallback
+        BrowseTile(systemImage: library.collectionType.systemIcon, title: library.name) {
+            if let imageURL {
+                CachedAsyncImage(url: imageURL) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: BrowseTileFallback(systemImage: library.collectionType.systemIcon)
+                    }
                 }
+            } else {
+                BrowseTileFallback(systemImage: library.collectionType.systemIcon)
             }
-            .clipped()
-        } else {
-            gradientFallback
         }
-    }
-
-    private var gradientFallback: some View {
-        LinearGradient(
-            colors: [
-                Color(hex: library.collectionType.accentHex).opacity(0.25),
-                DT.Color.backgroundSecondary,
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 }
 
-/// Same tile treatment as LibraryCard (icon + centered label, gradient background, height
-/// 110) so "Your Requests" reads as one more tile alongside the library ones, not a
-/// differently-styled row.
+/// "Your Requests" as one more tile alongside the library ones.
 struct RequestsCard: View {
+    var body: some View {
+        BrowseTile(systemImage: "text.badge.checkmark", title: "Requests") {
+            ZStack {
+                DT.Color.backgroundTertiary
+                RadialGradient(colors: [DT.Color.accent.opacity(0.55), .clear],
+                               center: .topTrailing, startRadius: 0, endRadius: 180)
+            }
+        }
+    }
+}
+
+/// A Browse tile: artwork filling the card, with the icon and name on a scrim at the bottom.
+/// Always dark, so the white label reads in either appearance.
+private struct BrowseTile<Background: View>: View {
+    let systemImage: String
+    let title: String
+    @ViewBuilder let background: Background
+
     @State private var hovered = false
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [DT.Color.accent.opacity(0.25), DT.Color.backgroundSecondary],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-
-            VStack(spacing: 10) {
-                Image(systemName: "text.badge.checkmark")
-                    .font(.system(.title, weight: .light))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.6), radius: 6)
-
-                Text("Requests")
-                    .font(.system(.footnote, design: .default, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .shadow(color: .black.opacity(0.6), radius: 6)
+        Color.clear
+            .frame(height: 110)
+            .overlay { background }
+            .overlay(alignment: .bottomLeading) {
+                ZStack(alignment: .bottomLeading) {
+                    LinearGradient(colors: [.black.opacity(0.85), .black.opacity(0.35), .clear],
+                                   startPoint: .bottom, endPoint: .top)
+                    HStack(spacing: 8) {
+                        Image(systemName: systemImage)
+                            .font(.system(.subheadline, weight: .semibold))
+                            .foregroundStyle(DT.Color.accent)
+                        Text(title)
+                            .font(.system(.subheadline, design: .default, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                    }
+                    .padding(12)
+                }
             }
-            .padding(16)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous)
+                    .stroke(hovered ? DT.Color.accent.opacity(0.6) : .white.opacity(0.08), lineWidth: 1)
+            )
+            .alwaysDark()
+            .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
+            .scaleEffect(hovered ? 1.02 : 1)
+            .animation(DT.Animation.fast, value: hovered)
+            .onPointerHover { hovered = $0 }
+            .contentShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
+    }
+}
+
+/// A library with no artwork: graphite with its icon large and faint in the corner.
+private struct BrowseTileFallback: View {
+    let systemImage: String
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            LinearGradient(colors: [DT.Color.backgroundTertiary, DT.Color.backgroundSecondary],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            Image(systemName: systemImage)
+                .font(.system(size: 56, weight: .light))
+                .foregroundStyle(.white.opacity(0.08))
+                .padding(10)
         }
-        .frame(height: 110)
-        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
-        .overlay(
-            RoundedRectangle(cornerRadius: DT.Radius.card)
-                .stroke(hovered ? DT.Color.accent.opacity(0.5) : DT.Color.accent.opacity(0.18), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
-        .scaleEffect(hovered ? 1.02 : 1)
-        .animation(DT.Animation.fast, value: hovered)
-        .onPointerHover { hovered = $0 }
     }
 }
 
