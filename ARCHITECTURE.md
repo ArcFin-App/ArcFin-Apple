@@ -85,14 +85,14 @@ Tokens live under `DT` in `Arcfin/Shared/DesignTokens.swift`; the sizes that dif
 
 | Token | Dark | Light |
 |---|---|---|
-| Background primary | `#0A0A0F` | Light equivalent with matching contrast |
-| Background secondary | `#12121A` | 〃 |
-| Background tertiary | `#1C1C26` | 〃 |
-| Accent | `#06B6D4` cyan | `#0E7490` deeper cyan |
+| Background primary | `#0B0B0C` | `#F4F4F5` |
+| Background secondary | `#141416` | `#FFFFFF` |
+| Background tertiary | `#1E1E21` | `#E4E4E7` |
+| Accent | `#FF6A4D` coral | `#B83A25` deeper coral |
 | Text primary | `#FFFFFF` | Dark equivalent |
 | Text secondary | `#8E8E93` | 〃 |
 
-- Labels on accent fills use `DT.Color.onAccent`.
+- Labels on accent fills use `DT.Color.onAccent`: dark on the bright coral, white on the deeper one.
 - Status colours go through `DT.Color.palette(_:)`.
 - Text over artwork stays white.
 - Hero titles use SF Pro Display; body text and labels use SF Pro Text.

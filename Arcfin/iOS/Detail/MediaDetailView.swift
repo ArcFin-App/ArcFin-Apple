@@ -95,7 +95,7 @@ struct MediaDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { model.toggleFavorite(authManager: authManager) } label: {
                     Image(systemName: model.isFavorite ? "heart.fill" : "heart")
-                        .foregroundStyle(model.isFavorite ? DT.Color.palette("EF4444") : DT.Color.textPrimary)
+                        .foregroundStyle(model.isFavorite ? DT.Color.palette("F43F5E") : DT.Color.textPrimary)
                 }
                 .accessibilityLabel(model.isFavorite ? "Remove from favorites" : "Add to favorites")
             }

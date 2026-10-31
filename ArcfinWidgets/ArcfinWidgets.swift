@@ -8,11 +8,11 @@ import LiveActivityKit
 import ActivityKit
 
 private enum WidgetDT {
-    static let accent = Color(red: 0x06 / 255, green: 0xB6 / 255, blue: 0xD4 / 255)
-    static let accentDeep = Color(red: 0x03 / 255, green: 0x7C / 255, blue: 0x93 / 255)
+    static let accent = Color(red: 0xFF / 255, green: 0x6A / 255, blue: 0x4D / 255)
+    static let accentDeep = Color(red: 0xE5 / 255, green: 0x53 / 255, blue: 0x3A / 255)
     static let success = Color(red: 0x10 / 255, green: 0xB9 / 255, blue: 0x81 / 255)
     static let paused = Color(red: 0xF5 / 255, green: 0x9E / 255, blue: 0x0B / 255)
-    static let background = Color(red: 0x0A / 255, green: 0x0A / 255, blue: 0x0F / 255)
+    static let background = Color(red: 0x0B / 255, green: 0x0B / 255, blue: 0x0C / 255)
     static let textSecondary = Color(white: 1, opacity: 0.7)
 }
 

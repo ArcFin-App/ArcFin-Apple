@@ -71,7 +71,7 @@ struct ServerPublicInfoSection: View {
             } else if let infoError = model.infoError {
                 Text(infoError)
                     .font(.caption)
-                    .foregroundStyle(DT.Color.palette("EF4444"))
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
                     .tvReadOnlyRow()
             }
         } header: {

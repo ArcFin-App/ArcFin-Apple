@@ -5,7 +5,7 @@ import SwiftUI
 struct PosterCard: View {
     var title: String
     var subtitle: String? = nil
-    var accentHue: Color = Color(hex: "1a0d2e")
+    var accentHue: Color = Color(hex: "24140F")
     var progress: Double? = nil
     var imageURL: URL? = nil
     var width: CGFloat = DT.Size.posterCard.width

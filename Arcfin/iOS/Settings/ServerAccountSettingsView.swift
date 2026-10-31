@@ -59,7 +59,7 @@ struct ServerAccountSettingsView: View {
                 if let quickConnectResult = quickConnect.result {
                     Text(quickConnectResult)
                         .font(.caption)
-                        .foregroundStyle(quickConnectResult.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("EF4444"))
+                        .foregroundStyle(quickConnectResult.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("F43F5E"))
                 }
             } header: {
                 Text("Quick Connect")

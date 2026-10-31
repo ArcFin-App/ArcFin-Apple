@@ -207,7 +207,7 @@ struct SeerrRequestsListView: View {
     private var posterMiniFallback: some View {
         RoundedRectangle(cornerRadius: 6)
             .fill(LinearGradient(
-                colors: [DT.Color.accent.opacity(0.08), Color(hex: "0a0a14")],
+                colors: [DT.Color.accent.opacity(0.08), Color(hex: "0B0B0C")],
                 startPoint: .top, endPoint: .bottom))
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
@@ -215,7 +215,7 @@ struct SeerrRequestsListView: View {
     private func requestStatusPill(_ status: RequestStatus) -> some View {
         let (label, hex): (String, String) = switch status {
         case .approved:  ("Approved", "10b981")
-        case .declined:  ("Declined", "EF4444")
+        case .declined:  ("Declined", "F43F5E")
         case .pending:   ("Pending", "f59e0b")
         }
         return statusPillView(label: label, hex: hex)

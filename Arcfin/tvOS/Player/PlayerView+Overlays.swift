@@ -327,7 +327,7 @@ extension PlayerView {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(.largeTitle))
-                .foregroundStyle(DT.Color.palette("EF4444"))
+                .foregroundStyle(DT.Color.palette("F43F5E"))
             Text(message)
                 .font(.system(.footnote))
                 .foregroundStyle(.white)

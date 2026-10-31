@@ -5,7 +5,7 @@ import SwiftUI
 struct PosterCard: View {
     var title: String
     var subtitle: String? = nil
-    var accentHue: Color = Color(hex: "1a0d2e")
+    var accentHue: Color = Color(hex: "24140F")
     var progress: Double? = nil
     var imageURL: URL? = nil
     var width: CGFloat = DT.Size.posterCard.width
@@ -63,13 +63,13 @@ struct PosterCard: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(.system(Self.titleStyle, design: .default, weight: .semibold))
-                        .foregroundStyle(DT.Color.textPrimary)
+                        .foregroundStyle(.white)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                     if let subtitle {
                         Text(subtitle)
                             .font(.system(Self.subtitleStyle, design: .default, weight: .medium))
-                            .foregroundStyle(DT.Color.textSecondary)
+                            .foregroundStyle(.white.opacity(0.7))
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }

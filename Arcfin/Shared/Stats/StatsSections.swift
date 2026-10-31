@@ -123,8 +123,8 @@ struct StatsSections: View {
                     StatTile(value: "\(stats.currentStreak)", unit: stats.currentStreak == 1 ? "day" : "days", label: "Current streak", icon: "flame.fill", hex: "F97316")
                 }
                 StatTile(value: "\(stats.longestStreak)", unit: stats.longestStreak == 1 ? "day" : "days", label: "Longest streak", icon: "trophy.fill", hex: "EAB308")
-                StatTile(value: "\(stats.activeDays)", unit: stats.activeDays == 1 ? "day" : "days", label: "Days you watched", icon: "calendar", hex: "06b6d4")
-                StatTile(value: StatsFormat.duration(stats.averagePerActiveDay), unit: nil, label: "On a watching day", icon: "clock.fill", hex: "8b5cf6")
+                StatTile(value: "\(stats.activeDays)", unit: stats.activeDays == 1 ? "day" : "days", label: "Days you watched", icon: "calendar", hex: "FF6A4D")
+                StatTile(value: StatsFormat.duration(stats.averagePerActiveDay), unit: nil, label: "On a watching day", icon: "clock.fill", hex: "60A5FA")
             }
             VStack(alignment: .leading, spacing: 8) {
                 Text("By day of the week")
@@ -274,7 +274,7 @@ struct StatsSections: View {
                     let peak = stats.decades.max { $0.count < $1.count }?.decade
                     Chart(stats.decades) { decade in
                         BarMark(x: .value("Decade", "\(decade.decade)s"), y: .value("Titles", decade.count))
-                            .foregroundStyle(decade.decade == peak ? DT.Color.palette("8b5cf6") : DT.Color.palette("8b5cf6").opacity(0.35))
+                            .foregroundStyle(decade.decade == peak ? DT.Color.palette("60A5FA") : DT.Color.palette("60A5FA").opacity(0.35))
                             .cornerRadius(3)
                     }
                     .chartYAxis(.hidden)
@@ -332,14 +332,14 @@ struct StatsSections: View {
                              value: "\(best.item.name) · \(rating.formatted(.number.precision(.fractionLength(1))))")
                 }
                 if let longest = stats.longestMovie, longest.runTimeTicks > 0 {
-                    FactLink(item: longest.item, icon: "hourglass", hex: "8b5cf6", title: "Longest movie",
+                    FactLink(item: longest.item, icon: "hourglass", hex: "60A5FA", title: "Longest movie",
                              value: "\(longest.item.name) · \(StatsFormat.duration(longest.runtimeSeconds))")
                 }
                 if let oldest = stats.oldestTitle, let year = oldest.item.productionYear {
                     FactLink(item: oldest.item, icon: "film.stack", hex: "F97316", title: "Oldest movie",
                              value: "\(oldest.item.name) · \(String(year))")
                 }
-                FactRow(icon: "sum", hex: "06b6d4", title: "That's about",
+                FactRow(icon: "sum", hex: "FF6A4D", title: "That's about",
                         value: StatsFormat.equivalent(stats.seconds))
                 if stats.period == .allTime, let first = stats.firstPlayed {
                     FactRow(icon: "clock.arrow.circlepath", hex: "EC4899", title: "Watching since",
@@ -352,8 +352,8 @@ struct StatsSections: View {
     private var libraryCard: some View {
         StatsCard(title: "Your Library", subtitle: "All time, across the server") {
             HStack(spacing: 12) {
-                CompletionRing(label: "Movies", done: counts.watchedMovies, total: counts.movies, hex: "8b5cf6")
-                CompletionRing(label: "Episodes", done: counts.watchedEpisodes, total: counts.episodes, hex: "06b6d4")
+                CompletionRing(label: "Movies", done: counts.watchedMovies, total: counts.movies, hex: "60A5FA")
+                CompletionRing(label: "Episodes", done: counts.watchedEpisodes, total: counts.episodes, hex: "FF6A4D")
                 CompletionRing(label: "Shows finished", done: counts.finishedShows, total: counts.shows, hex: "10b981")
             }
             HStack(spacing: 12) {

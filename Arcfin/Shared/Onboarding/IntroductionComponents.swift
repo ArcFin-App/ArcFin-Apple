@@ -62,7 +62,7 @@ struct IntroductionFeatureRow: View {
     }
 }
 
-/// The soft cyan light the splash screen glows with, behind the tour and the card.
+/// The soft coral light the splash screen glows with, behind the tour and the card.
 struct IntroductionGlow: View {
     var size: CGFloat = 560
 

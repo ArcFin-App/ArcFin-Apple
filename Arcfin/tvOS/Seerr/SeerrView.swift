@@ -47,7 +47,7 @@ struct SeerrView: View {
         VStack(spacing: 20) {
             Image(systemName: "lock.slash.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(DT.Color.palette("EF4444"))
+                .foregroundStyle(DT.Color.palette("F43F5E"))
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
@@ -503,7 +503,7 @@ private struct TVRequestRow: View {
     private func statusPill(_ status: RequestStatus) -> some View {
         let (label, hex): (String, String) = switch status {
         case .approved:  ("Approved",  "10b981")
-        case .declined:  ("Declined",  "EF4444")
+        case .declined:  ("Declined",  "F43F5E")
         case .pending:   ("Pending",   "f59e0b")
         }
         return pillView(label: label, hex: hex)
