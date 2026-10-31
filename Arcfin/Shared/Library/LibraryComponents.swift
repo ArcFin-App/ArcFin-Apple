@@ -29,70 +29,93 @@ struct LibraryCard: View {
 struct RequestsCard: View {
     var body: some View {
         BrowseTile(systemImage: "text.badge.checkmark", title: "Requests") {
-            ZStack {
-                DT.Color.backgroundTertiary
-                RadialGradient(colors: [DT.Color.accent.opacity(0.55), .clear],
-                               center: .topTrailing, startRadius: 0, endRadius: 180)
-            }
+            BrowseTileFallback(systemImage: "text.badge.checkmark")
         }
     }
 }
 
-/// A Browse tile: artwork filling the card, with the icon and name on a scrim at the bottom.
-/// Always dark, so the white label reads in either appearance.
-private struct BrowseTile<Background: View>: View {
+/// A Browse tile: artwork filling a 16:9 card, a warm scrim, and the icon and name at the
+/// bottom. Lifts with a coral ring on hover (Mac, iPad pointer) or focus (Apple TV). The scrim
+/// fades to the page surface, so the label is light on dark or dark on light.
+struct BrowseTile<Background: View>: View {
     let systemImage: String
     let title: String
     @ViewBuilder let background: Background
 
+    @Environment(\.isFocused) private var isFocused
+    @Environment(\.colorScheme) private var colorScheme
     @State private var hovered = false
+
+    private var highlighted: Bool { hovered || isFocused }
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous) }
 
     var body: some View {
         Color.clear
-            .frame(height: 110)
-            .overlay { background }
-            .overlay(alignment: .bottomLeading) {
-                ZStack(alignment: .bottomLeading) {
-                    LinearGradient(colors: [.black.opacity(0.85), .black.opacity(0.35), .clear],
-                                   startPoint: .bottom, endPoint: .top)
-                    HStack(spacing: 8) {
-                        Image(systemName: systemImage)
-                            .font(.system(.subheadline, weight: .semibold))
-                            .foregroundStyle(DT.Color.accent)
-                        Text(title)
-                            .font(.system(.subheadline, design: .default, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                    }
-                    .padding(12)
-                }
+            .aspectRatio(16 / 9, contentMode: .fit)
+            .overlay {
+                background
+                    .scaleEffect(highlighted ? 1.06 : 1)
             }
-            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
+            .overlay {
+                LinearGradient(stops: [
+                    .init(color: DT.Color.backgroundSecondary.opacity(0.92), location: 0),
+                    .init(color: DT.Color.backgroundSecondary.opacity(0.45), location: 0.45),
+                    .init(color: .clear, location: 0.85),
+                ], startPoint: .bottom, endPoint: .top)
+            }
+            .overlay {
+                RadialGradient(colors: [DT.Color.accent.opacity(highlighted ? 0.4 : 0.22), .clear],
+                               center: .bottomLeading, startRadius: 0, endRadius: 240 * DT.Scale.font)
+            }
+            .overlay(alignment: .bottomLeading) { label }
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
             .overlay(
-                RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous)
-                    .stroke(hovered ? DT.Color.accent.opacity(0.6) : .white.opacity(0.08), lineWidth: 1)
+                shape.strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.2), .clear], startPoint: .top, endPoint: .bottom),
+                    lineWidth: 1
+                )
             )
-            .alwaysDark()
-            .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
-            .scaleEffect(hovered ? 1.02 : 1)
-            .animation(DT.Animation.fast, value: hovered)
+            .overlay(shape.strokeBorder(DT.Color.accent, lineWidth: 2 * DT.Scale.font).opacity(highlighted ? 1 : 0))
+            .shadow(color: highlighted ? DT.Color.accent.opacity(0.35) : .black.opacity(colorScheme == .dark ? 0.3 : 0.1),
+                    radius: highlighted ? 18 : 10, y: highlighted ? 8 : 5)
+            .scaleEffect(highlighted ? 1.03 : 1)
+            .animation(DT.Animation.fast, value: highlighted)
             .onPointerHover { hovered = $0 }
-            .contentShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
+            .contentShape(shape)
+    }
+
+    private var label: some View {
+        HStack(spacing: 10 * DT.Scale.font) {
+            Image(systemName: systemImage)
+                .scaledFont(size: 12, weight: .bold)
+                .foregroundStyle(DT.Color.onAccent)
+                .frame(width: 28 * DT.Scale.font, height: 28 * DT.Scale.font)
+                .background(DT.Color.accent, in: Circle())
+            Text(title)
+                .scaledFont(size: 17, weight: .bold)
+                .foregroundStyle(DT.Color.textPrimary)
+                .lineLimit(1)
+                .shadow(color: DT.Color.backgroundSecondary.opacity(0.5), radius: 4)
+        }
+        .padding(14 * DT.Scale.font)
     }
 }
 
-/// A library with no artwork: graphite with its icon large and faint in the corner.
-private struct BrowseTileFallback: View {
+/// A tile with no artwork: graphite, with its icon large, tilted and lit coral from the corner.
+struct BrowseTileFallback: View {
     let systemImage: String
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            LinearGradient(colors: [DT.Color.backgroundTertiary, DT.Color.backgroundSecondary],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
+        ZStack(alignment: .trailing) {
+            LinearGradient(colors: [DT.Color.backgroundTertiary, DT.Color.backgroundPrimary],
+                           startPoint: .topTrailing, endPoint: .bottomLeading)
             Image(systemName: systemImage)
-                .font(.system(size: 56, weight: .light))
-                .foregroundStyle(.white.opacity(0.08))
-                .padding(10)
+                .font(.system(size: 110 * DT.Scale.font, weight: .ultraLight))
+                .foregroundStyle(LinearGradient(colors: [DT.Color.accent.opacity(0.45), DT.Color.textPrimary.opacity(0.03)],
+                                                startPoint: .topTrailing, endPoint: .bottomLeading))
+                .rotationEffect(.degrees(-12))
+                .offset(x: 30 * DT.Scale.font, y: -12 * DT.Scale.font)
         }
     }
 }
