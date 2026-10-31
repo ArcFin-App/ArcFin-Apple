@@ -185,6 +185,8 @@ private struct HomeHeroInfo: View {
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
                 }
             }
+            // The buttons sit on the artwork, so their glass stays dark under the white labels.
+            .alwaysDark()
             .padding(.top, 16)
 
             if items.count > 1 {
