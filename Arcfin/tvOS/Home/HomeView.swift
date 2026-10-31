@@ -33,6 +33,7 @@ struct HomeView: View {
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     @AppStorage("heroTrailerSound") private var heroTrailerSound = false
     @State private var isHomeShowing = false
+    @State private var isHeroScrolledAway = false
     @State private var heroVideoRequestedItemID: String?
     @State private var heroVideoIsPlaying = false
     @State private var heroChromeHidden = false
@@ -77,9 +78,9 @@ struct HomeView: View {
             ?? mediaRepo.recentlyAdded.first { $0.id == id }
     }
 
-    /// Only while Home itself is on screen: with sound on, a trailer left running under a
-    /// title's page, the player or another tab would be heard there.
-    private var heroVideoAllowed: Bool { isHomeShowing && model.playbackRequest == nil }
+    /// Only while the hero itself is on screen: with sound on, a trailer left running under
+    /// the shelves, a title's page, the player or another tab would be heard there.
+    private var heroVideoAllowed: Bool { isHomeShowing && !isHeroScrolledAway && model.playbackRequest == nil }
 
     private var heroDisplayItem: MediaItem? {
         focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
@@ -102,6 +103,9 @@ struct HomeView: View {
                     .focusSection()
                 }
                 .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
+                .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > sh / 2 } action: { _, scrolledAway in
+                    isHeroScrolledAway = scrolledAway
+                }
                 .ignoresSafeArea()
             }
             .screenBackground()
