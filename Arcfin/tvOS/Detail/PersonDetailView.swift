@@ -14,12 +14,18 @@ struct PersonDetailView: View {
     @State private var selectedItem: MediaItem?
     @State private var requestingCredit: SeerrItem?
     @State private var openCredit: SeerrItem?
+    @Namespace private var focusNamespace
+    @Environment(\.resetFocus) private var resetFocus
 
     private let columns = [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: 40)]
 
     init(person: MediaPerson) {
         self.person = person
         _model = State(initialValue: PersonDetailModel(person: person))
+    }
+
+    private var hasCards: Bool {
+        !model.isLoading && (!model.items.isEmpty || !model.missingCredits(seerrRepo: seerrRepo).isEmpty)
     }
 
     var body: some View {
@@ -32,6 +38,19 @@ struct PersonDetailView: View {
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
                 .tvFocusRing(cornerRadius: DT.Radius.md)
+        }
+        // While it loads, or when nothing loaded, the page has nothing to focus, so focus went to
+        // the tab bar, where Back doesn't return to the previous page. This keeps it here.
+        .overlay {
+            if !hasCards {
+                Rectangle().fill(.clear).contentShape(Rectangle())
+                    .focusable()
+                    .focusEffectDisabled()
+            }
+        }
+        .focusScope(focusNamespace)
+        .onChange(of: hasCards) { _, has in
+            if has { resetFocus(in: focusNamespace) }
         }
         .screenBackground()
         .navigationTitle(person.name)
