@@ -12,10 +12,7 @@ import AppKit
 /// anyway. Falls back to nothing whenever a title has no local trailer — most won't, and
 /// the static backdrop image already showing underneath just stays as-is.
 ///
-/// AppKit equivalent of LoopingPlayerUIView in the iOS and tvOS versions — see
-/// PlayerSurfaceView in PlayerSupportViews.swift for the same layer-backing +
-/// action(for:forKey:) pattern and why it isn't an override here (NSView has no base
-/// implementation to call super on).
+/// AppKit equivalent of LoopingPlayerUIView in the iOS version.
 struct HeroVideoBackdropView: NSViewRepresentable {
     let url: URL
 
@@ -34,7 +31,14 @@ struct HeroVideoBackdropView: NSViewRepresentable {
 }
 
 final class LoopingPlayerNSView: NSView {
+    // A sublayer rather than the view's own layer, so it can grow past the view's edges to
+    // crop black bars baked into the trailer (see measureLetterbox).
     private let playerLayer = AVPlayerLayer()
+    private let videoOutput = AVPlayerItemVideoOutput(pixelBufferAttributes: [
+        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+    ])
+    private var picture = CGRect(x: 0, y: 0, width: 1, height: 1)
+    private var letterboxTask: Task<Void, Never>?
     private var player: AVPlayer?
     private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
@@ -47,12 +51,15 @@ final class LoopingPlayerNSView: NSView {
         let headers = CustomHTTPHeaders.current
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
+        item.add(videoOutput)
         let player = AVPlayer(playerItem: item)
         player.isMuted = true
         player.actionAtItemEnd = .none
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
+        layer?.addSublayer(playerLayer)
+        layer?.masksToBounds = true
         // See LoopingPlayerUIView's matching note above — stay invisible until
         // timeControlStatus confirms real playback, instead of showing a frozen first
         // frame while the HLS transcode spins up.
@@ -105,7 +112,37 @@ final class LoopingPlayerNSView: NSView {
                 context.duration = 0.3
                 self.animator().alphaValue = 1
             }
+            Task { @MainActor [weak self] in self?.measureLetterbox() }
         }
+    }
+
+    /// See LoopingPlayerUIView.measureLetterbox in the iOS version.
+    private func measureLetterbox() {
+        letterboxTask = Task { [weak self] in
+            var previous: CGRect?
+            for _ in 0..<20 {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard !Task.isCancelled, let self, let item = self.player?.currentItem else { return }
+                guard let buffer = self.videoOutput.copyPixelBuffer(forItemTime: item.currentTime(), itemTimeForDisplay: nil),
+                      let picture = TrailerLetterbox.pictureRect(in: buffer) else { continue }
+                if let previous, TrailerLetterbox.matches(previous, picture) {
+                    item.remove(self.videoOutput)
+                    self.picture = picture
+                    CATransaction.begin()
+                    CATransaction.setAnimationDuration(0.4)
+                    self.playerLayer.frame = self.videoFrame()
+                    CATransaction.commit()
+                    return
+                }
+                previous = picture
+            }
+            if let self { self.player?.currentItem?.remove(self.videoOutput) }
+        }
+    }
+
+    private func videoFrame() -> CGRect {
+        guard let size = player?.currentItem?.presentationSize, size != .zero else { return bounds }
+        return TrailerLetterbox.frame(videoSize: size, picture: picture, filling: bounds.size)
     }
 
     @available(*, unavailable)
@@ -117,6 +154,8 @@ final class LoopingPlayerNSView: NSView {
     // dismantleNSView, which runs at the actual moment SwiftUI removes this view, since a
     // crossfade transition can delay this deinit well past that point.
     func stop() {
+        letterboxTask?.cancel()
+        letterboxTask = nil
         player?.pause()
         player = nil
         if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }
@@ -130,8 +169,6 @@ final class LoopingPlayerNSView: NSView {
     deinit {
         stop()
     }
-
-    override func makeBackingLayer() -> CALayer { playerLayer }
 
     // play() requested back in init can land before this view is actually attached to a
     // window (SwiftUI calls makeNSView off-hierarchy first) — retry once it's really on
@@ -147,15 +184,9 @@ final class LoopingPlayerNSView: NSView {
 
     override func layout() {
         super.layout()
-        playerLayer.frame = bounds
-    }
-
-    func action(for layer: CALayer, forKey event: String) -> CAAction? {
-        switch event {
-        case "bounds", "position", "frame", "transform", "sublayerTransform":
-            return NSNull()
-        default:
-            return nil
-        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        playerLayer.frame = videoFrame()
+        CATransaction.commit()
     }
 }

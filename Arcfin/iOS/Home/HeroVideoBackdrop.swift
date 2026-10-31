@@ -36,8 +36,14 @@ struct HeroVideoBackdropView: UIViewRepresentable {
 }
 
 final class LoopingPlayerUIView: UIView {
-    override class var layerClass: AnyClass { AVPlayerLayer.self }
-    private var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+    // A sublayer rather than the view's own layer, so it can grow past the view's edges to
+    // crop black bars baked into the trailer (see measureLetterbox).
+    private let playerLayer = AVPlayerLayer()
+    private let videoOutput = AVPlayerItemVideoOutput(pixelBufferAttributes: [
+        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+    ])
+    private var picture = CGRect(x: 0, y: 0, width: 1, height: 1)
+    private var letterboxTask: Task<Void, Never>?
     private var player: AVPlayer?
     private var loopObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
@@ -55,12 +61,15 @@ final class LoopingPlayerUIView: UIView {
         let headers = CustomHTTPHeaders.current
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
+        item.add(videoOutput)
         let player = AVPlayer(playerItem: item)
         player.isMuted = muted
         player.actionAtItemEnd = loops ? .none : .pause
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
+        layer.addSublayer(playerLayer)
+        clipsToBounds = true
         backgroundColor = .clear
         // Stay invisible until playback is actually running — showing this view as soon
         // as the URL resolves means a frozen first frame sits over the hero for however
@@ -108,8 +117,41 @@ final class LoopingPlayerUIView: UIView {
             guard player.timeControlStatus == .playing, let self, !self.hasFadedIn else { return }
             self.hasFadedIn = true
             UIView.animate(withDuration: 0.3) { self.alpha = 1 }
-            Task { @MainActor [weak self] in self?.onStart?() }
+            Task { @MainActor [weak self] in
+                self?.onStart?()
+                self?.measureLetterbox()
+            }
         }
+    }
+
+    /// Looks at the playing picture until two frames a moment apart agree on its black bars
+    /// (fades to black in between don't count), then zooms so the picture fills the view.
+    private func measureLetterbox() {
+        letterboxTask = Task { [weak self] in
+            var previous: CGRect?
+            for _ in 0..<20 {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard !Task.isCancelled, let self, let item = self.player?.currentItem else { return }
+                guard let buffer = self.videoOutput.copyPixelBuffer(forItemTime: item.currentTime(), itemTimeForDisplay: nil),
+                      let picture = TrailerLetterbox.pictureRect(in: buffer) else { continue }
+                if let previous, TrailerLetterbox.matches(previous, picture) {
+                    item.remove(self.videoOutput)
+                    self.picture = picture
+                    CATransaction.begin()
+                    CATransaction.setAnimationDuration(0.4)
+                    self.playerLayer.frame = self.videoFrame()
+                    CATransaction.commit()
+                    return
+                }
+                previous = picture
+            }
+            if let self { self.player?.currentItem?.remove(self.videoOutput) }
+        }
+    }
+
+    private func videoFrame() -> CGRect {
+        guard let size = player?.currentItem?.presentationSize, size != .zero else { return bounds }
+        return TrailerLetterbox.frame(videoSize: size, picture: picture, filling: bounds.size)
     }
 
     private func itemDidEnd() {
@@ -131,6 +173,8 @@ final class LoopingPlayerUIView: UIView {
     // dismantleUIView, which runs at the actual moment SwiftUI removes this view, since a
     // crossfade transition can delay this deinit well past that point.
     func stop() {
+        letterboxTask?.cancel()
+        letterboxTask = nil
         player?.pause()
         player = nil
         if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }
@@ -145,21 +189,11 @@ final class LoopingPlayerUIView: UIView {
         stop()
     }
 
-    // See PlayerSurfaceView's own note in PlayerSupportViews.swift — this view's own backing
-    // layer IS the AVPlayerLayer (layerClass above), so suppressing implicit animation has to
-    // happen at the layer-delegate hook, not by wrapping a redundant frame reassignment in
-    // CATransaction.setDisableActions in layoutSubviews.
-    override func action(for layer: CALayer, forKey event: String) -> CAAction? {
-        switch event {
-        case "bounds", "position", "frame", "transform", "sublayerTransform":
-            return NSNull()
-        default:
-            return super.action(for: layer, forKey: event)
-        }
-    }
-
     override func layoutSubviews() {
         super.layoutSubviews()
-        playerLayer.frame = bounds
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        playerLayer.frame = videoFrame()
+        CATransaction.commit()
     }
 }
