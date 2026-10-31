@@ -31,7 +31,6 @@ struct HomeHeroBanner<Background: View>: View {
                             if let item = items[safe: carousel.index] { openItem(item) }
                         }
                     )
-                if !isPortrait { Spacer(minLength: 0) }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
@@ -52,13 +51,9 @@ struct HomeHeroBanner<Background: View>: View {
 
     private var imageFade: some View {
         LinearGradient(
-            stops: isPortrait
-                ? [.init(color: .clear, location: 0.3),
-                   .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.75),
-                   .init(color: DT.Color.backgroundPrimary, location: 1)]
-                : [.init(color: .clear, location: 0.4),
-                   .init(color: DT.Color.backgroundPrimary.opacity(0.55), location: 0.78),
-                   .init(color: DT.Color.backgroundPrimary, location: 1)],
+            stops: [.init(color: .clear, location: 0.3),
+                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.75),
+                    .init(color: DT.Color.backgroundPrimary, location: 1)],
             startPoint: .top, endPoint: .bottom
         )
     }

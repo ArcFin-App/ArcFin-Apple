@@ -48,17 +48,15 @@ struct HomeView: View {
 
     /// Pulled out of the GeometryReader closure in body — inline ternary + if/else there
     /// pushed the surrounding ViewBuilder expression past the type-checker's time budget.
-    private func heroDimensions(screenW: CGFloat, screenH: CGFloat) -> (imageH: CGFloat, heroH: CGFloat) {
+    private func heroHeight(screenW: CGFloat, screenH: CGFloat) -> CGFloat {
         let rawImageH: CGFloat = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
         // On iPad/Mac (regular width — usePortraitHero is iPhone-only), the hero banner
         // was nearly filling the window before any shelves came into view. Capped there;
         // iPhone's portrait hero is already sized off its own aspect ratio and left alone.
-        guard !usePortraitHero else { return (rawImageH, rawImageH) }
+        guard !usePortraitHero else { return rawImageH }
         let capFraction: CGFloat = 0.7
         let cap = screenH * capFraction
-        let heroH = min(rawImageH + 220, cap)
-        let imageH = max(0, heroH - 220)
-        return (imageH, heroH)
+        return min(rawImageH + 220, cap)
     }
 
     // The modifier chain below is split across three properties: as one expression it grew
@@ -68,9 +66,7 @@ struct HomeView: View {
             GeometryReader { proxy in
                 let screenW = proxy.size.width
                 let screenH = proxy.size.height
-                let dims = heroDimensions(screenW: screenW, screenH: screenH)
-                let imageH = dims.imageH
-                let heroH = dims.heroH
+                let heroH = heroHeight(screenW: screenW, screenH: screenH)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -79,7 +75,7 @@ struct HomeView: View {
                         // black bar above it.
                         GeometryReader { heroGeo in
                             let stretch = max(0, heroGeo.frame(in: .named("homeScroll")).minY)
-                            heroBanner(imageH: imageH + stretch, screenW: screenW)
+                            heroBanner(imageH: heroH + stretch, screenW: screenW)
                                 .offset(y: -stretch)
                         }
                         .frame(height: heroH)
