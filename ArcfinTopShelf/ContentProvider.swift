@@ -31,6 +31,7 @@ class ContentProvider: TVTopShelfContentProvider {
         let si = TVTopShelfSectionedItem(identifier: item.id)
         si.title = item.title
         si.imageShape = .hdtv
+        si.playbackProgress = item.progress
         if let url = item.imageURL {
             si.setImageURL(url, for: .screenScale1x)
             si.setImageURL(url, for: .screenScale2x)

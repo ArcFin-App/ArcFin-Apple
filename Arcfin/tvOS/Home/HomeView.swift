@@ -760,8 +760,8 @@ struct HomeView: View {
     private func topShelfTitle(_ item: MediaItem) -> String {
         guard item.type == .episode else { return item.name }
         let show = item.seriesName ?? item.name
-        guard let sub = itemSubtitle(item) else { return show }
-        return "\(show) – \(sub)"
+        guard let code = HomeText.episodeLabel(item) else { return show }
+        return "\(show) · \(code)"
     }
 }
 
