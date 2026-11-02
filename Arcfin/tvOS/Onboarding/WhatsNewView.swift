@@ -20,13 +20,23 @@ struct WhatsNewView: View {
                 .focused($continueFocused)
             }
             .frame(width: 560)
+            .focusSection()
 
-            VStack(alignment: .leading, spacing: 44) {
-                ForEach(Array(WhatsNew.items.enumerated()), id: \.offset) { _, item in
-                    IntroductionFeatureRow(icon: item.icon, title: item.title, detail: item.detail)
+            // Each item takes focus so the remote can scroll a list taller than the screen.
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(Array(WhatsNew.items.enumerated()), id: \.offset) { _, item in
+                        IntroductionFeatureRow(icon: item.icon, title: item.title, detail: item.detail)
+                            .padding(18)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .tvFocusable(cornerRadius: DT.Radius.md)
+                    }
                 }
+                .padding(24)
             }
-            .frame(maxWidth: 900, alignment: .leading)
+            .defaultScrollAnchor(.center, for: .alignment)
+            .frame(maxWidth: 900)
+            .focusSection()
         }
         .padding(80)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -172,7 +172,13 @@ final class SeerrRepository {
     func loadWatchlist() async {
         guard let client else { return }
         // A failed fetch keeps what's shown, so the shelf doesn't vanish and come back.
-        guard let fetched = try? await client.watchlist() else { return }
+        let fetched: [SeerrItem]
+        do {
+            fetched = try await client.watchlist()
+        } catch {
+            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            return
+        }
         watchlist = await visible(fetched)
         indexForSpotlight()
     }
