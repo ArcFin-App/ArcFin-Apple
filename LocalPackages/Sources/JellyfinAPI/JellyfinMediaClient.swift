@@ -51,7 +51,7 @@ public struct JellyfinMediaClient: Sendable {
             resolvingAgainstBaseURL: false
         )!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
             .init(name: "ImageTypeLimit", value: "1"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "Recursive", value: "true"),
@@ -78,7 +78,7 @@ public struct JellyfinMediaClient: Sendable {
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableImages", value: "true"),
         ]
@@ -106,7 +106,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "IncludeItemTypes", value: itemType),
             .init(name: "Recursive", value: "true"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
             .init(name: "EnableUserData", value: "true"),
         ]
         var req = URLRequest(url: comps.url!)
@@ -281,7 +281,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: "Descending"),
             .init(name: "Filters", value: "IsResumable"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "IncludeItemTypes", value: "Movie,Episode"),
         ]
@@ -1163,6 +1163,7 @@ struct JellyfinItemResponse: Decodable {
     let parentBackdropImageTags: [String]?
     let providerIds: [String: String]?
     let genres: [String]?
+    let runTimeTicks: Int64?
     let premiereDate: String?
     let locationType: String?
 
@@ -1170,6 +1171,7 @@ struct JellyfinItemResponse: Decodable {
         case premiereDate = "PremiereDate"
         case locationType = "LocationType"
         case genres = "Genres"
+        case runTimeTicks = "RunTimeTicks"
         case id = "Id"
         case name = "Name"
         case type = "Type"
@@ -1220,6 +1222,8 @@ struct JellyfinItemResponse: Decodable {
             parentBackdropImageTags: parentBackdropImageTags ?? [],
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
             premiereDate: premiereDate.flatMap(Self.parseDay),
+            runTimeTicks: runTimeTicks,
+            genres: genres ?? [],
             isVirtual: locationType == "Virtual"
         )
     }
