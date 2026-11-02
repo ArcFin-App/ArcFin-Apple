@@ -13,6 +13,7 @@ struct HomeView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
@@ -36,7 +37,9 @@ struct HomeView: View {
     private let heroTimer = Timer.publish(every: 8, on: .main, in: .common).autoconnect()
 
     private var heroItems: [MediaItem] { HomeHeroCarousel.items(in: mediaRepo) }
-    private var usePortraitHero: Bool { sizeClass == .compact }
+    /// A phone held upright. Turned sideways it gets the wide hero: the portrait one was
+    /// taller than the whole screen.
+    private var usePortraitHero: Bool { sizeClass == .compact && verticalSizeClass != .compact }
 
     private var orderedVisibleShelves: [HomeShelf] {
         model.shelves(order: homeShelfOrderString, active: homeShelfActiveString, shuffled: shuffleHomeShelves)
@@ -64,7 +67,10 @@ struct HomeView: View {
     private var homeNavigation: some View {
         NavigationStack {
             GeometryReader { proxy in
-                let screenW = proxy.size.width
+                // The hero runs under the sides' safe areas (the notch side in landscape),
+                // where it otherwise left bars; the shelves stay inside them.
+                let insets = proxy.safeAreaInsets
+                let screenW = proxy.size.width + insets.leading + insets.trailing
                 let screenH = proxy.size.height
                 let heroH = heroHeight(screenW: screenW, screenH: screenH)
 
@@ -96,11 +102,13 @@ struct HomeView: View {
                             }
                         }
                         .padding(.top, 12)
+                        .padding(.leading, insets.leading)
+                        .padding(.trailing, insets.trailing)
                     }
                 }
                 .coordinateSpace(name: "homeScroll")
                 .screenBackground()
-                .ignoresSafeArea(edges: .top)
+                .ignoresSafeArea(edges: [.top, .horizontal])
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
                 }
