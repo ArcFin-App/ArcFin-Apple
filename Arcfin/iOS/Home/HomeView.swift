@@ -13,6 +13,7 @@ struct HomeView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
@@ -36,7 +37,9 @@ struct HomeView: View {
     private let heroTimer = Timer.publish(every: 8, on: .main, in: .common).autoconnect()
 
     private var heroItems: [MediaItem] { HomeHeroCarousel.items(in: mediaRepo) }
-    private var usePortraitHero: Bool { sizeClass == .compact }
+    /// A phone held upright. Turned sideways it gets the wide hero: the portrait one was
+    /// taller than the whole screen.
+    private var usePortraitHero: Bool { sizeClass == .compact && verticalSizeClass != .compact }
 
     private var orderedVisibleShelves: [HomeShelf] {
         model.shelves(order: homeShelfOrderString, active: homeShelfActiveString, shuffled: shuffleHomeShelves)
@@ -48,17 +51,15 @@ struct HomeView: View {
 
     /// Pulled out of the GeometryReader closure in body — inline ternary + if/else there
     /// pushed the surrounding ViewBuilder expression past the type-checker's time budget.
-    private func heroDimensions(screenW: CGFloat, screenH: CGFloat) -> (imageH: CGFloat, heroH: CGFloat) {
+    private func heroHeight(screenW: CGFloat, screenH: CGFloat) -> CGFloat {
         let rawImageH: CGFloat = (usePortraitHero ? screenW * 1.45 : screenW * 9 / 16) * 0.8
         // On iPad/Mac (regular width — usePortraitHero is iPhone-only), the hero banner
         // was nearly filling the window before any shelves came into view. Capped there;
         // iPhone's portrait hero is already sized off its own aspect ratio and left alone.
-        guard !usePortraitHero else { return (rawImageH, rawImageH) }
+        guard !usePortraitHero else { return rawImageH }
         let capFraction: CGFloat = 0.7
         let cap = screenH * capFraction
-        let heroH = min(rawImageH + 220, cap)
-        let imageH = max(0, heroH - 220)
-        return (imageH, heroH)
+        return min(rawImageH + 220, cap)
     }
 
     // The modifier chain below is split across three properties: as one expression it grew
@@ -66,11 +67,12 @@ struct HomeView: View {
     private var homeNavigation: some View {
         NavigationStack {
             GeometryReader { proxy in
-                let screenW = proxy.size.width
+                // The hero runs under the sides' safe areas (the notch side in landscape),
+                // where it otherwise left bars; the shelves stay inside them.
+                let insets = proxy.safeAreaInsets
+                let screenW = proxy.size.width + insets.leading + insets.trailing
                 let screenH = proxy.size.height
-                let dims = heroDimensions(screenW: screenW, screenH: screenH)
-                let imageH = dims.imageH
-                let heroH = dims.heroH
+                let heroH = heroHeight(screenW: screenW, screenH: screenH)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -79,7 +81,7 @@ struct HomeView: View {
                         // black bar above it.
                         GeometryReader { heroGeo in
                             let stretch = max(0, heroGeo.frame(in: .named("homeScroll")).minY)
-                            heroBanner(imageH: imageH + stretch, screenW: screenW)
+                            heroBanner(imageH: heroH + stretch, screenW: screenW)
                                 .offset(y: -stretch)
                         }
                         .frame(height: heroH)
@@ -100,11 +102,13 @@ struct HomeView: View {
                             }
                         }
                         .padding(.top, 12)
+                        .padding(.leading, insets.leading)
+                        .padding(.trailing, insets.trailing)
                     }
                 }
                 .coordinateSpace(name: "homeScroll")
                 .screenBackground()
-                .ignoresSafeArea(edges: .top)
+                .ignoresSafeArea(edges: [.top, .horizontal])
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
                 }
