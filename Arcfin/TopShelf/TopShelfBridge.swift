@@ -11,13 +11,29 @@ public struct TopShelfMediaItem: Codable {
     public let subtitle: String?    // e.g. "S1 E4 · Episode Title"
     public let imageURL: URL?       // backdrop/landscape 16:9 preferred
     public let progress: Double     // 0.0 – 1.0
+    public let summary: String?
+    public let genre: String?
+    public let duration: TimeInterval?  // seconds
+    public let year: Int?
+    public let backdropURL: URL?        // 1920-wide 16:9 for the carousel
+    public let contextTitle: String?    // why it is shown, already localized
 
-    public init(id: String, title: String, subtitle: String?, imageURL: URL?, progress: Double) {
+    public init(
+        id: String, title: String, subtitle: String?, imageURL: URL?, progress: Double,
+        summary: String? = nil, genre: String? = nil, duration: TimeInterval? = nil,
+        year: Int? = nil, backdropURL: URL? = nil, contextTitle: String? = nil
+    ) {
         self.id = id
         self.title = title
         self.subtitle = subtitle
         self.imageURL = imageURL
         self.progress = progress
+        self.summary = summary
+        self.genre = genre
+        self.duration = duration
+        self.year = year
+        self.backdropURL = backdropURL
+        self.contextTitle = contextTitle
     }
 }
 

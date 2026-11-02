@@ -10,6 +10,12 @@ struct TopShelfMediaItem: Codable {
     let subtitle: String?
     let imageURL: URL?
     let progress: Double
+    let summary: String?
+    let genre: String?
+    let duration: TimeInterval?
+    let year: Int?
+    let backdropURL: URL?
+    let contextTitle: String?
 }
 
 enum TopShelfBridge {
