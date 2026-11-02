@@ -47,18 +47,20 @@ struct MediaDetailView: View {
 
     var body: some View {
         let shareURL = model.shareURL(authManager: authManager)
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                MediaDetailHero(item: item, metrics: headerMetrics)
-                MediaDetailTitleBlock(item: item, detail: model.detail, awards: model.awards, metrics: headerMetrics)
-                if model.isLoading { loadingContent }
-                else { detailContent }
-                Spacer().frame(height: DT.Size.tabBarHeight + 24)
+        // Opened in landscape (or while the player still held the screen in landscape), the
+        // page kept that width after turning to portrait and ran past both edges, even pinned
+        // with containerRelativeFrame; the width read here follows the turn.
+        GeometryReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    MediaDetailHero(item: item, metrics: headerMetrics)
+                    MediaDetailTitleBlock(item: item, detail: model.detail, awards: model.awards, metrics: headerMetrics)
+                    if model.isLoading { loadingContent }
+                    else { detailContent }
+                    Spacer().frame(height: DT.Size.tabBarHeight + 24)
+                }
+                .frame(width: proxy.size.width)
             }
-            // The page can be laid out while the player still holds the screen in landscape;
-            // pinned to the visible width, it re-fits when the device turns back to portrait
-            // instead of keeping the landscape width and running past both edges.
-            .containerRelativeFrame(.horizontal)
         }
         .background {
             ZStack {
