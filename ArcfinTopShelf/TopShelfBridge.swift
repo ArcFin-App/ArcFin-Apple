@@ -16,14 +16,21 @@ struct TopShelfMediaItem: Codable {
     let year: Int?
     let backdropURL: URL?
     let contextTitle: String?
+    let logoURL: URL?
+    let ratingTitle: String?
+    let ratingValue: String?
+    let artworkFileName: String?
+    let artworkHasLogo: Bool?
 }
 
 enum TopShelfBridge {
     private static let suiteName            = "group.com.psmattas.Arcfin.shared"
     private static let continueWatchingKey  = "topShelf.continueWatching"
+    private static let nextUpKey            = "topShelf.nextUp"
     private static let recentlyAddedKey     = "topShelf.recentlyAdded"
 
     static func loadContinueWatching() -> [TopShelfMediaItem] { load(key: continueWatchingKey) }
+    static func loadNextUp()           -> [TopShelfMediaItem] { load(key: nextUpKey) }
     static func loadRecentlyAdded()    -> [TopShelfMediaItem] { load(key: recentlyAddedKey) }
 
     private static func load(key: String) -> [TopShelfMediaItem] {
@@ -32,6 +39,13 @@ enum TopShelfBridge {
               let items = try? JSONDecoder().decode([TopShelfMediaItem].self, from: data)
         else { return [] }
         return items
+    }
+
+    static func artworkURL(for item: TopShelfMediaItem) -> URL? {
+        guard let name = item.artworkFileName else { return nil }
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: suiteName)?
+            .appendingPathComponent("TopShelfArtwork", isDirectory: true)
+            .appendingPathComponent(name)
     }
 
     static func playURL(for itemID: String) -> URL {

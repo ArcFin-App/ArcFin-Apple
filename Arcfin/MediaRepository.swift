@@ -353,10 +353,14 @@ final class MediaRepository {
     }
 
     func logoURL(for item: MediaItem) -> URL? {
+        logoURL(itemID: item.id)
+    }
+
+    func logoURL(itemID: String, fillWidth: Int = 300) -> URL? {
         guard let base = baseURL, let token = accessToken else { return nil }
-        var comps = URLComponents(url: base.appendingPathComponent("Items/\(item.id)/Images/Logo"), resolvingAgainstBaseURL: false)!
+        var comps = URLComponents(url: base.appendingPathComponent("Items/\(itemID)/Images/Logo"), resolvingAgainstBaseURL: false)!
         comps.queryItems = [
-            .init(name: "fillWidth", value: "300"),
+            .init(name: "fillWidth", value: "\(fillWidth)"),
             .init(name: "quality", value: "90"),
             .init(name: "api_key", value: token),
         ]

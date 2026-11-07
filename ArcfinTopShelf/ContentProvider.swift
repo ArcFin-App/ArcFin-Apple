@@ -6,14 +6,16 @@ import Foundation
 class ContentProvider: TVTopShelfContentProvider {
 
     override func loadTopShelfContent() async -> (any TVTopShelfContent)? {
-        let items = TopShelfBridge.loadContinueWatching() + TopShelfBridge.loadRecentlyAdded()
+        var seen = Set<String>()
+        let items = (TopShelfBridge.loadContinueWatching() + TopShelfBridge.loadNextUp() + TopShelfBridge.loadRecentlyAdded())
+            .filter { seen.insert($0.id).inserted }
         guard !items.isEmpty else { return nil }
         return TVTopShelfCarouselContent(style: .details, items: items.map(makeItem(_:)))
     }
 
     private func makeItem(_ item: TopShelfMediaItem) -> TVTopShelfCarouselItem {
         let ci = TVTopShelfCarouselItem(identifier: item.id)
-        ci.title = item.title
+        ci.title = item.artworkHasLogo == true ? nil : item.title
         ci.contextTitle = item.contextTitle
         ci.summary = item.summary
         ci.genre = item.genre
@@ -21,7 +23,10 @@ class ContentProvider: TVTopShelfContentProvider {
         if let year = item.year {
             ci.creationDate = Calendar.current.date(from: DateComponents(year: year))
         }
-        if let url = item.backdropURL ?? item.imageURL {
+        if let title = item.ratingTitle, let value = item.ratingValue {
+            ci.namedAttributes = [TVTopShelfNamedAttribute(name: title, values: [value])]
+        }
+        if let url = TopShelfBridge.artworkURL(for: item) ?? item.backdropURL ?? item.imageURL {
             ci.setImageURL(url, for: .screenScale1x)
             ci.setImageURL(url, for: .screenScale2x)
         }

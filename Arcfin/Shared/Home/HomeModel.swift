@@ -84,18 +84,23 @@ final class HomeModel {
                 duration: item.runTimeTicks.map { TimeInterval($0) / 10_000_000 },
                 year: item.productionYear,
                 backdropURL: topShelfBackdropURL(for: item, mediaRepo: mediaRepo),
-                contextTitle: context
+                contextTitle: [context, HomeText.episodeLabel(item), progress > 0 ? progress.formatted(.percent.precision(.fractionLength(0))) : nil]
+                    .compactMap { $0 }.joined(separator: " · "),
+                logoURL: mediaRepo.logoURL(itemID: item.type == .episode ? item.seriesId ?? item.id : item.id, fillWidth: 800),
+                ratingTitle: String(localized: "Rating"),
+                ratingValue: item.communityRating.flatMap { $0 > 0 ? String(format: "★ %.1f", $0) : nil }
             )
         }
         let resumeContext = String(localized: "Continue Watching")
+        let nextUpContext = String(localized: "Next Up")
         let addedContext = String(localized: "Recently Added")
         TopShelfBridge.save(
             continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
                 let progress = item.userData?.playedPercentage.map { $0 / 100 } ?? 0
-                let context = progress > 0
-                    ? "\(resumeContext) · \(progress.formatted(.percent.precision(.fractionLength(0))))"
-                    : resumeContext
-                return entry(item, title: title(item), subtitle: subtitle(item), progress: progress, context: context)
+                return entry(item, title: title(item), subtitle: subtitle(item), progress: progress, context: resumeContext)
+            },
+            nextUp: mediaRepo.nextUp.prefix(3).map { item in
+                entry(item, title: title(item), subtitle: subtitle(item), progress: 0, context: nextUpContext)
             },
             recentlyAdded: mediaRepo.recentlyAdded.prefix(3).map { item in
                 entry(item, title: item.name, subtitle: nil, progress: 0, context: addedContext)
