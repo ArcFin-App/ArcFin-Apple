@@ -29,6 +29,9 @@ public final class CastManager: NSObject {
     /// Title of whatever this app last loaded onto the receiver, for UI that outlives the
     /// player screen (the mini controller). Cleared when the session ends.
     public private(set) var nowPlayingTitle: String?
+    /// The Jellyfin item on the receiver, so the mini controller can reopen its player. Sent
+    /// along as the media's customData, so a session resumed after a relaunch still has it.
+    public private(set) var nowPlayingItemID: String?
     /// Bumps each time the receiver reports the loaded item played to its end — observers
     /// use the change as an event (e.g. to cast the next episode); the value itself is
     /// meaningless.
@@ -79,7 +82,7 @@ public final class CastManager: NSObject {
     }
 
     public func loadMedia(
-        streamURL: URL, title: String, subtitle: String?, posterImageURL: URL?,
+        itemID: String, streamURL: URL, title: String, subtitle: String?, posterImageURL: URL?,
         contentType: String, startPositionSeconds: TimeInterval,
         subtitleTracks: [SubtitleTrack] = [], activeSubtitleTrackID: Int? = nil,
         isTransportStreamHLS: Bool = false
@@ -87,6 +90,7 @@ public final class CastManager: NSObject {
         #if canImport(GoogleCast)
         guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
         nowPlayingTitle = title
+        nowPlayingItemID = itemID
 
         let metadata = GCKMediaMetadata(metadataType: .movie)
         metadata.setString(title, forKey: kGCKMetadataKeyTitle)
@@ -97,6 +101,7 @@ public final class CastManager: NSObject {
         infoBuilder.contentType = contentType
         infoBuilder.streamType = .buffered
         infoBuilder.metadata = metadata
+        infoBuilder.customData = [Self.itemIDKey: itemID]
         if isTransportStreamHLS {
             // Left undefined the receiver guesses the segment layout, and the guess for
             // Jellyfin's TS+AAC output is what produced doubled, offset audio.
@@ -118,6 +123,8 @@ public final class CastManager: NSObject {
         client.loadMedia(with: requestBuilder.build())
         #endif
     }
+
+    private nonisolated static let itemIDKey = "arcfinItemId"
 
     public func setActiveSubtitleTrack(id: Int?) {
         #if canImport(GoogleCast)
@@ -204,7 +211,10 @@ extension CastManager: GCKSessionManagerListener {
 
     public nonisolated func sessionManager(_ sessionManager: GCKSessionManager, didResumeSession session: GCKSession) {
         let name = session.device.friendlyName
-        (session as? GCKCastSession)?.remoteMediaClient?.add(self)
+        let client = (session as? GCKCastSession)?.remoteMediaClient
+        client?.add(self)
+        // After a relaunch nothing here knows what the receiver is playing until it says so.
+        client?.requestStatus()
         MainActor.assumeIsolated {
             isConnecting = false
             isConnected = true
@@ -221,6 +231,7 @@ extension CastManager: GCKSessionManagerListener {
             isPaused = false
             deviceName = nil
             nowPlayingTitle = nil
+            nowPlayingItemID = nil
         }
     }
 
@@ -238,7 +249,13 @@ extension CastManager: GCKRemoteMediaClientListener {
         let finished = mediaStatus?.playerState == .idle && mediaStatus?.idleReason == .finished
         let position = mediaStatus?.streamPosition
         let receiverVolume = mediaStatus?.volume
+        let info = mediaStatus?.mediaInformation
+        let title = info?.metadata?.string(forKey: kGCKMetadataKeyTitle)
+        let itemID = (info?.customData as? [String: Any])?[Self.itemIDKey] as? String
         MainActor.assumeIsolated {
+            // Fills in what a resumed session doesn't know; a load from here already set both.
+            if nowPlayingTitle == nil, let title { nowPlayingTitle = title }
+            if nowPlayingItemID == nil, let itemID { nowPlayingItemID = itemID }
             // Idle statuses can repeat; only the transition into "finished" is an event.
             if finished, !lastStatusWasFinished { playbackFinishedCount += 1 }
             lastStatusWasFinished = finished
