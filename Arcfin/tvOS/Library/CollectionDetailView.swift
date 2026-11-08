@@ -77,6 +77,7 @@ struct CollectionDetailView: View {
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
+            .id(request.item.id)
         }
         .sheet(isPresented: $showFilterSheet) {
             NavigationStack {
