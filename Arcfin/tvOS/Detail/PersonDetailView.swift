@@ -14,6 +14,14 @@ struct PersonDetailView: View {
     @State private var selectedItem: MediaItem?
     @State private var requestingCredit: SeerrItem?
     @State private var openCredit: SeerrItem?
+    @FocusState private var focus: FocusTarget?
+
+    /// Where focus sits on this page: the header while there's nothing else to select, then the
+    /// first card once the page has loaded.
+    private enum FocusTarget: Hashable {
+        case header
+        case card(String)
+    }
 
     private let columns = [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: 40)]
 
@@ -22,19 +30,53 @@ struct PersonDetailView: View {
         _model = State(initialValue: PersonDetailModel(person: person))
     }
 
+    private var hasCards: Bool {
+        !model.isLoading && firstCard != nil
+    }
+
+    /// The card focus lands on: the first library title, else the first credit.
+    private var firstCard: FocusTarget? {
+        if let item = model.items.first { return .card("item-\(item.id)") }
+        if let credit = model.missingCredits(seerrRepo: seerrRepo).first { return .card("credit-\(credit.id)") }
+        return nil
+    }
+
     var body: some View {
         PersonDetailContent(model: model, columns: columns, creditScale: 1.8) { item, poster in
             Button { selectedItem = item } label: { poster }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
+                .focused($focus, equals: .card("item-\(item.id)"))
         } creditLink: { credit, card in
             Button { openCredit = credit.asSeerrItem } label: { card }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
                 .tvFocusRing(cornerRadius: DT.Radius.md)
+                .focused($focus, equals: .card("credit-\(credit.id)"))
+        } header: { header in
+            // Focusable so the page always has something on screen to select: while it loads,
+            // when it's empty or failed, and when coming down from the tab bar while the first
+            // card is still below the screen. Without it focus stayed on the tab bar, where
+            // Back leaves the page's stack.
+            header
+                .padding(.horizontal, 32)
+                .padding(.bottom, 16)
+                .tvFocusable(cornerRadius: DT.Radius.lg)
+                .focused($focus, equals: .header)
+        }
+        .focusSection()
+        .defaultFocus($focus, .header)
+        .task(id: hasCards) {
+            guard hasCards else { return }
+            // The first card may not be laid out yet; leave focus on the header if it never is.
+            for _ in 0..<10 where focus == .header {
+                focus = firstCard
+                try? await Task.sleep(for: .milliseconds(100))
+            }
         }
         .screenBackground()
-        .navigationTitle(person.name)
+        // The header already shows the name; a navigation title repeated it above the page.
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $requestingCredit) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingCredit)
                 .presentationDetents([.medium, .large])

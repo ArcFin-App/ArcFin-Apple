@@ -77,9 +77,13 @@ final class DownloadManager: NSObject {
     /// (network call, so filled in asynchronously — the activity starts without it and
     /// picks it up on the next refresh once the fetch completes).
     @ObservationIgnored private var liveActivityItemMeta: [String: (posterData: Data?, season: Int?, episode: Int?)] = [:]
+    /// The last title of a queue that drained while Smart Downloads may still add the next
+    /// episodes: the activity shows it as done but stays up, so they join it instead of each
+    /// starting an activity of its own (see settleLiveActivity).
+    @ObservationIgnored private var liveActivityPendingFinish: (title: String, meta: (posterData: Data?, season: Int?, episode: Int?)?)?
     #endif
-    /// Counts across the whole current queue run (reset when a fresh run starts after the
-    /// previous one fully drained) — drives the Live Activity's "N of M" display.
+    /// Counts across the whole current queue run, including what Smart Downloads adds to it
+    /// before the activity ends — drives the Live Activity's "N of M" display.
     @ObservationIgnored private var queueCompletedCount = 0
     @ObservationIgnored private var queueTotalCount = 0
     /// Own path monitor rather than reusing AuthManager's (which only re-resolves the
@@ -361,6 +365,10 @@ final class DownloadManager: NSObject {
         finishedMeta: (posterData: Data?, season: Int?, episode: Int?)? = nil
     ) {
         guard let liveActivity else { return }
+        if !isFinished, let pending = liveActivityPendingFinish {
+            refreshLiveActivity(isFinished: true, finishedTitle: pending.title, finishedMeta: pending.meta)
+            return
+        }
         let itemId = activeItemIds.first
         let stat = itemId.flatMap { stats[$0] }
         let meta = isFinished ? finishedMeta : itemId.flatMap { liveActivityItemMeta[$0] }
@@ -456,8 +464,17 @@ final class DownloadManager: NSObject {
         }
     }
 
+    /// Ends a drained queue's activity once Smart Downloads has nothing more to add to it.
+    private func settleLiveActivity() {
+        guard let pending = liveActivityPendingFinish, !isRunningSmartDownloads,
+              pendingQueue.isEmpty, activeItemIds.isEmpty else { return }
+        liveActivityPendingFinish = nil
+        endLiveActivity(lastTitle: pending.title, lastMeta: pending.meta)
+    }
+
     /// Cancelling isn't completing — no "Download Complete" flourish, no lingering card.
     private func endLiveActivityImmediately() {
+        liveActivityPendingFinish = nil
         guard let liveActivity else { return }
         self.liveActivity = nil
         Task { await liveActivity.end(nil, dismissalPolicy: .immediate) }
@@ -682,11 +699,12 @@ final class DownloadManager: NSObject {
         activeItemTitles[item.id] = item.name
         pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
-        if isFreshQueue {
+        if isFreshQueue && liveActivityPendingFinish == nil {
             queueCompletedCount = 0
             queueTotalCount = 1
             beginLiveActivity(currentItemTitle: item.name)
         } else {
+            liveActivityPendingFinish = nil
             queueTotalCount += 1
             refreshLiveActivity()
         }
@@ -774,7 +792,13 @@ final class DownloadManager: NSObject {
         // A show just got a downloaded episode, so Smart Downloads can line up the ones after
         // it. Only once the queue has drained: running it mid-queue would reenter this loop
         // (see runSmartDownloadsIfNeeded), and a run already in progress ignores this.
-        if downloadedEpisode, !isQueuePaused { refreshSmartDownloads() }
+        if downloadedEpisode, !isQueuePaused {
+            refreshSmartDownloads()
+        } else {
+            #if canImport(ActivityKit) && os(iOS)
+            settleLiveActivity()
+            #endif
+        }
     }
 
     /// `skipVideoDownload` is set only by orphan recovery (see recoverOrphanedDownload) —
@@ -900,7 +924,13 @@ final class DownloadManager: NSObject {
         queueCompletedCount += 1
         // Another title can still be transferring alongside (Downloads at Once).
         if pendingQueue.isEmpty && activeItemIds.isEmpty {
-            endLiveActivity(lastTitle: finishedTitle, lastMeta: finishedMeta)
+            // A queue run ends by asking Smart Downloads for the episodes after this one.
+            if isProcessingQueue {
+                liveActivityPendingFinish = (finishedTitle, finishedMeta)
+                refreshLiveActivity()
+            } else {
+                endLiveActivity(lastTitle: finishedTitle, lastMeta: finishedMeta)
+            }
         } else {
             refreshLiveActivity()
         }
@@ -1291,11 +1321,19 @@ final class DownloadManager: NSObject {
     /// places other than launch: the app coming to the foreground, the connection coming back,
     /// the player closing, or a show being switched on.
     func refreshSmartDownloads() {
-        guard let authManager, let credential = authManager.state.credential else { return }
+        guard let authManager, let credential = authManager.state.credential else {
+            #if canImport(ActivityKit) && os(iOS)
+            settleLiveActivity()
+            #endif
+            return
+        }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         Task {
             await reconcileWatchedState()
             await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
+            #if canImport(ActivityKit) && os(iOS)
+            settleLiveActivity()
+            #endif
         }
     }
 
@@ -1334,7 +1372,12 @@ final class DownloadManager: NSObject {
             isRunningSmartDownloads = false
             if smartDownloadsRerunRequested {
                 smartDownloadsRerunRequested = false
-                Task { await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader) }
+                Task {
+                    await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader)
+                    #if canImport(ActivityKit) && os(iOS)
+                    settleLiveActivity()
+                    #endif
+                }
             }
         }
 
