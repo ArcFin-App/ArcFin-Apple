@@ -182,7 +182,7 @@ struct LibraryItemCard: View {
 // MARK: - Browse sections
 
 struct LibrarySectionHeader: View {
-    let title: String
+    let title: LocalizedStringKey
 
     var body: some View {
         Text(title)
