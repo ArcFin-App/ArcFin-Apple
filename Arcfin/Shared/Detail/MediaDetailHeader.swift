@@ -10,40 +10,44 @@ struct MediaDetailHero: View {
     let metrics: DetailHeaderMetrics
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: metrics.backdropFillWidth) {
-                RetryingAsyncImage(
-                    url: url,
-                    logCategory: "MediaDetailView",
-                    logContext: "backdrop item=\(item.name)",
-                    content: { img in
-                        img
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    },
-                    placeholder: { DetailFallbackHero(item: item) }
-                )
-            } else { DetailFallbackHero(item: item) }
+        // Sized by the page, not the artwork: a fill-scaled backdrop is wider than its column,
+        // and as an overlay it can't push the page out past the edges or make the page's
+        // width depend on the window's.
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: metrics.heroHeight)
+            .overlay {
+                ZStack(alignment: .bottom) {
+                    if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: metrics.backdropFillWidth) {
+                        RetryingAsyncImage(
+                            url: url,
+                            logCategory: "MediaDetailView",
+                            logContext: "backdrop item=\(item.name)",
+                            content: { img in
+                                img
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            },
+                            placeholder: { DetailFallbackHero(item: item) }
+                        )
+                    } else { DetailFallbackHero(item: item) }
 
-            // Progressive blur: the material only shows toward the bottom edge, so the
-            // image softens as it leaves the frame rather than being covered by a flat band.
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .mask(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0.35),
-                            .init(color: .black, location: 1),
-                        ],
-                        startPoint: .top, endPoint: .bottom
-                    )
-                )
-        }
-        .frame(height: metrics.heroHeight)
-        // Exactly the screen's width: a fill-scaled backdrop is wider than a small phone, and
-        // sized by its own width it pushed the whole page out past both edges.
-        .containerRelativeFrame(.horizontal)
+                    // Progressive blur: the material only shows toward the bottom edge, so the
+                    // image softens as it leaves the frame rather than being covered by a flat band.
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .mask(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .clear, location: 0.35),
+                                    .init(color: .black, location: 1),
+                                ],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                        )
+                }
+            }
         // Fading the artwork's own opacity (instead of painting the page color over it)
         // blends into whatever is behind, including the artwork-tinted page background.
         .mask(

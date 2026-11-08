@@ -12,35 +12,39 @@ struct DetailHeroBackdrop<Fallback: View>: View {
     @ViewBuilder var fallback: Fallback
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            if let url {
-                CachedAsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    default:
+        // Sized by the page, not the artwork: a fill-scaled backdrop is wider than its column,
+        // and as an overlay it can't push the page out past the edges or make the page's
+        // width depend on the window's.
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: height)
+            .overlay {
+                ZStack(alignment: .bottom) {
+                    if let url {
+                        CachedAsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            default:
+                                fallback
+                            }
+                        }
+                    } else {
                         fallback
                     }
-                }
-            } else {
-                fallback
-            }
 
-            // Progressive blur: the material only shows toward the bottom edge.
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .mask(
-                    LinearGradient(
-                        stops: [.init(color: .clear, location: 0.35), .init(color: .black, location: 1)],
-                        startPoint: .top, endPoint: .bottom
-                    )
-                )
-        }
-        .frame(height: height)
-        // Exactly the screen's width; a fill-scaled image sized by its own width pushes the
-        // page past both edges on a narrow phone.
-        .containerRelativeFrame(.horizontal)
+                    // Progressive blur: the material only shows toward the bottom edge.
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .mask(
+                            LinearGradient(
+                                stops: [.init(color: .clear, location: 0.35), .init(color: .black, location: 1)],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                        )
+                }
+            }
         .mask(
             LinearGradient(
                 stops: [

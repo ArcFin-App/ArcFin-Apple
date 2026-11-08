@@ -76,6 +76,11 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             phaseContent
+                // Title pages pin their content to the container's width. Sized from that
+                // content, the window grew by the sidebar's width on every pass until AppKit
+                // aborted (#345). With both bounds set the frame takes the window's size and
+                // never asks the content for one.
+                .frame(minWidth: 800, maxWidth: .infinity, minHeight: 500, maxHeight: .infinity)
 
             if model.isShowing(.onboarding, phase: phase) {
                 OnboardingView(isSignedIn: phase == .main) { model.introduction.finishOnboarding() }
