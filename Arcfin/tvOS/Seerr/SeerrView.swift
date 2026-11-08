@@ -98,18 +98,18 @@ struct SeerrView: View {
                         .padding(.horizontal, 80)
                         .padding(.bottom, 40)
                 } else if !trendingForType.isEmpty {
-                    tvShelf(title: showsTrending ? "Trending Now" : "Popular", items: trendingForType)
+                    tvShelf(title: showsTrending ? String(localized: "Trending Now") : String(localized: "Popular"), items: trendingForType)
                 }
                 let upcoming = model.upcoming(in: seerrRepo)
                 if !upcoming.isEmpty {
-                    tvShelf(title: "Upcoming", items: upcoming)
+                    tvShelf(title: String(localized: "Upcoming"), items: upcoming)
                 }
                 let popular = model.popular(in: seerrRepo)
                 if showsTrending, !popular.isEmpty {
-                    tvShelf(title: model.mediaType == .tv ? "Popular Series" : "Popular Movies", items: popular)
+                    tvShelf(title: model.mediaType == .tv ? String(localized: "Popular Series") : String(localized: "Popular Movies"), items: popular)
                 }
                 if !model.languageItems.isEmpty, let name = model.languageName {
-                    tvShelf(title: "Popular in \(name)", items: model.languageItems)
+                    tvShelf(title: String(localized: "Popular in \(name)"), items: model.languageItems)
                 }
                 genreRow
 
