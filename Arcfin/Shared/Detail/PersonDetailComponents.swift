@@ -6,7 +6,7 @@ import SeerrAPI
 
 /// A person's page below the navigation bar: photo, name and bio, their titles in the library,
 /// and what else they're in.
-struct PersonDetailContent<ItemLink: View, CreditLink: View>: View {
+struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     let model: PersonDetailModel
@@ -16,12 +16,14 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View>: View {
     @ViewBuilder let itemLink: (MediaItem, PosterCard) -> ItemLink
     /// Each platform's button around a credit Seerr can request.
     @ViewBuilder let creditLink: (SeerrPersonCredit, PersonCreditCard) -> CreditLink
+    /// Each platform's wrapper around the photo, name and role.
+    @ViewBuilder let header: (PersonDetailHeader) -> Header
 
     var body: some View {
         let missingCredits = model.missingCredits(seerrRepo: seerrRepo)
         ScrollView(showsIndicators: false) {
             VStack(spacing: DT.Spacing.md) {
-                PersonDetailHeader(person: model.person)
+                header(PersonDetailHeader(person: model.person))
 
                 if model.isLoading {
                     // Full width and a fixed height, so the page is already its final size
@@ -36,6 +38,9 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View>: View {
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            // Apple TV scrolls only by moving focus: a long bio pushed the titles
+                            // below the screen with nothing focusable in between.
+                            .tvFocusable(cornerRadius: DT.Radius.md)
                             .padding(.horizontal, DT.Spacing.pagePad)
                     }
 
@@ -75,7 +80,18 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View>: View {
     }
 }
 
-private struct PersonDetailHeader: View {
+extension PersonDetailContent where Header == PersonDetailHeader {
+    init(
+        model: PersonDetailModel, columns: [GridItem], creditScale: CGFloat,
+        @ViewBuilder itemLink: @escaping (MediaItem, PosterCard) -> ItemLink,
+        @ViewBuilder creditLink: @escaping (SeerrPersonCredit, PersonCreditCard) -> CreditLink
+    ) {
+        self.init(model: model, columns: columns, creditScale: creditScale,
+                  itemLink: itemLink, creditLink: creditLink, header: { $0 })
+    }
+}
+
+struct PersonDetailHeader: View {
     @Environment(MediaRepository.self) private var mediaRepo
     let person: MediaPerson
 
