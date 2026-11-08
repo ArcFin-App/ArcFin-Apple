@@ -105,7 +105,7 @@ struct SeerrDiscoverPage: View {
                         upcomingSection
                     }
                     if !model.languageItems.isEmpty, let languageName = model.languageName {
-                        itemGrid(title: "Popular in \(languageName)", items: Array(model.languageItems.prefix(10)), isLoading: false)
+                        itemGrid(title: String(localized: "Popular in \(languageName)"), items: Array(model.languageItems.prefix(10)), isLoading: false)
                     }
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
@@ -131,7 +131,7 @@ struct SeerrDiscoverPage: View {
                 // Genre chips
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
-                        genreChip(label: "All", isSelected: model.selectedGenre == nil) {
+                        genreChip(label: String(localized: "All"), isSelected: model.selectedGenre == nil) {
                             withAnimation(DT.Animation.fast) { model.selectedGenre = nil }
                         }
                         ForEach(genresForType) { genre in
@@ -193,11 +193,11 @@ struct SeerrDiscoverPage: View {
     }
 
     private var trendingSection: some View {
-        itemGrid(title: showsTrending ? "Trending Now" : "Popular", items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
+        itemGrid(title: showsTrending ? String(localized: "Trending Now") : String(localized: "Popular"), items: trendingForType, isLoading: seerrRepo.isLoadingDiscover)
     }
 
     private var upcomingSection: some View {
-        itemGrid(title: "Upcoming", items: upcomingForType, isLoading: false)
+        itemGrid(title: String(localized: "Upcoming"), items: upcomingForType, isLoading: false)
     }
 
     private func genreResultsSection(_ genre: SeerrGenre) -> some View {

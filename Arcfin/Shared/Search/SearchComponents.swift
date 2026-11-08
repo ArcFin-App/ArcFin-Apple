@@ -70,7 +70,7 @@ struct SearchEmptyState: View {
 }
 
 struct SearchingRow: View {
-    let text: String
+    let text: LocalizedStringKey
 
     var body: some View {
         HStack(spacing: 10) {
