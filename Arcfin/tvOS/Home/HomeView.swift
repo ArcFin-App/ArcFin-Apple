@@ -127,6 +127,11 @@ struct HomeView: View {
             }
         }
         .task { await load() }
+        .task(id: topShelfSignature) {
+            guard !topShelfSignature.isEmpty else { return }
+            model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
+            await TopShelfArtwork.refresh()
+        }
         // The hero already shows the first Continue Watching item until something's focused.
         // Assigning focus to it here pulled the page down to that row once Home loaded.
         .onChange(of: mediaRepo.continueWatching) { _, _ in
@@ -153,7 +158,7 @@ struct HomeView: View {
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
                 model.deepLinkItemID = id
-                model.detailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
+                model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
@@ -178,12 +183,11 @@ struct HomeView: View {
              mediaRepo.logoURL(for: item)].compactMap { $0 }
         }
         ImageCache.preheat(urls: heroURLs)
-        model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
         let pendingID = model.deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
         if let id = pendingID {
             UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
             model.deepLinkItemID = nil
-            model.detailItem = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).first { $0.id == id }
+            model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
         }
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
@@ -760,12 +764,18 @@ struct HomeView: View {
         return item.productionYear.map { String($0) }
     }
 
+    // Changes when the shelf's items or their progress do, so it follows what was just watched.
+    private var topShelfSignature: [String] {
+        (mediaRepo.continueWatching.prefix(5) + mediaRepo.nextUp.prefix(3) + mediaRepo.recentlyAdded.prefix(3))
+            .map { "\($0.id)-\(Int($0.userData?.playedPercentage ?? 0))" }
+    }
+
     // Top Shelf title includes S/E so users see context without needing a subtitle row
     private func topShelfTitle(_ item: MediaItem) -> String {
         guard item.type == .episode else { return item.name }
         let show = item.seriesName ?? item.name
-        guard let sub = itemSubtitle(item) else { return show }
-        return "\(show) – \(sub)"
+        guard let code = HomeText.episodeLabel(item) else { return show }
+        return "\(show) · \(code)"
     }
 }
 

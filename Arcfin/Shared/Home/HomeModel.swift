@@ -74,23 +74,50 @@ final class HomeModel {
     }
 
     func saveTopShelf(mediaRepo: MediaRepository, title: (MediaItem) -> String, subtitle: (MediaItem) -> String?) {
+        func entry(_ item: MediaItem, title: String, subtitle: String?, progress: Double, context: String) -> TopShelfMediaItem {
+            TopShelfMediaItem(
+                id: item.id, title: title, subtitle: subtitle,
+                imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
+                progress: progress,
+                summary: item.overview,
+                genre: item.genres.first,
+                duration: item.runTimeTicks.map { TimeInterval($0) / 10_000_000 },
+                year: item.productionYear,
+                backdropURL: topShelfBackdropURL(for: item, mediaRepo: mediaRepo),
+                contextTitle: [context, HomeText.episodeLabel(item), progress > 0 ? progress.formatted(.percent.precision(.fractionLength(0))) : nil]
+                    .compactMap { $0 }.joined(separator: " · "),
+                logoURL: mediaRepo.logoURL(itemID: item.type == .episode ? item.seriesId ?? item.id : item.id, fillWidth: 800),
+                ratingTitle: String(localized: "Rating"),
+                ratingValue: item.communityRating.flatMap { $0 > 0 ? String(format: "★ %.1f", $0) : nil }
+            )
+        }
+        let resumeContext = String(localized: "Continue Watching")
+        let nextUpContext = String(localized: "Next Up")
+        let addedContext = String(localized: "Recently Added")
         TopShelfBridge.save(
             continueWatching: mediaRepo.continueWatching.prefix(5).map { item in
-                TopShelfMediaItem(
-                    id: item.id, title: title(item),
-                    subtitle: subtitle(item),
-                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
-                    progress: item.userData?.playedPercentage.map { $0 / 100 } ?? 0
-                )
+                let progress = item.userData?.playedPercentage.map { $0 / 100 } ?? 0
+                return entry(item, title: title(item), subtitle: subtitle(item), progress: progress, context: resumeContext)
+            },
+            nextUp: mediaRepo.nextUp.prefix(3).map { item in
+                entry(item, title: title(item), subtitle: subtitle(item), progress: 0, context: nextUpContext)
             },
             recentlyAdded: mediaRepo.recentlyAdded.prefix(3).map { item in
-                TopShelfMediaItem(
-                    id: item.id, title: item.name, subtitle: nil,
-                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640),
-                    progress: 0
-                )
+                entry(item, title: item.name, subtitle: nil, progress: 0, context: addedContext)
             }
         )
+    }
+
+    /// Episodes use the series' backdrop; the carousel is a full-width hero, not an episode still.
+    private func topShelfBackdropURL(for item: MediaItem, mediaRepo: MediaRepository) -> URL? {
+        if item.type == .episode,
+           let parentID = item.parentBackdropItemId ?? item.seriesId,
+           let tag = item.parentBackdropImageTags.first,
+           let base = mediaRepo.baseURL, let token = mediaRepo.accessToken {
+            return JellyfinMediaClient.imageURL(baseURL: base, itemID: parentID, tag: tag,
+                                                type: .backdrop, fillWidth: 1920, token: token)
+        }
+        return mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920)
     }
 
     func loadServiceRows(seerrRepo: SeerrRepository) async {
