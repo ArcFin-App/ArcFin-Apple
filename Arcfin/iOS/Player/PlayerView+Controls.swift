@@ -169,106 +169,24 @@ extension PlayerView {
     }
 
     private var moreMenu: some View {
-        Menu {
-            if canPictureInPicture {
-                Button { togglePiP() } label: {
-                    Label("Picture in Picture", systemImage: "pip.enter")
-                }
-            }
-            if supportsMultipleWindows, !isPlayerWindow {
-                Button { openInNewWindow() } label: {
-                    Label("Open in New Window", systemImage: "macwindow.badge.plus")
-                }
-            }
-
-            if castEnabled, CastManager.shared.isCastAvailable {
-                Button { routeBridge.fireCast() } label: {
-                    Label("Cast", systemImage: "tv")
-                }
-            }
-            Button { routeBridge.fireAirPlay() } label: {
-                Label("AirPlay", systemImage: "airplayvideo")
-            }
-
-            if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
-                Button { showSyncPlayMenu = true } label: {
-                    Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
-                }
-            }
-            sharePlayMenuItem
-
-            if !model.castMembers.isEmpty {
-                Button { openXRay() } label: {
-                    Label("X-Ray: Cast", systemImage: "person.2")
-                }
-            }
-
-            Button { withAnimation { audioOnly.toggle() } } label: {
-                Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
-            }
-            Button { showTrackMenu = true } label: {
-                Label("Subtitles & Audio", systemImage: "captions.bubble")
-            }
-            if let info = model.playbackInfo, info.versions.count > 1 {
-                Picker(selection: Binding(get: { info.mediaSourceId }, set: { model.changeVersion($0) })) {
-                    ForEach(info.versions) { Text($0.name).tag($0.id) }
-                } label: {
-                    Label("Version", systemImage: "square.stack")
-                }
-                .pickerStyle(.menu)
-            }
-            Button { showRateMenu = true } label: {
-                Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
-            }
-            subtitleTimingMenu
-            Button { showQualityMenu = true } label: {
-                Label("Quality", systemImage: "slider.horizontal.3")
-            }
-            sleepTimerMenu
-            Button { showInfoSheet = true } label: {
-                Label("Media Info", systemImage: "info.circle")
-            }
-        } label: {
-            Image(systemName: "ellipsis.circle")
-                .font(.system(.title3, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-        }
-        .accessibilityLabel("More options")
-    }
-
-    @ViewBuilder
-    private var subtitleTimingMenu: some View {
-        if !model.subtitleCues.isEmpty {
-            Menu {
-                Button("Later by 0.5 s") { model.subtitleDelay += 0.5 }
-                Button("Earlier by 0.5 s") { model.subtitleDelay -= 0.5 }
-                Button("Later by 0.1 s") { model.subtitleDelay += 0.1 }
-                Button("Earlier by 0.1 s") { model.subtitleDelay -= 0.1 }
-                Button("Reset", role: .destructive) { model.subtitleDelay = 0 }
-                    .disabled(model.subtitleDelay == 0)
-            } label: {
-                Label(
-                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
-                    systemImage: "clock.arrow.2.circlepath")
-            }
-        }
-    }
-
-    private var sleepTimerMenu: some View {
-        Menu {
-            Button("Off") { model.setSleepTimer(minutes: nil) }
-            ForEach([15, 30, 45, 60], id: \.self) { minutes in
-                Button("\(minutes) minutes") { model.setSleepTimer(minutes: minutes) }
-            }
-            if item.type == .episode {
-                Button("End of Episode") { model.setSleepTimer(minutes: nil, atEndOfItem: true) }
-            }
-        } label: {
-            Label(
-                model.sleepTimerEndsAt != nil || model.sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
-                systemImage: "moon.zzz")
-        }
+        PlayerMoreMenu(
+            model: model, item: item, routeBridge: routeBridge, groupState: groupState,
+            canPictureInPicture: canPictureInPicture,
+            canOpenInNewWindow: supportsMultipleWindows && !isPlayerWindow,
+            canCast: castEnabled && CastManager.shared.isCastAvailable,
+            canSyncPlay: syncPlayEnabled && ProfileRules.shared.canUseSyncPlay,
+            isAudioOnly: audioOnly,
+            togglePiP: togglePiP,
+            openInNewWindow: openInNewWindow,
+            openXRay: openXRay,
+            toggleAudioOnly: { withAnimation { audioOnly.toggle() } },
+            showSyncPlayMenu: $showSyncPlayMenu,
+            showTrackMenu: $showTrackMenu,
+            showRateMenu: $showRateMenu,
+            showQualityMenu: $showQualityMenu,
+            showInfoSheet: $showInfoSheet
+        )
+        .equatable()
     }
 
     /// Every button already has a 44 pt target; the gaps keep thumbs off the neighbouring one.
@@ -389,28 +307,6 @@ extension PlayerView {
         closePlayer()
     }
 
-    // MARK: - SharePlay
-
-    /// In a FaceTime call SharePlay starts straight away; otherwise the share sheet offers it.
-    /// Apple TV has no share sheet, so there it only shows during a call.
-    @ViewBuilder
-    var sharePlayMenuItem: some View {
-        if sharePlay.isActive {
-            Button(role: .destructive) { sharePlay.leave() } label: {
-                Label(sharePlay.participantCount > 1 ? "Leave SharePlay (\(sharePlay.participantCount))" : "Leave SharePlay",
-                      systemImage: "shareplay.slash")
-            }
-        } else if groupState.isEligibleForGroupSession {
-            Button { sharePlay.start(item) } label: {
-                Label("SharePlay", systemImage: "shareplay")
-            }
-        } else {
-            ShareLink(item: WatchTogetherItem(activity: sharePlay.activity(for: item)),
-                      preview: SharePreview(item.type == .episode ? (item.seriesName ?? item.name) : item.name)) {
-                Label("SharePlay", systemImage: "shareplay")
-            }
-        }
-    }
 
     // MARK: - Casting
 
@@ -770,5 +666,176 @@ extension PlayerView {
             }
         }
         Button("Cancel", role: .cancel) {}
+    }
+}
+
+/// The player's More menu in a view of its own. Inside PlayerView it was rebuilt on every
+/// playback tick, and each rebuild reset the open menu: in landscape, where it's taller than
+/// the screen and scrolls, it jumped back and dropped taps. Equality ignores the actions and
+/// bindings, so only a change to what the menu shows redraws it; what it reads from the
+/// model is tracked on its own.
+struct PlayerMoreMenu: View, Equatable {
+    let model: PlayerModel
+    let item: MediaItem
+    let routeBridge: RouteButtonBridge
+    @ObservedObject var groupState: GroupStateObserver
+    let canPictureInPicture: Bool
+    let canOpenInNewWindow: Bool
+    let canCast: Bool
+    let canSyncPlay: Bool
+    let isAudioOnly: Bool
+    let togglePiP: () -> Void
+    let openInNewWindow: () -> Void
+    let openXRay: () -> Void
+    let toggleAudioOnly: () -> Void
+    @Binding var showSyncPlayMenu: Bool
+    @Binding var showTrackMenu: Bool
+    @Binding var showRateMenu: Bool
+    @Binding var showQualityMenu: Bool
+    @Binding var showInfoSheet: Bool
+
+    @Environment(SyncPlayManager.self) private var syncPlayManager
+    @Environment(SharePlayManager.self) private var sharePlay
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.model === rhs.model && lhs.item.id == rhs.item.id
+            && lhs.canPictureInPicture == rhs.canPictureInPicture
+            && lhs.canOpenInNewWindow == rhs.canOpenInNewWindow
+            && lhs.canCast == rhs.canCast && lhs.canSyncPlay == rhs.canSyncPlay
+            && lhs.isAudioOnly == rhs.isAudioOnly
+    }
+
+    var body: some View {
+        Menu {
+            if canPictureInPicture {
+                Button { togglePiP() } label: {
+                    Label("Picture in Picture", systemImage: "pip.enter")
+                }
+            }
+            if canOpenInNewWindow {
+                Button { openInNewWindow() } label: {
+                    Label("Open in New Window", systemImage: "macwindow.badge.plus")
+                }
+            }
+
+            if canCast {
+                Button { routeBridge.fireCast() } label: {
+                    Label("Cast", systemImage: "tv")
+                }
+            }
+            Button { routeBridge.fireAirPlay() } label: {
+                Label("AirPlay", systemImage: "airplayvideo")
+            }
+            // The menu's items appear while it's open, so this keeps the controls (and the
+            // menu with them) from auto-hiding under a finger still scrolling it.
+            .onAppear { model.handleMenuVisibilityChange(true) }
+            .onDisappear {
+                // After the item's action runs, so a sheet it opened keeps the controls up.
+                Task {
+                    guard !(showTrackMenu || showRateMenu || showQualityMenu || showInfoSheet || showSyncPlayMenu) else { return }
+                    model.handleMenuVisibilityChange(false)
+                }
+            }
+
+            if canSyncPlay {
+                Button { showSyncPlayMenu = true } label: {
+                    Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
+                }
+            }
+            sharePlayMenuItem
+
+            if !model.castMembers.isEmpty {
+                Button { openXRay() } label: {
+                    Label("X-Ray: Cast", systemImage: "person.2")
+                }
+            }
+
+            Button { toggleAudioOnly() } label: {
+                Label(isAudioOnly ? "Show Video" : "Audio Only", systemImage: isAudioOnly ? "video" : "waveform")
+            }
+            Button { showTrackMenu = true } label: {
+                Label("Subtitles & Audio", systemImage: "captions.bubble")
+            }
+            if let info = model.playbackInfo, info.versions.count > 1 {
+                Picker(selection: Binding(get: { info.mediaSourceId }, set: { model.changeVersion($0) })) {
+                    ForEach(info.versions) { Text($0.name).tag($0.id) }
+                } label: {
+                    Label("Version", systemImage: "square.stack")
+                }
+                .pickerStyle(.menu)
+            }
+            Button { showRateMenu = true } label: {
+                Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
+            }
+            subtitleTimingMenu
+            Button { showQualityMenu = true } label: {
+                Label("Quality", systemImage: "slider.horizontal.3")
+            }
+            sleepTimerMenu
+            Button { showInfoSheet = true } label: {
+                Label("Media Info", systemImage: "info.circle")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(.title3, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel("More options")
+    }
+
+    @ViewBuilder
+    private var subtitleTimingMenu: some View {
+        if !model.subtitleCues.isEmpty {
+            Menu {
+                Button("Later by 0.5 s") { model.subtitleDelay += 0.5 }
+                Button("Earlier by 0.5 s") { model.subtitleDelay -= 0.5 }
+                Button("Later by 0.1 s") { model.subtitleDelay += 0.1 }
+                Button("Earlier by 0.1 s") { model.subtitleDelay -= 0.1 }
+                Button("Reset", role: .destructive) { model.subtitleDelay = 0 }
+                    .disabled(model.subtitleDelay == 0)
+            } label: {
+                Label(
+                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
+                    systemImage: "clock.arrow.2.circlepath")
+            }
+        }
+    }
+
+    private var sleepTimerMenu: some View {
+        Menu {
+            Button("Off") { model.setSleepTimer(minutes: nil) }
+            ForEach([15, 30, 45, 60], id: \.self) { minutes in
+                Button("\(minutes) minutes") { model.setSleepTimer(minutes: minutes) }
+            }
+            if item.type == .episode {
+                Button("End of Episode") { model.setSleepTimer(minutes: nil, atEndOfItem: true) }
+            }
+        } label: {
+            Label(
+                model.sleepTimerEndsAt != nil || model.sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
+                systemImage: "moon.zzz")
+        }
+    }
+
+    /// In a FaceTime call SharePlay starts straight away; otherwise the share sheet offers it.
+    /// Apple TV has no share sheet, so there it only shows during a call.
+    @ViewBuilder
+    private var sharePlayMenuItem: some View {
+        if sharePlay.isActive {
+            Button(role: .destructive) { sharePlay.leave() } label: {
+                Label(sharePlay.participantCount > 1 ? "Leave SharePlay (\(sharePlay.participantCount))" : "Leave SharePlay",
+                      systemImage: "shareplay.slash")
+            }
+        } else if groupState.isEligibleForGroupSession {
+            Button { sharePlay.start(item) } label: {
+                Label("SharePlay", systemImage: "shareplay")
+            }
+        } else {
+            ShareLink(item: WatchTogetherItem(activity: sharePlay.activity(for: item)),
+                      preview: SharePreview(item.type == .episode ? (item.seriesName ?? item.name) : item.name)) {
+                Label("SharePlay", systemImage: "shareplay")
+            }
+        }
     }
 }
