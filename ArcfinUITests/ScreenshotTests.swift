@@ -125,7 +125,10 @@ final class ScreenshotTests: XCTestCase {
         try selectTab("Browse")
         let field = app.searchFields.firstMatch
         if !field.waitForExistence(timeout: 3) {
-            app.swipeDown()
+            // iPad keeps the field behind a Search button in the navigation bar (#296);
+            // iPhone shows it once the list is pulled down.
+            let searchButton = app.navigationBars.buttons["Search"].firstMatch
+            if searchButton.exists { searchButton.tap() } else { app.swipeDown() }
         }
         try waitFor(field)
         field.tap()
