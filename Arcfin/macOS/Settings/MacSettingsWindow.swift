@@ -7,13 +7,14 @@ import AuthCore
 /// a sidebar, as Mac apps keep their settings.
 struct MacSettingsWindow: View {
     private enum Pane: String, CaseIterable, Identifiable {
-        case general, playback, downloads, appearance, notifications, server, integrations
+        case general, profile, playback, downloads, appearance, notifications, server, integrations
 
         var id: String { rawValue }
 
         var title: String {
             switch self {
             case .general: String(localized: "General")
+            case .profile: String(localized: "Your Profile")
             case .playback: String(localized: "Playback")
             case .downloads: String(localized: "Downloads")
             case .appearance: String(localized: "Appearance")
@@ -26,6 +27,7 @@ struct MacSettingsWindow: View {
         var icon: String {
             switch self {
             case .general: "person.crop.circle"
+            case .profile: "person.text.rectangle"
             case .playback: "play.circle"
             case .downloads: "arrow.down.circle"
             case .appearance: "paintbrush"
@@ -71,6 +73,7 @@ struct MacSettingsWindow: View {
     private func detail(for pane: Pane) -> some View {
         switch pane {
         case .general: SettingsView()
+        case .profile: ProfileAccessView()
         case .playback: PlaybackSettingsView()
         case .downloads: DownloadsSettingsView()
         case .appearance: AppearanceView()

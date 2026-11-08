@@ -71,6 +71,8 @@ final class MediaRepository {
     /// director, its cast.
     var recommendations: [MovieRecommendationCategory] = []
     var libraries: [JellyfinLibrary] = []
+    /// Titles in each library, by library id, for the Browse tiles.
+    var libraryCounts: [String: Int] = [:]
     /// TMDB keys (`JellyfinMediaClient.libraryKey`) of every movie and show the server has.
     var libraryTMDBKeys: Set<String> = []
     var serverID: String = ""
@@ -216,6 +218,7 @@ final class MediaRepository {
         continueWatching       = cwResult
         recentlyAdded          = laResult
         libraries              = libsResult
+        Task { await loadLibraryCounts(libsResult, credential: credential, header: header) }
         nextUp                 = nUpResult
         recentlyAddedMovies    = raMovResult
         recentlyAddedShows     = raShowResult
@@ -231,6 +234,22 @@ final class MediaRepository {
         if let tmdbKeysResult { libraryTMDBKeys = tmdbKeysResult }
 
         return succeeded
+    }
+
+    /// After the main load, so Home doesn't wait on it; a library whose count fails keeps
+    /// its last one.
+    private func loadLibraryCounts(_ libraries: [JellyfinLibrary], credential: ServerCredential, header: String) async {
+        let client = client
+        await withTaskGroup(of: (String, Int?).self) { group in
+            for library in libraries {
+                group.addTask {
+                    (library.id, try? await client.getLibraryItemCount(credential: credential, authHeader: header, library: library))
+                }
+            }
+            for await (id, count) in group {
+                if let count { libraryCounts[id] = count }
+            }
+        }
     }
 
     /// Shelves that follow watched state and favourites, after a change on another device.

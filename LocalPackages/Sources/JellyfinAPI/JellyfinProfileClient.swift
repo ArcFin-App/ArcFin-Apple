@@ -63,6 +63,9 @@ public struct UserPolicy: Sendable, Equatable {
     public var maxActiveSessions = 0
     /// "CreateAndJoinGroups", "JoinGroups" or "None".
     public var syncPlayAccess = "CreateAndJoinGroups"
+    /// When false, only the libraries in `enabledFolders` are visible.
+    public var enableAllFolders = true
+    public var enabledFolders: [String] = []
 
     public init() {}
 
@@ -236,6 +239,8 @@ private struct UserResponse: Decodable {
         let remoteClientBitrateLimit: Int?
         let maxActiveSessions: Int?
         let syncPlayAccess: String?
+        let enableAllFolders: Bool?
+        let enabledFolders: [String]?
 
         enum CodingKeys: String, CodingKey {
             case isAdministrator = "IsAdministrator", maxParentalRating = "MaxParentalRating"
@@ -253,6 +258,7 @@ private struct UserResponse: Decodable {
             case enablePublicSharing = "EnablePublicSharing"
             case remoteClientBitrateLimit = "RemoteClientBitrateLimit", maxActiveSessions = "MaxActiveSessions"
             case syncPlayAccess = "SyncPlayAccess"
+            case enableAllFolders = "EnableAllFolders", enabledFolders = "EnabledFolders"
         }
     }
 
@@ -297,6 +303,8 @@ private struct UserResponse: Decodable {
             p.remoteClientBitrateLimit = policy.remoteClientBitrateLimit
             p.maxActiveSessions = policy.maxActiveSessions ?? 0
             p.syncPlayAccess = policy.syncPlayAccess ?? "CreateAndJoinGroups"
+            p.enableAllFolders = policy.enableAllFolders ?? true
+            p.enabledFolders = policy.enabledFolders ?? []
         }
         return UserProfileDetails(
             name: name, serverName: serverName, hasPassword: hasPassword ?? true,

@@ -20,7 +20,9 @@ struct SettingsView: View {
         .screenBackground()
         .navigationTitle(authManager.state.credential?.displayName ?? "Settings")
         .sheet(isPresented: $showUsersSheet, onDismiss: { usersDetent = .medium }) {
+            // The Mac ignores detents, so without a size of its own the list sized to nothing.
             NavigationStack { UsersView(onExpand: { usersDetent = .large }) }
+                .frame(minWidth: 460, idealWidth: 520, minHeight: 520, idealHeight: 600)
                 .presentationDetents([.medium, .large], selection: $usersDetent)
                 .presentationDragIndicator(.visible)
         }

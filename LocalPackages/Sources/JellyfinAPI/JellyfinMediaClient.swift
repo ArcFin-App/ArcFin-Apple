@@ -403,6 +403,36 @@ public struct JellyfinMediaClient: Sendable {
         }
     }
 
+    /// How many titles of its main kind a library holds: movies, shows, collections and so on.
+    /// Asks for the total only (`Limit=0`).
+    public func getLibraryItemCount(credential: ServerCredential, authHeader: String, library: JellyfinLibrary) async throws -> Int {
+        let itemTypes: String = switch library.collectionType {
+        case .movies: "Movie"
+        case .tvshows: "Series"
+        case .boxsets: "BoxSet"
+        case .playlists: "Playlist"
+        case .homevideos: "Video"
+        case .photos: "Photo"
+        case .books: "Book"
+        case .music: "MusicAlbum"
+        case .livetv, .unknown: "Movie,Series"
+        }
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "ParentId", value: library.id),
+            .init(name: "IncludeItemTypes", value: itemTypes),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Limit", value: "0"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).totalRecordCount ?? 0
+    }
+
     /// The Jellyfin server's UUID, from its public info.
     public func getServerID(credential: ServerCredential) async throws -> String {
         try await getPublicInfo(baseURL: credential.baseURL).id
