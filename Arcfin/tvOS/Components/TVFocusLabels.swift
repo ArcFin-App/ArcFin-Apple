@@ -92,7 +92,7 @@ struct TVFocusRowLabel<Content: View>: View {
 // Has a visible rest state (dimmed) and brightens/scales on focus.
 struct TVDetailButtonLabel: View {
     let icon: String
-    let text: String
+    let text: LocalizedStringKey
     var isPrimary: Bool = false
     @Environment(\.isFocused) private var isFocused
 
