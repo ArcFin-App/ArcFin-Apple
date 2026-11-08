@@ -5,9 +5,7 @@ import SwiftUI
 struct SeerrView: View {
     @State private var model = SeerrDiscoverModel()
 
-    private let discoverColumns = [GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 12)]
-
     var body: some View {
-        SeerrDiscoverPage(model: model, discoverColumns: discoverColumns, gridSpacing: 12)
+        SeerrDiscoverPage(model: model, gridSpacing: 12)
     }
 }
