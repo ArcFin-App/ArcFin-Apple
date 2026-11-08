@@ -224,7 +224,7 @@ struct CollectionDetailView: View {
         .accessibilityHidden(true)
     }
 
-    private var playLabel: String {
+    private var playLabel: LocalizedStringKey {
         guard let next = nextToPlay else { return "Play from Start" }
         if (next.userData?.playbackPositionTicks ?? 0) > 0 { return "Resume \(next.name)" }
         return watchedCount == 0 ? "Play" : "Continue with \(next.name)"

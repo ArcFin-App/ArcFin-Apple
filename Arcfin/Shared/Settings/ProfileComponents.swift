@@ -187,7 +187,7 @@ private struct PINFlowSheet: View {
                 errorMessage = nil
                 stage = .second
             } else {
-                errorMessage = "Incorrect PIN"
+                errorMessage = String(localized: "Incorrect PIN")
                 resetToken += 1
             }
 
@@ -196,7 +196,7 @@ private struct PINFlowSheet: View {
                 authManager.removePin(for: profile.id)
                 Task { await onDone(); dismiss() }
             } else {
-                errorMessage = "Incorrect PIN"
+                errorMessage = String(localized: "Incorrect PIN")
                 resetToken += 1
             }
         }

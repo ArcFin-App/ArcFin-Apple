@@ -33,7 +33,7 @@ final class AppLockModel {
 
     func enter(_ entered: String, for target: ServerCredential, authManager: AuthManager, onUnlock: () -> Void) {
         guard entered == storedPIN else {
-            errorMessage = "Incorrect PIN"
+            errorMessage = String(localized: "Incorrect PIN")
             resetToken += 1
             return
         }

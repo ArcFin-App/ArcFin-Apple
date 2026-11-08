@@ -27,10 +27,10 @@ final class SearchModel {
     var libraryGroups: [LibraryGroup] {
         let rest = Array(jellyfinResults.dropFirst())
         let groups = [
-            LibraryGroup(title: "Movies", items: rest.filter { $0.type == .movie }, isLandscape: false),
-            LibraryGroup(title: "Shows", items: rest.filter { $0.type == .series }, isLandscape: false),
-            LibraryGroup(title: "Episodes", items: rest.filter { $0.type == .episode }, isLandscape: true),
-            LibraryGroup(title: "Collections", items: rest.filter { ![.movie, .series, .episode].contains($0.type) }, isLandscape: false),
+            LibraryGroup(title: String(localized: "Movies"), items: rest.filter { $0.type == .movie }, isLandscape: false),
+            LibraryGroup(title: String(localized: "Shows"), items: rest.filter { $0.type == .series }, isLandscape: false),
+            LibraryGroup(title: String(localized: "Episodes"), items: rest.filter { $0.type == .episode }, isLandscape: true),
+            LibraryGroup(title: String(localized: "Collections"), items: rest.filter { ![.movie, .series, .episode].contains($0.type) }, isLandscape: false),
         ]
         return groups.filter { !$0.items.isEmpty }
     }
