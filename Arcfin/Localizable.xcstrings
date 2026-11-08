@@ -2945,6 +2945,70 @@
         }
       }
     },
+    "Shows the title you're on full screen with its trailer, above one row at a time. While the trailer plays, everything else fades away. Off shows Home as one scrolling page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zeigt den gewählten Titel bildschirmfüllend mit seinem Trailer, darunter jeweils eine Reihe. Während der Trailer läuft, wird alles andere ausgeblendet. Aus zeigt den Start als eine durchgehende Seite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Muestra el título seleccionado a pantalla completa con su tráiler, sobre una fila cada vez. Mientras se reproduce el tráiler, todo lo demás se desvanece. Desactivado, Inicio es una sola página con desplazamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Affiche le titre sélectionné en plein écran avec sa bande-annonce, au-dessus d’une rangée à la fois. Pendant la bande-annonce, tout le reste s’efface. Désactivé, l’Accueil défile sur une seule page."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra il titolo selezionato a schermo intero con il suo trailer, sopra una riga alla volta. Mentre il trailer è in riproduzione, tutto il resto svanisce. Disattivato, la Home è un’unica pagina che scorre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "選択中のタイトルを予告編とともに全画面で表示し、その下に列を1つずつ表示します。予告編の再生中は、ほかの表示はすべてフェードアウトします。オフにするとホームを1つのスクロールページとして表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "선택한 타이틀을 예고편과 함께 전체 화면으로 표시하고, 그 아래에 줄을 하나씩 보여 줍니다. 예고편이 재생되는 동안 나머지는 모두 사라집니다. 끄면 홈을 하나의 스크롤 페이지로 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toont de gekozen titel schermvullend met zijn trailer, met daaronder één rij tegelijk. Terwijl de trailer speelt, vervaagt de rest. Uit toont Start als één scrollende pagina."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra o título selecionado em tela cheia com o trailer, acima de uma fileira por vez. Enquanto o trailer toca, todo o resto desaparece. Desativado, o Início é uma única página com rolagem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показывает выбранное во весь экран вместе с трейлером, а под ним — по одному ряду. Пока идёт трейлер, всё остальное исчезает. Если выключено, главная прокручивается одной страницей."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "以全屏显示当前选中的内容及其预告片，下方一次显示一行。预告片播放时，其余内容都会淡出。关闭后首页以单个滚动页面显示。"
+          }
+        }
+      }
+    },
     "Sign In" : {
       "localizations" : {
         "de" : {
@@ -3261,6 +3325,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "下载内容也能跳过片头"
+          }
+        }
+      }
+    },
+    "Spotlight Home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Spotlight-Start"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicio destacado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accueil à la une"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Home in primo piano"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "スポットライトホーム"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "스포트라이트 홈"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Spotlight-start"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Início em destaque"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Главная в фокусе"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "聚光灯首页"
           }
         }
       }

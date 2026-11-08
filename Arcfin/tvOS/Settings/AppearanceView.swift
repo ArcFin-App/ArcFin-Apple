@@ -6,6 +6,7 @@ struct AppearanceView: View {
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     @AppStorage("heroTrailerSound") private var heroTrailerSound = false
+    @AppStorage("modernHome") private var modernHome = false
     @AppStorage("libraryScreensaverEnabled") private var screensaverEnabled = true
     @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
     @AppStorage(BottomNavPrefs.activeKey) private var activeTabs = ""
@@ -19,6 +20,11 @@ struct AppearanceView: View {
                 }
                 .tvListRow()
                 .syncLocked("mergeContinueWatchingAndUpNext", authManager)
+                Toggle(isOn: $modernHome) {
+                    TVRowLabelText(title: "Spotlight Home", detail: "Shows the title you're on full screen with its trailer, above one row at a time. While the trailer plays, everything else fades away. Off shows Home as one scrolling page.")
+                }
+                .tvListRow()
+                .syncLocked("modernHome", authManager)
                 Toggle(isOn: $heroVideoBackdropsEnabled) {
                     TVRowLabelText(title: "Hero Video Backdrops", detail: "Plays a muted trailer behind the featured title when the server has one.")
                 }

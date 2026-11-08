@@ -44,8 +44,31 @@ struct HomeView: View {
     @State private var heroFocusToRestore: HeroFocus?
     @State private var heroUnlockTask: Task<Void, Never>?
     @FocusState private var focusedHeroButton: HeroButton?
+    @AppStorage("modernHome") private var modernHome = false
+    // Modern Home: the row the focused card is in, where each row starts, and the title the
+    // fixed hero shows.
+    @State private var modernRow: String?
+    @State private var modernRowTops: [String: CGFloat] = [:]
+    @State private var modernRowHeights: [String: CGFloat] = [:]
+    @State private var modernHero: ModernHeroSubject?
+    /// Modern Home while the trailer plays: the focused row sits a little lower, and the hero's
+    /// details and every other row fade, until the next press.
+    @State private var modernRowsResting = false
 
     private enum HeroButton { case play, info }
+
+    /// What Modern Home's hero shows: the focused card's title, from the library or Seerr.
+    private enum ModernHeroSubject: Equatable {
+        case media(MediaItem)
+        case seerr(SeerrItem)
+
+        var id: String {
+            switch self {
+            case .media(let item): "media-\(item.id)"
+            case .seerr(let item): "seerr-\(item.id)"
+            }
+        }
+    }
     private enum HeroFocus: Equatable { case item(String), button(HeroButton) }
 
     private var heroChromeOpacity: Double { heroChromeHidden ? 0 : 1 }
@@ -79,34 +102,50 @@ struct HomeView: View {
     }
 
     /// Only while the hero itself is on screen: with sound on, a trailer left running under
-    /// the shelves, a title's page, the player or another tab would be heard there.
-    private var heroVideoAllowed: Bool { isHomeShowing && !isHeroScrolledAway && model.playbackRequest == nil }
+    /// the shelves, a title's page, the player or another tab would be heard there. Spotlight
+    /// Home's hero never scrolls away.
+    private var heroVideoAllowed: Bool {
+        isHomeShowing && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil
+    }
 
     private var heroDisplayItem: MediaItem? {
-        focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
+        if modernHome {
+            switch modernHero {
+            case .media(let item): return item
+            case .seerr: return nil
+            case nil: return cwItems.first ?? mediaRepo.recentlyAdded.first
+            }
+        }
+        return focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
     }
 
     var body: some View {
         NavigationStack {
-            GeometryReader { proxy in
-                let sh = proxy.size.height
-                let sw = proxy.size.width
+            Group {
+                if modernHome {
+                    modernLayout
+                } else {
+                    GeometryReader { proxy in
+                        let sh = proxy.size.height
+                        let sw = proxy.size.width
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        heroSection(screenW: sw, screenH: sh)
-                            .frame(height: sh)
-                        belowFoldSection
-                            .padding(.vertical, 72)
-                            .disabled(heroTargetsLocked)
+                        ScrollView(showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                heroSection(screenW: sw, screenH: sh)
+                                    .frame(height: sh)
+                                belowFoldSection
+                                    .padding(.vertical, 72)
+                                    .disabled(heroTargetsLocked)
+                            }
+                            .focusSection()
+                        }
+                        .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
+                        .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > sh / 2 } action: { _, scrolledAway in
+                            isHeroScrolledAway = scrolledAway
+                        }
+                        .ignoresSafeArea()
                     }
-                    .focusSection()
                 }
-                .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
-                .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > sh / 2 } action: { _, scrolledAway in
-                    isHeroScrolledAway = scrolledAway
-                }
-                .ignoresSafeArea()
             }
             .screenBackground()
             .onAppear { isHomeShowing = true }
@@ -154,6 +193,9 @@ struct HomeView: View {
             showHeroChrome()
         }
         .onChange(of: heroVideoAllowed) { _, _ in loadHeroVideoBackdrop() }
+        .onChange(of: modernHero?.id) { _, _ in
+            if modernHome { reloadHeroVideoIfItemChanged() }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
@@ -191,7 +233,9 @@ struct HomeView: View {
         }
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
-        if focusedItemID == nil {
+        // Modern Home starts on its first row by itself; the same title can also be in a row
+        // further down, where this could put focus instead.
+        if focusedItemID == nil, !modernHome {
             focusedItemID = mediaRepo.continueWatching.first?.id
         }
     }
@@ -442,6 +486,14 @@ struct HomeView: View {
     /// drawn fades; the focused button or card stays in place and keeps focus.
     private func hideHeroChromeSoon() {
         heroChromeTask?.cancel()
+        if modernHome {
+            heroChromeTask = Task {
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled, heroVideoIsPlaying else { return }
+                withAnimation(DT.Animation.motion(.easeInOut(duration: 0.6))) { modernRowsResting = true }
+            }
+            return
+        }
         heroChromeTask = Task {
             try? await Task.sleep(for: .seconds(5))
             guard !Task.isCancelled, heroVideoIsPlaying, let target = currentHeroFocus else { return }
@@ -496,6 +548,9 @@ struct HomeView: View {
         heroChromeTask = nil
         if heroChromeHidden {
             withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
+        }
+        if modernRowsResting {
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { modernRowsResting = false }
         }
         if heroVideoIsPlaying { hideHeroChromeSoon() }
     }
@@ -657,6 +712,7 @@ struct HomeView: View {
                         subtitle: item.productionYear.map { String($0) },
                         imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
                     )
+                    .background { modernFocusProbe(row: title, subject: .media(item)) }
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -698,6 +754,13 @@ struct HomeView: View {
         }
         .padding(.bottom, 40)
         .focusSection()
+        .background {
+            if modernHome {
+                GeometryReader { proxy in
+                    Color.clear.preference(key: ModernRowHeights.self, value: [.init(title: title, height: proxy.size.height)])
+                }
+            }
+        }
     }
 
     private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
@@ -710,6 +773,7 @@ struct HomeView: View {
                             .compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
                         imageURL: item.backdropURL ?? item.posterURL
                     )
+                    .background { modernFocusProbe(row: title, subject: .seerr(item)) }
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -723,6 +787,218 @@ struct HomeView: View {
         Task {
             let local = await model.libraryCopy(of: item, authManager: authManager)
             if let local { model.detailItem = local } else { model.seerrDetailItem = item }
+        }
+    }
+
+    // MARK: - Modern Home
+
+
+    /// The hero stays put and shows the focused title; the rows sit under it, the focused one
+    /// on top with part of the next showing below. Moving down slides them up, and the row
+    /// that leaves fades out under the hero's details.
+    private var modernLayout: some View {
+        GeometryReader { proxy in
+            let sw = proxy.size.width
+            let sh = proxy.size.height
+            let rowsTop = sh * 0.5
+            let focusedRowTop = modernRow.flatMap { modernRowTops[$0] } ?? 0
+            // Resting drops the focused row until its cards almost reach the bottom edge.
+            // Each row's height includes its 40 pt bottom padding.
+            let focusedRowHeight = modernRowHeights[modernRow ?? "Continue Watching"] ?? 0
+            let restingDrop = max(0, sh - 60 - rowsTop - (focusedRowHeight - 40))
+            let rowsOffset = rowsTop - focusedRowTop + (modernRowsResting ? restingDrop : 0)
+
+            ZStack(alignment: .topLeading) {
+                modernBackdrop
+                    .frame(width: sw, height: sh)
+                    .clipped()
+
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0.2),
+                        .init(color: DT.Color.backgroundPrimary.opacity(0.85), location: 0.5),
+                        .init(color: DT.Color.backgroundPrimary, location: 0.8)
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+                LinearGradient(
+                    colors: [DT.Color.backgroundPrimary.opacity(0.75), .clear],
+                    startPoint: .leading, endPoint: .trailing
+                )
+                .frame(width: sw * 0.6)
+
+                modernHeroInfo
+                    .padding(.leading, 80)
+                    .padding(.top, 150)
+                    .opacity(modernRowsResting ? 0 : 1)
+
+                modernRows
+                    .offset(y: rowsOffset)
+                    .animation(DT.Animation.motion(.easeInOut(duration: 0.35)), value: rowsOffset)
+                    .frame(width: sw, height: sh, alignment: .top)
+                    // Resting shows only a band around the focused row, which moves down with
+                    // it. Masking rather than fading keeps the other rows focusable, so the next
+                    // press can move to them while everything comes back.
+                    .mask {
+                        ZStack(alignment: .top) {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .clear, location: (rowsTop - 40) / sh),
+                                    .init(color: .black, location: rowsTop / sh)
+                                ],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                            .opacity(modernRowsResting ? 0 : 1)
+                            VStack(spacing: 0) {
+                                Color.clear.frame(height: max(0, rowsTop + (modernRowsResting ? restingDrop : 0) - 20))
+                                Color.black.frame(height: focusedRowHeight + 20)
+                                Color.clear
+                            }
+                            .opacity(modernRowsResting ? 1 : 0)
+                        }
+                    }
+            }
+        }
+        // Measured edge to edge: inside the safe area the backdrop stopped short of the right
+        // edge and the rows were cut off above the bottom.
+        .ignoresSafeArea()
+        // Any press brings the rows back from resting, including one that moves no focus.
+        .onMoveCommand { _ in showHeroChrome() }
+    }
+
+    private var modernRows: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            modernContinueWatchingRow
+            ForEach(orderedShelves) { shelf in
+                shelfView(for: shelf)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("shelf.\(shelf.rawValue)")
+            }
+        }
+        .focusSection()
+        // Tops come from adding up row heights in order. Measuring positions picked up the
+        // offset they were used for, so the rows chased their own position: the bounce.
+        .onPreferenceChange(ModernRowHeights.self) { rows in
+            var top: CGFloat = 0
+            var tops: [String: CGFloat] = [:]
+            var heights: [String: CGFloat] = [:]
+            for row in rows {
+                tops[row.title] = top
+                heights[row.title] = row.height
+                top += row.height
+            }
+            modernRowTops = tops
+            modernRowHeights = heights
+        }
+    }
+
+    @ViewBuilder
+    private var modernContinueWatchingRow: some View {
+        let items = cwItems
+        if !items.isEmpty {
+            let title = "Continue Watching"
+            tvShelfRow(title: title) {
+                ForEach(items) { item in
+                    Button { model.detailItem = item } label: {
+                        PosterCard(
+                            title: itemTitle(item),
+                            subtitle: itemSubtitle(item),
+                            progress: item.userData?.playedPercentage.map { $0 / 100 },
+                            imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                        )
+                        .background { modernFocusProbe(row: title, subject: .media(item)) }
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
+                    .focused($focusedItemID, equals: item.id)
+                    .contextMenu { cwContextMenu(item) }
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("shelf.\(HomeShelf.continueWatching.rawValue)")
+        }
+    }
+
+    private func modernFocusProbe(row: String, subject: ModernHeroSubject) -> some View {
+        CardFocusProbe {
+            guard modernHome else { return }
+            modernRow = row
+            modernHero = subject
+        }
+    }
+
+    @ViewBuilder
+    private var modernBackdrop: some View {
+        if case .seerr(let item) = modernHero {
+            LazyHeroImage(url: item.backdropURL) { heroFallbackGradient }
+        } else {
+            backdropLayer()
+        }
+    }
+
+    @ViewBuilder
+    private var modernHeroInfo: some View {
+        Group {
+            if case .seerr(let item) = modernHero {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(item.title)
+                        .font(.system(size: 36, weight: .heavy))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.9), radius: 10)
+                    HStack(spacing: 12) {
+                        if let year = item.year {
+                            Text(year).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+                            Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
+                        }
+                        Text(item.mediaType == .tv ? "Series" : "Movie")
+                            .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+                    }
+                    modernOverview(item.overview)
+                }
+            } else if let item = heroDisplayItem {
+                VStack(alignment: .leading, spacing: 16) {
+                    CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                        if case .success(let img) = phase {
+                            img.resizable().scaledToFit()
+                                .frame(maxWidth: 300, maxHeight: 90)
+                                .shadow(color: .black.opacity(0.7), radius: 12)
+                        } else {
+                            Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
+                                .font(.system(size: 36, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.9), radius: 10)
+                        }
+                    }
+                    if item.type == .episode {
+                        Text(itemTitle(item))
+                            .font(.system(size: 25, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                    } else {
+                        heroMetaRow(item)
+                    }
+                    if let pct = item.userData?.playedPercentage, pct > 1 {
+                        progressBar(pct: pct / 100)
+                    }
+                    modernOverview(item.overview)
+                }
+            } else {
+                brandingBlock
+            }
+        }
+        .frame(maxWidth: 760, alignment: .leading)
+        .id(modernHero?.id)
+        .transition(.opacity)
+        .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: modernHero?.id)
+    }
+
+    @ViewBuilder
+    private func modernOverview(_ overview: String?) -> some View {
+        if let overview = overview?.nilIfEmpty {
+            Text(overview)
+                .font(.system(size: 22))
+                .foregroundStyle(.white.opacity(0.75))
+                .lineLimit(3)
+                .shadow(color: .black.opacity(0.6), radius: 6)
         }
     }
 
@@ -776,6 +1052,34 @@ struct HomeView: View {
         let show = item.seriesName ?? item.name
         guard let code = HomeText.episodeLabel(item) else { return show }
         return "\(show) · \(code)"
+    }
+}
+
+/// Each Modern Home row's height, in the order the rows are stacked.
+private struct ModernRowHeights: PreferenceKey {
+    struct Row: Equatable {
+        let title: String
+        let height: CGFloat
+    }
+
+    static let defaultValue: [Row] = []
+
+    static func reduce(value: inout [Row], nextValue: () -> [Row]) {
+        value += nextValue()
+    }
+}
+
+/// Tells Modern Home when a card takes focus: inside a button's label, `isFocused` is the
+/// button's own focus.
+private struct CardFocusProbe: View {
+    let onFocus: () -> Void
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        Color.clear
+            .onChange(of: isFocused) { _, focused in
+                if focused { onFocus() }
+            }
     }
 }
 
