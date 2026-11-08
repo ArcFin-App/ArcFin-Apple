@@ -246,7 +246,7 @@ struct MediaDetailView: View {
         }
     }
 
-    private var playLabel: String {
+    private var playLabel: LocalizedStringKey {
         let playTarget = model.playTarget
         let episode = playTarget.type == .episode ? playTarget.indexNumber.map { "E\($0)" } : nil
         if model.isResumable {
