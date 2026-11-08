@@ -33,6 +33,7 @@ struct HomeView: View {
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     @AppStorage("heroTrailerSound") private var heroTrailerSound = false
     @State private var isHomeShowing = false
+    @State private var homePath = NavigationPath()
     @State private var isHeroScrolledAway = false
     @State private var heroVideoRequestedItemID: String?
     @State private var heroVideoIsPlaying = false
@@ -103,9 +104,11 @@ struct HomeView: View {
 
     /// Only while the hero itself is on screen: with sound on, a trailer left running under
     /// the shelves, a title's page, the player or another tab would be heard there. Spotlight
-    /// Home's hero never scrolls away.
+    /// Home's hero never scrolls away. Pushing a page doesn't reliably end `isHomeShowing` on
+    /// Apple TV, so an open page is checked directly.
     private var heroVideoAllowed: Bool {
-        isHomeShowing && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil
+        isHomeShowing && homePath.isEmpty && model.detailItem == nil && model.seerrDetailItem == nil
+            && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil
     }
 
     private var heroDisplayItem: MediaItem? {
@@ -120,7 +123,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $homePath) {
             Group {
                 if modernHome {
                     modernLayout
