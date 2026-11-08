@@ -55,40 +55,44 @@ struct DownloadedItemDetailPage: View {
     private func fileURL(_ name: String?) -> URL? { DownloadedItemDetailModel.fileURL(name, of: item) }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                DetailHeroBackdrop(url: DownloadedItemDetailModel.heroURL(for: item))
-                titleBlock
-                VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                    playRow
-                    if let tagline = item.tagline, !tagline.isEmpty {
-                        Text(tagline)
-                            .font(.system(.subheadline, weight: .medium))
-                            .italic()
-                            .foregroundStyle(DT.Color.textPrimary.opacity(0.9))
+        GeometryReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    DetailHeroBackdrop(url: DownloadedItemDetailModel.heroURL(for: item))
+                    titleBlock
+                    VStack(alignment: .leading, spacing: DT.Spacing.lg) {
+                        playRow
+                        if let tagline = item.tagline, !tagline.isEmpty {
+                            Text(tagline)
+                                .font(.system(.subheadline, weight: .medium))
+                                .italic()
+                                .foregroundStyle(DT.Color.textPrimary.opacity(0.9))
+                        }
+                        if let overview = item.overview, !overview.isEmpty {
+                            Text(overview)
+                                .font(.system(.footnote))
+                                .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
+                                .lineSpacing(3)
+                        }
+                        if !item.castNames.isEmpty { castSection }
+                        detailsSection
+                        Button(role: .destructive) { model.showDeleteConfirm = true } label: {
+                            Label("Delete Download", systemImage: "trash")
+                                .font(.system(.subheadline, weight: .semibold))
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.red)
                     }
-                    if let overview = item.overview, !overview.isEmpty {
-                        Text(overview)
-                            .font(.system(.footnote))
-                            .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
-                            .lineSpacing(3)
-                    }
-                    if !item.castNames.isEmpty { castSection }
-                    detailsSection
-                    Button(role: .destructive) { model.showDeleteConfirm = true } label: {
-                        Label("Delete Download", systemImage: "trash")
-                            .font(.system(.subheadline, weight: .semibold))
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.red)
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .padding(.top, DT.Spacing.md)
+                    .padding(.bottom, DT.Spacing.xl)
                 }
-                .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.top, DT.Spacing.md)
-                .padding(.bottom, DT.Spacing.xl)
+                // A page-wide frame from the GeometryReader, not containerRelativeFrame: it follows an
+                // iPhone turn (#325) and, on the Mac, can't feed the page's width back into the
+                // window's layout (#345).
+                .frame(width: proxy.size.width)
             }
-            // Re-fits after the player hands the screen back in landscape (see MediaDetailView).
-            .containerRelativeFrame(.horizontal)
         }
         .detailPageBackground(tint: model.heroTint)
         .ignoresSafeArea(edges: .top)

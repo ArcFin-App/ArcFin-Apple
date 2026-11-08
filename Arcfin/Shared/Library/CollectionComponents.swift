@@ -22,36 +22,40 @@ struct CollectionContent: View {
     private var watchedCount: Int { model.watchedCount }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                heroSection
+        GeometryReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    heroSection
 
-                if model.isLoading {
-                    ProgressView()
-                        .tint(DT.Color.accent)
-                        .frame(maxWidth: .infinity, minHeight: 240)
-                } else {
-                    VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                        actionRow
-                        if !items.isEmpty { progressSection }
-                        if let overview = model.detail?.item.overview ?? collection.overview, !overview.isEmpty {
-                            Text(overview)
-                                .font(.system(.footnote))
-                                .foregroundStyle(DT.Color.textPrimary.opacity(0.8))
-                                .lineSpacing(4)
-                                .lineLimit(5)
-                                .padding(.horizontal, DT.Spacing.pagePad)
+                    if model.isLoading {
+                        ProgressView()
+                            .tint(DT.Color.accent)
+                            .frame(maxWidth: .infinity, minHeight: 240)
+                    } else {
+                        VStack(alignment: .leading, spacing: DT.Spacing.lg) {
+                            actionRow
+                            if !items.isEmpty { progressSection }
+                            if let overview = model.detail?.item.overview ?? collection.overview, !overview.isEmpty {
+                                Text(overview)
+                                    .font(.system(.footnote))
+                                    .foregroundStyle(DT.Color.textPrimary.opacity(0.8))
+                                    .lineSpacing(4)
+                                    .lineLimit(5)
+                                    .padding(.horizontal, DT.Spacing.pagePad)
+                            }
+                            if !items.isEmpty { titlesSection }
+                            if let people = model.detail?.people, !people.isEmpty { castSection(people) }
                         }
-                        if !items.isEmpty { titlesSection }
-                        if let people = model.detail?.people, !people.isEmpty { castSection(people) }
+                        .padding(.top, DT.Spacing.md)
                     }
-                    .padding(.top, DT.Spacing.md)
-                }
 
-                Spacer().frame(height: DT.Size.tabBarHeight + 24)
+                    Spacer().frame(height: DT.Size.tabBarHeight + 24)
+                }
+                // A page-wide frame from the GeometryReader, not containerRelativeFrame: it follows an
+                // iPhone turn (#325) and, on the Mac, can't feed the page's width back into the
+                // window's layout (#345).
+                .frame(width: proxy.size.width)
             }
-            // Re-fits after the player hands the screen back in landscape (see MediaDetailView).
-            .containerRelativeFrame(.horizontal)
         }
     }
 

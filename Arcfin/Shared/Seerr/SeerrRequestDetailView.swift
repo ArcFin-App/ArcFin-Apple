@@ -159,32 +159,33 @@ struct SeerrRequestDetailView: View {
 
     // MARK: - Hero
 
+    // Sized by the page, not the artwork, so a wide backdrop can't widen the page.
     private var heroSection: some View {
-        ZStack(alignment: .bottom) {
-            if let url = request.backdropURL ?? request.posterURL {
-                CachedAsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    default: fallbackHero
+        Color.clear.frame(maxWidth: .infinity).frame(height: 260).overlay {
+            ZStack(alignment: .bottom) {
+                if let url = request.backdropURL ?? request.posterURL {
+                    CachedAsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img):
+                            img
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        default: fallbackHero
+                        }
                     }
-                }
-            } else { fallbackHero }
+                } else { fallbackHero }
 
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
-                    .init(color: DT.Color.backgroundPrimary, location: 1),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
+                        .init(color: DT.Color.backgroundPrimary, location: 1),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+            }
         }
-        .frame(height: 260)
-        .containerRelativeFrame(.horizontal)
         .clipped()
     }
 
