@@ -58,7 +58,6 @@ struct SetupGuideContent: View {
                         .foregroundStyle(DT.Color.textSecondary)
 
                     tipRow(icon: "exclamationmark.triangle", text: "Include the port number — e.g. http://192.168.1.10:8096")
-                    tipRow(icon: "exclamationmark.triangle", text: "No trailing slash — http://server.local not http://server.local/")
                     tipRow(icon: "checkmark.circle", text: "Arcfin auto-discovers servers on your local Wi-Fi network")
                     tipRow(icon: "checkmark.circle", text: "Quick Connect lets you sign in without typing a password on this device")
                 }
