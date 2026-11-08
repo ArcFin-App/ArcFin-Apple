@@ -92,7 +92,7 @@ final class MediaRepository {
     private(set) var accessToken: String?
 
     private let client = JellyfinMediaClient()
-    private var loaded = false
+    private(set) var loaded = false
     private var lastLoadedAt: Date?
     private var lastLoadedUserID: String?
 

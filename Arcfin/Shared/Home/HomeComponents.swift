@@ -358,7 +358,8 @@ struct HomeShelfView<Card: View>: View {
                 }
             }
         case .recentlyAddedMovies:
-            if !mediaRepo.recentlyAddedMovies.isEmpty || !mediaRepo.connectionFailed {
+            // Placeholders only until the first load finishes; an empty answer hides the shelf.
+            if !mediaRepo.recentlyAddedMovies.isEmpty || (!mediaRepo.loaded && !mediaRepo.connectionFailed) {
                 ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
                     seeAll(SeeAllShelf(title: "Recently Added Movies", items: mediaRepo.recentlyAddedMovies))
                 }) {
@@ -366,7 +367,7 @@ struct HomeShelfView<Card: View>: View {
                 }
             }
         case .recentlyAddedShows:
-            if !mediaRepo.recentlyAddedShows.isEmpty || !mediaRepo.connectionFailed {
+            if !mediaRepo.recentlyAddedShows.isEmpty || (!mediaRepo.loaded && !mediaRepo.connectionFailed) {
                 ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
                     seeAll(SeeAllShelf(title: "Recently Added Shows", items: mediaRepo.recentlyAddedShows))
                 }) {

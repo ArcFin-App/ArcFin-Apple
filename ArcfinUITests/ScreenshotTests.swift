@@ -125,7 +125,10 @@ final class ScreenshotTests: XCTestCase {
         try selectTab("Browse")
         let field = app.searchFields.firstMatch
         if !field.waitForExistence(timeout: 3) {
-            app.swipeDown()
+            // iPad keeps the field behind a Search button in the navigation bar (#296);
+            // iPhone shows it once the list is pulled down.
+            let searchButton = app.navigationBars.buttons["Search"].firstMatch
+            if searchButton.exists { searchButton.tap() } else { app.swipeDown() }
         }
         try waitFor(field)
         field.tap()
@@ -247,9 +250,17 @@ final class ScreenshotTests: XCTestCase {
         // spaced out.
         let tab = app.tabBars.buttons[title].firstMatch
         let focusedTab = app.tabBars.buttons.matching(NSPredicate(format: "hasFocus == true")).firstMatch
-        for _ in 0..<20 where !focusedTab.exists {
+        // Menu on a tab's first screen sends focus straight to the tab bar. Up alone could
+        // spend its presses on Home's hero waking up and stay on a shelf (#299). Menu only
+        // while the tab bar isn't focused: from there it would leave the app.
+        if !focusedTab.exists {
+            XCUIRemote.shared.press(.menu)
+            _ = focusedTab.waitForExistence(timeout: 2)
+        }
+        // Focus can start on a card far down Home, one press per shelf to climb back.
+        for _ in 0..<40 where !focusedTab.exists {
             XCUIRemote.shared.press(.up)
-            Thread.sleep(forTimeInterval: 0.4)
+            Thread.sleep(forTimeInterval: 0.5)
         }
         try waitFor(focusedTab, timeout: 5)
         for direction in [XCUIRemote.Button.right, .left] {
