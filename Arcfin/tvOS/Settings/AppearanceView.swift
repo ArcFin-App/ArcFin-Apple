@@ -21,7 +21,7 @@ struct AppearanceView: View {
                 .tvListRow()
                 .syncLocked("mergeContinueWatchingAndUpNext", authManager)
                 Toggle(isOn: $modernHome) {
-                    TVRowLabelText(title: "Modern Home", detail: "Keeps the featured title on screen while the rows slide up beneath it. Off scrolls the whole page.")
+                    TVRowLabelText(title: "Spotlight Home", detail: "Shows the title you're on full screen with its trailer, above one row at a time. While the trailer plays, everything else fades away. Off shows Home as one scrolling page.")
                 }
                 .tvListRow()
                 .syncLocked("modernHome", authManager)

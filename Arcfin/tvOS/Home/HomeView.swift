@@ -48,7 +48,11 @@ struct HomeView: View {
     // fixed hero shows.
     @State private var modernRow: String?
     @State private var modernRowTops: [String: CGFloat] = [:]
+    @State private var modernRowHeights: [String: CGFloat] = [:]
     @State private var modernHero: ModernHeroSubject?
+    /// Modern Home while the trailer plays: the focused row sits a little lower, and the hero's
+    /// details and every other row fade, until the next press.
+    @State private var modernRowsResting = false
 
     private enum HeroButton { case play, info }
 
@@ -475,8 +479,14 @@ struct HomeView: View {
     /// drawn fades; the focused button or card stays in place and keeps focus.
     private func hideHeroChromeSoon() {
         heroChromeTask?.cancel()
-        // Modern Home's hero has no buttons to hide behind, and its rows stay in view.
-        guard !modernHome else { return }
+        if modernHome {
+            heroChromeTask = Task {
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled, heroVideoIsPlaying else { return }
+                withAnimation(DT.Animation.motion(.easeInOut(duration: 0.6))) { modernRowsResting = true }
+            }
+            return
+        }
         heroChromeTask = Task {
             try? await Task.sleep(for: .seconds(5))
             guard !Task.isCancelled, heroVideoIsPlaying, let target = currentHeroFocus else { return }
@@ -531,6 +541,9 @@ struct HomeView: View {
         heroChromeTask = nil
         if heroChromeHidden {
             withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
+        }
+        if modernRowsResting {
+            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { modernRowsResting = false }
         }
         if heroVideoIsPlaying { hideHeroChromeSoon() }
     }
@@ -734,8 +747,12 @@ struct HomeView: View {
         }
         .padding(.bottom, 40)
         .focusSection()
-        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.modernRowsSpace)).minY } action: { top in
-            if modernHome { modernRowTops[title] = top }
+        .background {
+            if modernHome {
+                GeometryReader { proxy in
+                    Color.clear.preference(key: ModernRowHeights.self, value: [.init(title: title, height: proxy.size.height)])
+                }
+            }
         }
     }
 
@@ -768,7 +785,6 @@ struct HomeView: View {
 
     // MARK: - Modern Home
 
-    private static let modernRowsSpace = "modernRows"
 
     /// The hero stays put and shows the focused title; the rows sit under it, the focused one
     /// on top with part of the next showing below. Moving down slides them up, and the row
@@ -779,6 +795,11 @@ struct HomeView: View {
             let sh = proxy.size.height
             let rowsTop = sh * 0.5
             let focusedRowTop = modernRow.flatMap { modernRowTops[$0] } ?? 0
+            // Resting drops the focused row until its cards almost reach the bottom edge.
+            // Each row's height includes its 40 pt bottom padding.
+            let focusedRowHeight = modernRowHeights[modernRow ?? "Continue Watching"] ?? 0
+            let restingDrop = max(0, sh - 60 - rowsTop - (focusedRowHeight - 40))
+            let rowsOffset = rowsTop - focusedRowTop + (modernRowsResting ? restingDrop : 0)
 
             ZStack(alignment: .topLeading) {
                 modernBackdrop
@@ -802,25 +823,40 @@ struct HomeView: View {
                 modernHeroInfo
                     .padding(.leading, 80)
                     .padding(.top, 150)
+                    .opacity(modernRowsResting ? 0 : 1)
 
                 modernRows
-                    .offset(y: rowsTop - focusedRowTop)
-                    .animation(DT.Animation.motion(.easeInOut(duration: 0.35)), value: modernRow)
+                    .offset(y: rowsOffset)
+                    .animation(DT.Animation.motion(.easeInOut(duration: 0.35)), value: rowsOffset)
                     .frame(width: sw, height: sh, alignment: .top)
+                    // Resting shows only a band around the focused row, which moves down with
+                    // it. Masking rather than fading keeps the other rows focusable, so the next
+                    // press can move to them while everything comes back.
                     .mask {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .clear, location: (rowsTop - 40) / sh),
-                                .init(color: .black, location: rowsTop / sh)
-                            ],
-                            startPoint: .top, endPoint: .bottom
-                        )
+                        ZStack(alignment: .top) {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .clear, location: (rowsTop - 40) / sh),
+                                    .init(color: .black, location: rowsTop / sh)
+                                ],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                            .opacity(modernRowsResting ? 0 : 1)
+                            VStack(spacing: 0) {
+                                Color.clear.frame(height: max(0, rowsTop + (modernRowsResting ? restingDrop : 0) - 20))
+                                Color.black.frame(height: focusedRowHeight + 20)
+                                Color.clear
+                            }
+                            .opacity(modernRowsResting ? 1 : 0)
+                        }
                     }
             }
         }
         // Measured edge to edge: inside the safe area the backdrop stopped short of the right
         // edge and the rows were cut off above the bottom.
         .ignoresSafeArea()
+        // Any press brings the rows back from resting, including one that moves no focus.
+        .onMoveCommand { _ in showHeroChrome() }
     }
 
     private var modernRows: some View {
@@ -832,8 +868,21 @@ struct HomeView: View {
                     .accessibilityIdentifier("shelf.\(shelf.rawValue)")
             }
         }
-        .coordinateSpace(name: Self.modernRowsSpace)
         .focusSection()
+        // Tops come from adding up row heights in order. Measuring positions picked up the
+        // offset they were used for, so the rows chased their own position: the bounce.
+        .onPreferenceChange(ModernRowHeights.self) { rows in
+            var top: CGFloat = 0
+            var tops: [String: CGFloat] = [:]
+            var heights: [String: CGFloat] = [:]
+            for row in rows {
+                tops[row.title] = top
+                heights[row.title] = row.height
+                top += row.height
+            }
+            modernRowTops = tops
+            modernRowHeights = heights
+        }
     }
 
     @ViewBuilder
@@ -996,6 +1045,20 @@ struct HomeView: View {
         let show = item.seriesName ?? item.name
         guard let code = HomeText.episodeLabel(item) else { return show }
         return "\(show) · \(code)"
+    }
+}
+
+/// Each Modern Home row's height, in the order the rows are stacked.
+private struct ModernRowHeights: PreferenceKey {
+    struct Row: Equatable {
+        let title: String
+        let height: CGFloat
+    }
+
+    static let defaultValue: [Row] = []
+
+    static func reduce(value: inout [Row], nextValue: () -> [Row]) {
+        value += nextValue()
     }
 }
 
