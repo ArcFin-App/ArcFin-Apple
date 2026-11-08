@@ -272,9 +272,17 @@ final class SeerrRepository {
         return await visible(result.items)
     }
 
+    /// Someone already asked for this title: Seerr answers a duplicate request with 409.
+    struct AlreadyRequested: Error {}
+
     func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
         guard let client else { throw URLError(.badURL) }
-        try await client.createRequest(mediaType: mediaType, mediaId: mediaId, seasons: seasons)
+        do {
+            try await client.createRequest(mediaType: mediaType, mediaId: mediaId, seasons: seasons)
+        } catch SeerrError.requestFailed(status: 409, body: _) {
+            await loadRequests()
+            throw AlreadyRequested()
+        }
         await loadRequests()
     }
 

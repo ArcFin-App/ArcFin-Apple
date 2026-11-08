@@ -6465,6 +6465,70 @@
         }
       }
     },
+    "This title has already been requested. You'll be notified when it becomes available." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieser Titel wurde bereits angefragt. Du wirst benachrichtigt, sobald er verfügbar ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este título ya se ha solicitado. Recibirás un aviso cuando esté disponible."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ce titre a déjà été demandé. Vous serez averti quand il sera disponible."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo titolo è già stato richiesto. Riceverai una notifica quando sarà disponibile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "この作品はすでにリクエストされています。視聴できるようになったらお知らせします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 작품은 이미 요청되었습니다. 볼 수 있게 되면 알려 드립니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze titel is al aangevraagd. Je krijgt een melding zodra hij beschikbaar is."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este título já foi solicitado. Você será avisado quando ele estiver disponível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Этот фильм или сериал уже запрошен. Вы получите уведомление, когда он станет доступен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这部作品已有人请求。可以观看时你会收到通知。"
+          }
+        }
+      }
+    },
     "Trailers on Home" : {
       "localizations" : {
         "de" : {

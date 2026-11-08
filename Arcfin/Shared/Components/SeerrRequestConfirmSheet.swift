@@ -16,6 +16,7 @@ struct SeerrRequestConfirmSheet: View {
     @State private var selectedSeasons: Set<Int> = []
     @State private var isSubmitting = false
     @State private var submitError: String?
+    @State private var alreadyRequested = false
 
     private var isSeries: Bool { item.mediaType == .tv }
     private var rows: [SeerrSeasonRow] { detail?.seasonRows ?? [] }
@@ -48,12 +49,13 @@ struct SeerrRequestConfirmSheet: View {
         (partialRequestsEnabled ? Array(selectedSeasons) : unrequested).sorted()
     }
     private var requestDisabled: Bool {
-        isSubmitting || (isSeries && (
+        isSubmitting || alreadyRequested || (isSeries && (
             overLimit || overQuota || unrequested.isEmpty ||
             (partialRequestsEnabled && selectedSeasons.isEmpty)
         ))
     }
     private var requestLabel: String {
+        if alreadyRequested { return "Already Requested" }
         guard isSeries else { return isSubmitting ? "Sending…" : "Confirm Request" }
         if unrequested.isEmpty { return "Already Requested" }
         if !partialRequestsEnabled { return isSubmitting ? "Sending…" : "Request Series" }
@@ -113,7 +115,14 @@ struct SeerrRequestConfirmSheet: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.lg)
 
-                if let submitError {
+                if alreadyRequested {
+                    Text("This title has already been requested. You'll be notified when it becomes available.")
+                        .font(.system(.caption))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                        .padding(.bottom, DT.Spacing.sm)
+                } else if let submitError {
                     Text(submitError)
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.palette("F43F5E"))
@@ -127,6 +136,9 @@ struct SeerrRequestConfirmSheet: View {
             }
         }
         .task {
+            // A movie has no per-season rows to say so; the loaded requests and the item's own
+            // status do. A series is covered by its season rows below.
+            if !isSeries, seerrRepo.isRequested(item) { alreadyRequested = true }
             async let fetchedDetail = seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
             async let fetchedSettings = seerrRepo.ensurePublicSettings()
             let (resolvedDetail, resolvedSettings) = await (fetchedDetail, fetchedSettings)
@@ -434,6 +446,9 @@ struct SeerrRequestConfirmSheet: View {
                 do {
                     try await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id, seasons: seasons)
                     requestingItem = nil
+                } catch is SeerrRepository.AlreadyRequested {
+                    isSubmitting = false
+                    alreadyRequested = true
                 } catch {
                     isSubmitting = false
                     submitError = "Couldn't send request: \(error.localizedDescription)"
