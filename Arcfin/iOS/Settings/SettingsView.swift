@@ -189,6 +189,19 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("settings.profile")
+                NavigationLink {
+                    ProfileAccessView()
+                } label: {
+                    HStack {
+                        settingsRow("Your Profile", icon: "person.text.rectangle")
+                        Spacer()
+                        if ProfileRules.shared.restrictsContent {
+                            Label("Parental Controls", systemImage: "lock.shield")
+                                .font(.caption)
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                    }
+                }
             }
         }
     }

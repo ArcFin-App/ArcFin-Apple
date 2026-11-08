@@ -238,11 +238,12 @@ final class ProfileRules {
     }
 
     static func describe(_ schedule: AccessSchedule) -> String {
+        let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         let day: String = switch schedule.dayOfWeek {
-        case "Everyday": "Every day"
-        case "Weekday": "Weekdays"
-        case "Weekend": "Weekends"
-        default: schedule.dayOfWeek
+        case "Everyday": String(localized: "Every day")
+        case "Weekday": String(localized: "Weekdays")
+        case "Weekend": String(localized: "Weekends")
+        default: names.firstIndex(of: schedule.dayOfWeek).map { Calendar.current.weekdaySymbols[$0] } ?? schedule.dayOfWeek
         }
         return "\(day), \(timeLabel(schedule.startHour))–\(timeLabel(schedule.endHour))"
     }
@@ -253,7 +254,7 @@ final class ProfileRules {
         components.hour = (total / 60) % 24
         components.minute = total % 60
         guard let date = Calendar.current.date(from: components) else { return "\(hours)" }
-        return hours >= 24 ? "midnight" : date.formatted(date: .omitted, time: .shortened)
+        return hours >= 24 ? String(localized: "midnight") : date.formatted(date: .omitted, time: .shortened)
     }
 }
 

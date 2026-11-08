@@ -363,7 +363,6 @@
 				tvOS/Settings/LicenseRow.swift = (tvos, );
 				tvOS/Settings/PlaybackSettingsView.swift = (tvos, );
 				tvOS/Settings/PlayerFeaturesSettingsView.swift = (tvos, );
-				tvOS/Settings/ProfileAccessView.swift = (tvos, );
 				tvOS/Settings/SeerrPluginView.swift = (tvos, );
 				tvOS/Settings/ServerSettingsView.swift = (tvos, );
 				tvOS/Settings/SettingsView.swift = (tvos, );

@@ -93,6 +93,7 @@ struct MediaDetailView: View {
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 playbackRequest = Arcfin.PlaybackRequest(item: next, startTicks: 0)
             }
+            .id(request.item.id)
         }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
         .sheet(isPresented: $showSubtitleSearch) {
@@ -186,6 +187,17 @@ struct MediaDetailView: View {
             if let mins = model.detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text("\(mins)m").font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+            }
+            // Counts from the resume point; refreshed each minute so it stays right on a page
+            // left open.
+            TimelineView(.everyMinute) { _ in
+                if let endsAt = model.endTime {
+                    HStack(spacing: 12) {
+                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
+                        Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                            .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+                    }
+                }
             }
             if let rating = item.communityRating {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))

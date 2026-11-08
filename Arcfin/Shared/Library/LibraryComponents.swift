@@ -6,11 +6,12 @@ import JellyfinAPI
 // MARK: - Library card
 
 struct LibraryCard: View {
+    @Environment(MediaRepository.self) private var mediaRepo
     let library: JellyfinLibrary
     let imageURL: URL?
 
     var body: some View {
-        BrowseTile(systemImage: library.collectionType.systemIcon, title: library.name) {
+        BrowseTile(systemImage: library.collectionType.systemIcon, title: library.name, count: mediaRepo.libraryCounts[library.id]) {
             if let imageURL {
                 CachedAsyncImage(url: imageURL) { phase in
                     switch phase {
@@ -40,6 +41,8 @@ struct RequestsCard: View {
 struct BrowseTile<Background: View>: View {
     let systemImage: String
     let title: String
+    /// How many titles the library holds, shown in the corner once it's known.
+    var count: Int? = nil
     @ViewBuilder let background: Background
 
     @Environment(\.isFocused) private var isFocused
@@ -68,6 +71,7 @@ struct BrowseTile<Background: View>: View {
                                center: .bottomLeading, startRadius: 0, endRadius: 240 * DT.Scale.font)
             }
             .overlay(alignment: .bottomLeading) { label }
+            .overlay(alignment: .topTrailing) { countBadge }
             .clipShape(shape)
             .overlay(shape.strokeBorder(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
             .overlay(
@@ -83,6 +87,20 @@ struct BrowseTile<Background: View>: View {
             .animation(DT.Animation.fast, value: highlighted)
             .onPointerHover { hovered = $0 }
             .contentShape(shape)
+    }
+
+    @ViewBuilder
+    private var countBadge: some View {
+        if let count, count > 0 {
+            Text(count.formatted())
+                .scaledFont(size: 11, weight: .semibold)
+                .monospacedDigit()
+                .foregroundStyle(DT.Color.textPrimary)
+                .padding(.horizontal, 8 * DT.Scale.font)
+                .padding(.vertical, 3 * DT.Scale.font)
+                .background(DT.Color.backgroundSecondary.opacity(0.75), in: Capsule())
+                .padding(10 * DT.Scale.font)
+        }
     }
 
     private var label: some View {
