@@ -164,6 +164,9 @@ struct HomeView: View {
             PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                 model.playbackRequest = PlaybackRequest(item: next, startTicks: 0)
             }
+            // The cover stays up for the next episode; a new id gives it a fresh player
+            // instead of the last episode's.
+            .id(request.item.id)
         }
         .task { await load() }
         .task(id: topShelfSignature) {
