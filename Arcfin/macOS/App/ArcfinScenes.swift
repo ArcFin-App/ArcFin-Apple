@@ -26,7 +26,7 @@ extension ArcfinApp {
             // sidebar — no separate NavigationSplitView shell needed. This just gives the
             // window itself sane native sizing instead of whatever SwiftUI's bare default is.
             .defaultSize(width: 1280, height: 800)
-            .windowResizability(.contentSize)
+            .windowResizability(.contentMinSize)
             .commands {
                 SidebarCommands()
                 // Edit › Find… (⌘F) searches the library, the app's one search field.

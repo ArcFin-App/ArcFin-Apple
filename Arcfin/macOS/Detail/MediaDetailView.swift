@@ -58,10 +58,6 @@ struct MediaDetailView: View {
                 else { detailContent }
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
-            // The page can be laid out while the player still holds the screen in landscape;
-            // pinned to the visible width, it re-fits when the device turns back to portrait
-            // instead of keeping the landscape width and running past both edges.
-            .containerRelativeFrame(.horizontal)
         }
         .background {
             ZStack {
