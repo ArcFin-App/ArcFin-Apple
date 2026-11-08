@@ -679,6 +679,9 @@ final class PlayerModel {
         currentSubtitleText = nil
         currentBitmapCue = nil
         Task { await player.pause() }
+        // Opened from the casting bar: the receiver is already playing this, so loading it
+        // again would jump it back to where the local player happens to be.
+        guard CastManager.shared.nowPlayingItemID != item.id else { return }
         loadCast(startSeconds: Double(player.positionTicks) / 10_000_000)
     }
 
@@ -707,7 +710,7 @@ final class PlayerModel {
             } ?? []
             castSubtitleTrackIDs = Set(tracks.map(\.id))
             CastManager.shared.loadMedia(
-                streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
+                itemID: item.id, streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
                 contentType: castContentType(for: url),
                 startPositionSeconds: startSeconds,
                 subtitleTracks: tracks,
