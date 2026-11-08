@@ -9,6 +9,9 @@ struct HomeShelfSettingsView: View {
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleShelves = false
 
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
+    private var shown: [HomeShelf] {
+        order.filter { $0.isOffered(seerrConfigured: seerrRepo.isConfigured, hasCatalog: seerrRepo.hasCatalog) }
+    }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
     private var footerText: String {
@@ -28,7 +31,7 @@ struct HomeShelfSettingsView: View {
 
             Section {
                 // No dragging on tvOS: select turns a shelf on or off, and a long press moves it.
-                ForEach(Array(order.enumerated()), id: \.element) { index, shelf in
+                ForEach(Array(shown.enumerated()), id: \.element) { index, shelf in
                     Button { toggle(shelf) } label: {
                         HStack(spacing: 12) {
                             Image(systemName: shelf.icon).frame(width: 40)
@@ -41,7 +44,7 @@ struct HomeShelfSettingsView: View {
                     .contextMenu {
                         if !shuffleShelves {
                             Button("Move Up") { moveShelf(at: index, by: -1) }.disabled(index == 0)
-                            Button("Move Down") { moveShelf(at: index, by: 1) }.disabled(index == order.count - 1)
+                            Button("Move Down") { moveShelf(at: index, by: 1) }.disabled(index == shown.count - 1)
                         }
                     }
                 }
@@ -53,9 +56,9 @@ struct HomeShelfSettingsView: View {
 
             if seerrRepo.hasCatalog {
                 Section {
-                    NavigationLink("Streaming Services") { StreamingServicesView().tvSettingsPage() }
+                    NavigationLink("Popular Elsewhere") { StreamingServicesView().tvSettingsPage() }
                 } footer: {
-                    Text("Pick the services you use to get a row of what's popular on each, from Seerr or TMDB.")
+                    Text("Pick the services you use for a row of what's popular on each. Arcfin doesn't play these services: open a title to find it in your library or request it with Seerr.")
                 }
             }
         }
@@ -69,10 +72,9 @@ struct HomeShelfSettingsView: View {
     }
 
     private func moveShelf(at index: Int, by offset: Int) {
-        var items = order
         let target = index + offset
-        guard items.indices.contains(target) else { return }
-        items.swapAt(index, target)
+        guard shown.indices.contains(target) else { return }
+        let items = HomeShelfPrefs.reorder(order, shown: shown) { $0.swapAt(index, target) }
         orderString = HomeShelfPrefs.encode(items)
     }
 

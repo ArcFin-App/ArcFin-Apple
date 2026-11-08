@@ -32,7 +32,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         case .nowAvailable:           String(localized: "Now Available")
         case .suggested:              String(localized: "Suggested for You")
         case .recommendations:        String(localized: "Recommended")
-        case .streamingServices:      String(localized: "Your Streaming Services")
+        case .streamingServices:      String(localized: "Popular Elsewhere")
         case .seerrWatchlist:         String(localized: "Watchlist")
         case .seerrTrending:          String(localized: "Trending")
         case .seerrPopularMovies:     String(localized: "Popular Movies")
@@ -44,6 +44,16 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         switch self {
         case .nowAvailable, .streamingServices, .seerrWatchlist, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries: true
         default: false
+        }
+    }
+
+    /// Whether the shelf can show at all: Watchlist and Now Available need Seerr, the catalogue
+    /// shelves Seerr or TMDB. One that can't isn't offered in Home Shelves.
+    func isOffered(seerrConfigured: Bool, hasCatalog: Bool) -> Bool {
+        switch self {
+        case .nowAvailable, .seerrWatchlist: seerrConfigured
+        case .streamingServices, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries: hasCatalog
+        default: true
         }
     }
 
@@ -99,6 +109,14 @@ enum HomeShelfPrefs {
         let saved = raw.split(separator: ",").compactMap { HomeShelf(rawValue: String($0)) }
         let missing = HomeShelf.allCases.filter { !saved.contains($0) }
         return saved + missing
+    }
+
+    /// Applies a reorder of the shelves on show, leaving the hidden ones where they were.
+    static func reorder(_ order: [HomeShelf], shown: [HomeShelf], _ change: (inout [HomeShelf]) -> Void) -> [HomeShelf] {
+        var moved = shown
+        change(&moved)
+        var next = moved.makeIterator()
+        return order.map { shown.contains($0) ? next.next() ?? $0 : $0 }
     }
 
     static func encode(_ items: [HomeShelf]) -> String {

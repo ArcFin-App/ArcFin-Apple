@@ -64,11 +64,14 @@ struct StreamingServicesView: View {
                 if !model.region.isEmpty {
                     Text("Available in \(Locale.current.localizedString(forRegionCode: model.region) ?? model.region)")
                 }
+            } footer: {
+                // JustWatch supplies this data through TMDB, which asks for it to be credited.
+                Text("Availability from JustWatch")
             }
         }
         .arcfinListStyle()
         .screenBackground()
-        .arcfinNavTitleLarge("Streaming Services")
+        .arcfinNavTitleLarge("Popular Elsewhere")
         .searchable(text: $query, prompt: "Search services")
         .task { await model.load(seerrRepo: seerrRepo) }
         .onChange(of: regionOverride) { Task { await model.load(seerrRepo: seerrRepo) } }

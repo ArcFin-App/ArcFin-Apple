@@ -9,6 +9,9 @@ struct HomeShelfSettingsView: View {
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleShelves = false
 
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
+    private var shown: [HomeShelf] {
+        order.filter { $0.isOffered(seerrConfigured: seerrRepo.isConfigured, hasCatalog: seerrRepo.hasCatalog) }
+    }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
     private var editMode: EditMode { shuffleShelves ? .inactive : .active }
@@ -29,7 +32,7 @@ struct HomeShelfSettingsView: View {
             }
 
             Section {
-                ForEach(order) { shelf in
+                ForEach(shown) { shelf in
                     HStack(spacing: 12) {
                         Image(systemName: shelf.icon)
                             .font(.system(.callout))
@@ -59,9 +62,9 @@ struct HomeShelfSettingsView: View {
 
             if seerrRepo.hasCatalog {
                 Section {
-                    NavigationLink("Streaming Services") { StreamingServicesView().tvSettingsPage() }
+                    NavigationLink("Popular Elsewhere") { StreamingServicesView().tvSettingsPage() }
                 } footer: {
-                    Text("Pick the services you use to get a row of what's popular on each, from Seerr or TMDB.")
+                    Text("Pick the services you use for a row of what's popular on each. Arcfin doesn't play these services: open a title to find it in your library or request it with Seerr.")
                 }
             }
         }
@@ -76,8 +79,7 @@ struct HomeShelfSettingsView: View {
     }
 
     private func move(from source: IndexSet, to destination: Int) {
-        var items = order
-        items.move(fromOffsets: source, toOffset: destination)
+        let items = HomeShelfPrefs.reorder(order, shown: shown) { $0.move(fromOffsets: source, toOffset: destination) }
         orderString = HomeShelfPrefs.encode(items)
     }
 

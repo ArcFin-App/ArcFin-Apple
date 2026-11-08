@@ -4033,6 +4033,70 @@
         }
       }
     },
+    "Pick the services you use for a row of what's popular on each. Arcfin doesn't play these services: open a title to find it in your library or request it with Seerr." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wähle die Dienste, die du nutzt, um für jeden eine Reihe mit Beliebtem zu sehen. Arcfin spielt diese Dienste nicht ab: Öffne einen Titel, um ihn in deiner Mediathek zu finden oder mit Seerr anzufragen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Elige los servicios que usas para ver una fila con lo más popular de cada uno. Arcfin no reproduce estos servicios: abre un título para buscarlo en tu biblioteca o solicitarlo con Seerr."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Choisissez les services que vous utilisez pour voir une rangée de ce qui est populaire sur chacun. Arcfin ne lit pas ces services : ouvrez un titre pour le trouver dans votre bibliothèque ou le demander avec Seerr."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scegli i servizi che usi per vedere una riga con ciò che è popolare su ciascuno. Arcfin non riproduce questi servizi: apri un titolo per trovarlo nella tua libreria o richiederlo con Seerr."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使っているサービスを選ぶと、それぞれで人気の作品が1列ずつ表示されます。Arcfin はこれらのサービスを再生しません。作品を開くと、ライブラリで探すか Seerr でリクエストできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사용하는 서비스를 고르면 각 서비스에서 인기 있는 작품이 한 줄씩 표시됩니다. Arcfin은 이 서비스들을 재생하지 않습니다. 작품을 열어 보관함에서 찾거나 Seerr로 요청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kies de diensten die je gebruikt voor een rij met wat er op elk populair is. Arcfin speelt deze diensten niet af: open een titel om hem in je bibliotheek te vinden of met Seerr aan te vragen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escolha os serviços que você usa para ver uma fileira com o que é popular em cada um. O Arcfin não reproduz esses serviços: abra um título para encontrá-lo na sua biblioteca ou solicitá-lo com o Seerr."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выберите сервисы, которыми пользуетесь, чтобы видеть ряд популярного на каждом. Arcfin не воспроизводит эти сервисы: откройте фильм или сериал, чтобы найти его в медиатеке или запросить через Seerr."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "选择你使用的服务，即可为每个服务显示一排热门内容。Arcfin 不播放这些服务：打开一部作品，可在你的资料库中找到它，或通过 Seerr 请求。"
+          }
+        }
+      }
+    },
     "Play from Start" : {
       "localizations" : {
         "de" : {
@@ -4413,6 +4477,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "热门"
+          }
+        }
+      }
+    },
+    "Popular Elsewhere" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anderswo beliebt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Popular en otros sitios"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Populaire ailleurs"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Popolare altrove"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ほかで人気"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다른 곳에서 인기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Elders populair"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Popular em outros lugares"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Популярно в других местах"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "别处热门"
           }
         }
       }
@@ -43013,70 +43141,6 @@
         }
       }
     },
-    "Pick the services you use to get a row of what's popular on each, from Seerr or TMDB." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Wähle die Dienste, die du nutzt, um eine Reihe mit dem Beliebtesten auf jedem zu bekommen, aus Seerr oder TMDB."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Elige los servicios que usas para tener una fila con lo más popular en cada uno, desde Seerr o TMDB."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Choisissez les services que vous utilisez pour obtenir une rangée de ce qui est populaire sur chacun, via Seerr ou TMDB."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Scegli i servizi che usi per avere una riga dei titoli popolari su ciascuno, da Seerr o TMDB."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "利用しているサービスを選ぶと、それぞれの人気作品の列をSeerrまたはTMDBから表示します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "사용하는 서비스를 선택하면 Seerr나 TMDB에서 각 서비스의 인기 작품 줄을 받을 수 있습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Kies de diensten die je gebruikt voor een rij met wat er populair is op elk, via Seerr of TMDB."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Escolha os serviços que você usa para ter uma fileira com o que é popular em cada um, via Seerr ou TMDB."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Выберите сервисы, которыми пользуетесь, чтобы получить ряд популярного на каждом из них из Seerr или TMDB."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "选取你使用的服务，即可获得每个服务上的热门内容行，数据来自 Seerr 或 TMDB。"
-          }
-        }
-      }
-    },
     "Picture in Picture" : {
       "localizations" : {
         "de" : {
@@ -59721,70 +59785,6 @@
         }
       }
     },
-    "Streaming Services" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Streamingdienste"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Servicios de streaming"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Services de streaming"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Servizi di streaming"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "配信サービス"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "스트리밍 서비스"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Streamingdiensten"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Serviços de streaming"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Стриминговые сервисы"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "串流服务"
-          }
-        }
-      }
-    },
     "Streaming services and title details, without Seerr." : {
       "localizations" : {
         "de" : {
@@ -70855,70 +70855,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你的 %@ 统计卡片"
-          }
-        }
-      }
-    },
-    "Your Streaming Services" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Deine Streamingdienste"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Tus servicios de streaming"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Vos services de streaming"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "I tuoi servizi di streaming"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "あなたの配信サービス"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "나의 스트리밍 서비스"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Je streamingdiensten"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Seus serviços de streaming"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ваши стриминговые сервисы"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "你的串流服务"
           }
         }
       }
