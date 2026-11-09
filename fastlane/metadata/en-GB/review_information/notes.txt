@@ -17,12 +17,6 @@ The demo account genuinely has no password set. Arcfin's sign-in screen only req
 username to enable the Sign In button — the password field is optional, matching Jellyfin
 itself, which allows accounts configured with no password (common for demo/kid profiles).
 
-NOTE TO SELF BEFORE SUBMITTING: do one final end-to-end sign-in test against
-https://demo.jellyfin.org/stable right before submitting — demo server uptime/config can
-change without notice. If it's down or no longer passwordless, submit a private Jellyfin
-server + test account of your own instead, since Apple's reviewer needs *something* that
-works to actually evaluate the app.
-
 Once signed in, the reviewer can browse the library, play a video (direct play or
 transcoded depending on the source), and try Settings > Playback, Downloads, and the
 profile picker (Face ID/PIN lock is off by default — it's an opt-in per-profile setting
@@ -32,3 +26,11 @@ Local network permission (server/Chromecast discovery) and location permission (
 Wi-Fi network name, used only to switch between a server's local/remote address) are both
 optional — declining either still leaves the app fully usable by entering a server URL
 manually.
+
+The same sign-in works on iPhone, iPad, Mac and Apple TV (on Apple TV, type the server
+URL and username with the on-screen keyboard).
+
+Arcfin allows plain-HTTP connections (NSAllowsArbitraryLoads) because the server is one the
+user runs or is invited to, and many home Jellyfin servers on a local network have no TLS
+certificate. Arcfin never loads web content from those servers, only Jellyfin API and media
+requests.
