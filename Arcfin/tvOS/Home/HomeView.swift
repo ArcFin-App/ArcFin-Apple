@@ -207,7 +207,7 @@ struct HomeView: View {
         // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
         // backdrop transitions are instant with no load jump.
         let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
-             mediaRepo.logoURL(for: item)].compactMap { $0 }
+             heroLogoURL(item)].compactMap { $0 }
         }
         ImageCache.preheat(urls: heroURLs)
         let pendingID = model.deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
@@ -300,15 +300,16 @@ struct HomeView: View {
     private var heroInfoBlock: some View {
         if let item = heroDisplayItem {
             VStack(alignment: .leading, spacing: 16) {
-                CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                CachedAsyncImage(url: heroLogoURL(item)) { phase in
                     if case .success(let img) = phase {
                         img.resizable().scaledToFit()
                             .frame(maxWidth: 300, maxHeight: 90)
                             .shadow(color: .black.opacity(0.7), radius: 12)
                     } else {
-                        Text(item.name)
+                        Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
                             .font(.system(size: 36, weight: .heavy))
                             .foregroundStyle(.white)
+                            .lineLimit(2)
                             .shadow(color: .black.opacity(0.9), radius: 10)
                     }
                 }
@@ -317,8 +318,17 @@ struct HomeView: View {
                 .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
                 .opacity(heroChromeOpacity)
 
-                heroMetaRow(item)
-                    .opacity(heroChromeOpacity)
+                Group {
+                    if item.type == .episode {
+                        Text(itemTitle(item))
+                            .font(.system(size: 25, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(1)
+                    } else {
+                        heroMetaRow(item)
+                    }
+                }
+                .opacity(heroChromeOpacity)
 
                 if let pct = item.userData?.playedPercentage, pct > 1 {
                     progressBar(pct: pct / 100)
@@ -898,7 +908,7 @@ struct HomeView: View {
                 }
             } else if let item = heroDisplayItem {
                 VStack(alignment: .leading, spacing: 16) {
-                    CachedAsyncImage(url: mediaRepo.logoURL(for: item)) { phase in
+                    CachedAsyncImage(url: heroLogoURL(item)) { phase in
                         if case .success(let img) = phase {
                             img.resizable().scaledToFit()
                                 .frame(maxWidth: 300, maxHeight: 90)
@@ -907,6 +917,7 @@ struct HomeView: View {
                             Text(item.type == .episode ? (item.seriesName ?? item.name) : item.name)
                                 .font(.system(size: 36, weight: .heavy))
                                 .foregroundStyle(.white)
+                                .lineLimit(2)
                                 .shadow(color: .black.opacity(0.9), radius: 10)
                         }
                     }
@@ -914,6 +925,7 @@ struct HomeView: View {
                         Text(itemTitle(item))
                             .font(.system(size: 25, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(1)
                     } else {
                         heroMetaRow(item)
                     }
@@ -965,6 +977,11 @@ struct HomeView: View {
     }
 
     // MARK: - Helpers
+
+    /// Episodes have no logo of their own; their show's stands in.
+    private func heroLogoURL(_ item: MediaItem) -> URL? {
+        mediaRepo.logoURL(itemID: item.type == .episode ? (item.seriesId ?? item.id) : item.id)
+    }
 
     // "S1 · E4 · Episode Name" for episodes, show title for movies/series
     private func itemTitle(_ item: MediaItem) -> String {
