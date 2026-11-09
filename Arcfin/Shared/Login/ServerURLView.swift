@@ -77,14 +77,11 @@ struct ServerURLView: View {
                 }
             }
 
-            HStack(spacing: 20) {
-                Button { showSetupGuide = true } label: {
-                    Label("Setup Guide", systemImage: "questionmark.circle")
-                }
-                Button { showCustomHeaders = true } label: {
-                    Label("Custom Headers", systemImage: "key.horizontal")
-                }
-                .accessibilityHint("For a server behind an access gateway")
+            // Side by side where they fit on one line each, otherwise one above the other: on
+            // Apple TV's narrow column each label wrapped onto two lines.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 20) { helpLinks }
+                VStack(spacing: 12) { helpLinks }
             }
             .font(.subheadline)
             .foregroundStyle(DT.Color.accent)
@@ -127,6 +124,21 @@ struct ServerURLView: View {
         recentServers = await stored
         discoveredServers = await found
         discovering = false
+    }
+
+    @ViewBuilder
+    private var helpLinks: some View {
+        Button { showSetupGuide = true } label: {
+            Label("Setup Guide", systemImage: "questionmark.circle")
+                .lineLimit(1)
+                .fixedSize()
+        }
+        Button { showCustomHeaders = true } label: {
+            Label("Custom Headers", systemImage: "key.horizontal")
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .accessibilityHint("For a server behind an access gateway")
     }
 
     private func handleConnect() async {
