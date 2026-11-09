@@ -24,6 +24,39 @@
 				<string>1C8F.1</string>
 			</array>
 		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- E174.1: free space checked before a download starts, and to remove watched
+				     downloads when the device runs low (DownloadManager). -->
+				<string>E174.1</string>
+				<!-- 85F4.1: free space shown to the user on the Downloads storage screen
+				     (DownloadsModel.storageCaption). -->
+				<string>85F4.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- C617.1: attributes of files inside the app's own container: download sizes
+				     (DownloadManager), Nuke's image disk cache and the playback engine's cache. -->
+				<string>C617.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- 35F9.1: elapsed time between events inside the app (the playback engine's
+				     live-stream timing). Never sent off the device. -->
+				<string>35F9.1</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
