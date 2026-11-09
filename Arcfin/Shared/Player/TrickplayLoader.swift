@@ -54,7 +54,7 @@ final class TrickplayLoader {
                 let (data, response) = try await URLSession.arcfin.data(for: req)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? -1
                 guard status == 200, let image = PlatformImage(data: data) else {
-                    print("[Trickplay] tile \(tileIndex) fetch failed — status \(status), bytes \(data.count), url \(url)")
+                    print("[Trickplay] tile \(tileIndex) fetch failed — status \(status), bytes \(data.count)")
                     return nil
                 }
                 return image
