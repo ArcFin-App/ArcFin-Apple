@@ -9,20 +9,23 @@ struct QuickConnectRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
+            // A Label, as the Your Profile row above uses, so the icon gets the same size.
+            Label {
+                HStack(spacing: 10) {
+                    TextField("Quick Connect", text: $quickConnect.code)
+                        .autocorrectionDisabled()
+                    Button {
+                        quickConnect.authorize(authManager: authManager)
+                    } label: {
+                        if quickConnect.isAuthorizing { ProgressView().scaleEffect(0.8) }
+                        else { Text("Authorize") }
+                    }
+                    .disabled(quickConnect.code.isEmpty || quickConnect.isAuthorizing)
+                }
+            } icon: {
                 Image(systemName: "number.square")
                     .foregroundStyle(DT.Color.accent)
                     .frame(width: 22)
-                    .accessibilityHidden(true)
-                TextField("Quick Connect", text: $quickConnect.code)
-                    .autocorrectionDisabled()
-                Button {
-                    quickConnect.authorize(authManager: authManager)
-                } label: {
-                    if quickConnect.isAuthorizing { ProgressView().scaleEffect(0.8) }
-                    else { Text("Authorize") }
-                }
-                .disabled(quickConnect.code.isEmpty || quickConnect.isAuthorizing)
             }
             if let quickConnectResult = quickConnect.result {
                 Text(quickConnectResult)
