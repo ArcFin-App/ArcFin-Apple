@@ -153,6 +153,11 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("settings.profile")
+                QuickConnectRow()
+            } footer: {
+                Text("Enter the code shown on another device to sign it in instantly using this account.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
         }
     }

@@ -185,7 +185,7 @@
 				iOS/Settings/NotificationsSettingsView.swift = (ios, );
 				iOS/Settings/PlaybackSettingsView.swift = (ios, );
 				iOS/Settings/PlayerFeaturesSettingsView.swift = (ios, );
-				iOS/Settings/QuickConnectView.swift = (ios, );
+				iOS/Settings/QuickConnectRow.swift = (ios, );
 				iOS/Settings/SeerrPluginView.swift = (ios, );
 				iOS/Settings/ServerAccountSettingsView.swift = (ios, );
 				iOS/Settings/ServerSettingsView.swift = (ios, );
@@ -282,7 +282,7 @@
 				macOS/Settings/NotificationsSettingsView.swift = (macos, );
 				macOS/Settings/PlaybackSettingsView.swift = (macos, );
 				macOS/Settings/PlayerFeaturesSettingsView.swift = (macos, );
-				macOS/Settings/QuickConnectView.swift = (macos, );
+				macOS/Settings/QuickConnectRow.swift = (macos, );
 				macOS/Settings/SeerrPluginView.swift = (macos, );
 				macOS/Settings/ServerAccountSettingsView.swift = (macos, );
 				macOS/Settings/ServerSettingsView.swift = (macos, );

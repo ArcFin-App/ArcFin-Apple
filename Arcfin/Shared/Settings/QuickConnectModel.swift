@@ -4,7 +4,7 @@ import Foundation
 import AuthCore
 import JellyfinAPI
 
-/// Signing another device in with Quick Connect, from Settings › Quick Connect.
+/// Signing another device in with Quick Connect, from Settings, under Your Profile.
 @MainActor @Observable
 final class QuickConnectModel {
     var code = ""
