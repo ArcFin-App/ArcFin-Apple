@@ -29,7 +29,7 @@ DISCOVER & TRACK
 BUILT-IN PRIVACY
 • A profile picker with optional per-profile Face ID or PIN lock
 • SyncPlay to watch together with others on your server, in sync
-• No analytics, no tracking, no third-party ad SDKs — Arcfin talks directly to your own server and nowhere else
+• No analytics, no tracking, no ads. Your media streams straight from your own server; Arcfin only looks up artwork, details and trailers on TMDB, Wikidata and YouTube, and talks to Google Cast when you cast
 
 Arcfin is actively developed and updated. Feedback and bug reports are always welcome — see the Support link on the app's product page.
 

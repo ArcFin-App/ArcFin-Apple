@@ -156,7 +156,7 @@ Arcfin does not promote, support or condone piracy. Discussion of piracy, reques
 
 ## License
 
-Arcfin's source code is licensed under the **[GNU Affero General Public License v3.0 or later](LICENSE)** (AGPL-3.0-or-later).
+Arcfin's source code is licensed under the **[GNU Affero General Public License v3.0 or later](LICENSE)** (AGPL-3.0-or-later), with an additional permission that allows it to be distributed through the App Store and TestFlight, as long as the complete source code stays freely available.
 
 In short:
 - **You can** use, study, modify and share Arcfin, including commercially.

@@ -56,7 +56,7 @@ struct RetryingAsyncImage<I: View, P: View>: View {
                             guard attempt <= maxRetries else {
                                 let nsError = error as NSError
                                 let _ = Telemetry.logger(category: logCategory).error(
-                                    "image load gave up after \(maxRetries, privacy: .public) retries + original-size fallback: \(logContext, privacy: .public) url=\(url.absoluteString, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                                    "image load gave up after \(maxRetries, privacy: .public) retries + original-size fallback: \(logContext, privacy: .public) path=\(url.path, privacy: .public) domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
                                 )
                                 return
                             }

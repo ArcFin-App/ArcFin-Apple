@@ -71050,6 +71050,326 @@
           }
         }
       }
+    },
+    "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Wiedergabe wurde angehalten, weil das Video nicht gelesen werden konnte. Versuche es erneut oder wähle in Einstellungen › Wiedergabe einen anderen Player."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La reproducción se detuvo porque no se pudo leer el vídeo. Vuelve a intentarlo o elige otro motor en Ajustes › Reproducción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lecture s'est arrêtée car la vidéo n'a pas pu être lue. Réessayez ou choisissez un autre moteur dans Réglages › Lecture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La riproduzione si è interrotta perché non è stato possibile leggere il video. Riprova o scegli un altro motore in Impostazioni › Riproduzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ビデオを読み込めなかったため、再生が停止しました。もう一度試すか、「設定」›「再生」で別のエンジンを選択してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비디오를 읽을 수 없어 재생이 중지되었습니다. 다시 시도하거나 설정 › 재생에서 다른 엔진을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Het afspelen is gestopt omdat de video niet kon worden gelezen. Probeer het opnieuw of kies een andere engine in Instellingen › Afspelen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A reprodução parou porque não foi possível ler o vídeo. Tente novamente ou escolha outro mecanismo em Ajustes › Reprodução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Воспроизведение остановлено: не удалось прочитать видео. Попробуйте ещё раз или выберите другой движок в разделе «Настройки» › «Воспроизведение»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法读取视频，播放已停止。请重试，或在“设置”›“播放”中选择其他引擎。"
+          }
+        }
+      }
+    },
+    "Data Sources" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenquellen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuentes de datos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sources de données"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fonti dei dati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データソース"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "데이터 출처"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gegevensbronnen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fontes de dados"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Источники данных"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据来源"
+          }
+        }
+      }
+    },
+    "This product uses the TMDB API but is not endorsed or certified by TMDB." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Produkt nutzt die TMDB-API, wird aber von TMDB weder unterstützt noch zertifiziert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce produit utilise l'API TMDB, mais n'est ni approuvé ni certifié par TMDB."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo prodotto usa l'API di TMDB, ma non è approvato né certificato da TMDB."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この製品はTMDB APIを使用していますが、TMDBによって承認または認定されたものではありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 제품은 TMDB API를 사용하지만 TMDB의 보증이나 인증을 받지 않았습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dit product gebruikt de TMDB-API, maar wordt niet door TMDB onderschreven of gecertificeerd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Этот продукт использует API TMDB, но не одобрен и не сертифицирован TMDB."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本产品使用 TMDB API，但未经 TMDB 认可或认证。"
+          }
+        }
+      }
+    },
+    "Streaming availability is provided by JustWatch." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verfügbarkeit bei Streamingdiensten von JustWatch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilidad en servicios de streaming proporcionada por JustWatch."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilité en streaming fournie par JustWatch."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilità in streaming fornita da JustWatch."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ストリーミング配信状況はJustWatchによって提供されています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스트리밍 제공 정보는 JustWatch에서 제공합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschikbaarheid bij streamingdiensten wordt geleverd door JustWatch."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilidade em streaming fornecida pela JustWatch."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Данные о доступности на стриминговых сервисах предоставлены JustWatch."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流媒体上架信息由 JustWatch 提供。"
+          }
+        }
+      }
+    },
+    "Awards come from Wikidata." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auszeichnungen stammen von Wikidata."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los premios proceden de Wikidata."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les récompenses proviennent de Wikidata."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I premi provengono da Wikidata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受賞歴はWikidataから取得しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "수상 정보는 Wikidata에서 가져옵니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prijzen komen van Wikidata."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os prêmios vêm do Wikidata."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сведения о наградах взяты из Wikidata."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "奖项信息来自 Wikidata。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

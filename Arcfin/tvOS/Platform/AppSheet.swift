@@ -25,7 +25,10 @@ private struct TVSheetPanel<Content: View>: View {
     let content: Content
 
     var body: some View {
+        // A list or scroll view clips at its own edges, so a row that grows when focused was cut
+        // there however wide the panel was. The margin puts that room inside the scroll view.
         content
+            .contentMargins(.horizontal, 40, for: .scrollContent)
             .padding(.horizontal, 48)
             .padding(.vertical, 24)
             .frame(maxWidth: 1120, maxHeight: .infinity)

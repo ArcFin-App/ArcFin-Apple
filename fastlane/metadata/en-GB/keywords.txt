@@ -1,1 +1,1 @@
-jellyfin,media server,streaming,self-hosted,nas,chromecast,airplay,vlc,offline,video player
+media server,streaming,self-hosted,nas,offline,video player,movies,tv shows,home theater,subtitles

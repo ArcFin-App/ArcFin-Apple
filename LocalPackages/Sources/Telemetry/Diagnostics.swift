@@ -65,11 +65,19 @@ public final class Diagnostics: NSObject, Sendable {
             let predicate = NSPredicate(format: "subsystem == %@", Telemetry.subsystem)
             let lines = try store.getEntries(at: start, matching: predicate)
                 .compactMap { $0 as? OSLogEntryLog }
-                .map { "\($0.date.formatted(.iso8601)) [\($0.category)] \(levelName($0.level)) \($0.composedMessage)" }
+                .map { "\($0.date.formatted(.iso8601)) [\($0.category)] \(levelName($0.level)) \(redacted($0.composedMessage))" }
             return lines.suffix(logLinesKept).joined(separator: "\n") + "\n"
         } catch {
             return "(log unavailable: \(error.localizedDescription))\n"
         }
+    }
+
+    /// Reports get attached to public issues, so a token that slipped into a log line
+    /// (an api_key/ApiKey query parameter or a MediaBrowser Token="…" header) is masked.
+    static func redacted(_ line: String) -> String {
+        line
+            .replacing(/(?i)(api_?key=)[^&\s"']+/) { "\($0.output.1)REDACTED" }
+            .replacing(/(?i)(token=")[^"]*/) { "\($0.output.1)REDACTED" }
     }
 
     private static func levelName(_ level: OSLogEntryLog.Level) -> String {

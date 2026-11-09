@@ -181,7 +181,7 @@ Search [existing issues](https://git.psmattas.com/ArcFin/ArcFin/issues) first. S
 
 ## License and the DCO
 
-Arcfin is licensed under [AGPL-3.0-or-later](LICENSE). By contributing, you license your contribution under the same terms. You keep the copyright on your own work; there's no CLA and no copyright assignment.
+Arcfin is licensed under [AGPL-3.0-or-later](LICENSE), with an additional permission (at the top of the LICENSE file) for distribution through the App Store and TestFlight. By contributing, you license your contribution under the same terms, including that permission, so the App Store build can include it. You keep the copyright on your own work; there's no CLA and no copyright assignment.
 
 Every commit needs a **Developer Certificate of Origin** sign-off: a `Signed-off-by:` line certifying that you wrote the change, or otherwise have the right to submit it under the project's license ([developercertificate.org](https://developercertificate.org)). Add it with:
 
