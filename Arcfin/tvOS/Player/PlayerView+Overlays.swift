@@ -10,8 +10,8 @@ extension PlayerView {
     /// Who's in this, beside the picture: a panel on the trailing edge in landscape, along the
     /// bottom in portrait. Playback carries on; picking someone pauses and opens their page.
     @ViewBuilder
-    var xRayOverlay: some View {
-        if showXRay {
+    var castPanelOverlay: some View {
+        if showCastPanel {
             GeometryReader { proxy in
                 let landscape = proxy.size.width > proxy.size.height
                 ZStack(alignment: landscape ? .trailing : .bottom) {
@@ -21,7 +21,7 @@ extension PlayerView {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("X-Ray")
+                                Text("Cast & Characters")
                                     .font(.system(.headline, weight: .bold))
                                     .foregroundStyle(.white)
                                 Text("In \(item.type == .episode ? (item.seriesName ?? item.name) : item.name)")
@@ -31,7 +31,7 @@ extension PlayerView {
                             }
                             Spacer()
                             Button {
-                                withAnimation(DT.Animation.fast) { showXRay = false }
+                                withAnimation(DT.Animation.fast) { showCastPanel = false }
                             } label: {
                                 Image(systemName: "xmark")
                                     .font(.system(.footnote, weight: .bold))
@@ -42,7 +42,7 @@ extension PlayerView {
                                     .contentShape(Rectangle())
                             }
                             .playerOverlayButton(cornerRadius: 22)
-                            .accessibilityLabel("Close X-Ray")
+                            .accessibilityLabel("Close Cast & Characters")
                         }
                         ScrollView(landscape ? .vertical : .horizontal, showsIndicators: false) {
                             let layout = landscape
@@ -50,8 +50,8 @@ extension PlayerView {
                                 : AnyLayout(HStackLayout(alignment: .top, spacing: 14))
                             layout {
                                 ForEach(model.castMembers) { person in
-                                    Button { openXRayPerson(person) } label: {
-                                        XRayPersonRow(person: person, compact: !landscape)
+                                    Button { openCastPanelPerson(person) } label: {
+                                        CastPanelPersonRow(person: person, compact: !landscape)
                                     }
                                     .playerOverlayButton(cornerRadius: DT.Radius.md)
                                 }
@@ -68,7 +68,7 @@ extension PlayerView {
                     .focusSection()
                 }
             }
-            .onExitCommand { withAnimation(DT.Animation.fast) { showXRay = false } }
+            .onExitCommand { withAnimation(DT.Animation.fast) { showCastPanel = false } }
         }
     }
 

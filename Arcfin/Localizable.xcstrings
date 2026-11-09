@@ -19139,66 +19139,66 @@
         }
       }
     },
-    "Close X-Ray" : {
+    "Close Cast & Characters" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray schließen"
+            "state" : "translated",
+            "value" : "Besetzung & Rollen schließen"
           }
         },
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Cerrar X-Ray"
+            "state" : "translated",
+            "value" : "Cerrar reparto y personajes"
           }
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Fermer X-Ray"
+            "state" : "translated",
+            "value" : "Fermer distribution et personnages"
           }
         },
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Chiudi X-Ray"
+            "state" : "translated",
+            "value" : "Chiudi cast e personaggi"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Rayを閉じる"
+            "state" : "translated",
+            "value" : "キャストと役を閉じる"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray 닫기"
+            "state" : "translated",
+            "value" : "출연진 및 배역 닫기"
           }
         },
         "nl" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sluit X-Ray"
+            "state" : "translated",
+            "value" : "Sluit cast en personages"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Fechar X-Ray"
+            "state" : "translated",
+            "value" : "Fechar elenco e personagens"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Закрыть X-Ray"
+            "state" : "translated",
+            "value" : "Закрыть «Актёры и роли»"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "关闭 X-Ray"
+            "state" : "translated",
+            "value" : "关闭演员与角色"
           }
         }
       }
@@ -69579,194 +69579,66 @@
         }
       }
     },
-    "X-Ray" : {
+    "Cast & Characters" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "Besetzung & Rollen"
           }
         },
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "Reparto y personajes"
           }
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "Distribution et personnages"
           }
         },
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "Cast e personaggi"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "キャストと役"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "출연진 및 배역"
           }
         },
         "nl" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "Cast en personages"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "Elenco e personagens"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
+            "state" : "translated",
+            "value" : "Актёры и роли"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray"
-          }
-        }
-      }
-    },
-    "X-Ray: cast" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: Besetzung"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: reparto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray : distribution"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: cast"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray：キャスト"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: 출연진"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: cast"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: elenco"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: в ролях"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray：演员"
-          }
-        }
-      }
-    },
-    "X-Ray: Cast" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: Besetzung"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: reparto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray : distribution"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: cast"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray：キャスト"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: 출연진"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: cast"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: elenco"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray: в ролях"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "X-Ray：演员"
+            "state" : "translated",
+            "value" : "演员与角色"
           }
         }
       }

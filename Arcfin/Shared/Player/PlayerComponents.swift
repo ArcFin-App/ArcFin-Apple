@@ -521,10 +521,10 @@ struct SuggestionRow: View {
     }
 }
 
-// MARK: - X-Ray
+// MARK: - Cast & Characters
 
-/// Someone in the X-Ray panel: a column of photo and name, or a row in the side panel.
-struct XRayPersonRow: View {
+/// Someone in the Cast & Characters panel: a column of photo and name, or a row in the side panel.
+struct CastPanelPersonRow: View {
     let person: MediaPerson
     let compact: Bool
     @Environment(MediaRepository.self) private var mediaRepo
