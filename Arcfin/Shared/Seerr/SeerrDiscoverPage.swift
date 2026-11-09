@@ -60,7 +60,7 @@ struct SeerrDiscoverPage: View {
         .onChange(of: model.mediaType) { _, _ in
             model.mediaTypeChanged()
         }
-        .sheet(item: $requestingItem) { item in
+        .appSheet(item: $requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingItem)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)

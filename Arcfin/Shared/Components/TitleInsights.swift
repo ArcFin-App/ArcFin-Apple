@@ -176,7 +176,7 @@ struct TitleInsights: View {
                                 Text(provider.name)
                                     .font(.caption2)
                                     .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
-                                    .lineLimit(2)
+                                    .lineLimit(2, reservesSpace: true)
                                     .multilineTextAlignment(.center)
                             }
                             .frame(width: Self.logoSize + 18)

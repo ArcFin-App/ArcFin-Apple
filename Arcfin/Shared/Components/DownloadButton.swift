@@ -95,7 +95,7 @@ struct DownloadButton: View {
             errorMessage = newValue
             downloadManager.errors[item.id] = nil
         }
-        .sheet(item: $previewSheet) { preview in
+        .appSheet(item: $previewSheet) { preview in
             DownloadConfirmSheet(item: item, preview: preview) { bitrateCap in
                 startDownload(bitrateCap: bitrateCap)
             }

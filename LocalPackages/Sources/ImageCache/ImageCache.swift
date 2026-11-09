@@ -110,17 +110,20 @@ public struct LazyHeroImage: View {
     }
 
     public var body: some View {
-        ZStack {
-            placeholder
-            if let displayed {
-                displayed
-                    .resizable()
-                    .scaledToFill()
-                    .id(version)
-                    .transition(.opacity)
+        // Overlays keep the image's own size out of layout: filling a frame with art that isn't
+        // the frame's shape made this view taller or wider than the screen, which moved
+        // everything laid out around it.
+        Color.clear
+            .overlay { placeholder }
+            .overlay {
+                if let displayed {
+                    displayed
+                        .resizable()
+                        .scaledToFill()
+                        .id(version)
+                        .transition(.opacity)
+                }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: url) {
             guard let url else { return }
             guard let response = try? await ImageCache.load(url) else { return }

@@ -26,6 +26,7 @@ struct MediaDetailView: View {
     @State private var openedCollection: MediaItem?
     @State private var openedPlaylist: MediaItem?
     @Namespace private var focusNamespace
+    @State private var minuteTick = Date()
 
     init(item: MediaItem) {
         self.item = item
@@ -70,6 +71,13 @@ struct MediaDetailView: View {
                              trailers: .withPage, seriesOpensOnSeasonInProgress: false)
         }
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
+        .task {
+            while !Task.isCancelled {
+                let second = Calendar.current.component(.second, from: .now)
+                try? await Task.sleep(for: .seconds(60 - second))
+                minuteTick = .now
+            }
+        }
         .navigationDestination(item: $openedCollection) { CollectionDetailView(collection: $0) }
         .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .task(id: item.tmdbId) { await model.loadAwards() }
@@ -96,7 +104,7 @@ struct MediaDetailView: View {
             .id(request.item.id)
         }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
-        .sheet(isPresented: $showSubtitleSearch) {
+        .appSheet(isPresented: $showSubtitleSearch) {
             NavigationStack {
                 SubtitleSearchView(itemId: item.id)
                     .toolbar {
@@ -188,16 +196,14 @@ struct MediaDetailView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text("\(mins)m").font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
-            // Counts from the resume point; refreshed each minute so it stays right on a page
-            // left open.
-            TimelineView(.everyMinute) { _ in
-                if let endsAt = model.endTime {
-                    HStack(spacing: 12) {
-                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
-                        Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
-                            .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
-                    }
-                }
+            // Counts from the resume point; minuteTick redraws it each minute so it stays right
+            // on a page left open. A TimelineView(.everyMinute) here redrew the whole page every
+            // frame on Apple TV once the logo had loaded, holding the CPU at 100%.
+            let _ = minuteTick
+            if let endsAt = model.endTime {
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
+                Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                    .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = item.communityRating {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
@@ -287,14 +293,16 @@ struct MediaDetailView: View {
 
             HStack(spacing: 14) {
                 Button { model.toggleFavorite(authManager: authManager) } label: {
-                    TVDetailButtonLabel(icon: model.isFavorite ? "heart.fill" : "heart", text: "")
+                    TVDetailIconButtonLabel(icon: model.isFavorite ? "heart.fill" : "heart")
                 }
                 .accessibilityLabel(model.isFavorite ? "Remove from favorites" : "Add to favorites")
                 Menu {
                     moreMenuContent
                 } label: {
-                    TVDetailButtonLabel(icon: "ellipsis", text: "")
+                    TVDetailIconButtonLabel(icon: "ellipsis")
                 }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
                 .accessibilityLabel("More")
             }
             .buttonStyle(TVCardButtonStyle())
@@ -794,6 +802,8 @@ private struct TVEpisodeCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
+                    // Keeps the line when there's no number or badge, so cards stay level.
+                    Text(verbatim: " ").font(.system(size: 23, weight: .bold)).frame(width: 0).hidden()
                     if let epNum = ep.indexNumber {
                         Text("Ep \(epNum)")
                             .font(.system(size: 23, weight: .bold))
@@ -849,18 +859,18 @@ private struct TVCastPersonCard<Placeholder: View>: View {
             .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 12)
             .scaleEffect(isFocused ? 1.08 : 1)
 
+            // Space for two lines of name and one of role on every card, so a row of people
+            // lines up whatever their names.
             Text(name)
                 .font(.system(size: 23, weight: .semibold))
                 .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.center)
 
-            if let role, !role.isEmpty {
-                Text(role)
-                    .font(.system(size: 23))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(1)
-            }
+            Text(role ?? "")
+                .font(.system(size: 23))
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(1, reservesSpace: true)
         }
         .frame(width: 160, alignment: .top)
         .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)

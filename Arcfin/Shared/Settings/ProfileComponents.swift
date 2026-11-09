@@ -105,7 +105,7 @@ struct ProfileDetailView: View {
         .navigationTitle(profile.displayName)
         .inlineNavigationTitle()
         .task { hasPIN = await authManager.pin(for: profile.id) != nil }
-        .sheet(item: $pinFlow) { flow in
+        .appSheet(item: $pinFlow) { flow in
             PINFlowSheet(profile: profile, flow: flow) {
                 hasPIN = await authManager.pin(for: profile.id) != nil
             }

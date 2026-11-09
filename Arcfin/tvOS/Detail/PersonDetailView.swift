@@ -77,7 +77,7 @@ struct PersonDetailView: View {
         .screenBackground()
         // The header already shows the name; a navigation title repeated it above the page.
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(item: $requestingCredit) { item in
+        .appSheet(item: $requestingCredit) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingCredit)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)

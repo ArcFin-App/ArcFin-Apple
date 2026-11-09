@@ -51,6 +51,7 @@ extension PlayerView {
             Button { closePlayer() } label: {
                 TVPlayerControlLabel(systemImage: "chevron.down", size: 15, diameter: 34)
             }
+            .accessibilityLabel("Close Player")
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
 
@@ -171,13 +172,16 @@ extension PlayerView {
                     Button { model.seek(by: -skipBackwardSeconds) } label: {
                         TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
                     }
+                    .accessibilityLabel("Skip Back")
                     Button { model.togglePlayPause() } label: {
                         TVPlayerControlLabel(systemImage: playPauseIconIsPlaying ? "pause.fill" : "play.fill", size: 22, diameter: 48)
                     }
+                    .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     .prefersDefaultFocus(!model.tvControlsHidden, in: tvFocusNamespace)
                     Button { model.seek(by: skipForwardSeconds) } label: {
                         TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 16, diameter: 38)
                     }
+                    .accessibilityLabel("Skip Forward")
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
                             TVPlayerControlLabel(systemImage: "forward.end.fill", size: 16, diameter: 38)
@@ -209,9 +213,11 @@ extension PlayerView {
             Button { showTrackMenu = true } label: {
                 TVPlayerControlLabel(systemImage: "captions.bubble", size: 14, diameter: 32)
             }
+            .accessibilityLabel("Subtitles & Audio")
             Button { showRateMenu = true } label: {
                 TVPlayerControlLabel(systemImage: "gauge.with.dots.needle.67percent", size: 14, diameter: 32)
             }
+            .accessibilityLabel("Playback Speed")
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -223,19 +229,24 @@ extension PlayerView {
             Button { showQualityMenu = true } label: {
                 TVPlayerControlLabel(systemImage: "slider.horizontal.3", size: 14, diameter: 32)
             }
+            .accessibilityLabel("Quality")
             if chapterListEnabled, !model.chapters.isEmpty {
                 Button { showChapterMenu = true } label: {
                     TVPlayerControlLabel(systemImage: "list.bullet", size: 14, diameter: 32)
                 }
+                .accessibilityLabel("Chapters")
             }
             Button { showInfoSheet = true } label: {
                 TVPlayerControlLabel(systemImage: "info.circle", size: 14, diameter: 32)
             }
+            .accessibilityLabel("Media Info")
             Menu {
                 tvMoreMenuContent
             } label: {
                 TVPlayerControlLabel(systemImage: "ellipsis", size: 14, diameter: 32)
             }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
             .accessibilityLabel("More options")
         }
         .buttonStyle(TVCardButtonStyle())

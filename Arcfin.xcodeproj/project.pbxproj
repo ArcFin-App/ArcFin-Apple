@@ -140,6 +140,7 @@
 				iOS/Onboarding/WhatsNewView.swift = (ios, );
 				iOS/Platform/AdaptiveColor.swift = (ios, );
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
+				iOS/Platform/AppSheet.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
 				iOS/Platform/FieldBackground.swift = (ios, );
@@ -236,6 +237,7 @@
 				macOS/Onboarding/WhatsNewView.swift = (macos, );
 				macOS/Platform/AdaptiveColor.swift = (macos, );
 				macOS/Platform/AlwaysDarkPlayer.swift = (macos, );
+				macOS/Platform/AppSheet.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
 				macOS/Platform/FieldBackground.swift = (macos, );
@@ -327,6 +329,7 @@
 				tvOS/Onboarding/WhatsNewView.swift = (tvos, );
 				tvOS/Platform/AdaptiveColor.swift = (tvos, );
 				tvOS/Platform/AlwaysDarkPlayer.swift = (tvos, );
+				tvOS/Platform/AppSheet.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
 				tvOS/Platform/FieldBackground.swift = (tvos, );

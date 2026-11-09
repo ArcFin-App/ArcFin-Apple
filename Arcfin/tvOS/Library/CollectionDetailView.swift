@@ -79,7 +79,7 @@ struct CollectionDetailView: View {
             }
             .id(request.item.id)
         }
-        .sheet(isPresented: $showFilterSheet) {
+        .appSheet(isPresented: $showFilterSheet) {
             NavigationStack {
                 TVLibraryFilterList(
                     availableGenres: availableGenres, availableYears: availableYears,
@@ -306,7 +306,7 @@ struct CollectionDetailView: View {
                                 Text(person.name)
                                     .font(.system(size: 23, weight: .semibold))
                                     .foregroundStyle(DT.Color.textPrimary)
-                                    .lineLimit(2)
+                                    .lineLimit(2, reservesSpace: true)
                                     .multilineTextAlignment(.center)
                             }
                             .frame(width: 150)

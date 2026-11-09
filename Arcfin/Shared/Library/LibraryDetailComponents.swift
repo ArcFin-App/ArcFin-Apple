@@ -41,7 +41,7 @@ struct PlaylistModifiers: ViewModifier {
     func body(content: Content) -> some View {
         if isPlaylist {
             content
-                .sheet(isPresented: $showAddTitles) {
+                .appSheet(isPresented: $showAddTitles) {
                     AddTitlesToPlaylistSheet(playlistId: playlistId, existingIds: existingIds, onAdded: onChanged)
                 }
                 .alert("Rename Playlist", isPresented: $showRename) {

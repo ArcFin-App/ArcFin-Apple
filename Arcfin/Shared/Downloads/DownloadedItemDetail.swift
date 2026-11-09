@@ -218,14 +218,12 @@ struct DownloadedItemDetailPage: View {
                             Text(name)
                                 .font(.system(.caption, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
-                                .lineLimit(2)
+                                .lineLimit(2, reservesSpace: true)
                                 .multilineTextAlignment(.center)
-                            if let role = item.castRoles[safe: index], !role.isEmpty {
-                                Text(role)
-                                    .font(.caption2)
-                                    .foregroundStyle(DT.Color.textSecondary)
-                                    .lineLimit(1)
-                            }
+                            Text(item.castRoles[safe: index] ?? "")
+                                .font(.caption2)
+                                .foregroundStyle(DT.Color.textSecondary)
+                                .lineLimit(1, reservesSpace: true)
                         }
                         .frame(width: 84)
                         .accessibilityElement(children: .combine)

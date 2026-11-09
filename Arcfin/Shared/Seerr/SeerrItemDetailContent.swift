@@ -91,7 +91,7 @@ struct SeerrItemDetailContent: View {
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         .transparentInlineNavigationBar()
-        .sheet(item: $model.requestingItem) { item in
+        .appSheet(item: $model.requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $model.requestingItem)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)

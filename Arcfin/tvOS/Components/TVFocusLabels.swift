@@ -121,6 +121,32 @@ struct TVDetailButtonLabel: View {
     }
 }
 
+/// Icon-only sibling of `TVDetailButtonLabel`, the same height. A label inside a Menu sizes
+/// itself, so the width is set here too rather than left to the row.
+struct TVDetailIconButtonLabel: View {
+    let icon: String
+    var width: CGFloat = 123
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        ZStack {
+            // Holds the text buttons' line height.
+            Text(verbatim: " ").scaledFont(size: 15).hidden()
+            Image(systemName: icon).scaledFont(size: 15)
+        }
+        .foregroundStyle(isFocused ? .white : .white.opacity(0.9))
+        .frame(width: width)
+        .padding(.vertical, 13 * DT.Scale.font)
+        .background(
+            RoundedRectangle(cornerRadius: DT.Radius.md)
+                .fill(isFocused ? AnyShapeStyle(Color.white.opacity(0.3)) : AnyShapeStyle(Color.white.opacity(0.08)))
+        )
+        .contentShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+        .scaleEffect(isFocused ? 1.02 : 1.0)
+        .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)
+    }
+}
+
 // Tappable description block. Shows truncated text at rest, highlights on focus,
 // adds "Read more" hint when focused so the user knows it's interactive.
 struct TVDescriptionLabel: View {

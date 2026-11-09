@@ -55,7 +55,7 @@ struct MainTabView: View {
             // The focus ENGINE still works (remote nav, isFocused env); only
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
-            .sheet(item: $playlistStore.addingItem) { item in
+            .appSheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
             }
         }
