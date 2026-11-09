@@ -26,6 +26,7 @@ struct MediaDetailView: View {
     @State private var openedCollection: MediaItem?
     @State private var openedPlaylist: MediaItem?
     @Namespace private var focusNamespace
+    @State private var minuteTick = Date()
 
     init(item: MediaItem) {
         self.item = item
@@ -70,6 +71,13 @@ struct MediaDetailView: View {
                              trailers: .withPage, seriesOpensOnSeasonInProgress: false)
         }
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
+        .task {
+            while !Task.isCancelled {
+                let second = Calendar.current.component(.second, from: .now)
+                try? await Task.sleep(for: .seconds(60 - second))
+                minuteTick = .now
+            }
+        }
         .navigationDestination(item: $openedCollection) { CollectionDetailView(collection: $0) }
         .navigationDestination(item: $openedPlaylist) { LibraryDetailView(playlistItem: $0) }
         .task(id: item.tmdbId) { await model.loadAwards() }
@@ -96,7 +104,7 @@ struct MediaDetailView: View {
             .id(request.item.id)
         }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
-        .sheet(isPresented: $showSubtitleSearch) {
+        .appSheet(isPresented: $showSubtitleSearch) {
             NavigationStack {
                 SubtitleSearchView(itemId: item.id)
                     .toolbar {
@@ -188,16 +196,14 @@ struct MediaDetailView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 Text("\(mins)m").font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
-            // Counts from the resume point; refreshed each minute so it stays right on a page
-            // left open.
-            TimelineView(.everyMinute) { _ in
-                if let endsAt = model.endTime {
-                    HStack(spacing: 12) {
-                        Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
-                        Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
-                            .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
-                    }
-                }
+            // Counts from the resume point; minuteTick redraws it each minute so it stays right
+            // on a page left open. A TimelineView(.everyMinute) here redrew the whole page every
+            // frame on Apple TV once the logo had loaded, holding the CPU at 100%.
+            let _ = minuteTick
+            if let endsAt = model.endTime {
+                Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
+                Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
+                    .font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             if let rating = item.communityRating {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))

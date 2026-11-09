@@ -32,17 +32,8 @@ struct ContentView: View {
             LoginRootView()
                 .transition(.opacity)
         case .main:
-            // The profile's access schedule, checked every minute.
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                // context.date only drives the minute-by-minute check; the time compared is
-                // the trusted one.
-                if context.date > .distantPast, ProfileRules.shared.isWithinSchedule() {
-                    MainTabView()
-                } else {
-                    AccessScheduleView(onSwitchProfile: { model.switchProfileFromSchedule() })
-                }
-            }
-            .transition(.opacity)
+            ScheduleGate(onSwitchProfile: { model.switchProfileFromSchedule() })
+                .transition(.opacity)
         case .offline:
             NavigationStack {
                 DownloadsView(goBackOnline: { offlineModeEnabled = false })
@@ -106,4 +97,29 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+}
+
+/// The profile's access schedule, checked each minute. A task rather than a TimelineView: on
+/// Apple TV a TimelineView could start redrawing everything under it every frame, as one did
+/// on a title's page.
+private struct ScheduleGate: View {
+    let onSwitchProfile: () -> Void
+    @State private var tick = Date()
+
+    var body: some View {
+        Group {
+            // tick only drives the minute-by-minute check; the time compared is the trusted one.
+            if tick > .distantPast, ProfileRules.shared.isWithinSchedule() {
+                MainTabView()
+            } else {
+                AccessScheduleView(onSwitchProfile: onSwitchProfile)
+            }
+        }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                tick = .now
+            }
+        }
+    }
 }
