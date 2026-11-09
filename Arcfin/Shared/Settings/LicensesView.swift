@@ -12,6 +12,12 @@ struct LicensesView: View {
     }
 
     private let licenses: [License] = [
+        License(name: "AetherEngine", license: "LGPL-3.0 with App Store exception", url: "https://github.com/superuser404notfound/AetherEngine", note: nil),
+        License(name: "FFmpeg (via FFmpegBuild)", license: "LGPL-2.1-or-later", url: "https://ffmpeg.org", note: nil),
+        License(name: "dav1d", license: "BSD-2-Clause", url: "https://code.videolan.org/videolan/dav1d", note: nil),
+        License(name: "zimg", license: "WTFPL", url: "https://github.com/sekrit-twc/zimg", note: nil),
+        License(name: "libzvbi", license: "LGPL-2.1-or-later, MIT", url: "https://github.com/zapping-vbi/zvbi", note: nil),
+        License(name: "libdovi (via LibDovi)", license: "MIT", url: "https://github.com/quietvoid/dovi_tool", note: nil),
         License(name: "libVLC (via SwiftVLC)", license: "LGPL-2.1", url: "https://code.videolan.org/videolan/vlc",
                 note: "Provides the VLC playback engine option. LGPL permits linking from closed-source apps."),
         License(name: "SwiftVLC", license: "MIT", url: "https://github.com/harflabs/SwiftVLC", note: nil),
@@ -37,6 +43,8 @@ struct LicensesView: View {
         License(name: "swift-concurrency-extras", license: "MIT", url: "https://github.com/pointfreeco/swift-concurrency-extras", note: nil),
         License(name: "combine-schedulers", license: "MIT", url: "https://github.com/pointfreeco/combine-schedulers", note: nil),
         License(name: "swift-collections", license: "Apache 2.0", url: "https://github.com/apple/swift-collections", note: nil),
+        License(name: "swift-http-types", license: "Apache 2.0", url: "https://github.com/apple/swift-http-types", note: nil),
+        License(name: "SMBClient", license: "MIT", url: "https://github.com/kishikawakatsumi/SMBClient", note: nil),
         License(name: "YouTubePlayerKit", license: "MIT", url: "https://github.com/SvenTiigi/YouTubePlayerKit",
                 note: "Plays a YouTube trailer in-app when a title has no local trailer file."),
         License(name: "YouTube API Services", license: "YouTube API Services Terms of Service", url: "https://developers.google.com/youtube/terms/api-services-terms-of-service",
@@ -45,6 +53,14 @@ struct LicensesView: View {
 
     var body: some View {
         List {
+            Section("Data Sources") {
+                Text("This product uses the TMDB API but is not endorsed or certified by TMDB.")
+                    .tvReadOnlyRow()
+                Text("Streaming availability is provided by JustWatch.")
+                    .tvReadOnlyRow()
+                Text("Awards come from Wikidata.")
+                    .tvReadOnlyRow()
+            }
             Section {
                 ForEach(licenses) { entry in
                     // A real control on Apple TV: focus-driven scrolling didn't reliably reach a
