@@ -25,8 +25,10 @@ private struct TVSheetPanel<Content: View>: View {
     let content: Content
 
     var body: some View {
+        // Wide enough for a full-width button at the largest focus scale (1.12, FocusRing) to
+        // stay inside the clip below.
         content
-            .padding(.horizontal, 48)
+            .padding(.horizontal, 80)
             .padding(.vertical, 24)
             .frame(maxWidth: 1120, maxHeight: .infinity)
             // The same colour as the pages shown in it, so their own background doesn't read
