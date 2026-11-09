@@ -7,7 +7,6 @@ struct ServerAccountSettingsView: View {
     @Environment(AuthManager.self) private var authManager
 
     @State private var showSwitchServerSheet = false
-    @State private var quickConnect = QuickConnectModel()
 
     private var distinctServerCount: Int {
         Set(authManager.profiles.map { $0.baseURL.host ?? $0.baseURL.absoluteString }).count
@@ -40,31 +39,6 @@ struct ServerAccountSettingsView: View {
                         TVRowLabelText(title: "Active Sessions", detail: "Who's watching on your server right now.")
                     }
                 }
-            }
-
-            Section {
-                HStack(spacing: 10) {
-                    TextField("Code", text: $quickConnect.code)
-                        .autocorrectionDisabled()
-                    Button {
-                        quickConnect.authorize(authManager: authManager)
-                    } label: {
-                        if quickConnect.isAuthorizing { ProgressView().scaleEffect(0.8) }
-                        else { Text("Authorize") }
-                    }
-                    .disabled(quickConnect.code.isEmpty || quickConnect.isAuthorizing)
-                }
-                if let quickConnectResult = quickConnect.result {
-                    Text(quickConnectResult)
-                        .font(.caption)
-                        .foregroundStyle(quickConnectResult.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("F43F5E"))
-                }
-            } header: {
-                Text("Quick Connect")
-            } footer: {
-                Text("Enter the code shown on another device to sign it in instantly using this account.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
             }
         }
         .arcfinListStyle()

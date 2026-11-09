@@ -202,6 +202,11 @@ struct SettingsView: View {
                         }
                     }
                 }
+                NavigationLink {
+                    QuickConnectView()
+                } label: {
+                    settingsRow("Quick Connect", icon: "number.square")
+                }
             }
         }
     }
