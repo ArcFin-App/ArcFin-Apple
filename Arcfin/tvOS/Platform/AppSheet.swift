@@ -25,10 +25,11 @@ private struct TVSheetPanel<Content: View>: View {
     let content: Content
 
     var body: some View {
-        // Wide enough for a full-width button at the largest focus scale (1.12, FocusRing) to
-        // stay inside the clip below.
+        // A list or scroll view clips at its own edges, so a row that grows when focused was cut
+        // there however wide the panel was. The margin puts that room inside the scroll view.
         content
-            .padding(.horizontal, 80)
+            .contentMargins(.horizontal, 40, for: .scrollContent)
+            .padding(.horizontal, 48)
             .padding(.vertical, 24)
             .frame(maxWidth: 1120, maxHeight: .infinity)
             // The same colour as the pages shown in it, so their own background doesn't read
