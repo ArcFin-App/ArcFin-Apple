@@ -1,3 +1,42 @@
+Arcfin
+Copyright (C) 2026 Puranjay Savar Mattas
+
+Arcfin is licensed under the GNU Affero General Public License, version 3
+or (at your option) any later version, with the additional permission
+below. The full text of the GNU AGPL v3 follows after it.
+
+
+ADDITIONAL PERMISSION: APP STORE DISTRIBUTION
+=============================================
+
+As an additional permission under section 7 of the GNU Affero General
+Public License, version 3, the copyright holders of Arcfin grant you
+permission to convey this Program, and works based on it, through
+application stores and beta-distribution services operated by third
+parties (including, but not limited to, the Apple App Store and Apple
+TestFlight), even where the terms of such a store or service impose
+restrictions on recipients that this License would otherwise not allow,
+such as:
+
+  - limits on the number of devices or accounts the work may be
+    installed on or used with;
+  - restrictions on copying, redistributing or re-signing the binary;
+  - the store's own digital rights management or usage rules;
+
+provided that the Corresponding Source of the conveyed work is made
+available to every recipient, at no charge and under the terms of this
+License including this additional permission, from a publicly
+accessible network server, as described in section 6(d).
+
+This permission only removes the conflict with the store's terms. Every
+other right and obligation under this License, including section 13
+(Remote Network Interaction), stays in force.
+
+If you modify this Program, you may extend this permission to your
+version, but you are not obliged to. If you do not wish to, delete this
+permission from your version.
+
+
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
