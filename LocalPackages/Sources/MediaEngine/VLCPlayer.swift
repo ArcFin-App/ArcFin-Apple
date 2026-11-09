@@ -14,10 +14,15 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
 
     private let log = Telemetry.logger(category: "VLCEnginePlayer")
     public let vlcPlayer = SwiftVLC.Player()
+    // libVLC reports the end of a title as a plain `stopped`; only its endReached event
+    // tells that apart from a stop we asked for.
+    private var reachedEnd = false
+    @ObservationIgnored private var endWatcher: Task<Void, Never>?
 
     public var status: PlaybackStatus {
         switch vlcPlayer.state {
-        case .idle, .stopped, .stopping: .idle
+        case .stopped: reachedEnd ? .ended : .idle
+        case .idle, .stopping: .idle
         case .opening, .buffering: .loading
         case .playing: .playing
         case .paused: .paused
@@ -48,6 +53,14 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
     public init() {}
 
     public func load(url: URL, startPositionTicks: Int64) async throws {
+        reachedEnd = false
+        endWatcher?.cancel()
+        let events = vlcPlayer.events
+        endWatcher = Task { [weak self] in
+            for await event in events {
+                if case .endReached = event { self?.reachedEnd = true }
+            }
+        }
         do throws(VLCError) {
             let media = try Media(url: url)
             // A 3 s starting cushion, and libVLC's prefetch filter (off unless asked for) with a
@@ -112,6 +125,7 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
     }
 
     public func seek(to positionTicks: Int64) async {
+        reachedEnd = false
         do throws(VLCError) {
             try vlcPlayer.seek(to: Self.duration(fromTicks: positionTicks))
         } catch {
@@ -135,6 +149,8 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
     }
 
     public func stop() async {
+        endWatcher?.cancel()
+        endWatcher = nil
         vlcPlayer.stop()
     }
 

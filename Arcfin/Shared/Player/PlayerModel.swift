@@ -251,6 +251,11 @@ final class PlayerModel {
     private func handleStatusChange(_ newStatus: PlaybackStatus) {
         if newStatus == .playing { scheduleAutoHide() }
         if newStatus == .ended { Task { await finishPlayback() } }
+        // A failure while loading throws from setup(), which handles it (and Aether's
+        // fallback); this is the engine giving up after playback had already started.
+        if case .failed = newStatus, loadingStage == nil, errorMessage == nil {
+            errorMessage = String(localized: "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback.")
+        }
     }
 
     // MARK: - Now Playing / AirPlay metadata

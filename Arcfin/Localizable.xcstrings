@@ -71051,6 +71051,70 @@
         }
       }
     },
+    "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Wiedergabe wurde angehalten, weil das Video nicht gelesen werden konnte. Versuche es erneut oder wähle in Einstellungen › Wiedergabe einen anderen Player."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La reproducción se detuvo porque no se pudo leer el vídeo. Vuelve a intentarlo o elige otro motor en Ajustes › Reproducción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lecture s'est arrêtée car la vidéo n'a pas pu être lue. Réessayez ou choisissez un autre moteur dans Réglages › Lecture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La riproduzione si è interrotta perché non è stato possibile leggere il video. Riprova o scegli un altro motore in Impostazioni › Riproduzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ビデオを読み込めなかったため、再生が停止しました。もう一度試すか、「設定」›「再生」で別のエンジンを選択してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비디오를 읽을 수 없어 재생이 중지되었습니다. 다시 시도하거나 설정 › 재생에서 다른 엔진을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Het afspelen is gestopt omdat de video niet kon worden gelezen. Probeer het opnieuw of kies een andere engine in Instellingen › Afspelen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A reprodução parou porque não foi possível ler o vídeo. Tente novamente ou escolha outro mecanismo em Ajustes › Reprodução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Воспроизведение остановлено: не удалось прочитать видео. Попробуйте ещё раз или выберите другой движок в разделе «Настройки» › «Воспроизведение»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法读取视频，播放已停止。请重试，或在“设置”›“播放”中选择其他引擎。"
+          }
+        }
+      }
+    },
     "Data Sources" : {
       "localizations" : {
         "de" : {
