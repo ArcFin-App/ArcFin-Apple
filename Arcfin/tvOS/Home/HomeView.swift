@@ -39,11 +39,6 @@ struct HomeView: View {
     @State private var heroVideoIsPlaying = false
     @State private var heroChromeHidden = false
     @State private var heroChromeTask: Task<Void, Never>?
-    // While the hero is hidden, only the element focus was on stays focusable, so the first
-    // press has nowhere to go: it brings the hero back with focus where it was.
-    @State private var heroTargetsLocked = false
-    @State private var heroFocusToRestore: HeroFocus?
-    @State private var heroUnlockTask: Task<Void, Never>?
     @FocusState private var focusedHeroButton: HeroButton?
     @AppStorage("modernHome") private var modernHome = false
     // Modern Home: the row the focused card is in, where each row starts, and the title the
@@ -70,7 +65,6 @@ struct HomeView: View {
             }
         }
     }
-    private enum HeroFocus: Equatable { case item(String), button(HeroButton) }
 
     private var heroChromeOpacity: Double { heroChromeHidden ? 0 : 1 }
 
@@ -80,14 +74,8 @@ struct HomeView: View {
 
     /// Focus on the hero's buttons or its Continue Watching row, the only places the hero
     /// hides from.
-    private var currentHeroFocus: HeroFocus? {
-        if let focusedHeroButton { return .button(focusedHeroButton) }
-        if let focusedItemID, cwItems.contains(where: { $0.id == focusedItemID }) { return .item(focusedItemID) }
-        return nil
-    }
-
-    private func heroTargetLocked(_ target: HeroFocus) -> Bool {
-        heroTargetsLocked && heroFocusToRestore != target
+    private var focusIsOnHero: Bool {
+        focusedHeroButton != nil || focusedItemID.map { id in cwItems.contains { $0.id == id } } == true
     }
 
     private var focusedItem: MediaItem? {
@@ -138,7 +126,6 @@ struct HomeView: View {
                                     .frame(height: sh)
                                 belowFoldSection
                                     .padding(.vertical, 72)
-                                    .disabled(heroTargetsLocked)
                             }
                             .focusSection()
                         }
@@ -183,19 +170,11 @@ struct HomeView: View {
             if focusedItemID == nil { reloadHeroVideoIfItemChanged() }
         }
         .onChange(of: focusedItemID) { _, newValue in
-            if heroTargetsLocked {
-                heroFocusDidChangeWhileLocked()
-                return
-            }
             if let newValue { lastFocusedItemID = newValue }
             showHeroChrome()
             reloadHeroVideoIfItemChanged()
         }
         .onChange(of: focusedHeroButton) { _, _ in
-            if heroTargetsLocked {
-                heroFocusDidChangeWhileLocked()
-                return
-            }
             showHeroChrome()
         }
         .onChange(of: heroVideoAllowed) { _, _ in loadHeroVideoBackdrop() }
@@ -284,8 +263,9 @@ struct HomeView: View {
             }
         }
         .focusSection()
+        // Focus moving brings the hero back too; this covers a press that has nowhere to go.
         .onMoveCommand { _ in
-            if heroTargetsLocked { wakeHeroChrome() }
+            if heroChromeHidden { showHeroChrome() }
         }
     }
 
@@ -347,7 +327,7 @@ struct HomeView: View {
 
                 HStack(spacing: 20) {
                     Button {
-                        if heroTargetsLocked { wakeHeroChrome(); return }
+                        if heroChromeHidden { showHeroChrome(); return }
                         // Releases this screen's own focus claim before the player appears —
                         // a lingering @FocusState here can otherwise keep the remote's actual
                         // focus target stuck on this (now-hidden) screen instead of the
@@ -361,10 +341,9 @@ struct HomeView: View {
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
                     .focused($focusedHeroButton, equals: .play)
-                    .disabled(heroTargetLocked(.button(.play)))
 
                     Button {
-                        if heroTargetsLocked { wakeHeroChrome(); return }
+                        if heroChromeHidden { showHeroChrome(); return }
                         model.detailItem = item
                     } label: {
                         TVHeroButtonLabel(icon: "info.circle", text: "More Info")
@@ -373,7 +352,6 @@ struct HomeView: View {
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
                     .focused($focusedHeroButton, equals: .info)
-                    .disabled(heroTargetLocked(.button(.info)))
                 }
                 .padding(.top, 4)
             }
@@ -442,7 +420,6 @@ struct HomeView: View {
         heroVideoBackdropItemID = nil
         heroVideoRequestedItemID = nil
         heroVideoIsPlaying = false
-        unlockHeroTargets()
         showHeroChrome()
         guard heroVideoBackdropsEnabled, heroVideoAllowed, let item = heroDisplayItem,
               case .authenticated(let credential) = authManager.state
@@ -466,7 +443,6 @@ struct HomeView: View {
     private func endHeroVideoBackdrop(itemID: String) {
         guard heroVideoBackdropItemID == itemID else { return }
         heroVideoIsPlaying = false
-        unlockHeroTargets()
         showHeroChrome()
         withAnimation(DT.Animation.motion(.easeOut(duration: 0.6))) {
             heroVideoBackdropURL = nil
@@ -502,49 +478,9 @@ struct HomeView: View {
         }
         heroChromeTask = Task {
             try? await Task.sleep(for: .seconds(5))
-            guard !Task.isCancelled, heroVideoIsPlaying, let target = currentHeroFocus else { return }
-            heroFocusToRestore = target
-            heroTargetsLocked = true
+            guard !Task.isCancelled, heroVideoIsPlaying, focusIsOnHero else { return }
             withAnimation(DT.Animation.motion(.easeInOut(duration: 0.6))) { heroChromeHidden = true }
         }
-    }
-
-    /// The first press after the hero hid: bring it back and keep focus where it was. Up can
-    /// still reach the tab bar, which can't be locked, so focus is put back on the element.
-    /// The targets unlock a moment later, once that press has been handled.
-    private func wakeHeroChrome() {
-        heroChromeTask?.cancel()
-        if heroChromeHidden {
-            withAnimation(DT.Animation.motion(.easeInOut(duration: 0.4))) { heroChromeHidden = false }
-        }
-        restoreHeroFocus()
-        heroUnlockTask?.cancel()
-        heroUnlockTask = Task {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            restoreHeroFocus()
-            unlockHeroTargets()
-            if heroVideoIsPlaying { hideHeroChromeSoon() }
-        }
-    }
-
-    private func heroFocusDidChangeWhileLocked() {
-        if currentHeroFocus != heroFocusToRestore { wakeHeroChrome() }
-    }
-
-    private func restoreHeroFocus() {
-        switch heroFocusToRestore {
-        case .item(let id): focusedItemID = id
-        case .button(let button): focusedHeroButton = button
-        case nil: break
-        }
-    }
-
-    private func unlockHeroTargets() {
-        heroUnlockTask?.cancel()
-        heroUnlockTask = nil
-        heroTargetsLocked = false
-        heroFocusToRestore = nil
     }
 
     /// Any focus move brings the hero back. While the trailer keeps playing it fades again
@@ -578,7 +514,7 @@ struct HomeView: View {
                     HStack(spacing: 16) {
                         ForEach(items) { item in
                             Button {
-                                if heroTargetsLocked { wakeHeroChrome(); return }
+                                if heroChromeHidden { showHeroChrome(); return }
                                 model.detailItem = item
                             } label: {
                                 PosterCard(
@@ -592,7 +528,6 @@ struct HomeView: View {
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
                             .focused($focusedItemID, equals: item.id)
-                            .disabled(heroTargetLocked(.item(item.id)))
                             .contextMenu { cwContextMenu(item) }
                         }
                     }
