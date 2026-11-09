@@ -257,7 +257,7 @@ extension PlayerView {
     /// Something besides the transport controls that the remote should land on.
     private var tvOverlayHasFocusTarget: Bool {
         model.showStillWatchingPrompt || (model.showUpNext && model.nextEpisode != nil)
-            || (model.showMoreLikeThis && !model.moreLikeThis.isEmpty) || showXRay
+            || (model.showMoreLikeThis && !model.moreLikeThis.isEmpty) || showCastPanel
     }
 
     /// With the controls hidden, an invisible catcher holds focus, so a click never presses a
@@ -326,8 +326,8 @@ extension PlayerView {
     @ViewBuilder
     private var tvMoreMenuContent: some View {
         if !model.castMembers.isEmpty {
-            Button { openXRay() } label: {
-                Label("X-Ray: Cast", systemImage: "person.2")
+            Button { openCastPanel() } label: {
+                Label("Cast & Characters", systemImage: "person.2")
             }
         }
         if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
@@ -474,18 +474,18 @@ extension PlayerView {
         model.player.status == .playing
     }
 
-    // MARK: - X-Ray
+    // MARK: - Cast & Characters
 
-    func openXRay() {
+    func openCastPanel() {
         withAnimation(DT.Animation.fast) {
-            showXRay = true
+            showCastPanel = true
             model.isControlsVisible = false
         }
     }
 
-    func openXRayPerson(_ person: MediaPerson) {
+    func openCastPanelPerson(_ person: MediaPerson) {
         Task { await model.player.pause() }
-        xRayPerson = person
+        castPanelPerson = person
     }
 
     // MARK: - SharePlay

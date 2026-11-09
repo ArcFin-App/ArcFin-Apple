@@ -87,7 +87,7 @@ extension PlayerView {
 
             Spacer()
 
-            if !model.castMembers.isEmpty { xRayButton }
+            if !model.castMembers.isEmpty { castPanelButton }
 
             macQuickActionIcons
 
@@ -178,8 +178,8 @@ extension PlayerView {
             sharePlayMenuItem
 
             if !model.castMembers.isEmpty {
-                Button { openXRay() } label: {
-                    Label("X-Ray: Cast", systemImage: "person.2")
+                Button { openCastPanel() } label: {
+                    Label("Cast & Characters", systemImage: "person.2")
                 }
             }
 
@@ -331,20 +331,21 @@ extension PlayerView {
         model.isEffectivelyPlaying
     }
 
-    // MARK: - X-Ray
+    // MARK: - Cast & Characters
 
-    func openXRay() {
+    func openCastPanel() {
         withAnimation(DT.Animation.fast) {
-            showXRay = true
+            showCastPanel = true
             model.isControlsVisible = false
         }
     }
 
-    private var xRayButton: some View {
-        Button { openXRay() } label: {
-            Label("X-Ray", systemImage: "person.2.fill")
+    private var castPanelButton: some View {
+        Button { openCastPanel() } label: {
+            Label("Cast & Characters", systemImage: "person.2.fill")
                 .labelStyle(.titleAndIcon)
                 .font(.system(.caption, weight: .bold))
+                .lineLimit(1)
                 .foregroundStyle(.white)
                 .padding(.horizontal, 12)
                 .frame(height: 32)
@@ -354,12 +355,11 @@ extension PlayerView {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("X-Ray: cast")
     }
 
-    func openXRayPerson(_ person: MediaPerson) {
+    func openCastPanelPerson(_ person: MediaPerson) {
         Task { await model.player.pause() }
-        xRayPerson = person
+        castPanelPerson = person
     }
 
     /// Carries on from here in a window of its own, so the app stays usable beside it.

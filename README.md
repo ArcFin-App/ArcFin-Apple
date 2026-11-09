@@ -45,7 +45,7 @@ Internal testers get each build **as soon as it's uploaded**, before it's sent t
 ### Watching
 - **Three playback engines:** Aether (FFmpeg demuxing with VideoToolbox decoding, the default), AVFoundation and VLC. Auto picks Aether and falls back to the others if a file won't open.
 - **Formats:** direct play or server transcoding, HEVC and HDR, surround and Atmos audio, and text and image subtitles with your own styling.
-- **In the player:** Skip Intro, Recap, Credits and Preview; chapters; scrubbing previews; playback speed; audio and subtitle switching without reloading; Previous and Next; Up Next with a countdown; "Are you still watching?"; X-Ray cast info; and a sleep timer.
+- **In the player:** Skip Intro, Recap, Credits and Preview; chapters; scrubbing previews; playback speed; audio and subtitle switching without reloading; Previous and Next; Up Next with a countdown; "Are you still watching?"; Cast & Characters; and a sleep timer.
 - **Around the player:** AirPlay, Chromecast (iPhone and iPad), Picture in Picture, Now Playing and Control Center.
 - **Watching together:** SharePlay over FaceTime, and Jellyfin's SyncPlay.
 - **Player in its own window** on iPad and Mac, so you can keep browsing beside it.

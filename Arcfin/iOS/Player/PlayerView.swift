@@ -54,9 +54,9 @@ struct PlayerView: View {
     @AppStorage("castEnabled") var castEnabled = true
     @AppStorage("skipForwardSeconds") var skipForwardSeconds = 10
     @AppStorage("skipBackwardSeconds") var skipBackwardSeconds = 10
-    @State var showXRay = false
-    /// A cast member picked in X-Ray; their page opens over the paused player.
-    @State var xRayPerson: MediaPerson?
+    @State var showCastPanel = false
+    /// A cast member picked in Cast & Characters; their page opens over the paused player.
+    @State var castPanelPerson: MediaPerson?
     @State var audioOnly = false
     @AppStorage("doubleTapToSkip") var doubleTapToSkip = true
 
@@ -159,7 +159,7 @@ struct PlayerView: View {
             }
 
             MoreLikeThisPanel(model: model, suggestionsAreHorizontal: isLandscape)
-            XRayPanel(item: item, castMembers: model.castMembers, isPresented: $showXRay) { openXRayPerson($0) }
+            CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel) { openCastPanelPerson($0) }
 
             if model.showStillWatchingPrompt {
                 StillWatchingPrompt(model: model)
@@ -228,11 +228,11 @@ struct PlayerView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
-        .sheet(item: $xRayPerson, onDismiss: { Task { await model.player.play() } }) { person in
+        .sheet(item: $castPanelPerson, onDismiss: { Task { await model.player.play() } }) { person in
             NavigationStack {
                 PersonDetailView(person: person)
                     .toolbar {
-                        ToolbarItem(placement: .confirmationAction) { Button("Done") { xRayPerson = nil } }
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") { castPanelPerson = nil } }
                     }
             }
         }

@@ -43,9 +43,9 @@ struct PlayerView: View {
     @AppStorage("syncPlayEnabled") var syncPlayEnabled = true
     @AppStorage("skipForwardSeconds") var skipForwardSeconds = 10
     @AppStorage("skipBackwardSeconds") var skipBackwardSeconds = 10
-    @State var showXRay = false
-    /// A cast member picked in X-Ray; their page opens over the paused player.
-    @State var xRayPerson: MediaPerson?
+    @State var showCastPanel = false
+    /// A cast member picked in Cast & Characters; their page opens over the paused player.
+    @State var castPanelPerson: MediaPerson?
     @State var audioOnly = false
     // tvOS's focus engine doesn't reliably move focus into a newly-presented
     // .fullScreenCover on its own — a @FocusState still bound in the presenting screen
@@ -136,7 +136,7 @@ struct PlayerView: View {
             }
 
             moreLikeThisOverlay
-            xRayOverlay
+            castPanelOverlay
 
             if model.showStillWatchingPrompt {
                 stillWatchingOverlay
@@ -219,11 +219,11 @@ struct PlayerView: View {
         .appSheet(isPresented: $showChapterMenu) {
             ChapterListSheet(model: model) { showChapterMenu = false }
         }
-        .appSheet(item: $xRayPerson, onDismiss: { Task { await model.player.play() } }) { person in
+        .appSheet(item: $castPanelPerson, onDismiss: { Task { await model.player.play() } }) { person in
             NavigationStack {
                 PersonDetailView(person: person)
                     .toolbar {
-                        ToolbarItem(placement: .confirmationAction) { Button("Done") { xRayPerson = nil } }
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") { castPanelPerson = nil } }
                     }
             }
         }

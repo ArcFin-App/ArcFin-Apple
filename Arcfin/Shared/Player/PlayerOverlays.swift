@@ -284,7 +284,7 @@ struct MoreLikeThisPanel: View {
 
 /// Who's in this, beside the picture: a panel on the trailing edge in landscape, along the
 /// bottom in portrait. Playback carries on; picking someone pauses and opens their page.
-struct XRayPanel: View {
+struct CastPanel: View {
     let item: MediaItem
     let castMembers: [MediaPerson]
     @Binding var isPresented: Bool
@@ -302,7 +302,7 @@ struct XRayPanel: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("X-Ray")
+                                Text("Cast & Characters")
                                     .font(.system(.headline, weight: .bold))
                                     .foregroundStyle(.white)
                                 Text("In \(item.type == .episode ? (item.seriesName ?? item.name) : item.name)")
@@ -323,7 +323,7 @@ struct XRayPanel: View {
                                     .contentShape(Rectangle())
                             }
                             .playerOverlayButton(cornerRadius: 22)
-                            .accessibilityLabel("Close X-Ray")
+                            .accessibilityLabel("Close Cast & Characters")
                         }
                         ScrollView(landscape ? .vertical : .horizontal, showsIndicators: false) {
                             let layout = landscape
@@ -332,7 +332,7 @@ struct XRayPanel: View {
                             layout {
                                 ForEach(castMembers) { person in
                                     Button { onSelect(person) } label: {
-                                        XRayPersonRow(person: person, compact: !landscape)
+                                        CastPanelPersonRow(person: person, compact: !landscape)
                                     }
                                     .playerOverlayButton(cornerRadius: DT.Radius.md)
                                 }
