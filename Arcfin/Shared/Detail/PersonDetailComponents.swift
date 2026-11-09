@@ -61,7 +61,7 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
                     if !missingCredits.isEmpty {
                         PersonSectionHeader(title: "Also Appears In")
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
+                            HStack(alignment: .top, spacing: 12) {
                                 ForEach(missingCredits) { credit in
                                     creditLink(credit, PersonCreditCard(credit: credit, scale: creditScale))
                                 }
@@ -188,13 +188,11 @@ struct PersonCreditCard: View {
             Text(credit.title)
                 .font(.system(.caption2, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(2)
-            if let role = credit.role, !role.isEmpty {
-                Text(role)
-                    .font(.system(.caption2, design: .default))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(1)
-            }
+                .lineLimit(2, reservesSpace: true)
+            Text(credit.role ?? "")
+                .font(.system(.caption2, design: .default))
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(1, reservesSpace: true)
         }
         .frame(width: 110 * scale)
     }

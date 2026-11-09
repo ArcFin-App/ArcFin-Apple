@@ -293,14 +293,16 @@ struct MediaDetailView: View {
 
             HStack(spacing: 14) {
                 Button { model.toggleFavorite(authManager: authManager) } label: {
-                    TVDetailButtonLabel(icon: model.isFavorite ? "heart.fill" : "heart", text: "")
+                    TVDetailIconButtonLabel(icon: model.isFavorite ? "heart.fill" : "heart")
                 }
                 .accessibilityLabel(model.isFavorite ? "Remove from favorites" : "Add to favorites")
                 Menu {
                     moreMenuContent
                 } label: {
-                    TVDetailButtonLabel(icon: "ellipsis", text: "")
+                    TVDetailIconButtonLabel(icon: "ellipsis")
                 }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
                 .accessibilityLabel("More")
             }
             .buttonStyle(TVCardButtonStyle())
@@ -800,6 +802,8 @@ private struct TVEpisodeCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
+                    // Keeps the line when there's no number or badge, so cards stay level.
+                    Text(verbatim: " ").font(.system(size: 23, weight: .bold)).frame(width: 0).hidden()
                     if let epNum = ep.indexNumber {
                         Text("Ep \(epNum)")
                             .font(.system(size: 23, weight: .bold))
@@ -855,18 +859,18 @@ private struct TVCastPersonCard<Placeholder: View>: View {
             .shadow(color: isFocused ? DT.Color.accent.opacity(0.45) : .clear, radius: 12)
             .scaleEffect(isFocused ? 1.08 : 1)
 
+            // Space for two lines of name and one of role on every card, so a row of people
+            // lines up whatever their names.
             Text(name)
                 .font(.system(size: 23, weight: .semibold))
                 .foregroundStyle(isFocused ? DT.Color.accent : DT.Color.textPrimary)
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.center)
 
-            if let role, !role.isEmpty {
-                Text(role)
-                    .font(.system(size: 23))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(1)
-            }
+            Text(role ?? "")
+                .font(.system(size: 23))
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(1, reservesSpace: true)
         }
         .frame(width: 160, alignment: .top)
         .animation(DT.Animation.motion(.spring(response: 0.2, dampingFraction: 0.75)), value: isFocused)

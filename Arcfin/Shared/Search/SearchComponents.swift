@@ -346,11 +346,11 @@ struct SearchResultCard: View {
                 .font(.system(.caption, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
-            if let subtitle {
-                Text(subtitle)
-                    .font(.system(.caption2))
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
+            // Every card keeps the subtitle's line, so a row stays level without one.
+            Text(subtitle ?? "")
+                .font(.system(.caption2))
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(1, reservesSpace: true)
         }
         .animation(DT.Animation.fast, value: highlighted)
         .onPointerHover { hovered = $0 }

@@ -394,12 +394,11 @@ struct StatsPosterTile: View {
             Text(title ?? item.name)
                 .font(.system(.subheadline, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(2)
-            if let caption {
-                Text(caption)
-                    .font(.system(.caption))
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
+                .lineLimit(2, reservesSpace: true)
+            Text(caption ?? "")
+                .font(.system(.caption))
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(1, reservesSpace: true)
         }
         .frame(width: 120 * StatsMetrics.scale, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -430,11 +429,12 @@ struct PersonTile: View {
             Text(entry.person.name)
                 .font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.center)
             Text("\(entry.titles) \(entry.titles == 1 ? "title" : "titles")")
                 .font(.system(.caption))
                 .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(1)
         }
         .frame(width: 96 * StatsMetrics.scale)
         .accessibilityElement(children: .combine)

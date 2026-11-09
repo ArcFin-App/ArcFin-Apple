@@ -306,7 +306,7 @@ struct CollectionDetailView: View {
                                 Text(person.name)
                                     .font(.system(size: 23, weight: .semibold))
                                     .foregroundStyle(DT.Color.textPrimary)
-                                    .lineLimit(2)
+                                    .lineLimit(2, reservesSpace: true)
                                     .multilineTextAlignment(.center)
                             }
                             .frame(width: 150)

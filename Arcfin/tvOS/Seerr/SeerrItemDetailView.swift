@@ -247,9 +247,14 @@ struct SeerrItemDetailView: View {
                     ForEach(seasons) { season in
                         VStack(spacing: 4) {
                             Text(season.label).font(.system(size: 23, weight: .semibold))
-                            if let count = season.episodeCount {
-                                Text("\(count) episodes").font(.system(size: 23)).foregroundStyle(DT.Color.textSecondary)
+                            Group {
+                                if let count = season.episodeCount {
+                                    Text("\(count) episodes")
+                                } else {
+                                    Text(verbatim: " ")
+                                }
                             }
+                            .font(.system(size: 23)).foregroundStyle(DT.Color.textSecondary)
                         }
                         .foregroundStyle(DT.Color.textPrimary)
                         .padding(.horizontal, 24).padding(.vertical, 14)
@@ -284,14 +289,12 @@ struct SeerrItemDetailView: View {
                             Text(member.name)
                                 .font(.system(size: 23, weight: .semibold))
                                 .foregroundStyle(DT.Color.textPrimary)
-                                .lineLimit(2)
+                                .lineLimit(2, reservesSpace: true)
                                 .multilineTextAlignment(.center)
-                            if let character = member.character {
-                                Text(character)
-                                    .font(.system(size: 23))
-                                    .foregroundStyle(DT.Color.textSecondary)
-                                    .lineLimit(1)
-                            }
+                            Text(member.character ?? "")
+                                .font(.system(size: 23))
+                                .foregroundStyle(DT.Color.textSecondary)
+                                .lineLimit(1, reservesSpace: true)
                         }
                         .frame(width: 150)
                         .focusable()
