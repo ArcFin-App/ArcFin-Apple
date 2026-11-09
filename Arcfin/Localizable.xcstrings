@@ -71370,6 +71370,1606 @@
           }
         }
       }
+    },
+    "A New Look" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein neuer Look"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuevo aspecto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nouveau look"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuovo look"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しいデザイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로운 디자인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een nieuwe look"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um novo visual"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новый облик"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全新外观"
+          }
+        }
+      }
+    },
+    "Arcfin has a new coral colour and a new app icon, in light and dark appearance." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin hat eine neue Korallenfarbe und ein neues App-Symbol, im hellen und im dunklen Erscheinungsbild."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin tiene un nuevo color coral y un nuevo icono, en modo claro y oscuro."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin adopte une nouvelle couleur corail et une nouvelle icône, en apparence claire comme sombre."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin ha un nuovo colore corallo e una nuova icona, sia nell'aspetto chiaro sia in quello scuro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin に新しいコーラルカラーと新しいアプリアイコンが登場しました。ライトモードとダークモードの両方に対応しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin에 새로운 코랄 색상과 새 앱 아이콘이 적용되었습니다. 라이트 모드와 다크 모드 모두 지원합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin heeft een nieuwe koraalkleur en een nieuw appsymbool, in de lichte en donkere weergave."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Arcfin ganhou uma nova cor coral e um novo ícone, nos modos claro e escuro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У Arcfin новый коралловый цвет и новый значок — в светлом и тёмном оформлении."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin 换上了新的珊瑚色和新的 App 图标，浅色和深色外观都适用。"
+          }
+        }
+      }
+    },
+    "Arcfin has a new coral colour and a new app icon." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin hat eine neue Korallenfarbe und ein neues App-Symbol."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin tiene un nuevo color coral y un nuevo icono."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin adopte une nouvelle couleur corail et une nouvelle icône."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin ha un nuovo colore corallo e una nuova icona."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin に新しいコーラルカラーと新しいアプリアイコンが登場しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin에 새로운 코랄 색상과 새 앱 아이콘이 적용되었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin heeft een nieuwe koraalkleur en een nieuw appsymbool."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Arcfin ganhou uma nova cor coral e um novo ícone."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У Arcfin новый коралловый цвет и новый значок."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin 换上了新的珊瑚色和新的 App 图标。"
+          }
+        }
+      }
+    },
+    "A Fuller Discover" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr zu entdecken"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un Descubrir más completo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une page Découvrir plus riche"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una sezione Scopri più ricca"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "充実した「見つける」"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 풍성해진 둘러보기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een vollere Ontdekken-pagina"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um Descobrir mais completo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обновлённый раздел «Обзор»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更丰富的“发现”"
+          }
+        }
+      }
+    },
+    "Discover mixes big cards with rows of what's trending, titles like your last watch, what's popular on your streaming services, genres and what's coming soon. Titles you've already requested now say so." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entdecken mischt große Karten mit Reihen: Trends, Titel wie dein zuletzt gesehener, Beliebtes bei deinen Streamingdiensten, Genres und Demnächst. Titel, die du schon angefragt hast, zeigen das jetzt an."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descubrir combina tarjetas grandes con filas de tendencias, títulos parecidos a lo último que viste, lo más popular en tus servicios de streaming, géneros y próximos estrenos. Los títulos que ya pediste ahora lo indican."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Découvrir mêle de grandes cartes à des rangées : tendances, titres proches de votre dernier visionnage, succès sur vos services de streaming, genres et prochaines sorties. Les titres déjà demandés l'indiquent désormais."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scopri alterna schede grandi a righe di tendenze, titoli simili all'ultimo che hai visto, i più popolari sui tuoi servizi di streaming, generi e prossime uscite. I titoli che hai già richiesto ora lo indicano."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「見つける」では、大きなカードと、トレンド、最近観た作品に似たタイトル、利用中の配信サービスで人気の作品、ジャンル、近日公開の作品の列が並びます。リクエスト済みのタイトルにはその旨が表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "둘러보기에서 큰 카드와 함께 인기 콘텐츠, 최근에 본 작품과 비슷한 타이틀, 내 스트리밍 서비스의 인기작, 장르, 공개 예정작 줄을 볼 수 있습니다. 이미 요청한 타이틀에는 요청됨이 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ontdekken wisselt grote kaarten af met rijen: trending, titels zoals je laatst bekeken, populair bij je streamingdiensten, genres en binnenkort. Titels die je al hebt aangevraagd laten dat nu zien."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Descobrir mistura cartões grandes com fileiras de tendências, títulos parecidos com o que você viu por último, os populares nos seus serviços de streaming, gêneros e lançamentos em breve. Os títulos que você já pediu agora mostram isso."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Обзор» сочетает большие карточки с подборками: в тренде, похожее на последнее просмотренное, популярное в ваших стриминговых сервисах, жанры и скоро. Уже запрошенные тайтлы теперь отмечены."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“发现”将大卡片与多行内容结合：热门趋势、与你上次观看相似的作品、你的流媒体服务上的热门内容、类型和即将上线。你已请求过的作品现在会标明。"
+          }
+        }
+      }
+    },
+    "Settings › Your Profile shows your account, the libraries you can see, parental controls and what you're allowed to do." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen › Dein Profil zeigt dein Konto, die Mediatheken, die du sehen kannst, die Kindersicherung und was du darfst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes › Tu perfil muestra tu cuenta, las bibliotecas que puedes ver, el control parental y lo que tienes permitido hacer."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réglages › Votre profil affiche votre compte, les bibliothèques que vous voyez, le contrôle parental et ce que vous êtes autorisé à faire."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impostazioni › Il tuo profilo mostra il tuo account, le librerie che puoi vedere, il controllo genitori e cosa ti è consentito fare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「設定」›「あなたのプロフィール」で、アカウント、表示できるライブラリ、ペアレンタルコントロール、許可されている操作を確認できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정 › 내 프로필에서 계정, 볼 수 있는 보관함, 자녀 보호 기능, 허용된 작업을 확인할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instellingen › Je profiel toont je account, de bibliotheken die je kunt zien, ouderlijk toezicht en wat je mag doen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes › Seu perfil mostra sua conta, as bibliotecas que você pode ver, o controle parental e o que você tem permissão para fazer."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В разделе «Настройки» › «Ваш профиль» видны ваша учётная запись, доступные медиатеки, родительский контроль и ваши права."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“设置”›“你的个人资料”会显示你的账户、你能看到的资料库、家长控制以及你被允许执行的操作。"
+          }
+        }
+      }
+    },
+    "Quick Connect in Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect in den Einstellungen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect en Ajustes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect dans les Réglages"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect nelle Impostazioni"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定から Quick Connect"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정에서 Quick Connect"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect in Instellingen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect nos Ajustes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect в настройках"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置中的 Quick Connect"
+          }
+        }
+      }
+    },
+    "Type a Quick Connect code right under Your Profile in Settings to sign another device in with your account." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib einen Quick-Connect-Code direkt unter Dein Profil in den Einstellungen ein, um ein anderes Gerät mit deinem Konto anzumelden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribe un código de Quick Connect justo debajo de Tu perfil en Ajustes para iniciar sesión con tu cuenta en otro dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez un code Quick Connect juste sous Votre profil dans les Réglages pour connecter un autre appareil à votre compte."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci un codice Quick Connect subito sotto Il tuo profilo nelle Impostazioni per accedere con il tuo account su un altro dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「設定」の「あなたのプロフィール」のすぐ下に Quick Connect コードを入力すると、別のデバイスにあなたのアカウントでサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정의 내 프로필 바로 아래에 Quick Connect 코드를 입력하면 다른 기기에서 내 계정으로 로그인할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ een Quick Connect-code direct onder Je profiel in Instellingen om een ander apparaat met je account aan te melden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digite um código do Quick Connect logo abaixo de Seu perfil nos Ajustes para entrar com sua conta em outro dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Введите код Quick Connect прямо под пунктом «Ваш профиль» в настройках, чтобы войти в свою учётную запись на другом устройстве."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置”中“你的个人资料”下方直接输入 Quick Connect 代码，即可用你的账户登录另一台设备。"
+          }
+        }
+      }
+    },
+    "Type a Quick Connect code under your profile in Settings › General to sign another device in with your account." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib einen Quick-Connect-Code unter deinem Profil in Einstellungen › Allgemein ein, um ein anderes Gerät mit deinem Konto anzumelden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribe un código de Quick Connect debajo de tu perfil en Ajustes › General para iniciar sesión con tu cuenta en otro dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez un code Quick Connect sous votre profil dans Réglages › Général pour connecter un autre appareil à votre compte."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci un codice Quick Connect sotto il tuo profilo in Impostazioni › Generali per accedere con il tuo account su un altro dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「設定」›「一般」のプロフィールの下に Quick Connect コードを入力すると、別のデバイスにあなたのアカウントでサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정 › 일반에서 프로필 아래에 Quick Connect 코드를 입력하면 다른 기기에서 내 계정으로 로그인할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ een Quick Connect-code onder je profiel in Instellingen › Algemeen om een ander apparaat met je account aan te melden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digite um código do Quick Connect abaixo do seu perfil em Ajustes › Geral para entrar com sua conta em outro dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Введите код Quick Connect под своим профилем в разделе «Настройки» › «Основные», чтобы войти в свою учётную запись на другом устройстве."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置”›“通用”中你的个人资料下方输入 Quick Connect 代码，即可用你的账户登录另一台设备。"
+          }
+        }
+      }
+    },
+    "Library Counts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anzahl in Mediatheken"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recuento de bibliotecas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nombre de titres par bibliothèque"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conteggio delle librerie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ライブラリの作品数"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보관함 항목 수"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aantallen per bibliotheek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contagem das bibliotecas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Счётчики медиатек"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "资料库数量"
+          }
+        }
+      }
+    },
+    "Each library in Browse shows how many titles it holds." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jede Mediathek unter Durchsuchen zeigt, wie viele Titel sie enthält."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada biblioteca en Explorar muestra cuántos títulos contiene."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque bibliothèque dans Parcourir indique combien de titres elle contient."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni libreria in Sfoglia mostra quanti titoli contiene."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「ブラウズ」の各ライブラリに、収録されている作品数が表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "탐색의 각 보관함에 들어 있는 타이틀 수가 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elke bibliotheek in Bladeren laat zien hoeveel titels erin staan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada biblioteca em Explorar mostra quantos títulos ela tem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Каждая медиатека в разделе «Обзор библиотек» показывает, сколько в ней тайтлов."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“浏览”中的每个资料库都会显示其中的作品数量。"
+          }
+        }
+      }
+    },
+    "Casting Bar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cast-Leiste"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barra de transmisión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barre de diffusion"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barra di trasmissione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャストバー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캐스트 막대"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Castbalk"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barra de transmissão"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Панель трансляции"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "投放栏"
+          }
+        }
+      }
+    },
+    "Tap the casting bar to open the player for what's on your TV. The bar comes back if you reopen Arcfin while casting." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippe auf die Cast-Leiste, um den Player für das zu öffnen, was auf deinem Fernseher läuft. Die Leiste ist wieder da, wenn du Arcfin während des Castens erneut öffnest."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca la barra de transmisión para abrir el reproductor de lo que se ve en tu TV. La barra vuelve a aparecer si abres Arcfin de nuevo mientras transmites."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touchez la barre de diffusion pour ouvrir le lecteur de ce qui passe sur votre TV. La barre réapparaît si vous rouvrez Arcfin pendant la diffusion."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca la barra di trasmissione per aprire il player di ciò che è in onda sulla TV. La barra ricompare se riapri Arcfin mentre trasmetti."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャストバーをタップすると、テレビで再生中の作品のプレーヤーが開きます。キャスト中に Arcfin を開き直してもバーが戻ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캐스트 막대를 탭하면 TV에서 재생 중인 콘텐츠의 플레이어가 열립니다. 캐스트 중에 Arcfin을 다시 열어도 막대가 다시 나타납니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tik op de castbalk om de speler te openen voor wat er op je tv speelt. De balk komt terug als je Arcfin opnieuw opent tijdens het casten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque na barra de transmissão para abrir o player do que está na sua TV. A barra volta se você reabrir o Arcfin durante a transmissão."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Коснитесь панели трансляции, чтобы открыть плеер для того, что идёт на телевизоре. Панель появится снова, если открыть Arcfin во время трансляции."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点投放栏即可打开电视上正在播放内容的播放器。投放时重新打开 Arcfin，投放栏也会回来。"
+          }
+        }
+      }
+    },
+    "One Live Activity for Smart Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Live-Aktivität für intelligente Downloads"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una sola Actividad en Vivo para las descargas inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une seule activité en direct pour les téléchargements intelligents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una sola Live Activity per i download intelligenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スマートダウンロードのライブアクティビティを1つに"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스마트 다운로드를 하나의 실시간 현황으로"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eén live activiteit voor slimme downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma única Atividade ao Vivo para os downloads inteligentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Одна живая активность для умных загрузок"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "智能下载只显示一个实时活动"
+          }
+        }
+      }
+    },
+    "A Smart Downloads run now shows as a single Live Activity instead of one per episode." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Durchlauf der intelligenten Downloads erscheint jetzt als eine einzige Live-Aktivität statt einer pro Folge."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada tanda de descargas inteligentes aparece ahora como una sola Actividad en Vivo en lugar de una por episodio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une série de téléchargements intelligents s'affiche désormais en une seule activité en direct au lieu d'une par épisode."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una sessione di download intelligenti ora appare come un'unica Live Activity invece di una per episodio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スマートダウンロードの実行は、エピソードごとではなく1つのライブアクティビティとして表示されるようになりました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스마트 다운로드 실행이 이제 에피소드마다가 아니라 하나의 실시간 현황으로 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een ronde slimme downloads verschijnt nu als één live activiteit in plaats van één per aflevering."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada rodada de downloads inteligentes agora aparece como uma única Atividade ao Vivo, em vez de uma por episódio."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цикл умных загрузок теперь отображается одной живой активностью, а не отдельной для каждой серии."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一轮智能下载现在只显示为一个实时活动，而不是每集一个。"
+          }
+        }
+      }
+    },
+    "Clearer Playback Problems" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klarere Wiedergabeprobleme"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problemas de reproducción más claros"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des problèmes de lecture plus clairs"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problemi di riproduzione più chiari"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生の問題がわかりやすく"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 명확한 재생 문제 안내"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duidelijkere afspeelproblemen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problemas de reprodução mais claros"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Понятнее о проблемах воспроизведения"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更清楚的播放问题提示"
+          }
+        }
+      }
+    },
+    "If a video stops partway, Arcfin tells you instead of leaving a black screen, and the VLC engine now moves on to Up Next at the end." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bricht ein Video mittendrin ab, sagt Arcfin dir das, statt einen schwarzen Bildschirm zu zeigen, und der VLC-Player geht am Ende jetzt zu Als Nächstes weiter."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si un vídeo se detiene a mitad, Arcfin te lo dice en lugar de dejar la pantalla en negro, y el motor VLC ahora pasa a A continuación al terminar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si une vidéo s'arrête en cours de route, Arcfin vous le dit au lieu de laisser un écran noir, et le moteur VLC passe désormais à la suite à la fin."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se un video si interrompe a metà, Arcfin te lo dice invece di lasciare lo schermo nero, e il motore VLC ora passa ad A seguire alla fine."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画が途中で止まった場合、画面を真っ暗にしたままにせずお知らせします。また、VLC エンジンも最後に「次に再生」へ進むようになりました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동영상이 도중에 멈추면 검은 화면을 그대로 두지 않고 알려 드리며, 이제 VLC 엔진도 끝나면 다음 항목으로 넘어갑니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopt een video halverwege, dan laat Arcfin dat weten in plaats van een zwart scherm te tonen, en de VLC-engine gaat aan het einde nu door naar Hierna."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se um vídeo parar no meio, o Arcfin avisa em vez de deixar a tela preta, e o mecanismo VLC agora passa para A seguir no final."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если видео остановится на середине, Arcfin сообщит об этом вместо чёрного экрана, а движок VLC теперь переходит к следующему в конце."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果视频播放到一半停止，Arcfin 会告诉你，而不是停留在黑屏；VLC 引擎现在也会在结束时接着播放下一集。"
+          }
+        }
+      }
+    },
+    "X-Ray in the player is now called Cast & Characters." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "X-Ray im Player heißt jetzt Besetzung & Rollen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "X-Ray en el reproductor ahora se llama Reparto y personajes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "X-Ray dans le lecteur s'appelle désormais Distribution et personnages."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "X-Ray nel player ora si chiama Cast e personaggi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレーヤーの X-Ray は「キャストと登場人物」という名前になりました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "플레이어의 X-Ray가 이제 출연진 및 등장인물로 바뀌었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "X-Ray in de speler heet nu Cast en personages."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O X-Ray do player agora se chama Elenco e personagens."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "X-Ray в плеере теперь называется «Актёры и персонажи»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放器中的 X-Ray 现在叫“演员与角色”。"
+          }
+        }
+      }
+    },
+    "Next Episode, Same Window" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächste Folge, gleiches Fenster"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siguiente episodio, misma ventana"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épisode suivant, même fenêtre"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Episodio successivo, stessa finestra"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次のエピソードも同じウインドウで"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 에피소드도 같은 창에서"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volgende aflevering, zelfde venster"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Próximo episódio, mesma janela"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Следующая серия в том же окне"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一集，同一窗口"
+          }
+        }
+      }
+    },
+    "The next episode starts in the main window's player, and title and collection pages no longer stretch the window." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die nächste Folge startet im Player des Hauptfensters, und Titel- und Sammlungsseiten ziehen das Fenster nicht mehr in die Breite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El siguiente episodio empieza en el reproductor de la ventana principal, y las páginas de títulos y colecciones ya no estiran la ventana."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'épisode suivant démarre dans le lecteur de la fenêtre principale, et les pages de titres et de collections n'étirent plus la fenêtre."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'episodio successivo parte nel player della finestra principale, e le pagine di titoli e raccolte non allargano più la finestra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次のエピソードはメインウインドウのプレーヤーで始まり、作品やコレクションのページでウインドウが広がらなくなりました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 에피소드가 메인 창의 플레이어에서 시작되며, 타이틀 및 컬렉션 페이지가 더 이상 창을 늘리지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De volgende aflevering start in de speler van het hoofdvenster, en titel- en collectiepagina's rekken het venster niet meer op."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O próximo episódio começa no player da janela principal, e as páginas de títulos e coleções não esticam mais a janela."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Следующая серия начинается в плеере главного окна, а страницы тайтлов и коллекций больше не растягивают окно."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一集会在主窗口的播放器中开始播放，作品和合集页面也不会再把窗口撑宽。"
+          }
+        }
+      }
+    },
+    "Home opens on the featured title with its trailer, and Up and Down move through the rows one at a time." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Startseite öffnet mit dem hervorgehobenen Titel und seinem Trailer, und mit Hoch und Runter gehst du Reihe für Reihe weiter."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicio se abre con el título destacado y su tráiler, y Arriba y Abajo recorren las filas de una en una."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'accueil s'ouvre sur le titre à la une avec sa bande-annonce, et Haut et Bas parcourent les rangées une par une."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La Home si apre sul titolo in evidenza con il suo trailer, e Su e Giù scorrono le righe una alla volta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホームは注目作品と予告編で始まり、上下ボタンで列を1つずつ移動できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "홈이 추천 타이틀과 예고편으로 시작되며, 위아래 버튼으로 줄을 하나씩 이동합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De startpagina opent met de uitgelichte titel en zijn trailer, en Omhoog en Omlaag gaan rij voor rij."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Início abre no título em destaque com o trailer, e Para cima e Para baixo percorrem as fileiras uma de cada vez."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Главная открывается на избранном тайтле с трейлером, а кнопки «Вверх» и «Вниз» переключают ряды по одному."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主页会以精选作品及其预告片打开，按上下键可逐行浏览。"
+          }
+        }
+      }
+    },
+    "A Richer Top Shelf" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein reicheres Top Shelf"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un Top Shelf más completo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un Top Shelf plus riche"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un Top Shelf più ricco"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "より充実したトップシェルフ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 풍성해진 탑 셸프"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een rijkere Top Shelf"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um Top Shelf mais completo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Более насыщенная верхняя полка"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更丰富的顶部栏"
+          }
+        }
+      }
+    },
+    "Put Arcfin in the top row of your Apple TV to see what you're watching, with logos and progress, plus Next Up." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lege Arcfin in die oberste Reihe deines Apple TV, um zu sehen, was du gerade schaust, mit Logos und Fortschritt, dazu Als Nächstes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pon Arcfin en la fila superior de tu Apple TV para ver lo que estás viendo, con logotipos y progreso, además de A continuación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Placez Arcfin dans la rangée du haut de votre Apple TV pour voir ce que vous regardez, avec logos et progression, ainsi que la suite."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metti Arcfin nella fila in alto della tua Apple TV per vedere cosa stai guardando, con loghi e avanzamento, più A seguire."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV の一番上の列に Arcfin を置くと、視聴中の作品がロゴや進行状況とともに表示され、「次に再生」も並びます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV의 맨 위 줄에 Arcfin을 두면 시청 중인 콘텐츠가 로고와 진행 상황과 함께 표시되고, 다음 항목도 볼 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zet Arcfin in de bovenste rij van je Apple TV om te zien wat je kijkt, met logo's en voortgang, plus Hierna."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coloque o Arcfin na fileira de cima da sua Apple TV para ver o que você está assistindo, com logos e progresso, além de A seguir."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поместите Arcfin в верхний ряд Apple TV, чтобы видеть, что вы смотрите, с логотипами и прогрессом, а также следующее."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把 Arcfin 放到 Apple TV 的最上面一行，就能看到你正在看的内容，附带标志和进度，还有接下来要看的。"
+          }
+        }
+      }
+    },
+    "Smoother Title Pages" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flüssigere Titelseiten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Páginas de títulos más fluidas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des pages de titres plus fluides"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pagine dei titoli più fluide"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "よりスムーズな作品ページ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 매끄러운 타이틀 페이지"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soepelere titelpagina's"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Páginas de títulos mais fluidas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Более плавные страницы тайтлов"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更流畅的作品页面"
+          }
+        }
+      }
+    },
+    "Title pages no longer slow your Apple TV down, they show when a title would end, and sheets open in a wider panel that fits what's in them." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titelseiten bremsen dein Apple TV nicht mehr aus, zeigen, wann ein Titel enden würde, und Fenster öffnen sich in einem breiteren Bereich, der zum Inhalt passt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las páginas de títulos ya no ralentizan tu Apple TV, muestran a qué hora terminaría el título y las ventanas se abren en un panel más ancho que se ajusta a su contenido."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les pages de titres ne ralentissent plus votre Apple TV, indiquent l'heure de fin et les fenêtres s'ouvrent dans un panneau plus large adapté à leur contenu."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le pagine dei titoli non rallentano più la tua Apple TV, mostrano quando finirebbe il titolo e i pannelli si aprono più larghi, adatti al loro contenuto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作品ページで Apple TV の動作が重くならなくなり、終了時刻が表示されるようになりました。シートは内容に合わせた広いパネルで開きます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "타이틀 페이지가 더 이상 Apple TV를 느리게 하지 않으며, 끝나는 시간이 표시되고, 시트가 내용에 맞는 더 넓은 패널로 열립니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titelpagina's vertragen je Apple TV niet meer, tonen hoe laat een titel afgelopen zou zijn, en vensters openen in een breder paneel dat bij de inhoud past."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As páginas de títulos não deixam mais sua Apple TV lenta, mostram quando o título terminaria e as janelas abrem num painel mais largo que se ajusta ao conteúdo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Страницы тайтлов больше не тормозят Apple TV, показывают время окончания, а окна открываются в более широкой панели по размеру содержимого."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作品页面不会再拖慢 Apple TV，会显示作品的结束时间，弹出页面也会以适合内容的更宽面板打开。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
