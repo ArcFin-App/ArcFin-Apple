@@ -20,7 +20,9 @@ struct HomeView: View {
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
     @State private var model = HomeModel()
 
-    @FocusState private var focusedItemID: String?
+    /// The focused card, by row as well as title: the same title can be in several rows, and
+    /// cards sharing a focus value made Apple TV move focus to the other copy.
+    @FocusState private var focusedCard: CardFocus?
     // @FocusState clears to nil the instant focus moves to anything not bound to it (e.g.
     // the hero's own Play/More Info buttons) — using it directly for heroDisplayItem meant
     // moving focus up off a shelf card immediately reset the hero back to
@@ -53,6 +55,13 @@ struct HomeView: View {
 
     private enum HeroButton { case play, info }
 
+    private struct CardFocus: Hashable {
+        let row: String
+        let itemID: String
+    }
+
+    private static let continueWatchingRow = "Continue Watching"
+
     /// What Modern Home's hero shows: the focused card's title, from the library or Seerr.
     private enum ModernHeroSubject: Equatable {
         case media(MediaItem)
@@ -75,7 +84,7 @@ struct HomeView: View {
     /// Focus on the hero's buttons or its Continue Watching row, the only places the hero
     /// hides from.
     private var focusIsOnHero: Bool {
-        focusedHeroButton != nil || focusedItemID.map { id in cwItems.contains { $0.id == id } } == true
+        focusedHeroButton != nil || focusedCard?.row == Self.continueWatchingRow
     }
 
     private var focusedItem: MediaItem? {
@@ -167,10 +176,10 @@ struct HomeView: View {
         // The hero already shows the first Continue Watching item until something's focused.
         // Assigning focus to it here pulled the page down to that row once Home loaded.
         .onChange(of: mediaRepo.continueWatching) { _, _ in
-            if focusedItemID == nil { reloadHeroVideoIfItemChanged() }
+            if focusedCard == nil { reloadHeroVideoIfItemChanged() }
         }
-        .onChange(of: focusedItemID) { _, newValue in
-            if let newValue { lastFocusedItemID = newValue }
+        .onChange(of: focusedCard) { _, newValue in
+            if let newValue { lastFocusedItemID = newValue.itemID }
             showHeroChrome()
             reloadHeroVideoIfItemChanged()
         }
@@ -220,8 +229,8 @@ struct HomeView: View {
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
         // Modern Home starts on its first row by itself; the same title can also be in a row
         // further down, where this could put focus instead.
-        if focusedItemID == nil, !modernHome {
-            focusedItemID = mediaRepo.continueWatching.first?.id
+        if focusedCard == nil, !modernHome, let first = mediaRepo.continueWatching.first {
+            focusedCard = CardFocus(row: Self.continueWatchingRow, itemID: first.id)
         }
     }
 
@@ -315,7 +324,7 @@ struct HomeView: View {
                 }
                 .id(item.id)
                 .transition(.opacity)
-                .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
+                .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: lastFocusedItemID)
                 .opacity(heroChromeOpacity)
 
                 Group {
@@ -342,7 +351,7 @@ struct HomeView: View {
                         // a lingering @FocusState here can otherwise keep the remote's actual
                         // focus target stuck on this (now-hidden) screen instead of the
                         // player, which claims its own initial focus via .prefersDefaultFocus.
-                        focusedItemID = nil
+                        focusedCard = nil
                         model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
@@ -368,7 +377,7 @@ struct HomeView: View {
             .frame(maxWidth: 540, alignment: .leading)
             .id(item.id)
             .transition(.opacity)
-            .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: focusedItemID)
+            .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: lastFocusedItemID)
         } else {
             brandingBlock
         }
@@ -537,7 +546,7 @@ struct HomeView: View {
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
-                            .focused($focusedItemID, equals: item.id)
+                            .focused($focusedCard, equals: CardFocus(row: Self.continueWatchingRow, itemID: item.id))
                             .contextMenu { cwContextMenu(item) }
                         }
                     }
@@ -601,11 +610,11 @@ struct HomeView: View {
             }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
-                mediaShelf(title: "More \(shelf.genre)", items: shelf.items)
+                mediaShelf(title: "More \(shelf.genre)", rowID: "genre-\(shelf.genre)", items: shelf.items)
             }
         case .becauseYouWatched:
             if let recommendation = mediaRepo.becauseYouWatched {
-                mediaShelf(title: "Because You Watched \(recommendation.source.name)", items: recommendation.items)
+                mediaShelf(title: "Because You Watched \(recommendation.source.name)", rowID: HomeShelf.becauseYouWatched.rawValue, items: recommendation.items)
             }
         case .favorites:
             if !mediaRepo.favorites.isEmpty {
@@ -621,7 +630,7 @@ struct HomeView: View {
             }
         case .recommendations:
             ForEach(mediaRepo.recommendations) { category in
-                mediaShelf(title: HomeShelfLoader.recommendationTitle(category), items: category.items)
+                mediaShelf(title: HomeShelfLoader.recommendationTitle(category), rowID: "recommendation-\(category.recommendationType)-\(category.id)", items: category.items)
             }
         case .nowAvailable:
             if seerrRepo.isConfigured, !model.nowAvailable.isEmpty {
@@ -631,7 +640,7 @@ struct HomeView: View {
             if seerrRepo.hasCatalog {
                 ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
                     if let items = model.serviceRows[provider.id], !items.isEmpty {
-                        seerrShelf(title: "Popular on \(provider.name)", items: items)
+                        seerrShelf(title: "Popular on \(provider.name)", rowID: "service-\(provider.id)", items: items)
                     }
                 }
             }
@@ -654,8 +663,9 @@ struct HomeView: View {
         }
     }
 
-    private func mediaShelf(title: String, badge: String? = nil, items: [MediaItem]) -> some View {
-        tvShelfRow(title: title, badge: badge) {
+    private func mediaShelf(title: String, rowID: String? = nil, badge: String? = nil, items: [MediaItem]) -> some View {
+        let rowID = rowID ?? title
+        return tvShelfRow(title: title, rowID: rowID, badge: badge) {
             ForEach(items) { item in
                 NavigationLink(value: item) {
                     PosterCard(
@@ -663,18 +673,20 @@ struct HomeView: View {
                         subtitle: item.productionYear.map { String($0) },
                         imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
                     )
-                    .background { modernFocusProbe(row: title, subject: .media(item)) }
+                    .background { modernFocusProbe(row: rowID, subject: .media(item)) }
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
-                .focused($focusedItemID, equals: item.id)
+                .focused($focusedCard, equals: CardFocus(row: rowID, itemID: item.id))
                 .contextMenu { cwContextMenu(item) }
             }
         }
     }
 
+    /// `rowID` tells rows apart where titles repeat, as Recommendations' can.
     private func tvShelfRow<Content: View>(
         title: String,
+        rowID: String,
         badge: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
@@ -708,14 +720,15 @@ struct HomeView: View {
         .background {
             if modernHome {
                 GeometryReader { proxy in
-                    Color.clear.preference(key: ModernRowHeights.self, value: [.init(title: title, height: proxy.size.height)])
+                    Color.clear.preference(key: ModernRowHeights.self, value: [.init(id: rowID, height: proxy.size.height)])
                 }
             }
         }
     }
 
-    private func seerrShelf(title: String, items: [SeerrItem]) -> some View {
-        tvShelfRow(title: title) {
+    private func seerrShelf(title: String, rowID: String? = nil, items: [SeerrItem]) -> some View {
+        let rowID = rowID ?? title
+        return tvShelfRow(title: title, rowID: rowID) {
             ForEach(items) { item in
                 Button { openSeerrShelfItem(item) } label: {
                     PosterCard(
@@ -724,7 +737,7 @@ struct HomeView: View {
                             .compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
                         imageURL: item.backdropURL ?? item.posterURL
                     )
-                    .background { modernFocusProbe(row: title, subject: .seerr(item)) }
+                    .background { modernFocusProbe(row: rowID, subject: .seerr(item)) }
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -753,10 +766,15 @@ struct HomeView: View {
             let sh = proxy.size.height
             let rowsTop = sh * 0.5
             let focusedRowTop = modernRow.flatMap { modernRowTops[$0] } ?? 0
-            // Resting drops the focused row until its cards almost reach the bottom edge.
-            // Each row's height includes its 40 pt bottom padding.
-            let focusedRowHeight = modernRowHeights[modernRow ?? "Continue Watching"] ?? 0
-            let restingDrop = max(0, sh - 60 - rowsTop - (focusedRowHeight - 40))
+            // Resting drops the focused row towards the bottom edge. Each row's height includes
+            // its 40 pt bottom padding. The next row's cards (about 60 pt below its top, after
+            // the row title) keep their top 40 pt on screen, masked: Apple TV only moves focus
+            // to cards on screen, so a deeper drop left Down with nowhere to go.
+            let focusedRowHeight = modernRowHeights[modernRow ?? Self.continueWatchingRow] ?? 0
+            let restingDrop = max(0, min(
+                sh - 60 - rowsTop - (focusedRowHeight - 40),
+                sh - 40 - rowsTop - focusedRowHeight - 60
+            ))
             let rowsOffset = rowsTop - focusedRowTop + (modernRowsResting ? restingDrop : 0)
 
             ZStack(alignment: .topLeading) {
@@ -834,8 +852,8 @@ struct HomeView: View {
             var tops: [String: CGFloat] = [:]
             var heights: [String: CGFloat] = [:]
             for row in rows {
-                tops[row.title] = top
-                heights[row.title] = row.height
+                tops[row.id] = top
+                heights[row.id] = row.height
                 top += row.height
             }
             modernRowTops = tops
@@ -847,8 +865,8 @@ struct HomeView: View {
     private var modernContinueWatchingRow: some View {
         let items = cwItems
         if !items.isEmpty {
-            let title = "Continue Watching"
-            tvShelfRow(title: title) {
+            let title = Self.continueWatchingRow
+            tvShelfRow(title: title, rowID: title) {
                 ForEach(items) { item in
                     Button { model.detailItem = item } label: {
                         PosterCard(
@@ -861,7 +879,7 @@ struct HomeView: View {
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
-                    .focused($focusedItemID, equals: item.id)
+                    .focused($focusedCard, equals: CardFocus(row: Self.continueWatchingRow, itemID: item.id))
                     .contextMenu { cwContextMenu(item) }
                 }
             }
@@ -962,7 +980,7 @@ struct HomeView: View {
         if item.type == .movie || item.type == .episode {
             let ticks = item.userData?.played == true ? 0 : (item.userData?.playbackPositionTicks ?? 0)
             Button {
-                focusedItemID = nil
+                focusedCard = nil
                 model.playbackRequest = PlaybackRequest(item: item, startTicks: ticks)
             } label: {
                 Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
@@ -1016,7 +1034,7 @@ struct HomeView: View {
 /// Each Modern Home row's height, in the order the rows are stacked.
 private struct ModernRowHeights: PreferenceKey {
     struct Row: Equatable {
-        let title: String
+        let id: String
         let height: CGFloat
     }
 
