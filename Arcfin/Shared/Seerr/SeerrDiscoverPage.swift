@@ -2,10 +2,12 @@
 
 import SwiftUI
 import SeerrAPI
+import JellyfinAPI
 
-/// Discover on iPhone, iPad and Mac: the top trending titles as wide cards, then shelves of
-/// posters like Home's, with genre and search results as a poster grid. Each platform's
-/// `SeerrView` passes its grid spacing.
+/// Discover on iPhone, iPad and Mac: lists of wide cards (trending, popular, upcoming) with
+/// shelves of posters like Home's between them, including the services picked in Popular
+/// Elsewhere, a few genres and titles like the last one watched. Genre and search results are
+/// a poster grid. Each platform's `SeerrView` passes its grid spacing.
 struct SeerrDiscoverPage: View {
     @Bindable var model: SeerrDiscoverModel
     let gridSpacing: CGFloat
@@ -16,7 +18,8 @@ struct SeerrDiscoverPage: View {
     @State private var searchText = ""
     @State private var requestingItem: SeerrItem? = nil
     @State private var openedItem: SeerrItem?
-    @State private var pageWidth: CGFloat = 0
+    @State private var pageSize: CGSize = .zero
+    @AppStorage(StreamingServicePrefs.key) private var servicesData = Data()
 
     private var genresForType: [SeerrGenre] { model.genres(in: seerrRepo) }
     private var trendingForType: [SeerrItem] { model.trending(in: seerrRepo) }
@@ -104,32 +107,83 @@ struct SeerrDiscoverPage: View {
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
             }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
-        .refreshable { await model.refresh(seerrRepo: seerrRepo) }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { pageSize = $0 }
+        .refreshable {
+            await model.refresh(seerrRepo: seerrRepo)
+            await loadMoreRows()
+        }
         .task(id: model.mediaType) { await model.loadLanguageItems(seerrRepo: seerrRepo) }
+        .task(id: moreRowsKey) { await loadMoreRows() }
     }
 
-    /// The top trending titles as wide cards, then shelves like Home's.
-    @ViewBuilder
+    private enum FeaturedKind: String { case trending, popular, upcoming }
+
+    private enum DiscoverBlock: Identifiable {
+        case featured(FeaturedKind, [SeerrItem])
+        case row(SeerrDiscoverModel.DiscoverRow)
+
+        var id: String {
+            switch self {
+            case .featured(let kind, _): "featured-\(kind.rawValue)"
+            case .row(let row): row.id
+            }
+        }
+    }
+
+    /// Wide cards, a few rows, wide cards again: trending, then titles like the last one
+    /// watched, the picked services and genres; popular; more of the same; then upcoming and
+    /// whatever rows are left. A title gets a wide card once.
+    private var blocks: [DiscoverBlock] {
+        var featuredIDs = Set<Int>()
+        let services = model.serviceRows
+        let genres = model.genreRows
+        let language: SeerrDiscoverModel.DiscoverRow? = model.languageName.flatMap { name in
+            model.languageItems.isEmpty ? nil
+                : .init(id: "language", title: String(localized: "Popular in \(name)"), items: model.languageItems)
+        }
+        var blocks: [DiscoverBlock] = []
+        blocks += featuredBlocks(showsTrending ? .trending : .popular, items: trendingForType,
+                                 restTitle: showsTrending ? String(localized: "Trending Now") : String(localized: "Popular"),
+                                 featuredIDs: &featuredIDs)
+        blocks += [model.becauseYouWatched, services.first, genres.first].compactMap { $0.map(DiscoverBlock.row) }
+        if showsTrending {
+            blocks += featuredBlocks(.popular, items: model.popular(in: seerrRepo),
+                                     restTitle: model.mediaType == .tv ? String(localized: "Popular Series") : String(localized: "Popular Movies"),
+                                     featuredIDs: &featuredIDs)
+        }
+        blocks += [services.dropFirst().first, genres.dropFirst().first, language].compactMap { $0.map(DiscoverBlock.row) }
+        blocks += featuredBlocks(.upcoming, items: upcomingForType, restTitle: String(localized: "Upcoming"), featuredIDs: &featuredIDs)
+        blocks += (services.dropFirst(2) + genres.dropFirst(2)).map(DiscoverBlock.row)
+        return blocks
+    }
+
+    private func featuredBlocks(_ kind: FeaturedKind, items: [SeerrItem], restTitle: String, featuredIDs: inout Set<Int>) -> [DiscoverBlock] {
+        let top = Array(items.filter { $0.backdropURL != nil && !featuredIDs.contains($0.id) }.prefix(Self.featuredCount))
+        featuredIDs.formUnion(top.map(\.id))
+        let rest = items.filter { !top.contains($0) }
+        var result: [DiscoverBlock] = []
+        if !top.isEmpty { result.append(.featured(kind, top)) }
+        if !rest.isEmpty { result.append(.row(.init(id: "\(kind.rawValue)-rest", title: restTitle, items: rest))) }
+        return result
+    }
+
     private var discoverShelves: some View {
-        let featured = Array(trendingForType.filter { $0.backdropURL != nil }.prefix(Self.featuredCount))
-        if !featured.isEmpty {
-            featuredCarousel(featured)
+        ForEach(blocks) { block in
+            switch block {
+            case .featured(let kind, let items): featuredCarousel(items, kind: kind)
+            case .row(let row): shelf(title: row.title, items: row.items)
+            }
         }
-        let rest = trendingForType.filter { !featured.contains($0) }
-        if !rest.isEmpty {
-            shelf(title: showsTrending ? String(localized: "Trending Now") : String(localized: "Popular"), items: rest)
-        }
-        if !upcomingForType.isEmpty {
-            shelf(title: String(localized: "Upcoming"), items: upcomingForType)
-        }
-        let popular = model.popular(in: seerrRepo)
-        if showsTrending, !popular.isEmpty {
-            shelf(title: model.mediaType == .tv ? String(localized: "Popular Series") : String(localized: "Popular Movies"), items: popular)
-        }
-        if !model.languageItems.isEmpty, let languageName = model.languageName {
-            shelf(title: String(localized: "Popular in \(languageName)"), items: model.languageItems)
-        }
+    }
+
+    /// Changes whenever a row beyond Seerr's own lists needs loading again.
+    private var moreRowsKey: String {
+        let services = StreamingServicePrefs.decode(servicesData).map(\.id)
+        return "\(model.mediaType)-\(services)-\(genresForType.count)-\(seerrRepo.hasCatalog)-\(mediaRepo.watchAgain.first?.id ?? "")"
+    }
+
+    private func loadMoreRows() async {
+        await model.loadMoreRows(seerrRepo: seerrRepo, mediaRepo: mediaRepo, services: StreamingServicePrefs.decode(servicesData))
     }
 
     // MARK: - Header
@@ -182,17 +236,20 @@ struct SeerrDiscoverPage: View {
 
     private static let featuredCount = 5
 
-    /// A page-wide card on a phone; on an iPad or Mac, wide enough to show the next one.
+    /// Page-wide on a phone held upright. No taller than 40% of what's on screen, so in
+    /// landscape a card leaves room for the rows around it, and no wider than 560 pt, so an
+    /// iPad or Mac shows part of the next one.
     private var featuredWidth: CGFloat {
-        let available = max(pageWidth - DT.Spacing.pagePad * 2, 0)
-        return min(available, 680)
+        let available = max(pageSize.width - DT.Spacing.pagePad * 2, 0)
+        let fitsHeight = pageSize.height * 0.4 * 16 / 9
+        return min(available, 560, fitsHeight)
     }
 
-    private func featuredCarousel(_ items: [SeerrItem]) -> some View {
+    private func featuredCarousel(_ items: [SeerrItem], kind: FeaturedKind) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(spacing: DT.Spacing.shelfGap) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    featuredCard(item, rank: index + 1)
+                    featuredCard(item, rank: index + 1, kind: kind)
                 }
             }
             .scrollTargetLayout()
@@ -203,7 +260,7 @@ struct SeerrDiscoverPage: View {
         .padding(.bottom, DT.Spacing.xl)
     }
 
-    private func featuredCard(_ item: SeerrItem, rank: Int) -> some View {
+    private func featuredCard(_ item: SeerrItem, rank: Int, kind: FeaturedKind) -> some View {
         let isAvailable = mediaRepo.hasInLibrary(item)
         let request = isAvailable ? nil : seerrRepo.matchingRequest(for: item)
         let canRequest = !isAvailable && !seerrRepo.isRequested(item)
@@ -228,7 +285,7 @@ struct SeerrDiscoverPage: View {
                         startPoint: .top, endPoint: .bottom)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(showsTrending ? "#\(rank) in Trending" : "#\(rank) in Popular")
+                        Text(featuredLabel(kind, rank: rank))
                             .font(.system(.caption, weight: .bold))
                             .foregroundStyle(DT.Color.accent)
                         Text(item.title)
@@ -274,6 +331,14 @@ struct SeerrDiscoverPage: View {
                 }
             }
             .padding(DT.Spacing.md)
+        }
+    }
+
+    private func featuredLabel(_ kind: FeaturedKind, rank: Int) -> String {
+        switch kind {
+        case .trending: String(localized: "#\(rank) in Trending")
+        case .popular: String(localized: "#\(rank) in Popular")
+        case .upcoming: String(localized: "Coming Soon")
         }
     }
 
