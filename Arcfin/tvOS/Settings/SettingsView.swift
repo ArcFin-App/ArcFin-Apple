@@ -28,9 +28,7 @@ struct SettingsView: View {
         .navigationDestination(for: TVSettingsPage.self, destination: page)
         .screenBackground()
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showUsersSheet) {
-            // frame(minWidth: 900) used to force content wider than tvOS's own sheet
-            // container, clipping the text on both edges — letting it size naturally fits.
+        .appSheet(isPresented: $showUsersSheet) {
             NavigationStack { UsersView() }
         }
     }

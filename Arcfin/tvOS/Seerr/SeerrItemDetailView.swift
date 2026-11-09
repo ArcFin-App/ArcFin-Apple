@@ -44,7 +44,7 @@ struct SeerrItemDetailView: View {
         .screenBackground()
         .navigationDestination(item: $model.openLibraryItem) { MediaDetailView(item: $0) }
         .navigationDestination(item: $model.openSeerrItem) { SeerrItemDetailView(item: $0) }
-        .sheet(item: $model.requestingItem) { item in
+        .appSheet(item: $model.requestingItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $model.requestingItem)
         }
         .fullScreenCover(isPresented: $showFullDescription) { fullDescription }

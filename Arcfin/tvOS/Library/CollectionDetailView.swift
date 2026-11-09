@@ -79,7 +79,7 @@ struct CollectionDetailView: View {
             }
             .id(request.item.id)
         }
-        .sheet(isPresented: $showFilterSheet) {
+        .appSheet(isPresented: $showFilterSheet) {
             NavigationStack {
                 TVLibraryFilterList(
                     availableGenres: availableGenres, availableYears: availableYears,

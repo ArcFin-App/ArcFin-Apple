@@ -69,7 +69,7 @@ struct SwitchServerView: View {
             .inlineNavigationTitle()
         }
         .task { await pins.load(authManager: authManager) }
-        .sheet(item: $switchTarget) { target in
+        .appSheet(item: $switchTarget) { target in
             PINEntrySheet(
                 title: "Switch to \(target.displayName)",
                 subtitle: target.baseURL.host,

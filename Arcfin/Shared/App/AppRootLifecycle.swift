@@ -115,7 +115,7 @@ struct AppRootLifecycle: ViewModifier {
                     model.checkSeerrSetupPrompt(seerrURL: seerrURL, seerrUsername: seerrUsername, seerrAuthMethod: seerrAuthMethod)
                 }
             }
-            .sheet(isPresented: Bindable(model).showSeerrSetupPrompt) {
+            .appSheet(isPresented: Bindable(model).showSeerrSetupPrompt) {
                 if case .authenticated(let cred) = model.authManager.state {
                     SeerrSetupPromptView(
                         seerrURL: seerrURL,

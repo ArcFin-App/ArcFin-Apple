@@ -98,8 +98,8 @@ struct ServerURLView: View {
             }
         }
         .task { await runDiscovery() }
-        .sheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
-        .sheet(isPresented: $showCustomHeaders) {
+        .appSheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
+        .appSheet(isPresented: $showCustomHeaders) {
             NavigationStack {
                 CustomHeadersView()
                     .toolbar {
