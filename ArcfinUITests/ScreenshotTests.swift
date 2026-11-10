@@ -236,7 +236,8 @@ final class ScreenshotTests: XCTestCase {
         #else
         try selectTab("Browse")
         #endif
-        let library = app.buttons[name].firstMatch
+        // A tile's label also carries its title count ("Movies, 1,234"), so match the start.
+        let library = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
         try waitFor(library)
         press(library)
         settle()
