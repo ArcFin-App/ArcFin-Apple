@@ -16,9 +16,12 @@ final class LibraryModel {
     /// Live TV and Music aren't playable yet (no live-TV tuner support, no music player
     /// UI) — hide them from the library list rather than showing a section that just
     /// leads to a dead end.
-    static func libraries(in mediaRepo: MediaRepository) -> [JellyfinLibrary] {
+    /// `includeLiveTV` is for the platforms whose Browse has a Live TV screen to open.
+    static func libraries(in mediaRepo: MediaRepository, includeLiveTV: Bool = false) -> [JellyfinLibrary] {
         let hidden = LibraryVisibility.hiddenIDs
-        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && !hidden.contains($0.id) }
+        let libraries = mediaRepo.libraries.filter {
+            ($0.collectionType != .livetv || includeLiveTV) && $0.collectionType != .music && !hidden.contains($0.id)
+        }
         // The server only lists a Playlists library once a playlist exists; the tile is
         // always there so the first one can be made from it.
         guard !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) else { return libraries }
