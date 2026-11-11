@@ -49,6 +49,8 @@ final class PlayerModel {
     /// What's on the channel being watched, kept current as one programme follows another.
     var liveProgram: LiveTVProgram?
     @ObservationIgnored var liveProgramTask: Task<Void, Never>?
+    /// The tuner stream the Cast receiver is playing, separate from the local player's own.
+    @ObservationIgnored var castLiveStreamId: String?
     var errorMessage: String?
     var isControlsVisible = true
     // A separate flag, not reusing isControlsVisible — the latter also drives
@@ -266,7 +268,8 @@ final class PlayerModel {
         if newStatus == .ended { Task { await finishPlayback() } }
         // A failure while loading throws from setup(), which handles it (and Aether's
         // fallback); this is the engine giving up after playback had already started.
-        if case .failed = newStatus, loadingStage == nil, errorMessage == nil {
+        // A channel's local stream is closed on purpose while casting.
+        if case .failed = newStatus, loadingStage == nil, errorMessage == nil, !(isLive && CastManager.shared.isConnected) {
             errorMessage = String(localized: "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback.")
         }
     }
@@ -552,7 +555,7 @@ final class PlayerModel {
             await player.play()
             loadingStage = nil
             await applyRememberedRate()
-            sharePlay.playerOpened(item)
+            if !isLive { sharePlay.playerOpened(item) }
             // The preferred or remembered audio language, which a file played as is ignores.
             if selectedAudioIndex != nil { await selectAudioInEngine() }
             // A cast that was already running when this screen opened (autoplay moved on to
@@ -705,6 +708,9 @@ final class PlayerModel {
         currentSubtitleText = nil
         currentBitmapCue = nil
         Task { await player.pause() }
+        // The receiver opens a tuner stream of its own; the paused local one would hold a
+        // second tuner the whole time.
+        if isLive { playbackInfo?.liveStreamId = nil }
         // Opened from the casting bar: the receiver is already playing this, so loading it
         // again would jump it back to where the local player happens to be.
         guard CastManager.shared.nowPlayingItemID != item.id else { return }
@@ -725,6 +731,10 @@ final class PlayerModel {
                 forCast: true
             )
             guard !Task.isCancelled, let url = info?.playURL ?? playbackInfo?.playURL else { return }
+            if isLive {
+                if let old = castLiveStreamId, old != info?.liveStreamId { closeLiveStream(old) }
+                castLiveStreamId = info?.liveStreamId
+            }
             // Text subtitles go to the receiver as sidecar WebVTT tracks; image-based ones
             // have no deliveryUrl and are burned into the transcode by the server instead.
             let tracks = (info ?? playbackInfo)?.subtitleStreams.compactMap { stream -> CastManager.SubtitleTrack? in
@@ -736,12 +746,14 @@ final class PlayerModel {
             } ?? []
             castSubtitleTrackIDs = Set(tracks.map(\.id))
             CastManager.shared.loadMedia(
-                itemID: item.id, streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
+                itemID: item.id, streamURL: url, title: item.name, subtitle: isLive ? liveProgram?.name : nil,
+                posterImageURL: posterURL,
                 contentType: castContentType(for: url),
                 startPositionSeconds: startSeconds,
                 subtitleTracks: tracks,
                 activeSubtitleTrackID: tracks.contains { $0.id == selectedSubtitleIndex } ? selectedSubtitleIndex : nil,
-                isTransportStreamHLS: url.pathExtension.lowercased() == "m3u8"
+                isTransportStreamHLS: url.pathExtension.lowercased() == "m3u8",
+                isLive: isLive
             )
         }
     }
@@ -773,6 +785,12 @@ final class PlayerModel {
     func resumeLocalPlaybackAfterCast() {
         castLoadTask?.cancel()
         defer { tracksAtCastStart = nil }
+        if isLive {
+            if let castLiveStreamId { closeLiveStream(castLiveStreamId) }
+            castLiveStreamId = nil
+            reload(errorContext: "resume after casting")
+            return
+        }
         // Tracks picked on the cast dashboard change selectedAudioIndex/selectedSubtitleIndex,
         // but the local player is still on the old stream — reload so it matches what the
         // viewer was just watching.
@@ -1512,7 +1530,7 @@ final class PlayerModel {
             toggleControlsVisibilityOnAction()
             return
         }
-        if routesThroughSyncPlay, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+        if routesThroughSyncPlay, !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             if player.status == .playing {
                 syncPlayManager.requestPause(credential: credential, authHeader: authHeader)
@@ -1522,7 +1540,7 @@ final class PlayerModel {
             toggleControlsVisibilityOnAction()
             return
         }
-        if sharePlay.isActive {
+        if sharePlay.isActive, !isLive {
             sharePlay.send(player.status == .playing ? .pause : .play, itemId: item.id, positionTicks: player.positionTicks)
         }
         Task {

@@ -176,7 +176,8 @@ extension PlayerView {
             canPictureInPicture: canPictureInPicture,
             canOpenInNewWindow: supportsMultipleWindows && !isPlayerWindow,
             canCast: castEnabled && CastManager.shared.isCastAvailable,
-            canSyncPlay: syncPlayEnabled && ProfileRules.shared.canUseSyncPlay,
+            // SyncPlay keeps everyone at the same position; a channel has none to share.
+            canSyncPlay: syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive,
             isAudioOnly: audioOnly,
             togglePiP: togglePiP,
             openInNewWindow: openInNewWindow,
@@ -433,61 +434,70 @@ extension PlayerView {
         let fraction = durationSeconds > 0 ? min(max(shownSeconds / durationSeconds, 0), 1) : 0
 
         return VStack(spacing: 16) {
-            VStack(spacing: 4) {
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(.white.opacity(0.25)).frame(height: 4)
-                        Capsule().fill(DT.Color.accent)
-                            .frame(width: proxy.size.width * fraction, height: 4)
-                        Circle().fill(.white)
-                            .frame(width: isCastScrubbing ? 18 : 12, height: isCastScrubbing ? 18 : 12)
-                            .offset(x: proxy.size.width * fraction - (isCastScrubbing ? 9 : 6))
+            if model.isLive {
+                VStack(spacing: 8) {
+                    LiveBadge()
+                    LiveProgramBar(program: model.liveProgram)
+                }
+            } else {
+                VStack(spacing: 4) {
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(.white.opacity(0.25)).frame(height: 4)
+                            Capsule().fill(DT.Color.accent)
+                                .frame(width: proxy.size.width * fraction, height: 4)
+                            Circle().fill(.white)
+                                .frame(width: isCastScrubbing ? 18 : 12, height: isCastScrubbing ? 18 : 12)
+                                .offset(x: proxy.size.width * fraction - (isCastScrubbing ? 9 : 6))
+                        }
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    let f = min(max(value.location.x / max(proxy.size.width, 1), 0), 1)
+                                    isCastScrubbing = true
+                                    castScrubTicks = Double(model.player.durationTicks) * f
+                                }
+                                .onEnded { _ in
+                                    cast.seek(toSeconds: castScrubTicks / 10_000_000)
+                                    isCastScrubbing = false
+                                }
+                        )
                     }
-                    .frame(maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                let f = min(max(value.location.x / max(proxy.size.width, 1), 0), 1)
-                                isCastScrubbing = true
-                                castScrubTicks = Double(model.player.durationTicks) * f
-                            }
-                            .onEnded { _ in
-                                cast.seek(toSeconds: castScrubTicks / 10_000_000)
-                                isCastScrubbing = false
-                            }
-                    )
-                }
-                .frame(height: 28)
-                .accessibilityElement()
-                .accessibilityLabel("Playback position")
-                .accessibilityValue("\(model.timeLabel(ticks: Int64(shownSeconds * 10_000_000))) of \(model.timeLabel(ticks: model.player.durationTicks))")
-                .accessibilityAdjustableAction { direction in
-                    let step = Double(direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
-                    cast.seek(toSeconds: min(max(liveSeconds + step, 0), durationSeconds))
-                }
+                    .frame(height: 28)
+                    .accessibilityElement()
+                    .accessibilityLabel("Playback position")
+                    .accessibilityValue("\(model.timeLabel(ticks: Int64(shownSeconds * 10_000_000))) of \(model.timeLabel(ticks: model.player.durationTicks))")
+                    .accessibilityAdjustableAction { direction in
+                        let step = Double(direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
+                        cast.seek(toSeconds: min(max(liveSeconds + step, 0), durationSeconds))
+                    }
 
-                HStack {
-                    Text(model.timeLabel(ticks: Int64(shownSeconds * 10_000_000)))
-                    Spacer()
-                    Text("-" + model.timeLabel(ticks: Int64(max(durationSeconds - shownSeconds, 0) * 10_000_000)))
+                    HStack {
+                        Text(model.timeLabel(ticks: Int64(shownSeconds * 10_000_000)))
+                        Spacer()
+                        Text("-" + model.timeLabel(ticks: Int64(max(durationSeconds - shownSeconds, 0) * 10_000_000)))
+                    }
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.7))
+                    .accessibilityHidden(true)
                 }
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.white.opacity(0.7))
-                .accessibilityHidden(true)
             }
 
             HStack(spacing: 24) {
-                Button {
-                    cast.seek(toSeconds: max(liveSeconds - Double(skipBackwardSeconds), 0))
-                } label: {
-                    Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                        .font(.title)
-                        .foregroundStyle(.white)
-                        .frame(minWidth: 52, minHeight: 52)
-                        .contentShape(Rectangle())
+                if !model.isLive {
+                    Button {
+                        cast.seek(toSeconds: max(liveSeconds - Double(skipBackwardSeconds), 0))
+                    } label: {
+                        Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                            .font(.title)
+                            .foregroundStyle(.white)
+                            .frame(minWidth: 52, minHeight: 52)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                 }
-                .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
 
                 Button { cast.togglePlayPause() } label: {
                     Image(systemName: cast.isPaused ? "play.fill" : "pause.fill")
@@ -498,16 +508,18 @@ extension PlayerView {
                 }
                 .accessibilityLabel(cast.isPaused ? "Play" : "Pause")
 
-                Button {
-                    cast.seek(toSeconds: min(liveSeconds + Double(skipForwardSeconds), durationSeconds))
-                } label: {
-                    Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                        .font(.title)
-                        .foregroundStyle(.white)
-                        .frame(minWidth: 52, minHeight: 52)
-                        .contentShape(Rectangle())
+                if !model.isLive {
+                    Button {
+                        cast.seek(toSeconds: min(liveSeconds + Double(skipForwardSeconds), durationSeconds))
+                    } label: {
+                        Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                            .font(.title)
+                            .foregroundStyle(.white)
+                            .frame(minWidth: 52, minHeight: 52)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                 }
-                .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
             }
             .buttonStyle(.plain)
             .dynamicTypeSize(...DynamicTypeSize.accessibility1)
@@ -766,7 +778,7 @@ struct PlayerMoreMenu: View, Equatable {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }
             }
-            sharePlayMenuItem
+            if !model.isLive { sharePlayMenuItem }
 
             if !model.castMembers.isEmpty {
                 Button { openCastPanel() } label: {
@@ -788,8 +800,10 @@ struct PlayerMoreMenu: View, Equatable {
                 }
                 .pickerStyle(.menu)
             }
-            Button { showRateMenu = true } label: {
-                Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
+            if !model.isLive {
+                Button { showRateMenu = true } label: {
+                    Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
+                }
             }
             subtitleTimingMenu
             Button { showQualityMenu = true } label: {
