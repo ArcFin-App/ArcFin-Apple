@@ -275,7 +275,10 @@ final class PlayerModel {
         // fallback); this is the engine giving up after playback had already started.
         // A channel's local stream is closed on purpose while casting.
         if case .failed = newStatus, loadingStage == nil, errorMessage == nil, !(isLive && CastManager.shared.isConnected) {
-            errorMessage = String(localized: "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback.")
+            // A channel's stream dying is its source, not the engine: another engine won't help.
+            errorMessage = isLive
+                ? String(localized: "This channel didn't send any video. Its source may be offline. Try again, or pick another channel.")
+                : String(localized: "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback.")
         }
     }
 
