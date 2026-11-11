@@ -14,6 +14,11 @@ struct SeerrRequestsListView: View {
 
     @State private var selectedRequest: SeerrRequestItem? = nil
     @State private var statusFilter: RequestStatus? = nil
+    @State private var review = SeerrRequestReview()
+
+    private var pendingCount: Int {
+        seerrRepo.requests.count { $0.status == .pending && (filter == nil || $0.mediaType == filter) }
+    }
 
     private var filteredRequests: [SeerrRequestItem] {
         seerrRepo.requests.filter { request in
@@ -45,6 +50,9 @@ struct SeerrRequestsListView: View {
                     )
                     .frame(height: 220)
                 } else {
+                    if seerrRepo.canManageRequests, statusFilter == nil, pendingCount > 0 {
+                        pendingBanner
+                    }
                     list
                 }
                 Spacer().frame(height: DT.Size.tabBarHeight + 16)
@@ -74,6 +82,7 @@ struct SeerrRequestsListView: View {
         .navigationDestination(item: $selectedRequest) { req in
             SeerrRequestDetailView(request: req)
         }
+        .seerrRequestReview(review)
         .task {
             await seerrRepo.loadRequests()
         }
@@ -95,6 +104,7 @@ struct SeerrRequestsListView: View {
                     } label: {
                         Label("View Details", systemImage: "info.circle")
                     }
+                    SeerrRequestReviewMenu(request: req, review: review)
                     Button(role: .destructive) {
                         Task { try? await seerrRepo.cancelRequest(id: req.id) }
                     } label: {
@@ -105,6 +115,28 @@ struct SeerrRequestsListView: View {
                 })
             }
         }
+        .padding(.horizontal, DT.Spacing.pagePad)
+        .padding(.top, 12)
+    }
+
+    /// For someone who manages requests: how many are waiting, and a way to see only those.
+    private var pendingBanner: some View {
+        Button { withAnimation(DT.Animation.fast) { statusFilter = .pending } } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "hourglass")
+                    .foregroundStyle(DT.Color.palette("f59e0b"))
+                Text(pendingCount == 1 ? "1 request is waiting for approval" : "\(pendingCount) requests are waiting for approval")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                Spacer(minLength: 0)
+                Text("Review")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(DT.Color.accent)
+            }
+            .padding(12)
+            .background(DT.Color.palette("f59e0b").opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.top, 12)
     }
@@ -167,6 +199,12 @@ struct SeerrRequestsListView: View {
                     if let mediaStatus = req.mediaStatus {
                         mediaStatusPill(mediaStatus)
                     }
+                }
+                if let name = seerrRepo.requesterName(of: req) {
+                    Label("Requested by \(name)", systemImage: "person")
+                        .font(DT.Font.caption2)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(1)
                 }
             }
 

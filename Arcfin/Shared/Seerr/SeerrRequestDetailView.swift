@@ -14,12 +14,21 @@ struct SeerrRequestDetailView: View {
     @State private var showCancelConfirm = false
     @State private var detail: SeerrMediaDetail?
     @State private var isLoadingDetail = false
+    @State private var review = SeerrRequestReview()
+
+    /// The list's copy, which approving or declining brings up to date.
+    private var current: SeerrRequestItem {
+        seerrRepo.requests.first { $0.id == request.id } ?? request
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
                 titleBlock
+                SeerrRequestReviewButtons(request: current, review: review)
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                    .padding(.bottom, DT.Spacing.sm)
                 removeRequestButton
                 if let key = detail?.trailerYouTubeKey {
                     SeerrTrailerButton(videoID: key, title: request.mediaTitle)
@@ -76,6 +85,7 @@ struct SeerrRequestDetailView: View {
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
         .transparentInlineNavigationBar()
+        .seerrRequestReview(review)
         .confirmationDialog(
             "Remove this request?",
             isPresented: $showCancelConfirm,
@@ -299,7 +309,18 @@ struct SeerrRequestDetailView: View {
                 Spacer()
                 requestStatusPill
             }
-            if let mediaStatus = request.mediaStatus {
+            if let name = seerrRepo.requesterName(of: current) {
+                HStack {
+                    Text("Requested By")
+                        .font(.system(.footnote, design: .default, weight: .semibold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                    Spacer()
+                    Text(name)
+                        .font(.system(.footnote))
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+            if let mediaStatus = current.mediaStatus {
                 HStack {
                     Text("Media Status")
                         .font(.system(.footnote, design: .default, weight: .semibold))
@@ -315,7 +336,7 @@ struct SeerrRequestDetailView: View {
     }
 
     private var requestStatusPill: some View {
-        let (label, hex): (String, String) = switch request.status {
+        let (label, hex): (String, String) = switch current.status {
         case .approved:  ("Approved", "10b981")
         case .declined:  ("Declined", "F43F5E")
         case .pending:   ("Pending", "f59e0b")

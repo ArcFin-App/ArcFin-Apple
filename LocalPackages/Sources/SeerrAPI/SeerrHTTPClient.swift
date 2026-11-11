@@ -739,6 +739,20 @@ public actor SeerrHTTPClient {
         }
     }
 
+    /// Approves or declines a pending request. Needs the Manage Requests permission (or admin).
+    public func setRequestApproved(requestID: Int, approved: Bool) async throws {
+        try await ensureAuthenticated()
+        let url = baseURL.appendingPathComponent("api/v1/request/\(requestID)/\(approved ? "approve" : "decline")")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        applyXSRF(to: &req)
+        req.timeoutInterval = 15
+        let (data, status) = try await sendWrite(req)
+        guard (200...299).contains(status) else {
+            throw SeerrError.requestFailed(status: status, body: String(data: data, encoding: .utf8) ?? "")
+        }
+    }
+
     // MARK: - Private helpers
 
     /// Reads the XSRF-TOKEN cookie from the session's cookie jar and injects it
@@ -907,6 +921,12 @@ private struct SeerrRequestResponse: Decodable {
     let status: Int
     let createdAt: String?
     let media: SeerrRequestMedia
+    let requestedBy: RequestedBy?
+
+    struct RequestedBy: Decodable {
+        let id: Int?
+        let displayName: String?
+    }
 
     // Seerr's request media entity only stores identifiers/status —
     // title, name, posterPath, backdropPath live on TMDB and are fetched separately.
@@ -925,7 +945,8 @@ private struct SeerrRequestResponse: Decodable {
         return SeerrRequestItem(id: id, mediaTitle: title, mediaType: mType,
                                 status: reqStatus, mediaStatus: mediaStatus, requestedAt: date,
                                 posterPath: detail?.posterPath, backdropPath: detail?.backdropPath,
-                                tmdbId: media.tmdbId)
+                                tmdbId: media.tmdbId,
+                                requestedByID: requestedBy?.id, requestedByName: requestedBy?.displayName)
     }
 }
 

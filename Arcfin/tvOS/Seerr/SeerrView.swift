@@ -8,6 +8,7 @@ struct SeerrView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var model = SeerrDiscoverModel()
+    @State private var review = SeerrRequestReview()
 
     private var trendingForType: [SeerrItem] { model.trending(in: seerrRepo) }
 
@@ -25,6 +26,7 @@ struct SeerrView: View {
                 }
             }
             .screenBackground()
+            .seerrRequestReview(review)
             .navigationDestination(for: SeerrItem.self) { SeerrItemDetailView(item: $0) }
             .navigationDestination(for: MediaItem.self) { MediaDetailView(item: $0) }
             .navigationDestination(for: SeerrGenre.self) { genre in
@@ -249,7 +251,7 @@ struct SeerrView: View {
     private var requestsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("My Requests")
+                Text(seerrRepo.canManageRequests ? "Requests" : "My Requests")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                 if seerrRepo.isLoadingRequests {
@@ -280,12 +282,16 @@ struct SeerrView: View {
                                 id: tmdbId, title: req.mediaTitle, mediaType: req.mediaType,
                                 posterPath: req.posterPath, backdropPath: req.backdropPath,
                                 availabilityStatus: req.mediaStatus)) {
-                                TVRequestRow(req: req)
+                                TVRequestRow(req: req, requester: seerrRepo.requesterName(of: req))
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
+                            // Press and hold to approve or decline.
+                            .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
                         } else {
-                            TVRequestRow(req: req).focusable()
+                            TVRequestRow(req: req, requester: seerrRepo.requesterName(of: req))
+                                .focusable()
+                                .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
                         }
                     }
                 }
@@ -447,6 +453,7 @@ private struct TVSeerrCard: View {
 
 private struct TVRequestRow: View {
     let req: SeerrRequestItem
+    var requester: String?
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
@@ -483,6 +490,12 @@ private struct TVRequestRow: View {
                     if let mediaStatus = req.mediaStatus {
                         mediaStatusPill(mediaStatus)
                     }
+                }
+                if let requester {
+                    Label("Requested by \(requester)", systemImage: "person")
+                        .font(.system(size: 21))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(1)
                 }
             }
 

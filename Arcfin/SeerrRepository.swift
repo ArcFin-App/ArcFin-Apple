@@ -33,6 +33,9 @@ final class SeerrRepository {
     /// above. Used by the season picker (quota, auto-approve banner, whether specials/partial
     /// requests are even offered).
     @ObservationIgnored private(set) var currentUser: SeerrCurrentUser?
+    /// The Seerr user is an admin or can manage requests: they see everyone's requests and
+    /// can approve or decline the pending ones.
+    private(set) var canManageRequests = false
     @ObservationIgnored private(set) var publicSettings: SeerrPublicSettings?
 
     // Not @ObservationIgnored, unlike the bookkeeping vars below — isConfigured reads this,
@@ -130,6 +133,9 @@ final class SeerrRepository {
         configuredPassword = trimPass; configuredMethod = authMethod
         client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
                                  authMethod: authMethod, authorizeQuickConnect: authorizeQuickConnect)
+        // A different Seerr user, whose permissions and quota are their own.
+        currentUser = nil
+        canManageRequests = false
         authFailed = false
         cachedRegion = nil
         trending = []; popularMovies = []; popularTV = []; requests = []
@@ -263,8 +269,12 @@ final class SeerrRepository {
             }
             // Only on a refresh, never the first load — otherwise every request already
             // sitting at approved/available on first launch would fire a notification.
+            if let user = await ensureCurrentUser() {
+                canManageRequests = SeerrPermission.hasAny(of: [.manageRequests], in: user.permissions)
+            }
             if !firstLoad {
-                for item in requests {
+                // Someone who manages requests sees everyone's; only their own notify them.
+                for item in requests where item.requestedByID == nil || item.requestedByID == currentUser?.id {
                     guard let previous = known[item.id] else { continue }
                     if previous.status != .approved, item.status == .approved {
                         Task { await NotificationManager.notifyRequestApproved(title: item.mediaTitle) }
@@ -333,6 +343,19 @@ final class SeerrRepository {
         }
         await loadRequests()
     }
+
+    /// Approves or declines someone's pending request, then reloads the list for the
+    /// request's new status and its media's.
+    func setRequestApproved(_ request: SeerrRequestItem, approved: Bool) async throws {
+        guard let client else { throw URLError(.badURL) }
+        try await client.setRequestApproved(requestID: request.id, approved: approved)
+        if let index = requests.firstIndex(where: { $0.id == request.id }) {
+            requests[index].status = approved ? .approved : .declined
+        }
+        await loadRequests()
+    }
+
+    var pendingRequestCount: Int { requests.count { $0.status == .pending } }
 
     func cancelRequest(id: Int) async throws {
         guard let client else { throw URLError(.badURL) }

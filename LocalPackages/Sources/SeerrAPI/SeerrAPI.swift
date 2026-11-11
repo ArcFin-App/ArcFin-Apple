@@ -174,14 +174,19 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
     /// TMDB id of the requested title — lets the detail screen fetch the full
     /// movie/tv record (overview, genres, cast, etc.) beyond what the request list carries.
     public var tmdbId: Int?
+    /// Who asked for it. Someone who manages requests sees everyone's, not only their own.
+    public var requestedByID: Int?
+    public var requestedByName: String?
 
     public init(id: Int, mediaTitle: String, mediaType: RequestMediaType, status: RequestStatus,
                 mediaStatus: SeerrAvailabilityStatus? = nil, requestedAt: Date,
-                posterPath: String? = nil, backdropPath: String? = nil, tmdbId: Int? = nil) {
+                posterPath: String? = nil, backdropPath: String? = nil, tmdbId: Int? = nil,
+                requestedByID: Int? = nil, requestedByName: String? = nil) {
         self.id = id; self.mediaTitle = mediaTitle; self.mediaType = mediaType
         self.status = status; self.mediaStatus = mediaStatus; self.requestedAt = requestedAt
         self.posterPath = posterPath; self.backdropPath = backdropPath
         self.tmdbId = tmdbId
+        self.requestedByID = requestedByID; self.requestedByName = requestedByName
     }
 
     public var posterURL: URL? {
