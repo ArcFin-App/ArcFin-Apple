@@ -2753,6 +2753,134 @@
         }
       }
     },
+    "Connected with Quick Connect" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mit Quick Connect verbunden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conectado con Quick Connect"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connecté avec Quick Connect"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connesso con Quick Connect"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connectで接続しました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect로 연결됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbonden met Quick Connect"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conectado com o Quick Connect"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подключено через Quick Connect"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已通过 Quick Connect 连接"
+          }
+        }
+      }
+    },
+    "Connecting" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbinden …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conectando…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connessione…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "接続中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "연결 중…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbinden…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conectando…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подключение…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在连接…"
+          }
+        }
+      }
+    },
     "Connecting…" : {
       "localizations" : {
         "de" : {
@@ -3325,6 +3453,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "暂时无法连接 Seerr，请重试。"
+          }
+        }
+      }
+    },
+    "Couldn't reach Seerr. Check the address and your connection, then try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr ist nicht erreichbar. Prüfe die Adresse und deine Verbindung und versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se ha podido conectar con Seerr. Comprueba la dirección y tu conexión e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de joindre Seerr. Vérifiez l’adresse et votre connexion, puis réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile raggiungere Seerr. Controlla l’indirizzo e la connessione, poi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrに接続できませんでした。アドレスと接続を確認して、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에 연결할 수 없습니다. 주소와 연결 상태를 확인한 다음 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan Seerr niet bereiken. Controleer het adres en je verbinding en probeer het opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível acessar o Seerr. Verifique o endereço e sua conexão e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось связаться с Seerr. Проверьте адрес и подключение, затем повторите попытку."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法连接到 Seerr。请检查地址和网络连接，然后重试。"
           }
         }
       }
@@ -5761,6 +5953,70 @@
         }
       }
     },
+    "Invalid URL" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ungültige URL"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "URL no válida"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "URL non valide"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "URL non valido"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "無効なURL"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "잘못된 URL"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ongeldige URL"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "URL inválida"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Недопустимый URL"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "URL 无效"
+          }
+        }
+      }
+    },
     "Join only" : {
       "localizations" : {
         "de" : {
@@ -8001,6 +8257,70 @@
         }
       }
     },
+    "Password (Optional)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Passwort (optional)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contraseña (opcional)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mot de passe (facultatif)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Password (facoltativa)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "パスワード（任意）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "암호(선택 사항)"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wachtwoord (optioneel)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Senha (opcional)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Пароль (необязательно)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "密码（可选）"
+          }
+        }
+      }
+    },
     "Pick a programme in the guide to record it, or record every episode of a series." : {
       "localizations" : {
         "de" : {
@@ -9341,6 +9661,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "公开分享"
+          }
+        }
+      }
+    },
+    "Quick Connect is turned off on your Jellyfin server. Ask your admin to turn it on, or enter your password instead." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect ist auf deinem Jellyfin-Server deaktiviert. Bitte deinen Admin, es zu aktivieren, oder gib stattdessen dein Passwort ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect está desactivado en tu servidor Jellyfin. Pide a tu administrador que lo active o introduce tu contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect est désactivé sur votre serveur Jellyfin. Demandez à votre administrateur de l’activer ou saisissez plutôt votre mot de passe."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect è disattivato sul tuo server Jellyfin. Chiedi all’amministratore di attivarlo oppure inserisci la password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "JellyfinサーバでQuick Connectがオフになっています。管理者にオンにしてもらうか、代わりにパスワードを入力してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin 서버에서 Quick Connect가 꺼져 있습니다. 관리자에게 켜 달라고 요청하거나 대신 암호를 입력하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect staat uit op je Jellyfin-server. Vraag je beheerder het aan te zetten of voer in plaats daarvan je wachtwoord in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Quick Connect está desativado no seu servidor Jellyfin. Peça ao administrador para ativá-lo ou digite sua senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect выключен на вашем сервере Jellyfin. Попросите администратора включить его или введите пароль."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的 Jellyfin 服务器已关闭 Quick Connect。请让管理员打开，或改为输入密码。"
           }
         }
       }
@@ -11073,6 +11457,134 @@
         }
       }
     },
+    "Seerr didn't accept that username or password." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr hat diesen Benutzernamen oder dieses Passwort nicht akzeptiert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr no ha aceptado ese nombre de usuario o contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr n’a pas accepté ce nom d’utilisateur ou ce mot de passe."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr non ha accettato questo nome utente o questa password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrがそのユーザ名またはパスワードを受け付けませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에서 해당 사용자 이름 또는 암호를 받아들이지 않았습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr heeft die gebruikersnaam of dat wachtwoord niet geaccepteerd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Seerr não aceitou esse nome de usuário ou senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr не принял это имя пользователя или пароль."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr 不接受该用户名或密码。"
+          }
+        }
+      }
+    },
+    "Seerr didn't accept your Jellyfin account. Ask your admin to add you to Seerr." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr hat dein Jellyfin-Konto nicht akzeptiert. Bitte deinen Admin, dich in Seerr hinzuzufügen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr no ha aceptado tu cuenta de Jellyfin. Pide a tu administrador que te añada a Seerr."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr n’a pas accepté votre compte Jellyfin. Demandez à votre administrateur de vous ajouter à Seerr."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr non ha accettato il tuo account Jellyfin. Chiedi all’amministratore di aggiungerti a Seerr."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "SeerrがあなたのJellyfinアカウントを受け付けませんでした。管理者にSeerrへの追加を依頼してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에서 Jellyfin 계정을 받아들이지 않았습니다. 관리자에게 Seerr에 추가해 달라고 요청하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr heeft je Jellyfin-account niet geaccepteerd. Vraag je beheerder je aan Seerr toe te voegen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Seerr não aceitou sua conta do Jellyfin. Peça ao administrador para adicionar você ao Seerr."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr не принял вашу учётную запись Jellyfin. Попросите администратора добавить вас в Seerr."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr 不接受你的 Jellyfin 账户。请让管理员将你添加到 Seerr。"
+          }
+        }
+      }
+    },
     "Sends a notification just before it starts" : {
       "localizations" : {
         "de" : {
@@ -11649,6 +12161,134 @@
         }
       }
     },
+    "Sign in with a local Seerr account." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mit einem lokalen Seerr-Konto anmelden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión con una cuenta local de Seerr."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez-vous avec un compte Seerr local."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi con un account Seerr locale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrのローカルアカウントでサインインします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "로컬 Seerr 계정으로 로그인합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meld je aan met een lokaal Seerr-account."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entre com uma conta local do Seerr."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Войдите с локальной учётной записью Seerr."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用本地 Seerr 账户登录。"
+          }
+        }
+      }
+    },
+    "Sign in with your Jellyfin account. Leave the password empty to connect with Quick Connect, without typing it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mit deinem Jellyfin-Konto anmelden. Lass das Passwort leer, um dich ohne Eingabe über Quick Connect zu verbinden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión con tu cuenta de Jellyfin. Deja la contraseña vacía para conectarte con Quick Connect sin escribirla."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez-vous avec votre compte Jellyfin. Laissez le mot de passe vide pour vous connecter avec Quick Connect, sans le saisir."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi con il tuo account Jellyfin. Lascia vuota la password per connetterti con Quick Connect senza digitarla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfinアカウントでサインインします。パスワードを空欄にすると、入力せずにQuick Connectで接続します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin 계정으로 로그인합니다. 암호를 비워 두면 입력하지 않고 Quick Connect로 연결합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meld je aan met je Jellyfin-account. Laat het wachtwoord leeg om zonder typen met Quick Connect te verbinden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entre com sua conta do Jellyfin. Deixe a senha em branco para conectar com o Quick Connect, sem digitá-la."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Войдите с учётной записью Jellyfin. Оставьте пароль пустым, чтобы подключиться через Quick Connect без ввода."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用你的 Jellyfin 账户登录。将密码留空即可通过 Quick Connect 连接，无需输入密码。"
+          }
+        }
+      }
+    },
     "Sign Out of %@?" : {
       "localizations" : {
         "de" : {
@@ -11837,6 +12477,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "正在登录…"
+          }
+        }
+      }
+    },
+    "Signs In With" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anmeldung über"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión con"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion via"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accede con"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サインイン方法"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "로그인 방법"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meldt aan met"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entra com"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход через"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "登录方式"
           }
         }
       }
@@ -13313,6 +14017,70 @@
         }
       }
     },
+    "This server uses Seerr to handle media requests and more. Connect it with your Jellyfin account (%@); there's no password to type." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieser Server nutzt Seerr für Medienanfragen und mehr. Verbinde es mit deinem Jellyfin-Konto (%@) – ein Passwort musst du nicht eingeben."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este servidor usa Seerr para gestionar solicitudes de contenido y más. Conéctalo con tu cuenta de Jellyfin (%@); no hace falta escribir ninguna contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ce serveur utilise Seerr pour les demandes de contenus et plus encore. Connectez-le avec votre compte Jellyfin (%@) ; aucun mot de passe à saisir."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo server usa Seerr per gestire le richieste di contenuti e altro. Collegalo con il tuo account Jellyfin (%@); non serve digitare alcuna password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このサーバはメディアのリクエストなどにSeerrを使用しています。Jellyfinアカウント（%@）で接続できます。パスワードの入力は不要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 서버는 미디어 요청 등에 Seerr를 사용합니다. Jellyfin 계정(%@)으로 연결하십시오. 암호를 입력할 필요가 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze server gebruikt Seerr voor mediaverzoeken en meer. Verbind het met je Jellyfin-account (%@); je hoeft geen wachtwoord te typen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este servidor usa o Seerr para pedidos de mídia e mais. Conecte-o com sua conta do Jellyfin (%@); não é preciso digitar senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Этот сервер использует Seerr для запросов медиа и не только. Подключите его через учётную запись Jellyfin (%@) — вводить пароль не нужно."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此服务器使用 Seerr 处理媒体请求等功能。使用你的 Jellyfin 账户（%@）连接，无需输入密码。"
+          }
+        }
+      }
+    },
     "This title has already been requested. You'll be notified when it becomes available." : {
       "localizations" : {
         "de" : {
@@ -13373,6 +14141,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这部作品已有人请求。可以观看时你会收到通知。"
+          }
+        }
+      }
+    },
+    "This version of Seerr can't connect with Quick Connect. Update Seerr, or enter your password instead." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Diese Seerr-Version kann sich nicht über Quick Connect verbinden. Aktualisiere Seerr oder gib stattdessen dein Passwort ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Esta versión de Seerr no puede conectarse con Quick Connect. Actualiza Seerr o introduce tu contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cette version de Seerr ne peut pas se connecter avec Quick Connect. Mettez Seerr à jour ou saisissez plutôt votre mot de passe."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questa versione di Seerr non può connettersi con Quick Connect. Aggiorna Seerr oppure inserisci la password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このバージョンのSeerrはQuick Connectで接続できません。Seerrをアップデートするか、代わりにパスワードを入力してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 버전의 Seerr는 Quick Connect로 연결할 수 없습니다. Seerr를 업데이트하거나 대신 암호를 입력하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze versie van Seerr kan niet verbinden met Quick Connect. Werk Seerr bij of voer in plaats daarvan je wachtwoord in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Esta versão do Seerr não consegue conectar com o Quick Connect. Atualize o Seerr ou digite sua senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Эта версия Seerr не поддерживает Quick Connect. Обновите Seerr или введите пароль."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此版本的 Seerr 无法通过 Quick Connect 连接。请更新 Seerr，或改为输入密码。"
           }
         }
       }
@@ -70729,70 +71561,6 @@
         }
       }
     },
-    "This server uses Seerr to handle media requests and more. Would you like to connect it now?" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dieser Server nutzt Seerr für Medienanfragen und mehr. Möchtest du es jetzt verbinden?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Este servidor usa Seerr para gestionar solicitudes de contenido y más. ¿Quieres conectarlo ahora?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ce serveur utilise Seerr pour gérer les demandes de médias et plus encore. Voulez-vous le connecter maintenant ?"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Questo server usa Seerr per gestire le richieste di contenuti e altro. Vuoi connetterlo ora?"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "このサーバはメディアのリクエストなどにSeerrを使用しています。今すぐ接続しますか？"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 서버는 미디어 요청 등에 Seerr를 사용합니다. 지금 연결하겠습니까?"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Deze server gebruikt Seerr voor mediaverzoeken en meer. Wil je het nu verbinden?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Este servidor usa o Seerr para cuidar de solicitações de mídia e mais. Quer conectá-lo agora?"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Этот сервер использует Seerr для запросов медиа и не только. Подключить его сейчас?"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "此服务器使用 Seerr 处理媒体请求等。要现在连接吗？"
-          }
-        }
-      }
-    },
     "This session's log and any crash reports, as a text file. It can include your server's address and the titles you played." : {
       "comment" : "A description of the contents of the diagnostics file.",
       "isCommentAutoGenerated" : true,
@@ -76999,70 +77767,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "黄色"
-          }
-        }
-      }
-    },
-    "Yes, Connect Now" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ja, jetzt verbinden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sí, conectar ahora"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Oui, connecter maintenant"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sì, connetti ora"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "はい、今すぐ接続"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "예, 지금 연결"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ja, verbind nu"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sim, conectar agora"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Да, подключить"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "是，立即连接"
           }
         }
       }

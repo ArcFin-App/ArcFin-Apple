@@ -124,7 +124,7 @@ final class AppRootModel {
         guard case .authenticated(let cred) = authManager.state,
               authManager.arcfinSyncLockedKeys.contains("seerrAuthMethod"),
               seerrAuthMethod == .jellyfin, !seerrURL.isEmpty,
-              seerrUsername.isEmpty || authManager.seerrPassword.isEmpty,
+              seerrUsername.isEmpty,
               !UserDefaults.standard.bool(forKey: seerrSetupPromptHandledKey(for: cred.id))
         else { return }
         showSeerrSetupPrompt = true
@@ -217,7 +217,8 @@ final class AppRootModel {
 
     func configureSeerr(seerrURL: String, seerrUsername: String, seerrAuthMethod: SeerrAuthMethod) {
         seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
-                            password: authManager.seerrPassword, authMethod: seerrAuthMethod)
+                            password: authManager.seerrPassword, authMethod: seerrAuthMethod,
+                            authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager))
         // Warms Discover and the Browse > Your Requests sections in the background as soon
         // as Seerr is reachable, so they're already populated (no skeleton) the first time
         // the user actually taps into either.

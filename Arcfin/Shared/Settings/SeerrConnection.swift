@@ -18,43 +18,43 @@ final class SeerrConnectionForm {
     var testResult: String? = nil
     private(set) var isTesting = false
 
-    func beginEditing(url: String, username: String, password: String, authMethod: SeerrAuthMethod) {
+    /// Whether Save can go ahead: a Jellyfin account can leave the password empty and connect
+    /// through Quick Connect.
+    var isComplete: Bool {
+        !url.isEmpty && !username.isEmpty && (authMethod == .jellyfin || !password.isEmpty)
+    }
+
+    var passwordLabel: String {
+        authMethod == .jellyfin ? String(localized: "Password (Optional)") : String(localized: "Password")
+    }
+
+    /// A new connection starts with the Jellyfin username, which a Jellyfin account uses as is.
+    func beginEditing(url: String, username: String, password: String, authMethod: SeerrAuthMethod,
+                      jellyfinUsername: String? = nil) {
         self.url = url
-        self.username = username
+        self.username = username.isEmpty ? (jellyfinUsername ?? "") : username
         self.password = password
         self.authMethod = authMethod
         testResult = nil
         isEditing = true
     }
 
-    func testConnection(seerrRepo: SeerrRepository) {
+    func testConnection(seerrRepo: SeerrRepository, authManager: AuthManager) {
         guard let url = URL(string: self.url.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            testResult = "✗ Invalid URL"; return
+            testResult = "✗ " + String(localized: "Invalid URL"); return
         }
         isTesting = true; testResult = nil
-        let path = authMethod.apiPath
-        let body = try? JSONSerialization.data(withJSONObject: [
-            "username": username,
-            "password": password,
-        ])
+        let client = SeerrHTTPClient(baseURL: url, username: username, password: password, authMethod: authMethod,
+                                     authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager))
         Task {
-            var req = URLRequest(url: url.appendingPathComponent(path))
-            req.httpMethod = "POST"
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = body
-            req.timeoutInterval = 10
             do {
-                let (_, resp) = try await URLSession.arcfin.data(for: req)
-                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                    testResult = "✓ Connected as \(authMethod.label)"
-                    seerrRepo.clearAuthFailure()
-                } else if let http = resp as? HTTPURLResponse, http.statusCode == 403 {
-                    testResult = "✗ Wrong account type — try the other option"
-                } else {
-                    testResult = "✗ Invalid credentials"
-                }
+                try await client.login()
+                testResult = "✓ " + (await client.usesQuickConnect
+                    ? String(localized: "Connected with Quick Connect")
+                    : String(localized: "Connected"))
+                seerrRepo.clearAuthFailure()
             } catch {
-                testResult = "✗ \(error.localizedDescription)"
+                testResult = "✗ " + SeerrSignInText.message(for: error)
             }
             isTesting = false
         }
@@ -66,6 +66,8 @@ struct SeerrConnectionSummary: View {
     let url: String
     let authMethod: SeerrAuthMethod
     let username: String
+    /// Connected through Quick Connect rather than a saved password.
+    var usesQuickConnect = false
     let onRemove: () -> Void
 
     var body: some View {
@@ -78,6 +80,10 @@ struct SeerrConnectionSummary: View {
                 .tvReadOnlyRow()
             LabeledContent("Username", value: username)
                 .tvReadOnlyRow()
+            if usesQuickConnect {
+                LabeledContent("Signs In With", value: String(localized: "Quick Connect"))
+                    .tvReadOnlyRow()
+            }
         } header: {
             Label("Connection", systemImage: "server.rack")
                 .font(.system(.caption, design: .default, weight: .semibold))
@@ -114,7 +120,9 @@ struct SeerrAccountTypeSection: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .textCase(nil)
         } footer: {
-            Text(form.authMethod.description)
+            Text(form.authMethod == .jellyfin
+                 ? "Sign in with your Jellyfin account. Leave the password empty to connect with Quick Connect, without typing it."
+                 : "Sign in with a local Seerr account.")
                 .font(.caption)
                 .foregroundStyle(DT.Color.textSecondary)
         }
@@ -125,10 +133,11 @@ struct SeerrAccountTypeSection: View {
 struct SeerrTestSection: View {
     let form: SeerrConnectionForm
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
 
     var body: some View {
         Section {
-            Button { form.testConnection(seerrRepo: seerrRepo) } label: {
+            Button { form.testConnection(seerrRepo: seerrRepo, authManager: authManager) } label: {
                 HStack {
                     if form.isTesting { ProgressView().scaleEffect(0.8) }
                     else { Image(systemName: "network") }
@@ -136,7 +145,7 @@ struct SeerrTestSection: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
-            .disabled(form.url.isEmpty || form.username.isEmpty || form.password.isEmpty || form.isTesting)
+            .disabled(!form.isComplete || form.isTesting)
 
             if let result = form.testResult {
                 Text(result)

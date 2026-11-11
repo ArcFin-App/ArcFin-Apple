@@ -120,9 +120,14 @@ struct AppRootLifecycle: ViewModifier {
                     SeerrSetupPromptView(
                         seerrURL: seerrURL,
                         jellyfinUsername: cred.displayName,
+                        authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: model.authManager),
                         onConnected: { username, password in
                             seerrUsername = username
-                            model.authManager.saveSeerrPassword(password)
+                            if password.isEmpty {
+                                model.authManager.removeSeerrPassword()
+                            } else {
+                                model.authManager.saveSeerrPassword(password)
+                            }
                             model.markSeerrSetupPromptHandled(for: cred.id)
                         },
                         onDismiss: { model.markSeerrSetupPromptHandled(for: cred.id) }

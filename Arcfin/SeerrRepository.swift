@@ -99,12 +99,17 @@ final class SeerrRepository {
         return result
     }
 
+    /// A Jellyfin account with no password connects through Quick Connect, approved with
+    /// `authorizeQuickConnect`; any other account needs its username and password.
     func configure(urlString: String, username: String, password: String,
-                   authMethod: SeerrAuthMethod = .jellyfin) {
+                   authMethod: SeerrAuthMethod = .jellyfin,
+                   authorizeQuickConnect: SeerrHTTPClient.QuickConnectAuthorizer? = nil) {
         let trimURL  = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimURL.isEmpty, !trimUser.isEmpty, !trimPass.isEmpty,
+        let viaQuickConnect = authMethod == .jellyfin && trimPass.isEmpty && authorizeQuickConnect != nil
+        // The username is set once someone chooses to connect, Quick Connect or not.
+        guard !trimURL.isEmpty, !trimUser.isEmpty, viaQuickConnect || !trimPass.isEmpty,
               let url = URL(string: trimURL) else {
             client = nil
             configuredURL = ""; configuredUsername = ""; configuredPassword = ""
@@ -124,7 +129,7 @@ final class SeerrRepository {
         configuredURL = trimURL; configuredUsername = trimUser
         configuredPassword = trimPass; configuredMethod = authMethod
         client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
-                                      authMethod: authMethod)
+                                 authMethod: authMethod, authorizeQuickConnect: authorizeQuickConnect)
         authFailed = false
         cachedRegion = nil
         trending = []; popularMovies = []; popularTV = []; requests = []
@@ -185,8 +190,8 @@ final class SeerrRepository {
             return ListResult(items: try await fetch())
         } catch where isCancellation(error) {
             return ListResult(wasCancelled: true)
-        } catch SeerrError.authFailed {
-            return ListResult(error: SeerrError.authFailed.localizedDescription, isAuthFailure: true)
+        } catch let error as SeerrError where error.isSignInFailure {
+            return ListResult(error: SeerrSignInText.message(for: error), isAuthFailure: true)
         } catch {
             return ListResult(error: error.localizedDescription)
         }
@@ -270,7 +275,7 @@ final class SeerrRepository {
             }
             authFailed = false
             indexForSpotlight()
-        } catch SeerrError.authFailed {
+        } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
         } catch where Self.isCancellation(error) {
         } catch {

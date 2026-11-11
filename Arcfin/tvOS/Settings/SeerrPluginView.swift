@@ -2,6 +2,7 @@
 
 import SwiftUI
 import SeerrAPI
+import AuthCore
 
 struct SeerrPluginView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -25,7 +26,8 @@ struct SeerrPluginView: View {
     var body: some View {
         List {
             if isConfigured && !form.isEditing {
-                SeerrConnectionSummary(url: seerrURL, authMethod: seerrAuthMethod, username: seerrUsername) {
+                SeerrConnectionSummary(url: seerrURL, authMethod: seerrAuthMethod, username: seerrUsername,
+                                       usesQuickConnect: seerrAuthMethod == .jellyfin && authManager.seerrPassword.isEmpty) {
                     showRemoveConfirm = true
                 }
             } else {
@@ -39,7 +41,7 @@ struct SeerrPluginView: View {
             ToolbarItem(placement: .primaryAction) {
                 if form.isEditing || !isConfigured {
                     Button("Save") { save() }
-                        .disabled(form.url.isEmpty || form.username.isEmpty || form.password.isEmpty)
+                        .disabled(!form.isComplete)
                 } else {
                     Button("Edit") { beginEditing() }
                         .disabled(isLocked)
@@ -90,7 +92,7 @@ struct SeerrPluginView: View {
         Section {
             TextField("Username", text: $form.username)
                 .autocorrectionDisabled()
-            SecureField("Password", text: $form.password)
+            SecureField(form.passwordLabel, text: $form.password)
                 .autocorrectionDisabled()
         } header: {
             Label("Credentials", systemImage: "person.fill")
@@ -107,13 +109,18 @@ struct SeerrPluginView: View {
 
     private func beginEditing() {
         form.beginEditing(url: seerrURL, username: seerrUsername,
-                          password: authManager.seerrPassword, authMethod: seerrAuthMethod)
+                          password: authManager.seerrPassword, authMethod: seerrAuthMethod,
+                          jellyfinUsername: authManager.state.credential?.displayName)
     }
 
     private func save() {
         seerrURL = form.url.trimmingCharacters(in: .whitespacesAndNewlines)
         seerrUsername = form.username
-        authManager.saveSeerrPassword(form.password)
+        if form.password.isEmpty {
+            authManager.removeSeerrPassword()
+        } else {
+            authManager.saveSeerrPassword(form.password)
+        }
         seerrAuthMethod = form.authMethod
         form.isEditing = false
     }
