@@ -10,6 +10,8 @@ enum PlatformMetrics {
     static let backdropCard = CGSize(width: 240, height: 135)
     static let wideCard = CGSize(width: 200, height: 113)
     static let fontScale: CGFloat = 1.0
+    /// The player can tell when its sound is turned all the way down.
+    static let detectsMutedSound = true
 
     /// The point size `scaledFont(size:)` starts from.
     static func scaledFontSize(_ size: CGFloat) -> CGFloat {

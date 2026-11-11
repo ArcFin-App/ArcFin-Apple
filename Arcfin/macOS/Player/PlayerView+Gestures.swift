@@ -49,7 +49,9 @@ extension PlayerView {
     /// rather than through a hidden system slider — macOS has no per-app "hidden MPVolumeView"
     /// trick to reach for the way iOS does.
     func adjustMacVolume(by delta: Double) {
+        let wasMuted = macVolume == 0
         macVolume = min(max(macVolume + delta, 0), 1)
+        if (macVolume == 0) != wasMuted { model.soundMutedChanged(macVolume == 0) }
         model.setEngineVolume(Float(macVolume))
         macVolumeHUD = macVolume
         macVolumeHUDTask?.cancel()

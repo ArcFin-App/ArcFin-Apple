@@ -187,6 +187,7 @@ public enum SettingsSyncRegistry {
         .init("skipCredits", .bool),
         .init("skipRecap", .bool),
         .init("skipCommercials", .bool),
+        .init("subtitlesWhenMuted", .bool),
         .init("subtitleDefault", .bool),
         .init("trailersEnabled", .bool),
         .init("youtubeTrailersEnabled", .bool),

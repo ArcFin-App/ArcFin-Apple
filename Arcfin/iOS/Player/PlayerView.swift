@@ -389,9 +389,11 @@ struct PlayerView: View {
         // without the isDraggingVolume guard this observer's own echo of that call kept
         // overwriting dragValue mid-drag with a quantized, async-delayed system value —
         // the touch tracked smoothly but the displayed % randomly jumped away from it.
-        volumeObservation = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.new]) { _, change in
+        volumeObservation = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.old, .new]) { _, change in
             guard let newValue = change.newValue else { return }
+            let wasMuted = (change.oldValue ?? 1) < 0.01, isMuted = newValue < 0.01
             Task { @MainActor in
+                if wasMuted != isMuted { model.soundMutedChanged(isMuted) }
                 guard !isDraggingVolume else { return }
                 dragAxis = .volume
                 dragValue = CGFloat(newValue)

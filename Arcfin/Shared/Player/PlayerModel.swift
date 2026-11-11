@@ -1142,6 +1142,29 @@ final class PlayerModel {
         Task { await setup() }
     }
 
+    /// The track Show Subtitles When Muted turned on, to turn off again when the sound returns.
+    @ObservationIgnored private var subtitleShownForMute: Int?
+
+    /// Show Subtitles When Muted: with the sound off and no subtitles on, the preferred
+    /// language's track (or the default, or the first) comes on, and goes off again with the
+    /// sound. Only tracks drawn here, so it never reloads the stream; forced tracks don't count.
+    func soundMutedChanged(_ muted: Bool) {
+        guard (UserDefaults.standard.object(forKey: "subtitlesWhenMuted") as? Bool) ?? true,
+              !CastManager.shared.isConnected else { return }
+        if muted {
+            guard selectedSubtitleIndex == nil, let info = playbackInfo else { return }
+            let preferred = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
+            let tracks = info.subtitleStreams.filter { !$0.isForced && drawsSubtitleHere($0.index) }
+            guard let pick = tracks.first(where: { !preferred.isEmpty && $0.language == preferred })
+                    ?? tracks.first(where: \.isDefault) ?? tracks.first else { return }
+            changeTrack(subtitleIndex: .some(pick.index), remember: false)
+            subtitleShownForMute = pick.index
+        } else if let shown = subtitleShownForMute {
+            subtitleShownForMute = nil
+            if selectedSubtitleIndex == shown { changeTrack(subtitleIndex: .some(nil), remember: false) }
+        }
+    }
+
     /// When playback started, for telling a stream that never played from one that broke later.
     @ObservationIgnored private var playStartedAt: Date?
 
@@ -1407,11 +1430,13 @@ final class PlayerModel {
     /// carry only one audio track, external subtitles aren't muxed into the asset at all) —
     /// AVMediaSelectionGroup on the local asset can't reflect that, so a track change reloads
     /// via a fresh PlaybackInfo call with the new stream index, same as a quality change.
-    func changeTrack(audioIndex: Int? = nil, subtitleIndex: Int?? = nil) {
+    func changeTrack(audioIndex: Int? = nil, subtitleIndex: Int?? = nil, remember: Bool = true) {
         let previousSubtitle = selectedSubtitleIndex
         if let audioIndex { selectedAudioIndex = audioIndex }
         if let subtitleIndex { selectedSubtitleIndex = subtitleIndex }
-        rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil)
+        // A change by hand keeps what was picked, rather than undoing it when the sound returns.
+        if remember { subtitleShownForMute = nil }
+        if remember { rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil) }
         if audioIndex != nil, subtitleIndex == nil, !CastManager.shared.isConnected,
            playbackInfo?.playMethod == .directPlay {
             Task {

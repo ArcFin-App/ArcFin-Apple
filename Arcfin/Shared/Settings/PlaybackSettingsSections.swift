@@ -33,6 +33,7 @@ struct PlaybackAutomationSection: View {
     @AppStorage("skipRecap")       private var skipRecap       = false
     @AppStorage("skipCommercials") private var skipCommercials = false
     @AppStorage("subtitleDefault") private var subtitleDefault = false
+    @AppStorage("subtitlesWhenMuted") private var subtitlesWhenMuted = true
     @AppStorage("rememberPlaybackSpeed") private var rememberPlaybackSpeed = false
     @AppStorage("upNextCountdownSeconds") private var upNextCountdownSeconds = 5
     @AppStorage("defaultPlaybackSpeed") private var defaultPlaybackSpeed = 1.0
@@ -78,6 +79,13 @@ struct PlaybackAutomationSection: View {
             }
             .tvListRow()
             .syncLocked("subtitleDefault", authManager)
+            if PlatformMetrics.detectsMutedSound {
+                Toggle(isOn: $subtitlesWhenMuted) {
+                    TVRowLabelText(title: "Show Subtitles When Muted", detail: "Turns subtitles on while the sound is all the way down, and off again when it comes back.")
+                }
+                .tvListRow()
+                .syncLocked("subtitlesWhenMuted", authManager)
+            }
             Toggle(isOn: $rememberPlaybackSpeed) {
                 TVRowLabelText(title: "Remember Playback Speed", detail: "New videos start at the speed you last picked.")
             }

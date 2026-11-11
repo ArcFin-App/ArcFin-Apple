@@ -13313,6 +13313,70 @@
         }
       }
     },
+    "Show Subtitles When Muted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Untertitel bei stummem Ton zeigen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar subtítulos sin sonido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sous-titres quand le son est coupé"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra sottotitoli senza audio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "消音時に字幕を表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음소거 시 자막 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ondertitels tonen als het geluid uit staat"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar legendas sem som"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Субтитры при выключенном звуке"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "静音时显示字幕"
+          }
+        }
+      }
+    },
     "Shown" : {
       "localizations" : {
         "de" : {
@@ -16509,6 +16573,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "当前热门"
+          }
+        }
+      }
+    },
+    "Turns subtitles on while the sound is all the way down, and off again when it comes back." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Schaltet Untertitel ein, solange der Ton ganz leise gestellt ist, und wieder aus, wenn er zurückkommt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Activa los subtítulos mientras el volumen está al mínimo y los desactiva cuando vuelve el sonido."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Active les sous-titres quand le son est au minimum, et les désactive quand il revient."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Attiva i sottotitoli quando il volume è al minimo e li disattiva quando torna l’audio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音量が最小の間は字幕をオンにし、音が戻るとオフにします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "소리가 완전히 줄어 있는 동안 자막을 켜고, 소리가 돌아오면 다시 끕니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zet ondertitels aan terwijl het geluid helemaal uit staat, en weer uit als het terugkomt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ativa as legendas enquanto o volume está no mínimo e as desativa quando o som volta."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Включает субтитры, пока звук убран до нуля, и выключает их, когда он возвращается."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音量调到最低时打开字幕，声音恢复后再关闭。"
           }
         }
       }
