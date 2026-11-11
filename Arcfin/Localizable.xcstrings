@@ -17153,6 +17153,70 @@
         }
       }
     },
+    "Your server sets up this Seerr connection for everyone, so it can't be removed here. Ask your admin to change it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server richtet diese Seerr-Verbindung für alle ein, daher kann sie hier nicht entfernt werden. Bitte deinen Admin, sie zu ändern."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor configura esta conexión con Seerr para todos, así que no se puede quitar aquí. Pide a tu administrador que la cambie."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur configure cette connexion Seerr pour tout le monde : elle ne peut donc pas être supprimée ici. Demandez à votre administrateur de la modifier."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il tuo server configura questa connessione a Seerr per tutti, quindi non può essere rimossa qui. Chiedi all’amministratore di modificarla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このSeerr接続はサーバがすべてのユーザ向けに設定しているため、ここでは削除できません。変更は管理者に依頼してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 Seerr 연결은 서버가 모든 사용자에게 설정하므로 여기에서 제거할 수 없습니다. 관리자에게 변경을 요청하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server stelt deze Seerr-verbinding voor iedereen in, dus je kunt hem hier niet verwijderen. Vraag je beheerder om hem te wijzigen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seu servidor configura esta conexão com o Seerr para todos, então ela não pode ser removida aqui. Peça ao administrador para alterá-la."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Это подключение к Seerr настраивает ваш сервер для всех, поэтому удалить его здесь нельзя. Попросите администратора изменить его."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此 Seerr 连接由你的服务器为所有人设置，因此无法在此移除。请让管理员更改。"
+          }
+        }
+      }
+    },
     "Your server took too long to answer. Check your connection, then try again." : {
       "localizations" : {
         "de" : {

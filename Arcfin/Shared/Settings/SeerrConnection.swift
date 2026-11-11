@@ -83,6 +83,9 @@ struct SeerrConnectionSummary: View {
     let username: String
     /// Connected through Quick Connect rather than a saved password.
     var usesQuickConnect = false
+    /// The server's Arcfin Sync plugin sets this connection: it can't be removed here, since
+    /// the plugin would put it straight back.
+    var isManagedByServer = false
     let onRemove: () -> Void
 
     var body: some View {
@@ -106,10 +109,19 @@ struct SeerrConnectionSummary: View {
                 .textCase(nil)
         }
 
-        Section {
-            Button(role: .destructive, action: onRemove) {
-                Text("Remove Connection")
-                    .frame(maxWidth: .infinity, alignment: .center)
+        if isManagedByServer {
+            Section {
+            } footer: {
+                Text("Your server sets up this Seerr connection for everyone, so it can't be removed here. Ask your admin to change it.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        } else {
+            Section {
+                Button(role: .destructive, action: onRemove) {
+                    Text("Remove Connection")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
             }
         }
     }

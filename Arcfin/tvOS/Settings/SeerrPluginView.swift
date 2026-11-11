@@ -27,7 +27,8 @@ struct SeerrPluginView: View {
         List {
             if isConfigured && !form.isEditing {
                 SeerrConnectionSummary(url: seerrURL, authMethod: seerrAuthMethod, username: seerrUsername,
-                                       usesQuickConnect: seerrAuthMethod == .jellyfin && authManager.seerrPassword.isEmpty) {
+                                       usesQuickConnect: seerrAuthMethod == .jellyfin && authManager.seerrPassword.isEmpty,
+                                       isManagedByServer: isLocked) {
                     showRemoveConfirm = true
                 }
             } else {
