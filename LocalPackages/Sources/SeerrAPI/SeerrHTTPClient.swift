@@ -121,6 +121,12 @@ public actor SeerrHTTPClient {
         self.authFailedKey = "arcfin.seerr.authFailedUntil.\(baseURL.host ?? "unknown").\(username.lowercased())"
     }
 
+    /// Lets the next request try signing in again, for an automatic retry. A refused
+    /// password's hour-long cooldown still holds, so that password isn't sent again sooner.
+    public func allowSignInRetry() {
+        authPermanentlyFailed = false
+    }
+
     /// Clears any persisted auth-failure cooldown. Call this when the user updates credentials.
     public func clearAuthFailure() {
         UserDefaults.standard.removeObject(forKey: authFailedKey)

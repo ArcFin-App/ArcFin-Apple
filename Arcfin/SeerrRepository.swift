@@ -50,6 +50,10 @@ final class SeerrRepository {
     @ObservationIgnored private var discoverLoad: Task<Void, Never>?
     @ObservationIgnored private var watchlistLoad: Task<Void, Never>?
     @ObservationIgnored private var requestsLoad: Task<Void, Never>?
+    // Trying again by itself after a failure, waiting longer each time (see scheduleRetry).
+    @ObservationIgnored private var retryTask: Task<Void, Never>?
+    @ObservationIgnored private var retryAttempt = 0
+    private static let retryDelays: [Duration] = [.seconds(15), .seconds(30), .seconds(60), .seconds(120), .seconds(300), .seconds(600)]
     @ObservationIgnored private var configuredURL: String = ""
     @ObservationIgnored private var configuredUsername: String = ""
     @ObservationIgnored private var configuredPassword: String = ""
@@ -70,6 +74,31 @@ final class SeerrRepository {
     func reloadTMDB() {
         tmdb = TMDBCredential.load().map(TMDBClient.init(key:))
         tmdbDetails = [:]
+        resetRetry()
+    }
+
+    /// After Seerr won't sign in, or a load from Seerr or TMDB fails, tries again by itself:
+    /// 15 s, 30 s, 1, 2 and 5 min, then every 10 min. One wait at a time.
+    private func scheduleRetry() {
+        guard retryTask == nil, hasCatalog else { return }
+        let delay = Self.retryDelays[min(retryAttempt, Self.retryDelays.count - 1)]
+        retryAttempt += 1
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard let self, !Task.isCancelled else { return }
+            self.retryTask = nil
+            await self.client?.allowSignInRetry()
+            await self.loadDiscover()
+            await self.loadRequests()
+            if !self.watchlist.isEmpty || self.authFailed { await self.loadWatchlist() }
+        }
+    }
+
+    /// A load worked, or the connection changed: the next failure starts the waits again.
+    private func resetRetry() {
+        retryTask?.cancel()
+        retryTask = nil
+        retryAttempt = 0
     }
 
     /// One TMDB details request serves a title page's facts, detail and age rating.
@@ -133,6 +162,7 @@ final class SeerrRepository {
         configuredPassword = trimPass; configuredMethod = authMethod
         client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
                                  authMethod: authMethod, authorizeQuickConnect: authorizeQuickConnect)
+        resetRetry()
         // A different Seerr user, whose permissions and quota are their own.
         currentUser = nil
         canManageRequests = false
@@ -176,6 +206,7 @@ final class SeerrRepository {
         for error in errors {
             Telemetry.logger(category: "SeerrRepository").error("loadDiscover failed: \(error, privacy: .public)")
         }
+        if errors.isEmpty { resetRetry() } else { scheduleRetry() }
         if firstLoad { isLoadingDiscover = false }
     }
 
@@ -224,9 +255,11 @@ final class SeerrRepository {
         } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
             Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            scheduleRetry()
             return
         } catch {
             Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            scheduleRetry()
             return
         }
         authFailed = false
@@ -292,12 +325,14 @@ final class SeerrRepository {
             indexForSpotlight()
         } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
+            scheduleRetry()
         } catch where Self.isCancellation(error) {
         } catch {
             let nsError = error as NSError
             Telemetry.logger(category: "SeerrRepository").error(
                 "loadRequests failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
             )
+            scheduleRetry()
         }
         if firstLoad { isLoadingRequests = false }
     }
@@ -433,6 +468,7 @@ final class SeerrRepository {
     /// reload can't still see it) and loads Discover, requests and the watchlist again.
     func retrySignIn() async {
         guard let client else { return }
+        resetRetry()
         await client.clearAuthFailure()
         authFailed = false
         discoverError = nil
