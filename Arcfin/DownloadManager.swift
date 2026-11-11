@@ -46,6 +46,8 @@ final class DownloadManager: NSObject {
     private(set) var stats: [String: DownloadStats] = [:]
     private(set) var activeItemIds: Set<String> = []
     private(set) var activeItemTitles: [String: String] = [:]
+    /// The title being downloaded or waiting, for its show, season and episode in Downloads.
+    private(set) var activeItems: [String: MediaItem] = [:]
     /// Keyed by itemId — a shared single error string would show the wrong download's
     /// failure on an unrelated DownloadButton if more than one item is downloading at once.
     var errors: [String: String] = [:]
@@ -738,6 +740,7 @@ final class DownloadManager: NSObject {
         else { return false }
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
+        activeItems[item.id] = item
         pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
         if isFreshQueue && liveActivityPendingFinish == nil {
@@ -956,6 +959,7 @@ final class DownloadManager: NSObject {
         #endif
         activeItemIds.remove(item.id)
         activeItemTitles[item.id] = nil
+        activeItems[item.id] = nil
         progress[item.id] = nil
         stats[item.id] = nil
         speedSamples[item.id] = nil
@@ -1182,6 +1186,7 @@ final class DownloadManager: NSObject {
         pausedItemIds.remove(itemId)
         activeItemIds.remove(itemId)
         activeItemTitles[itemId] = nil
+        activeItems[itemId] = nil
         progress[itemId] = nil
         stats[itemId] = nil
         speedSamples[itemId] = nil
@@ -1499,6 +1504,7 @@ final class DownloadManager: NSObject {
                 .reduce(0) { $0 + $1.fileSizeBytes }
         }
 
+        var smart: [MediaItem] = []
         for (seriesId, count) in targets {
             // The episode up next plus the `count` after it: the one you're on doesn't use
             // up the allowance.
@@ -1535,25 +1541,28 @@ final class DownloadManager: NSObject {
                 Task { await processQueue() }
                 continue
             }
-            for episode in nextUp {
-                guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
-                guard totalDownloadedBytes() < budgetBytes else {
-                    Self.smartLog.notice("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
-                    return
-                }
-                Self.smartLog.notice("Smart Downloads queuing \(episode.name, privacy: .public)")
-                await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
-            }
+            smart.append(contentsOf: nextUp)
         }
-        for movie in movies where !isDownloaded(movie.id) && !activeItemIds.contains(movie.id) {
-            guard totalDownloadedBytes() < budgetBytes else {
+        smart.append(contentsOf: movies)
+
+        // Downloads at Once titles at a time, each batch finishing before the budget is checked
+        // again, so it can go over by at most one batch less one title.
+        var batch = 0
+        for item in smart where !isDownloaded(item.id) && !activeItemIds.contains(item.id) {
+            if batch == 0, totalDownloadedBytes() >= budgetBytes {
                 Self.smartLog.notice("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
-                return
+                break
             }
-            Self.smartLog.notice("Smart Downloads queuing \(movie.name, privacy: .public)")
-            Self.smartMovieIds.insert(movie.id)
-            await startDownload(item: movie, credential: credential, authHeader: authHeader, viaSmart: true)
+            guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true) else { continue }
+            Self.smartLog.notice("Smart Downloads queuing \(item.name, privacy: .public)")
+            if item.seriesId == nil { Self.smartMovieIds.insert(item.id) }
+            batch += 1
+            if batch >= concurrentDownloadLimit {
+                batch = 0
+                await processQueue()
+            }
         }
+        if batch > 0 { await processQueue() }
     }
 
     /// When watch history gives no next episode (a later episode is marked watched, say), the

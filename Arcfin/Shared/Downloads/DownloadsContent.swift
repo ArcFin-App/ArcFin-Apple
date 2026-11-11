@@ -2,6 +2,7 @@
 
 import SwiftUI
 import Persistence
+import JellyfinAPI
 
 /// The Downloads list: storage, the queue, Continue Watching, shows and movies. `play` starts a
 /// download the way the platform does, and `manage` sits at the end of the storage card.
@@ -203,12 +204,22 @@ struct DownloadsContent<Manage: View>: View {
         let fraction = downloadManager.progress[itemId] ?? 0
         let isActive = downloadManager.activeItemIds.contains(itemId) && !downloadManager.queuedItemIds.contains(itemId)
         let isPaused = downloadManager.pausedItemIds.contains(itemId)
+        let item = downloadManager.activeItems[itemId]
+        let isEpisode = item?.type == .episode
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(downloadManager.activeItemTitles[itemId] ?? "Downloading…")
-                    .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(isActive ? DT.Color.textPrimary : DT.Color.textSecondary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text((isEpisode ? item?.seriesName : nil) ?? downloadManager.activeItemTitles[itemId] ?? "Downloading…")
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(isActive ? DT.Color.textPrimary : DT.Color.textSecondary)
+                        .lineLimit(1)
+                    if isEpisode, let item, let subtitle = HomeText.subtitle(item) {
+                        Text(subtitle)
+                            .font(.system(.caption))
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
                 Spacer()
                 if let stats, stats.totalBytes > 0 {
                     Text(Double(fraction), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
@@ -269,7 +280,14 @@ struct DownloadsContent<Manage: View>: View {
                 if isPaused {
                     Text("Paused")
                 } else if let stats, stats.bytesPerSecond > 0 {
-                    Text("\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s")
+                    let speed = "\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s"
+                    if stats.totalBytes > stats.bytesWritten {
+                        let left = Duration.seconds(Double(stats.totalBytes - stats.bytesWritten) / stats.bytesPerSecond)
+                            .formatted(.units(allowed: [.hours, .minutes, .seconds], width: .abbreviated, maximumUnitCount: 2))
+                        Text("\(speed) · \(left) left")
+                    } else {
+                        Text(speed)
+                    }
                 }
             }
             .font(.system(.caption))
