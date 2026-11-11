@@ -90,13 +90,13 @@ struct LiveTVGuideView: View {
                     }
             }
         }
-        .background(.bar)
+        .background(.regularMaterial)
         .overlay(alignment: .leading) {
             Text(model.guideStart.formatted(.dateTime.weekday(.abbreviated).day()))
                 .font(.system(.caption, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
                 .frame(width: channelWidth, height: headerHeight)
-                .background(.bar)
+                .background(.regularMaterial)
                 .offset(x: offsetX)
         }
     }
