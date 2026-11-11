@@ -179,6 +179,8 @@ struct ServerURLView: View {
             return String(localized: "This device isn't connected to the internet.")
         case .invalidServerURL?:
             return String(localized: "That doesn't look like a server address.")
+        case .unsupportedScheme(let scheme)?:
+            return String(localized: "Server addresses start with http:// or https://, not “\(scheme)://”. Check how it's typed, or leave it off and Arcfin will try both.")
         default:
             return String(localized: "Can't reach the server. Check the address and try again.")
         }

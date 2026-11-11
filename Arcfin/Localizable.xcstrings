@@ -12609,6 +12609,70 @@
         }
       }
     },
+    "Server addresses start with http:// or https://, not “%@://”. Check how it's typed, or leave it off and Arcfin will try both." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Serveradressen beginnen mit http:// oder https://, nicht mit „%@://“. Prüfe die Schreibweise oder lass es weg, dann probiert Arcfin beides."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Las direcciones de servidor empiezan por http:// o https://, no por «%@://». Revisa cómo está escrita o quítalo y Arcfin probará ambas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les adresses de serveur commencent par http:// ou https://, pas par « %@:// ». Vérifiez la saisie, ou retirez-le et Arcfin essaiera les deux."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gli indirizzi del server iniziano con http:// o https://, non con “%@://”. Controlla come è scritto, oppure toglilo e Arcfin proverà entrambi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバのアドレスは「%@://」ではなく、http://またはhttps://で始まります。入力を確認するか、省略するとArcfinが両方を試します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버 주소는 ‘%@://’가 아니라 http:// 또는 https://로 시작합니다. 입력을 확인하거나 생략하면 Arcfin이 둘 다 시도합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Serveradressen beginnen met http:// of https://, niet met ‘%@://’. Controleer hoe het is getypt, of laat het weg en Arcfin probeert beide."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Endereços de servidor começam com http:// ou https://, não com “%@://”. Confira a digitação ou deixe sem e o Arcfin tentará os dois."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Адрес сервера начинается с http:// или https://, а не с «%@://». Проверьте написание или уберите эту часть — Arcfin попробует оба варианта."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器地址以 http:// 或 https:// 开头，而不是“%@://”。请检查输入，或者省略它，Arcfin 会两种都尝试。"
+          }
+        }
+      }
+    },
     "Set" : {
       "localizations" : {
         "de" : {

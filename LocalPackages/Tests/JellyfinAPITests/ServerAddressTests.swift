@@ -11,6 +11,38 @@ struct ServerAddressTests {
         HTTPURLResponse(url: URL(string: url)!, statusCode: 200, httpVersion: nil, headerFields: nil)!
     }
 
+    @Test("A typed address is tried as given, slips put right", arguments: [
+        ("http://10.0.1.122:8096", ["http://10.0.1.122:8096"]),
+        ("HTTPS://jf.example.com/", ["https://jf.example.com"]),
+        ("http:/10.0.1.122:8096", ["http://10.0.1.122:8096"]),
+        ("http//10.0.1.122:8096", ["http://10.0.1.122:8096"]),
+        ("https:///example.com/jellyfin//", ["https://example.com/jellyfin"]),
+        ("10.0.1.122:8096", ["https://10.0.1.122:8096", "http://10.0.1.122:8096"]),
+        ("jf.example.com", ["https://jf.example.com", "http://jf.example.com"]),
+        ("[fe80::1]:8096", ["https://[fe80::1]:8096", "http://[fe80::1]:8096"]),
+        ("httpbin.example.com", ["https://httpbin.example.com", "http://httpbin.example.com"]),
+    ])
+    func candidates(typed: String, expected: [String]) throws {
+        #expect(try JellyfinAuthClient.candidates(for: typed).map(\.absoluteString) == expected)
+    }
+
+    @Test("Another scheme is refused before anything is sent")
+    func wrongScheme() {
+        #expect(throws: JellyfinAuthError.unsupportedScheme("htt")) {
+            try JellyfinAuthClient.candidates(for: "htt://10.0.1.122:8096")
+        }
+        #expect(throws: JellyfinAuthError.unsupportedScheme("ftp")) {
+            try JellyfinAuthClient.candidates(for: "ftp://jf.example.com")
+        }
+    }
+
+    @Test("Something that isn't an address is refused", arguments: ["", "   ", "my server", "http://", "https:///"])
+    func notAnAddress(typed: String) {
+        #expect(throws: JellyfinAuthError.invalidServerURL) {
+            try JellyfinAuthClient.candidates(for: typed)
+        }
+    }
+
     @Test("A redirect to https is the address that's saved")
     func followsRedirectToHTTPS() {
         let base = JellyfinAuthClient.base(
