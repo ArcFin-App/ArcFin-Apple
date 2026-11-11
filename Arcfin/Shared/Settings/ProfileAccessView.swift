@@ -136,6 +136,7 @@ struct ProfileAccessView: View {
                        detail: policy.syncPlayAccess == "JoinGroups" ? "Join only" : nil)
             permission("Remote Access", policy.enableRemoteAccess)
             permission("Live TV", policy.enableLiveTvAccess)
+            permission("Record Live TV", policy.enableLiveTvAccess && policy.enableLiveTvManagement)
             permission("Video Transcoding", policy.enableVideoPlaybackTranscoding)
             permission("Audio Transcoding", policy.enableAudioPlaybackTranscoding)
             permission("Remuxing", policy.enablePlaybackRemuxing)

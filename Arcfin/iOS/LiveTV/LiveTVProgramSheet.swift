@@ -111,7 +111,7 @@ struct LiveTVProgramSheet: View {
                 .controlSize(.large)
             }
 
-            if !hasEnded {
+            if !hasEnded, ProfileRules.shared.canRecordLiveTV {
                 HStack(spacing: 10) {
                     recordButton
                     if current.isSeries { seriesButton }

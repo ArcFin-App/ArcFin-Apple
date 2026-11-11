@@ -25,7 +25,9 @@ struct LiveTVRecordingsView: View {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if isEmpty {
             ContentUnavailableView("No Recordings", systemImage: "record.circle",
-                                   description: Text("Pick a programme in the guide to record it, or record every episode of a series."))
+                                   description: ProfileRules.shared.canRecordLiveTV
+                                       ? Text("Pick a programme in the guide to record it, or record every episode of a series.")
+                                       : Text("Recordings on your server show up here."))
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
@@ -172,14 +174,16 @@ private struct LiveTVTimerRow: View {
                     .lineLimit(2)
             }
             Spacer(minLength: 8)
-            Button(role: .destructive) { confirming = true } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .frame(width: 44, height: 44)
+            if ProfileRules.shared.canRecordLiveTV {
+                Button(role: .destructive) { confirming = true } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isActive ? "Stop Recording" : "Cancel Recording")
+            }
         }
         .padding(.leading, 14)
         .padding(.trailing, 4)
@@ -241,14 +245,16 @@ private struct LiveTVSeriesTimerRow: View {
                     .lineLimit(2)
             }
             Spacer(minLength: 8)
-            Button(role: .destructive) { confirming = true } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .frame(width: 44, height: 44)
+            if ProfileRules.shared.canRecordLiveTV {
+                Button(role: .destructive) { confirming = true } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Stop Recording Series")
+            }
         }
         .padding(.leading, 14)
         .padding(.trailing, 4)

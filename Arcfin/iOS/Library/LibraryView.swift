@@ -22,7 +22,7 @@ struct LibraryView: View {
         ]
     }
 
-    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: true) }
+    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV) }
 
     var body: some View {
         NavigationStack {
