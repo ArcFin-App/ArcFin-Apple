@@ -92,6 +92,7 @@ struct PlayerView: View {
             if audioOnly {
                 PlayerAudioOnlyCover(item: item)
             }
+            PlayerRadioCover(model: model)
 
             if let seekFeedback = model.seekFeedback {
                 PlayerSeekFeedbackView(feedback: seekFeedback)

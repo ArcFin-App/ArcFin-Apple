@@ -44,6 +44,12 @@ struct LiveTVChannelRow: View {
                         .font(.system(.subheadline, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(1)
+                    if channel.isRadio {
+                        Image(systemName: "radio")
+                            .font(.caption2)
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .accessibilityLabel("Radio")
+                    }
                     if channel.isFavorite {
                         Image(systemName: "star.fill")
                             .font(.caption2)

@@ -209,6 +209,12 @@ final class PlayerModel {
         toggleControlsVisibilityOnAction()
     }
 
+    /// A channel with no picture: a radio station, or a TV channel sending sound only.
+    var isRadio: Bool {
+        isLive && (LiveTVQueue.channels.first { $0.id == item.id }?.isRadio == true
+                   || (playbackInfo != nil && playbackInfo?.videoStream == nil))
+    }
+
     /// Whether the channel list has anything to offer: other channels, or one to go back to.
     var hasChannelList: Bool { isLive && (!liveChannels.isEmpty || lastChannel != nil) }
 

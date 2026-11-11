@@ -13,12 +13,14 @@ public struct LiveTVChannel: Sendable, Identifiable, Equatable, Hashable {
     public var primaryImageTag: String?
     public var isFavorite: Bool
     public var currentProgram: LiveTVProgram?
+    /// A radio station rather than a TV channel.
+    public var isRadio: Bool
 
     public init(id: String, name: String, number: String? = nil, primaryImageTag: String? = nil,
-                isFavorite: Bool = false, currentProgram: LiveTVProgram? = nil) {
+                isFavorite: Bool = false, currentProgram: LiveTVProgram? = nil, isRadio: Bool = false) {
         self.id = id; self.name = name; self.number = number
         self.primaryImageTag = primaryImageTag; self.isFavorite = isFavorite
-        self.currentProgram = currentProgram
+        self.currentProgram = currentProgram; self.isRadio = isRadio
     }
 
     /// The channel as the player and Now Playing see it.
@@ -516,15 +518,17 @@ private struct ChannelResponse: Decodable {
     let imageTags: [String: String]?
     let userData: UserDataResponse?
     let currentProgram: ProgramResponse?
+    let channelType: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", number = "ChannelNumber", imageTags = "ImageTags"
-        case userData = "UserData", currentProgram = "CurrentProgram"
+        case userData = "UserData", currentProgram = "CurrentProgram", channelType = "ChannelType"
     }
 
     func toChannel() -> LiveTVChannel {
         LiveTVChannel(id: id, name: name ?? number ?? "", number: number, primaryImageTag: imageTags?["Primary"],
-                      isFavorite: userData?.isFavorite ?? false, currentProgram: currentProgram?.toProgram())
+                      isFavorite: userData?.isFavorite ?? false, currentProgram: currentProgram?.toProgram(),
+                      isRadio: channelType == "Radio")
     }
 }
 

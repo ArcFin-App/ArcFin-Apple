@@ -201,3 +201,36 @@ extension LiveTVCategory {
         }
     }
 }
+
+/// What a radio station shows instead of a black picture: its logo, name and what's on.
+struct PlayerRadioCover: View {
+    let model: PlayerModel
+
+    var body: some View {
+        if model.isRadio {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                VStack(spacing: 16) {
+                    ChannelLogo(channel: LiveTVChannel(id: model.item.id, name: model.item.name,
+                                                       primaryImageTag: model.item.primaryImageTag),
+                                size: CGSize(width: 220 * DT.Scale.font, height: 140 * DT.Scale.font))
+                    Text(model.item.name)
+                        .font(.system(.title2, weight: .bold))
+                        .foregroundStyle(.white)
+                    if let program = model.liveProgram {
+                        Text(program.name)
+                            .font(.system(.body))
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+                    Label("Radio", systemImage: "radio")
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(DT.Color.accent)
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            }
+            .allowsHitTesting(false)
+            .transition(.opacity)
+        }
+    }
+}
