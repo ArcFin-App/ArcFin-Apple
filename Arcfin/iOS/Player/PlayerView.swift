@@ -411,6 +411,8 @@ struct PlayerView: View {
             }
         }
         await model.setup()
+        // Opened with the sound already off: the observer above only hears changes.
+        if AVAudioSession.sharedInstance().outputVolume < 0.01 { model.soundMutedChanged(true) }
     }
 
     /// Picture in picture, frame-rate matching and the AirPlay receiver's Now Playing card,
