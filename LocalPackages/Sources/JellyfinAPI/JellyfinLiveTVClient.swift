@@ -121,12 +121,17 @@ public struct LiveTVSeriesTimer: Sendable, Identifiable, Equatable, Hashable {
 
 extension JellyfinMediaClient {
 
-    /// GET /LiveTv/Channels with what's on each now, in the server's channel order.
-    public func getLiveTVChannels(credential: ServerCredential, authHeader: String) async throws -> [LiveTVChannel] {
+    /// GET /LiveTv/Channels with what's on each now, in the server's channel order, a page at
+    /// a time: an IPTV playlist can hold tens of thousands.
+    public func getLiveTVChannels(credential: ServerCredential, authHeader: String, startIndex: Int = 0,
+                                  limit: Int = 200, favoritesOnly: Bool = false) async throws -> (channels: [LiveTVChannel], total: Int) {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("LiveTv/Channels"),
                                   resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             .init(name: "userId", value: credential.userID),
+            .init(name: "startIndex", value: "\(startIndex)"),
+            .init(name: "limit", value: "\(limit)"),
+            .init(name: "enableTotalRecordCount", value: "true"),
             .init(name: "addCurrentProgram", value: "true"),
             .init(name: "enableUserData", value: "true"),
             .init(name: "enableImages", value: "true"),
@@ -134,8 +139,27 @@ extension JellyfinMediaClient {
             .init(name: "enableImageTypes", value: "Primary"),
             .init(name: "fields", value: "Overview,ChannelInfo"),
         ]
+        if favoritesOnly { comps.queryItems?.append(.init(name: "isFavorite", value: "true")) }
         let page: LiveTVPage<ChannelResponse> = try await getLiveTV(comps, authHeader: authHeader)
-        return page.items.map { $0.toChannel() }
+        let channels = page.items.map { $0.toChannel() }
+        return (channels, page.totalRecordCount ?? startIndex + channels.count)
+    }
+
+    /// Whether the server has any guide at all: an M3U playlist without an XMLTV or Schedules
+    /// Direct listings provider has channels but no programmes.
+    public func hasLiveTVGuide(credential: ServerCredential, authHeader: String) async -> Bool {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("LiveTv/Programs"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 20
+        let body: [String: Any] = [
+            "UserId": credential.userID, "Limit": 1, "MinEndDate": JellyfinDate.string(.now),
+            "EnableImages": false, "EnableUserData": false, "EnableTotalRecordCount": false,
+        ]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        guard let page: LiveTVPage<ProgramResponse> = try? await send(req) else { return true }
+        return !page.items.isEmpty
     }
 
     /// GET /LiveTv/Channels/{id}, with what's on it now.

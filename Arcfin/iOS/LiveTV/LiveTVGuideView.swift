@@ -23,6 +23,9 @@ struct LiveTVGuideView: View {
     var body: some View {
         if model.isLoadingChannels {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if model.hasGuide == false {
+            ContentUnavailableView("No Guide", systemImage: "calendar.badge.exclamationmark",
+                                   description: Text("Your server has channels but no programme guide. Add a listings provider, such as an XMLTV file or Schedules Direct, in the Jellyfin dashboard under Live TV."))
         } else if model.visibleChannels.isEmpty {
             LiveTVEmptyChannels(favoritesOnly: model.favoritesOnly)
         } else {
@@ -115,6 +118,9 @@ struct LiveTVGuideView: View {
         }
         .task(id: model.guideGeneration) {
             await model.loadGuide(around: channel, authManager: authManager)
+        }
+        .onAppear {
+            Task { await model.loadMoreIfNeeded(after: channel, authManager: authManager) }
         }
     }
 

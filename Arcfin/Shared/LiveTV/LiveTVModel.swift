@@ -19,10 +19,18 @@ enum LiveTVTab: String, CaseIterable, Identifiable {
 /// Channels, the guide, recordings and timers for the Live TV screen on every platform.
 @MainActor @Observable
 final class LiveTVModel {
+    /// The channels loaded so far, in the server's order; more come a page at a time.
     private(set) var channels: [LiveTVChannel] = []
+    private(set) var totalChannels = 0
+    private(set) var favoriteChannels: [LiveTVChannel] = []
     private(set) var isLoadingChannels = true
+    private(set) var isLoadingMore = false
     private(set) var channelsFailed = false
     var favoritesOnly = false
+    /// False when the server has channels but no guide (an M3U playlist with no listings
+    /// provider); nil until it's known.
+    private(set) var hasGuide: Bool?
+    static let pageSize = 200
 
     /// The guide's programmes by channel, filled in as rows come on screen.
     private(set) var programs: [String: [LiveTVProgram]] = [:]
@@ -45,11 +53,11 @@ final class LiveTVModel {
 
     private let client = JellyfinMediaClient()
 
-    var visibleChannels: [LiveTVChannel] {
-        favoritesOnly ? channels.filter(\.isFavorite) : channels
-    }
+    var visibleChannels: [LiveTVChannel] { favoritesOnly ? favoriteChannels : channels }
 
-    var hasFavorites: Bool { channels.contains(where: \.isFavorite) }
+    var hasFavorites: Bool { !favoriteChannels.isEmpty }
+
+    var canLoadMore: Bool { !favoritesOnly && channels.count < totalChannels }
 
     private func session(_ authManager: AuthManager) -> (credential: ServerCredential, authHeader: String)? {
         guard let credential = authManager.state.credential else { return nil }
@@ -65,20 +73,54 @@ final class LiveTVModel {
 
     func loadChannels(authManager: AuthManager) async {
         guard let (credential, header) = session(authManager) else { return }
+        let client = client
+        async let firstPage = client.getLiveTVChannels(credential: credential, authHeader: header, limit: Self.pageSize)
+        async let favorites = try? client.getLiveTVChannels(credential: credential, authHeader: header,
+                                                             limit: 1000, favoritesOnly: true)
+        async let guide = client.hasLiveTVGuide(credential: credential, authHeader: header)
         do {
-            channels = try await client.getLiveTVChannels(credential: credential, authHeader: header)
+            let page = try await firstPage
+            channels = page.channels
+            totalChannels = page.total
             channelsFailed = false
         } catch {
             if channels.isEmpty { channelsFailed = true }
         }
+        if let favorites = await favorites { favoriteChannels = favorites.channels }
+        hasGuide = await guide
         isLoadingChannels = false
     }
 
+    /// Loads the next page once a row near the end of what's loaded comes on screen.
+    func loadMoreIfNeeded(after channel: LiveTVChannel, authManager: AuthManager) async {
+        guard canLoadMore, !isLoadingMore,
+              let index = channels.lastIndex(where: { $0.id == channel.id }), index >= channels.count - 40,
+              let (credential, header) = session(authManager) else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        guard let page = try? await client.getLiveTVChannels(credential: credential, authHeader: header,
+                                                             startIndex: channels.count, limit: Self.pageSize)
+        else { return }
+        let known = Set(channels.map(\.id))
+        channels += page.channels.filter { !known.contains($0.id) }
+        // An empty page with more still reported would ask again forever.
+        totalChannels = page.channels.isEmpty ? channels.count : page.total
+    }
+
     /// What's on now moves on every few minutes; called on a timer while the screen is open.
+    /// Without a guide there's nothing to move on.
     func refreshNowPlaying(authManager: AuthManager) async {
-        guard let (credential, header) = session(authManager),
-              let fresh = try? await client.getLiveTVChannels(credential: credential, authHeader: header) else { return }
-        channels = fresh
+        guard hasGuide == true, let (credential, header) = session(authManager),
+              let fresh = try? await client.getLiveTVChannels(credential: credential, authHeader: header,
+                                                              limit: min(max(channels.count, Self.pageSize), 1000))
+        else { return }
+        let programs = Dictionary(fresh.channels.map { ($0.id, $0.currentProgram) }, uniquingKeysWith: { a, _ in a })
+        for i in channels.indices where programs[channels[i].id] != nil {
+            channels[i].currentProgram = programs[channels[i].id] ?? nil
+        }
+        for i in favoriteChannels.indices where programs[favoriteChannels[i].id] != nil {
+            favoriteChannels[i].currentProgram = programs[favoriteChannels[i].id] ?? nil
+        }
         let start = Self.halfHour(before: .now)
         if start != guideStart {
             guideStart = start
@@ -87,17 +129,28 @@ final class LiveTVModel {
     }
 
     func toggleFavorite(_ channel: LiveTVChannel, authManager: AuthManager) {
-        guard let (credential, header) = session(authManager),
-              let index = channels.firstIndex(where: { $0.id == channel.id }) else { return }
+        guard let (credential, header) = session(authManager) else { return }
         let newValue = !channel.isFavorite
-        channels[index].isFavorite = newValue
+        setFavorite(newValue, on: channel)
         HapticManager.impact(.light)
         Task {
             do {
                 try await client.markFavorite(credential: credential, authHeader: header, itemId: channel.id, favorite: newValue)
             } catch {
-                if let i = channels.firstIndex(where: { $0.id == channel.id }) { channels[i].isFavorite = !newValue }
+                setFavorite(!newValue, on: channel)
             }
+        }
+    }
+
+    private func setFavorite(_ favorite: Bool, on channel: LiveTVChannel) {
+        if let i = channels.firstIndex(where: { $0.id == channel.id }) { channels[i].isFavorite = favorite }
+        if favorite {
+            guard !favoriteChannels.contains(where: { $0.id == channel.id }) else { return }
+            var updated = channel
+            updated.isFavorite = true
+            favoriteChannels.append(updated)
+        } else {
+            favoriteChannels.removeAll { $0.id == channel.id }
         }
     }
 
@@ -115,14 +168,14 @@ final class LiveTVModel {
     }
 
     func channel(for program: LiveTVProgram) -> LiveTVChannel? {
-        channels.first { $0.id == program.channelId }
+        channels.first { $0.id == program.channelId } ?? favoriteChannels.first { $0.id == program.channelId }
     }
 
     // MARK: - Guide
 
     /// Loads the guide for a block of channels around one that's coming on screen.
     func loadGuide(around channel: LiveTVChannel, authManager: AuthManager) async {
-        guard !requestedGuideChannels.contains(channel.id),
+        guard hasGuide != false, !requestedGuideChannels.contains(channel.id),
               let index = visibleChannels.firstIndex(where: { $0.id == channel.id }),
               let (credential, header) = session(authManager) else { return }
         let block = visibleChannels[index..<min(index + 25, visibleChannels.count)]

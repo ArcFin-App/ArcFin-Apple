@@ -101,28 +101,43 @@ struct LiveTVChannelsList: View {
             LiveTVEmptyChannels(favoritesOnly: model.favoritesOnly)
         } else {
             TimelineView(.periodic(from: .now, by: 30)) { context in
-                List(model.visibleChannels) { channel in
-                    Button { model.play(channel) } label: {
-                        LiveTVChannelRow(channel: channel, now: context.date)
+                List {
+                    ForEach(model.visibleChannels) { channel in
+                        channelRow(channel, now: context.date)
                     }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 8, leading: DT.Spacing.pagePad, bottom: 8, trailing: DT.Spacing.pagePad))
-                    .swipeActions(edge: .leading) {
-                        Button { model.toggleFavorite(channel, authManager: authManager) } label: {
-                            Label(channel.isFavorite ? "Remove from Favorites" : "Add to Favorites",
-                                  systemImage: channel.isFavorite ? "star.slash" : "star")
-                        }
-                        .tint(DT.Color.palette("F59E0B"))
-                    }
-                    .contextMenu {
-                        LiveTVChannelMenu(model: model, channel: channel)
+                    if model.canLoadMore {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                     }
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .refreshable { await model.loadChannels(authManager: authManager) }
             }
+        }
+    }
+
+    private func channelRow(_ channel: LiveTVChannel, now: Date) -> some View {
+        Button { model.play(channel) } label: {
+            LiveTVChannelRow(channel: channel, now: now, showsGuide: model.hasGuide != false)
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 8, leading: DT.Spacing.pagePad, bottom: 8, trailing: DT.Spacing.pagePad))
+        .swipeActions(edge: .leading) {
+            Button { model.toggleFavorite(channel, authManager: authManager) } label: {
+                Label(channel.isFavorite ? "Remove from Favorites" : "Add to Favorites",
+                      systemImage: channel.isFavorite ? "star.slash" : "star")
+            }
+            .tint(DT.Color.palette("F59E0B"))
+        }
+        .contextMenu {
+            LiveTVChannelMenu(model: model, channel: channel)
+        }
+        .onAppear {
+            Task { await model.loadMoreIfNeeded(after: channel, authManager: authManager) }
         }
     }
 }
@@ -149,6 +164,8 @@ struct LiveTVChannelMenu: View {
 struct LiveTVChannelRow: View {
     let channel: LiveTVChannel
     let now: Date
+    /// Off when the server has no guide, so rows don't all say there's no information.
+    var showsGuide = true
 
     var body: some View {
         HStack(spacing: 14) {
@@ -191,7 +208,7 @@ struct LiveTVChannelRow: View {
                             .foregroundStyle(DT.Color.textSecondary)
                             .lineLimit(1)
                     }
-                } else {
+                } else if showsGuide {
                     Text("No programme information")
                         .font(.system(.footnote))
                         .foregroundStyle(DT.Color.textSecondary)

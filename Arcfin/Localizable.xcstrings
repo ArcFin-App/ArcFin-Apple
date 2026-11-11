@@ -705,6 +705,70 @@
         }
       }
     },
+    "All of your server's tuners are busy. Stop watching or recording on another device, then try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alle Tuner deines Servers sind belegt. Beende das Ansehen oder Aufnehmen auf einem anderen Gerät und versuche es dann erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Todos los sintonizadores de tu servidor están ocupados. Deja de ver o grabar en otro dispositivo y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tous les tuners de votre serveur sont occupés. Arrêtez la lecture ou l'enregistrement sur un autre appareil, puis réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tutti i sintonizzatori del server sono occupati. Interrompi la visione o la registrazione su un altro dispositivo, poi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーのチューナーがすべて使用中です。別のデバイスでの視聴や録画を止めてから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버의 모든 튜너가 사용 중입니다. 다른 기기에서 시청이나 녹화를 중지한 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alle tuners van je server zijn bezet. Stop met kijken of opnemen op een ander apparaat en probeer het dan opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Todos os sintonizadores do servidor estão ocupados. Pare de assistir ou gravar em outro dispositivo e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Все тюнеры сервера заняты. Остановите просмотр или запись на другом устройстве и попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器的所有调谐器都在使用中。请在其他设备上停止观看或录制，然后重试。"
+          }
+        }
+      }
+    },
     "Already in Your Library" : {
       "localizations" : {
         "de" : {
@@ -2369,6 +2433,70 @@
         }
       }
     },
+    "Couldn't make a secure connection to your server. Check its certificate, then try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Es konnte keine sichere Verbindung zu deinem Server hergestellt werden. Prüfe sein Zertifikat und versuche es dann erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudo establecer una conexión segura con tu servidor. Comprueba su certificado y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible d'établir une connexion sécurisée avec votre serveur. Vérifiez son certificat, puis réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile stabilire una connessione sicura con il server. Controlla il suo certificato, poi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーと安全に接続できませんでした。証明書を確認してから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 안전하게 연결할 수 없습니다. 인증서를 확인한 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan geen beveiligde verbinding met je server maken. Controleer het certificaat en probeer het dan opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível criar uma conexão segura com o servidor. Verifique o certificado e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось установить защищённое соединение с сервером. Проверьте его сертификат и попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法与服务器建立安全连接。请检查其证书，然后重试。"
+          }
+        }
+      }
+    },
     "Couldn't reach Seerr right now — try again." : {
       "localizations" : {
         "de" : {
@@ -2429,6 +2557,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "暂时无法连接 Seerr，请重试。"
+          }
+        }
+      }
+    },
+    "Couldn't reach your server. Check your connection, then try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server ist nicht erreichbar. Prüfe deine Verbindung und versuche es dann erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudo conectar con tu servidor. Comprueba tu conexión y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de joindre votre serveur. Vérifiez votre connexion, puis réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile raggiungere il server. Controlla la connessione, poi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーに接続できませんでした。接続を確認してから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 연결할 수 없습니다. 연결을 확인한 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan je server niet bereiken. Controleer je verbinding en probeer het dan opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível acessar o servidor. Verifique sua conexão e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось связаться с сервером. Проверьте подключение и попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法连接到服务器。请检查网络连接，然后重试。"
           }
         }
       }
@@ -5121,6 +5313,70 @@
         }
       }
     },
+    "Next Channel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nächster Sender"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canal siguiente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chaîne suivante"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canale successivo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "次のチャンネル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다음 채널"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Volgende zender"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Próximo canal"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Следующий канал"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "下一个频道"
+          }
+        }
+      }
+    },
     "Next channel: %@" : {
       "localizations" : {
         "de" : {
@@ -5309,6 +5565,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "没有收藏的频道"
+          }
+        }
+      }
+    },
+    "No Guide" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kein Programm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No hay guía"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aucun guide"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessuna guida"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "番組表がありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "편성표 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geen gids"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sem guia"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Нет телегида"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没有节目指南"
           }
         }
       }
@@ -6333,6 +6653,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "播放默认音轨"
+          }
+        }
+      }
+    },
+    "Playback was interrupted. Try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Wiedergabe wurde unterbrochen. Versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se interrumpió la reproducción. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La lecture a été interrompue. Réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La riproduzione è stata interrotta. Riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生が中断されました。もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "재생이 중단되었습니다. 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Het afspelen is onderbroken. Probeer het opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A reprodução foi interrompida. Tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Воспроизведение прервано. Попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放已中断，请重试。"
           }
         }
       }
@@ -9153,6 +9537,70 @@
         }
       }
     },
+    "Something went wrong talking to your server. Try again in a moment." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bei der Verbindung mit deinem Server ist etwas schiefgelaufen. Versuche es gleich noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Algo falló al comunicarse con tu servidor. Vuelve a intentarlo en un momento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un problème est survenu lors de la communication avec votre serveur. Réessayez dans un instant."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Qualcosa è andato storto nella comunicazione con il server. Riprova tra poco."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーとの通信で問題が発生しました。しばらくしてからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버와 통신하는 중 문제가 발생했습니다. 잠시 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Er ging iets mis bij het contact met je server. Probeer het zo opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Algo deu errado na comunicação com o servidor. Tente novamente em instantes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "При обмене данными с сервером что-то пошло не так. Попробуйте чуть позже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "与服务器通信时出错。请稍后重试。"
+          }
+        }
+      }
+    },
     "Spotlight Home" : {
       "localizations" : {
         "de" : {
@@ -9729,6 +10177,70 @@
         }
       }
     },
+    "The channel took too long to start. Its source may be slow or offline. Try again, or pick another channel." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Sender hat zu lange zum Starten gebraucht. Seine Quelle ist vielleicht langsam oder offline. Versuche es erneut oder wähle einen anderen Sender."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El canal tardó demasiado en empezar. Puede que su fuente sea lenta o esté desconectada. Inténtalo de nuevo o elige otro canal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La chaîne a mis trop de temps à démarrer. Sa source est peut-être lente ou hors ligne. Réessayez ou choisissez une autre chaîne."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il canale ci ha messo troppo a partire. La sua sorgente potrebbe essere lenta o offline. Riprova o scegli un altro canale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "チャンネルの開始に時間がかかりすぎました。配信元が遅いかオフラインの可能性があります。もう一度試すか、別のチャンネルを選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "채널을 시작하는 데 너무 오래 걸렸습니다. 소스가 느리거나 오프라인일 수 있습니다. 다시 시도하거나 다른 채널을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Het duurde te lang voordat de zender begon. De bron is misschien traag of offline. Probeer het opnieuw of kies een andere zender."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O canal demorou demais para começar. A fonte pode estar lenta ou fora do ar. Tente novamente ou escolha outro canal."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Канал слишком долго запускался. Возможно, источник медленный или недоступен. Попробуйте снова или выберите другой канал."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "频道启动时间过长，其信号源可能较慢或已离线。请重试或选择其他频道。"
+          }
+        }
+      }
+    },
     "The featured title's trailer now plays all the way through while the details fade away. For sound, turn on Hero Trailer Sound in Settings › Appearance." : {
       "localizations" : {
         "de" : {
@@ -9793,6 +10305,134 @@
         }
       }
     },
+    "This channel didn't send any video. Its source may be offline. Try again, or pick another channel." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieser Sender hat kein Video gesendet. Seine Quelle ist vielleicht offline. Versuche es erneut oder wähle einen anderen Sender."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este canal no envió vídeo. Puede que su fuente esté desconectada. Inténtalo de nuevo o elige otro canal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cette chaîne n'a envoyé aucune vidéo. Sa source est peut-être hors ligne. Réessayez ou choisissez une autre chaîne."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo canale non ha inviato alcun video. La sua sorgente potrebbe essere offline. Riprova o scegli un altro canale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このチャンネルから映像が届きませんでした。配信元がオフラインの可能性があります。もう一度試すか、別のチャンネルを選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 채널에서 영상이 전송되지 않았습니다. 소스가 오프라인일 수 있습니다. 다시 시도하거나 다른 채널을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze zender stuurde geen beeld. De bron is misschien offline. Probeer het opnieuw of kies een andere zender."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este canal não enviou vídeo. A fonte pode estar fora do ar. Tente novamente ou escolha outro canal."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Канал не передал видео. Возможно, источник недоступен. Попробуйте снова или выберите другой канал."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此频道没有传来视频，其信号源可能已离线。请重试或选择其他频道。"
+          }
+        }
+      }
+    },
+    "This channel isn't on your server any more. Pull down on the channel list to refresh it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieser Sender ist nicht mehr auf deinem Server. Ziehe die Senderliste nach unten, um sie zu aktualisieren."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este canal ya no está en tu servidor. Desliza hacia abajo la lista de canales para actualizarla."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cette chaîne n'est plus sur votre serveur. Tirez la liste des chaînes vers le bas pour l'actualiser."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questo canale non è più sul server. Trascina in basso l'elenco dei canali per aggiornarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このチャンネルはサーバーにもうありません。チャンネル一覧を下に引いて更新してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 채널은 더 이상 서버에 없습니다. 채널 목록을 아래로 당겨 새로 고치세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze zender staat niet meer op je server. Trek de zenderlijst omlaag om hem te vernieuwen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este canal não está mais no servidor. Puxe a lista de canais para baixo para atualizá-la."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Этого канала больше нет на сервере. Потяните список каналов вниз, чтобы обновить его."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此频道已不在服务器上。下拉频道列表即可刷新。"
+          }
+        }
+      }
+    },
     "This is the last profile on this device, so its PIN, the Seerr sign-in, the TMDB key and the custom headers are all removed. Downloads stay." : {
       "localizations" : {
         "de" : {
@@ -9853,6 +10493,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这是此设备上的最后一个个人资料，因此其 PIN 码、Seerr 登录信息、TMDB 密钥和自定义标头都将被移除。下载内容会保留。"
+          }
+        }
+      }
+    },
+    "This isn't on your server any more. It may have been moved or deleted." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das ist nicht mehr auf deinem Server. Es wurde vielleicht verschoben oder gelöscht."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ya no está en tu servidor. Puede que se haya movido o eliminado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ce contenu n'est plus sur votre serveur. Il a peut-être été déplacé ou supprimé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non è più sul server. Potrebbe essere stato spostato o eliminato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "これはサーバーにもうありません。移動または削除された可能性があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 항목은 더 이상 서버에 없습니다. 이동되었거나 삭제되었을 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit staat niet meer op je server. Het is misschien verplaatst of verwijderd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Isto não está mais no servidor. Pode ter sido movido ou excluído."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Этого больше нет на сервере. Возможно, файл перемещён или удалён."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此内容已不在服务器上，可能已被移动或删除。"
           }
         }
       }
@@ -9981,6 +10685,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这部作品已有人请求。可以观看时你会收到通知。"
+          }
+        }
+      }
+    },
+    "This video couldn't be opened. Try again, or pick another engine in Settings › Playback." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieses Video konnte nicht geöffnet werden. Versuche es erneut oder wähle einen anderen Player unter Einstellungen › Wiedergabe."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudo abrir este vídeo. Inténtalo de nuevo o elige otro motor en Ajustes › Reproducción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible d'ouvrir cette vidéo. Réessayez ou choisissez un autre moteur dans Réglages › Lecture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile aprire questo video. Riprova o scegli un altro motore in Impostazioni › Riproduzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このビデオを開けませんでした。もう一度試すか、「設定」›「再生」で別のエンジンを選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 비디오를 열 수 없습니다. 다시 시도하거나 설정 › 재생에서 다른 엔진을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze video kon niet worden geopend. Probeer het opnieuw of kies een andere speler in Instellingen › Afspelen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível abrir este vídeo. Tente novamente ou escolha outro mecanismo em Ajustes › Reprodução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось открыть видео. Попробуйте снова или выберите другой движок в «Настройки» › «Воспроизведение»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法打开此视频。请重试，或在“设置”›“播放”中选择其他引擎。"
           }
         }
       }
@@ -11009,6 +11777,70 @@
         }
       }
     },
+    "Your profile is already streaming on as many devices as it's allowed. Stop playback on another device, then try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Profil streamt bereits auf so vielen Geräten wie erlaubt. Beende die Wiedergabe auf einem anderen Gerät und versuche es dann erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu perfil ya está reproduciendo en todos los dispositivos permitidos. Detén la reproducción en otro dispositivo y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre profil diffuse déjà sur autant d'appareils que permis. Arrêtez la lecture sur un autre appareil, puis réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il tuo profilo è già in riproduzione sul numero massimo di dispositivi consentiti. Interrompi la riproduzione su un altro dispositivo, poi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このプロフィールは許可された台数のデバイスですでに再生中です。別のデバイスで再生を止めてから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "프로필이 이미 허용된 최대 기기 수에서 스트리밍 중입니다. 다른 기기에서 재생을 중지한 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je profiel streamt al op het maximale aantal toegestane apparaten. Stop het afspelen op een ander apparaat en probeer het dan opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seu perfil já está transmitindo no máximo de dispositivos permitidos. Pare a reprodução em outro dispositivo e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ваш профиль уже воспроизводит на максимально допустимом числе устройств. Остановите воспроизведение на другом устройстве и попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的个人资料已在允许的最多设备上播放。请在其他设备上停止播放，然后重试。"
+          }
+        }
+      }
+    },
     "Your Requests" : {
       "localizations" : {
         "de" : {
@@ -11073,6 +11905,326 @@
         }
       }
     },
+    "Your server couldn't open this channel. Its source may be offline or not broadcasting right now. Try again, or pick another channel." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server konnte diesen Sender nicht öffnen. Seine Quelle ist vielleicht offline oder sendet gerade nicht. Versuche es erneut oder wähle einen anderen Sender."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor no pudo abrir este canal. Puede que su fuente esté desconectada o no esté emitiendo ahora. Inténtalo de nuevo o elige otro canal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur n'a pas pu ouvrir cette chaîne. Sa source est peut-être hors ligne ou ne diffuse pas en ce moment. Réessayez ou choisissez une autre chaîne."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non è riuscito ad aprire questo canale. La sua sorgente potrebbe essere offline o non trasmettere in questo momento. Riprova o scegli un altro canale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがこのチャンネルを開けませんでした。配信元がオフラインか、現在放送していない可能性があります。もう一度試すか、別のチャンネルを選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 이 채널을 열 수 없습니다. 소스가 오프라인이거나 지금 방송하지 않을 수 있습니다. 다시 시도하거나 다른 채널을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server kon deze zender niet openen. De bron is misschien offline of zendt nu niet uit. Probeer het opnieuw of kies een andere zender."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não conseguiu abrir este canal. A fonte pode estar fora do ar ou sem transmissão agora. Tente novamente ou escolha outro canal."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер не смог открыть канал. Возможно, источник недоступен или сейчас не вещает. Попробуйте снова или выберите другой канал."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器无法打开此频道，其信号源可能已离线或目前未播出。请重试或选择其他频道。"
+          }
+        }
+      }
+    },
+    "Your server couldn't turn this into something this device plays. Ask whoever runs the server to check that transcoding is allowed for your profile." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server konnte das nicht in ein Format umwandeln, das dieses Gerät abspielt. Bitte die Person, die den Server betreibt, zu prüfen, ob Transkodierung für dein Profil erlaubt ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor no pudo convertirlo en algo que este dispositivo reproduzca. Pide a quien administra el servidor que compruebe que la transcodificación está permitida para tu perfil."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur n'a pas pu convertir ce contenu dans un format lisible par cet appareil. Demandez à la personne qui gère le serveur de vérifier que le transcodage est autorisé pour votre profil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non è riuscito a convertirlo in un formato riproducibile da questo dispositivo. Chiedi a chi gestisce il server di verificare che la transcodifica sia consentita per il tuo profilo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがこのデバイスで再生できる形式に変換できませんでした。サーバーの管理者に、あなたのプロフィールでトランスコードが許可されているか確認してもらってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 이 기기에서 재생할 수 있는 형식으로 변환하지 못했습니다. 서버 관리자에게 프로필에 트랜스코딩이 허용되어 있는지 확인해 달라고 요청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server kon dit niet omzetten naar iets wat dit apparaat afspeelt. Vraag de beheerder van de server om te controleren of transcoderen voor je profiel is toegestaan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não conseguiu converter isto para algo que este dispositivo reproduza. Peça a quem administra o servidor para verificar se a transcodificação está permitida para o seu perfil."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Серверу не удалось преобразовать видео в формат, который воспроизводит это устройство. Попросите администратора сервера проверить, разрешено ли перекодирование для вашего профиля."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器无法将其转换为此设备可播放的格式。请让服务器管理员检查你的个人资料是否允许转码。"
+          }
+        }
+      }
+    },
+    "Your server didn't accept your sign-in. Sign in again, then try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server hat deine Anmeldung nicht akzeptiert. Melde dich erneut an und versuche es dann noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor no aceptó tu inicio de sesión. Vuelve a iniciar sesión y prueba de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur n'a pas accepté votre connexion. Reconnectez-vous, puis réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non ha accettato il tuo accesso. Accedi di nuovo, poi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがサインインを受け付けませんでした。もう一度サインインしてから、お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 로그인을 승인하지 않았습니다. 다시 로그인한 후 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server accepteerde je aanmelding niet. Meld je opnieuw aan en probeer het dan nog eens."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não aceitou seu login. Entre novamente e tente outra vez."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер не принял ваш вход. Войдите снова и повторите попытку."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器未接受你的登录。请重新登录后再试。"
+          }
+        }
+      }
+    },
+    "Your server doesn't let this profile play this. Ask whoever runs the server to check your profile's permissions." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server erlaubt diesem Profil nicht, das abzuspielen. Bitte die Person, die den Server betreibt, die Berechtigungen deines Profils zu prüfen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor no permite que este perfil lo reproduzca. Pide a quien administra el servidor que revise los permisos de tu perfil."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur n'autorise pas ce profil à lire ce contenu. Demandez à la personne qui gère le serveur de vérifier les autorisations de votre profil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non consente a questo profilo di riprodurlo. Chiedi a chi gestisce il server di controllare i permessi del tuo profilo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーがこのプロフィールでの再生を許可していません。サーバーの管理者にプロフィールの権限を確認してもらってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 이 프로필의 재생을 허용하지 않습니다. 서버 관리자에게 프로필 권한을 확인해 달라고 요청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server staat dit profiel niet toe dit af te spelen. Vraag de beheerder van de server om de rechten van je profiel te controleren."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não permite que este perfil reproduza isto. Peça a quem administra o servidor para verificar as permissões do seu perfil."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер не разрешает этому профилю воспроизводить это. Попросите администратора сервера проверить права вашего профиля."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器不允许此个人资料播放该内容。请让服务器管理员检查你的个人资料权限。"
+          }
+        }
+      }
+    },
+    "Your server has channels but no programme guide. Add a listings provider, such as an XMLTV file or Schedules Direct, in the Jellyfin dashboard under Live TV." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server hat Sender, aber kein Programm. Füge im Jellyfin-Dashboard unter Live-TV einen Programmanbieter hinzu, etwa eine XMLTV-Datei oder Schedules Direct."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor tiene canales, pero no guía de programación. Añade un proveedor de guía, como un archivo XMLTV o Schedules Direct, en el panel de Jellyfin, en TV en directo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur a des chaînes mais pas de guide des programmes. Ajoutez un fournisseur de guide, comme un fichier XMLTV ou Schedules Direct, dans le tableau de bord Jellyfin, sous TV en direct."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server ha dei canali ma nessuna guida dei programmi. Aggiungi un fornitore di guida, come un file XMLTV o Schedules Direct, nella dashboard di Jellyfin, in TV in diretta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーにはチャンネルがありますが、番組表がありません。Jellyfin のダッシュボードの「ライブTV」で、XMLTV ファイルや Schedules Direct などの番組表プロバイダを追加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 채널은 있지만 편성표가 없습니다. Jellyfin 대시보드의 실시간 TV에서 XMLTV 파일이나 Schedules Direct 같은 편성표 제공자를 추가하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server heeft zenders maar geen programmagids. Voeg in het Jellyfin-dashboard onder Live-tv een gidsaanbieder toe, zoals een XMLTV-bestand of Schedules Direct."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor tem canais, mas não tem guia de programação. Adicione um provedor de guia, como um arquivo XMLTV ou o Schedules Direct, no painel do Jellyfin, em TV ao vivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "На сервере есть каналы, но нет телегида. Добавьте источник программы передач, например файл XMLTV или Schedules Direct, в панели Jellyfin в разделе «Прямой эфир»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器有频道但没有节目指南。请在 Jellyfin 控制台的“电视直播”中添加节目单提供方，例如 XMLTV 文件或 Schedules Direct。"
+          }
+        }
+      }
+    },
     "Your server hasn't found any channels. Add a tuner or an M3U playlist in the Jellyfin dashboard under Live TV." : {
       "localizations" : {
         "de" : {
@@ -11133,6 +12285,262 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "服务器未找到任何频道。请在 Jellyfin 控制台的“电视直播”中添加调谐器或 M3U 播放列表。"
+          }
+        }
+      }
+    },
+    "Your server is busy. Try again in a moment." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server ist ausgelastet. Versuche es gleich noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor está ocupado. Vuelve a intentarlo en un momento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur est occupé. Réessayez dans un instant."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server è occupato. Riprova tra poco."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーが混み合っています。しばらくしてからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 사용 중입니다. 잠시 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server is bezet. Probeer het zo opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor está ocupado. Tente novamente em instantes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер занят. Попробуйте чуть позже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器正忙，请稍后重试。"
+          }
+        }
+      }
+    },
+    "Your server ran into a problem starting this video (error %lld). Try again in a moment. If it keeps happening, the server's log will say why." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server hatte ein Problem beim Starten dieses Videos (Fehler %lld). Versuche es gleich noch einmal. Wenn es weiter passiert, steht der Grund im Protokoll des Servers."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor tuvo un problema al iniciar este vídeo (error %lld). Vuelve a intentarlo en un momento. Si sigue pasando, el registro del servidor indicará por qué."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur a rencontré un problème au démarrage de cette vidéo (erreur %lld). Réessayez dans un instant. Si cela se reproduit, le journal du serveur en donnera la raison."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server ha avuto un problema nell'avviare questo video (errore %lld). Riprova tra poco. Se continua a succedere, il log del server indicherà il motivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーでこのビデオの開始中に問題が発生しました（エラー %lld）。しばらくしてからもう一度お試しください。繰り返し起きる場合は、サーバーのログに原因が記録されています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에서 이 비디오를 시작하는 중 문제가 발생했습니다(오류 %lld). 잠시 후 다시 시도하세요. 계속 발생하면 서버 로그에서 원인을 확인할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server had een probleem bij het starten van deze video (fout %lld). Probeer het zo opnieuw. Blijft het gebeuren, dan staat de oorzaak in het logboek van de server."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor teve um problema ao iniciar este vídeo (erro %lld). Tente novamente em instantes. Se continuar acontecendo, o log do servidor dirá o motivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "На сервере возникла ошибка при запуске видео (код %lld). Попробуйте чуть позже. Если это повторяется, причина будет в журнале сервера."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器在启动此视频时遇到问题（错误 %lld）。请稍后重试。如果反复出现，服务器日志会说明原因。"
+          }
+        }
+      }
+    },
+    "Your server sent an answer Arcfin couldn't read. Try again in a moment." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server hat eine Antwort gesendet, die Arcfin nicht lesen konnte. Versuche es gleich noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor envió una respuesta que Arcfin no pudo leer. Vuelve a intentarlo en un momento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur a envoyé une réponse qu'Arcfin n'a pas pu lire. Réessayez dans un instant."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server ha inviato una risposta che Arcfin non è riuscito a leggere. Riprova tra poco."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーから Arcfin が読み取れない応答が返されました。しばらくしてからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 Arcfin이 읽을 수 없는 응답을 보냈습니다. 잠시 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server stuurde een antwoord dat Arcfin niet kon lezen. Probeer het zo opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor enviou uma resposta que o Arcfin não conseguiu ler. Tente novamente em instantes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер прислал ответ, который Arcfin не смог прочитать. Попробуйте чуть позже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器返回了 Arcfin 无法读取的内容。请稍后重试。"
+          }
+        }
+      }
+    },
+    "Your server took too long to answer. Check your connection, then try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server hat zu lange nicht geantwortet. Prüfe deine Verbindung und versuche es dann erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor tardó demasiado en responder. Comprueba tu conexión y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur a mis trop de temps à répondre. Vérifiez votre connexion, puis réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server ci ha messo troppo a rispondere. Controlla la connessione, poi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーの応答に時間がかかりすぎました。接続を確認してから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버 응답이 너무 오래 걸렸습니다. 연결을 확인한 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server deed er te lang over om te antwoorden. Controleer je verbinding en probeer het dan opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor demorou demais para responder. Verifique sua conexão e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер слишком долго не отвечал. Проверьте подключение и попробуйте снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器响应时间过长。请检查网络连接，然后重试。"
           }
         }
       }
