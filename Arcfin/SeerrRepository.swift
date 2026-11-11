@@ -41,8 +41,12 @@ final class SeerrRepository {
     // connecting Seerr (e.g. via the Quick Connect setup prompt) silently needed a full app
     // relaunch before Discover/Watchlist actually appeared.
     private var client: SeerrHTTPClient?
-    @ObservationIgnored private var isFetchingDiscover = false
-    @ObservationIgnored private var isFetchingRequests = false
+    // One load of each at a time, run on its own so the screen that started it closing
+    // doesn't cancel it. Home, Discover and the Watchlist screen all ask at once, and each
+    // used to start its own, with every one cut off as the screens changed.
+    @ObservationIgnored private var discoverLoad: Task<Void, Never>?
+    @ObservationIgnored private var watchlistLoad: Task<Void, Never>?
+    @ObservationIgnored private var requestsLoad: Task<Void, Never>?
     @ObservationIgnored private var configuredURL: String = ""
     @ObservationIgnored private var configuredUsername: String = ""
     @ObservationIgnored private var configuredPassword: String = ""
@@ -86,6 +90,7 @@ final class SeerrRepository {
             result = await Self.attempt { try await seerr(client) }
             if result.error == nil { return result }
         }
+        if result.wasCancelled { return result }
         if let tmdb, let tmdbFetch {
             let fallback = await Self.attempt { try await tmdbFetch(tmdb) }
             if fallback.error == nil { return fallback }
@@ -127,8 +132,15 @@ final class SeerrRepository {
     }
 
     func loadDiscover() async {
-        guard hasCatalog, !isFetchingDiscover else { return }
-        isFetchingDiscover = true
+        guard hasCatalog else { return }
+        if let discoverLoad { return await discoverLoad.value }
+        let load = Task { await fetchDiscover() }
+        discoverLoad = load
+        await load.value
+        discoverLoad = nil
+    }
+
+    private func fetchDiscover() async {
         let firstLoad = trending.isEmpty
         if firstLoad { isLoadingDiscover = true }
         // Each list on its own: Seerr failing one (it returns 500 when its TMDB request for
@@ -137,11 +149,15 @@ final class SeerrRepository {
         let rM = await fromEither(seerr: { try await $0.discoverMovies() }, tmdb: { try await $0.popular(mediaType: .movie) })
         let rTV = await fromEither(seerr: { try await $0.discoverTV() }, tmdb: { try await $0.popular(mediaType: .tv) })
         let newT = await visible(rT.items), newM = await visible(rM.items), newTV = await visible(rTV.items)
-        if !newT.isEmpty  || (firstLoad && rT.error == nil) { trending = newT }
-        if !newM.isEmpty  || (firstLoad && rM.error == nil) { popularMovies = newM }
-        if !newTV.isEmpty || (firstLoad && rTV.error == nil) { popularTV = newTV }
+        if !newT.isEmpty  || (firstLoad && rT.error == nil && !rT.wasCancelled) { trending = newT }
+        if !newM.isEmpty  || (firstLoad && rM.error == nil && !rM.wasCancelled) { popularMovies = newM }
+        if !newTV.isEmpty || (firstLoad && rTV.error == nil && !rTV.wasCancelled) { popularTV = newTV }
 
         let results = [rT, rM, rTV]
+        guard !results.contains(where: \.wasCancelled) else {
+            if firstLoad { isLoadingDiscover = false }
+            return
+        }
         let errors = results.compactMap(\.error)
         authFailed = results.contains(where: \.isAuthFailure)
         // Only worth showing when nothing at all came back.
@@ -150,18 +166,25 @@ final class SeerrRepository {
             Telemetry.logger(category: "SeerrRepository").error("loadDiscover failed: \(error, privacy: .public)")
         }
         if firstLoad { isLoadingDiscover = false }
-        isFetchingDiscover = false
     }
 
     private struct ListResult: Sendable {
         var items: [SeerrItem] = []
         var error: String?
         var isAuthFailure = false
+        var wasCancelled = false
+    }
+
+    /// A request cut off by its task ending, which says nothing about Seerr.
+    nonisolated static func isCancellation(_ error: Error) -> Bool {
+        error is CancellationError || (error as? URLError)?.code == .cancelled
     }
 
     private static func attempt(_ fetch: @Sendable () async throws -> [SeerrItem]) async -> ListResult {
         do {
             return ListResult(items: try await fetch())
+        } catch where isCancellation(error) {
+            return ListResult(wasCancelled: true)
         } catch SeerrError.authFailed {
             return ListResult(error: SeerrError.authFailed.localizedDescription, isAuthFailure: true)
         } catch {
@@ -169,12 +192,24 @@ final class SeerrRepository {
         }
     }
 
-    func loadWatchlist() async {
+    /// `refresh` is a pull to refresh: every title's details are fetched again.
+    func loadWatchlist(refresh: Bool = false) async {
+        guard client != nil else { return }
+        if let watchlistLoad { return await watchlistLoad.value }
+        let load = Task { await fetchWatchlist(refresh: refresh) }
+        watchlistLoad = load
+        await load.value
+        watchlistLoad = nil
+    }
+
+    private func fetchWatchlist(refresh: Bool) async {
         guard let client else { return }
         // A failed fetch keeps what's shown, so the shelf doesn't vanish and come back.
         let fetched: [SeerrItem]
         do {
-            fetched = try await client.watchlist()
+            fetched = try await client.watchlist(refresh: refresh)
+        } catch where Self.isCancellation(error) {
+            return
         } catch {
             Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
             return
@@ -192,8 +227,16 @@ final class SeerrRepository {
     }
 
     func loadRequests() async {
-        guard let client, !isFetchingRequests else { return }
-        isFetchingRequests = true
+        guard client != nil else { return }
+        if let requestsLoad { return await requestsLoad.value }
+        let load = Task { await fetchRequests() }
+        requestsLoad = load
+        await load.value
+        requestsLoad = nil
+    }
+
+    private func fetchRequests() async {
+        guard let client else { return }
         let firstLoad = requests.isEmpty
         if firstLoad { isLoadingRequests = true }
         do {
@@ -229,6 +272,7 @@ final class SeerrRepository {
             indexForSpotlight()
         } catch SeerrError.authFailed {
             authFailed = true
+        } catch where Self.isCancellation(error) {
         } catch {
             let nsError = error as NSError
             Telemetry.logger(category: "SeerrRepository").error(
@@ -236,7 +280,6 @@ final class SeerrRepository {
             )
         }
         if firstLoad { isLoadingRequests = false }
-        isFetchingRequests = false
     }
 
     func search(query: String) async -> [SeerrItem] {
