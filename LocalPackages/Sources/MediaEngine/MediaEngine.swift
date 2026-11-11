@@ -37,6 +37,12 @@ public protocol MediaPlayerProtocol: AnyObject, Sendable {
 
 /// A live stream the player keeps some of, so it can be paused and gone back into. Seconds are
 /// on the player's own timeline for the stream.
+/// An engine that can lift speech above music and effects.
+@MainActor
+public protocol DialogueBoosting: AnyObject {
+    var isDialogueBoosted: Bool { get set }
+}
+
 @MainActor
 public protocol LiveRewindable: AnyObject {
     /// What can be gone back into so far, up to the live edge; nil before anything is kept.

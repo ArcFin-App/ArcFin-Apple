@@ -235,3 +235,38 @@ public enum PlaybackEngineSelector {
         return chosen
     }
 }
+
+// MARK: - Dialogue boost
+
+extension VLCEnginePlayer: DialogueBoosting {
+    /// libVLC's equalizer, shaped for speech: the low end and the top of the treble down,
+    /// the voice band (about 600 Hz to 6 kHz) up, and the preamp lowered so the lift doesn't clip.
+    public var isDialogueBoosted: Bool {
+        get { vlcPlayer.equalizer != nil }
+        set {
+            guard newValue != isDialogueBoosted else { return }
+            vlcPlayer.equalizer = newValue ? Self.dialogueEqualizer() : nil
+        }
+    }
+
+    private static func dialogueEqualizer() -> Equalizer {
+        let equalizer = Equalizer()
+        equalizer.preampGain = EqualizerGain(-4)
+        let gains: [Float] = (0..<Equalizer.bandCount).map { index in
+            let hertz = Equalizer.bandFrequency(at: index) ?? 1000
+            switch hertz {
+            case ..<100: return -5
+            case ..<250: return -3
+            case ..<450: return 0
+            case ..<800: return 3
+            case ..<2000: return 5
+            case ..<4000: return 6
+            case ..<8000: return 3
+            case ..<13000: return -1
+            default: return -2
+            }
+        }
+        try? equalizer.setBands(gains)
+        return equalizer
+    }
+}

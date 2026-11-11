@@ -504,7 +504,9 @@ extension PlayerView {
                     showTrackMenu = false
                     model.changeTrack(subtitleIndex: .some(index))
                 },
-                audioDescriptionIndices: model.audioDescriptionIndices
+                audioDescriptionIndices: model.audioDescriptionIndices,
+                dialogueBoost: model.supportsDialogueBoost
+                    ? Binding(get: { model.isDialogueBoosted }, set: { model.setDialogueBoost($0) }) : nil
             )
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }

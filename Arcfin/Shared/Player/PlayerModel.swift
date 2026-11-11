@@ -434,6 +434,21 @@ final class PlayerModel {
         Task { await player.setRate(rate) }
     }
 
+    // MARK: Dialogue boost
+
+    static let dialogueBoostKey = "dialogueBoost"
+
+    /// Only where the engine can shape the sound: VLC, for now.
+    var supportsDialogueBoost: Bool { player is DialogueBoosting }
+    private(set) var isDialogueBoosted = UserDefaults.standard.bool(forKey: PlayerModel.dialogueBoostKey)
+
+    /// Remembered for every title; applied again each time a stream loads.
+    func setDialogueBoost(_ on: Bool) {
+        isDialogueBoosted = on
+        UserDefaults.standard.set(on, forKey: Self.dialogueBoostKey)
+        (player as? DialogueBoosting)?.isDialogueBoosted = on
+    }
+
     // MARK: Hold for speed
 
     /// Settings › Playback › Hold Speed: how fast playback runs while held.
@@ -657,6 +672,7 @@ final class PlayerModel {
             }
             await player.play()
             playStartedAt = Date()
+            (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
             loadingStage = nil
             await applyRememberedRate()
             if !isLive { sharePlay.playerOpened(item) }

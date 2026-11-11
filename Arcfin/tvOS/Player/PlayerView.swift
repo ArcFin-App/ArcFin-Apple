@@ -321,7 +321,9 @@ struct PlayerView: View {
                 },
                 audioDescriptionIndices: model.audioDescriptionIndices,
                 rowBackground: Color.clear,
-                followsFocus: true
+                followsFocus: true,
+                dialogueBoost: model.supportsDialogueBoost
+                    ? Binding(get: { model.isDialogueBoosted }, set: { model.setDialogueBoost($0) }) : nil
             )
             .navigationTitle("Subtitles & Audio")
             .toolbar {

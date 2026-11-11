@@ -602,15 +602,31 @@ struct TrackSelectionSheet: View {
     var rowBackground: Color = DT.Color.backgroundSecondary
     /// Darkens the focused row's text, for Apple TV's light focus platter.
     var followsFocus = false
+    /// Set where the engine can lift speech above music and effects.
+    var dialogueBoost: Binding<Bool>? = nil
 
     var body: some View {
         List {
             if !audioStreams.isEmpty {
-                Section("Audio") {
+                Section {
                     ForEach(audioStreams, id: \.index) { stream in
                         trackRow(audioLabel(for: stream), isSelected: stream.index == selectedAudioIndex) {
                             onSelectAudio(stream.index)
                         }
+                    }
+                    if let dialogueBoost {
+                        Toggle(isOn: dialogueBoost) {
+                            Label("Dialogue Boost", systemImage: "waveform.badge.plus")
+                                .foregroundStyle(DT.Color.textPrimary)
+                        }
+                        .tint(DT.Color.accent)
+                        .listRowBackground(rowBackground)
+                    }
+                } header: {
+                    Text("Audio")
+                } footer: {
+                    if dialogueBoost != nil {
+                        Text("Makes speech easier to hear over music and effects.")
                     }
                 }
             }
