@@ -47,6 +47,15 @@ final class LiveTVModel {
     private(set) var seriesTimers: [LiveTVSeriesTimer] = []
     private(set) var isLoadingRecordings = true
 
+    /// Search, on the Live TV screen and in Browse.
+    var searchQuery = ""
+    private(set) var searchChannels: [LiveTVChannel] = []
+    private(set) var searchPrograms: [LiveTVProgram] = []
+    private(set) var isSearching = false
+    private var searchTask: Task<Void, Never>?
+
+    var hasSearchResults: Bool { !searchChannels.isEmpty || !searchPrograms.isEmpty }
+
     var selectedProgram: LiveTVProgram?
     var playbackRequest: MediaDetailView.PlaybackRequest?
     var actionError: String?
@@ -144,6 +153,7 @@ final class LiveTVModel {
 
     private func setFavorite(_ favorite: Bool, on channel: LiveTVChannel) {
         if let i = channels.firstIndex(where: { $0.id == channel.id }) { channels[i].isFavorite = favorite }
+        if let i = searchChannels.firstIndex(where: { $0.id == channel.id }) { searchChannels[i].isFavorite = favorite }
         if favorite {
             guard !favoriteChannels.contains(where: { $0.id == channel.id }) else { return }
             var updated = channel
@@ -154,10 +164,11 @@ final class LiveTVModel {
         }
     }
 
-    /// Plays a channel, with the others in the list a channel up or down away.
-    func play(_ channel: LiveTVChannel) {
-        let list = visibleChannels.contains(where: { $0.id == channel.id }) ? visibleChannels : channels
-        PlayQueue.start(list.map(\.mediaItem))
+    /// Plays a channel, with the others in the list a channel up or down away: the list it
+    /// was picked from, or else the channel list.
+    func play(_ channel: LiveTVChannel, among list: [LiveTVChannel]? = nil) {
+        let list = list ?? (visibleChannels.contains(where: { $0.id == channel.id }) ? visibleChannels : channels)
+        PlayQueue.start((list.contains(where: { $0.id == channel.id }) ? list : [channel]).map(\.mediaItem))
         playbackRequest = MediaDetailView.PlaybackRequest(item: channel.mediaItem, startTicks: 0)
     }
 
@@ -167,8 +178,39 @@ final class LiveTVModel {
         playbackRequest = MediaDetailView.PlaybackRequest(item: recording.item, startTicks: resume)
     }
 
+    /// The programme's channel, from whatever's loaded; a programme found by search can be on
+    /// one that isn't, and its id and name are enough to play it.
     func channel(for program: LiveTVProgram) -> LiveTVChannel? {
-        channels.first { $0.id == program.channelId } ?? favoriteChannels.first { $0.id == program.channelId }
+        channels.first { $0.id == program.channelId }
+            ?? favoriteChannels.first { $0.id == program.channelId }
+            ?? searchChannels.first { $0.id == program.channelId }
+            ?? LiveTVChannel(id: program.channelId, name: program.channelName ?? "")
+    }
+
+    // MARK: - Search
+
+    /// Waits for a pause in typing and drops a search still running for an older query.
+    func search(authManager: AuthManager) {
+        searchTask?.cancel()
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, let (credential, header) = session(authManager) else {
+            searchChannels = []
+            searchPrograms = []
+            isSearching = false
+            return
+        }
+        isSearching = true
+        let includePrograms = hasGuide != false
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            let found = try? await client.searchLiveTV(credential: credential, authHeader: header,
+                                                       query: query, includePrograms: includePrograms)
+            guard !Task.isCancelled else { return }
+            searchChannels = found?.channels ?? []
+            searchPrograms = found?.programs ?? []
+            isSearching = false
+        }
     }
 
     // MARK: - Guide

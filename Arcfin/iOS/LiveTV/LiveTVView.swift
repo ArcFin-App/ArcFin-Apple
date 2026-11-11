@@ -13,19 +13,27 @@ struct LiveTVView: View {
 
     var body: some View {
         Group {
-            switch tab {
-            case .channels: LiveTVChannelsList(model: model)
-            case .guide: LiveTVGuideView(model: model)
-            case .recordings: LiveTVRecordingsView(model: model)
+            if !model.searchQuery.isEmpty {
+                LiveTVSearchResults(model: model)
+            } else {
+                switch tab {
+                case .channels: LiveTVChannelsList(model: model)
+                case .guide: LiveTVGuideView(model: model)
+                case .recordings: LiveTVRecordingsView(model: model)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .screenBackground()
-        .safeAreaBar(edge: .top, spacing: 0) { tabPicker }
+        .safeAreaBar(edge: .top, spacing: 0) {
+            if model.searchQuery.isEmpty { tabPicker }
+        }
         .navigationTitle(library.name)
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $model.searchQuery, prompt: "Channels and programmes")
+        .onChange(of: model.searchQuery) { _, _ in model.search(authManager: authManager) }
         .toolbar {
-            if tab != .recordings, model.hasFavorites || model.favoritesOnly {
+            if tab != .recordings, model.searchQuery.isEmpty, model.hasFavorites || model.favoritesOnly {
                 ToolbarItem(placement: .topBarTrailing) {
                     Toggle(isOn: $model.favoritesOnly.animation(DT.Animation.fast)) {
                         Label("Favorites Only", systemImage: model.favoritesOnly ? "star.fill" : "star")
@@ -46,23 +54,8 @@ struct LiveTVView: View {
             guard newTab == .recordings else { return }
             Task { await model.loadRecordings(authManager: authManager) }
         }
-        .sheet(item: $model.selectedProgram) { program in
-            LiveTVProgramSheet(model: model, program: program)
-        }
-        .fullScreenCover(item: $model.playbackRequest, onDismiss: {
-            PlayQueue.clear()
+        .liveTVPresentations(model: model) {
             Task { await model.loadRecordings(authManager: authManager) }
-        }) { request in
-            PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
-                PlayerView.keepOrientationOnNextDisappear = true
-                model.playbackRequest = MediaDetailView.PlaybackRequest(item: next, startTicks: 0)
-            }
-            .id(request.item.id)
-        }
-        .alert("Live TV", isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(model.actionError ?? "")
         }
     }
 
@@ -76,6 +69,43 @@ struct LiveTVView: View {
         .labelsHidden()
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Programme sheet and player
+
+extension View {
+    /// The programme sheet, the player for a channel or recording, and the recording error,
+    /// for the Live TV screen and for Live TV results in Browse's search.
+    func liveTVPresentations(model: LiveTVModel, onPlayerClosed: @escaping () -> Void = {}) -> some View {
+        modifier(LiveTVPresentations(model: model, onPlayerClosed: onPlayerClosed))
+    }
+}
+
+private struct LiveTVPresentations: ViewModifier {
+    @Bindable var model: LiveTVModel
+    let onPlayerClosed: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(item: $model.selectedProgram) { program in
+                LiveTVProgramSheet(model: model, program: program)
+            }
+            .fullScreenCover(item: $model.playbackRequest, onDismiss: {
+                PlayQueue.clear()
+                onPlayerClosed()
+            }) { request in
+                PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                    PlayerView.keepOrientationOnNextDisappear = true
+                    model.playbackRequest = MediaDetailView.PlaybackRequest(item: next, startTicks: 0)
+                }
+                .id(request.item.id)
+            }
+            .alert("Live TV", isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(model.actionError ?? "")
+            }
     }
 }
 

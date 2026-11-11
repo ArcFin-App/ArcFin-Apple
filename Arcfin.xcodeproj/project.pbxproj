@@ -135,6 +135,7 @@
 				iOS/LiveTV/LiveTVGuideView.swift = (ios, );
 				iOS/LiveTV/LiveTVProgramSheet.swift = (ios, );
 				iOS/LiveTV/LiveTVRecordingsView.swift = (ios, );
+				iOS/LiveTV/LiveTVSearchResults.swift = (ios, );
 				iOS/LiveTV/LiveTVView.swift = (ios, );
 				iOS/Lock/AppLockView.swift = (ios, );
 				iOS/Login/LoginPlatform.swift = (ios, );

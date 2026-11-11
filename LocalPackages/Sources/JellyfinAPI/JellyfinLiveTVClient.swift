@@ -171,6 +171,36 @@ extension JellyfinMediaClient {
         return channel.toChannel()
     }
 
+    /// Channels and programmes whose name matches, best match first. The channel list only
+    /// holds the pages loaded so far, so search asks the server. Programmes that have already
+    /// ended are left out, the rest go soonest first.
+    public func searchLiveTV(credential: ServerCredential, authHeader: String, query: String,
+                             includePrograms: Bool = true, limit: Int = 30) async throws -> (channels: [LiveTVChannel], programs: [LiveTVProgram]) {
+        func items(_ type: String) -> URLComponents {
+            var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Items"), resolvingAgainstBaseURL: false)!
+            comps.queryItems = [
+                .init(name: "userId", value: credential.userID),
+                .init(name: "searchTerm", value: query),
+                .init(name: "includeItemTypes", value: type),
+                .init(name: "recursive", value: "true"),
+                .init(name: "limit", value: "\(limit)"),
+                .init(name: "fields", value: "ChannelInfo,Overview"),
+                .init(name: "enableUserData", value: "true"),
+                .init(name: "enableImageTypes", value: "Primary"),
+                .init(name: "imageTypeLimit", value: "1"),
+                .init(name: "enableTotalRecordCount", value: "false"),
+            ]
+            return comps
+        }
+        async let channelPage: LiveTVPage<ChannelResponse> = getLiveTV(items("TvChannel"), authHeader: authHeader)
+        var programs: [LiveTVProgram] = []
+        if includePrograms, let page: LiveTVPage<ProgramResponse> = try? await getLiveTV(items("LiveTvProgram"), authHeader: authHeader) {
+            let now = Date()
+            programs = page.items.compactMap { $0.toProgram() }.filter { $0.endDate > now }.sorted { $0.startDate < $1.startDate }
+        }
+        return (try await channelPage.items.map { $0.toChannel() }, programs)
+    }
+
     func getLiveTVChannelCount(credential: ServerCredential, authHeader: String) async throws -> Int {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("LiveTv/Channels"),
                                   resolvingAgainstBaseURL: false)!
