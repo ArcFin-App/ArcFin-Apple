@@ -406,6 +406,9 @@ public struct JellyfinMediaClient: Sendable {
     /// How many titles of its main kind a library holds: movies, shows, collections and so on.
     /// Asks for the total only (`Limit=0`).
     public func getLibraryItemCount(credential: ServerCredential, authHeader: String, library: JellyfinLibrary) async throws -> Int {
+        if library.collectionType == .livetv {
+            return try await getLiveTVChannelCount(credential: credential, authHeader: authHeader)
+        }
         let itemTypes: String = switch library.collectionType {
         case .movies: "Movie"
         case .tvshows: "Series"
@@ -1267,6 +1270,24 @@ struct JellyfinItemResponse: Decodable {
     }
 }
 
+/// Jellyfin writes seven fractional digits, which ISO8601DateFormatter won't read.
+enum JellyfinDate {
+    static func parse(_ raw: String) -> Date? {
+        var text = raw
+        if let dot = text.firstIndex(of: "."), let end = text[dot...].firstIndex(where: { !$0.isNumber && $0 != "." }) {
+            let fraction = text[text.index(after: dot)..<end]
+            text.replaceSubrange(dot..<end, with: "." + fraction.prefix(3))
+        }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+    }
+
+    static func string(_ date: Date) -> String {
+        ISO8601DateFormatter().string(from: date)
+    }
+}
+
 struct UserDataResponse: Decodable {
     let playbackPositionTicks: Int64?
     let playCount: Int?
@@ -1276,17 +1297,7 @@ struct UserDataResponse: Decodable {
     let likes: Bool?
     let lastPlayedDate: String?
 
-    /// Jellyfin writes seven fractional digits, which ISO8601DateFormatter won't read.
-    var lastPlayed: Date? {
-        guard var text = lastPlayedDate else { return nil }
-        if let dot = text.firstIndex(of: "."), let end = text[dot...].firstIndex(where: { !$0.isNumber && $0 != "." }) {
-            let fraction = text[text.index(after: dot)..<end]
-            text.replaceSubrange(dot..<end, with: "." + fraction.prefix(3))
-        }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: text) ?? ISO8601DateFormatter().date(from: text)
-    }
+    var lastPlayed: Date? { lastPlayedDate.flatMap(JellyfinDate.parse) }
 
     enum CodingKeys: String, CodingKey {
         case likes = "Likes"

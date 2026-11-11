@@ -84,6 +84,8 @@ public struct JellyfinPlaybackInfo: Sendable {
     /// Every version of the item (e.g. 4K and 1080p files merged into one title), in the
     /// server's order; one entry when there's only one.
     public let versions: [MediaVersion]
+    /// A live TV channel's tuner stream, opened by the PlaybackInfo call; close it when done.
+    public var liveStreamId: String? = nil
 
     public var isTranscoding: Bool { playMethod == .transcode }
     public var isDolbyVision: Bool { (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby") }
@@ -230,6 +232,9 @@ extension JellyfinMediaClient {
                 .init(name: "mediaSourceId", value: source.id),
                 .init(name: "api_key", value: credential.accessToken),
             ]
+            if let liveStreamId = source.liveStreamId {
+                directComps.queryItems?.append(.init(name: "LiveStreamId", value: liveStreamId))
+            }
             playURL = directComps.url!
             playMethod = .directPlay
         }
@@ -258,7 +263,8 @@ extension JellyfinMediaClient {
             trickplay: source.trickplayInfo?.preferred(),
             videoStream: videoStream,
             bitrate: source.bitrate ?? videoStream?.bitRate,
-            versions: decoded.mediaSources.map { MediaVersion(id: $0.id, name: $0.name ?? "Version") }
+            versions: decoded.mediaSources.map { MediaVersion(id: $0.id, name: $0.name ?? "Version") },
+            liveStreamId: source.liveStreamId
         )
     }
 
@@ -306,34 +312,38 @@ extension JellyfinMediaClient {
 
     // MARK: - Playback progress reporting
 
-    public func reportPlaybackStart(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64) async {
+    public func reportPlaybackStart(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing",
-                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false)
+                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false,
+                                liveStreamId: liveStreamId)
     }
 
-    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool) async {
+    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Progress",
-                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: isPaused)
+                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: isPaused,
+                                liveStreamId: liveStreamId)
     }
 
-    public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64) async {
+    public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Stopped",
-                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false)
+                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false,
+                                liveStreamId: liveStreamId)
     }
 
-    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool) async {
+    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String?) async {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent(path))
         req.httpMethod = "POST"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 8
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "ItemId": itemId,
             "MediaSourceId": mediaSourceId,
             "PositionTicks": positionTicks,
             "IsPaused": isPaused,
             "PlayMethod": "DirectPlay",
         ]
+        if let liveStreamId { body["LiveStreamId"] = liveStreamId }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         _ = try? await URLSession.arcfin.data(for: req)
     }
@@ -695,9 +705,11 @@ private struct MediaSourceResponse: Decodable {
     let trickplayInfo: [String: TrickplayResponse]?
     let bitrate: Int?
     let name: String?
+    let liveStreamId: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", container = "Container", runTimeTicks = "RunTimeTicks"
+        case liveStreamId = "LiveStreamId"
         case transcodingUrl = "TranscodingUrl", transcodeReasons = "TranscodeReasons"
         case mediaStreams = "MediaStreams"
         case trickplayInfo = "TrickplayInfo"
