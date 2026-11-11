@@ -13,6 +13,8 @@ struct LiveTVProgramDetails: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @State private var isWorking = false
+    /// Set while the series options show, before the series is recorded.
+    @State private var seriesOptions: LiveTVSeriesOptions?
 
     /// The programme with any timer change made while the sheet is open.
     private var current: LiveTVProgram { model.selectedProgram?.id == program.id ? model.selectedProgram ?? program : program }
@@ -113,6 +115,9 @@ struct LiveTVProgramDetails: View {
                     if current.isSeries { seriesButton }
                 }
                 .disabled(isWorking)
+                if let binding = Binding($seriesOptions) {
+                    seriesOptionsPanel(binding)
+                }
             }
         }
     }
@@ -134,9 +139,14 @@ struct LiveTVProgramDetails: View {
 
     private var seriesButton: some View {
         Button {
-            run { current.seriesTimerId != nil
-                ? await model.cancelRecording(of: current, series: true, authManager: authManager)
-                : await model.record(current, series: true, authManager: authManager) }
+            if current.seriesTimerId != nil {
+                run { await model.cancelRecording(of: current, series: true, authManager: authManager) }
+            } else if seriesOptions == nil {
+                // The options come first, with the server's defaults filled in.
+                run { seriesOptions = await model.seriesDefaults(for: current, authManager: authManager) }
+            } else {
+                seriesOptions = nil
+            }
         } label: {
             Label(current.seriesTimerId != nil ? "Stop Series" : "Record Series",
                   systemImage: current.seriesTimerId != nil ? "repeat.circle.fill" : "repeat.circle")
@@ -145,6 +155,27 @@ struct LiveTVProgramDetails: View {
         .buttonStyle(.glass)
         .tint(current.seriesTimerId != nil ? DT.Color.palette("F43F5E") : nil)
         .controlSize(.large)
+    }
+
+    private func seriesOptionsPanel(_ options: Binding<LiveTVSeriesOptions>) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            LiveTVSeriesOptionsForm(options: options)
+            Button {
+                let chosen = options.wrappedValue
+                run {
+                    await model.record(current, series: true, options: chosen, authManager: authManager)
+                    seriesOptions = nil
+                }
+            } label: {
+                Label("Record Every Episode", systemImage: "repeat.circle.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.glassProminent)
+            .tint(DT.Color.accent)
+            .controlSize(.large)
+            .disabled(isWorking)
+        }
+        .padding(16)
+        .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
     }
 
     private func run(_ work: @escaping () async -> Void) {

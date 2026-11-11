@@ -90,6 +90,12 @@ private struct LiveTVPresentations: ViewModifier {
             .sheet(item: $model.selectedProgram) { program in
                 LiveTVProgramSheet(model: model, program: program)
             }
+            .sheet(item: $model.editingSeriesTimer) { seriesTimer in
+                LiveTVSeriesEditor(model: model, seriesTimer: seriesTimer) { model.editingSeriesTimer = nil }
+                    .padding(DT.Spacing.lg)
+                    .frame(minWidth: 440, idealWidth: 480)
+                    .screenBackground()
+            }
             .onChange(of: model.playbackRequest) { _, request in
                 guard let request else { return }
                 playbackPresenter.present(request.item, startTicks: request.startTicks)

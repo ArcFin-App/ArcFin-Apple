@@ -117,6 +117,48 @@ public struct LiveTVSeriesTimer: Sendable, Identifiable, Equatable, Hashable {
     public var imageTag: String?
 }
 
+/// How a series is recorded: the parts of Jellyfin's series timer the app lets you change.
+public struct LiveTVSeriesOptions: Sendable, Equatable, Hashable {
+    public var recordNewOnly: Bool
+    public var recordAnyChannel: Bool
+    public var recordAnyTime: Bool
+    /// Minutes to start early and keep going after the end.
+    public var startEarlyMinutes: Int
+    public var endLateMinutes: Int
+    /// How many episodes to keep; 0 keeps them all.
+    public var keepUpTo: Int
+
+    public init(recordNewOnly: Bool = true, recordAnyChannel: Bool = false, recordAnyTime: Bool = true,
+                startEarlyMinutes: Int = 0, endLateMinutes: Int = 0, keepUpTo: Int = 0) {
+        self.recordNewOnly = recordNewOnly; self.recordAnyChannel = recordAnyChannel
+        self.recordAnyTime = recordAnyTime; self.startEarlyMinutes = startEarlyMinutes
+        self.endLateMinutes = endLateMinutes; self.keepUpTo = keepUpTo
+    }
+
+    init(json: [String: Any]) {
+        recordNewOnly = json["RecordNewOnly"] as? Bool ?? true
+        recordAnyChannel = json["RecordAnyChannel"] as? Bool ?? false
+        recordAnyTime = json["RecordAnyTime"] as? Bool ?? true
+        startEarlyMinutes = (json["PrePaddingSeconds"] as? Int ?? 0) / 60
+        endLateMinutes = (json["PostPaddingSeconds"] as? Int ?? 0) / 60
+        keepUpTo = json["KeepUpTo"] as? Int ?? 0
+    }
+
+    func applied(to json: [String: Any]) -> [String: Any] {
+        var json = json
+        json["RecordNewOnly"] = recordNewOnly
+        json["RecordAnyChannel"] = recordAnyChannel
+        json["RecordAnyTime"] = recordAnyTime
+        json["PrePaddingSeconds"] = startEarlyMinutes * 60
+        json["PostPaddingSeconds"] = endLateMinutes * 60
+        json["KeepUpTo"] = keepUpTo
+        // Padding the server was told about is what it records; without these it can ignore it.
+        json["IsPrePaddingRequired"] = startEarlyMinutes > 0
+        json["IsPostPaddingRequired"] = endLateMinutes > 0
+        return json
+    }
+}
+
 // MARK: - Live TV requests
 
 extension JellyfinMediaClient {
@@ -289,11 +331,38 @@ extension JellyfinMediaClient {
         try await postLiveTV("LiveTv/Timers", body: defaults, credential: credential, authHeader: authHeader)
     }
 
-    /// Records every showing of the series the programme belongs to, with the server's defaults
-    /// (new episodes on this channel, at any time).
-    public func recordLiveTVSeries(credential: ServerCredential, authHeader: String, programId: String) async throws {
+    /// The server's starting options for recording the series a programme belongs to.
+    public func liveTVSeriesDefaults(credential: ServerCredential, authHeader: String, programId: String) async throws -> LiveTVSeriesOptions {
         let defaults = try await timerDefaults(credential: credential, authHeader: authHeader, programId: programId)
-        try await postLiveTV("LiveTv/SeriesTimers", body: defaults, credential: credential, authHeader: authHeader)
+        return LiveTVSeriesOptions(json: try jsonObject(defaults))
+    }
+
+    /// Records every showing of the series the programme belongs to, as the options say.
+    public func recordLiveTVSeries(credential: ServerCredential, authHeader: String, programId: String,
+                                   options: LiveTVSeriesOptions? = nil) async throws {
+        var body = try await timerDefaults(credential: credential, authHeader: authHeader, programId: programId)
+        if let options {
+            body = try JSONSerialization.data(withJSONObject: options.applied(to: try jsonObject(body)))
+        }
+        try await postLiveTV("LiveTv/SeriesTimers", body: body, credential: credential, authHeader: authHeader)
+    }
+
+    /// GET /LiveTv/SeriesTimers/{id}: a series recording's options, to edit them.
+    public func liveTVSeriesOptions(credential: ServerCredential, authHeader: String, seriesTimerId: String) async throws -> LiveTVSeriesOptions {
+        LiveTVSeriesOptions(json: try jsonObject(try await seriesTimerData(credential: credential, authHeader: authHeader, id: seriesTimerId)))
+    }
+
+    /// POST /LiveTv/SeriesTimers/{id}: changes a series recording's options, keeping the rest.
+    public func updateLiveTVSeriesTimer(credential: ServerCredential, authHeader: String, seriesTimerId: String,
+                                        options: LiveTVSeriesOptions) async throws {
+        let current = try jsonObject(try await seriesTimerData(credential: credential, authHeader: authHeader, id: seriesTimerId))
+        let body = try JSONSerialization.data(withJSONObject: options.applied(to: current))
+        try await postLiveTV("LiveTv/SeriesTimers/\(seriesTimerId)", body: body, credential: credential, authHeader: authHeader)
+    }
+
+    /// DELETE /LiveTv/Recordings/{id}: removes a recording from the server, file and all.
+    public func deleteLiveTVRecording(credential: ServerCredential, authHeader: String, recordingId: String) async throws {
+        try await deleteLiveTV("LiveTv/Recordings/\(recordingId)", credential: credential, authHeader: authHeader)
     }
 
     public func cancelLiveTVTimer(credential: ServerCredential, authHeader: String, timerId: String) async throws {
@@ -317,6 +386,24 @@ extension JellyfinMediaClient {
     }
 
     // MARK: Helpers
+
+    private func seriesTimerData(credential: ServerCredential, authHeader: String, id: String) async throws -> Data {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("LiveTv/SeriesTimers/\(id)"))
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+
+    private func jsonObject(_ data: Data) throws -> [String: Any] {
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw URLError(.cannotParseResponse)
+        }
+        return object
+    }
 
     /// GET /LiveTv/Timers/Defaults: the server's ready-made timer for a programme, sent back as is.
     private func timerDefaults(credential: ServerCredential, authHeader: String, programId: String) async throws -> Data {

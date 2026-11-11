@@ -16,6 +16,8 @@ struct LiveTVRecordingsView: View {
             : [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
     }
 
+    @State private var deletingRecording: LiveTVRecording?
+
     private var isEmpty: Bool {
         model.recordings.isEmpty && model.timers.isEmpty && model.seriesTimers.isEmpty
     }
@@ -50,6 +52,14 @@ struct LiveTVRecordingsView: View {
                                         LiveTVRecordingCard(recording: recording)
                                     }
                                     .arcfinPlainButton(cornerRadius: DT.Radius.card, prominent: false)
+                                    .contextMenu {
+                                        Button { model.play(recording) } label: { Label("Play", systemImage: "play.fill") }
+                                        if ProfileRules.shared.canRecordLiveTV {
+                                            Button(role: .destructive) { deletingRecording = recording } label: {
+                                                Label("Delete Recording", systemImage: "trash")
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -69,6 +79,8 @@ struct LiveTVRecordingsView: View {
                         section("Series") {
                             ForEach(model.seriesTimers) { seriesTimer in
                                 LiveTVSeriesTimerRow(seriesTimer: seriesTimer) {
+                                    model.editingSeriesTimer = seriesTimer
+                                } cancel: {
                                     Task { await model.cancel(seriesTimer, authManager: authManager) }
                                 }
                             }
@@ -80,6 +92,16 @@ struct LiveTVRecordingsView: View {
                 .padding(.bottom, 32)
             }
             .refreshable { await model.loadRecordings(authManager: authManager) }
+            .confirmationDialog("Delete \(deletingRecording?.item.name ?? "")?",
+                                isPresented: Binding(get: { deletingRecording != nil }, set: { if !$0 { deletingRecording = nil } }),
+                                titleVisibility: .visible) {
+                Button("Delete Recording", role: .destructive) {
+                    guard let recording = deletingRecording else { return }
+                    Task { await model.delete(recording, authManager: authManager) }
+                }
+            } message: {
+                Text("The recording is removed from your server for everyone.")
+            }
         }
     }
 
@@ -207,11 +229,40 @@ private struct LiveTVTimerRow: View {
 private struct LiveTVSeriesTimerRow: View {
     @Environment(MediaRepository.self) private var mediaRepo
     let seriesTimer: LiveTVSeriesTimer
+    let edit: () -> Void
     let cancel: () -> Void
 
     @State private var confirming = false
 
     var body: some View {
+        HStack(spacing: 12) {
+            if ProfileRules.shared.canRecordLiveTV {
+                Button(action: edit) { summary }
+                    .arcfinPlainButton(cornerRadius: DT.Radius.sm, prominent: false)
+                    .accessibilityHint("Changes how the series is recorded")
+                Button(role: .destructive) { confirming = true } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .frame(width: 44, height: 44)
+                }
+                .arcfinPlainButton(cornerRadius: 22 * DT.Scale.font)
+                .accessibilityLabel("Stop Recording Series")
+            } else {
+                summary
+            }
+        }
+        .padding(.leading, 14)
+        .padding(.trailing, 4)
+        .padding(.vertical, 8)
+        .confirmationDialog("Stop recording \(seriesTimer.name)?", isPresented: $confirming, titleVisibility: .visible) {
+            Button("Stop Recording Series", role: .destructive, action: cancel)
+        } message: {
+            Text("Episodes already recorded stay on your server.")
+        }
+    }
+
+    private var summary: some View {
         HStack(spacing: 12) {
             Group {
                 if let id = seriesTimer.imageItemId,
@@ -245,25 +296,8 @@ private struct LiveTVSeriesTimerRow: View {
                     .lineLimit(2)
             }
             Spacer(minLength: 8)
-            if ProfileRules.shared.canRecordLiveTV {
-                Button(role: .destructive) { confirming = true } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .frame(width: 44, height: 44)
-            }
-            .arcfinPlainButton(cornerRadius: 22 * DT.Scale.font)
-            .accessibilityLabel("Stop Recording Series")
-            }
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 4)
-        .padding(.vertical, 8)
-        .confirmationDialog("Stop recording \(seriesTimer.name)?", isPresented: $confirming, titleVisibility: .visible) {
-            Button("Stop Recording Series", role: .destructive, action: cancel)
-        } message: {
-            Text("Episodes already recorded stay on your server.")
-        }
+        .contentShape(Rectangle())
     }
 
     private var detail: String {

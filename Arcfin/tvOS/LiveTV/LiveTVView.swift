@@ -123,6 +123,12 @@ private struct LiveTVPresentations: ViewModifier {
                         .padding(.vertical, 24)
                 }
             }
+            .appSheet(item: $model.editingSeriesTimer) { seriesTimer in
+                ScrollView {
+                    LiveTVSeriesEditor(model: model, seriesTimer: seriesTimer) { model.editingSeriesTimer = nil }
+                        .padding(.vertical, 24)
+                }
+            }
             .fullScreenCover(item: $model.playbackRequest, onDismiss: {
                 PlayQueue.clear()
                 onPlayerClosed()

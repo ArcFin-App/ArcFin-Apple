@@ -59,6 +59,8 @@ final class LiveTVModel {
     var selectedProgram: LiveTVProgram?
     var playbackRequest: MediaDetailView.PlaybackRequest?
     var actionError: String?
+    /// A series recording whose options are open for editing.
+    var editingSeriesTimer: LiveTVSeriesTimer?
 
     private let client = JellyfinMediaClient()
 
@@ -256,16 +258,17 @@ final class LiveTVModel {
 
     // MARK: - Recording a programme
 
-    func record(_ program: LiveTVProgram, series: Bool, authManager: AuthManager) async {
+    func record(_ program: LiveTVProgram, series: Bool, options: LiveTVSeriesOptions? = nil, authManager: AuthManager) async {
         guard let (credential, header) = session(authManager) else { return }
         do {
             if series {
-                try await client.recordLiveTVSeries(credential: credential, authHeader: header, programId: program.id)
+                try await client.recordLiveTVSeries(credential: credential, authHeader: header, programId: program.id, options: options)
             } else {
                 try await client.recordLiveTVProgram(credential: credential, authHeader: header, programId: program.id)
             }
             HapticManager.impact(.medium)
             await refresh(program, authManager: authManager)
+            warnIfClashing(program)
         } catch {
             actionError = series
                 ? String(localized: "Couldn't record the series. Check that your server has a tuner and a recording folder set up.")
@@ -295,6 +298,50 @@ final class LiveTVModel {
             clearTimer(id: timer.id)
         } catch {
             actionError = String(localized: "Couldn't cancel the recording. Try again.")
+        }
+    }
+
+    /// The server marks a timer it can't fit on a free tuner as conflicted.
+    private func warnIfClashing(_ program: LiveTVProgram) {
+        guard timers.contains(where: { $0.programId == program.id && $0.hasProblem }) else { return }
+        actionError = String(localized: "This clashes with another recording, and there isn't a free tuner for both. Cancel one of them in Recordings, or the server will only record one.")
+    }
+
+    /// The server's starting options for a series, for the options shown before recording it.
+    func seriesDefaults(for program: LiveTVProgram, authManager: AuthManager) async -> LiveTVSeriesOptions {
+        guard let (credential, header) = session(authManager),
+              let options = try? await client.liveTVSeriesDefaults(credential: credential, authHeader: header, programId: program.id)
+        else { return LiveTVSeriesOptions() }
+        return options
+    }
+
+    func options(for seriesTimer: LiveTVSeriesTimer, authManager: AuthManager) async -> LiveTVSeriesOptions? {
+        guard let (credential, header) = session(authManager) else { return nil }
+        return try? await client.liveTVSeriesOptions(credential: credential, authHeader: header, seriesTimerId: seriesTimer.id)
+    }
+
+    /// Saves a series recording's changed options; true when the server took them.
+    func save(_ options: LiveTVSeriesOptions, for seriesTimer: LiveTVSeriesTimer, authManager: AuthManager) async -> Bool {
+        guard let (credential, header) = session(authManager) else { return false }
+        do {
+            try await client.updateLiveTVSeriesTimer(credential: credential, authHeader: header,
+                                                     seriesTimerId: seriesTimer.id, options: options)
+            await loadRecordings(authManager: authManager)
+            reloadGuide()
+            return true
+        } catch {
+            actionError = String(localized: "Couldn't save the series recording's options. Try again.")
+            return false
+        }
+    }
+
+    func delete(_ recording: LiveTVRecording, authManager: AuthManager) async {
+        guard let (credential, header) = session(authManager) else { return }
+        do {
+            try await client.deleteLiveTVRecording(credential: credential, authHeader: header, recordingId: recording.id)
+            recordings.removeAll { $0.id == recording.id }
+        } catch {
+            actionError = String(localized: "Couldn't delete the recording. Check that your profile is allowed to manage recordings.")
         }
     }
 

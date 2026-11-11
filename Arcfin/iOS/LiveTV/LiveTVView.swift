@@ -94,6 +94,15 @@ private struct LiveTVPresentations: ViewModifier {
             .sheet(item: $model.selectedProgram) { program in
                 LiveTVProgramSheet(model: model, program: program)
             }
+            .sheet(item: $model.editingSeriesTimer) { seriesTimer in
+                ScrollView {
+                    LiveTVSeriesEditor(model: model, seriesTimer: seriesTimer) { model.editingSeriesTimer = nil }
+                        .padding(DT.Spacing.pagePad)
+                }
+                .screenBackground()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
             .fullScreenCover(item: $model.playbackRequest, onDismiss: {
                 PlayQueue.clear()
                 onPlayerClosed()
