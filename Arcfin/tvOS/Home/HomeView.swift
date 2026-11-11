@@ -170,6 +170,9 @@ struct HomeView: View {
         .task { await load() }
         .task(id: topShelfSignature) {
             guard !topShelfSignature.isEmpty else { return }
+            if HomeShelf.hasLiveTV(in: mediaRepo) {
+                await model.liveTV.load(.liveFavoriteChannels, authManager: authManager)
+            }
             model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
             await TopShelfArtwork.refresh()
         }

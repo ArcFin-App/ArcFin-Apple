@@ -13,13 +13,17 @@ enum TopShelfArtwork {
         var continueWatching = TopShelfBridge.loadContinueWatching()
         var nextUp = TopShelfBridge.loadNextUp()
         var recentlyAdded = TopShelfBridge.loadRecentlyAdded()
+        var liveChannels = TopShelfBridge.loadLiveChannels()
         await addArtwork(to: &continueWatching, in: directory)
         await addArtwork(to: &nextUp, in: directory)
         await addArtwork(to: &recentlyAdded, in: directory)
+        await addArtwork(to: &liveChannels, in: directory)
         guard !Task.isCancelled else { return }
 
-        TopShelfBridge.save(continueWatching: continueWatching, nextUp: nextUp, recentlyAdded: recentlyAdded)
-        removeUnused(keeping: Set((continueWatching + nextUp + recentlyAdded).compactMap(\.artworkFileName)), in: directory)
+        TopShelfBridge.save(continueWatching: continueWatching, nextUp: nextUp, recentlyAdded: recentlyAdded,
+                            liveChannels: liveChannels)
+        removeUnused(keeping: Set((continueWatching + nextUp + recentlyAdded + liveChannels).compactMap(\.artworkFileName)),
+                     in: directory)
         TVTopShelfContentProvider.topShelfContentDidChange()
     }
 
@@ -27,6 +31,17 @@ enum TopShelfArtwork {
         let accent = UIColor(DT.Color.accent)
         for index in items.indices {
             let item = items[index]
+            // A channel with nothing on to picture: its logo on a card, not stretched to fill.
+            if item.backdropURL == nil, let logoURL = item.logoURL, item.imageURL == logoURL,
+               let logo = try? await ImageCache.load(logoURL) {
+                let name = "\(item.id)-logo.jpg"
+                let url = directory.appendingPathComponent(name)
+                let saved = await Task.detached(priority: .utility) {
+                    renderLogoCard(logo: logo, accent: accent, to: url)
+                }.value
+                if saved { items[index].artworkFileName = name }
+                continue
+            }
             guard let backdropURL = item.backdropURL ?? item.imageURL,
                   let backdrop = try? await ImageCache.load(backdropURL) else { continue }
             let logo = if let logoURL = item.logoURL { try? await ImageCache.load(logoURL) } else { nil as UIImage? }
@@ -82,6 +97,27 @@ enum TopShelfArtwork {
                 accent.setFill()
                 UIBezierPath(roundedRect: filled, cornerRadius: barSize.height / 2).fill()
             }
+        }
+        return (try? data.write(to: url, options: .atomic)) != nil
+    }
+
+    private nonisolated static func renderLogoCard(logo: UIImage, accent: UIColor, to url: URL) -> Bool {
+        let canvas = CGSize(width: 1920, height: 1080)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let data = UIGraphicsImageRenderer(size: canvas, format: format).jpegData(withCompressionQuality: 0.85) { context in
+            UIColor(red: 0.08, green: 0.08, blue: 0.09, alpha: 1).setFill()
+            context.fill(CGRect(origin: .zero, size: canvas))
+            let glow = [accent.withAlphaComponent(0.35).cgColor, UIColor.clear.cgColor] as CFArray
+            if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: glow, locations: [0, 1]) {
+                context.cgContext.drawRadialGradient(gradient, startCenter: CGPoint(x: 1300, y: 760), startRadius: 0,
+                                                     endCenter: CGPoint(x: 1300, y: 760), endRadius: 900, options: [])
+            }
+            let maxSize = CGSize(width: 820, height: 420)
+            let fit = min(maxSize.width / logo.size.width, maxSize.height / logo.size.height)
+            let size = CGSize(width: logo.size.width * fit, height: logo.size.height * fit)
+            logo.draw(in: CGRect(x: 1300 - size.width / 2, y: 600 - size.height / 2, width: size.width, height: size.height))
         }
         return (try? data.write(to: url, options: .atomic)) != nil
     }
