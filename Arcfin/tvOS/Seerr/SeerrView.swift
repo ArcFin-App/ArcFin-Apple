@@ -53,14 +53,13 @@ struct SeerrView: View {
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Check your Seerr credentials in Settings → Plugins → Seerr.")
+            Text("Seerr didn't accept the sign-in. Try again, or check Settings › Integrations › Seerr.")
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
             Button("Try Again") {
-                seerrRepo.clearAuthFailure()
-                Task { await seerrRepo.loadDiscover() }
+                Task { await seerrRepo.retrySignIn() }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -176,8 +175,7 @@ struct SeerrView: View {
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
             Button("Try Again") {
-                seerrRepo.clearAuthFailure()
-                Task { await seerrRepo.loadDiscover() }
+                Task { await seerrRepo.retrySignIn() }
             }
         }
         .padding(28)

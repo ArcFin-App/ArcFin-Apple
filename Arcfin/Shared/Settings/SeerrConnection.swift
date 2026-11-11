@@ -88,7 +88,38 @@ struct SeerrConnectionSummary: View {
     var isManagedByServer = false
     let onRemove: () -> Void
 
+    @Environment(SeerrRepository.self) private var seerrRepo
+    @State private var isRetrying = false
+
     var body: some View {
+        if seerrRepo.authFailed {
+            Section {
+                Button {
+                    isRetrying = true
+                    Task {
+                        await seerrRepo.retrySignIn()
+                        isRetrying = false
+                    }
+                } label: {
+                    HStack {
+                        if isRetrying { ProgressView().scaleEffect(0.8) }
+                        Text("Try Again")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .disabled(isRetrying)
+            } header: {
+                Label("Couldn't Sign In", systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
+                    .textCase(nil)
+            } footer: {
+                Text("Seerr didn't accept the sign-in. Try again, or check the details below.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        }
+
         Section {
             // Focusable on tvOS so the page doesn't open with focus on Remove Connection.
             LabeledContent("Server URL", value: url)

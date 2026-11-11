@@ -116,7 +116,9 @@ public actor SeerrHTTPClient {
         config.waitsForConnectivity = true
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
-        self.authFailedKey = "arcfin.seerr.authFailedUntil.\(baseURL.host ?? "unknown")"
+        // Per user as well as per server: one profile's refused password mustn't lock out
+        // another profile signing in to the same Seerr.
+        self.authFailedKey = "arcfin.seerr.authFailedUntil.\(baseURL.host ?? "unknown").\(username.lowercased())"
     }
 
     /// Clears any persisted auth-failure cooldown. Call this when the user updates credentials.
@@ -147,6 +149,19 @@ public actor SeerrHTTPClient {
             isAuthenticated = true
             return
         }
+        do {
+            try await loginWithPassword()
+        } catch SeerrError.authFailed where authMethod == .jellyfin && authorizeQuickConnect != nil {
+            // A saved Jellyfin password that no longer works (changed since, or saved for
+            // another profile): the Jellyfin session can still sign in through Quick Connect.
+            try await loginWithQuickConnect()
+            authPermanentlyFailed = false
+            UserDefaults.standard.removeObject(forKey: authFailedKey)
+            isAuthenticated = true
+        }
+    }
+
+    private func loginWithPassword() async throws {
         let url = baseURL.appendingPathComponent(authMethod.apiPath)
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -206,7 +221,9 @@ public actor SeerrHTTPClient {
 
     private func ensureAuthenticated() async throws {
         guard !authPermanentlyFailed else { throw SeerrError.authFailed }
-        if let until = UserDefaults.standard.object(forKey: authFailedKey) as? Date,
+        // The cooldown guards Jellyfin against repeated wrong passwords; Quick Connect sends none.
+        if authorizeQuickConnect == nil || authMethod != .jellyfin,
+           let until = UserDefaults.standard.object(forKey: authFailedKey) as? Date,
            until > Date() {
             authPermanentlyFailed = true
             throw SeerrError.authFailed

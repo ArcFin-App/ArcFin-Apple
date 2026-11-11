@@ -4225,6 +4225,134 @@
         }
       }
     },
+    "Couldn't Sign In" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anmeldung fehlgeschlagen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se ha podido iniciar sesión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion impossible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accesso non riuscito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サインインできませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "로그인할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan niet aanmelden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível entrar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось войти"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法登录"
+          }
+        }
+      }
+    },
+    "Couldn't Sign In to Seerr" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anmeldung bei Seerr fehlgeschlagen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se ha podido iniciar sesión en Seerr"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion à Seerr impossible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accesso a Seerr non riuscito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrにサインインできませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에 로그인할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan niet aanmelden bij Seerr"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível entrar no Seerr"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось войти в Seerr"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法登录 Seerr"
+          }
+        }
+      }
+    },
     "Create a user account" : {
       "localizations" : {
         "de" : {
@@ -12349,6 +12477,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Seerr 不接受该用户名或密码。"
+          }
+        }
+      }
+    },
+    "Seerr didn't accept the sign-in. Try again, or check Settings › Integrations › Seerr." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr hat die Anmeldung nicht akzeptiert. Versuche es erneut oder prüfe Einstellungen › Integrationen › Seerr."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr no ha aceptado el inicio de sesión. Inténtalo de nuevo o revisa Ajustes › Integraciones › Seerr."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr n’a pas accepté la connexion. Réessayez ou vérifiez Réglages › Intégrations › Seerr."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr non ha accettato l’accesso. Riprova o controlla Impostazioni › Integrazioni › Seerr."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrがサインインを受け付けませんでした。もう一度試すか、「設定」›「連携」›「Seerr」を確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에서 로그인을 받아들이지 않았습니다. 다시 시도하거나 설정 › 연동 › Seerr를 확인하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr heeft de aanmelding niet geaccepteerd. Probeer het opnieuw of controleer Instellingen › Integraties › Seerr."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Seerr não aceitou a entrada. Tente novamente ou verifique Ajustes › Integrações › Seerr."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr не принял вход. Повторите попытку или проверьте «Настройки» › «Интеграции» › «Seerr»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr 未接受登录。请重试，或检查“设置”›“集成”›“Seerr”。"
+          }
+        }
+      }
+    },
+    "Seerr didn't accept the sign-in. Try again, or check the details below." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr hat die Anmeldung nicht akzeptiert. Versuche es erneut oder prüfe die Angaben unten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr no ha aceptado el inicio de sesión. Inténtalo de nuevo o revisa los datos de abajo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr n’a pas accepté la connexion. Réessayez ou vérifiez les informations ci-dessous."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr non ha accettato l’accesso. Riprova o controlla i dati qui sotto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrがサインインを受け付けませんでした。もう一度試すか、下の情報を確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에서 로그인을 받아들이지 않았습니다. 다시 시도하거나 아래 정보를 확인하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr heeft de aanmelding niet geaccepteerd. Probeer het opnieuw of controleer de gegevens hieronder."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Seerr não aceitou a entrada. Tente novamente ou verifique os dados abaixo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr не принял вход. Повторите попытку или проверьте данные ниже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr 未接受登录。请重试，或检查下方的信息。"
           }
         }
       }
@@ -27711,70 +27967,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "请检查网络连接，然后重新打开。"
-          }
-        }
-      }
-    },
-    "Check your Seerr credentials in Settings → Plugins → Seerr." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Prüfe deine Seerr-Zugangsdaten unter Einstellungen → Plugins → Seerr."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Comprueba tus credenciales de Seerr en Ajustes → Complementos → Seerr."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Vérifiez vos identifiants Seerr dans Réglages → Plugins → Seerr."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Controlla le credenziali di Seerr in Impostazioni → Plugin → Seerr."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "「設定」→「プラグイン」→「Seerr」でSeerrの認証情報を確認してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "설정 → 플러그인 → Seerr에서 Seerr 자격 증명을 확인하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Controleer je Seerr-inloggegevens via Instellingen → Plugins → Seerr."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Verifique suas credenciais do Seerr em Ajustes → Plugins → Seerr."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Проверьте учётные данные Seerr в разделе «Настройки» → «Плагины» → «Seerr»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "请在“设置”→“插件”→“Seerr”中检查你的 Seerr 凭证。"
           }
         }
       }

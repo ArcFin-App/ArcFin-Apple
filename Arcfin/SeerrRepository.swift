@@ -221,10 +221,15 @@ final class SeerrRepository {
             fetched = try await client.watchlist(refresh: refresh)
         } catch where Self.isCancellation(error) {
             return
+        } catch let error as SeerrError where error.isSignInFailure {
+            authFailed = true
+            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            return
         } catch {
             Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
             return
         }
+        authFailed = false
         watchlist = await visible(fetched)
         indexForSpotlight()
     }
@@ -421,11 +426,19 @@ final class SeerrRepository {
     /// this app), a profile switch is a reasonable moment to give it a fresh try instead of
     /// staying latched out for the rest of the cooldown.
     func retryAfterProfileSwitch() async {
+        await retrySignIn()
+    }
+
+    /// Try Again after Seerr wouldn't sign in: forgets the failure (waiting for that, so the
+    /// reload can't still see it) and loads Discover, requests and the watchlist again.
+    func retrySignIn() async {
         guard let client else { return }
         await client.clearAuthFailure()
         authFailed = false
+        discoverError = nil
         await loadDiscover()
         await loadRequests()
+        await loadWatchlist()
     }
 
     func mediaDetail(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrMediaDetail? {
