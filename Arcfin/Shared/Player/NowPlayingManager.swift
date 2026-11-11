@@ -89,6 +89,21 @@ final class NowPlayingManager {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
+    /// A live channel: no duration or position, so the lock screen shows it as live.
+    func updateLive(title: String, channel: String, rate: Float, artwork: PlatformImage?) {
+        var info: [String: Any] = [
+            MPMediaItemPropertyTitle: title,
+            MPMediaItemPropertyArtist: channel,
+            MPNowPlayingInfoPropertyIsLiveStream: true,
+            MPNowPlayingInfoPropertyPlaybackRate: rate,
+            MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.video.rawValue,
+        ]
+        if let artwork {
+            info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
+        }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
     func clear() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         [commandCenter.playCommand, commandCenter.pauseCommand, commandCenter.togglePlayPauseCommand,

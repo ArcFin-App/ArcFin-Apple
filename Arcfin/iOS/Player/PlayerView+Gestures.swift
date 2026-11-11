@@ -93,7 +93,7 @@ extension PlayerView {
     /// Sideways swipes scrub, with the controls up so the scrubber and its preview show where
     /// the swipe will land.
     private func beginSwipeSeek() {
-        guard model.player.durationTicks > 0 else { return }
+        guard model.player.durationTicks > 0, !model.isLive else { return }
         dragAxis = .seek
         dragBaseline = CGFloat(model.pendingSeekTargetTicks ?? model.player.positionTicks)
         model.scrubTicks = Double(dragBaseline)
@@ -108,7 +108,7 @@ extension PlayerView {
     }
 
     private func handleDoubleTap(at location: CGPoint, width: CGFloat) {
-        guard doubleTapToSkip else { model.toggleControls(); return }
+        guard doubleTapToSkip, !model.isLive else { model.toggleControls(); return }
         let tappedRight = location.x > width / 2
         let forward = tappedRight
         let seconds = forward ? skipForwardSeconds : skipBackwardSeconds

@@ -135,7 +135,9 @@ extension PlayerView {
             items.append(QuickAction(id: "chapters", icon: "list.bullet") { showChapterMenu = true })
         }
         items.append(QuickAction(id: "tracks", icon: "captions.bubble") { showTrackMenu = true })
-        items.append(QuickAction(id: "speed", icon: "gauge.with.dots.needle.67percent") { showRateMenu = true })
+        if !model.isLive {
+            items.append(QuickAction(id: "speed", icon: "gauge.with.dots.needle.67percent") { showRateMenu = true })
+        }
         return items
     }
 
@@ -199,14 +201,22 @@ extension PlayerView {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
-            PlayerScrubber(model: model)
+            if model.isLive {
+                LiveProgramBar(program: model.liveProgram)
+            } else {
+                PlayerScrubber(model: model)
+            }
 
             HStack {
-                Text(model.timeLabel(ticks: model.elapsedTicks))
-                    .font(.system(.caption, design: .monospaced, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .contentTransition(.numericText())
-                    .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
+                if model.isLive {
+                    LiveBadge()
+                } else {
+                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                        .font(.system(.caption, design: .monospaced, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .contentTransition(.numericText())
+                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
+                }
 
                 Spacer()
 
@@ -218,13 +228,15 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
-                        .accessibilityLabel(model.previousItem.map { "Previous: \($0.name)" } ?? "Previous")
+                        .accessibilityLabel(previousLabel)
                     }
-                    Button { model.seek(by: -skipBackwardSeconds) } label: {
-                        Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                            .font(.system(.title3)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                    if !model.isLive {
+                        Button { model.seek(by: -skipBackwardSeconds) } label: {
+                            Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
                     }
                     Button { model.togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
@@ -233,11 +245,13 @@ extension PlayerView {
                             .frame(width: 56, height: 56)
                             .contentShape(Rectangle())
                     }
-                    Button { model.seek(by: skipForwardSeconds) } label: {
-                        Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                            .font(.system(.title3)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                    if !model.isLive {
+                        Button { model.seek(by: skipForwardSeconds) } label: {
+                            Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
                     }
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
@@ -246,21 +260,31 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
-                        .accessibilityLabel("Next: \(nextEpisode.name)")
+                        .accessibilityLabel(model.isLive ? "Next channel: \(nextEpisode.name)" : "Next: \(nextEpisode.name)")
                     }
                 }
 
                 Spacer()
 
-                Text(model.remainingLabel)
-                    .font(.system(.caption, design: .monospaced, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .contentTransition(.numericText())
-                    .animation(.default, value: model.remainingTicks)
+                if model.isLive {
+                    // Balances the badge so the transport stays centred.
+                    LiveBadge().hidden()
+                } else {
+                    Text(model.remainingLabel)
+                        .font(.system(.caption, design: .monospaced, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .contentTransition(.numericText())
+                        .animation(.default, value: model.remainingTicks)
+                }
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, 24)
+    }
+
+    private var previousLabel: String {
+        guard let previous = model.previousItem else { return String(localized: "Previous") }
+        return model.isLive ? String(localized: "Previous channel: \(previous.name)") : String(localized: "Previous: \(previous.name)")
     }
 
     /// `player.status` alone stays `.paused` for the whole duration of a Cast session (see
