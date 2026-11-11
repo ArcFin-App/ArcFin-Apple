@@ -348,6 +348,12 @@ struct PlayerView: View {
                 avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
             }
         }
+        // The AirPlay receiver's card follows a channel onto its next programme.
+        model.liveProgramChanged = {
+            if let avPlayer = model.player as? AVFoundationPlayer {
+                avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
+            }
+        }
         model.engineReleased = { pip.detach() }
         model.replacementEngineStarting = {
             for _ in 0..<30 where model.player.status != .playing {

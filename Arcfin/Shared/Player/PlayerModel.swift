@@ -34,6 +34,8 @@ final class PlayerModel {
     /// Playback has just started: picture in picture and the like.
     @ObservationIgnored var playbackStarted: () -> Void = {}
     @ObservationIgnored var streamReloaded: () -> Void = {}
+    /// The channel being watched has moved on to another programme.
+    @ObservationIgnored var liveProgramChanged: () -> Void = {}
     /// The engine is about to be swapped for another, which must take over picture in picture.
     @ObservationIgnored var engineReleased: () -> Void = {}
     @ObservationIgnored var replacementEngineStarting: () async -> Void = {}
@@ -870,6 +872,7 @@ final class PlayerModel {
         closePlayer = {}
         playbackStarted = {}
         streamReloaded = {}
+        liveProgramChanged = {}
         engineReleased = {}
         replacementEngineStarting = {}
     }
@@ -1073,7 +1076,9 @@ final class PlayerModel {
             while !Task.isCancelled {
                 let channel = try? await client.getLiveTVChannel(credential: credential, authHeader: authHeader, channelId: item.id)
                 guard !Task.isCancelled else { return }
+                let previousId = liveProgram?.id
                 liveProgram = channel?.currentProgram
+                if liveProgram?.id != previousId { liveProgramChanged() }
                 updateNowPlayingInfo()
                 let wait = liveProgram.map { max($0.endDate.timeIntervalSinceNow, 0) + 5 } ?? 300
                 try? await Task.sleep(for: .seconds(wait))
