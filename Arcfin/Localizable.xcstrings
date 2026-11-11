@@ -8129,66 +8129,66 @@
         }
       }
     },
-    "Makes speech easier to hear over music and effects." : {
+    "Makes speech easier to hear over music and effects. With Aether, Atmos plays as surround sound while it's on." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Macht Sprache neben Musik und Effekten besser hörbar."
+            "value" : "Macht Sprache neben Musik und Effekten besser hörbar. Mit Aether wird Atmos währenddessen als Surround-Ton wiedergegeben."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Hace que las voces se oigan mejor sobre la música y los efectos."
+            "value" : "Hace que las voces se oigan mejor sobre la música y los efectos. Con Aether, el Atmos se reproduce como sonido envolvente mientras está activado."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Rend les voix plus audibles par-dessus la musique et les effets."
+            "value" : "Rend les voix plus audibles par-dessus la musique et les effets. Avec Aether, l’Atmos est lu en son surround tant que l’option est activée."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Rende le voci più udibili sopra musica ed effetti."
+            "value" : "Rende le voci più udibili sopra musica ed effetti. Con Aether, l’Atmos viene riprodotto come audio surround finché è attivo."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "音楽や効果音の中でも会話が聞き取りやすくなります。"
+            "value" : "音楽や効果音の中でも会話が聞き取りやすくなります。Aetherでは、オンの間はAtmosがサラウンドとして再生されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "음악과 효과음 속에서도 대사가 더 잘 들리게 합니다."
+            "value" : "음악과 효과음 속에서도 대사가 더 잘 들리게 합니다. Aether에서는 켜져 있는 동안 Atmos가 서라운드로 재생됩니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Maakt spraak beter hoorbaar boven muziek en effecten."
+            "value" : "Maakt spraak beter hoorbaar boven muziek en effecten. Met Aether speelt Atmos zolang dit aanstaat als surroundgeluid."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Deixa as falas mais fáceis de ouvir sobre a música e os efeitos."
+            "value" : "Deixa as falas mais fáceis de ouvir sobre a música e os efeitos. Com o Aether, o Atmos toca como som surround enquanto estiver ativado."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Делает речь разборчивее на фоне музыки и эффектов."
+            "value" : "Делает речь разборчивее на фоне музыки и эффектов. С Aether, пока функция включена, Atmos воспроизводится как объёмный звук."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "让对白在音乐和音效中更清晰。"
+            "value" : "让对白在音乐和音效中更清晰。使用 Aether 时，开启期间 Atmos 会以环绕声播放。"
           }
         }
       }

@@ -55,6 +55,8 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     public private(set) var selectedAudioTrackIndex: Int = 0
     public private(set) var selectedSubtitleTrackIndex: Int? = nil
     public private(set) var playbackRate: Float = 1.0
+    /// Dialogue boost, carried into each load and kept across them.
+    var dialogueBoostRequested = false
 
     /// Native PGS/DVB bitmap cues the engine decodes itself — additive to the app's own
     /// Jellyfin-delivery-URL text-cue path (SubtitleLoader.SubtitleCue), which stays the
@@ -179,6 +181,7 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         // paused too. Held on disk, not in memory, and the engine stops at a quarter of the free
         // space, so a large title on a full device buffers less rather than crowding it out.
         options.forwardBufferSegments = 150
+        options.audioShaping = Self.shaping(dialogueBoosted: dialogueBoostRequested)
         // The engine's open-time probe reads up to 50 MB / 60 s, which a remux with sparse PGS
         // tracks always exhausts — over a remote link that held the first frame for over a
         // minute. Video and audio resolve within the first few MB; subtitle tracks come from
@@ -198,8 +201,11 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
 
     public func play() async { engine.play() }
     public func pause() async { engine.pause() }
+    /// Exact: since 7.54 the software AV1 route otherwise lands on a keyframe up to 10 s away,
+    /// which leaves a resume, a skip or the end of an intro seconds off. Every other route is
+    /// exact either way.
     public func seek(to positionTicks: Int64) async {
-        await engine.seek(to: Self.seconds(fromTicks: positionTicks))
+        await engine.seek(to: Self.seconds(fromTicks: positionTicks), exact: true)
     }
     public func setRate(_ rate: Float) async {
         playbackRate = rate
@@ -245,6 +251,27 @@ public struct AetherEngineVideoSurface: View {
 extension AetherEnginePlayer: LiveRewindable {
     public var liveWindow: ClosedRange<Double>? { engine.seekableLiveRange }
     public var secondsBehindLive: Double { engine.behindLiveSeconds }
-    public func seekLive(toSeconds seconds: Double) async { await engine.seek(to: seconds) }
+    public func seekLive(toSeconds seconds: Double) async { await engine.seek(to: seconds, exact: true) }
     public func goToLiveEdge() async { await engine.seekToLiveEdge() }
+}
+
+// MARK: - Dialogue boost
+
+extension AetherEnginePlayer: DialogueBoosting {
+    /// The engine's audio shaping lifts the centre channel of a 5.1 or 7.1 mix, or pulls the
+    /// dialogue out of a stereo one, behind a limiter. While it's on the audio is decoded here,
+    /// so Atmos plays as its channel bed rather than passing through to a receiver. Changing it
+    /// during playback rebuilds the session at the playhead, holding the picture a moment.
+    public var isDialogueBoosted: Bool {
+        get { dialogueBoostRequested }
+        set {
+            guard newValue != dialogueBoostRequested else { return }
+            dialogueBoostRequested = newValue
+            engine.setAudioShaping(Self.shaping(dialogueBoosted: newValue))
+        }
+    }
+
+    static func shaping(dialogueBoosted: Bool) -> AudioShaping {
+        AudioShaping(dialogueGainDB: dialogueBoosted ? 6 : 0)
+    }
 }

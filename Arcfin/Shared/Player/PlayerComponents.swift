@@ -626,7 +626,7 @@ struct TrackSelectionSheet: View {
                     Text("Audio")
                 } footer: {
                     if dialogueBoost != nil {
-                        Text("Makes speech easier to hear over music and effects.")
+                        Text("Makes speech easier to hear over music and effects. With Aether, Atmos plays as surround sound while it's on.")
                     }
                 }
             }

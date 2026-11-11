@@ -655,6 +655,8 @@ final class PlayerModel {
             // source's own structure breaks one engine but not another) falls back once to
             // the same AVFoundation/VLC split Auto used before Aether existed, rather than
             // surfacing a hard error over an engine that can't serve this specific source.
+            // Before the load, so the stream starts shaped rather than rebuilding once it plays.
+            (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
             do {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
