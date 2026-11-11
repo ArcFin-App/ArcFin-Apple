@@ -3457,6 +3457,70 @@
         }
       }
     },
+    "Convert to AV1" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In AV1 umwandeln"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Convertir a AV1"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Convertir en AV1"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Converti in AV1"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AV1に変換"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AV1로 변환"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Omzetten naar AV1"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Converter para AV1"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Конвертировать в AV1"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "转换为 AV1"
+          }
+        }
+      }
+    },
     "Couldn't Approve" : {
       "localizations" : {
         "de" : {
@@ -17213,6 +17277,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "地址无法使用时，设置会告诉你原因；会重定向到其他地址的服务器现在也能稳定播放。"
+          }
+        }
+      }
+    },
+    "When the server converts a video, it's asked for AV1 first, which looks better at the same speed. A server that can't encode AV1 is noticed and gets HEVC instead. Turning this back on tries every server again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn der Server ein Video umwandelt, wird zuerst AV1 angefragt – das sieht bei gleicher Datenrate besser aus. Ein Server, der kein AV1 kodieren kann, wird erkannt und liefert stattdessen HEVC. Beim erneuten Einschalten werden alle Server wieder versucht."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cuando el servidor convierte un vídeo, se le pide primero AV1, que se ve mejor con la misma velocidad. Si un servidor no puede codificar AV1, se detecta y se usa HEVC. Al volver a activarlo, se prueban de nuevo todos los servidores."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quand le serveur convertit une vidéo, l’AV1 est demandé en premier : il donne une meilleure image au même débit. Un serveur incapable d’encoder en AV1 est repéré et envoie du HEVC à la place. Réactiver l’option réessaie tous les serveurs."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quando il server converte un video, viene chiesto prima AV1, che a parità di velocità ha una resa migliore. Un server che non sa codificare AV1 viene riconosciuto e usa HEVC. Riattivando l’opzione si riprovano tutti i server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバがビデオを変換するとき、まずAV1を要求します。同じ速度でより高画質です。AV1をエンコードできないサーバは検出され、代わりにHEVCが使われます。オンに戻すと、すべてのサーバで再び試します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 비디오를 변환할 때 먼저 AV1을 요청합니다. 같은 속도에서 화질이 더 좋습니다. AV1을 인코딩할 수 없는 서버는 감지되어 대신 HEVC를 사용합니다. 다시 켜면 모든 서버에서 다시 시도합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Als de server een video omzet, wordt eerst om AV1 gevraagd: dat ziet er bij dezelfde snelheid beter uit. Een server die geen AV1 kan coderen, wordt herkend en levert HEVC. Als je dit weer aanzet, worden alle servers opnieuw geprobeerd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quando o servidor converte um vídeo, o AV1 é pedido primeiro, com imagem melhor na mesma velocidade. Um servidor que não codifica AV1 é detectado e passa a usar HEVC. Ao reativar, todos os servidores são testados de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Когда сервер конвертирует видео, сначала запрашивается AV1 — при той же скорости он выглядит лучше. Сервер, который не умеет кодировать AV1, будет обнаружен и перейдёт на HEVC. При повторном включении все серверы проверяются заново."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器转换视频时会优先请求 AV1，在同等速率下画质更好。无法编码 AV1 的服务器会被识别，并改用 HEVC。重新打开此选项会再次尝试所有服务器。"
           }
         }
       }

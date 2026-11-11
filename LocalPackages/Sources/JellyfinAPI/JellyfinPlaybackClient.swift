@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
+import VideoToolbox
 import AuthCore
 import Telemetry
 import os
@@ -88,6 +89,14 @@ public struct JellyfinPlaybackInfo: Sendable {
     public var liveStreamId: String? = nil
 
     public var isTranscoding: Bool { playMethod == .transcode }
+    /// The server was asked to convert to AV1 first. Whether it could is only known from
+    /// whether the stream plays (see AV1Encoding).
+    public var askedForAV1: Bool {
+        guard isTranscoding else { return false }
+        let codecs = URLComponents(url: playURL, resolvingAgainstBaseURL: false)?.queryItems?
+            .first { $0.name.caseInsensitiveCompare("VideoCodec") == .orderedSame }?.value ?? ""
+        return codecs.lowercased().hasPrefix("av1")
+    }
     public var isDolbyVision: Bool { (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby") }
     public var isHDR: Bool {
         isDolbyVision || (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("hdr")
@@ -184,7 +193,8 @@ extension JellyfinMediaClient {
             "UserId": credential.userID,
             "AutoOpenLiveStream": true,
             "DeviceProfile": forCast || !nativeDecoder
-                ? Self.deviceProfile(forCast: forCast) : Self.nativeDecoderProfile,
+                ? Self.deviceProfile(forCast: forCast, baseURL: credential.baseURL)
+                : Self.nativeDecoderProfile(baseURL: credential.baseURL),
         ]
         if let maxBitrate = quality.maxBitrate { body["MaxStreamingBitrate"] = maxBitrate }
         // MaxWidth forces a resolution-based transcode even when the source's bitrate
@@ -476,10 +486,30 @@ extension JellyfinMediaClient {
 
     // MARK: - Device profile
 
+    /// AV1 in hardware: iPhone 15 Pro and later, M3 Macs and later, the newest Apple TVs.
+    public static let decodesAV1InHardware = VTIsHardwareDecodeSupported(kCMVideoCodecType_AV1)
+
+    /// The codecs to ask the server to convert to, best first. AV1 leads when this device
+    /// decodes it in hardware, the setting allows it and this server hasn't failed at it: a
+    /// server with AV1 encoding off leaves it out by itself, and one that has it on without
+    /// an AV1 encoder (Pascal NVENC, for one) fails, which AV1Encoding then remembers.
+    static func transcodeVideoCodecs(_ base: String, baseURL: URL) -> String {
+        AV1Encoding.isOffered(for: baseURL) ? "av1," + base : base
+    }
+
+    /// Aether decodes AV1 in software (dav1d) where there's no hardware decoder, which keeps
+    /// up to 1080p; anything larger is converted by the server to HEVC instead.
+    static var av1SoftwareLimit: [String: Any]? {
+        guard !decodesAV1InHardware else { return nil }
+        return ["Type": "Video", "Codec": "av1", "Conditions": [
+            ["Condition": "LessThanEqual", "Property": "Width", "Value": "1920", "IsRequired": true],
+        ]]
+    }
+
     /// For engines that demux and decode on the device (Aether's FFmpeg + VideoToolbox, VLC):
     /// any container and codec plays as is, so the server only steps in when the bitrate
     /// cap forces a transcode, and image subtitles stay in the file for the engine to draw.
-    static var nativeDecoderProfile: [String: Any] {
+    static func nativeDecoderProfile(baseURL: URL) -> [String: Any] {
         if UserDefaults.standard.bool(forKey: "codecCompatibilityMode") { return compatibilityProfile }
         return [
         "MaxStreamingBitrate": 120_000_000,
@@ -490,7 +520,7 @@ extension JellyfinMediaClient {
         "TranscodingProfiles": [
             [
                 "Container": "mp4", "Type": "Video", "AudioCodec": "aac,ac3,eac3",
-                "VideoCodec": "hevc,h264", "Context": "Streaming", "Protocol": "hls",
+                "VideoCodec": transcodeVideoCodecs("hevc,h264", baseURL: baseURL), "Context": "Streaming", "Protocol": "hls",
                 "MaxAudioChannels": "8", "MinSegments": "2", "BreakOnNonKeyFrames": true,
             ],
         ],
@@ -500,7 +530,7 @@ extension JellyfinMediaClient {
             ["Format": "dvdsub", "Method": "Embed"],
             ["Format": "dvbsub", "Method": "Embed"],
         ],
-        "CodecProfiles": [videoRangeProfile].compactMap { $0 },
+        "CodecProfiles": [videoRangeProfile, av1SoftwareLimit].compactMap { $0 },
     ] }
 
     /// Compatibility Mode, the last resort for a file that won't play: direct play only
@@ -550,10 +580,12 @@ extension JellyfinMediaClient {
     /// in CodecProfileSettingsView (Settings > Playback > Codec Compatibility) rather than
     /// hardcoded — a struct, not a View, so read straight from UserDefaults like the rest
     /// of the playback code's own settings reads (skipIntro/autoPlayNext etc.) already do.
-    static func deviceProfile(forCast: Bool) -> [String: Any] {
+    static func deviceProfile(forCast: Bool, baseURL: URL) -> [String: Any] {
         if !forCast, UserDefaults.standard.bool(forKey: "codecCompatibilityMode") { return compatibilityProfile }
         let allowHEVC = (UserDefaults.standard.object(forKey: "codecAllowHEVCDirectPlay") as? Bool) ?? true
         let allowSurroundAudio = UserDefaults.standard.bool(forKey: "codecAllowSurroundAudioDirectPlay")
+        // AVFoundation plays AV1 only with a hardware decoder, and only in MP4 and MOV.
+        let directVideoCodecs = (allowHEVC ? "h264,hevc" : "h264") + (decodesAV1InHardware && !forCast ? ",av1" : "")
         let videoCodecs = allowHEVC ? "h264,hevc" : "h264"
         // AudioCodec lists are deliberately narrow by default: AVFoundation can't reliably
         // decode ac3/eac3/dts to the built-in speaker/headphones on-device (only passthrough
@@ -575,8 +607,8 @@ extension JellyfinMediaClient {
         // unreliable even for codec-compatible files (routinely "Cannot Open" on
         // real-world encodes), so mkv sources always remux into HLS below instead.
         "DirectPlayProfiles": [
-            ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": mp4AudioCodecs],
-            ["Container": "mov", "Type": "Video", "VideoCodec": videoCodecs, "AudioCodec": movAudioCodecs],
+            ["Container": "mp4,m4v", "Type": "Video", "VideoCodec": directVideoCodecs, "AudioCodec": mp4AudioCodecs],
+            ["Container": "mov", "Type": "Video", "VideoCodec": directVideoCodecs, "AudioCodec": movAudioCodecs],
         ],
         // HLS can only carry HEVC in fMP4 segments, and with h264 as the only output an HEVC
         // source in mkv was re-encoded in full instead of just repackaged. The Chromecast
@@ -588,7 +620,7 @@ extension JellyfinMediaClient {
                 "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
             ] : [
                 "Container": "mp4", "Type": "Video", "AudioCodec": "aac",
-                "VideoCodec": videoCodecs, "Context": "Streaming", "Protocol": "hls",
+                "VideoCodec": transcodeVideoCodecs(videoCodecs, baseURL: baseURL), "Context": "Streaming", "Protocol": "hls",
                 "MaxAudioChannels": "6", "MinSegments": "2", "BreakOnNonKeyFrames": true,
             ],
         ],
@@ -620,6 +652,37 @@ extension JellyfinMediaClient {
             ["Format": "dvbsub", "Method": "Encode"],
         ],
     ] }
+}
+
+// MARK: - AV1 conversion
+
+/// Whether to ask a server to convert to AV1. There's no API that says whether the server's
+/// GPU can encode AV1, so it's learned: a conversion to AV1 that fails marks the server,
+/// and it's asked for HEVC from then on. Turning the setting off and on again forgets that.
+public enum AV1Encoding {
+    public static let settingKey = "codecAllowAV1Transcode"
+    private static func failedKey(_ baseURL: URL) -> String { "arcfin.av1EncodeFailed.\(baseURL.host ?? "")" }
+
+    public static var isAllowed: Bool {
+        (UserDefaults.standard.object(forKey: settingKey) as? Bool) ?? true
+    }
+
+    static func isOffered(for baseURL: URL) -> Bool {
+        JellyfinMediaClient.decodesAV1InHardware && isAllowed
+            && !UserDefaults.standard.bool(forKey: failedKey(baseURL))
+    }
+
+    public static func markFailed(on baseURL: URL) {
+        UserDefaults.standard.set(true, forKey: failedKey(baseURL))
+    }
+
+    /// Forgets every server's failure, for when the setting is turned back on.
+    public static func forgetFailures() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("arcfin.av1EncodeFailed.") {
+            defaults.removeObject(forKey: key)
+        }
+    }
 }
 
 // MARK: - Private response decoders

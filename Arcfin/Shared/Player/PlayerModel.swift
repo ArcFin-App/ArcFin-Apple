@@ -331,6 +331,7 @@ final class PlayerModel {
         // fallback); this is the engine giving up after playback had already started.
         // A channel's local stream is closed on purpose while casting.
         if case .failed = newStatus, loadingStage == nil, errorMessage == nil, !(isLive && CastManager.shared.isConnected) {
+            if retryWithoutAV1() { return }
             // A channel's stream dying is its source, not the engine: another engine won't help.
             errorMessage = isLive
                 ? String(localized: "This channel didn't send any video. Its source may be offline. Try again, or pick another channel.")
@@ -479,6 +480,7 @@ final class PlayerModel {
     }
 
     func setup() async {
+        playStartedAt = nil
         guard let credential, let authHeader else {
             errorMessage = "Not signed in."
             return
@@ -617,6 +619,7 @@ final class PlayerModel {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             await player.play()
+            playStartedAt = Date()
             loadingStage = nil
             await applyRememberedRate()
             if !isLive { sharePlay.playerOpened(item) }
@@ -646,6 +649,7 @@ final class PlayerModel {
             return
         } catch {
             log.error("Couldn't start \(self.item.id, privacy: .public): \(error, privacy: .public)")
+            if retryWithoutAV1() { return }
             errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
         }
 
@@ -1136,6 +1140,22 @@ final class PlayerModel {
     func retry() {
         errorMessage = nil
         Task { await setup() }
+    }
+
+    /// When playback started, for telling a stream that never played from one that broke later.
+    @ObservationIgnored private var playStartedAt: Date?
+
+    /// A conversion to AV1 that fails as it starts means this server can't encode AV1 (its
+    /// setting allows it, but its GPU has no AV1 encoder): remember that, and start again,
+    /// which now asks for HEVC. Marking the server first keeps this to one go.
+    private func retryWithoutAV1() -> Bool {
+        guard let info = playbackInfo, info.askedForAV1, let credential,
+              playStartedAt.map({ Date().timeIntervalSince($0) < 20 }) ?? true else { return false }
+        AV1Encoding.markFailed(on: credential.baseURL)
+        log.info("AV1 conversion failed on \(credential.baseURL.host ?? "", privacy: .public); using HEVC from now on")
+        errorMessage = nil
+        Task { await setup() }
+        return true
     }
 
     // MARK: - Live TV

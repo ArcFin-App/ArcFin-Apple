@@ -6,6 +6,7 @@ import Testing
 
 @Suite("Device profiles", .serialized)
 struct DeviceProfileTests {
+    static let server = URL(string: "http://jf.example.com:8096")!
 
     private func directPlay(_ profile: [String: Any]) -> [[String: Any]] {
         profile["DirectPlayProfiles"] as? [[String: Any]] ?? []
@@ -22,7 +23,7 @@ struct DeviceProfileTests {
 
     @Test("AVFoundation never direct-plays mkv")
     func avFoundationNoMKV() {
-        let containers = directPlay(JellyfinMediaClient.deviceProfile(forCast: false))
+        let containers = directPlay(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server))
             .compactMap { $0["Container"] as? String }
             .joined(separator: ",")
         #expect(!containers.split(separator: ",").contains("mkv"))
@@ -31,7 +32,7 @@ struct DeviceProfileTests {
     @Test("AVFoundation's HLS output carries HEVC in fMP4, so HEVC is repackaged rather than re-encoded")
     func avFoundationHEVCPassthrough() {
         UserDefaults.standard.removeObject(forKey: "codecAllowHEVCDirectPlay")
-        let output = transcoding(JellyfinMediaClient.deviceProfile(forCast: false))
+        let output = transcoding(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server))
         #expect(output["Container"] as? String == "mp4")
         #expect(output["Protocol"] as? String == "hls")
         #expect((output["VideoCodec"] as? String)?.split(separator: ",").contains("hevc") == true)
@@ -41,20 +42,20 @@ struct DeviceProfileTests {
     func hevcToggleOff() {
         UserDefaults.standard.set(false, forKey: "codecAllowHEVCDirectPlay")
         defer { UserDefaults.standard.removeObject(forKey: "codecAllowHEVCDirectPlay") }
-        let output = transcoding(JellyfinMediaClient.deviceProfile(forCast: false))
-        #expect(output["VideoCodec"] as? String == "h264")
+        let output = transcoding(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server))
+        #expect((output["VideoCodec"] as? String)?.split(separator: ",").filter { $0 != "av1" } == ["h264"])
     }
 
     @Test("Chromecast keeps h264 in ts")
     func castOutput() {
-        let output = transcoding(JellyfinMediaClient.deviceProfile(forCast: true))
+        let output = transcoding(JellyfinMediaClient.deviceProfile(forCast: true, baseURL: Self.server))
         #expect(output["Container"] as? String == "ts")
         #expect(output["VideoCodec"] as? String == "h264")
     }
 
     @Test("Native engines direct-play mkv with no codec limits")
     func nativeDirectPlaysEverything() throws {
-        let profiles = directPlay(JellyfinMediaClient.nativeDecoderProfile)
+        let profiles = directPlay(JellyfinMediaClient.nativeDecoderProfile(baseURL: Self.server))
         let profile = try #require(profiles.first)
         #expect((profile["Container"] as? String)?.split(separator: ",").contains("mkv") == true)
         #expect(profile["VideoCodec"] == nil)
@@ -63,11 +64,11 @@ struct DeviceProfileTests {
 
     @Test("Native engines keep image subtitles in the file instead of burning them in")
     func nativeEmbedsImageSubtitles() {
-        let profile = JellyfinMediaClient.nativeDecoderProfile
+        let profile = JellyfinMediaClient.nativeDecoderProfile(baseURL: Self.server)
         for format in ["pgssub", "dvdsub", "dvbsub"] {
             #expect(subtitleMethod(profile, format: format) == "Embed")
         }
-        #expect(subtitleMethod(JellyfinMediaClient.deviceProfile(forCast: false), format: "pgssub") == "Encode")
+        #expect(subtitleMethod(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server), format: "pgssub") == "Encode")
     }
 }
 
@@ -111,23 +112,23 @@ extension DeviceProfileTests {
     func hdrDefault() {
         UserDefaults.standard.removeObject(forKey: "codecForceHDRTranscode")
         UserDefaults.standard.removeObject(forKey: "codecForceDolbyVisionTranscode")
-        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false)) == nil)
-        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile) == nil)
+        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server)) == nil)
+        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile(baseURL: Self.server)) == nil)
     }
 
     @Test("Force HDR to Transcode allows only SDR, on every engine")
     func forceHDR() {
         UserDefaults.standard.set(true, forKey: "codecForceHDRTranscode")
         defer { UserDefaults.standard.removeObject(forKey: "codecForceHDRTranscode") }
-        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false)) == "SDR")
-        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile) == "SDR")
+        #expect(allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server)) == "SDR")
+        #expect(allowedRanges(JellyfinMediaClient.nativeDecoderProfile(baseURL: Self.server)) == "SDR")
     }
 
     @Test("Force Dolby Vision to Transcode keeps HDR10 and HLG but not Dolby Vision")
     func forceDolbyVision() {
         UserDefaults.standard.set(true, forKey: "codecForceDolbyVisionTranscode")
         defer { UserDefaults.standard.removeObject(forKey: "codecForceDolbyVisionTranscode") }
-        let ranges = allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false))?.split(separator: "|") ?? []
+        let ranges = allowedRanges(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server))?.split(separator: "|") ?? []
         #expect(ranges.contains("HDR10") && ranges.contains("HLG"))
         #expect(!ranges.contains { $0.hasPrefix("DOVI") })
     }
@@ -136,13 +137,32 @@ extension DeviceProfileTests {
     func compatibilityMode() {
         UserDefaults.standard.set(true, forKey: "codecCompatibilityMode")
         defer { UserDefaults.standard.removeObject(forKey: "codecCompatibilityMode") }
-        for profile in [JellyfinMediaClient.deviceProfile(forCast: false), JellyfinMediaClient.nativeDecoderProfile] {
+        for profile in [JellyfinMediaClient.deviceProfile(forCast: false, baseURL: Self.server), JellyfinMediaClient.nativeDecoderProfile(baseURL: Self.server)] {
             #expect(directPlay(profile).map { $0["VideoCodec"] as? String } == ["h264"])
             #expect(transcoding(profile)["VideoCodec"] as? String == "h264")
             #expect(transcoding(profile)["AudioCodec"] as? String == "aac")
             #expect(allowedRanges(profile) == "SDR")
         }
-        #expect(transcoding(JellyfinMediaClient.deviceProfile(forCast: true))["Container"] as? String == "ts")
+        #expect(transcoding(JellyfinMediaClient.deviceProfile(forCast: true, baseURL: Self.server))["Container"] as? String == "ts")
+    }
+
+    @Test("AV1 leads the conversion only where the device decodes it, and never after the server failed at it")
+    func av1Conversion() {
+        let server = URL(string: "http://av1-test.example.com")!
+        AV1Encoding.forgetFailures()
+        UserDefaults.standard.removeObject(forKey: AV1Encoding.settingKey)
+        defer { AV1Encoding.forgetFailures() }
+        let codecs = { (transcoding(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: server))["VideoCodec"] as? String) ?? "" }
+        #expect(codecs().hasPrefix("av1") == JellyfinMediaClient.decodesAV1InHardware)
+        AV1Encoding.markFailed(on: server)
+        #expect(!codecs().contains("av1"))
+        #expect(transcoding(JellyfinMediaClient.deviceProfile(forCast: true, baseURL: server))["VideoCodec"] as? String == "h264")
+    }
+
+    @Test("Without an AV1 decoder, native engines keep AV1 to 1080p")
+    func av1SoftwareLimit() {
+        let limited = (JellyfinMediaClient.nativeDecoderProfile(baseURL: Self.server)["CodecProfiles"] as? [[String: Any]] ?? [])
+            .contains { $0["Codec"] as? String == "av1" }
+        #expect(limited == !JellyfinMediaClient.decodesAV1InHardware)
     }
 }
-
