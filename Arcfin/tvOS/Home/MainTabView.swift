@@ -39,7 +39,7 @@ struct MainTabView: View {
                             }
                     }
                 }
-                Tab("Requests", systemImage: "clock") {
+                Tab(BottomNavItem.requests.title, systemImage: BottomNavItem.requests.icon) {
                     SeerrView()
                 }
                 if BottomNavPrefs.active(from: activeString).contains(.stats) {
