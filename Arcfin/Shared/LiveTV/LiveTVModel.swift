@@ -4,6 +4,13 @@ import SwiftUI
 import JellyfinAPI
 import AuthCore
 
+/// The channels a channel was played from, for the player's channel list: the same list the
+/// play queue steps through with Previous and Next, with what's on each.
+@MainActor
+enum LiveTVQueue {
+    static var channels: [LiveTVChannel] = []
+}
+
 enum LiveTVTab: String, CaseIterable, Identifiable {
     case channels, guide, recordings
     var id: String { rawValue }
@@ -170,7 +177,9 @@ final class LiveTVModel {
     /// was picked from, or else the channel list.
     func play(_ channel: LiveTVChannel, among list: [LiveTVChannel]? = nil) {
         let list = list ?? (visibleChannels.contains(where: { $0.id == channel.id }) ? visibleChannels : channels)
-        PlayQueue.start((list.contains(where: { $0.id == channel.id }) ? list : [channel]).map(\.mediaItem))
+        let queue = list.contains(where: { $0.id == channel.id }) ? list : [channel]
+        PlayQueue.start(queue.map(\.mediaItem))
+        LiveTVQueue.channels = queue
         playbackRequest = MediaDetailView.PlaybackRequest(item: channel.mediaItem, startTicks: 0)
     }
 

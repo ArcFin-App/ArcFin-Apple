@@ -168,6 +168,21 @@ final class PlayerModel {
     /// A live TV channel: no timeline to seek in, nothing to resume or mark watched.
     var isLive: Bool { item.type == .tvChannel }
 
+    /// The channel list over the picture, to switch channel without leaving the player.
+    var showChannelList = false
+
+    /// The channels this one was played from, when there's more than this one.
+    var liveChannels: [LiveTVChannel] {
+        guard isLive, LiveTVQueue.channels.contains(where: { $0.id == item.id }) else { return [] }
+        return LiveTVQueue.channels.count > 1 ? LiveTVQueue.channels : []
+    }
+
+    func switchChannel(to channel: LiveTVChannel) {
+        showChannelList = false
+        guard channel.id != item.id else { return }
+        onPlayNext(channel.mediaItem)
+    }
+
     /// Hands over the environment the shared steps need.
     func attach(authManager: AuthManager, mediaRepo: MediaRepository, syncPlayManager: SyncPlayManager,
                 sharePlay: SharePlayManager, scenePhase: ScenePhase) {

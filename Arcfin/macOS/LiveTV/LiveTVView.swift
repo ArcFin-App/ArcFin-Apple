@@ -104,6 +104,7 @@ private struct LiveTVPresentations: ViewModifier {
             .onChange(of: playbackPresenter.request == nil) { _, closed in
                 guard closed else { return }
                 PlayQueue.clear()
+                LiveTVQueue.channels = []
                 onPlayerClosed()
             }
             .alert("Live TV", isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })) {

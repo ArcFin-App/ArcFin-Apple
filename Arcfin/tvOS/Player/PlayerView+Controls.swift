@@ -240,6 +240,12 @@ extension PlayerView {
 
     private var rightSecondaryActions: some View {
         HStack(spacing: 12) {
+            if !model.liveChannels.isEmpty {
+                Button { withAnimation(DT.Animation.fast) { model.showChannelList = true } } label: {
+                    TVPlayerControlLabel(systemImage: "list.bullet.rectangle", size: 14, diameter: 32)
+                }
+                .accessibilityLabel("Channels")
+            }
             Button { showQualityMenu = true } label: {
                 TVPlayerControlLabel(systemImage: "slider.horizontal.3", size: 14, diameter: 32)
             }
@@ -283,11 +289,12 @@ extension PlayerView {
     /// button nobody can see.
     var tvCatcherActive: Bool {
         model.tvControlsHidden && !tvOverlayHasFocusTarget && model.skipButtonLabel == nil && model.errorMessage == nil
+            && !model.showChannelList
     }
 
     /// Changes whenever a different control should hold focus.
     var tvFocusContext: String {
-        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)-\(model.errorMessage != nil)"
+        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)-\(model.errorMessage != nil)-\(model.showChannelList)"
     }
 
     /// The remote while the controls are hidden, as in the system player: a click or a swipe
@@ -308,7 +315,10 @@ extension PlayerView {
             case .right where model.isLive: model.playNextEpisode()
             case .left: tvQuickSeek(forward: false)
             case .right: tvQuickSeek(forward: true)
-            // Down opens subtitles and audio, as the system player's info panel does.
+            // Down opens subtitles and audio, as the system player's info panel does, or on a
+            // channel the channel list.
+            case .down where !model.liveChannels.isEmpty:
+                withAnimation(DT.Animation.fast) { model.showChannelList = true }
             case .down: showTrackMenu = true
             default: model.toggleControlsVisibilityOnAction()
             }
@@ -332,7 +342,9 @@ extension PlayerView {
     /// Menu steps back one layer at a time: out of a scrub, then hides the controls, then
     /// leaves the player.
     func handleTVExit() {
-        if model.isScrubbing {
+        if model.showChannelList {
+            withAnimation(DT.Animation.fast) { model.showChannelList = false }
+        } else if model.isScrubbing {
             model.isScrubbing = false
             model.scrubThumbnail = nil
             model.scheduleAutoHide()

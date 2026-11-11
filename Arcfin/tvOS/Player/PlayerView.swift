@@ -138,6 +138,7 @@ struct PlayerView: View {
 
             moreLikeThisOverlay
             castPanelOverlay
+            PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
                 stillWatchingOverlay

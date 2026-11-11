@@ -131,6 +131,7 @@ private struct LiveTVPresentations: ViewModifier {
             }
             .fullScreenCover(item: $model.playbackRequest, onDismiss: {
                 PlayQueue.clear()
+                LiveTVQueue.channels = []
                 onPlayerClosed()
             }) { request in
                 PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in

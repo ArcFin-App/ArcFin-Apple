@@ -111,6 +111,7 @@ extension PlayerView {
             case "fullscreen": "Toggle full screen"
             case "chapters": "Chapters"
             case "tracks": "Subtitles and audio"
+            case "channels": "Channels"
             default: "Playback speed"
             }
         }
@@ -134,6 +135,11 @@ extension PlayerView {
         ]
         if chapterListEnabled, !model.chapters.isEmpty {
             items.append(QuickAction(id: "chapters", icon: "list.bullet") { showChapterMenu = true })
+        }
+        if !model.liveChannels.isEmpty {
+            items.append(QuickAction(id: "channels", icon: "list.bullet.rectangle") {
+                withAnimation(DT.Animation.fast) { model.showChannelList = true }
+            })
         }
         items.append(QuickAction(id: "tracks", icon: "captions.bubble") { showTrackMenu = true })
         if !model.isLive {

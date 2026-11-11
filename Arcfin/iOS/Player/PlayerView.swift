@@ -163,6 +163,7 @@ struct PlayerView: View {
 
             MoreLikeThisPanel(model: model, suggestionsAreHorizontal: isLandscape)
             CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel) { openCastPanelPerson($0) }
+            PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
                 StillWatchingPrompt(model: model)
