@@ -17,6 +17,7 @@ struct DownloadsSettingsView: View {
     @AppStorage("downloadTrickplay") private var downloadTrickplay = true
     @AppStorage("seasonDownloadUnwatchedOnly") private var seasonDownloadUnwatchedOnly = false
     @AppStorage("pauseDownloadsInLowPowerMode") private var pauseInLowPowerMode = false
+    @AppStorage(DownloadManager.downloadWhilePlayingKey) private var downloadWhilePlaying = false
     @AppStorage("pauseDownloadsInLowDataMode") private var pauseInLowDataMode = false
     @AppStorage("removeDownloadsAfterDays") private var removeAfterDays = 0
     @AppStorage("removeWatchedWhenLowOnSpace") private var removeWatchedWhenLow = false
@@ -80,6 +81,10 @@ struct DownloadsSettingsView: View {
                 }
                 .syncLocked("pauseDownloadsInLowDataMode", authManager)
                 .onChange(of: pauseInLowDataMode) { downloadManager.recheckQueueHold() }
+                Toggle(isOn: $downloadWhilePlaying) {
+                    TVRowLabelText(title: "Keep Downloading While Playing", detail: "Otherwise downloads and Smart Downloads wait while a video streams, so it gets the whole connection, and carry on when you close the player.")
+                }
+                .syncLocked(DownloadManager.downloadWhilePlayingKey, authManager)
             }
 
             Section {

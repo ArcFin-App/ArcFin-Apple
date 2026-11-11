@@ -216,6 +216,7 @@ public enum SettingsSyncRegistry {
         .init("seasonDownloadUnwatchedOnly", .bool),
         .init("pauseDownloadsInLowPowerMode", .bool),
         .init("pauseDownloadsInLowDataMode", .bool),
+        .init("downloadWhilePlaying", .bool),
         .init("removeDownloadsAfterDays", .int),
         .init("removeWatchedWhenLowOnSpace", .bool),
         // Appearance

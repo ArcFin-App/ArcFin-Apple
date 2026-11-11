@@ -532,6 +532,11 @@ final class PlayerModel {
     }
 
     func setup() async {
+        // Before the connection check below, which downloads running alongside would skew.
+        if !holdsPlayerActivity {
+            holdsPlayerActivity = true
+            PlayerActivity.shared.opened()
+        }
         playStartedAt = nil
         av1Watchdog?.cancel()
         setupGeneration += 1
@@ -974,6 +979,10 @@ final class PlayerModel {
         stillWatchingTimeoutTask?.cancel()
         liveProgramTask?.cancel()
         av1Watchdog?.cancel()
+        if holdsPlayerActivity {
+            holdsPlayerActivity = false
+            PlayerActivity.shared.closed()
+        }
     }
 
     /// Closing the player closes the group too — an orphaned WebSocket connection with
@@ -1245,6 +1254,7 @@ final class PlayerModel {
     @ObservationIgnored private var playStartedAt: Date?
     @ObservationIgnored private var av1Watchdog: Task<Void, Never>?
     @ObservationIgnored private var setupGeneration = 0
+    @ObservationIgnored private var holdsPlayerActivity = false
 
     /// A server whose AV1 encoder doesn't exist never sends a first segment, and the engine
     /// keeps retrying rather than failing, so no error ever reaches retryWithoutAV1. A
@@ -1959,5 +1969,26 @@ final class PlayerModel {
     var currentSubtitleStream: JellyfinMediaStream? {
         guard let selectedSubtitleIndex else { return nil }
         return playbackInfo?.subtitleStreams.first(where: { $0.index == selectedSubtitleIndex })
+    }
+}
+
+/// Whether a player is streaming, for what makes way for it: downloads (unless Keep
+/// Downloading While Playing is on) and Home's hero trailers. A count, since a Mac can have
+/// more than one player window open.
+@MainActor @Observable
+final class PlayerActivity {
+    static let shared = PlayerActivity()
+    private(set) var openPlayers = 0
+    var isPlayerOpen: Bool { openPlayers > 0 }
+
+    func opened() {
+        openPlayers += 1
+        if openPlayers == 1 { AppServices.downloadManager.playerOpened() }
+    }
+
+    func closed() {
+        guard openPlayers > 0 else { return }
+        openPlayers -= 1
+        if openPlayers == 0 { AppServices.downloadManager.playerClosed() }
     }
 }

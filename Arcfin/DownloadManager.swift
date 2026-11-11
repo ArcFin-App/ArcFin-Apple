@@ -97,10 +97,11 @@ final class DownloadManager: NSObject {
 
     /// Why the queue is waiting instead of starting the next title.
     enum QueueHold: Equatable {
-        case mobileData, lowDataMode, lowPowerMode
+        case mobileData, lowDataMode, lowPowerMode, playing
 
         var title: String {
             switch self {
+            case .playing: String(localized: "Waiting for the Video to End")
             case .mobileData: String(localized: "Waiting for Wi-Fi")
             case .lowDataMode: String(localized: "Low Data Mode Is On")
             case .lowPowerMode: String(localized: "Low Power Mode Is On")
@@ -108,6 +109,7 @@ final class DownloadManager: NSObject {
         }
         var detail: String {
             switch self {
+            case .playing: String(localized: "Downloads carry on when you close the player, so the video gets the whole connection.")
             case .mobileData: String(localized: "Downloads start when you're on Wi-Fi.")
             case .lowDataMode: String(localized: "Downloads start when Low Data Mode is off.")
             case .lowPowerMode: String(localized: "Downloads start when Low Power Mode is off.")
@@ -126,10 +128,45 @@ final class DownloadManager: NSObject {
     private func hold(viaSmart: Bool) -> QueueHold? {
         guard !holdOverridden else { return nil }
         let defaults = UserDefaults.standard
+        if waitsForPlayer { return .playing }
         if isOnMobileData, viaSmart ? !smartDownloadsAllowMobileData : isWiFiOnly { return .mobileData }
         if isOnLowDataMode, defaults.bool(forKey: "pauseDownloadsInLowDataMode") { return .lowDataMode }
         if ProcessInfo.processInfo.isLowPowerModeEnabled, defaults.bool(forKey: "pauseDownloadsInLowPowerMode") { return .lowPowerMode }
         return nil
+    }
+
+    /// Settings › Downloads › Keep Downloading While Playing, off by default: a player open
+    /// pauses transfers, the queue and Smart Downloads until it closes.
+    static let downloadWhilePlayingKey = "downloadWhilePlaying"
+    @ObservationIgnored private var isPlayerOpen = false
+    /// Transfers suspended for the player, kept apart from ones paused by hand.
+    @ObservationIgnored private var pausedForPlayer: Set<String> = []
+    private var waitsForPlayer: Bool {
+        isPlayerOpen && !UserDefaults.standard.bool(forKey: Self.downloadWhilePlayingKey)
+    }
+
+    func playerOpened() {
+        isPlayerOpen = true
+        holdOverridden = false
+        guard waitsForPlayer else { return }
+        for id in Set(downloadTasks.keys).union(partTasks.keys) where !pausedItemIds.contains(id) {
+            let running = transfers(for: id).filter { $0.state == .running }
+            guard !running.isEmpty else { continue }
+            running.forEach { $0.suspend() }
+            pausedForPlayer.insert(id)
+            stats[id]?.bytesPerSecond = 0
+            speedSamples[id] = nil
+        }
+        Self.smartLog.notice("Player open: \(self.pausedForPlayer.count, privacy: .public) download(s) paused until it closes")
+    }
+
+    func playerClosed() {
+        let waited = waitsForPlayer
+        isPlayerOpen = false
+        for id in pausedForPlayer { transfers(for: id).forEach { $0.resume() } }
+        pausedForPlayer = []
+        recheckQueueHold()
+        if waited { refreshSmartDownloads() }
     }
 
     /// Settings › Downloads › Downloads at Once.
@@ -633,6 +670,10 @@ final class DownloadManager: NSObject {
     }
 
     func pauseDownload(itemId: String) {
+        if pausedForPlayer.remove(itemId) != nil {
+            pausedItemIds.insert(itemId)
+            return
+        }
         let running = transfers(for: itemId).filter { $0.state == .running }
         guard !running.isEmpty else { return }
         running.forEach { $0.suspend() }
@@ -1354,6 +1395,10 @@ final class DownloadManager: NSObject {
         let kept = Self.keptShows
         guard globalOn || !kept.isEmpty else {
             Self.smartLog.notice("Smart Downloads skipped: off, and no show set to Keep Downloaded")
+            return
+        }
+        guard !waitsForPlayer else {
+            Self.smartLog.notice("Smart Downloads skipped: a video is playing")
             return
         }
         guard !isOnMobileData || smartDownloadsAllowMobileData else {

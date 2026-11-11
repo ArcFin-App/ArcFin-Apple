@@ -705,6 +705,70 @@
         }
       }
     },
+    "A video is playing. Downloading now shares its connection, which can lower its quality." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ein Video wird abgespielt. Ein Download jetzt teilt sich die Verbindung und kann die Qualität senken."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se está reproduciendo un vídeo. Descargar ahora comparte su conexión y puede reducir su calidad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Une vidéo est en cours de lecture. Télécharger maintenant partage sa connexion et peut réduire sa qualité."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "È in riproduzione un video. Scaricare ora ne condivide la connessione e può ridurne la qualità."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ビデオを再生中です。今ダウンロードすると回線を分け合うため、画質が下がることがあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "동영상을 재생하는 중입니다. 지금 다운로드하면 연결을 나눠 써서 화질이 낮아질 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Er speelt een video. Nu downloaden deelt de verbinding en kan de kwaliteit verlagen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Um vídeo está sendo reproduzido. Baixar agora divide a conexão e pode reduzir a qualidade."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Идёт воспроизведение видео. Загрузка сейчас разделит соединение и может снизить качество."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在播放视频。现在下载会占用其网络连接，可能降低画质。"
+          }
+        }
+      }
+    },
     "About This Programme" : {
       "localizations" : {
         "de" : {
@@ -5313,6 +5377,70 @@
         }
       }
     },
+    "Downloads carry on when you close the player, so the video gets the whole connection." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads gehen weiter, sobald du den Player schließt, damit das Video die ganze Verbindung bekommt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Las descargas continúan al cerrar el reproductor, para que el vídeo tenga toda la conexión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les téléchargements reprennent à la fermeture du lecteur, pour que la vidéo dispose de toute la connexion."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I download riprendono quando chiudi il player, così il video ha tutta la connessione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "プレーヤーを閉じるとダウンロードが再開します。それまではビデオが回線をすべて使います。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "플레이어를 닫으면 다운로드가 이어집니다. 그동안 동영상이 연결을 모두 사용합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads gaan verder als je de speler sluit, zodat de video de hele verbinding krijgt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Os downloads continuam quando você fecha o player, para o vídeo usar toda a conexão."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Загрузки продолжатся после закрытия плеера, чтобы видео получало всё соединение."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "关闭播放器后下载会继续，让视频独享网络连接。"
+          }
+        }
+      }
+    },
     "Enter a server address." : {
       "localizations" : {
         "de" : {
@@ -7613,6 +7741,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "保留"
+          }
+        }
+      }
+    },
+    "Keep Downloading While Playing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Beim Abspielen weiterladen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seguir descargando al reproducir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continuer à télécharger pendant la lecture"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continua a scaricare durante la riproduzione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生中もダウンロードを続ける"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "재생 중에도 다운로드 계속"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Blijven downloaden tijdens afspelen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continuar baixando durante a reprodução"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Загружать во время просмотра"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放时继续下载"
           }
         }
       }
@@ -9981,6 +10173,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "其他登录方式"
+          }
+        }
+      }
+    },
+    "Otherwise downloads and Smart Downloads wait while a video streams, so it gets the whole connection, and carry on when you close the player." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sonst warten Downloads und Smart Downloads, während ein Video streamt, damit es die ganze Verbindung bekommt, und gehen weiter, wenn du den Player schließt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si no, las descargas y las descargas inteligentes esperan mientras se reproduce un vídeo, para que tenga toda la conexión, y continúan al cerrar el reproductor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sinon, les téléchargements et les téléchargements intelligents attendent pendant la lecture d'une vidéo, pour qu'elle dispose de toute la connexion, et reprennent à la fermeture du lecteur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Altrimenti i download e i download intelligenti aspettano mentre un video è in streaming, così ha tutta la connessione, e riprendono quando chiudi il player."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "オフにすると、ビデオのストリーミング中はダウンロードとスマートダウンロードが待機し、ビデオが回線をすべて使います。プレーヤーを閉じると再開します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "끄면 동영상을 스트리밍하는 동안 다운로드와 스마트 다운로드가 기다려 동영상이 연결을 모두 사용하고, 플레이어를 닫으면 이어집니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anders wachten downloads en slimme downloads terwijl een video streamt, zodat die de hele verbinding krijgt, en gaan ze verder als je de speler sluit."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Caso contrário, os downloads e os downloads inteligentes esperam enquanto um vídeo é transmitido, para ele usar toda a conexão, e continuam quando você fecha o player."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Иначе загрузки и умные загрузки ждут, пока идёт видео, чтобы оно получало всё соединение, и продолжаются после закрытия плеера."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "否则在视频串流时，下载和智能下载会暂停，让视频独享网络连接，关闭播放器后继续。"
           }
         }
       }
@@ -18045,6 +18301,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "视频转码"
+          }
+        }
+      }
+    },
+    "Waiting for the Video to End" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Warten auf das Ende des Videos"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Esperando a que termine el vídeo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "En attente de la fin de la vidéo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In attesa della fine del video"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ビデオの終了を待っています"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "동영상이 끝나기를 기다리는 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wachten tot de video klaar is"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aguardando o fim do vídeo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ожидание окончания видео"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "等待视频结束"
           }
         }
       }

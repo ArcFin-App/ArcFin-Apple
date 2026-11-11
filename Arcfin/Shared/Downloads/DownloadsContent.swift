@@ -123,7 +123,7 @@ struct DownloadsContent<Manage: View>: View {
 
     private func heldCard(_ hold: DownloadManager.QueueHold) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
+            Image(systemName: hold == .playing ? "play.circle" : hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
                 .font(.system(.title3))
                 .foregroundStyle(.orange)
                 .accessibilityHidden(true)
@@ -419,6 +419,7 @@ struct DownloadsAlerts: ViewModifier {
                 switch downloadManager.queueHold {
                 case .mobileData: Text("You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply.")
                 case .lowDataMode: Text("Low Data Mode is on. Downloading uses data your device is trying to save.")
+                case .playing: Text("A video is playing. Downloading now shares its connection, which can lower its quality.")
                 default: Text("Low Power Mode is on. Downloading uses more battery.")
                 }
             }
