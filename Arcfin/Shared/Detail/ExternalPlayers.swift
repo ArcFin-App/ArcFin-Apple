@@ -17,7 +17,7 @@ struct ExternalPlayer: Identifiable, Hashable {
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
-    private static func encoded(_ url: URL) -> String {
+    private nonisolated static func encoded(_ url: URL) -> String {
         url.absoluteString.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? url.absoluteString
     }
 
@@ -36,7 +36,7 @@ struct ExternalPlayer: Identifiable, Hashable {
     ]
 
     /// The players installed here that can take a stream.
-    static var installed: [ExternalPlayer] { all.filter(ExternalApps.canOpen) }
+    static var installed: [ExternalPlayer] { all.filter { ExternalApps.canOpen($0) } }
 
     /// The file itself, played as is, signed with the profile's token so the other app can
     /// fetch it without signing in.
