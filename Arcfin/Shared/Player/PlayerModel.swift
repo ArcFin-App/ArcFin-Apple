@@ -533,6 +533,7 @@ final class PlayerModel {
 
     func setup() async {
         playStartedAt = nil
+        av1Watchdog?.cancel()
         guard let credential, let authHeader else {
             errorMessage = "Not signed in."
             return
@@ -674,6 +675,7 @@ final class PlayerModel {
             }
             await player.play()
             playStartedAt = Date()
+            watchAV1Conversion(startedFrom: resumeFrom)
             (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
             loadingStage = nil
             await applyRememberedRate()
@@ -965,6 +967,7 @@ final class PlayerModel {
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
         liveProgramTask?.cancel()
+        av1Watchdog?.cancel()
     }
 
     /// Closing the player closes the group too — an orphaned WebSocket connection with
@@ -1222,6 +1225,24 @@ final class PlayerModel {
 
     /// When playback started, for telling a stream that never played from one that broke later.
     @ObservationIgnored private var playStartedAt: Date?
+    @ObservationIgnored private var av1Watchdog: Task<Void, Never>?
+
+    /// A server whose AV1 encoder doesn't exist never sends a first segment, and the engine
+    /// keeps retrying rather than failing, so no error ever reaches retryWithoutAV1. A
+    /// conversion to AV1 that hasn't started playing 15 s after it was asked for counts as
+    /// that failure.
+    private func watchAV1Conversion(startedFrom startTicks: Int64) {
+        av1Watchdog?.cancel()
+        guard playbackInfo?.askedForAV1 == true else { return }
+        av1Watchdog = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard let self, !Task.isCancelled, self.playbackInfo?.askedForAV1 == true else { return }
+            let advanced = self.player.positionTicks > startTicks + 10_000_000
+            guard self.player.status != .playing || !advanced else { return }
+            self.playStartedAt = nil
+            _ = self.retryWithoutAV1()
+        }
+    }
 
     /// A conversion to AV1 that fails as it starts means this server can't encode AV1 (its
     /// setting allows it, but its GPU has no AV1 encoder): remember that, and start again,
