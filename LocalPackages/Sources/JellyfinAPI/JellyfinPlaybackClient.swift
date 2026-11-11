@@ -246,7 +246,11 @@ extension JellyfinMediaClient {
             // only the container is being repackaged (a cheap remux, codecs untouched) —
             // that's Jellyfin's "Direct Stream", genuinely distinct from a real re-encode,
             // and its own dashboard doesn't label it "Transcoding" either.
-            let reasons = Set(source.transcodeReasons ?? [])
+            // The reply's own TranscodeReasons often comes back empty; the URL always has them.
+            let urlReasons = relative.queryItems?
+                .first { $0.name.caseInsensitiveCompare("TranscodeReasons") == .orderedSame }?.value?
+                .split(separator: ",").map(String.init) ?? []
+            let reasons = Set(source.transcodeReasons.flatMap { $0.isEmpty ? nil : $0 } ?? urlReasons)
             playMethod = (reasons.isEmpty || reasons == ["ContainerNotSupported"]) ? .directStream : .transcode
         } else {
             // The extension must be in the path, not just a query param — AVFoundation
