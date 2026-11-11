@@ -326,6 +326,7 @@
 				tvOS/Library/LibraryDetailView.swift = (tvos, );
 				tvOS/Library/LibraryFilterControls.swift = (tvos, );
 				tvOS/Library/LibraryView.swift = (tvos, );
+				tvOS/LiveTV/LiveTVView.swift = (tvos, );
 				tvOS/Lock/AppLockView.swift = (tvos, );
 				tvOS/Login/LoginPlatform.swift = (tvos, );
 				tvOS/Login/SetupGuideSheet.swift = (tvos, );
