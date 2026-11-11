@@ -434,6 +434,43 @@ final class PlayerModel {
         Task { await player.setRate(rate) }
     }
 
+    // MARK: Hold for speed
+
+    /// Settings › Playback › Hold Speed: how fast playback runs while held.
+    static let holdSpeedKey = "holdSpeedRate"
+    static let holdSpeedOptions: [Float] = [1.5, 2.0, 3.0]
+    var holdSpeed: Float {
+        let saved = UserDefaults.standard.float(forKey: Self.holdSpeedKey)
+        return Self.holdSpeedOptions.contains(saved) ? saved : 2.0
+    }
+
+    /// Held down: plays faster until let go, then back to the speed that was set.
+    private(set) var isSpeedBoosting = false
+    @ObservationIgnored private var rateBeforeBoost: Float?
+
+    /// Only while something is playing, and not on a channel: live has nothing ahead to speed to.
+    func beginSpeedBoost() {
+        guard !isSpeedBoosting, !isLive, player.status == .playing, !CastManager.shared.isConnected else { return }
+        rateBeforeBoost = player.playbackRate
+        isSpeedBoosting = true
+        HapticManager.impact(.medium)
+        let rate = holdSpeed
+        Task { await player.setRate(rate) }
+    }
+
+    /// When a hold last ended: letting go shouldn't also count as a tap that toggles the controls.
+    @ObservationIgnored private(set) var speedBoostEndedAt: Date?
+    var justEndedSpeedBoost: Bool { speedBoostEndedAt.map { Date().timeIntervalSince($0) < 0.4 } ?? false }
+
+    func endSpeedBoost() {
+        guard isSpeedBoosting else { return }
+        isSpeedBoosting = false
+        speedBoostEndedAt = Date()
+        let rate = rateBeforeBoost ?? 1.0
+        rateBeforeBoost = nil
+        Task { await player.setRate(rate) }
+    }
+
     /// One step along the speed menu's options, from whichever is closest to the current speed.
     func stepPlaybackRate(_ direction: Int) {
         let options = Self.rateOptions

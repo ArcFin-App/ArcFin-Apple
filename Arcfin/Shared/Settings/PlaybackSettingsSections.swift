@@ -37,6 +37,7 @@ struct PlaybackAutomationSection: View {
     @AppStorage("rememberPlaybackSpeed") private var rememberPlaybackSpeed = false
     @AppStorage("upNextCountdownSeconds") private var upNextCountdownSeconds = 5
     @AppStorage("defaultPlaybackSpeed") private var defaultPlaybackSpeed = 1.0
+    @AppStorage(PlayerModel.holdSpeedKey) private var holdSpeed = 2.0
 
     var body: some View {
         Section {
@@ -85,6 +86,10 @@ struct PlaybackAutomationSection: View {
                 }
                 .tvListRow()
                 .syncLocked("subtitlesWhenMuted", authManager)
+            }
+            SettingsPicker("Hold Speed", detail: PlatformMetrics.holdSpeedHint, selection: $holdSpeed,
+                           options: PlayerModel.holdSpeedOptions.map(Double.init)) { rate in
+                Text("\(rate.formatted())×")
             }
             Toggle(isOn: $rememberPlaybackSpeed) {
                 TVRowLabelText(title: "Remember Playback Speed", detail: "New videos start at the speed you last picked.")

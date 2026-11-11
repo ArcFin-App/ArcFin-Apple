@@ -158,6 +158,7 @@ struct PlayerView: View {
                 .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
 
             SkipSegmentButton(model: model)
+            SpeedBoostBadge(model: model)
 
             if model.showUpNext, let nextEpisode = model.nextEpisode {
                 UpNextCard(model: model, next: nextEpisode)
@@ -299,6 +300,7 @@ struct PlayerView: View {
                 .contentShape(Rectangle())
                 .gesture(tapGesture(width: proxy.size.width))
                 .simultaneousGesture(dragGesture(size: proxy.size))
+                .simultaneousGesture(holdForSpeedGesture)
                 .onChange(of: proxy.size) { _, newSize in
                     isLandscape = newSize.width > newSize.height
                 }

@@ -6401,6 +6401,134 @@
         }
       }
     },
+    "Hold Speed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tempo beim Halten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Velocidad al mantener"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vitesse en maintenant"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Velocità tenendo premuto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "長押し時の速度"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "길게 누를 때 속도"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Snelheid bij vasthouden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Velocidade ao segurar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Скорость при удержании"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "按住时的速度"
+          }
+        }
+      }
+    },
+    "Hold the right arrow key to play at this speed until you let go." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Halte die Rechtspfeiltaste gedrückt, um mit diesem Tempo abzuspielen, bis du loslässt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantén pulsada la tecla de flecha derecha para reproducir a esta velocidad hasta que la sueltes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Maintenez la flèche droite pour lire à cette vitesse jusqu’à ce que vous la relâchiez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tieni premuto il tasto freccia destra per riprodurre a questa velocità finché non lo rilasci."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "右矢印キーを押し続けると、離すまでこの速度で再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "오른쪽 화살표 키를 누르고 있으면 뗄 때까지 이 속도로 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houd de pijl-naar-rechtstoets ingedrukt om op deze snelheid af te spelen tot je loslaat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantenha a seta para a direita pressionada para reproduzir nesta velocidade até soltar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Удерживайте клавишу со стрелкой вправо, чтобы воспроизводить с этой скоростью, пока не отпустите."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "按住右方向键即可以此速度播放，松开后恢复。"
+          }
+        }
+      }
+    },
     "Home, title pages, Stats and Settings are evenly spaced, easier to read and simpler to get around with the remote." : {
       "localizations" : {
         "de" : {
@@ -10113,6 +10241,70 @@
         }
       }
     },
+    "Playing at %@ times speed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wiedergabe mit %@-facher Geschwindigkeit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduciendo a %@× de velocidad"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lecture à %@ fois la vitesse"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riproduzione a %@× di velocità"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@倍速で再生中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@배속으로 재생 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Afspelen op %@× snelheid"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduzindo a %@× de velocidade"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Воспроизведение со скоростью ×%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在以 %@ 倍速播放"
+          }
+        }
+      }
+    },
     "Plays a live TV channel from your server." : {
       "localizations" : {
         "de" : {
@@ -10749,6 +10941,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "首播"
+          }
+        }
+      }
+    },
+    "Press and hold the clickpad to play at this speed until you let go." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Halte das Clickpad gedrückt, um mit diesem Tempo abzuspielen, bis du loslässt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantén pulsado el clickpad para reproducir a esta velocidad hasta que lo sueltes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Maintenez le pavé tactile enfoncé pour lire à cette vitesse jusqu’à ce que vous le relâchiez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tieni premuto il clickpad per riprodurre a questa velocità finché non lo rilasci."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "クリックパッドを押し続けると、離すまでこの速度で再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "클릭패드를 길게 누르면 뗄 때까지 이 속도로 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houd het klikvlak ingedrukt om op deze snelheid af te spelen tot je loslaat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pressione e segure o clickpad para reproduzir nesta velocidade até soltar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Удерживайте сенсорную панель нажатой, чтобы воспроизводить с этой скоростью, пока не отпустите."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "按住触控板即可以此速度播放，松开后恢复。"
           }
         }
       }
@@ -16893,6 +17149,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "无法打开此视频。请重试，或在“设置”›“播放”中选择其他引擎。"
+          }
+        }
+      }
+    },
+    "Touch and hold the video to play at this speed until you let go." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Halte das Video gedrückt, um es mit diesem Tempo abzuspielen, bis du loslässt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantén pulsado el vídeo para reproducirlo a esta velocidad hasta que lo sueltes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Maintenez le doigt sur la vidéo pour la lire à cette vitesse jusqu’à ce que vous le relâchiez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tieni premuto sul video per riprodurlo a questa velocità finché non lo rilasci."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ビデオを長押しすると、指を離すまでこの速度で再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "비디오를 길게 터치하면 손을 뗄 때까지 이 속도로 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houd de video ingedrukt om hem op deze snelheid af te spelen tot je loslaat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toque e segure o vídeo para reproduzir nesta velocidade até soltar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Удерживайте палец на видео, чтобы воспроизводить его с этой скоростью, пока не отпустите."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "按住视频即可以此速度播放，松开后恢复。"
           }
         }
       }

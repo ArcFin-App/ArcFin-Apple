@@ -12,6 +12,8 @@ enum PlatformMetrics {
     static let fontScale: CGFloat = 2.0
     /// The player can tell when its sound is turned all the way down.
     static let detectsMutedSound = false
+    /// How to hold playback at speed here, for Settings › Playback › Hold Speed.
+    static let holdSpeedHint: LocalizedStringKey = "Press and hold the clickpad to play at this speed until you let go."
 
     /// The point size `scaledFont(size:)` starts from.
     static func scaledFontSize(_ size: CGFloat) -> CGFloat {
