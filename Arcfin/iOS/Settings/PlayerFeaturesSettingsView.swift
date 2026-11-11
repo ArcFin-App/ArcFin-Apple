@@ -11,10 +11,22 @@ struct PlayerFeaturesSettingsView: View {
     @AppStorage("swipeGesturesEnabled") private var swipeGesturesEnabled = true
     @AppStorage("ignoreEdgeSwipes") private var ignoreEdgeSwipes = true
     @AppStorage("doubleTapToSkip") private var doubleTapToSkip = true
+    @AppStorage(PlayerOpeningOrientation.key) private var openingOrientation = PlayerOpeningOrientation.followDevice
 
     var body: some View {
         List {
             PlayerFeatureToggleSections()
+
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                Section {
+                    Picker(selection: $openingOrientation) {
+                        ForEach(PlayerOpeningOrientation.allCases) { Text($0.label).tag($0) }
+                    } label: {
+                        TVRowLabelText(title: "Open Videos In", detail: "The rotate button in the player still turns it either way.")
+                    }
+                    .syncLocked(PlayerOpeningOrientation.key, authManager)
+                }
+            }
 
             Section {
                 Toggle(isOn: $autoPictureInPicture) {

@@ -177,7 +177,10 @@ struct PlayerView: View {
         // Center, Notification Center and the Home gesture, which then take a second swipe.
         .defersSystemGestures(on: swipeGesturesEnabled && !ignoreEdgeSwipes ? .vertical : [])
         .keepsScreenAwake(status: model.player.status)
-        .onAppear { connectModel() }
+        .onAppear {
+            connectModel()
+            applyOpeningOrientation()
+        }
         .task { if !model.isAskingToResume { await setup() } }
         .confirmationDialog("Resume Playback?", isPresented: $model.isAskingToResume, titleVisibility: .visible) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {

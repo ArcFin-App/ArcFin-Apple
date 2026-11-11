@@ -153,6 +153,40 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
 
 // MARK: - Rotate button
 
+/// Settings › Player Features › Open Videos In, on iPhone.
+enum PlayerOpeningOrientation: String, CaseIterable, Identifiable {
+    case followDevice, landscape, portrait
+    static let key = "playerOpeningOrientation"
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .followDevice: String(localized: "Follow Device")
+        case .landscape: String(localized: "Landscape")
+        case .portrait: String(localized: "Portrait")
+        }
+    }
+
+    static var current: PlayerOpeningOrientation {
+        UserDefaults.standard.string(forKey: key).flatMap(Self.init(rawValue:)) ?? .followDevice
+    }
+}
+
+/// Turns the player to the orientation Open Videos In asks for, on iPhone, until the rotate
+/// button changes it or the player closes (resetPlayerOrientation). A player taking over from
+/// the last one in the same cover keeps whatever orientation that one was left in.
+func applyOpeningOrientation() {
+    guard UIDevice.current.userInterfaceIdiom == .phone,
+          let scene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+    else { return }
+    switch PlayerOpeningOrientation.current {
+    case .followDevice: return
+    case .landscape: scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { _ in }
+    case .portrait: scene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { _ in }
+    }
+}
+
 /// Flips between portrait and forced landscape — iPad/iPhone with multiple orientations
 /// enabled don't always rotate on their own for a video sheet, so this is a manual override.
 func togglePlayerOrientation() {

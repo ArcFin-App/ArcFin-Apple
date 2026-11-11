@@ -247,6 +247,7 @@ public enum SettingsSyncRegistry {
         .init("autoPictureInPicture", .bool),
         .init("swipeGesturesEnabled", .bool),
         .init("ignoreEdgeSwipes", .bool),
+        .init("playerOpeningOrientation", .string),
         .init("doubleTapToSkip", .bool),
         // Subtitle style
         .init("subtitleTextSize", .string),
