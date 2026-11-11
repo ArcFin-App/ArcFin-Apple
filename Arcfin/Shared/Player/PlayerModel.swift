@@ -7,6 +7,8 @@ import JellyfinAPI
 import MediaEngine
 import SwiftVLC
 import CastKit
+import Telemetry
+import os
 
 /// A title's playback on the player screen, shared by the iPhone, iPad, Mac and Apple TV
 /// `PlayerView`: the engine, what's reported to the server, quality, tracks, skipping, Up Next,
@@ -17,6 +19,7 @@ final class PlayerModel {
     let startPositionTicks: Int64
     @ObservationIgnored let onPlayNext: (MediaItem) -> Void
     @ObservationIgnored let client = JellyfinMediaClient()
+    @ObservationIgnored private let log = Telemetry.logger(category: "Player")
     /// Apple TV hides the controls by fading them out, so they stay focusable (see its PlayerView).
     @ObservationIgnored let hidesControlsByFading: Bool
     /// Play, pause and seek go to the SyncPlay group while in one, rather than to the player.
@@ -574,7 +577,8 @@ final class PlayerModel {
             startAutoRecovery()
             watchForMissingPicture()
         } catch {
-            errorMessage = "Couldn't start playback: \(error.localizedDescription)"
+            log.error("Couldn't start \(self.item.id, privacy: .public): \(error, privacy: .public)")
+            errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
         }
 
         autoSkipped = []
@@ -1060,6 +1064,12 @@ final class PlayerModel {
         }
     }
 
+    /// The error screen's Try Again: starts over from asking the server for a stream.
+    func retry() {
+        errorMessage = nil
+        Task { await setup() }
+    }
+
     // MARK: - Live TV
 
     private func closeLiveStream(_ liveStreamId: String) {
@@ -1478,7 +1488,8 @@ final class PlayerModel {
                 updateNowPlayingInfo()
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
             } catch {
-                errorMessage = "Couldn't \(errorContext): \(error.localizedDescription)"
+                log.error("Couldn't \(errorContext, privacy: .public): \(error, privacy: .public)")
+                errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
             }
         }
     }

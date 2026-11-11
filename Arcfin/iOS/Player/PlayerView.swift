@@ -124,7 +124,10 @@ struct PlayerView: View {
             }
 
             if let errorMessage = model.errorMessage {
-                PlayerErrorView(message: errorMessage) { closePlayer() }
+                PlayerErrorView(message: errorMessage, retry: model.retry,
+                                nextChannel: model.isLive && model.nextEpisode != nil ? { model.playNextEpisode() } : nil) {
+                    closePlayer()
+                }
             }
 
             if let networkToast = model.networkToast {
