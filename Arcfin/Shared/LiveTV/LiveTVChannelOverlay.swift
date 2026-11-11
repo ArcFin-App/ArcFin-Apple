@@ -8,6 +8,8 @@ import JellyfinAPI
 struct LiveTVChannelOverlay: View {
     let channels: [LiveTVChannel]
     let currentID: String
+    /// The channel watched before this one, offered first as a way straight back.
+    var lastChannel: LiveTVChannel?
     let select: (LiveTVChannel) -> Void
     let close: () -> Void
 
@@ -30,6 +32,20 @@ struct LiveTVChannelOverlay: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
+
+            if let lastChannel, lastChannel.id != currentID {
+                Button { select(lastChannel) } label: {
+                    Label("Back to \(lastChannel.name)", systemImage: "arrow.uturn.backward")
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
+                }
+                .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 10)
+            }
 
             TimelineView(.everyMinute) { context in
                 ScrollViewReader { proxy in
@@ -101,10 +117,11 @@ struct PlayerChannelListLayer: View {
     let model: PlayerModel
 
     var body: some View {
-        if model.showChannelList, !model.liveChannels.isEmpty {
+        if model.showChannelList, model.hasChannelList {
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
-                LiveTVChannelOverlay(channels: model.liveChannels, currentID: model.item.id) { channel in
+                LiveTVChannelOverlay(channels: model.liveChannels, currentID: model.item.id,
+                                     lastChannel: model.lastChannel) { channel in
                     model.switchChannel(to: channel)
                 } close: {
                     withAnimation(DT.Animation.fast) { model.showChannelList = false }

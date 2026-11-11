@@ -170,6 +170,8 @@ final class PlayerModel {
 
     /// The channel list over the picture, to switch channel without leaving the player.
     var showChannelList = false
+    /// The channel watched before this one, to go straight back to it.
+    private(set) var lastChannel: LiveTVChannel?
 
     /// The channels this one was played from, when there's more than this one.
     var liveChannels: [LiveTVChannel] {
@@ -206,6 +208,9 @@ final class PlayerModel {
         Task { await liveRewind.seekLive(toSeconds: target) }
         toggleControlsVisibilityOnAction()
     }
+
+    /// Whether the channel list has anything to offer: other channels, or one to go back to.
+    var hasChannelList: Bool { isLive && (!liveChannels.isEmpty || lastChannel != nil) }
 
     func switchChannel(to channel: LiveTVChannel) {
         showChannelList = false
@@ -609,6 +614,12 @@ final class PlayerModel {
             loadingStage = nil
             await applyRememberedRate()
             if !isLive { sharePlay.playerOpened(item) }
+            if isLive {
+                let channel = LiveTVQueue.channels.first { $0.id == item.id }
+                    ?? LiveTVChannel(id: item.id, name: item.name, primaryImageTag: item.primaryImageTag)
+                LiveTVRecents.record(channel, for: credential.userID)
+                lastChannel = LiveTVRecents.channels(for: credential.userID).dropFirst().first
+            }
             // The preferred or remembered audio language, which a file played as is ignores.
             if selectedAudioIndex != nil { await selectAudioInEngine() }
             // A cast that was already running when this screen opened (autoplay moved on to

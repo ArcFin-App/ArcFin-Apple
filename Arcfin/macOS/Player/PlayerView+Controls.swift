@@ -136,7 +136,7 @@ extension PlayerView {
         if chapterListEnabled, !model.chapters.isEmpty {
             items.append(QuickAction(id: "chapters", icon: "list.bullet") { showChapterMenu = true })
         }
-        if !model.liveChannels.isEmpty {
+        if model.hasChannelList {
             items.append(QuickAction(id: "channels", icon: "list.bullet.rectangle") {
                 withAnimation(DT.Animation.fast) { model.showChannelList = true }
             })

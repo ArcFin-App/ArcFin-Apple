@@ -290,6 +290,25 @@ extension JellyfinMediaClient {
         return program.toProgram()
     }
 
+    /// GET /LiveTv/Programs/Recommended?isAiring=true: what's on now, as the server ranks it.
+    /// Empty without a guide.
+    public func getLiveTVOnNow(credential: ServerCredential, authHeader: String, limit: Int = 20) async throws -> [LiveTVProgram] {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("LiveTv/Programs/Recommended"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "userId", value: credential.userID),
+            .init(name: "isAiring", value: "true"),
+            .init(name: "limit", value: "\(limit)"),
+            .init(name: "enableImages", value: "true"),
+            .init(name: "imageTypeLimit", value: "1"),
+            .init(name: "enableImageTypes", value: "Primary,Thumb"),
+            .init(name: "fields", value: "Overview,ChannelInfo"),
+            .init(name: "enableTotalRecordCount", value: "false"),
+        ]
+        let page: LiveTVPage<ProgramResponse> = try await getLiveTV(comps, authHeader: authHeader)
+        return page.items.compactMap { $0.toProgram() }
+    }
+
     /// GET /LiveTv/Recordings, newest first.
     public func getLiveTVRecordings(credential: ServerCredential, authHeader: String) async throws -> [LiveTVRecording] {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("LiveTv/Recordings"),

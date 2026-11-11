@@ -136,7 +136,7 @@ extension PlayerView {
             items.append(QuickAction(id: "chapters", icon: "list.bullet") { showChapterMenu = true })
         }
         // First on a channel, so it's there in portrait as well.
-        if !model.liveChannels.isEmpty {
+        if model.hasChannelList {
             items.insert(QuickAction(id: "channels", icon: "list.bullet.rectangle") {
                 withAnimation(DT.Animation.fast) { model.showChannelList = true }
             }, at: 0)

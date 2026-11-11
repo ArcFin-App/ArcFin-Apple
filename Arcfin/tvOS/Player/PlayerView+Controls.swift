@@ -240,7 +240,7 @@ extension PlayerView {
 
     private var rightSecondaryActions: some View {
         HStack(spacing: 12) {
-            if !model.liveChannels.isEmpty {
+            if model.hasChannelList {
                 Button { withAnimation(DT.Animation.fast) { model.showChannelList = true } } label: {
                     TVPlayerControlLabel(systemImage: "list.bullet.rectangle", size: 14, diameter: 32)
                 }
@@ -317,7 +317,7 @@ extension PlayerView {
             case .right: tvQuickSeek(forward: true)
             // Down opens subtitles and audio, as the system player's info panel does, or on a
             // channel the channel list.
-            case .down where !model.liveChannels.isEmpty:
+            case .down where model.hasChannelList:
                 withAnimation(DT.Animation.fast) { model.showChannelList = true }
             case .down: showTrackMenu = true
             default: model.toggleControlsVisibilityOnAction()

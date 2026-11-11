@@ -23,6 +23,8 @@ final class HomeModel {
     var detailItem: MediaItem?
     /// Play / Resume straight away, without opening the title's page.
     var playbackRequest: PlaybackRequest?
+    /// The Live TV shelves' channels and programmes.
+    let liveTV = HomeLiveTVShelves()
     var seerrDetailItem: SeerrItem?
     var seerrRequestItem: SeerrItem?
     var deepLinkItemID: String?
