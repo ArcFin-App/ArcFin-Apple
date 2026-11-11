@@ -159,6 +159,24 @@ public struct LiveTVSeriesOptions: Sendable, Equatable, Hashable {
     }
 }
 
+/// A kind of programme the guide can be narrowed to, as Jellyfin tags them.
+public enum LiveTVCategory: String, Sendable, CaseIterable, Identifiable {
+    case movies, series, news, kids, sports
+
+    public var id: String { rawValue }
+
+    /// The query parameter Jellyfin filters channels and programmes by.
+    var parameter: String {
+        switch self {
+        case .movies: "IsMovie"
+        case .series: "IsSeries"
+        case .news: "IsNews"
+        case .kids: "IsKids"
+        case .sports: "IsSports"
+        }
+    }
+}
+
 // MARK: - Live TV requests
 
 extension JellyfinMediaClient {
@@ -166,7 +184,8 @@ extension JellyfinMediaClient {
     /// GET /LiveTv/Channels with what's on each now, in the server's channel order, a page at
     /// a time: an IPTV playlist can hold tens of thousands.
     public func getLiveTVChannels(credential: ServerCredential, authHeader: String, startIndex: Int = 0,
-                                  limit: Int = 200, favoritesOnly: Bool = false) async throws -> (channels: [LiveTVChannel], total: Int) {
+                                  limit: Int = 200, favoritesOnly: Bool = false,
+                                  category: LiveTVCategory? = nil) async throws -> (channels: [LiveTVChannel], total: Int) {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("LiveTv/Channels"),
                                   resolvingAgainstBaseURL: false)!
         comps.queryItems = [
@@ -182,6 +201,7 @@ extension JellyfinMediaClient {
             .init(name: "fields", value: "Overview,ChannelInfo"),
         ]
         if favoritesOnly { comps.queryItems?.append(.init(name: "isFavorite", value: "true")) }
+        if let category { comps.queryItems?.append(.init(name: category.parameter, value: "true")) }
         let page: LiveTVPage<ChannelResponse> = try await getLiveTV(comps, authHeader: authHeader)
         let channels = page.items.map { $0.toChannel() }
         return (channels, page.totalRecordCount ?? startIndex + channels.count)
@@ -257,13 +277,14 @@ extension JellyfinMediaClient {
 
     /// POST /LiveTv/Programs: the guide for these channels between two times, by start time.
     public func getLiveTVPrograms(credential: ServerCredential, authHeader: String,
-                                  channelIds: [String], from start: Date, to end: Date) async throws -> [LiveTVProgram] {
+                                  channelIds: [String], from start: Date, to end: Date,
+                                  category: LiveTVCategory? = nil) async throws -> [LiveTVProgram] {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("LiveTv/Programs"))
         req.httpMethod = "POST"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 20
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "UserId": credential.userID,
             "ChannelIds": channelIds,
             "MinEndDate": JellyfinDate.string(start),
@@ -276,6 +297,7 @@ extension JellyfinMediaClient {
             "EnableTotalRecordCount": false,
             "Fields": ["Overview"],
         ]
+        if let category { body[category.parameter] = true }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         let page: LiveTVPage<ProgramResponse> = try await send(req)
         return page.items.compactMap { $0.toProgram() }

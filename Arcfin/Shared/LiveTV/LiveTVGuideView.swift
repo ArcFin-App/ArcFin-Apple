@@ -30,17 +30,57 @@ struct LiveTVGuideView: View {
         } else if model.visibleChannels.isEmpty {
             LiveTVEmptyChannels(favoritesOnly: model.favoritesOnly)
         } else {
-            TimelineView(.everyMinute) { context in
-                grid(now: context.date)
+            VStack(spacing: 0) {
+                if model.hasGuide == true { categoryBar }
+                if model.isLoadingCategory {
+                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if model.guideChannels.isEmpty, let category = model.guideCategory {
+                    ContentUnavailableView("Nothing Found", systemImage: category.systemImage,
+                                           description: Text("Nothing of this kind is in the guide right now."))
+                } else {
+                    TimelineView(.everyMinute) { context in
+                        grid(now: context.date)
+                    }
+                }
             }
         }
+    }
+
+    /// All, then each kind of programme the guide can be narrowed to.
+    private var categoryBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8 * DT.Scale.font) {
+                chip(title: String(localized: "All"), systemImage: "square.grid.2x2", category: nil)
+                ForEach(LiveTVCategory.allCases) { category in
+                    chip(title: category.title, systemImage: category.systemImage, category: category)
+                }
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.vertical, 8)
+        }
+        .scrollClipDisabled()
+        .tvFocusSection()
+    }
+
+    private func chip(title: String, systemImage: String, category: LiveTVCategory?) -> some View {
+        let selected = model.guideCategory == category
+        return Button { model.selectCategory(category, authManager: authManager) } label: {
+            Label(title, systemImage: systemImage)
+                .font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(selected ? DT.Color.onAccent : DT.Color.textPrimary)
+                .padding(.horizontal, 14 * DT.Scale.font)
+                .padding(.vertical, 7 * DT.Scale.font)
+                .background(selected ? DT.Color.accent : DT.Color.backgroundSecondary, in: Capsule())
+        }
+        .arcfinPlainButton(cornerRadius: 40, prominent: false)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func grid(now: Date) -> some View {
         ScrollView([.horizontal, .vertical]) {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                 Section {
-                    ForEach(model.visibleChannels) { channel in
+                    ForEach(model.guideChannels) { channel in
                         row(for: channel, now: now)
                     }
                 } header: {

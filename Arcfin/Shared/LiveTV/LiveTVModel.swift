@@ -73,6 +73,33 @@ final class LiveTVModel {
 
     var visibleChannels: [LiveTVChannel] { favoritesOnly ? favoriteChannels : channels }
 
+    /// The guide narrowed to one kind of programme; nil shows everything.
+    private(set) var guideCategory: LiveTVCategory?
+    /// The channels showing that kind of programme, as the server finds them.
+    private(set) var categoryChannels: [LiveTVChannel] = []
+    private(set) var isLoadingCategory = false
+
+    var guideChannels: [LiveTVChannel] {
+        guard guideCategory != nil else { return visibleChannels }
+        return favoritesOnly ? categoryChannels.filter(\.isFavorite) : categoryChannels
+    }
+
+    func selectCategory(_ category: LiveTVCategory?, authManager: AuthManager) {
+        guard category != guideCategory else { return }
+        guideCategory = category
+        categoryChannels = []
+        reloadGuide()
+        guard let category, let (credential, header) = session(authManager) else { return }
+        isLoadingCategory = true
+        Task {
+            let page = try? await client.getLiveTVChannels(credential: credential, authHeader: header,
+                                                           limit: 500, category: category)
+            guard guideCategory == category else { return }
+            categoryChannels = page?.channels ?? []
+            isLoadingCategory = false
+        }
+    }
+
     var hasFavorites: Bool { !favoriteChannels.isEmpty }
 
     var canLoadMore: Bool { !favoritesOnly && channels.count < totalChannels }
@@ -229,15 +256,16 @@ final class LiveTVModel {
     /// Loads the guide for a block of channels around one that's coming on screen.
     func loadGuide(around channel: LiveTVChannel, authManager: AuthManager) async {
         guard hasGuide != false, !requestedGuideChannels.contains(channel.id),
-              let index = visibleChannels.firstIndex(where: { $0.id == channel.id }),
+              let index = guideChannels.firstIndex(where: { $0.id == channel.id }),
               let (credential, header) = session(authManager) else { return }
-        let block = visibleChannels[index..<min(index + 25, visibleChannels.count)]
+        let block = guideChannels[index..<min(index + 25, guideChannels.count)]
             .map(\.id).filter { !requestedGuideChannels.contains($0) }
         guard !block.isEmpty else { return }
         requestedGuideChannels.formUnion(block)
         do {
             let found = try await client.getLiveTVPrograms(credential: credential, authHeader: header,
-                                                           channelIds: block, from: guideStart, to: guideEnd)
+                                                           channelIds: block, from: guideStart, to: guideEnd,
+                                                           category: guideCategory)
             let grouped = Dictionary(grouping: found, by: \.channelId)
             for id in block { programs[id] = grouped[id] ?? [] }
         } catch {

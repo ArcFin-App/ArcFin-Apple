@@ -179,3 +179,25 @@ struct LivePositionBadge: View {
         }
     }
 }
+
+extension LiveTVCategory {
+    var title: String {
+        switch self {
+        case .movies: String(localized: "Movies")
+        case .series: String(localized: "Series")
+        case .news: String(localized: "News")
+        case .kids: String(localized: "Kids")
+        case .sports: String(localized: "Sports")
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .movies: "film"
+        case .series: "tv"
+        case .news: "newspaper"
+        case .kids: "figure.and.child.holdinghands"
+        case .sports: "sportscourt"
+        }
+    }
+}
