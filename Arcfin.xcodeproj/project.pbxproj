@@ -145,6 +145,7 @@
 				iOS/Platform/AppSheet.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
+				iOS/Platform/ExternalApps.swift = (ios, );
 				iOS/Platform/FieldBackground.swift = (ios, );
 				iOS/Platform/FocusRing.swift = (ios, );
 				iOS/Platform/Haptics.swift = (ios, );
@@ -244,6 +245,7 @@
 				macOS/Platform/AppSheet.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
+				macOS/Platform/ExternalApps.swift = (macos, );
 				macOS/Platform/FieldBackground.swift = (macos, );
 				macOS/Platform/FocusRing.swift = (macos, );
 				macOS/Platform/Haptics.swift = (macos, );
@@ -338,6 +340,7 @@
 				tvOS/Platform/AppSheet.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
+				tvOS/Platform/ExternalApps.swift = (tvos, );
 				tvOS/Platform/FieldBackground.swift = (tvos, );
 				tvOS/Platform/FocusRing.swift = (tvos, );
 				tvOS/Platform/Haptics.swift = (tvos, );

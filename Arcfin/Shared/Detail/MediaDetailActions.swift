@@ -290,6 +290,7 @@ struct DetailMoreMenu: View {
             Button { PlaylistStore.shared.addingItem = item } label: {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }
+            OpenInPlayerMenu(item: item)
             if (item.type == .movie || item.type == .episode) && ProfileRules.shared.canManageSubtitles {
                 Button { searchSubtitles() } label: {
                     Label("Search for Subtitles…", systemImage: "captions.bubble")
