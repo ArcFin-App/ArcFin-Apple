@@ -87,26 +87,26 @@ private struct LiveTVSearchRows: View {
     let channels: [LiveTVChannel]
     let programs: [LiveTVProgram]
 
+    /// Search results are short-lived; they read the time once rather than ticking.
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 30)) { context in
-            VStack(spacing: 0) {
-                ForEach(Array(channels.enumerated()), id: \.element.id) { index, channel in
-                    if index > 0 { divider }
-                    Button { model.play(channel, among: model.searchChannels) } label: {
-                        LiveTVChannelRow(channel: channel, now: context.date, showsGuide: model.hasGuide == true)
-                            .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu { LiveTVChannelMenu(model: model, channel: channel) }
+        let now = Date()
+        VStack(spacing: 0) {
+            ForEach(Array(channels.enumerated()), id: \.element.id) { index, channel in
+                if index > 0 { divider }
+                Button { model.play(channel, among: model.searchChannels) } label: {
+                    LiveTVChannelRow(channel: channel, now: now, showsGuide: model.hasGuide == true)
+                        .padding(.vertical, 8)
                 }
-                ForEach(Array(programs.enumerated()), id: \.element.id) { index, program in
-                    if index > 0 || !channels.isEmpty { divider }
-                    Button { model.selectedProgram = program } label: {
-                        LiveTVProgramRow(program: program, now: context.date)
-                            .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.plain)
+                .buttonStyle(.plain)
+                .contextMenu { LiveTVChannelMenu(model: model, channel: channel) }
+            }
+            ForEach(Array(programs.enumerated()), id: \.element.id) { index, program in
+                if index > 0 || !channels.isEmpty { divider }
+                Button { model.selectedProgram = program } label: {
+                    LiveTVProgramRow(program: program, now: now)
+                        .padding(.vertical, 8)
                 }
+                .buttonStyle(.plain)
             }
         }
     }

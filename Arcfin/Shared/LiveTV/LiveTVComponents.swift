@@ -27,7 +27,7 @@ struct LiveProgramBar: View {
     let program: LiveTVProgram?
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 30)) { context in
+        TimelineView(.everyMinute) { context in
             HStack(spacing: 10) {
                 Text(program?.startDate.formatted(date: .omitted, time: .shortened) ?? "")
                     .font(.system(.caption, design: .monospaced, weight: .medium))

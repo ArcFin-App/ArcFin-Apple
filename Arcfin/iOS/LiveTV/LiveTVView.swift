@@ -30,7 +30,10 @@ struct LiveTVView: View {
         }
         .navigationTitle(library.name)
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $model.searchQuery, prompt: "Channels and programmes")
+        // Always showing: hidden until pulled down, it appeared while the list loaded, vanished
+        // once it had, and fought the tab picker when pulled.
+        .searchable(text: $model.searchQuery, placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: "Channels and programmes")
         .onChange(of: model.searchQuery) { _, _ in model.search(authManager: authManager) }
         .toolbar {
             if tab != .recordings, model.searchQuery.isEmpty, model.hasFavorites || model.favoritesOnly {
@@ -130,7 +133,7 @@ struct LiveTVChannelsList: View {
         } else if model.visibleChannels.isEmpty {
             LiveTVEmptyChannels(favoritesOnly: model.favoritesOnly)
         } else {
-            TimelineView(.periodic(from: .now, by: 30)) { context in
+            TimelineView(.everyMinute) { context in
                 List {
                     ForEach(model.visibleChannels) { channel in
                         channelRow(channel, now: context.date)

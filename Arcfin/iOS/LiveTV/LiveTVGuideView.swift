@@ -29,7 +29,7 @@ struct LiveTVGuideView: View {
         } else if model.visibleChannels.isEmpty {
             LiveTVEmptyChannels(favoritesOnly: model.favoritesOnly)
         } else {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
+            TimelineView(.everyMinute) { context in
                 grid(now: context.date)
             }
         }

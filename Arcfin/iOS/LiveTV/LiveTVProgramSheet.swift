@@ -87,7 +87,7 @@ struct LiveTVProgramSheet: View {
                     }
                 }
                 if current.isAiring() {
-                    TimelineView(.periodic(from: .now, by: 30)) { context in
+                    TimelineView(.everyMinute) { context in
                         ProgramProgressLine(program: current, now: context.date)
                     }
                     .padding(.top, 4)
