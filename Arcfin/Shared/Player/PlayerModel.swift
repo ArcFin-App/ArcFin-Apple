@@ -579,6 +579,9 @@ final class PlayerModel {
             startProgressReporting(mediaSourceId: info.mediaSourceId)
             startAutoRecovery()
             watchForMissingPicture()
+        } catch where error is CancellationError || (error as? URLError)?.code == .cancelled {
+            // The player closed, or moved to another channel, before this one had started.
+            return
         } catch {
             log.error("Couldn't start \(self.item.id, privacy: .public): \(error, privacy: .public)")
             errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
