@@ -12,6 +12,7 @@
 ![Minimum OS](https://img.shields.io/badge/OS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
+[![Listed on JellyWatch Hub](https://jellywatch.app/hub/arcfin/badge.svg)](https://jellywatch.app/hub/arcfin)
 
 **A native Jellyfin client for iPhone, iPad, Mac and Apple TV.**
 
