@@ -27,6 +27,9 @@ final class AppRootModel {
     /// The stored sign-in and the PIN lock have been checked this launch.
     var launchChecked = false
     var showSeerrSetupPrompt = false
+    /// Why connecting Seerr by itself didn't work, for the prompt that asks for the password.
+    var seerrSetupError: String?
+    @ObservationIgnored private var isConnectingSeerr = false
     @ObservationIgnored private var heartbeatTask: Task<Void, Never>?
     @ObservationIgnored private var arcfinSyncTask: Task<Void, Never>?
     @ObservationIgnored private var seerrPollTask: Task<Void, Never>?
@@ -120,14 +123,33 @@ final class AppRootModel {
         UserDefaults.standard.set(true, forKey: seerrSetupPromptHandledKey(for: credentialID))
     }
 
+    /// The server's Arcfin Sync plugin gave a Seerr address but this profile hasn't connected
+    /// Seerr: connect it with the Jellyfin account through Quick Connect, without asking. Only
+    /// when that can't work does the prompt appear, asking for the password and saying why.
     func checkSeerrSetupPrompt(seerrURL: String, seerrUsername: String, seerrAuthMethod: SeerrAuthMethod) {
         guard case .authenticated(let cred) = authManager.state,
-              authManager.arcfinSyncLockedKeys.contains("seerrAuthMethod"),
-              seerrAuthMethod == .jellyfin, !seerrURL.isEmpty,
-              seerrUsername.isEmpty,
+              seerrAuthMethod == .jellyfin, !seerrURL.isEmpty, let url = URL(string: seerrURL),
+              seerrUsername.isEmpty, !isConnectingSeerr,
               !UserDefaults.standard.bool(forKey: seerrSetupPromptHandledKey(for: cred.id))
         else { return }
-        showSeerrSetupPrompt = true
+        isConnectingSeerr = true
+        let client = SeerrHTTPClient(baseURL: url, username: cred.displayName, password: "", authMethod: .jellyfin,
+                                     authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager))
+        Task {
+            defer { isConnectingSeerr = false }
+            do {
+                try await client.login()
+                guard authManager.state.credential?.id == cred.id else { return }
+                authManager.removeSeerrPassword()
+                UserDefaults.standard.set(cred.displayName, forKey: "seerrUsername")
+                markSeerrSetupPromptHandled(for: cred.id)
+            } catch where SeerrRepository.isCancellation(error) {
+            } catch {
+                guard authManager.state.credential?.id == cred.id else { return }
+                seerrSetupError = SeerrSignInText.message(for: error)
+                showSeerrSetupPrompt = true
+            }
+        }
     }
 
     func refreshLockRequirement() async {

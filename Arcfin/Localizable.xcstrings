@@ -5377,6 +5377,70 @@
         }
       }
     },
+    "For a local Seerr account, or when Quick Connect is turned off on your Jellyfin server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Für ein lokales Seerr-Konto oder wenn Quick Connect auf deinem Jellyfin-Server deaktiviert ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Para una cuenta local de Seerr o cuando Quick Connect está desactivado en tu servidor Jellyfin."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pour un compte Seerr local, ou lorsque Quick Connect est désactivé sur votre serveur Jellyfin."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Per un account Seerr locale o quando Quick Connect è disattivato sul tuo server Jellyfin."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrのローカルアカウントを使う場合や、JellyfinサーバでQuick Connectがオフの場合に使います。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "로컬 Seerr 계정이거나 Jellyfin 서버에서 Quick Connect가 꺼져 있는 경우에 사용합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Voor een lokaal Seerr-account, of als Quick Connect uitstaat op je Jellyfin-server."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Para uma conta local do Seerr ou quando o Quick Connect está desativado no seu servidor Jellyfin."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Для локальной учётной записи Seerr или если Quick Connect выключен на сервере Jellyfin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "适用于本地 Seerr 账户，或 Jellyfin 服务器关闭了 Quick Connect 的情况。"
+          }
+        }
+      }
+    },
     "Forced only" : {
       "localizations" : {
         "de" : {
@@ -8833,66 +8897,66 @@
         }
       }
     },
-    "Password (Optional)" : {
+    "Other Ways to Sign In" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Passwort (optional)"
+            "value" : "Andere Anmeldemöglichkeiten"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Contraseña (opcional)"
+            "value" : "Otras formas de iniciar sesión"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Mot de passe (facultatif)"
+            "value" : "Autres moyens de connexion"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Password (facoltativa)"
+            "value" : "Altri modi per accedere"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "パスワード（任意）"
+            "value" : "ほかのサインイン方法"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "암호(선택 사항)"
+            "value" : "다른 로그인 방법"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Wachtwoord (optioneel)"
+            "value" : "Andere manieren om aan te melden"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Senha (opcional)"
+            "value" : "Outras formas de entrar"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Пароль (необязательно)"
+            "value" : "Другие способы входа"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "密码（可选）"
+            "value" : "其他登录方式"
           }
         }
       }
@@ -12993,66 +13057,194 @@
         }
       }
     },
-    "Sign in with your Jellyfin account. Leave the password empty to connect with Quick Connect, without typing it." : {
+    "Sign In with Quick Connect" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Mit deinem Jellyfin-Konto anmelden. Lass das Passwort leer, um dich ohne Eingabe über Quick Connect zu verbinden."
+            "value" : "Mit Quick Connect anmelden"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Inicia sesión con tu cuenta de Jellyfin. Deja la contraseña vacía para conectarte con Quick Connect sin escribirla."
+            "value" : "Iniciar sesión con Quick Connect"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Connectez-vous avec votre compte Jellyfin. Laissez le mot de passe vide pour vous connecter avec Quick Connect, sans le saisir."
+            "value" : "Se connecter avec Quick Connect"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Accedi con il tuo account Jellyfin. Lascia vuota la password per connetterti con Quick Connect senza digitarla."
+            "value" : "Accedi con Quick Connect"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Jellyfinアカウントでサインインします。パスワードを空欄にすると、入力せずにQuick Connectで接続します。"
+            "value" : "Quick Connectでサインイン"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Jellyfin 계정으로 로그인합니다. 암호를 비워 두면 입력하지 않고 Quick Connect로 연결합니다."
+            "value" : "Quick Connect로 로그인"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Meld je aan met je Jellyfin-account. Laat het wachtwoord leeg om zonder typen met Quick Connect te verbinden."
+            "value" : "Aanmelden met Quick Connect"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Entre com sua conta do Jellyfin. Deixe a senha em branco para conectar com o Quick Connect, sem digitá-la."
+            "value" : "Entrar com o Quick Connect"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Войдите с учётной записью Jellyfin. Оставьте пароль пустым, чтобы подключиться через Quick Connect без ввода."
+            "value" : "Войти через Quick Connect"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "使用你的 Jellyfin 账户登录。将密码留空即可通过 Quick Connect 连接，无需输入密码。"
+            "value" : "使用 Quick Connect 登录"
+          }
+        }
+      }
+    },
+    "Sign In with Quick Connect Instead" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Stattdessen mit Quick Connect anmelden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Iniciar sesión con Quick Connect en su lugar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se connecter plutôt avec Quick Connect"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi invece con Quick Connect"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "代わりにQuick Connectでサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "대신 Quick Connect로 로그인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In plaats daarvan aanmelden met Quick Connect"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entrar com o Quick Connect"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Войти через Quick Connect"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "改用 Quick Connect 登录"
+          }
+        }
+      }
+    },
+    "Sign in with your Jellyfin username and password." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mit deinem Jellyfin-Benutzernamen und -Passwort anmelden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión con tu nombre de usuario y contraseña de Jellyfin."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez-vous avec votre nom d’utilisateur et votre mot de passe Jellyfin."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi con nome utente e password di Jellyfin."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfinのユーザ名とパスワードでサインインします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin 사용자 이름과 암호로 로그인합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meld je aan met je Jellyfin-gebruikersnaam en -wachtwoord."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entre com seu nome de usuário e senha do Jellyfin."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Войдите с именем пользователя и паролем Jellyfin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用你的 Jellyfin 用户名和密码登录。"
           }
         }
       }
@@ -13245,6 +13437,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "正在登录…"
+          }
+        }
+      }
+    },
+    "Signs in to Seerr as %@ with your Jellyfin account. There's no password to type, and none is saved." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meldet dich mit deinem Jellyfin-Konto als %@ bei Seerr an. Du musst kein Passwort eingeben, und es wird keins gespeichert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión en Seerr como %@ con tu cuenta de Jellyfin. No hay que escribir ninguna contraseña y no se guarda ninguna."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vous connecte à Seerr en tant que %@ avec votre compte Jellyfin. Aucun mot de passe à saisir, et aucun n’est enregistré."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accede a Seerr come %@ con il tuo account Jellyfin. Non devi digitare alcuna password e non ne viene salvata nessuna."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfinアカウントを使って%@としてSeerrにサインインします。パスワードの入力は不要で、保存もされません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin 계정을 사용해 %@(으)로 Seerr에 로그인합니다. 암호를 입력할 필요가 없으며 저장되지도 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meldt je met je Jellyfin-account aan bij Seerr als %@. Je hoeft geen wachtwoord te typen en er wordt er geen bewaard."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entra no Seerr como %@ com sua conta do Jellyfin. Não é preciso digitar senha, e nenhuma é salva."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход в Seerr как %@ через учётную запись Jellyfin. Пароль вводить не нужно, и он не сохраняется."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用你的 Jellyfin 账户以 %@ 身份登录 Seerr。无需输入密码，也不会保存密码。"
           }
         }
       }
@@ -15293,6 +15549,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "使用反向代理（Nginx、Caddy）和免费的 Let’s Encrypt 证书来加密连接。Arcfin 支持 http://，但强烈建议使用 https://。"
+          }
+        }
+      }
+    },
+    "Use a Username and Password" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Benutzername und Passwort verwenden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Usar un nombre de usuario y una contraseña"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Utiliser un nom d’utilisateur et un mot de passe"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Usa nome utente e password"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ユーザ名とパスワードを使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사용자 이름 및 암호 사용"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gebruikersnaam en wachtwoord gebruiken"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Usar nome de usuário e senha"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Использовать имя пользователя и пароль"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用用户名和密码"
           }
         }
       }

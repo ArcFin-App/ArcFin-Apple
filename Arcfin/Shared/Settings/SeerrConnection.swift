@@ -17,29 +17,43 @@ final class SeerrConnectionForm {
 
     var testResult: String? = nil
     private(set) var isTesting = false
+    /// Signing in with a username and password rather than Quick Connect, the usual way.
+    private(set) var usesPassword = false
+    private var jellyfinUsername = ""
 
-    /// Whether Save can go ahead: a Jellyfin account can leave the password empty and connect
-    /// through Quick Connect.
+    /// Whether Save can go ahead.
     var isComplete: Bool {
-        !url.isEmpty && !username.isEmpty && (authMethod == .jellyfin || !password.isEmpty)
+        !url.isEmpty && !username.isEmpty && (!usesPassword || !password.isEmpty)
     }
 
-    var passwordLabel: String {
-        authMethod == .jellyfin ? String(localized: "Password (Optional)") : String(localized: "Password")
-    }
-
-    /// A new connection starts with the Jellyfin username, which a Jellyfin account uses as is.
+    /// A connection with no saved password signs in with Quick Connect, as the Jellyfin user.
     func beginEditing(url: String, username: String, password: String, authMethod: SeerrAuthMethod,
                       jellyfinUsername: String? = nil) {
+        self.jellyfinUsername = jellyfinUsername ?? ""
+        usesPassword = !password.isEmpty || authMethod == .local
         self.url = url
-        self.username = username.isEmpty ? (jellyfinUsername ?? "") : username
+        self.username = username.isEmpty ? self.jellyfinUsername : username
         self.password = password
         self.authMethod = authMethod
         testResult = nil
         isEditing = true
     }
 
-    func testConnection(seerrRepo: SeerrRepository, authManager: AuthManager) {
+    func useQuickConnect() {
+        usesPassword = false
+        authMethod = .jellyfin
+        password = ""
+        if !jellyfinUsername.isEmpty { username = jellyfinUsername }
+        testResult = nil
+    }
+
+    func usePassword() {
+        usesPassword = true
+        testResult = nil
+    }
+
+    /// `onSuccess` runs once Seerr has accepted the sign-in.
+    func testConnection(seerrRepo: SeerrRepository, authManager: AuthManager, onSuccess: (() -> Void)? = nil) {
         guard let url = URL(string: self.url.trimmingCharacters(in: .whitespacesAndNewlines)) else {
             testResult = "✗ " + String(localized: "Invalid URL"); return
         }
@@ -53,6 +67,7 @@ final class SeerrConnectionForm {
                     ? String(localized: "Connected with Quick Connect")
                     : String(localized: "Connected"))
                 seerrRepo.clearAuthFailure()
+                onSuccess?()
             } catch {
                 testResult = "✗ " + SeerrSignInText.message(for: error)
             }
@@ -121,10 +136,80 @@ struct SeerrAccountTypeSection: View {
                 .textCase(nil)
         } footer: {
             Text(form.authMethod == .jellyfin
-                 ? "Sign in with your Jellyfin account. Leave the password empty to connect with Quick Connect, without typing it."
+                 ? "Sign in with your Jellyfin username and password."
                  : "Sign in with a local Seerr account.")
                 .font(.caption)
                 .foregroundStyle(DT.Color.textSecondary)
+        }
+    }
+}
+
+/// Settings › Seerr while editing, the usual way: sign in as the Jellyfin user through Quick
+/// Connect, with nothing to type. `onConnected` saves the connection.
+struct SeerrQuickConnectSection: View {
+    let form: SeerrConnectionForm
+    let onConnected: () -> Void
+    @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
+
+    var body: some View {
+        Section {
+            Button {
+                form.testConnection(seerrRepo: seerrRepo, authManager: authManager, onSuccess: onConnected)
+            } label: {
+                HStack(spacing: 8) {
+                    if form.isTesting { ProgressView().scaleEffect(0.8) }
+                    else { Image(systemName: "bolt.horizontal.circle.fill") }
+                    Text(form.isTesting ? "Signing In…" : "Sign In with Quick Connect")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .disabled(form.url.isEmpty || form.username.isEmpty || form.isTesting)
+
+            if let result = form.testResult {
+                Text(result)
+                    .font(.caption)
+                    .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("F43F5E"))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        } header: {
+            Label("Sign In", systemImage: "person.badge.key")
+                .font(.system(.caption, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .textCase(nil)
+        } footer: {
+            Text("Signs in to Seerr as \(form.username) with your Jellyfin account. There's no password to type, and none is saved.")
+                .font(.caption)
+                .foregroundStyle(DT.Color.textSecondary)
+        }
+    }
+}
+
+/// Switching between Quick Connect and a username and password, while editing.
+struct SeerrOtherSignInSection: View {
+    let form: SeerrConnectionForm
+
+    var body: some View {
+        Section {
+            if form.usesPassword {
+                Button("Sign In with Quick Connect Instead") { withAnimation { form.useQuickConnect() } }
+            } else {
+                Button("Use a Username and Password") { withAnimation { form.usePassword() } }
+            }
+        } header: {
+            if !form.usesPassword {
+                Text("Other Ways to Sign In")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            }
+        } footer: {
+            if !form.usesPassword {
+                Text("For a local Seerr account, or when Quick Connect is turned off on your Jellyfin server.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
         }
     }
 }

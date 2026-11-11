@@ -3,15 +3,15 @@
 import SwiftUI
 import SeerrAPI
 
-/// Shown once after a sign-in that left Seerr unconfigured because no password was available
-/// to auto-fill it (Quick Connect) — password-based sign-in already fills this in silently via
-/// AuthView's attemptSeerrAutoLogin. Seerr Account Type is locked to Jellyfin server-side here,
-/// which is why Settings hides the fields. Connect signs in to Seerr through Quick Connect
-/// with the Jellyfin session; the password is only asked for when that can't work.
+/// Shown when the server gives a Seerr address but connecting it by itself through Quick
+/// Connect didn't work (see AppRootModel.checkSeerrSetupPrompt): it opens at the password,
+/// saying why. Connect tries Quick Connect again.
 struct SeerrSetupPromptView: View {
     let seerrURL: String
     let jellyfinUsername: String
     let authorizeQuickConnect: SeerrHTTPClient.QuickConnectAuthorizer
+    /// Quick Connect was already tried and failed for this reason: start at the password.
+    var initialError: String?
     /// An empty password means Seerr was connected through Quick Connect.
     let onConnected: (_ username: String, _ password: String) -> Void
     let onDismiss: () -> Void
@@ -52,6 +52,11 @@ struct SeerrSetupPromptView: View {
             }
         }
         .interactiveDismissDisabled()
+        .onAppear {
+            guard let initialError else { return }
+            errorMessage = initialError
+            step = .password
+        }
     }
 
     private var askContent: some View {
@@ -207,6 +212,7 @@ struct SeerrSetupPromptView: View {
         seerrURL: "https://seerr.example.com",
         jellyfinUsername: "alex",
         authorizeQuickConnect: { _ in true },
+        initialError: nil,
         onConnected: { _, _ in },
         onDismiss: {}
     )

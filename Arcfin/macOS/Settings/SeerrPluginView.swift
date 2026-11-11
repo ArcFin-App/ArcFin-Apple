@@ -85,24 +85,30 @@ struct SeerrPluginView: View {
                 .textCase(nil)
         }
 
-        // Account type picker
-        SeerrAccountTypeSection(form: form)
+        if form.usesPassword {
+            // Account type picker
+            SeerrAccountTypeSection(form: form)
 
-        // Credentials
-        Section {
-            TextField("Username", text: $form.username)
-                .autocorrectionDisabled()
-            SecureField(form.passwordLabel, text: $form.password)
-                .autocorrectionDisabled()
-        } header: {
-            Label("Credentials", systemImage: "person.fill")
-                .font(.system(.caption, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.textSecondary)
-                .textCase(nil)
+            // Credentials
+            Section {
+                TextField("Username", text: $form.username)
+                    .autocorrectionDisabled()
+                SecureField("Password", text: $form.password)
+                    .autocorrectionDisabled()
+            } header: {
+                Label("Credentials", systemImage: "person.fill")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            }
+
+            // Test connection
+            SeerrTestSection(form: form)
+        } else {
+            SeerrQuickConnectSection(form: form) { save() }
         }
 
-        // Test connection
-        SeerrTestSection(form: form)
+        SeerrOtherSignInSection(form: form)
     }
 
     // MARK: - Actions
