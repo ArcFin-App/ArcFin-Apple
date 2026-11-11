@@ -166,7 +166,13 @@ final class HomeModel {
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         Task {
             if let detail = try? await JellyfinMediaClient().getItemDetail(credential: cred, authHeader: header, itemId: id) {
-                detailItem = detail.item
+                // A channel (a reminder, Siri) plays rather than opening a page it doesn't have.
+                if detail.item.type == .tvChannel {
+                    PlayQueue.clear()
+                    playbackRequest = PlaybackRequest(item: detail.item, startTicks: 0)
+                } else {
+                    detailItem = detail.item
+                }
             }
         }
     }

@@ -30,6 +30,7 @@ struct LiveTVProgramDetails: View {
         VStack(alignment: .leading, spacing: 16) {
             header
             actions
+                .task { await model.loadReminders() }
             if let overview = current.overview, !overview.isEmpty {
                 Text(overview)
                     .font(DT.Font.body)
@@ -107,6 +108,20 @@ struct LiveTVProgramDetails: View {
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
                 .controlSize(.large)
+            }
+
+            if NotificationManager.supportsReminders, current.startDate > .now {
+                let isSet = model.reminders.contains(current.id)
+                Button {
+                    Task { await model.toggleReminder(for: current) }
+                } label: {
+                    Label(isSet ? "Reminder Set" : "Remind Me", systemImage: isSet ? "bell.fill" : "bell")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glass)
+                .tint(isSet ? DT.Color.accent : nil)
+                .controlSize(.large)
+                .accessibilityHint(isSet ? "Cancels the reminder" : "Sends a notification just before it starts")
             }
 
             if !hasEnded, ProfileRules.shared.canRecordLiveTV {

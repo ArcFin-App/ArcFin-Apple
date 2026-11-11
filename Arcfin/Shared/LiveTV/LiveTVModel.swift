@@ -68,6 +68,28 @@ final class LiveTVModel {
     var actionError: String?
     /// A series recording whose options are open for editing.
     var editingSeriesTimer: LiveTVSeriesTimer?
+    /// Programmes with a reminder set on this device.
+    private(set) var reminders: Set<String> = []
+
+    func loadReminders() async {
+        reminders = await NotificationManager.reminderProgramIDs()
+    }
+
+    func toggleReminder(for program: LiveTVProgram) async {
+        if reminders.contains(program.id) {
+            NotificationManager.cancelReminder(programID: program.id)
+            reminders.remove(program.id)
+            return
+        }
+        let channelName = channel(for: program)?.name ?? program.channelName ?? ""
+        if await NotificationManager.remind(programID: program.id, title: program.name, channelName: channelName,
+                                            channelID: program.channelId, startsAt: program.startDate) {
+            reminders.insert(program.id)
+            HapticManager.impact(.light)
+        } else {
+            actionError = String(localized: "Couldn't set a reminder. Check that Arcfin is allowed to send notifications in Settings.")
+        }
+    }
 
     private let client = JellyfinMediaClient()
 
