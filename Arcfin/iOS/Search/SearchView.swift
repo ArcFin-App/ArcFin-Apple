@@ -69,6 +69,10 @@ struct SearchView: View {
                         ForEach(model.libraryGroups, id: \.title) { group in
                             libraryShelf(group)
                         }
+                        if liveTV.hasSearchResults {
+                            LiveTVSearchSection(model: liveTV)
+                                .simultaneousGesture(TapGesture().onEnded { saveRecentSearch() })
+                        }
                         if seerrRepo.isConfigured && (model.isSearchingDiscover || !model.seerrResults.isEmpty) {
                             SearchDiscoverSection(items: model.discoverResults(in: mediaRepo),
                                                   isSearching: model.isSearchingDiscover,
@@ -79,10 +83,6 @@ struct SearchView: View {
                                 } label: { SearchDiscoverRow(item: item, posterWidth: discoverPosterWidth) }
                                 .buttonStyle(PressableButtonStyle())
                             }
-                        }
-                        if liveTV.hasSearchResults {
-                            LiveTVSearchSection(model: liveTV)
-                                .simultaneousGesture(TapGesture().onEnded { saveRecentSearch() })
                         }
                     }
                     .padding(.top, 12)
@@ -151,6 +151,10 @@ struct SearchView: View {
                 } else if model.isSearchingLibrary {
                     ProgressView().frame(maxWidth: .infinity)
                 }
+                if liveTV.hasSearchResults {
+                    LiveTVSearchSection(model: liveTV)
+                        .padding(.horizontal, -DT.Spacing.pagePad)
+                }
                 if seerrRepo.isConfigured && !model.seerrResults.isEmpty {
                     SearchClassicDiscover {
                         LazyVGrid(columns: classicColumns, spacing: 16) {
@@ -165,10 +169,6 @@ struct SearchView: View {
                             }
                         }
                     }
-                }
-                if liveTV.hasSearchResults {
-                    LiveTVSearchSection(model: liveTV)
-                        .padding(.horizontal, -DT.Spacing.pagePad)
                 }
             }
             .padding(.horizontal, DT.Spacing.pagePad)

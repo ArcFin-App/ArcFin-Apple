@@ -37,47 +37,37 @@ struct LiveTVSearchResults: View {
     }
 }
 
-/// Live TV in Browse's search: a few channels and programmes in a card below the library and
-/// Discover, since a channel is rarely what someone searching is after.
+/// Live TV in Browse's search: a few channels and programmes below the library results and
+/// above Discover. Laid out like the other sections, with the antenna marking it as live.
 struct LiveTVSearchSection: View {
     let model: LiveTVModel
     static let shownPerKind = 4
 
     var body: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.sm) {
-            HStack(spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Image(systemName: "antenna.radiowaves.left.and.right")
                     .font(.system(.subheadline, weight: .bold))
-                    .foregroundStyle(DT.Color.onAccent)
-                    .frame(width: 30, height: 30)
-                    .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent],
-                                               startPoint: .topLeading, endPoint: .bottomTrailing),
-                                in: RoundedRectangle(cornerRadius: DT.Radius.sm, style: .continuous))
+                    .foregroundStyle(DT.Color.accent)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Live TV")
-                        .font(DT.Font.sectionTitle)
-                        .foregroundStyle(DT.Color.textPrimary)
-                    Text("Channels and programmes on your server")
-                        .font(.system(.caption))
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
+                Text("Live TV")
+                    .font(DT.Font.sectionTitle)
+                    .foregroundStyle(DT.Color.textPrimary)
+                Text("\(model.searchChannels.count + model.searchPrograms.count)")
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
                 Spacer(minLength: 0)
                 if model.isSearching { ProgressView() }
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
+            .padding(.horizontal, DT.Spacing.pagePad)
 
             LiveTVSearchRows(model: model,
                              channels: Array(model.searchChannels.prefix(Self.shownPerKind)),
                              programs: Array(model.searchPrograms.prefix(Self.shownPerKind)))
+                .padding(.horizontal, DT.Spacing.pagePad)
         }
-        .padding(DT.Spacing.md)
-        .background(DT.Color.backgroundSecondary.opacity(0.6),
-                    in: RoundedRectangle(cornerRadius: DT.Radius.xl, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: DT.Radius.xl, style: .continuous)
-            .stroke(DT.Color.textPrimary.opacity(0.08), lineWidth: 1))
-        .padding(.horizontal, DT.Spacing.pagePad)
     }
 }
 
