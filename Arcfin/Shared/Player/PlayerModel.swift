@@ -534,6 +534,8 @@ final class PlayerModel {
     func setup() async {
         playStartedAt = nil
         av1Watchdog?.cancel()
+        setupGeneration += 1
+        let generation = setupGeneration
         guard let credential, let authHeader else {
             errorMessage = "Not signed in."
             return
@@ -658,6 +660,8 @@ final class PlayerModel {
             // surfacing a hard error over an engine that can't serve this specific source.
             // Before the load, so the stream starts shaped rather than rebuilding once it plays.
             (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
+            // Armed before the load: a conversion that never starts can hold the load itself.
+            watchAV1Conversion(startedFrom: resumeFrom)
             do {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
@@ -673,9 +677,10 @@ final class PlayerModel {
                 }
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
+            // The AV1 watchdog started over while this load hung; that attempt owns the player now.
+            guard generation == setupGeneration else { return }
             await player.play()
             playStartedAt = Date()
-            watchAV1Conversion(startedFrom: resumeFrom)
             (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
             loadingStage = nil
             await applyRememberedRate()
@@ -705,6 +710,7 @@ final class PlayerModel {
             // The player closed, or moved to another channel, before this one had started.
             return
         } catch {
+            guard generation == setupGeneration else { return }
             log.error("Couldn't start \(self.item.id, privacy: .public): \(error, privacy: .public)")
             if retryWithoutAV1() { return }
             errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
@@ -1207,10 +1213,14 @@ final class PlayerModel {
     /// language's track (or the default, or the first) comes on, and goes off again with the
     /// sound. Only tracks drawn here, so it never reloads the stream; forced tracks don't count.
     func soundMutedChanged(_ muted: Bool) {
+        log.notice("Sound \(muted ? "muted" : "back", privacy: .public)")
         guard (UserDefaults.standard.object(forKey: "subtitlesWhenMuted") as? Bool) ?? true,
               !CastManager.shared.isConnected else { return }
         if muted {
-            guard selectedSubtitleIndex == nil, let info = playbackInfo else { return }
+            guard selectedSubtitleIndex == nil, let info = playbackInfo else {
+                log.notice("Muted: subtitles already on (\(self.selectedSubtitleIndex ?? -1, privacy: .public)) or nothing loaded")
+                return
+            }
             let preferred = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
             let candidates = info.subtitleStreams.filter { !$0.isForced }
             // One drawn here switches on at once; one inside the file (an MKV's embedded text
@@ -1219,10 +1229,10 @@ final class PlayerModel {
             let tracks = drawnHere.isEmpty ? candidates : drawnHere
             guard let pick = tracks.first(where: { !preferred.isEmpty && $0.language == preferred })
                     ?? tracks.first(where: \.isDefault) ?? tracks.first else {
-                log.info("Muted: no subtitle track to show")
+                log.notice("Muted: no subtitle track to show")
                 return
             }
-            log.info("Muted: showing subtitle track \(pick.index, privacy: .public)")
+            log.notice("Muted: showing subtitle track \(pick.index, privacy: .public)")
             changeTrack(subtitleIndex: .some(pick.index), remember: false)
             subtitleShownForMute = pick.index
         } else if let shown = subtitleShownForMute {
@@ -1234,6 +1244,7 @@ final class PlayerModel {
     /// When playback started, for telling a stream that never played from one that broke later.
     @ObservationIgnored private var playStartedAt: Date?
     @ObservationIgnored private var av1Watchdog: Task<Void, Never>?
+    @ObservationIgnored private var setupGeneration = 0
 
     /// A server whose AV1 encoder doesn't exist never sends a first segment, and the engine
     /// keeps retrying rather than failing, so no error ever reaches retryWithoutAV1. A
@@ -1259,7 +1270,7 @@ final class PlayerModel {
         guard let info = playbackInfo, info.askedForAV1, let credential,
               playStartedAt.map({ Date().timeIntervalSince($0) < 20 }) ?? true else { return false }
         AV1Encoding.markFailed(on: credential.baseURL)
-        log.info("AV1 conversion failed on \(credential.baseURL.host ?? "", privacy: .public); using HEVC from now on")
+        log.notice("AV1 conversion failed on \(credential.baseURL.host ?? "", privacy: .public); using HEVC from now on")
         errorMessage = nil
         Task { await setup() }
         return true
@@ -1683,6 +1694,7 @@ final class PlayerModel {
                 playbackInfo = info
                 await loadSubtitleCues(from: info, credential: credential)
                 lastLoadStartedAt = Date()
+                watchAV1Conversion(startedFrom: resumeTicks)
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
                 watchForMissingPicture()
