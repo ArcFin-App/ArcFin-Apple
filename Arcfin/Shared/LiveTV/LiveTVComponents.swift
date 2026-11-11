@@ -152,3 +152,30 @@ extension LiveTVProgram {
         return nil
     }
 }
+
+/// LIVE while watching live; once behind, how far and a button back to live.
+struct LivePositionBadge: View {
+    let behindSeconds: Double?
+    let goLive: () -> Void
+
+    var body: some View {
+        if let behindSeconds {
+            Button(action: goLive) {
+                HStack(spacing: 6) {
+                    Text("-" + Duration.seconds(behindSeconds).formatted(.time(pattern: behindSeconds >= 3600 ? .hourMinuteSecond : .minuteSecond)))
+                        .monospacedDigit()
+                    Text("Go Live")
+                }
+                .font(.system(.caption2, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(.white.opacity(0.2), in: Capsule())
+            }
+            .arcfinPlainButton(cornerRadius: 12, prominent: false)
+            .accessibilityLabel("Go to live")
+        } else {
+            LiveBadge()
+        }
+    }
+}

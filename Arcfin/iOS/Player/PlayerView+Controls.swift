@@ -217,7 +217,7 @@ extension PlayerView {
 
             HStack {
                 if model.isLive {
-                    LiveBadge()
+                    LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
                 } else {
                     Text(model.timeLabel(ticks: model.elapsedTicks))
                         .font(.system(.caption, design: .monospaced, weight: .medium))
@@ -238,7 +238,7 @@ extension PlayerView {
                         }
                         .accessibilityLabel(previousLabel)
                     }
-                    if !model.isLive {
+                    if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: -skipBackwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                                 .font(.system(.title3)).foregroundStyle(.white)
@@ -253,7 +253,7 @@ extension PlayerView {
                             .frame(width: 56, height: 56)
                             .contentShape(Rectangle())
                     }
-                    if !model.isLive {
+                    if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: skipForwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                                 .font(.system(.title3)).foregroundStyle(.white)

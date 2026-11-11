@@ -142,7 +142,7 @@ extension PlayerView {
             if model.isLive {
                 // Nothing to scrub on a channel, so nothing here to focus either.
                 HStack(spacing: 16) {
-                    LiveBadge()
+                    LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
                     LiveProgramBar(program: model.liveProgram)
                 }
             } else {
@@ -177,7 +177,7 @@ extension PlayerView {
                         }
                         .accessibilityLabel(previousLabel)
                     }
-                    if !model.isLive {
+                    if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: -skipBackwardSeconds) } label: {
                             TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
                         }
@@ -188,7 +188,7 @@ extension PlayerView {
                     }
                     .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     .prefersDefaultFocus(!model.tvControlsHidden, in: tvFocusNamespace)
-                    if !model.isLive {
+                    if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: skipForwardSeconds) } label: {
                             TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 16, diameter: 38)
                         }

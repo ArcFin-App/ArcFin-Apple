@@ -177,6 +177,36 @@ final class PlayerModel {
         return LiveTVQueue.channels.count > 1 ? LiveTVQueue.channels : []
     }
 
+    /// On a channel, the engine's kept part of the stream to pause and go back into; VLC has none.
+    private var liveRewind: LiveRewindable? { isLive ? player as? LiveRewindable : nil }
+
+    /// A channel that can be gone back into: at least half a minute is kept.
+    var canRewindLive: Bool {
+        guard let window = liveRewind?.liveWindow else { return false }
+        return window.upperBound - window.lowerBound >= 30
+    }
+
+    /// Seconds behind live, once it's more than a moment.
+    var secondsBehindLive: Double? {
+        guard let behind = liveRewind?.secondsBehindLive, behind >= 5 else { return nil }
+        return behind
+    }
+
+    func jumpToLive() {
+        guard let liveRewind else { return }
+        Task { await liveRewind.goToLiveEdge() }
+        toggleControlsVisibilityOnAction()
+    }
+
+    /// Skips back or forward within what's kept of the channel, never past live.
+    private func seekLive(by seconds: Int) {
+        guard let liveRewind, let window = liveRewind.liveWindow else { return }
+        let now = window.upperBound - liveRewind.secondsBehindLive
+        let target = min(max(now + Double(seconds), window.lowerBound), window.upperBound)
+        Task { await liveRewind.seekLive(toSeconds: target) }
+        toggleControlsVisibilityOnAction()
+    }
+
     func switchChannel(to channel: LiveTVChannel) {
         showChannelList = false
         guard channel.id != item.id else { return }
@@ -1587,7 +1617,7 @@ final class PlayerModel {
     }
 
     func seek(by seconds: Int) {
-        guard !isLive else { return }
+        guard !isLive else { seekLive(by: seconds); return }
         let base = pendingSeekTargetTicks ?? player.positionTicks
         let newTicks = min(max(0, base + Int64(seconds) * 10_000_000), player.durationTicks)
         performSeek(to: newTicks)
