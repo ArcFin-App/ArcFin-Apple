@@ -52,6 +52,8 @@ public final class DownloadedItem {
     public var recapEndSeconds: Double?
     public var previewStartSeconds: Double?
     public var previewEndSeconds: Double?
+    /// Ad breaks as "start-end" pairs in seconds, comma-separated.
+    public var commercialSpans: String?
     public var skipSegmentsSaved: Bool = false
 
     public var fileSizeBytes: Int64

@@ -1798,7 +1798,11 @@ extension DownloadedItem {
                 intro: span(introEndSeconds.map { _ in introStartSeconds ?? 0 }, introEndSeconds),
                 recap: span(recapStartSeconds, recapEndSeconds),
                 credits: span(creditsStartSeconds, creditsEndSeconds ?? creditsStartSeconds.map { _ in runtime }),
-                preview: span(previewStartSeconds, previewEndSeconds)
+                preview: span(previewStartSeconds, previewEndSeconds),
+                commercials: (commercialSpans ?? "").split(separator: ",").compactMap { pair in
+                    let bounds = pair.split(separator: "-").compactMap { Double($0) }
+                    return bounds.count == 2 ? span(bounds[0], bounds[1]) : nil
+                }
             )
         }
         set {
@@ -1810,6 +1814,8 @@ extension DownloadedItem {
             creditsEndSeconds = newValue.credits?.upperBound
             previewStartSeconds = newValue.preview?.lowerBound
             previewEndSeconds = newValue.preview?.upperBound
+            commercialSpans = newValue.commercials.isEmpty ? nil
+                : newValue.commercials.map { "\($0.lowerBound)-\($0.upperBound)" }.joined(separator: ",")
             skipSegmentsSaved = true
         }
     }

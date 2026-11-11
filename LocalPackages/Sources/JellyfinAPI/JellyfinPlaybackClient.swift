@@ -390,7 +390,7 @@ extension JellyfinMediaClient {
             resolvingAgainstBaseURL: false)!
         // The server binds this as a repeated parameter; a comma-joined value parses as one
         // bitwise-ORed enum value that matches no segment, so nothing came back.
-        comps.queryItems = ["Intro", "Outro", "Recap", "Preview"].map { .init(name: "includeSegmentTypes", value: $0) }
+        comps.queryItems = ["Intro", "Outro", "Recap", "Preview", "Commercial"].map { .init(name: "includeSegmentTypes", value: $0) }
         var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 6
@@ -407,6 +407,8 @@ extension JellyfinMediaClient {
             case "Recap": result.recap = result.recap ?? span
             case "Outro": result.credits = result.credits ?? span
             case "Preview": result.preview = result.preview ?? span
+            // Ad breaks come one per break, so every one is kept.
+            case "Commercial": result.commercials.append(span)
             default: break
             }
         }
@@ -818,13 +820,17 @@ public struct SkipSegments: Sendable, Equatable {
     public var credits: ClosedRange<Double>?
     /// A "next time on" preview, usually after the credits.
     public var preview: ClosedRange<Double>?
+    /// Ad breaks, in order: a recording's commercials, or ones a segment plugin found.
+    public var commercials: [ClosedRange<Double>]
 
     public init(intro: ClosedRange<Double>? = nil, recap: ClosedRange<Double>? = nil,
-                credits: ClosedRange<Double>? = nil, preview: ClosedRange<Double>? = nil) {
+                credits: ClosedRange<Double>? = nil, preview: ClosedRange<Double>? = nil,
+                commercials: [ClosedRange<Double>] = []) {
         self.intro = intro; self.recap = recap; self.credits = credits; self.preview = preview
+        self.commercials = commercials
     }
 
-    public var isEmpty: Bool { intro == nil && recap == nil && credits == nil && preview == nil }
+    public var isEmpty: Bool { intro == nil && recap == nil && credits == nil && preview == nil && commercials.isEmpty }
 }
 
 private struct MediaSegmentsPage: Decodable {

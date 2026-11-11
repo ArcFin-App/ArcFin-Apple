@@ -31,6 +31,7 @@ struct PlaybackAutomationSection: View {
     @AppStorage("skipIntro")       private var skipIntro       = false
     @AppStorage("skipCredits")     private var skipCredits     = false
     @AppStorage("skipRecap")       private var skipRecap       = false
+    @AppStorage("skipCommercials") private var skipCommercials = false
     @AppStorage("subtitleDefault") private var subtitleDefault = false
     @AppStorage("rememberPlaybackSpeed") private var rememberPlaybackSpeed = false
     @AppStorage("upNextCountdownSeconds") private var upNextCountdownSeconds = 5
@@ -58,7 +59,12 @@ struct PlaybackAutomationSection: View {
             }
             .tvListRow()
             .syncLocked("skipCredits", authManager)
-            if autoPlayNext || skipRecap || skipIntro || skipCredits {
+            Toggle(isOn: $skipCommercials) {
+                TVRowLabelText(title: "Skip Ads Automatically", detail: "Skips ad breaks in recordings when the server knows where they are.")
+            }
+            .tvListRow()
+            .syncLocked("skipCommercials", authManager)
+            if autoPlayNext || skipRecap || skipIntro || skipCredits || skipCommercials {
                 SettingsPicker("Countdown", detail: "How long the button fills before an automatic skip or the next episode.", selection: $upNextCountdownSeconds,
                                options: [3, 4, 5]) { seconds in
                     Text("\(seconds)s")

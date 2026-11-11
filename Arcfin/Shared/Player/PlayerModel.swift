@@ -1202,6 +1202,13 @@ final class PlayerModel {
     private func autoSkipIfNeeded(positionTicks: Int64) {
         let seconds = Double(positionTicks) / 10_000_000
         let defaults = UserDefaults.standard
+        // Each ad break skips once, by itself, like the other segments.
+        if defaults.bool(forKey: "skipCommercials"),
+           let span = segments.commercials.first(where: { $0.contains(seconds) }),
+           autoSkipped.insert("commercial@\(span.lowerBound)").inserted {
+            startAutoSkip(kind: "commercial")
+            return
+        }
         for (kind, span, enabled) in [
             ("recap", segments.recap, defaults.bool(forKey: "skipRecap")),
             ("intro", segments.intro, defaults.bool(forKey: "skipIntro")),
@@ -1749,15 +1756,18 @@ final class PlayerModel {
         let seconds = Double(player.positionTicks) / 10_000_000
         guard seconds > 0.5 else { return nil }
         // Recap ("previously on") is the cold open ahead of the intro, so it's checked first.
-        if let span = segments.recap, span.contains(seconds) { return ("recap", "Skip Recap", span) }
-        if let span = segments.intro, span.contains(seconds) { return ("intro", "Skip Intro", span) }
+        if let span = segments.recap, span.contains(seconds) { return ("recap", String(localized: "Skip Recap"), span) }
+        if let span = segments.intro, span.contains(seconds) { return ("intro", String(localized: "Skip Intro"), span) }
         if let span = segments.credits, span.contains(seconds) {
             // Up Next and the suggestions panel already offer a way on from the credits,
             // unless an automatic skip is counting down and needs to be seen.
             guard !showUpNext, !showMoreLikeThis || autoSkipCountdown?.kind == "credits" else { return nil }
-            return ("credits", "Skip Credits", span)
+            return ("credits", String(localized: "Skip Credits"), span)
         }
-        if let span = segments.preview, span.contains(seconds) { return ("preview", "Skip Preview", span) }
+        if let span = segments.preview, span.contains(seconds) { return ("preview", String(localized: "Skip Preview"), span) }
+        if let span = segments.commercials.first(where: { $0.contains(seconds) }) {
+            return ("commercial", String(localized: "Skip Ad"), span)
+        }
         return nil
     }
 
