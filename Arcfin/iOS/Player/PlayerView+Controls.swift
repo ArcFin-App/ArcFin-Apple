@@ -172,7 +172,9 @@ extension PlayerView {
                 CastButton(bridge: routeBridge)
             }
         }
+        // The buttons draw past a 1-point frame unless it clips them.
         .frame(width: 1, height: 1)
+        .clipped()
         .opacity(0.02)
         .allowsHitTesting(false)
     }
