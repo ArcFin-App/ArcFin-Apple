@@ -339,6 +339,8 @@ struct SeerrRequestDetailView: View {
         let (label, hex): (String, String) = switch current.status {
         case .approved:  ("Approved", "10b981")
         case .declined:  ("Declined", "F43F5E")
+        case .failed:  ("Failed", "F43F5E")
+        case .completed: ("Completed", "10b981")
         case .pending:   ("Pending", "f59e0b")
         }
         return statusPillView(label: label, hex: hex)

@@ -29,9 +29,10 @@ public enum RequestMediaType: String, Sendable {
 
 /// Seerr's request.status — the approval state of the request itself, distinct from
 /// media.status (SeerrAvailabilityStatus), which tracks whether the requested title has
-/// actually shown up on the server yet. The API only ever sends 1/2/3 for this field.
+/// actually shown up on the server yet. Seerr's MediaRequestStatus: 1 pending, 2 approved,
+/// 3 declined, 4 failed (sending it to Radarr or Sonarr failed), 5 completed.
 public enum RequestStatus: Int, Sendable, Equatable {
-    case pending = 1, approved, declined
+    case pending = 1, approved, declined, failed, completed
 }
 
 public struct MediaRequest: Sendable, Identifiable, Equatable {
@@ -206,6 +207,8 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
         case .pending:  return ("Pending", "f59e0b")
         case .approved: return ("Approved", "10b981")
         case .declined: return ("Declined", "F43F5E")
+        case .failed: return ("Failed", "F43F5E")
+        case .completed: return ("Completed", "10b981")
         }
     }
 }

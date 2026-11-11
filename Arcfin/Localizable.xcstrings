@@ -1153,6 +1153,70 @@
         }
       }
     },
+    "Already Handled" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bereits bearbeitet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ya gestionada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Déjà traitée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Già gestita"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "処理済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이미 처리됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Al afgehandeld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Já tratado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Уже обработан"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已处理"
+          }
+        }
+      }
+    },
     "Already in Your Library" : {
       "localizations" : {
         "de" : {
@@ -2945,6 +3009,70 @@
         }
       }
     },
+    "Completed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abgeschlossen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Completada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Terminée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Completata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "完了"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "완료됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Voltooid"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Concluído"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выполнен"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已完成"
+          }
+        }
+      }
+    },
     "Connect to Your Server" : {
       "localizations" : {
         "de" : {
@@ -3329,66 +3457,66 @@
         }
       }
     },
-    "Couldn't approve “%@”. %@" : {
+    "Couldn't Approve" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "„%1$@“ konnte nicht genehmigt werden. %2$@"
+            "value" : "Genehmigen fehlgeschlagen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "No se ha podido aprobar «%1$@». %2$@"
+            "value" : "No se ha podido aprobar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Impossible d’approuver « %1$@ ». %2$@"
+            "value" : "Approbation impossible"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Impossibile approvare “%1$@”. %2$@"
+            "value" : "Impossibile approvare"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "「%1$@」を承認できませんでした。%2$@"
+            "value" : "承認できませんでした"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "‘%1$@’을(를) 승인할 수 없습니다. %2$@"
+            "value" : "승인할 수 없음"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Kan ‘%1$@’ niet goedkeuren. %2$@"
+            "value" : "Kan niet goedkeuren"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Não foi possível aprovar “%1$@”. %2$@"
+            "value" : "Não foi possível aprovar"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Не удалось одобрить «%1$@». %2$@"
+            "value" : "Не удалось одобрить"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "无法批准“%1$@”。%2$@"
+            "value" : "无法批准"
           }
         }
       }
@@ -3521,66 +3649,66 @@
         }
       }
     },
-    "Couldn't decline “%@”. %@" : {
+    "Couldn't Decline" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "„%1$@“ konnte nicht abgelehnt werden. %2$@"
+            "value" : "Ablehnen fehlgeschlagen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "No se ha podido rechazar «%1$@». %2$@"
+            "value" : "No se ha podido rechazar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Impossible de refuser « %1$@ ». %2$@"
+            "value" : "Refus impossible"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Impossibile rifiutare “%1$@”. %2$@"
+            "value" : "Impossibile rifiutare"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "「%1$@」を却下できませんでした。%2$@"
+            "value" : "却下できませんでした"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "‘%1$@’을(를) 거절할 수 없습니다. %2$@"
+            "value" : "거절할 수 없음"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Kan ‘%1$@’ niet afwijzen. %2$@"
+            "value" : "Kan niet afwijzen"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Não foi possível recusar “%1$@”. %2$@"
+            "value" : "Não foi possível recusar"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Не удалось отклонить «%1$@». %2$@"
+            "value" : "Не удалось отклонить"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "无法拒绝“%1$@”。%2$@"
+            "value" : "无法拒绝"
           }
         }
       }
@@ -5309,6 +5437,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "每天"
+          }
+        }
+      }
+    },
+    "Failed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Fehlgeschlagen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Error"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Échec"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non riuscita"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "失敗"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "실패"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mislukt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Falhou"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ошибка"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "失败"
           }
         }
       }
@@ -12669,6 +12861,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Seerr 不接受你的 Jellyfin 账户。请让管理员将你添加到 Seerr。"
+          }
+        }
+      }
+    },
+    "Seerr didn't take the change to “%@”. Check your connection and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr hat die Änderung an „%@“ nicht übernommen. Prüfe deine Verbindung und versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr no ha aplicado el cambio en «%@». Comprueba tu conexión e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr n’a pas pris en compte la modification de « %@ ». Vérifiez votre connexion et réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr non ha applicato la modifica a “%@”. Controlla la connessione e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerrが「%@」への変更を受け付けませんでした。接続を確認して、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에서 ‘%@’의 변경 사항을 적용하지 않았습니다. 연결 상태를 확인한 다음 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr heeft de wijziging aan ‘%@’ niet doorgevoerd. Controleer je verbinding en probeer het opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Seerr não aplicou a alteração em “%@”. Verifique sua conexão e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr не принял изменение для «%@». Проверьте подключение и повторите попытку."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr 未应用对“%@”的更改。请检查网络连接，然后重试。"
           }
         }
       }
@@ -20223,6 +20479,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%lld 秒"
+          }
+        }
+      }
+    },
+    "“%@” isn't waiting for approval any more. The list now shows where it stands." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "„%@“ wartet nicht mehr auf Genehmigung. Die Liste zeigt jetzt den aktuellen Stand."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "«%@» ya no está pendiente de aprobación. La lista muestra ahora su estado actual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "« %@ » n’attend plus d’approbation. La liste indique maintenant où en est la demande."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” non è più in attesa di approvazione. L’elenco ora ne mostra lo stato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「%@」は承認待ちではなくなりました。現在の状況がリストに表示されています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "‘%@’은(는) 더 이상 승인 대기 중이 아닙니다. 목록에 현재 상태가 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "‘%@’ wacht niet meer op goedkeuring. De lijst laat nu zien hoe het ervoor staat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@” não está mais aguardando aprovação. A lista agora mostra a situação atual."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "«%@» больше не ждёт одобрения. В списке теперь показано его текущее состояние."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@”已不再等待批准。列表现在会显示其当前状态。"
           }
         }
       }

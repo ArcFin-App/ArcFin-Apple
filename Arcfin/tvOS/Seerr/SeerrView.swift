@@ -515,6 +515,8 @@ private struct TVRequestRow: View {
         let (label, hex): (String, String) = switch status {
         case .approved:  ("Approved",  "10b981")
         case .declined:  ("Declined",  "F43F5E")
+        case .failed:  ("Failed",  "F43F5E")
+        case .completed: ("Completed", "10b981")
         case .pending:   ("Pending",   "f59e0b")
         }
         return pillView(label: label, hex: hex)

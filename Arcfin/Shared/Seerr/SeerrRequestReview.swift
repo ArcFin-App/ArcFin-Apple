@@ -9,6 +9,7 @@ import SeerrAPI
 final class SeerrRequestReview {
     var declining: SeerrRequestItem?
     var error: String?
+    var errorTitle = ""
     private(set) var inProgress: Set<Int> = []
 
     func approve(_ request: SeerrRequestItem, seerrRepo: SeerrRepository) {
@@ -25,10 +26,15 @@ final class SeerrRequestReview {
         do {
             try await seerrRepo.setRequestApproved(request, approved: approved)
             HapticManager.impact(.medium)
+        } catch SeerrError.requestFailed(status: 409, body: _) {
+            // Handled already: approved or declined somewhere else, or Seerr finished it.
+            await seerrRepo.loadRequests()
+            errorTitle = String(localized: "Already Handled")
+            self.error = String(localized: "“\(request.mediaTitle)” isn't waiting for approval any more. The list now shows where it stands.")
+        } catch where SeerrRepository.isCancellation(error) {
         } catch {
-            self.error = approved
-                ? String(localized: "Couldn't approve “\(request.mediaTitle)”. \(error.localizedDescription)")
-                : String(localized: "Couldn't decline “\(request.mediaTitle)”. \(error.localizedDescription)")
+            errorTitle = approved ? String(localized: "Couldn't Approve") : String(localized: "Couldn't Decline")
+            self.error = String(localized: "Seerr didn't take the change to “\(request.mediaTitle)”. Check your connection and try again.")
         }
     }
 }
@@ -124,7 +130,7 @@ private struct SeerrRequestReviewPresentations: ViewModifier {
                     Text("\(name) will see that their request was declined.")
                 }
             }
-            .alert("Requests", isPresented: Binding(get: { review.error != nil }, set: { if !$0 { review.error = nil } })) {
+            .alert(review.errorTitle, isPresented: Binding(get: { review.error != nil }, set: { if !$0 { review.error = nil } })) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(review.error ?? "")
