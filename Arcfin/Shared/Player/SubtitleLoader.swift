@@ -3,6 +3,8 @@
 import Foundation
 import JellyfinAPI
 import AuthCore
+import Telemetry
+import os
 
 struct SubtitleCue: Sendable {
     let start: TimeInterval
@@ -14,6 +16,8 @@ struct SubtitleCue: Sendable {
 /// here instead of AVPlayerViewController, for full custom-control ownership) doesn't render
 /// subtitles on its own, so cues are looked up by position and drawn as a SwiftUI overlay.
 enum SubtitleLoader {
+    private static let log = Telemetry.logger(category: "Subtitles")
+
     static func loadCues(deliveryUrl: String, credential: ServerCredential) async -> [SubtitleCue] {
         guard let data = await fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential),
               let text = String(data: data, encoding: .utf8)
@@ -37,10 +41,18 @@ enum SubtitleLoader {
     }
 
     static func fetchRawVTTData(deliveryUrl: String, credential: ServerCredential) async -> Data? {
-        guard let url = absoluteURL(deliveryUrl: deliveryUrl, credential: credential),
-              let (data, _) = try? await URLSession.arcfin.data(from: url)
-        else { return nil }
-        return data
+        guard let url = absoluteURL(deliveryUrl: deliveryUrl, credential: credential) else { return nil }
+        do {
+            let (data, response) = try await URLSession.arcfin.data(from: url)
+            if let status = (response as? HTTPURLResponse)?.statusCode, status != 200 {
+                log.error("Subtitles: the server answered \(status, privacy: .public)")
+                return nil
+            }
+            return data
+        } catch {
+            log.error("Subtitles: couldn't fetch them: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
     }
 
     /// Parses a locally-saved VTT file — used by offline playback.

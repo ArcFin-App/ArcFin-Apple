@@ -1586,7 +1586,8 @@ final class PlayerModel {
     /// to burn into the picture (an image format being transcoded) needs a new stream.
     private func drawsSubtitleHere(_ index: Int?) -> Bool {
         guard let index else { return true }
-        return playbackInfo?.subtitleStreams.first(where: { $0.index == index })?.deliveryUrl != nil
+        guard let info = playbackInfo, let stream = info.subtitleStreams.first(where: { $0.index == index }) else { return false }
+        return subtitlePath(for: stream, in: info) != nil
     }
 
     func changeVersion(_ id: String) {
@@ -1650,13 +1651,27 @@ final class PlayerModel {
     private func loadSubtitleCues(from info: JellyfinPlaybackInfo, credential: ServerCredential) async {
         guard let index = selectedSubtitleIndex,
               let stream = info.subtitleStreams.first(where: { $0.index == index }),
-              let deliveryUrl = stream.deliveryUrl
+              let deliveryUrl = subtitlePath(for: stream, in: info)
         else {
+            if let index = selectedSubtitleIndex {
+                log.notice("Subtitles: track \(index, privacy: .public) isn't drawn here (\(info.playMethod.rawValue, privacy: .public))")
+            }
             subtitleCues = []
             currentSubtitleText = nil
             return
         }
         subtitleCues = await SubtitleLoader.loadCues(deliveryUrl: deliveryUrl, credential: credential)
+        log.notice("Subtitles: track \(index, privacy: .public) has \(self.subtitleCues.count, privacy: .public) cues (server link: \(stream.deliveryUrl != nil, privacy: .public))")
+    }
+
+    /// Where to fetch a text subtitle as WebVTT. The server's own link when it gives one; a
+    /// text track inside a file played as is can come without one, and the server converts
+    /// it from the same address all the same. Never for a conversion, which may burn it in.
+    private func subtitlePath(for stream: JellyfinMediaStream, in info: JellyfinPlaybackInfo) -> String? {
+        if let deliveryUrl = stream.deliveryUrl { return deliveryUrl }
+        let textCodecs: Set<String> = ["subrip", "srt", "ass", "ssa", "webvtt", "vtt", "mov_text", "text", "ttml"]
+        guard info.playMethod != .transcode, textCodecs.contains(stream.codec?.lowercased() ?? "") else { return nil }
+        return "/Videos/\(item.id)/\(info.mediaSourceId)/Subtitles/\(stream.index)/0/Stream.vtt"
     }
 
     func updateSubtitleText(forTicks ticks: Int64) {
