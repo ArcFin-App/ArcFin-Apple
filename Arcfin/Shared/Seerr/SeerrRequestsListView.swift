@@ -71,6 +71,8 @@ struct SeerrRequestsListView: View {
                         Text("Pending").tag(RequestStatus?.some(.pending))
                         Text("Approved").tag(RequestStatus?.some(.approved))
                         Text("Declined").tag(RequestStatus?.some(.declined))
+                        Text("Completed").tag(RequestStatus?.some(.completed))
+                        Text("Failed").tag(RequestStatus?.some(.failed))
                     }
                 } label: {
                     Image(systemName: statusFilter == nil
