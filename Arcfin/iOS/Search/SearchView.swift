@@ -12,6 +12,8 @@ struct SearchView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var model = SearchModel()
+    /// Channels and programmes, shown below everything else.
+    @State private var liveTV = LiveTVModel()
     @State private var requestingSeerrItem: SeerrItem?
     @AppStorage(RecentSearches.key) private var recentSearchesData = Data()
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
@@ -27,6 +29,14 @@ struct SearchView: View {
 
     private var recentSearches: [String] { RecentSearches.decode(recentSearchesData) }
 
+    private var searchesLiveTV: Bool {
+        ProfileRules.shared.canWatchLiveTV && mediaRepo.libraries.contains { $0.collectionType == .livetv }
+    }
+
+    private var foundNothing: Bool {
+        model.foundNothing && !liveTV.isSearching && !liveTV.hasSearchResults
+    }
+
     private func saveRecentSearch() {
         guard saveSearchHistory else { return }
         recentSearchesData = RecentSearches.adding(query, to: recentSearchesData)
@@ -39,7 +49,7 @@ struct SearchView: View {
                     Button { query = term } label: { label }
                         .buttonStyle(.plain)
                 }
-            } else if query.isEmpty || model.foundNothing {
+            } else if query.isEmpty || foundNothing {
                 SearchEmptyState(query: query)
             } else if !modernSearch {
                 classicResults
@@ -58,6 +68,10 @@ struct SearchView: View {
                         }
                         ForEach(model.libraryGroups, id: \.title) { group in
                             libraryShelf(group)
+                        }
+                        if liveTV.hasSearchResults {
+                            LiveTVSearchSection(model: liveTV)
+                                .simultaneousGesture(TapGesture().onEnded { saveRecentSearch() })
                         }
                         if seerrRepo.isConfigured && (model.isSearchingDiscover || !model.seerrResults.isEmpty) {
                             SearchDiscoverSection(items: model.discoverResults(in: mediaRepo),
@@ -81,7 +95,10 @@ struct SearchView: View {
         .screenBackground()
         .onChange(of: query) { _, newValue in
             model.search(newValue, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
+            liveTV.searchQuery = searchesLiveTV ? newValue : ""
+            liveTV.search(authManager: authManager)
         }
+        .liveTVPresentations(model: liveTV)
         .sheet(item: $requestingSeerrItem) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingSeerrItem)
                 .presentationDetents([.medium, .large])
@@ -133,6 +150,10 @@ struct SearchView: View {
                     }
                 } else if model.isSearchingLibrary {
                     ProgressView().frame(maxWidth: .infinity)
+                }
+                if liveTV.hasSearchResults {
+                    LiveTVSearchSection(model: liveTV)
+                        .padding(.horizontal, -DT.Spacing.pagePad)
                 }
                 if seerrRepo.isConfigured && !model.seerrResults.isEmpty {
                     SearchClassicDiscover {

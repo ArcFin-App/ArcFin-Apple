@@ -90,6 +90,48 @@ enum NotificationManager {
     static func notifyRequestAvailable(title: String) async {
         await send(title: "Now Available", body: title, identifier: "seerr-available.\(UUID().uuidString)", route: .discover)
     }
+
+    // MARK: - Live TV reminders
+
+    /// Apple TV notifications carry only a badge, so a reminder couldn't say anything there.
+    static var supportsReminders: Bool {
+        #if os(tvOS)
+        false
+        #else
+        true
+        #endif
+    }
+
+    private static let reminderPrefix = "livetv-reminder."
+
+    /// A notification two minutes before a programme starts; tapping it plays the channel.
+    /// False when notifications aren't allowed or the programme has already started.
+    static func remind(programID: String, title: String, channelName: String, channelID: String, startsAt start: Date) async -> Bool {
+        #if os(tvOS)
+        return false
+        #else
+        guard start > .now, await ensureAuthorized() else { return false }
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Starting Soon")
+        content.body = String(localized: "\(title) starts on \(channelName) at \(start.formatted(date: .omitted, time: .shortened)).")
+        content.sound = QuietHours.isNow ? nil : .default
+        content.userInfo = Route.item(channelID).userInfo
+        let fire = max(start.addingTimeInterval(-120).timeIntervalSinceNow, 1)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: fire, repeats: false)
+        let request = UNNotificationRequest(identifier: reminderPrefix + programID, content: content, trigger: trigger)
+        return (try? await UNUserNotificationCenter.current().add(request)) != nil
+        #endif
+    }
+
+    static func cancelReminder(programID: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [reminderPrefix + programID])
+    }
+
+    /// The programmes with a reminder still to come.
+    static func reminderProgramIDs() async -> Set<String> {
+        let pending = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        return Set(pending.map(\.identifier).filter { $0.hasPrefix(reminderPrefix) }.map { String($0.dropFirst(reminderPrefix.count)) })
+    }
 }
 
 #if !os(tvOS)

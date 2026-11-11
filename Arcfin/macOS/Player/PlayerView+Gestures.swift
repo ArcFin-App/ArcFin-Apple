@@ -22,7 +22,7 @@ extension PlayerView {
     }
 
     private func handleMacDoubleClick(at location: CGPoint, width: CGFloat) {
-        guard doubleTapToSkip else { model.toggleControls(); return }
+        guard doubleTapToSkip, !model.isLive else { model.toggleControls(); return }
         let tappedRight = location.x > width / 2
         let forward = tappedRight
         let seconds = forward ? skipForwardSeconds : skipBackwardSeconds

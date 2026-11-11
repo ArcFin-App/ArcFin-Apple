@@ -428,6 +428,121 @@
         }
       }
     },
+    "Play ${channel} channel in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${channel} in ${applicationName} abspielen",
+              "${channel} live in ${applicationName} schauen",
+              "Schalte in ${applicationName} auf ${channel}"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Play ${channel} channel in ${applicationName}",
+              "Watch ${channel} live in ${applicationName}",
+              "Tune to ${channel} in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproducir el canal ${channel} en ${applicationName}",
+              "Ver ${channel} en directo en ${applicationName}",
+              "Poner ${channel} en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Lire la chaîne ${channel} dans ${applicationName}",
+              "Regarder ${channel} en direct dans ${applicationName}",
+              "Mettre ${channel} dans ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Riproduci il canale ${channel} su ${applicationName}",
+              "Guarda ${channel} in diretta su ${applicationName}",
+              "Metti ${channel} su ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName} で ${channel} を再生",
+              "${applicationName} で ${channel} をライブで見る",
+              "${applicationName} で ${channel} に切り替え"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "${applicationName}에서 ${channel} 채널 재생",
+              "${applicationName}에서 ${channel} 실시간 시청",
+              "${applicationName}에서 ${channel}(으)로 전환"
+            ]
+          }
+        },
+        "nl" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Speel zender ${channel} af in ${applicationName}",
+              "Kijk ${channel} live in ${applicationName}",
+              "Zet ${channel} op in ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Reproduzir o canal ${channel} no ${applicationName}",
+              "Assistir ${channel} ao vivo no ${applicationName}",
+              "Colocar ${channel} no ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "Включи канал ${channel} в ${applicationName}",
+              "Смотреть ${channel} в прямом эфире в ${applicationName}",
+              "Переключи на ${channel} в ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在 ${applicationName} 中播放 ${channel} 频道",
+              "在 ${applicationName} 中观看 ${channel} 直播",
+              "在 ${applicationName} 中切换到 ${channel}"
+            ]
+          }
+        }
+      }
+    },
     "Play ${target} in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {

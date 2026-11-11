@@ -83,6 +83,10 @@ public actor SeerrHTTPClient {
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
     private var loginTask: Task<Void, Error>?
+    /// Watchlist titles' details by "tv:123", kept a while: the watchlist asks Seerr for each
+    /// title one by one, and it's reloaded by Home, Discover and the Watchlist screen alike.
+    private var watchlistDetails: [String: (item: SeerrItem, fetched: Date)] = [:]
+    private static let watchlistDetailLifetime: TimeInterval = 600
     private let session: URLSession
     // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
     private let authFailedKey: String
@@ -262,7 +266,8 @@ public actor SeerrHTTPClient {
     /// The user's Seerr watchlist. Only carries tmdbId/mediaType, so each entry is
     /// enriched with title/poster via the same detail lookup used for requests.
     /// Every page of it: Seerr serves the watchlist 20 at a time and ignores any page size.
-    public func watchlist() async throws -> [SeerrItem] {
+    /// `refresh` fetches every title's details again, for a pull to refresh.
+    public func watchlist(refresh: Bool = false) async throws -> [SeerrItem] {
         try await ensureAuthenticated()
         struct Page: Decodable { let totalPages: Int?; let results: [SeerrWatchlistItemResponse] }
         var raw: [SeerrWatchlistItemResponse] = []
@@ -277,15 +282,31 @@ public actor SeerrHTTPClient {
             page += 1
         }
 
+        if refresh { watchlistDetails = [:] }
+        let now = Date()
         var items = [SeerrItem?](repeating: nil, count: raw.count)
-        await withTaskGroup(of: (Int, SeerrItem?).self) { group in
-            for (index, r) in raw.enumerated() {
+        var missing: [(index: Int, key: String, entry: SeerrWatchlistItemResponse)] = []
+        for (index, r) in raw.enumerated() {
+            let key = "\(r.mediaType ?? "movie"):\(r.tmdbId ?? -1)"
+            if let cached = watchlistDetails[key], now.timeIntervalSince(cached.fetched) < Self.watchlistDetailLifetime {
+                items[index] = cached.item
+            } else {
+                missing.append((index, key, r))
+            }
+        }
+        var fetched: [(Int, String, SeerrItem?)] = []
+        await withTaskGroup(of: (Int, String, SeerrItem?).self) { group in
+            for (index, key, r) in missing {
                 group.addTask {
                     let detail = try? await self.mediaDetail(tmdbId: r.tmdbId, mediaType: r.mediaType)
-                    return (index, detail)
+                    return (index, key, detail)
                 }
             }
-            for await (index, item) in group { items[index] = item }
+            for await result in group { fetched.append(result) }
+        }
+        for (index, key, item) in fetched {
+            items[index] = item
+            if let item { watchlistDetails[key] = (item, now) }
         }
         return items.compactMap { $0 }
     }

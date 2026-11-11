@@ -54,7 +54,7 @@ struct WatchlistView: View {
         .navigationTitle("Watchlist")
         .arcfinNavTitleLarge("Watchlist")
         .task { await model.load(seerrRepo: seerrRepo) }
-        .refreshable { await seerrRepo.loadWatchlist() }
+        .refreshable { await seerrRepo.loadWatchlist(refresh: true) }
         // The title's page, as from Discover, where it can be requested or played.
         .navigationDestination(item: $openedItem) { item in
             SeerrItemDetailView(item: item)

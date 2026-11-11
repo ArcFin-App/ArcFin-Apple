@@ -23,6 +23,8 @@ final class HomeModel {
     var detailItem: MediaItem?
     /// Play / Resume straight away, without opening the title's page.
     var playbackRequest: PlaybackRequest?
+    /// The Live TV shelves' channels and programmes.
+    let liveTV = HomeLiveTVShelves()
     var seerrDetailItem: SeerrItem?
     var seerrRequestItem: SeerrItem?
     var deepLinkItemID: String?
@@ -104,8 +106,26 @@ final class HomeModel {
             },
             recentlyAdded: mediaRepo.recentlyAdded.prefix(3).map { item in
                 entry(item, title: item.name, subtitle: nil, progress: 0, context: addedContext)
-            }
+            },
+            liveChannels: topShelfChannels(mediaRepo: mediaRepo)
         )
+    }
+
+    /// Favourite channels, when the Favorite Channels shelf is on: what's on now as the picture
+    /// where the guide has one, otherwise the channel's logo.
+    private func topShelfChannels(mediaRepo: MediaRepository) -> [TopShelfMediaItem] {
+        let active = HomeShelfPrefs.active(from: UserDefaults.standard.string(forKey: HomeShelfPrefs.activeKey) ?? "")
+        guard active.contains(.liveFavoriteChannels), HomeShelf.hasLiveTV(in: mediaRepo) else { return [] }
+        let context = String(localized: "Favorite Channels")
+        return liveTV.favorites.prefix(3).map { channel in
+            let logo = mediaRepo.primaryImageURL(itemID: channel.id, tag: channel.primaryImageTag, fillWidth: 800)
+            let program = channel.currentProgram.flatMap { $0.isAiring() ? $0 : nil }
+            return TopShelfMediaItem(
+                id: channel.id, title: channel.name, subtitle: program?.name, imageURL: logo, progress: 0,
+                summary: program.map { [$0.name, $0.overview].compactMap { $0 }.joined(separator: "\n") },
+                backdropURL: program.flatMap { mediaRepo.primaryImageURL(itemID: $0.id, tag: $0.primaryImageTag, fillWidth: 1920) },
+                contextTitle: context, logoURL: logo)
+        }
     }
 
     /// Episodes use the series' backdrop; the carousel is a full-width hero, not an episode still.
@@ -164,7 +184,13 @@ final class HomeModel {
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         Task {
             if let detail = try? await JellyfinMediaClient().getItemDetail(credential: cred, authHeader: header, itemId: id) {
-                detailItem = detail.item
+                // A channel (a reminder, Siri) plays rather than opening a page it doesn't have.
+                if detail.item.type == .tvChannel {
+                    PlayQueue.clear()
+                    playbackRequest = PlaybackRequest(item: detail.item, startTicks: 0)
+                } else {
+                    detailItem = detail.item
+                }
             }
         }
     }

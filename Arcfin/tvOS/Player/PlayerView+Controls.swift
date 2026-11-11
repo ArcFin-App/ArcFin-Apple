@@ -139,23 +139,31 @@ extension PlayerView {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
-            scrubber
+            if model.isLive {
+                // Nothing to scrub on a channel, so nothing here to focus either.
+                HStack(spacing: 16) {
+                    LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
+                    LiveProgramBar(program: model.liveProgram)
+                }
+            } else {
+                scrubber
 
-            // Time labels moved off the buttons row when that row's left/right slots became
-            // leftSecondaryActions/rightSecondaryActions — they belong at the scrubber's own
-            // two ends regardless of what's in the row below it.
-            HStack {
-                Text(model.timeLabel(ticks: model.elapsedTicks))
-                    .scaledFont(size: 12, weight: .medium, design: .monospaced)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .contentTransition(.numericText())
-                    .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
-                Spacer()
-                Text(model.remainingLabel)
-                    .scaledFont(size: 12, weight: .medium, design: .monospaced)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .contentTransition(.numericText())
-                    .animation(.default, value: model.remainingTicks)
+                // Time labels moved off the buttons row when that row's left/right slots became
+                // leftSecondaryActions/rightSecondaryActions — they belong at the scrubber's own
+                // two ends regardless of what's in the row below it.
+                HStack {
+                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                        .scaledFont(size: 12, weight: .medium, design: .monospaced)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .contentTransition(.numericText())
+                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
+                    Spacer()
+                    Text(model.remainingLabel)
+                        .scaledFont(size: 12, weight: .medium, design: .monospaced)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .contentTransition(.numericText())
+                        .animation(.default, value: model.remainingTicks)
+                }
             }
 
             HStack {
@@ -167,26 +175,30 @@ extension PlayerView {
                         Button { model.playPrevious() } label: {
                             TVPlayerControlLabel(systemImage: "backward.end.fill", size: 16, diameter: 38)
                         }
-                        .accessibilityLabel(model.previousItem.map { "Previous: \($0.name)" } ?? "Previous")
+                        .accessibilityLabel(previousLabel)
                     }
-                    Button { model.seek(by: -skipBackwardSeconds) } label: {
-                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
+                    if !model.isLive || model.canRewindLive {
+                        Button { model.seek(by: -skipBackwardSeconds) } label: {
+                            TVPlayerControlLabel(systemImage: skipIconName(seconds: skipBackwardSeconds, forward: false), size: 16, diameter: 38)
+                        }
+                        .accessibilityLabel("Skip Back")
                     }
-                    .accessibilityLabel("Skip Back")
                     Button { model.togglePlayPause() } label: {
                         TVPlayerControlLabel(systemImage: playPauseIconIsPlaying ? "pause.fill" : "play.fill", size: 22, diameter: 48)
                     }
                     .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     .prefersDefaultFocus(!model.tvControlsHidden, in: tvFocusNamespace)
-                    Button { model.seek(by: skipForwardSeconds) } label: {
-                        TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 16, diameter: 38)
+                    if !model.isLive || model.canRewindLive {
+                        Button { model.seek(by: skipForwardSeconds) } label: {
+                            TVPlayerControlLabel(systemImage: skipIconName(seconds: skipForwardSeconds, forward: true), size: 16, diameter: 38)
+                        }
+                        .accessibilityLabel("Skip Forward")
                     }
-                    .accessibilityLabel("Skip Forward")
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
                             TVPlayerControlLabel(systemImage: "forward.end.fill", size: 16, diameter: 38)
                         }
-                        .accessibilityLabel("Next: \(nextEpisode.name)")
+                        .accessibilityLabel(model.isLive ? "Next channel: \(nextEpisode.name)" : "Next: \(nextEpisode.name)")
                     }
                 }
                 .buttonStyle(TVCardButtonStyle())
@@ -214,10 +226,12 @@ extension PlayerView {
                 TVPlayerControlLabel(systemImage: "captions.bubble", size: 14, diameter: 32)
             }
             .accessibilityLabel("Subtitles & Audio")
-            Button { showRateMenu = true } label: {
-                TVPlayerControlLabel(systemImage: "gauge.with.dots.needle.67percent", size: 14, diameter: 32)
+            if !model.isLive {
+                Button { showRateMenu = true } label: {
+                    TVPlayerControlLabel(systemImage: "gauge.with.dots.needle.67percent", size: 14, diameter: 32)
+                }
+                .accessibilityLabel("Playback Speed")
             }
-            .accessibilityLabel("Playback Speed")
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -226,6 +240,12 @@ extension PlayerView {
 
     private var rightSecondaryActions: some View {
         HStack(spacing: 12) {
+            if model.hasChannelList {
+                Button { withAnimation(DT.Animation.fast) { model.showChannelList = true } } label: {
+                    TVPlayerControlLabel(systemImage: "list.bullet.rectangle", size: 14, diameter: 32)
+                }
+                .accessibilityLabel("Channels")
+            }
             Button { showQualityMenu = true } label: {
                 TVPlayerControlLabel(systemImage: "slider.horizontal.3", size: 14, diameter: 32)
             }
@@ -254,6 +274,11 @@ extension PlayerView {
         .focusSection()
     }
 
+    private var previousLabel: String {
+        guard let previous = model.previousItem else { return String(localized: "Previous") }
+        return model.isLive ? String(localized: "Previous channel: \(previous.name)") : String(localized: "Previous: \(previous.name)")
+    }
+
     /// Something besides the transport controls that the remote should land on.
     private var tvOverlayHasFocusTarget: Bool {
         model.showStillWatchingPrompt || (model.showUpNext && model.nextEpisode != nil)
@@ -263,16 +288,18 @@ extension PlayerView {
     /// With the controls hidden, an invisible catcher holds focus, so a click never presses a
     /// button nobody can see.
     var tvCatcherActive: Bool {
-        model.tvControlsHidden && !tvOverlayHasFocusTarget && model.skipButtonLabel == nil
+        model.tvControlsHidden && !tvOverlayHasFocusTarget && model.skipButtonLabel == nil && model.errorMessage == nil
+            && !model.showChannelList
     }
 
     /// Changes whenever a different control should hold focus.
     var tvFocusContext: String {
-        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)"
+        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)-\(model.errorMessage != nil)-\(model.showChannelList)"
     }
 
     /// The remote while the controls are hidden, as in the system player: a click or a swipe
-    /// up shows them, down opens subtitles and audio, left and right skip back and forward.
+    /// up shows them, down opens subtitles and audio, left and right skip back and forward,
+    /// or on a channel change to the one before or after it.
     var tvRemoteCatcher: some View {
         Button { model.toggleControlsVisibilityOnAction() } label: {
             Color.clear
@@ -284,9 +311,14 @@ extension PlayerView {
         .prefersDefaultFocus(true, in: tvFocusNamespace)
         .onMoveCommand { direction in
             switch direction {
+            case .left where model.isLive: model.playPrevious()
+            case .right where model.isLive: model.playNextEpisode()
             case .left: tvQuickSeek(forward: false)
             case .right: tvQuickSeek(forward: true)
-            // Down opens subtitles and audio, as the system player's info panel does.
+            // Down opens subtitles and audio, as the system player's info panel does, or on a
+            // channel the channel list.
+            case .down where model.hasChannelList:
+                withAnimation(DT.Animation.fast) { model.showChannelList = true }
             case .down: showTrackMenu = true
             default: model.toggleControlsVisibilityOnAction()
             }
@@ -310,7 +342,9 @@ extension PlayerView {
     /// Menu steps back one layer at a time: out of a scrub, then hides the controls, then
     /// leaves the player.
     func handleTVExit() {
-        if model.isScrubbing {
+        if model.showChannelList {
+            withAnimation(DT.Animation.fast) { model.showChannelList = false }
+        } else if model.isScrubbing {
             model.isScrubbing = false
             model.scrubThumbnail = nil
             model.scheduleAutoHide()
@@ -330,12 +364,13 @@ extension PlayerView {
                 Label("Cast & Characters", systemImage: "person.2")
             }
         }
-        if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
+        // SyncPlay keeps everyone at the same position; a channel has none to share.
+        if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive {
             Button { showSyncPlayMenu = true } label: {
                 Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
             }
         }
-        sharePlayMenuItem
+        if !model.isLive { sharePlayMenuItem }
         Button { withAnimation { audioOnly.toggle() } } label: {
             Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
         }

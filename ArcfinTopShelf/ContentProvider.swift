@@ -7,7 +7,8 @@ class ContentProvider: TVTopShelfContentProvider {
 
     override func loadTopShelfContent() async -> (any TVTopShelfContent)? {
         var seen = Set<String>()
-        let items = (TopShelfBridge.loadContinueWatching() + TopShelfBridge.loadNextUp() + TopShelfBridge.loadRecentlyAdded())
+        let items = (TopShelfBridge.loadContinueWatching() + TopShelfBridge.loadNextUp() + TopShelfBridge.loadRecentlyAdded()
+                     + TopShelfBridge.loadLiveChannels())
             .filter { seen.insert($0.id).inserted }
         guard !items.isEmpty else { return nil }
         return TVTopShelfCarouselContent(style: .details, items: items.map(makeItem(_:)))

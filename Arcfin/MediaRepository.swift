@@ -365,6 +365,13 @@ final class MediaRepository {
                                             type: .backdrop, fillWidth: fillWidth, token: token)
     }
 
+    /// A Live TV channel logo, programme still or series-timer poster.
+    func primaryImageURL(itemID: String, tag: String?, fillWidth: Int = 200) -> URL? {
+        guard let base = baseURL, let token = accessToken, let tag else { return nil }
+        return JellyfinMediaClient.imageURL(baseURL: base, itemID: itemID, tag: tag,
+                                            type: .primary, fillWidth: fillWidth, token: token)
+    }
+
     func personImageURL(personId: String, tag: String, fillWidth: Int = 120) -> URL? {
         guard let base = baseURL, let token = accessToken else { return nil }
         return JellyfinMediaClient.imageURL(baseURL: base, itemID: personId, tag: tag,

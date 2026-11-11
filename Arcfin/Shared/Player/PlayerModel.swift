@@ -7,6 +7,8 @@ import JellyfinAPI
 import MediaEngine
 import SwiftVLC
 import CastKit
+import Telemetry
+import os
 
 /// A title's playback on the player screen, shared by the iPhone, iPad, Mac and Apple TV
 /// `PlayerView`: the engine, what's reported to the server, quality, tracks, skipping, Up Next,
@@ -17,6 +19,7 @@ final class PlayerModel {
     let startPositionTicks: Int64
     @ObservationIgnored let onPlayNext: (MediaItem) -> Void
     @ObservationIgnored let client = JellyfinMediaClient()
+    @ObservationIgnored private let log = Telemetry.logger(category: "Player")
     /// Apple TV hides the controls by fading them out, so they stay focusable (see its PlayerView).
     @ObservationIgnored let hidesControlsByFading: Bool
     /// Play, pause and seek go to the SyncPlay group while in one, rather than to the player.
@@ -34,12 +37,25 @@ final class PlayerModel {
     /// Playback has just started: picture in picture and the like.
     @ObservationIgnored var playbackStarted: () -> Void = {}
     @ObservationIgnored var streamReloaded: () -> Void = {}
+    /// The channel being watched has moved on to another programme.
+    @ObservationIgnored var liveProgramChanged: () -> Void = {}
     /// The engine is about to be swapped for another, which must take over picture in picture.
     @ObservationIgnored var engineReleased: () -> Void = {}
     @ObservationIgnored var replacementEngineStarting: () async -> Void = {}
 
     var player: any MediaPlayerProtocol = AVFoundationPlayer()
-    var playbackInfo: JellyfinPlaybackInfo?
+    var playbackInfo: JellyfinPlaybackInfo? {
+        didSet {
+            // Every new PlaybackInfo for a channel opens another tuner stream; the one it
+            // replaces would hold its tuner until the server times it out.
+            if let old = oldValue?.liveStreamId, old != playbackInfo?.liveStreamId { closeLiveStream(old) }
+        }
+    }
+    /// What's on the channel being watched, kept current as one programme follows another.
+    var liveProgram: LiveTVProgram?
+    @ObservationIgnored var liveProgramTask: Task<Void, Never>?
+    /// The tuner stream the Cast receiver is playing, separate from the local player's own.
+    @ObservationIgnored var castLiveStreamId: String?
     var errorMessage: String?
     var isControlsVisible = true
     // A separate flag, not reusing isControlsVisible — the latter also drives
@@ -144,8 +160,68 @@ final class PlayerModel {
             ? defaults.string(forKey: "mobileVideoQuality").flatMap(VideoQuality.init(rawValue:)) : nil
         quality = mobileQuality ?? VideoQuality(rawValue: defaults.string(forKey: "videoQuality") ?? "") ?? .max
         let behavior = ResumeBehavior.current
-        resumeFrom = behavior == .startOver ? 0 : startPositionTicks
-        isAskingToResume = behavior == .ask && startPositionTicks > 0
+        let isLive = item.type == .tvChannel
+        resumeFrom = behavior == .startOver || isLive ? 0 : startPositionTicks
+        isAskingToResume = behavior == .ask && startPositionTicks > 0 && !isLive
+    }
+
+    /// A live TV channel: no timeline to seek in, nothing to resume or mark watched.
+    var isLive: Bool { item.type == .tvChannel }
+
+    /// The channel list over the picture, to switch channel without leaving the player.
+    var showChannelList = false
+    /// The channel watched before this one, to go straight back to it.
+    private(set) var lastChannel: LiveTVChannel?
+
+    /// The channels this one was played from, when there's more than this one.
+    var liveChannels: [LiveTVChannel] {
+        guard isLive, LiveTVQueue.channels.contains(where: { $0.id == item.id }) else { return [] }
+        return LiveTVQueue.channels.count > 1 ? LiveTVQueue.channels : []
+    }
+
+    /// On a channel, the engine's kept part of the stream to pause and go back into; VLC has none.
+    private var liveRewind: LiveRewindable? { isLive ? player as? LiveRewindable : nil }
+
+    /// A channel that can be gone back into: at least half a minute is kept.
+    var canRewindLive: Bool {
+        guard let window = liveRewind?.liveWindow else { return false }
+        return window.upperBound - window.lowerBound >= 30
+    }
+
+    /// Seconds behind live, once it's more than a moment.
+    var secondsBehindLive: Double? {
+        guard let behind = liveRewind?.secondsBehindLive, behind >= 5 else { return nil }
+        return behind
+    }
+
+    func jumpToLive() {
+        guard let liveRewind else { return }
+        Task { await liveRewind.goToLiveEdge() }
+        toggleControlsVisibilityOnAction()
+    }
+
+    /// Skips back or forward within what's kept of the channel, never past live.
+    private func seekLive(by seconds: Int) {
+        guard let liveRewind, let window = liveRewind.liveWindow else { return }
+        let now = window.upperBound - liveRewind.secondsBehindLive
+        let target = min(max(now + Double(seconds), window.lowerBound), window.upperBound)
+        Task { await liveRewind.seekLive(toSeconds: target) }
+        toggleControlsVisibilityOnAction()
+    }
+
+    /// A channel with no picture: a radio station, or a TV channel sending sound only.
+    var isRadio: Bool {
+        isLive && (LiveTVQueue.channels.first { $0.id == item.id }?.isRadio == true
+                   || (playbackInfo != nil && playbackInfo?.videoStream == nil))
+    }
+
+    /// Whether the channel list has anything to offer: other channels, or one to go back to.
+    var hasChannelList: Bool { isLive && (!liveChannels.isEmpty || lastChannel != nil) }
+
+    func switchChannel(to channel: LiveTVChannel) {
+        showChannelList = false
+        guard channel.id != item.id else { return }
+        onPlayNext(channel.mediaItem)
     }
 
     /// Hands over the environment the shared steps need.
@@ -253,8 +329,12 @@ final class PlayerModel {
         if newStatus == .ended { Task { await finishPlayback() } }
         // A failure while loading throws from setup(), which handles it (and Aether's
         // fallback); this is the engine giving up after playback had already started.
-        if case .failed = newStatus, loadingStage == nil, errorMessage == nil {
-            errorMessage = String(localized: "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback.")
+        // A channel's local stream is closed on purpose while casting.
+        if case .failed = newStatus, loadingStage == nil, errorMessage == nil, !(isLive && CastManager.shared.isConnected) {
+            // A channel's stream dying is its source, not the engine: another engine won't help.
+            errorMessage = isLive
+                ? String(localized: "This channel didn't send any video. Its source may be offline. Try again, or pick another channel.")
+                : String(localized: "Playback stopped because the video couldn't be read. Try again, or pick another engine in Settings › Playback.")
         }
     }
 
@@ -284,11 +364,16 @@ final class PlayerModel {
             onPause: nowPlayingPause,
             onSkip: { [self] seconds in seek(by: seconds) },
             onSeek: { [self] seconds in performSeek(to: Int64(seconds * 10_000_000)) },
-            onNextTrack: item.type == .episode ? { [self] in playNextEpisode() } : nil
+            onNextTrack: item.type == .episode || isLive ? { [self] in playNextEpisode() } : nil
         )
     }
 
     func updateNowPlayingInfo() {
+        if isLive {
+            nowPlayingManager.updateLive(title: liveProgram?.name ?? item.name, channel: item.name,
+                                         rate: isEffectivelyPlaying ? 1 : 0, artwork: nowPlayingArtwork)
+            return
+        }
         let durationSeconds = Double(player.durationTicks) / 10_000_000
         guard durationSeconds > 0 else { return }
         nowPlayingManager.update(
@@ -488,7 +573,7 @@ final class PlayerModel {
             // Jellyfin negotiates audio/subtitle selection server-side (see changeTrack) —
             // a language default that actually changed the pick needs the same re-fetch
             // with explicit indices before the very first play, not just a local index change.
-            if languagePreferenceApplied, let reInfo = try? await client.getPlaybackInfo(
+            if languagePreferenceApplied, !isLive, let reInfo = try? await client.getPlaybackInfo(
                 credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
                 quality: qualityCap(for: quality),
                 audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
@@ -497,10 +582,11 @@ final class PlayerModel {
                 info = reInfo
             }
             playbackInfo = info
+            if isLive { followLiveProgram() }
             // PlaybackInfo's own TrickplayInfo field isn't reliably populated by Jellyfin —
             // the general item-detail endpoint's Trickplay field (keyed by MediaSourceId) is
             // what the official apps actually read it from.
-            let detail = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
+            let detail = isLive ? nil : try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: item.id)
             if let trickplay = detail?.trickplay[info.mediaSourceId] ?? info.trickplay {
                 trickplayLoader = TrickplayLoader(credential: credential, authHeader: authHeader, client: client, itemId: item.id, info: trickplay)
             }
@@ -533,7 +619,13 @@ final class PlayerModel {
             await player.play()
             loadingStage = nil
             await applyRememberedRate()
-            sharePlay.playerOpened(item)
+            if !isLive { sharePlay.playerOpened(item) }
+            if isLive {
+                let channel = LiveTVQueue.channels.first { $0.id == item.id }
+                    ?? LiveTVChannel(id: item.id, name: item.name, primaryImageTag: item.primaryImageTag)
+                LiveTVRecents.record(channel, for: credential.userID)
+                lastChannel = LiveTVRecents.channels(for: credential.userID).dropFirst().first
+            }
             // The preferred or remembered audio language, which a file played as is ignores.
             if selectedAudioIndex != nil { await selectAudioInEngine() }
             // A cast that was already running when this screen opened (autoplay moved on to
@@ -545,16 +637,22 @@ final class PlayerModel {
             Task { await fetchAndApplyNowPlayingArtwork() }
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                             positionTicks: resumeFrom)
+                                             positionTicks: resumeFrom, liveStreamId: info.liveStreamId)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
             startAutoRecovery()
             watchForMissingPicture()
+        } catch where error is CancellationError || (error as? URLError)?.code == .cancelled {
+            // The player closed, or moved to another channel, before this one had started.
+            return
         } catch {
-            errorMessage = "Couldn't start playback: \(error.localizedDescription)"
+            log.error("Couldn't start \(self.item.id, privacy: .public): \(error, privacy: .public)")
+            errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
         }
 
-        segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
         autoSkipped = []
+        if !isLive {
+            segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
+        }
 
         // A playlist or collection playing through goes by its own order; an episode by the
         // series' order. Next Up wasn't usable here: part-way through an episode it answers
@@ -684,6 +782,9 @@ final class PlayerModel {
         currentSubtitleText = nil
         currentBitmapCue = nil
         Task { await player.pause() }
+        // The receiver opens a tuner stream of its own; the paused local one would hold a
+        // second tuner the whole time.
+        if isLive { playbackInfo?.liveStreamId = nil }
         // Opened from the casting bar: the receiver is already playing this, so loading it
         // again would jump it back to where the local player happens to be.
         guard CastManager.shared.nowPlayingItemID != item.id else { return }
@@ -704,6 +805,10 @@ final class PlayerModel {
                 forCast: true
             )
             guard !Task.isCancelled, let url = info?.playURL ?? playbackInfo?.playURL else { return }
+            if isLive {
+                if let old = castLiveStreamId, old != info?.liveStreamId { closeLiveStream(old) }
+                castLiveStreamId = info?.liveStreamId
+            }
             // Text subtitles go to the receiver as sidecar WebVTT tracks; image-based ones
             // have no deliveryUrl and are burned into the transcode by the server instead.
             let tracks = (info ?? playbackInfo)?.subtitleStreams.compactMap { stream -> CastManager.SubtitleTrack? in
@@ -715,12 +820,14 @@ final class PlayerModel {
             } ?? []
             castSubtitleTrackIDs = Set(tracks.map(\.id))
             CastManager.shared.loadMedia(
-                itemID: item.id, streamURL: url, title: item.name, subtitle: nil, posterImageURL: posterURL,
+                itemID: item.id, streamURL: url, title: item.name, subtitle: isLive ? liveProgram?.name : nil,
+                posterImageURL: posterURL,
                 contentType: castContentType(for: url),
                 startPositionSeconds: startSeconds,
                 subtitleTracks: tracks,
                 activeSubtitleTrackID: tracks.contains { $0.id == selectedSubtitleIndex } ? selectedSubtitleIndex : nil,
-                isTransportStreamHLS: url.pathExtension.lowercased() == "m3u8"
+                isTransportStreamHLS: url.pathExtension.lowercased() == "m3u8",
+                isLive: isLive
             )
         }
     }
@@ -752,6 +859,12 @@ final class PlayerModel {
     func resumeLocalPlaybackAfterCast() {
         castLoadTask?.cancel()
         defer { tracksAtCastStart = nil }
+        if isLive {
+            if let castLiveStreamId { closeLiveStream(castLiveStreamId) }
+            castLiveStreamId = nil
+            reload(errorContext: "resume after casting")
+            return
+        }
         // Tracks picked on the cast dashboard change selectedAudioIndex/selectedSubtitleIndex,
         // but the local player is still on the old stream — reload so it matches what the
         // viewer was just watching.
@@ -792,6 +905,7 @@ final class PlayerModel {
         sleepTimerTask?.cancel()
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
+        liveProgramTask?.cancel()
     }
 
     /// Closing the player closes the group too — an orphaned WebSocket connection with
@@ -811,8 +925,11 @@ final class PlayerModel {
             let stoppedAt = player.positionTicks
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
                                                itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                               positionTicks: stoppedAt)
-            if WatchedThreshold.current.isReached(seconds: Double(stoppedAt) / 10_000_000,
+                                               positionTicks: stoppedAt, liveStreamId: info.liveStreamId)
+            if let liveStreamId = info.liveStreamId {
+                await client.closeLiveStream(credential: credential, authHeader: authHeader, liveStreamId: liveStreamId)
+            }
+            if !isLive, WatchedThreshold.current.isReached(seconds: Double(stoppedAt) / 10_000_000,
                                                   duration: Double(player.durationTicks) / 10_000_000,
                                                   creditsStart: segments.credits?.lowerBound) {
                 _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
@@ -827,11 +944,17 @@ final class PlayerModel {
         closePlayer = {}
         playbackStarted = {}
         streamReloaded = {}
+        liveProgramChanged = {}
         engineReleased = {}
         replacementEngineStarting = {}
     }
 
     func finishPlayback() async {
+        // A channel only ends when its stream stops, which isn't the end of anything to mark.
+        if isLive {
+            errorMessage = String(localized: "The channel stopped streaming. Try again, or pick another channel.")
+            return
+        }
         guard let credential, let authHeader else { return }
         _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
         closePlayer()
@@ -846,7 +969,7 @@ final class PlayerModel {
                 await client.reportPlaybackProgress(
                     credential: credential, authHeader: authHeader, itemId: item.id,
                     mediaSourceId: mediaSourceId, positionTicks: player.positionTicks,
-                    isPaused: player.status == .paused
+                    isPaused: player.status == .paused, liveStreamId: playbackInfo?.liveStreamId
                 )
             }
         }
@@ -1009,10 +1132,42 @@ final class PlayerModel {
         }
     }
 
+    /// The error screen's Try Again: starts over from asking the server for a stream.
+    func retry() {
+        errorMessage = nil
+        Task { await setup() }
+    }
+
+    // MARK: - Live TV
+
+    private func closeLiveStream(_ liveStreamId: String) {
+        guard let credential, let authHeader else { return }
+        let client = client
+        Task { await client.closeLiveStream(credential: credential, authHeader: authHeader, liveStreamId: liveStreamId) }
+    }
+
+    /// Fetches what's on now, then again each time a programme ends.
+    private func followLiveProgram() {
+        guard let credential, let authHeader else { return }
+        liveProgramTask?.cancel()
+        liveProgramTask = Task {
+            while !Task.isCancelled {
+                let channel = try? await client.getLiveTVChannel(credential: credential, authHeader: authHeader, channelId: item.id)
+                guard !Task.isCancelled else { return }
+                let previousId = liveProgram?.id
+                liveProgram = channel?.currentProgram
+                if liveProgram?.id != previousId { liveProgramChanged() }
+                updateNowPlayingInfo()
+                let wait = liveProgram.map { max($0.endDate.timeIntervalSinceNow, 0) + 5 } ?? 300
+                try? await Task.sleep(for: .seconds(wait))
+            }
+        }
+    }
+
     // MARK: - Up Next
 
     private func checkUpNextThreshold(positionTicks: Int64) {
-        guard nextEpisode != nil, !upNextDismissed, player.durationTicks > 0 else { return }
+        guard !isLive, nextEpisode != nil, !upNextDismissed, player.durationTicks > 0 else { return }
         let remainingSeconds = Double(player.durationTicks - positionTicks) / 10_000_000
         let seconds = Double(positionTicks) / 10_000_000
         // From the moment the credits start when the server knows it, else the last 30s.
@@ -1380,7 +1535,7 @@ final class PlayerModel {
 
     private func reload(errorContext: String, resumeTicks overrideTicks: Int64? = nil) {
         guard let credential, let authHeader else { return }
-        let resumeTicks = overrideTicks ?? player.positionTicks
+        let resumeTicks = isLive ? 0 : overrideTicks ?? player.positionTicks
         Task {
             do {
                 let info = try await client.getPlaybackInfo(
@@ -1401,7 +1556,8 @@ final class PlayerModel {
                 updateNowPlayingInfo()
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
             } catch {
-                errorMessage = "Couldn't \(errorContext): \(error.localizedDescription)"
+                log.error("Couldn't \(errorContext, privacy: .public): \(error, privacy: .public)")
+                errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
             }
         }
     }
@@ -1458,7 +1614,7 @@ final class PlayerModel {
             toggleControlsVisibilityOnAction()
             return
         }
-        if routesThroughSyncPlay, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+        if routesThroughSyncPlay, !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             if player.status == .playing {
                 syncPlayManager.requestPause(credential: credential, authHeader: authHeader)
@@ -1468,7 +1624,7 @@ final class PlayerModel {
             toggleControlsVisibilityOnAction()
             return
         }
-        if sharePlay.isActive {
+        if sharePlay.isActive, !isLive {
             sharePlay.send(player.status == .playing ? .pause : .play, itemId: item.id, positionTicks: player.positionTicks)
         }
         Task {
@@ -1478,6 +1634,7 @@ final class PlayerModel {
     }
 
     func seek(by seconds: Int) {
+        guard !isLive else { seekLive(by: seconds); return }
         let base = pendingSeekTargetTicks ?? player.positionTicks
         let newTicks = min(max(0, base + Int64(seconds) * 10_000_000), player.durationTicks)
         performSeek(to: newTicks)
@@ -1488,6 +1645,7 @@ final class PlayerModel {
     /// over the WebSocket, same as every other group member sees it) instead of seeking the
     /// local player directly — see applySyncPlayCommand.
     func performSeek(to ticks: Int64) {
+        guard !isLive else { return }
         pendingSeekTargetTicks = ticks
         if CastManager.shared.isConnected {
             CastManager.shared.seek(toSeconds: Double(ticks) / 10_000_000)
@@ -1545,6 +1703,10 @@ final class PlayerModel {
     // MARK: - Title
 
     var episodeSubtitle: String? {
+        if isLive, let liveProgram {
+            let times = (liveProgram.startDate..<liveProgram.endDate).formatted(.interval.hour().minute())
+            return "\(liveProgram.name) · \(times)"
+        }
         guard item.type == .episode, let series = item.seriesName else { return nil }
         let s = item.parentIndexNumber.map { "S\($0)" } ?? ""
         let e = item.indexNumber.map { "E\($0)" } ?? ""

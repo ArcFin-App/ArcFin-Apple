@@ -13,16 +13,34 @@ final class LibraryModel {
     var navigateToLocalPlayer = false
     var navigateToDownloadsDeepLink = false
 
-    /// Live TV and Music aren't playable yet (no live-TV tuner support, no music player
-    /// UI) — hide them from the library list rather than showing a section that just
-    /// leads to a dead end.
-    static func libraries(in mediaRepo: MediaRepository) -> [JellyfinLibrary] {
+    /// Browse's library tiles, in the same order on every device: Movies, Shows, Live TV,
+    /// Collections, Playlists, then the rest as the server lists them. Each Jellyfin user has
+    /// their own library order, so the server's alone moved tiles between profiles.
+    /// Music isn't shown: there's no music player yet (#386). Live TV only for profiles allowed it.
+    static func libraries(in mediaRepo: MediaRepository, includeLiveTV: Bool = false) -> [JellyfinLibrary] {
         let hidden = LibraryVisibility.hiddenIDs
-        let libraries = mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music && !hidden.contains($0.id) }
+        var libraries = mediaRepo.libraries.filter {
+            ($0.collectionType != .livetv || includeLiveTV) && $0.collectionType != .music && !hidden.contains($0.id)
+        }
         // The server only lists a Playlists library once a playlist exists; the tile is
         // always there so the first one can be made from it.
-        guard !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) else { return libraries }
-        return libraries + [JellyfinLibrary(id: LibraryDetailModel.allPlaylistsID, name: "Playlists", collectionType: .playlists)]
+        if !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) {
+            libraries.append(JellyfinLibrary(id: LibraryDetailModel.allPlaylistsID, name: "Playlists", collectionType: .playlists))
+        }
+        return libraries.enumerated()
+            .sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }
+            .map(\.element)
+    }
+
+    private static func rank(_ library: JellyfinLibrary) -> Int {
+        switch library.collectionType {
+        case .movies: 0
+        case .tvshows: 1
+        case .livetv: 2
+        case .boxsets: 3
+        case .playlists: 4
+        default: 5
+        }
     }
 
     func play(_ url: URL) {

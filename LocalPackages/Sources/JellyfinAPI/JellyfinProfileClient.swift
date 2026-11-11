@@ -51,6 +51,8 @@ public struct UserPolicy: Sendable, Equatable {
     public var enableCollectionManagement = false
     public var enableContentDeletion = false
     public var enableLiveTvAccess = true
+    /// Recording and cancelling recordings; watching only needs `enableLiveTvAccess`.
+    public var enableLiveTvManagement = true
     public var enableRemoteAccess = true
     public var enableVideoPlaybackTranscoding = true
     public var enableAudioPlaybackTranscoding = true
@@ -230,6 +232,7 @@ private struct UserResponse: Decodable {
         let enableCollectionManagement: Bool?
         let enableContentDeletion: Bool?
         let enableLiveTvAccess: Bool?
+        let enableLiveTvManagement: Bool?
         let enableRemoteAccess: Bool?
         let enableVideoPlaybackTranscoding: Bool?
         let enableAudioPlaybackTranscoding: Bool?
@@ -250,6 +253,7 @@ private struct UserResponse: Decodable {
             case enableSubtitleManagement = "EnableSubtitleManagement"
             case enableCollectionManagement = "EnableCollectionManagement"
             case enableContentDeletion = "EnableContentDeletion", enableLiveTvAccess = "EnableLiveTvAccess"
+            case enableLiveTvManagement = "EnableLiveTvManagement"
             case enableRemoteAccess = "EnableRemoteAccess"
             case enableVideoPlaybackTranscoding = "EnableVideoPlaybackTranscoding"
             case enableAudioPlaybackTranscoding = "EnableAudioPlaybackTranscoding"
@@ -294,6 +298,7 @@ private struct UserResponse: Decodable {
             p.enableCollectionManagement = policy.enableCollectionManagement ?? false
             p.enableContentDeletion = policy.enableContentDeletion ?? false
             p.enableLiveTvAccess = policy.enableLiveTvAccess ?? true
+            p.enableLiveTvManagement = policy.enableLiveTvManagement ?? true
             p.enableRemoteAccess = policy.enableRemoteAccess ?? true
             p.enableVideoPlaybackTranscoding = policy.enableVideoPlaybackTranscoding ?? true
             p.enableAudioPlaybackTranscoding = policy.enableAudioPlaybackTranscoding ?? true

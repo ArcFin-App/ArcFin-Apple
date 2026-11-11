@@ -401,22 +401,39 @@ struct StillWatchingPrompt: View {
 
 struct PlayerErrorView: View {
     let message: String
+    var retry: (() -> Void)? = nil
+    /// On a channel, moves on to the next one in the list.
+    var nextChannel: (() -> Void)? = nil
     let onClose: () -> Void
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 14) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(.largeTitle))
                 .foregroundStyle(DT.Color.palette("F43F5E"))
+                .accessibilityHidden(true)
             Text(message)
-                .font(.system(.footnote))
+                .font(.system(.subheadline))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                if let retry {
+                    Button("Try Again", action: retry)
+                        .buttonStyle(.glassProminent)
+                        .tint(DT.Color.accent)
+                }
+                if let nextChannel {
+                    Button("Next Channel", action: nextChannel)
+                        .buttonStyle(.glass)
+                }
+            }
+            .font(.system(.subheadline, weight: .semibold))
             Button("Close") { onClose() }
                 .font(.system(.footnote, design: .default, weight: .semibold))
                 .foregroundStyle(DT.Color.accent)
         }
         .padding(24)
-        .frame(maxWidth: 320)
+        .frame(maxWidth: 360)
     }
 }

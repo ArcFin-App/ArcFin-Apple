@@ -83,6 +83,7 @@ struct PlayerView: View {
             if audioOnly {
                 PlayerAudioOnlyCover(item: item)
             }
+            PlayerRadioCover(model: model)
 
             if let seekFeedback = model.seekFeedback {
                 PlayerSeekFeedbackView(feedback: seekFeedback)
@@ -122,7 +123,8 @@ struct PlayerView: View {
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
                 .opacity(model.tvControlsHidden ? 0 : 1)
-                .disabled(model.tvControlsHidden)
+                // An error's own buttons take over the remote while it's showing.
+                .disabled(model.tvControlsHidden || model.errorMessage != nil)
                 .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
 
             if tvCatcherActive {
@@ -137,6 +139,7 @@ struct PlayerView: View {
 
             moreLikeThisOverlay
             castPanelOverlay
+            PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
                 stillWatchingOverlay
@@ -162,6 +165,8 @@ struct PlayerView: View {
             // end of a row shouldn't seek.
             guard model.tvControlsHidden else { return }
             switch direction {
+            case .left where model.isLive: model.playPrevious()
+            case .right where model.isLive: model.playNextEpisode()
             case .left: model.seek(by: -skipBackwardSeconds)
             case .right: model.seek(by: skipForwardSeconds)
             default: break

@@ -84,6 +84,8 @@ public struct JellyfinPlaybackInfo: Sendable {
     /// Every version of the item (e.g. 4K and 1080p files merged into one title), in the
     /// server's order; one entry when there's only one.
     public let versions: [MediaVersion]
+    /// A live TV channel's tuner stream, opened by the PlaybackInfo call; close it when done.
+    public var liveStreamId: String? = nil
 
     public var isTranscoding: Bool { playMethod == .transcode }
     public var isDolbyVision: Bool { (videoStream?.videoRange ?? "").localizedCaseInsensitiveContains("dolby") }
@@ -118,6 +120,18 @@ public struct JellyfinSession: Sendable, Identifiable, Equatable {
         public let reasons: [String]
         public let hardwareAcceleration: String?
     }
+}
+
+/// Why the server wouldn't hand out a stream, so the player can say something useful.
+public enum PlaybackStartError: Error, Equatable {
+    /// The server answered with this HTTP status, e.g. 500 when a channel's source won't open.
+    case server(status: Int)
+    /// The profile isn't allowed to play it (PlaybackInfo's ErrorCode NotAllowed, or 403).
+    case notAllowed
+    /// Nothing the device plays can be made from it, often because transcoding is off for the profile.
+    case noCompatibleStream
+    /// The profile is already streaming on as many devices as it's allowed.
+    case rateLimitExceeded
 }
 
 /// Caps applied when the user overrides automatic quality — nil means uncapped/Auto.
@@ -187,11 +201,19 @@ extension JellyfinMediaClient {
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, resp) = try await URLSession.arcfin.data(for: req)
-        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
+        guard let http = resp as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        guard (200...299).contains(http.statusCode) else {
+            Self.playbackLog.error("PlaybackInfo for \(itemId, privacy: .public) failed: HTTP \(http.statusCode)")
+            throw http.statusCode == 403 ? PlaybackStartError.notAllowed : PlaybackStartError.server(status: http.statusCode)
         }
 
         let decoded = try JSONDecoder().decode(PlaybackInfoResponse.self, from: data)
+        switch decoded.errorCode {
+        case "NotAllowed": throw PlaybackStartError.notAllowed
+        case "NoCompatibleStream": throw PlaybackStartError.noCompatibleStream
+        case "RateLimitExceeded": throw PlaybackStartError.rateLimitExceeded
+        default: break
+        }
         guard let source = decoded.mediaSources.first(where: { $0.id == mediaSourceId }) ?? decoded.mediaSources.first
         else { throw URLError(.cannotParseResponse) }
 
@@ -230,6 +252,9 @@ extension JellyfinMediaClient {
                 .init(name: "mediaSourceId", value: source.id),
                 .init(name: "api_key", value: credential.accessToken),
             ]
+            if let liveStreamId = source.liveStreamId {
+                directComps.queryItems?.append(.init(name: "LiveStreamId", value: liveStreamId))
+            }
             playURL = directComps.url!
             playMethod = .directPlay
         }
@@ -258,7 +283,8 @@ extension JellyfinMediaClient {
             trickplay: source.trickplayInfo?.preferred(),
             videoStream: videoStream,
             bitrate: source.bitrate ?? videoStream?.bitRate,
-            versions: decoded.mediaSources.map { MediaVersion(id: $0.id, name: $0.name ?? "Version") }
+            versions: decoded.mediaSources.map { MediaVersion(id: $0.id, name: $0.name ?? "Version") },
+            liveStreamId: source.liveStreamId
         )
     }
 
@@ -306,34 +332,38 @@ extension JellyfinMediaClient {
 
     // MARK: - Playback progress reporting
 
-    public func reportPlaybackStart(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64) async {
+    public func reportPlaybackStart(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing",
-                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false)
+                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false,
+                                liveStreamId: liveStreamId)
     }
 
-    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool) async {
+    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Progress",
-                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: isPaused)
+                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: isPaused,
+                                liveStreamId: liveStreamId)
     }
 
-    public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64) async {
+    public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Stopped",
-                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false)
+                                itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false,
+                                liveStreamId: liveStreamId)
     }
 
-    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool) async {
+    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String?) async {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent(path))
         req.httpMethod = "POST"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 8
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "ItemId": itemId,
             "MediaSourceId": mediaSourceId,
             "PositionTicks": positionTicks,
             "IsPaused": isPaused,
             "PlayMethod": "DirectPlay",
         ]
+        if let liveStreamId { body["LiveStreamId"] = liveStreamId }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         _ = try? await URLSession.arcfin.data(for: req)
     }
@@ -682,7 +712,15 @@ struct SessionResponse: Decodable {
 
 private struct PlaybackInfoResponse: Decodable {
     let mediaSources: [MediaSourceResponse]
-    enum CodingKeys: String, CodingKey { case mediaSources = "MediaSources" }
+    /// "NotAllowed", "NoCompatibleStream" or "RateLimitExceeded" when the server refuses.
+    let errorCode: String?
+    enum CodingKeys: String, CodingKey { case mediaSources = "MediaSources", errorCode = "ErrorCode" }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mediaSources = try c.decodeIfPresent([MediaSourceResponse].self, forKey: .mediaSources) ?? []
+        errorCode = try c.decodeIfPresent(String.self, forKey: .errorCode)
+    }
 }
 
 private struct MediaSourceResponse: Decodable {
@@ -695,9 +733,11 @@ private struct MediaSourceResponse: Decodable {
     let trickplayInfo: [String: TrickplayResponse]?
     let bitrate: Int?
     let name: String?
+    let liveStreamId: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", container = "Container", runTimeTicks = "RunTimeTicks"
+        case liveStreamId = "LiveStreamId"
         case transcodingUrl = "TranscodingUrl", transcodeReasons = "TranscodeReasons"
         case mediaStreams = "MediaStreams"
         case trickplayInfo = "TrickplayInfo"

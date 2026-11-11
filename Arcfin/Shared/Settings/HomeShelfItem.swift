@@ -13,6 +13,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
     case suggested, recommendations
     case streamingServices
     case seerrWatchlist, seerrTrending, seerrPopularMovies, seerrPopularSeries
+    case liveFavoriteChannels, liveOnNow, liveRecentChannels
 
     var id: String { rawValue }
 
@@ -37,6 +38,22 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         case .seerrTrending:          String(localized: "Trending")
         case .seerrPopularMovies:     String(localized: "Popular Movies")
         case .seerrPopularSeries:     String(localized: "Popular Series")
+        case .liveFavoriteChannels:   String(localized: "Favorite Channels")
+        case .liveOnNow:              String(localized: "On Now")
+        case .liveRecentChannels:     String(localized: "Recently Watched Channels")
+        }
+    }
+
+    /// The server has Live TV and this profile may watch it.
+    @MainActor
+    static func hasLiveTV(in mediaRepo: MediaRepository) -> Bool {
+        ProfileRules.shared.canWatchLiveTV && mediaRepo.libraries.contains { $0.collectionType == .livetv }
+    }
+
+    var isLiveTV: Bool {
+        switch self {
+        case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels: true
+        default: false
         }
     }
 
@@ -48,11 +65,13 @@ enum HomeShelf: String, CaseIterable, Identifiable {
     }
 
     /// Whether the shelf can show at all: Watchlist and Now Available need Seerr, the catalogue
-    /// shelves Seerr or TMDB. One that can't isn't offered in Home Shelves.
-    func isOffered(seerrConfigured: Bool, hasCatalog: Bool) -> Bool {
+    /// shelves Seerr or TMDB, the Live TV ones a server with Live TV the profile may watch.
+    /// One that can't isn't offered in Home Shelves.
+    func isOffered(seerrConfigured: Bool, hasCatalog: Bool, hasLiveTV: Bool) -> Bool {
         switch self {
         case .nowAvailable, .seerrWatchlist: seerrConfigured
         case .streamingServices, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries: hasCatalog
+        case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels: hasLiveTV
         default: true
         }
     }
@@ -78,6 +97,9 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         case .seerrTrending:          "chart.line.uptrend.xyaxis"
         case .seerrPopularMovies:     "star"
         case .seerrPopularSeries:     "star.fill"
+        case .liveFavoriteChannels:   "star.square"
+        case .liveOnNow:              "antenna.radiowaves.left.and.right"
+        case .liveRecentChannels:     "clock.arrow.circlepath"
         }
     }
 }
@@ -95,6 +117,9 @@ enum HomeShelfPrefs {
         .recentlyReleasedMovies, .recentlyAiredEpisodes, .watchAgain,
         .seerrWatchlist, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries,
     ]
+
+    /// Shelves that start off, on a fresh install and after an update, until turned on.
+    static let offByDefault: Set<HomeShelf> = [.liveFavoriteChannels, .liveOnNow, .liveRecentChannels]
 
     /// Continue Watching and Up Next always lead; everything else is fair game when shuffling.
     static let pinned: [HomeShelf] = [.continueWatching, .nextUp]
@@ -129,11 +154,11 @@ enum HomeShelfPrefs {
     /// A shelf added in an update since the list was saved starts out on: it was never
     /// switched off, only unknown.
     static func active(from raw: String) -> Set<HomeShelf> {
-        guard !raw.isEmpty else { return Set(HomeShelf.allCases) }
+        guard !raw.isEmpty else { return Set(HomeShelf.allCases).subtracting(offByDefault) }
         let saved = Set(raw.split(separator: ",").compactMap { HomeShelf(rawValue: String($0)) })
         let known = UserDefaults.standard.string(forKey: knownKey)
             .map { Set($0.split(separator: ",").compactMap { HomeShelf(rawValue: String($0)) }) } ?? firstShelves
-        return saved.union(HomeShelf.allCases.filter { !known.contains($0) })
+        return saved.union(HomeShelf.allCases.filter { !known.contains($0) && !offByDefault.contains($0) })
     }
 
     /// Records every current shelf as known alongside, so turning a new one off sticks.

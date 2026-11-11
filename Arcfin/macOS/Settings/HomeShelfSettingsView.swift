@@ -4,13 +4,15 @@ import SwiftUI
 
 struct HomeShelfSettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(MediaRepository.self) private var mediaRepo
     @AppStorage(HomeShelfPrefs.orderKey) private var orderString = ""
     @AppStorage(HomeShelfPrefs.activeKey) private var activeString = ""
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleShelves = false
 
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
     private var shown: [HomeShelf] {
-        order.filter { $0.isOffered(seerrConfigured: seerrRepo.isConfigured, hasCatalog: seerrRepo.hasCatalog) }
+        order.filter { $0.isOffered(seerrConfigured: seerrRepo.isConfigured, hasCatalog: seerrRepo.hasCatalog,
+                                hasLiveTV: HomeShelf.hasLiveTV(in: mediaRepo)) }
     }
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 

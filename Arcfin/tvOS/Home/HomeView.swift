@@ -170,6 +170,9 @@ struct HomeView: View {
         .task { await load() }
         .task(id: topShelfSignature) {
             guard !topShelfSignature.isEmpty else { return }
+            if HomeShelf.hasLiveTV(in: mediaRepo) {
+                await model.liveTV.load(.liveFavoriteChannels, authManager: authManager)
+            }
             model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
             await TopShelfArtwork.refresh()
         }
@@ -660,7 +663,36 @@ struct HomeView: View {
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
                 seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
             }
+        case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels:
+            if HomeShelf.hasLiveTV(in: mediaRepo) {
+                liveTVShelf(shelf)
+            }
         }
+    }
+
+    /// A Live TV shelf: channels or what's on now, each playing its channel.
+    private func liveTVShelf(_ shelf: HomeShelf) -> some View {
+        let live = model.liveTV
+        let entries: [(channel: LiveTVChannel, program: LiveTVProgram?)] = switch shelf {
+        case .liveFavoriteChannels: live.favorites.map { ($0, nil) }
+        case .liveRecentChannels: live.recents.map { ($0, nil) }
+        default: live.onNow.map { (LiveTVChannel(id: $0.channelId, name: $0.channelName ?? "", currentProgram: $0), $0) }
+        }
+        let queue = entries.map(\.channel)
+        return VStack(spacing: 0) {
+            if !entries.isEmpty {
+                tvShelfRow(title: shelf.title, rowID: shelf.rawValue) {
+                    ForEach(entries, id: \.channel.id) { entry in
+                        Button { live.play(entry.channel, among: queue, model: model) } label: {
+                            LiveTVHomeCard(channel: entry.channel, program: entry.program)
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+            }
+        }
+        .task { await live.load(shelf, authManager: authManager) }
     }
 
     private func mediaShelf(title: String, rowID: String? = nil, badge: String? = nil, items: [MediaItem]) -> some View {

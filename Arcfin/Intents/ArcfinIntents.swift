@@ -128,6 +128,61 @@ struct MediaEntityQuery: EntityStringQuery {
     }
 }
 
+/// A live TV channel as Siri and Shortcuts see it.
+struct ChannelEntity: AppEntity {
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(
+        name: LocalizedStringResource("Channel"),
+        numericFormat: LocalizedStringResource("\(placeholder: .int) channels"))
+    static let defaultQuery = ChannelEntityQuery()
+
+    let id: String
+
+    @Property(title: "Name")
+    var name: String
+
+    var number: String?
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)", subtitle: number.map { LocalizedStringResource(stringLiteral: $0) })
+    }
+
+    init(channel: LiveTVChannel) {
+        id = channel.id
+        name = channel.name
+        number = channel.number
+    }
+}
+
+struct ChannelEntityQuery: EntityStringQuery {
+    func entities(for identifiers: [String]) async throws -> [ChannelEntity] {
+        guard let credential = IntentSession.credential() else { return [] }
+        let header = IntentSession.authHeader(for: credential)
+        let client = JellyfinMediaClient()
+        var result: [ChannelEntity] = []
+        for id in identifiers {
+            if let channel = try? await client.getLiveTVChannel(credential: credential, authHeader: header, channelId: id) {
+                result.append(ChannelEntity(channel: channel))
+            }
+        }
+        return result
+    }
+
+    func entities(matching string: String) async throws -> [ChannelEntity] {
+        guard let credential = IntentSession.credential() else { return [] }
+        let found = try await JellyfinMediaClient().searchLiveTV(
+            credential: credential, authHeader: IntentSession.authHeader(for: credential),
+            query: string, includePrograms: false, limit: 15)
+        return found.channels.map(ChannelEntity.init(channel:))
+    }
+
+    /// The channels watched most recently on this device.
+    func suggestedEntities() async throws -> [ChannelEntity] {
+        guard let credential = IntentSession.credential() else { return [] }
+        let recents = await MainActor.run { LiveTVRecents.channels(for: credential.userID) }
+        return recents.map(ChannelEntity.init(channel:))
+    }
+}
+
 // MARK: - Intents
 
 /// Opening an entity is also what a tap on its Spotlight result runs. It reuses the same
@@ -190,6 +245,22 @@ struct PlayTitleIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         WatchRoute.open(id: target.id)
+        return .result()
+    }
+}
+
+/// Plays a live TV channel; opening it by id plays rather than showing a page (HomeModel).
+struct PlayChannelIntent: AppIntent {
+    static let title: LocalizedStringResource = "Play Channel"
+    static let description = IntentDescription("Plays a live TV channel from your server.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Channel")
+    var channel: ChannelEntity
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        ArcfinRouting.openItem(id: channel.id)
         return .result()
     }
 }
@@ -274,6 +345,15 @@ struct ArcfinShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Play Title",
             systemImageName: "play.fill")
+        AppShortcut(
+            intent: PlayChannelIntent(),
+            phrases: [
+                "Play \(\.$channel) channel in \(.applicationName)",
+                "Watch \(\.$channel) live in \(.applicationName)",
+                "Tune to \(\.$channel) in \(.applicationName)",
+            ],
+            shortTitle: "Play Channel",
+            systemImageName: "antenna.radiowaves.left.and.right")
         AppShortcut(
             intent: PlayRandomMovieIntent(),
             phrases: [

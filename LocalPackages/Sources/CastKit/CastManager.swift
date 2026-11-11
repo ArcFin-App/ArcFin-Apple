@@ -85,7 +85,7 @@ public final class CastManager: NSObject {
         itemID: String, streamURL: URL, title: String, subtitle: String?, posterImageURL: URL?,
         contentType: String, startPositionSeconds: TimeInterval,
         subtitleTracks: [SubtitleTrack] = [], activeSubtitleTrackID: Int? = nil,
-        isTransportStreamHLS: Bool = false
+        isTransportStreamHLS: Bool = false, isLive: Bool = false
     ) {
         #if canImport(GoogleCast)
         guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
@@ -99,7 +99,7 @@ public final class CastManager: NSObject {
 
         let infoBuilder = GCKMediaInformationBuilder(contentURL: streamURL)
         infoBuilder.contentType = contentType
-        infoBuilder.streamType = .buffered
+        infoBuilder.streamType = isLive ? .live : .buffered
         infoBuilder.metadata = metadata
         infoBuilder.customData = [Self.itemIDKey: itemID]
         if isTransportStreamHLS {
@@ -117,7 +117,8 @@ public final class CastManager: NSObject {
 
         let requestBuilder = GCKMediaLoadRequestDataBuilder()
         requestBuilder.mediaInformation = infoBuilder.build()
-        requestBuilder.startTime = startPositionSeconds
+        // A live stream with no start time starts at the live edge.
+        if !isLive { requestBuilder.startTime = startPositionSeconds }
         requestBuilder.autoplay = true
         if let activeSubtitleTrackID { requestBuilder.activeTrackIDs = [NSNumber(value: activeSubtitleTrackID)] }
         client.loadMedia(with: requestBuilder.build())

@@ -92,6 +92,7 @@ struct PlayerView: View {
             if audioOnly {
                 PlayerAudioOnlyCover(item: item)
             }
+            PlayerRadioCover(model: model)
 
             if let seekFeedback = model.seekFeedback {
                 PlayerSeekFeedbackView(feedback: seekFeedback)
@@ -109,7 +110,10 @@ struct PlayerView: View {
             }
 
             if let errorMessage = model.errorMessage {
-                PlayerErrorView(message: errorMessage) { closePlayer() }
+                PlayerErrorView(message: errorMessage, retry: model.retry,
+                                nextChannel: model.isLive && model.nextEpisode != nil ? { model.playNextEpisode() } : nil) {
+                    closePlayer()
+                }
             }
 
             if let networkToast = model.networkToast {
@@ -145,6 +149,7 @@ struct PlayerView: View {
 
             MoreLikeThisPanel(model: model, suggestionsAreHorizontal: true)
             CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel) { openCastPanelPerson($0) }
+            PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
                 StillWatchingPrompt(model: model)
@@ -210,8 +215,15 @@ struct PlayerView: View {
         // () -> KeyPress.Result closure, unlike the characters: overload below, which takes
         // (KeyPress) -> KeyPress.Result — `{ _ in ... }` only compiles for the latter.
         .onKeyPress(.space) { model.togglePlayPause(); return .handled }
-        .onKeyPress(.leftArrow) { model.seek(by: -skipBackwardSeconds); return .handled }
-        .onKeyPress(.rightArrow) { model.seek(by: skipForwardSeconds); return .handled }
+        // On a channel there's nothing to seek in, so the arrows change channel.
+        .onKeyPress(.leftArrow) {
+            if model.isLive { model.playPrevious() } else { model.seek(by: -skipBackwardSeconds) }
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            if model.isLive { model.playNextEpisode() } else { model.seek(by: skipForwardSeconds) }
+            return .handled
+        }
         .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
         .onKeyPress(.downArrow) { adjustMacVolume(by: -0.05); return .handled }
         .onKeyPress(characters: CharacterSet(charactersIn: "fF")) { _ in

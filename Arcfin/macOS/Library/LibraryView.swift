@@ -17,7 +17,7 @@ struct LibraryView: View {
         [GridItem(.adaptive(minimum: 220), spacing: 12)]
     }
 
-    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo) }
+    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV) }
 
     var body: some View {
         NavigationStack {
@@ -33,11 +33,11 @@ struct LibraryView: View {
             .searchable(text: $model.searchQuery, prompt: "Movies, shows, people…")
             .searchFocused($isSearchFocused)
             .navigationDestination(for: JellyfinLibrary.self) { library in
-                LibraryDetailView(library: library)
+                libraryDestination(library)
             }
             // On the Mac a tile's NavigationLink(value:) can't find the destination above.
             .navigationDestination(item: $model.openedLibrary) { library in
-                LibraryDetailView(library: library)
+                libraryDestination(library)
             }
             .navigationDestination(for: LibraryNavTarget.self) { target in
                 switch target {
@@ -81,6 +81,15 @@ struct LibraryView: View {
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 model.showDownloads()
             }
+        }
+    }
+
+    @ViewBuilder
+    private func libraryDestination(_ library: JellyfinLibrary) -> some View {
+        if library.collectionType == .livetv {
+            LiveTVView(library: library)
+        } else {
+            LibraryDetailView(library: library)
         }
     }
 

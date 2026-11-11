@@ -44,6 +44,6 @@ struct WatchlistView: View {
         .navigationTitle("Watchlist")
         .arcfinNavTitleLarge("Watchlist")
         .task { await model.load(seerrRepo: seerrRepo) }
-        .refreshable { await seerrRepo.loadWatchlist() }
+        .refreshable { await seerrRepo.loadWatchlist(refresh: true) }
     }
 }

@@ -31,6 +31,9 @@ final class ProfileRules {
     var canDownload: Bool { policy.enableContentDownloading }
     var canManageSubtitles: Bool { policy.isAdministrator || policy.enableSubtitleManagement }
     var canUseSyncPlay: Bool { policy.syncPlayAccess != "None" }
+    /// The server's LiveTvAccess and LiveTvManagement policies: watching, and recording.
+    var canWatchLiveTV: Bool { policy.enableLiveTvAccess }
+    var canRecordLiveTV: Bool { policy.enableLiveTvAccess && policy.enableLiveTvManagement }
 
     func load(credential: ServerCredential, authHeader: String) async {
         let client = JellyfinMediaClient()

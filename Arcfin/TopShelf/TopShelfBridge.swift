@@ -51,6 +51,7 @@ public enum TopShelfBridge {
     private static let continueWatchingKey = "topShelf.continueWatching"
     private static let nextUpKey           = "topShelf.nextUp"
     private static let recentlyAddedKey    = "topShelf.recentlyAdded"
+    private static let liveChannelsKey     = "topShelf.liveChannels"
 
     public static var artworkDirectory: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: suiteName)?
@@ -60,7 +61,8 @@ public enum TopShelfBridge {
     public static func save(
         continueWatching: some Collection<TopShelfMediaItem>,
         nextUp: some Collection<TopShelfMediaItem>,
-        recentlyAdded: some Collection<TopShelfMediaItem>
+        recentlyAdded: some Collection<TopShelfMediaItem>,
+        liveChannels: [TopShelfMediaItem] = []
     ) {
         guard let defaults = UserDefaults(suiteName: suiteName) else { return }
         if let data = try? JSONEncoder().encode(Array(continueWatching.prefix(5))) {
@@ -71,6 +73,9 @@ public enum TopShelfBridge {
         }
         if let data = try? JSONEncoder().encode(Array(recentlyAdded.prefix(3))) {
             defaults.set(data, forKey: recentlyAddedKey)
+        }
+        if let data = try? JSONEncoder().encode(Array(liveChannels.prefix(3))) {
+            defaults.set(data, forKey: liveChannelsKey)
         }
         defaults.synchronize()
     }
@@ -85,6 +90,10 @@ public enum TopShelfBridge {
 
     public static func loadRecentlyAdded() -> [TopShelfMediaItem] {
         load(key: recentlyAddedKey)
+    }
+
+    public static func loadLiveChannels() -> [TopShelfMediaItem] {
+        load(key: liveChannelsKey)
     }
 
     private static func load(key: String) -> [TopShelfMediaItem] {

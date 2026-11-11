@@ -35,6 +35,18 @@ public protocol MediaPlayerProtocol: AnyObject, Sendable {
     func stop() async
 }
 
+/// A live stream the player keeps some of, so it can be paused and gone back into. Seconds are
+/// on the player's own timeline for the stream.
+@MainActor
+public protocol LiveRewindable: AnyObject {
+    /// What can be gone back into so far, up to the live edge; nil before anything is kept.
+    var liveWindow: ClosedRange<Double>? { get }
+    /// How far behind live playback is, in seconds.
+    var secondsBehindLive: Double { get }
+    func seekLive(toSeconds seconds: Double) async
+    func goToLiveEdge() async
+}
+
 // MARK: - Player state
 
 public struct PlayerState: Sendable, Equatable {
@@ -437,5 +449,29 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // interruption can legitimately happen mid-reload. It lives for this player
         // instance's whole lifetime instead; NotificationCenter auto-unregisters a stored
         // observer token when it's deallocated, so no explicit deinit is needed for it.
+    }
+}
+
+extension AVFoundationPlayer: LiveRewindable {
+    public var liveWindow: ClosedRange<Double>? {
+        guard let range = player.currentItem?.seekableTimeRanges.last?.timeRangeValue else { return nil }
+        let start = CMTimeGetSeconds(range.start), end = CMTimeGetSeconds(range.end)
+        guard start.isFinite, end.isFinite, end > start else { return nil }
+        return start...end
+    }
+
+    public var secondsBehindLive: Double {
+        guard let window = liveWindow else { return 0 }
+        return max(window.upperBound - CMTimeGetSeconds(player.currentTime()), 0)
+    }
+
+    public func seekLive(toSeconds seconds: Double) async {
+        await player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
+    }
+
+    public func goToLiveEdge() async {
+        guard let window = liveWindow else { return }
+        await player.seek(to: CMTime(seconds: window.upperBound, preferredTimescale: 600))
+        if player.timeControlStatus != .playing { player.play() }
     }
 }

@@ -28,10 +28,12 @@ enum TopShelfBridge {
     private static let continueWatchingKey  = "topShelf.continueWatching"
     private static let nextUpKey            = "topShelf.nextUp"
     private static let recentlyAddedKey     = "topShelf.recentlyAdded"
+    private static let liveChannelsKey      = "topShelf.liveChannels"
 
     static func loadContinueWatching() -> [TopShelfMediaItem] { load(key: continueWatchingKey) }
     static func loadNextUp()           -> [TopShelfMediaItem] { load(key: nextUpKey) }
     static func loadRecentlyAdded()    -> [TopShelfMediaItem] { load(key: recentlyAddedKey) }
+    static func loadLiveChannels()     -> [TopShelfMediaItem] { load(key: liveChannelsKey) }
 
     private static func load(key: String) -> [TopShelfMediaItem] {
         guard let defaults = UserDefaults(suiteName: suiteName),

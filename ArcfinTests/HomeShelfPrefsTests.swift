@@ -20,9 +20,29 @@ struct HomeShelfPrefsTests {
     }
 
     @Test func catalogueShelvesNeedSeerrOrTMDB() {
-        #expect(!HomeShelf.streamingServices.isOffered(seerrConfigured: false, hasCatalog: false))
-        #expect(HomeShelf.streamingServices.isOffered(seerrConfigured: false, hasCatalog: true))
-        #expect(!HomeShelf.seerrWatchlist.isOffered(seerrConfigured: false, hasCatalog: true))
-        #expect(HomeShelf.favorites.isOffered(seerrConfigured: false, hasCatalog: false))
+        #expect(!HomeShelf.streamingServices.isOffered(seerrConfigured: false, hasCatalog: false, hasLiveTV: false))
+        #expect(HomeShelf.streamingServices.isOffered(seerrConfigured: false, hasCatalog: true, hasLiveTV: false))
+        #expect(!HomeShelf.seerrWatchlist.isOffered(seerrConfigured: false, hasCatalog: true, hasLiveTV: false))
+        #expect(HomeShelf.favorites.isOffered(seerrConfigured: false, hasCatalog: false, hasLiveTV: false))
+    }
+
+    @Test func liveTVShelvesNeedLiveTV() {
+        for shelf in [HomeShelf.liveFavoriteChannels, .liveOnNow, .liveRecentChannels] {
+            #expect(!shelf.isOffered(seerrConfigured: true, hasCatalog: true, hasLiveTV: false))
+            #expect(shelf.isOffered(seerrConfigured: false, hasCatalog: false, hasLiveTV: true))
+        }
+    }
+
+    @Test func liveTVShelvesStartOff() {
+        let fresh = HomeShelfPrefs.active(from: "")
+        #expect(fresh.isDisjoint(with: HomeShelfPrefs.offByDefault))
+        #expect(fresh.contains(.continueWatching))
+        // A list saved before the Live TV shelves existed doesn't turn them on either.
+        let known = UserDefaults.standard.string(forKey: HomeShelfPrefs.knownKey)
+        defer { UserDefaults.standard.set(known, forKey: HomeShelfPrefs.knownKey) }
+        UserDefaults.standard.set("continueWatching,nextUp,favorites", forKey: HomeShelfPrefs.knownKey)
+        let updated = HomeShelfPrefs.active(from: "continueWatching,favorites")
+        #expect(updated.isDisjoint(with: HomeShelfPrefs.offByDefault))
+        #expect(updated.contains(.watchAgain))
     }
 }

@@ -241,3 +241,10 @@ public struct AetherEngineVideoSurface: View {
         AetherPlayerSurface(engine: player.engine)
     }
 }
+
+extension AetherEnginePlayer: LiveRewindable {
+    public var liveWindow: ClosedRange<Double>? { engine.seekableLiveRange }
+    public var secondsBehindLive: Double { engine.behindLiveSeconds }
+    public func seekLive(toSeconds seconds: Double) async { await engine.seek(to: seconds) }
+    public func goToLiveEdge() async { await engine.seekToLiveEdge() }
+}

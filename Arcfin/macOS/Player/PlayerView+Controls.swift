@@ -111,6 +111,7 @@ extension PlayerView {
             case "fullscreen": "Toggle full screen"
             case "chapters": "Chapters"
             case "tracks": "Subtitles and audio"
+            case "channels": "Channels"
             default: "Playback speed"
             }
         }
@@ -135,8 +136,15 @@ extension PlayerView {
         if chapterListEnabled, !model.chapters.isEmpty {
             items.append(QuickAction(id: "chapters", icon: "list.bullet") { showChapterMenu = true })
         }
+        if model.hasChannelList {
+            items.append(QuickAction(id: "channels", icon: "list.bullet.rectangle") {
+                withAnimation(DT.Animation.fast) { model.showChannelList = true }
+            })
+        }
         items.append(QuickAction(id: "tracks", icon: "captions.bubble") { showTrackMenu = true })
-        items.append(QuickAction(id: "speed", icon: "gauge.with.dots.needle.67percent") { showRateMenu = true })
+        if !model.isLive {
+            items.append(QuickAction(id: "speed", icon: "gauge.with.dots.needle.67percent") { showRateMenu = true })
+        }
         return items
     }
 
@@ -170,12 +178,13 @@ extension PlayerView {
                 }
             }
 
-            if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay {
+            // SyncPlay keeps everyone at the same position; a channel has none to share.
+            if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive {
                 Button { showSyncPlayMenu = true } label: {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }
             }
-            sharePlayMenuItem
+            if !model.isLive { sharePlayMenuItem }
 
             if !model.castMembers.isEmpty {
                 Button { openCastPanel() } label: {
@@ -197,8 +206,10 @@ extension PlayerView {
                 }
                 .pickerStyle(.menu)
             }
-            Button { showRateMenu = true } label: {
-                Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
+            if !model.isLive {
+                Button { showRateMenu = true } label: {
+                    Label("Playback Speed", systemImage: "gauge.with.dots.needle.67percent")
+                }
             }
             subtitleTimingMenu
             Button { showQualityMenu = true } label: {
@@ -258,14 +269,22 @@ extension PlayerView {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
-            PlayerScrubber(model: model)
+            if model.isLive {
+                LiveProgramBar(program: model.liveProgram)
+            } else {
+                PlayerScrubber(model: model)
+            }
 
             HStack {
-                Text(model.timeLabel(ticks: model.elapsedTicks))
-                    .font(.system(.caption, design: .monospaced, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .contentTransition(.numericText())
-                    .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
+                if model.isLive {
+                    LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
+                } else {
+                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                        .font(.system(.caption, design: .monospaced, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .contentTransition(.numericText())
+                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
+                }
 
                 Spacer()
 
@@ -277,14 +296,16 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
-                        .accessibilityLabel(model.previousItem.map { "Previous: \($0.name)" } ?? "Previous")
-                        .help("Previous")
+                        .accessibilityLabel(previousLabel)
+                        .help(model.isLive ? "Previous Channel" : "Previous")
                     }
-                    Button { model.seek(by: -skipBackwardSeconds) } label: {
-                        Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
-                            .font(.system(.title3)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                    if !model.isLive || model.canRewindLive {
+                        Button { model.seek(by: -skipBackwardSeconds) } label: {
+                            Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
                     }
                     Button { model.togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
@@ -293,11 +314,13 @@ extension PlayerView {
                             .frame(width: 56, height: 56)
                             .contentShape(Rectangle())
                     }
-                    Button { model.seek(by: skipForwardSeconds) } label: {
-                        Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
-                            .font(.system(.title3)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                    if !model.isLive || model.canRewindLive {
+                        Button { model.seek(by: skipForwardSeconds) } label: {
+                            Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                                .font(.system(.title3)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
                     }
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
@@ -306,22 +329,32 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
-                        .accessibilityLabel("Next: \(nextEpisode.name)")
-                        .help("Next")
+                        .accessibilityLabel(model.isLive ? "Next channel: \(nextEpisode.name)" : "Next: \(nextEpisode.name)")
+                        .help(model.isLive ? "Next Channel" : "Next")
                     }
                 }
 
                 Spacer()
 
-                Text(model.remainingLabel)
-                    .font(.system(.caption, design: .monospaced, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .contentTransition(.numericText())
-                    .animation(.default, value: model.remainingTicks)
+                if model.isLive {
+                    // Balances the badge so the transport stays centred.
+                    LiveBadge().hidden()
+                } else {
+                    Text(model.remainingLabel)
+                        .font(.system(.caption, design: .monospaced, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .contentTransition(.numericText())
+                        .animation(.default, value: model.remainingTicks)
+                }
             }
         }
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, 24)
+    }
+
+    private var previousLabel: String {
+        guard let previous = model.previousItem else { return String(localized: "Previous") }
+        return model.isLive ? String(localized: "Previous channel: \(previous.name)") : String(localized: "Previous: \(previous.name)")
     }
 
     /// `player.status` alone stays `.paused` for the whole duration of a Cast session (see

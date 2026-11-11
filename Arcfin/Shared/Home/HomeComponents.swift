@@ -483,6 +483,10 @@ struct HomeShelfView<Card: View>: View {
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
                 HomeSeerrShelf(title: "Popular Series", items: seerrRepo.popularTV, open: openSeerrItem)
             }
+        case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels:
+            if HomeShelf.hasLiveTV(in: mediaRepo) {
+                HomeLiveTVShelf(shelf: shelf, model: model)
+            }
         }
     }
 

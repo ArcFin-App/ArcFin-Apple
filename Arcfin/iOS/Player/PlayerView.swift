@@ -109,6 +109,7 @@ struct PlayerView: View {
             if audioOnly {
                 PlayerAudioOnlyCover(item: item)
             }
+            PlayerRadioCover(model: model)
 
             if let seekFeedback = model.seekFeedback {
                 PlayerSeekFeedbackView(feedback: seekFeedback)
@@ -124,7 +125,10 @@ struct PlayerView: View {
             }
 
             if let errorMessage = model.errorMessage {
-                PlayerErrorView(message: errorMessage) { closePlayer() }
+                PlayerErrorView(message: errorMessage, retry: model.retry,
+                                nextChannel: model.isLive && model.nextEpisode != nil ? { model.playNextEpisode() } : nil) {
+                    closePlayer()
+                }
             }
 
             if let networkToast = model.networkToast {
@@ -160,6 +164,7 @@ struct PlayerView: View {
 
             MoreLikeThisPanel(model: model, suggestionsAreHorizontal: isLandscape)
             CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel) { openCastPanelPerson($0) }
+            PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
                 StillWatchingPrompt(model: model)
@@ -344,6 +349,12 @@ struct PlayerView: View {
         model.closePlayer = { closePlayer() }
         model.playbackStarted = { playbackStarted() }
         model.streamReloaded = {
+            if let avPlayer = model.player as? AVFoundationPlayer {
+                avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
+            }
+        }
+        // The AirPlay receiver's card follows a channel onto its next programme.
+        model.liveProgramChanged = {
             if let avPlayer = model.player as? AVFoundationPlayer {
                 avPlayer.player.currentItem?.externalMetadata = airPlayExternalMetadata()
             }
