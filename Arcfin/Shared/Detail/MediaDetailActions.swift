@@ -310,6 +310,9 @@ struct DetailMoreMenu: View {
                 }
                 .pickerStyle(.menu)
             }
+            if ProfileRules.shared.canDownload, let target = model.smartDownloadsTarget {
+                SmartDownloadsIgnoreButton(id: target.id, name: target.name)
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .foregroundStyle(DT.Color.textPrimary)
@@ -338,5 +341,20 @@ struct DetailRatingMenu: View {
         }
         .accessibilityLabel("Rate")
         .accessibilityValue(likes == true ? "Liked" : likes == false ? "Disliked" : "Not rated")
+    }
+}
+
+/// Ignore in Smart Downloads, or Include again, for a movie or a show.
+struct SmartDownloadsIgnoreButton: View {
+    @Environment(DownloadManager.self) private var downloadManager
+    let id: String
+    let name: String
+
+    var body: some View {
+        let ignored = downloadManager.ignoredTitles[id] != nil
+        Button { downloadManager.setIgnored(id: id, name: name, ignored: !ignored) } label: {
+            Label(ignored ? "Include in Smart Downloads" : "Ignore in Smart Downloads",
+                  systemImage: ignored ? "arrow.down.circle" : "nosign")
+        }
     }
 }

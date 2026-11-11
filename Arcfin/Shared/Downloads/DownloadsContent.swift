@@ -332,6 +332,7 @@ struct DownloadsContent<Manage: View>: View {
                             Button { openSeries(group.seriesId, name: group.seriesName) } label: {
                                 Label("Details", systemImage: "info.circle")
                             }
+                            SmartDownloadsIgnoreButton(id: group.seriesId, name: group.seriesName)
                             Button(role: .destructive) { model.pendingDeleteSeriesId = group.seriesId } label: {
                                 Label("Delete All Episodes", systemImage: "trash")
                             }
@@ -370,6 +371,7 @@ struct DownloadsContent<Manage: View>: View {
                                 Label(item.playbackPositionTicks > 0 && !item.played ? "Resume" : "Play", systemImage: "play.fill")
                             }
                             Button { open(item) } label: { Label("Details", systemImage: "info.circle") }
+                            SmartDownloadsIgnoreButton(id: item.itemId, name: item.name)
                             Button(role: .destructive) { model.pendingDelete = item } label: {
                                 Label("Delete Download", systemImage: "trash")
                             }

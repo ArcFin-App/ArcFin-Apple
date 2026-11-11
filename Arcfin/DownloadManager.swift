@@ -1355,7 +1355,36 @@ final class DownloadManager: NSObject {
         var shows = Self.keptShows
         shows[seriesId] = episodeCount.map { KeptShow(name: name, episodeCount: $0) }
         UserDefaults.standard.set(try? JSONEncoder().encode(shows), forKey: Self.keptShowsKey)
-        if episodeCount != nil { refreshSmartDownloads() }
+        keptShowsVersion += 1
+        if episodeCount != nil {
+            if ignoredTitles[seriesId] != nil { setIgnored(id: seriesId, name: name, ignored: false) }
+            refreshSmartDownloads()
+        }
+    }
+
+    /// Bumped on every Keep Downloaded change, for screens listing the kept shows.
+    private(set) var keptShowsVersion = 0
+
+    private static let ignoredKey = "smartDownloadsIgnored"
+    private static let smartMoviesKey = "smartDownloadsMovieIds"
+
+    /// Movies and shows (by series id) Smart Downloads leaves alone, with their names.
+    /// Keep Downloaded is asked for by name, so ignoring a show stops keeping it too.
+    private(set) var ignoredTitles: [String: String] =
+        UserDefaults.standard.dictionary(forKey: ignoredKey) as? [String: String] ?? [:]
+
+    func setIgnored(id: String, name: String, ignored: Bool) {
+        ignoredTitles[id] = ignored ? name : nil
+        UserDefaults.standard.set(ignoredTitles, forKey: Self.ignoredKey)
+        if ignored, Self.keptShows[id] != nil { setKeptShow(seriesId: id, name: name, episodeCount: nil) }
+        if !ignored { refreshSmartDownloads() }
+    }
+
+    /// Movies Smart Downloads fetched from Continue Watching, so only those (not ones someone
+    /// downloaded themselves) go once watched.
+    private static var smartMovieIds: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: smartMoviesKey) ?? []) }
+        set { UserDefaults.standard.set(Array(newValue), forKey: smartMoviesKey) }
     }
 
     /// Catches downloads up with the server's watched state, then re-checks kept shows, from
@@ -1432,12 +1461,27 @@ final class DownloadManager: NSObject {
 
         let allDownloaded = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
         var targets: [String: Int] = [:]
+        var movies: [MediaItem] = []
         if globalOn {
             for seriesId in Set(allDownloaded.compactMap(\.seriesId)) { targets[seriesId] = episodeCount }
+            // What's being watched: shows in Continue Watching or Next Up, and movies part-way through.
+            async let resuming = client.getContinueWatching(credential: credential, authHeader: authHeader)
+            async let upNext = client.getNextUpIncludingRecent(credential: credential, authHeader: authHeader)
+            for item in ((try? await resuming) ?? []) + ((try? await upNext) ?? []) {
+                if let seriesId = item.seriesId { targets[seriesId] = episodeCount }
+                else if item.type == .movie { movies.append(item) }
+            }
+            for id in ignoredTitles.keys { targets[id] = nil }
+            movies.removeAll { ignoredTitles[$0.id] != nil }
         }
         for (seriesId, show) in kept { targets[seriesId] = show.episodeCount }
-        Self.smartLog.notice("Smart Downloads check: \(targets.count, privacy: .public) show(s), keep \(episodeCount, privacy: .public), budget \(budgetGB, privacy: .public) GB")
-        guard !targets.isEmpty else { return }
+        Self.smartLog.notice("Smart Downloads check: \(targets.count, privacy: .public) show(s), \(movies.count, privacy: .public) movie(s), keep \(episodeCount, privacy: .public), budget \(budgetGB, privacy: .public) GB")
+
+        for item in allDownloaded where item.played && Self.smartMovieIds.contains(item.itemId) {
+            markForDeletionAfterWatching(itemId: item.itemId)
+            Self.smartMovieIds.remove(item.itemId)
+        }
+        guard !targets.isEmpty || !movies.isEmpty else { return }
 
         // Watched episodes are queued for removal rather than deleted here: this also runs
         // while a downloads screen may be showing those rows (see markForDeletionAfterWatching).
@@ -1450,7 +1494,9 @@ final class DownloadManager: NSObject {
         // would otherwise use up the budget and quietly stop every show.
         func totalDownloadedBytes() -> Int64 {
             let current = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
-            return current.filter { $0.seriesId.map { targets[$0] != nil } ?? false }.reduce(0) { $0 + $1.fileSizeBytes }
+            let smartMovies = Self.smartMovieIds
+            return current.filter { $0.seriesId.map { targets[$0] != nil } ?? smartMovies.contains($0.itemId) }
+                .reduce(0) { $0 + $1.fileSizeBytes }
         }
 
         for (seriesId, count) in targets {
@@ -1498,6 +1544,15 @@ final class DownloadManager: NSObject {
                 Self.smartLog.notice("Smart Downloads queuing \(episode.name, privacy: .public)")
                 await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
             }
+        }
+        for movie in movies where !isDownloaded(movie.id) && !activeItemIds.contains(movie.id) {
+            guard totalDownloadedBytes() < budgetBytes else {
+                Self.smartLog.notice("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
+                return
+            }
+            Self.smartLog.notice("Smart Downloads queuing \(movie.name, privacy: .public)")
+            Self.smartMovieIds.insert(movie.id)
+            await startDownload(item: movie, credential: credential, authHeader: authHeader, viaSmart: true)
         }
     }
 

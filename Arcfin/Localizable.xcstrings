@@ -2881,6 +2881,134 @@
         }
       }
     },
+    "Choose Ignore in Smart Downloads in a movie or show's menu, or on it in Downloads." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wähle „In Smart Downloads ignorieren“ im Menü eines Films oder einer Serie oder bei ihm in Downloads."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Elige «Ignorar en descargas inteligentes» en el menú de una película o serie, o sobre ella en Descargas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Choisissez « Ignorer dans les téléchargements intelligents » dans le menu d'un film ou d'une série, ou sur celui-ci dans Téléchargements."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scegli «Ignora nei download intelligenti» nel menu di un film o di una serie, o su di esso in Download."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "映画や番組のメニュー、または「ダウンロード」でその項目から「スマートダウンロードで無視」を選びます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "영화나 프로그램의 메뉴, 또는 다운로드에서 해당 항목의 「스마트 다운로드에서 제외」를 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kies ‘Negeren in slimme downloads’ in het menu van een film of serie, of erop in Downloads."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escolha “Ignorar nos downloads inteligentes” no menu de um filme ou série, ou nele em Downloads."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выберите «Не включать в умные загрузки» в меню фильма или сериала либо на нём в «Загрузках»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在电影或节目的菜单中，或在“下载”中对其选择“在智能下载中忽略”。"
+          }
+        }
+      }
+    },
+    "Choose Keep Downloaded in a show's menu to keep its next episodes downloaded." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wähle „Heruntergeladen behalten“ im Menü einer Serie, damit ihre nächsten Folgen heruntergeladen bleiben."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Elige «Mantener descargado» en el menú de una serie para tener descargados sus próximos episodios."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Choisissez « Garder téléchargé » dans le menu d'une série pour garder ses prochains épisodes téléchargés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scegli «Mantieni scaricato» nel menu di una serie per tenere scaricati i suoi prossimi episodi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "番組のメニューで「ダウンロードを保持」を選ぶと、次のエピソードがダウンロードされたままになります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "프로그램 메뉴에서 「다운로드 유지」를 선택하면 다음 에피소드가 다운로드된 상태로 유지됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kies ‘Gedownload houden’ in het menu van een serie om de volgende afleveringen gedownload te houden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escolha “Manter baixado” no menu de uma série para manter os próximos episódios baixados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выберите «Хранить загруженным» в меню сериала, чтобы его следующие серии оставались загруженными."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在节目的菜单中选择“保持下载”，让接下来的几集保持已下载。"
+          }
+        }
+      }
+    },
     "Clearer Server Setup" : {
       "localizations" : {
         "de" : {
@@ -6977,6 +7105,70 @@
         }
       }
     },
+    "Ignore in Smart Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In Smart Downloads ignorieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar en descargas inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorer dans les téléchargements intelligents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignora nei download intelligenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "スマートダウンロードで無視"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "스마트 다운로드에서 제외"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Negeren in slimme downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar nos downloads inteligentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не включать в умные загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在智能下载中忽略"
+          }
+        }
+      }
+    },
     "Ignore Swipes Near Edges" : {
       "localizations" : {
         "de" : {
@@ -7037,6 +7229,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "忽略边缘附近的轻扫"
+          }
+        }
+      }
+    },
+    "Ignored" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignoriert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorados"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorés"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "無視中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "제외됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Genegeerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorados"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Исключённые"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已忽略"
           }
         }
       }
@@ -7293,6 +7549,198 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在 Jellyfin 控制台中前往“管理”→“用户”→“添加用户”。设置用户名和密码，然后设置媒体库访问权限。"
+          }
+        }
+      }
+    },
+    "Include" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Einbeziehen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Incluir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inclure"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Includi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "含める"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "포함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opnemen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Incluir"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Включить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "包含"
+          }
+        }
+      }
+    },
+    "Include %@ in Smart Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ in Smart Downloads einbeziehen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Incluir %@ en descargas inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inclure %@ dans les téléchargements intelligents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Includi %@ nei download intelligenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@をスマートダウンロードに含める"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@을(를) 스마트 다운로드에 포함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ opnemen in slimme downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Incluir %@ nos downloads inteligentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Включить «%@» в умные загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "将%@包含在智能下载中"
+          }
+        }
+      }
+    },
+    "Include in Smart Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In Smart Downloads einbeziehen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Incluir en descargas inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inclure dans les téléchargements intelligents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Includi nei download intelligenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "スマートダウンロードに含める"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "스마트 다운로드에 포함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opnemen in slimme downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Incluir nos downloads inteligentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Включить в умные загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "包含在智能下载中"
           }
         }
       }
@@ -7869,6 +8317,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "结束后继续录制"
+          }
+        }
+      }
+    },
+    "Keeps what you're watching downloaded: the next episodes of shows in Continue Watching, Next Up or your downloads, and movies you're part-way through. Watched ones are removed." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hält heruntergeladen, was du gerade schaust: die nächsten Folgen der Serien in Weiterschauen, Als Nächstes oder deinen Downloads und Filme, die du angefangen hast. Gesehenes wird entfernt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantiene descargado lo que estás viendo: los próximos episodios de las series de Seguir viendo, A continuación o tus descargas, y las películas que tienes a medias. Lo visto se elimina."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Garde téléchargé ce que vous regardez : les prochains épisodes des séries de Reprendre la lecture, À suivre ou de vos téléchargements, et les films commencés. Ce qui est vu est supprimé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tiene scaricato ciò che stai guardando: i prossimi episodi delle serie in Continua a guardare, Prossimi o nei tuoi download, e i film iniziati. Quelli visti vengono rimossi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "視聴中のものをダウンロードしておきます。「視聴を続ける」「次に見る」やダウンロード済みの番組の次のエピソードと、途中まで見た映画です。視聴済みのものは削除されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "보고 있는 콘텐츠를 다운로드해 둡니다. 이어서 시청하기, 다음 볼 작품 또는 다운로드에 있는 프로그램의 다음 에피소드와 보다 만 영화입니다. 다 본 항목은 삭제됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houdt gedownload wat je kijkt: de volgende afleveringen van series in Verder kijken, Hierna of je downloads, en films die je half hebt gezien. Bekeken items worden verwijderd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantém baixado o que você está assistindo: os próximos episódios das séries em Continuar assistindo, A seguir ou nos seus downloads, e os filmes que você começou. O que foi assistido é removido."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Хранит загруженным то, что вы смотрите: следующие серии сериалов из «Продолжить просмотр», «Далее» или ваших загрузок и начатые фильмы. Просмотренное удаляется."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "让你正在看的内容保持下载：“继续观看”“接下来”或已下载节目的后续几集，以及看了一部分的电影。看完的会被移除。"
           }
         }
       }
@@ -9281,6 +9793,70 @@
         }
       }
     },
+    "No Shows Kept" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Keine Serien behalten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ninguna serie mantenida"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aucune série gardée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nessuna serie mantenuta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "保持中の番組はありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "유지 중인 프로그램 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geen series gehouden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nenhuma série mantida"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Нет сохраняемых сериалов"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没有保持下载的节目"
+          }
+        }
+      }
+    },
     "Note your server address" : {
       "localizations" : {
         "de" : {
@@ -9405,6 +9981,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未找到内容"
+          }
+        }
+      }
+    },
+    "Nothing Ignored" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nichts ignoriert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada ignorado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rien d'ignoré"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niente ignorato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "無視している項目はありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "제외된 항목 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niets genegeerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada ignorado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ничего не исключено"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没有忽略的项目"
           }
         }
       }
@@ -15937,6 +16577,70 @@
         }
       }
     },
+    "Smart Downloads doesn't download these, even when they're in Continue Watching or Next Up." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Smart Downloads lädt diese nicht herunter, auch wenn sie in Weiterschauen oder Als Nächstes sind."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Las descargas inteligentes no descargan estos, aunque estén en Seguir viendo o A continuación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les téléchargements intelligents ne les téléchargent pas, même s'ils sont dans Reprendre la lecture ou À suivre."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I download intelligenti non li scaricano, anche se sono in Continua a guardare o Prossimi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「視聴を続ける」や「次に見る」にあっても、スマートダウンロードはこれらをダウンロードしません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이어서 시청하기나 다음 볼 작품에 있어도 스마트 다운로드는 이 항목을 다운로드하지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Slimme downloads downloadt deze niet, ook niet als ze in Verder kijken of Hierna staan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Os downloads inteligentes não baixam estes, mesmo que estejam em Continuar assistindo ou A seguir."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Умные загрузки не загружают их, даже если они есть в «Продолжить просмотр» или «Далее»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "即使它们在“继续观看”或“接下来”中，智能下载也不会下载。"
+          }
+        }
+      }
+    },
     "Something went wrong talking to your server. Try again in a moment." : {
       "localizations" : {
         "de" : {
@@ -17021,6 +17725,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "播放器中的旋转按钮仍可切换方向。"
+          }
+        }
+      }
+    },
+    "These download straight away, outside the storage budget, and stop under 2 GB free." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Diese werden sofort heruntergeladen, außerhalb des Speicherbudgets, und stoppen unter 2 GB freiem Speicher."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se descargan enseguida, fuera del límite de almacenamiento, y se detienen con menos de 2 GB libres."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ils se téléchargent tout de suite, hors du budget de stockage, et s'arrêtent sous 2 Go libres."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si scaricano subito, fuori dal budget di spazio, e si fermano sotto i 2 GB liberi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "すぐにダウンロードされ、ストレージ上限の対象外です。空き容量が2 GBを下回ると停止します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "바로 다운로드되며 저장 공간 한도에 포함되지 않고, 여유 공간이 2GB 미만이면 멈춥니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze worden meteen gedownload, buiten het opslagbudget, en stoppen onder 2 GB vrij."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estes são baixados na hora, fora do limite de armazenamento, e param com menos de 2 GB livres."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Они загружаются сразу, вне лимита хранилища, и останавливаются, когда свободно меньше 2 ГБ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这些会立即下载，不计入存储空间上限，可用空间低于 2 GB 时停止。"
           }
         }
       }
