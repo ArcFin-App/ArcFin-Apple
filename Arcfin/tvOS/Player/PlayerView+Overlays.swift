@@ -324,23 +324,42 @@ extension PlayerView {
     // MARK: - Error
 
     func errorView(_ message: String) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 28) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(.largeTitle))
+                .font(.system(size: 64))
                 .foregroundStyle(DT.Color.palette("F43F5E"))
+                .accessibilityHidden(true)
             Text(message)
-                .font(.system(.footnote))
+                .font(.system(.body))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-            Button("Close") { closePlayer() }
-                .font(.system(.footnote, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.accent)
-                .buttonStyle(TVCardButtonStyle())
-                .focusEffectDisabled()
-                .tvFocusRing(cornerRadius: DT.Radius.md)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 24) {
+                errorButton("Try Again", prominent: true) { model.retry() }
+                    .prefersDefaultFocus(true, in: tvFocusNamespace)
+                if model.isLive, model.nextEpisode != nil {
+                    errorButton("Next Channel") { model.playNextEpisode() }
+                }
+                errorButton("Close") { closePlayer() }
+            }
         }
-        .padding(24)
-        .frame(maxWidth: 320)
+        .padding(48)
+        .frame(maxWidth: 900)
+        .focusSection()
+    }
+
+    private func errorButton(_ title: LocalizedStringKey, prominent: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(.callout, weight: .semibold))
+                .foregroundStyle(prominent ? DT.Color.onAccent : .white)
+                .padding(.horizontal, 36)
+                .padding(.vertical, 16)
+                .background(prominent ? DT.Color.accent : Color.white.opacity(0.15), in: Capsule())
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .tvFocusRing(cornerRadius: 40, prominent: true)
     }
 
 }
