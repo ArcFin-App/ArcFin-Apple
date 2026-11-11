@@ -8,7 +8,9 @@ struct LiveTVSearchResults: View {
     let model: LiveTVModel
 
     var body: some View {
-        if model.isSearching, !model.hasSearchResults {
+        if model.searchQuery.isEmpty {
+            Color.clear
+        } else if model.isSearching, !model.hasSearchResults {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if !model.hasSearchResults {
             ContentUnavailableView.search(text: model.searchQuery)
@@ -87,7 +89,7 @@ private struct LiveTVSearchRows: View {
                     LiveTVChannelRow(channel: channel, now: now, showsGuide: model.hasGuide == true)
                         .padding(.vertical, 8)
                 }
-                .buttonStyle(.plain)
+                .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
                 .contextMenu { LiveTVChannelMenu(model: model, channel: channel) }
             }
             ForEach(Array(programs.enumerated()), id: \.element.id) { index, program in
@@ -96,7 +98,7 @@ private struct LiveTVSearchRows: View {
                     LiveTVProgramRow(program: program, now: now)
                         .padding(.vertical, 8)
                 }
-                .buttonStyle(.plain)
+                .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
             }
         }
     }
@@ -126,7 +128,7 @@ struct LiveTVProgramRow: View {
                         .foregroundStyle(DT.Color.textPrimary)
                 }
             }
-            .frame(width: 72)
+            .frame(width: 72 * DT.Scale.font)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {

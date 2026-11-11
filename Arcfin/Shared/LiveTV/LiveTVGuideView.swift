@@ -14,10 +14,11 @@ struct LiveTVGuideView: View {
     @State private var position = ScrollPosition()
 
     private var isWide: Bool { horizontalSizeClass == .regular }
-    private var channelWidth: CGFloat { isWide ? 132 : 84 }
-    private var rowHeight: CGFloat { isWide ? 76 : 68 }
-    private let headerHeight: CGFloat = 34
-    private var pointsPerMinute: CGFloat { isWide ? 7 : 5 }
+    // Scaled up on Apple TV, where the grid is read from across the room.
+    private var channelWidth: CGFloat { (isWide ? 132 : 84) * DT.Scale.font }
+    private var rowHeight: CGFloat { (isWide ? 76 : 68) * DT.Scale.font }
+    private let headerHeight: CGFloat = 34 * DT.Scale.font
+    private var pointsPerMinute: CGFloat { (isWide ? 7 : 5) * DT.Scale.font }
     private var gridWidth: CGFloat { CGFloat(LiveTVModel.guideHours * 60) * pointsPerMinute }
 
     var body: some View {
@@ -140,7 +141,7 @@ struct LiveTVGuideView: View {
                 Rectangle().fill(DT.Color.textPrimary.opacity(0.08)).frame(width: 1)
             }
         }
-        .buttonStyle(.plain)
+        .arcfinPlainButton(cornerRadius: DT.Radius.sm, prominent: false)
         .contextMenu { LiveTVChannelMenu(model: model, channel: channel) }
         .accessibilityLabel(channel.number.map { "\($0) \(channel.name)" } ?? channel.name)
         .accessibilityHint("Plays the channel")
@@ -247,7 +248,7 @@ private struct GuideProgramCell: View {
             .padding(3)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .arcfinPlainButton(cornerRadius: DT.Radius.sm, prominent: false)
         .accessibilityLabel("\(program.name), \(program.timeRange)")
         .accessibilityHint("Shows details and recording options")
     }

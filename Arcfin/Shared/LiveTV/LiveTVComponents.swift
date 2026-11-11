@@ -59,7 +59,7 @@ struct LiveProgramBar: View {
 struct ChannelLogo: View {
     @Environment(MediaRepository.self) private var mediaRepo
     let channel: LiveTVChannel
-    var size: CGSize = CGSize(width: 72, height: 48)
+    var size: CGSize = CGSize(width: 72 * DT.Scale.font, height: 48 * DT.Scale.font)
 
     var body: some View {
         RoundedRectangle(cornerRadius: DT.Radius.sm, style: .continuous)

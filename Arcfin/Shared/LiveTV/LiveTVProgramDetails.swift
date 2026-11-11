@@ -46,11 +46,11 @@ struct LiveTVProgramDetails: View {
                     default: DT.Color.backgroundTertiary
                     }
                 }
-                .frame(width: 96, height: 96 * 9 / 16)
+                .frame(width: 96 * DT.Scale.font, height: 96 * DT.Scale.font * 9 / 16)
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm, style: .continuous))
                 .accessibilityHidden(true)
             } else if let channel {
-                ChannelLogo(channel: channel, size: CGSize(width: 96, height: 54))
+                ChannelLogo(channel: channel, size: CGSize(width: 96 * DT.Scale.font, height: 54 * DT.Scale.font))
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -93,7 +93,12 @@ struct LiveTVProgramDetails: View {
             if current.isAiring(), let channel {
                 Button {
                     dismiss()
-                    model.play(channel)
+                    // Opening the player while the sheet is still closing can drop it, where
+                    // both are full-screen covers (Apple TV).
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(400))
+                        model.play(channel)
+                    }
                 } label: {
                     Label("Watch Now", systemImage: "play.fill").frame(maxWidth: .infinity)
                 }

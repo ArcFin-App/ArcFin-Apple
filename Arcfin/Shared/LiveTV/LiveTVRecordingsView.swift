@@ -12,7 +12,7 @@ struct LiveTVRecordingsView: View {
 
     private var columns: [GridItem] {
         horizontalSizeClass == .regular
-            ? [GridItem(.adaptive(minimum: 240), spacing: 12)]
+            ? [GridItem(.adaptive(minimum: 240 * DT.Scale.font), spacing: 12 * DT.Scale.font)]
             : [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
     }
 
@@ -49,7 +49,7 @@ struct LiveTVRecordingsView: View {
                                     Button { model.play(recording) } label: {
                                         LiveTVRecordingCard(recording: recording)
                                     }
-                                    .buttonStyle(.plain)
+                                    .arcfinPlainButton(cornerRadius: DT.Radius.card, prominent: false)
                                 }
                             }
                         }
@@ -181,7 +181,7 @@ private struct LiveTVTimerRow: View {
                         .foregroundStyle(DT.Color.textSecondary)
                         .frame(width: 44, height: 44)
             }
-            .buttonStyle(.plain)
+            .arcfinPlainButton(cornerRadius: 22 * DT.Scale.font)
             .accessibilityLabel(isActive ? "Stop Recording" : "Cancel Recording")
             }
         }
@@ -230,7 +230,7 @@ private struct LiveTVSeriesTimerRow: View {
                         .background(DT.Color.backgroundTertiary)
                 }
             }
-            .frame(width: 40, height: 56)
+            .frame(width: 40 * DT.Scale.font, height: 56 * DT.Scale.font)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.xs, style: .continuous))
             .accessibilityHidden(true)
 
@@ -252,7 +252,7 @@ private struct LiveTVSeriesTimerRow: View {
                         .foregroundStyle(DT.Color.textSecondary)
                         .frame(width: 44, height: 44)
             }
-            .buttonStyle(.plain)
+            .arcfinPlainButton(cornerRadius: 22 * DT.Scale.font)
             .accessibilityLabel("Stop Recording Series")
             }
         }
