@@ -9,6 +9,7 @@ struct PlayerFeaturesSettingsView: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage("autoPictureInPicture") private var autoPictureInPicture = false
     @AppStorage("swipeGesturesEnabled") private var swipeGesturesEnabled = true
+    @AppStorage("ignoreEdgeSwipes") private var ignoreEdgeSwipes = true
     @AppStorage("doubleTapToSkip") private var doubleTapToSkip = true
 
     var body: some View {
@@ -24,6 +25,12 @@ struct PlayerFeaturesSettingsView: View {
                     TVRowLabelText(title: "Swipe Gestures", detail: "Up or down on the left for brightness, the right for volume; sideways to move through the video.")
                 }
                 .syncLocked("swipeGesturesEnabled", authManager)
+                if swipeGesturesEnabled {
+                    Toggle(isOn: $ignoreEdgeSwipes) {
+                        TVRowLabelText(title: "Ignore Swipes Near Edges", detail: "Swipes that start at the top or bottom of the screen are left for Control Center, Notification Center and Home. Turn off to use the whole screen; the system then needs a second swipe.")
+                    }
+                    .syncLocked("ignoreEdgeSwipes", authManager)
+                }
                 Toggle(isOn: $doubleTapToSkip) {
                     TVRowLabelText(title: "Double-Tap to Skip", detail: "Double-tap a side of the video to skip back or forward.")
                 }

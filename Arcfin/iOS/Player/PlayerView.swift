@@ -75,6 +75,7 @@ struct PlayerView: View {
     @State var displayCriteriaMatcher = DisplayCriteriaMatcher()
     @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
     @AppStorage("swipeGesturesEnabled") var swipeGesturesEnabled = true
+    @AppStorage("ignoreEdgeSwipes") var ignoreEdgeSwipes = true
     @State var routeBridge = RouteButtonBridge()
     @State var isLandscape = false
 
@@ -172,6 +173,9 @@ struct PlayerView: View {
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // With swipes allowed right to the edges, the player's swipes come before Control
+        // Center, Notification Center and the Home gesture, which then take a second swipe.
+        .defersSystemGestures(on: swipeGesturesEnabled && !ignoreEdgeSwipes ? .vertical : [])
         .keepsScreenAwake(status: model.player.status)
         .onAppear { connectModel() }
         .task { if !model.isAskingToResume { await setup() } }
@@ -291,7 +295,7 @@ struct PlayerView: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .contentShape(Rectangle())
                 .gesture(tapGesture(width: proxy.size.width))
-                .simultaneousGesture(dragGesture(width: proxy.size.width))
+                .simultaneousGesture(dragGesture(size: proxy.size))
                 .onChange(of: proxy.size) { _, newSize in
                     isLandscape = newSize.width > newSize.height
                 }

@@ -29,7 +29,7 @@ extension PlayerView {
                 Color.clear
                     .contentShape(Rectangle())
                     .gesture(tapGesture(width: proxy.size.width))
-                    .simultaneousGesture(dragGesture(width: proxy.size.width))
+                    .simultaneousGesture(dragGesture(size: proxy.size))
                 bottomBar
             }
             .frame(width: proxy.size.width, height: proxy.size.height)

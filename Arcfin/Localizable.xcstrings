@@ -6529,6 +6529,70 @@
         }
       }
     },
+    "Ignore Swipes Near Edges" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wischen an den Rändern ignorieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar deslizamientos en los bordes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorer les balayages près des bords"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignora gli scorrimenti vicino ai bordi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "画面の端でのスワイプを無視"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "가장자리 근처 쓸어넘기기 무시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vegen bij de randen negeren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar deslizes perto das bordas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Игнорировать смахивания у краёв"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "忽略边缘附近的轻扫"
+          }
+        }
+      }
+    },
     "In a library sorted by name, pick a letter under Filter & Sort to jump straight to it." : {
       "localizations" : {
         "de" : {
@@ -15485,6 +15549,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "支持"
+          }
+        }
+      }
+    },
+    "Swipes that start at the top or bottom of the screen are left for Control Center, Notification Center and Home. Turn off to use the whole screen; the system then needs a second swipe." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wischen, die oben oder unten am Bildschirm beginnen, bleiben dem Kontrollzentrum, der Mitteilungszentrale und dem Home-Bildschirm überlassen. Schalte es aus, um den ganzen Bildschirm zu nutzen; das System braucht dann ein zweites Wischen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Los deslizamientos que empiezan en la parte superior o inferior de la pantalla se dejan para el centro de control, el centro de notificaciones y la pantalla de inicio. Desactívalo para usar toda la pantalla; el sistema necesitará entonces un segundo deslizamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les balayages qui partent du haut ou du bas de l’écran sont laissés au centre de contrôle, au centre de notifications et à l’écran d’accueil. Désactivez l’option pour utiliser tout l’écran ; le système demandera alors un second balayage."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gli scorrimenti che iniziano in alto o in basso sullo schermo sono lasciati a Centro di Controllo, Centro Notifiche e Home. Disattiva per usare tutto lo schermo; il sistema richiederà allora un secondo scorrimento."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "画面の上端または下端から始まるスワイプは、コントロールセンター、通知センター、ホームに使われます。オフにすると画面全体を使えますが、システムの操作には2回目のスワイプが必要になります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "화면 상단이나 하단에서 시작하는 쓸어넘기기는 제어 센터, 알림 센터 및 홈에 남겨 둡니다. 끄면 화면 전체를 사용할 수 있으며, 시스템 동작에는 한 번 더 쓸어넘겨야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vegen die boven- of onderaan het scherm beginnen, zijn voor het bedieningspaneel, het berichtencentrum en Home. Zet dit uit om het hele scherm te gebruiken; het systeem heeft dan een tweede veeg nodig."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deslizes que começam no topo ou na base da tela ficam para a Central de Controle, a Central de Notificações e a Tela de Início. Desative para usar a tela inteira; o sistema passa a exigir um segundo deslize."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Смахивания от верхнего или нижнего края экрана остаются для Пункта управления, Центра уведомлений и перехода домой. Выключите, чтобы использовать весь экран; системе тогда понадобится второе смахивание."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "从屏幕顶部或底部开始的轻扫会留给控制中心、通知中心和主屏幕。关闭后可使用整个屏幕，但系统操作需要再轻扫一次。"
           }
         }
       }

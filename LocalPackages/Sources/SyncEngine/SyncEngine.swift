@@ -246,6 +246,7 @@ public enum SettingsSyncRegistry {
         .init("matchContentFrameRate", .bool),
         .init("autoPictureInPicture", .bool),
         .init("swipeGesturesEnabled", .bool),
+        .init("ignoreEdgeSwipes", .bool),
         .init("doubleTapToSkip", .bool),
         // Subtitle style
         .init("subtitleTextSize", .string),

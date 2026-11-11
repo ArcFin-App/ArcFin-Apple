@@ -20,11 +20,20 @@ extension PlayerView {
             )
     }
 
-    func dragGesture(width: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 12)
+    /// How far from the top and bottom a swipe has to start to count, with Ignore Swipes Near
+    /// Edges on: room for Control Center, Notification Center and the Home gesture.
+    static let edgeSwipeMargin: CGFloat = 48
+
+    func dragGesture(size: CGSize) -> some Gesture {
+        let width = size.width
+        return DragGesture(minimumDistance: 12)
             .onChanged { value in
                 if dragAxis == nil {
                     guard swipeGesturesEnabled else { return }
+                    if ignoreEdgeSwipes,
+                       value.startLocation.y < Self.edgeSwipeMargin || value.startLocation.y > size.height - Self.edgeSwipeMargin {
+                        return
+                    }
                     if abs(value.translation.width) > abs(value.translation.height) {
                         beginSwipeSeek()
                         return
