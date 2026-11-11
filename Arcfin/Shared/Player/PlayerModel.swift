@@ -1212,9 +1212,17 @@ final class PlayerModel {
         if muted {
             guard selectedSubtitleIndex == nil, let info = playbackInfo else { return }
             let preferred = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
-            let tracks = info.subtitleStreams.filter { !$0.isForced && drawsSubtitleHere($0.index) }
+            let candidates = info.subtitleStreams.filter { !$0.isForced }
+            // One drawn here switches on at once; one inside the file (an MKV's embedded text
+            // track) needs the stream reloaded with it, which is still better than no words.
+            let drawnHere = candidates.filter { drawsSubtitleHere($0.index) }
+            let tracks = drawnHere.isEmpty ? candidates : drawnHere
             guard let pick = tracks.first(where: { !preferred.isEmpty && $0.language == preferred })
-                    ?? tracks.first(where: \.isDefault) ?? tracks.first else { return }
+                    ?? tracks.first(where: \.isDefault) ?? tracks.first else {
+                log.info("Muted: no subtitle track to show")
+                return
+            }
+            log.info("Muted: showing subtitle track \(pick.index, privacy: .public)")
             changeTrack(subtitleIndex: .some(pick.index), remember: false)
             subtitleShownForMute = pick.index
         } else if let shown = subtitleShownForMute {
