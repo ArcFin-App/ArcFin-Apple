@@ -9,12 +9,10 @@ import SeerrAPI
 enum SeerrSignIn {
     /// Approves Seerr's Quick Connect code with whichever Jellyfin profile is signed in when
     /// Seerr asks, so a profile switch never approves it as the previous user.
-    static func quickConnectAuthorizer(authManager: AuthManager) -> SeerrHTTPClient.QuickConnectAuthorizer {
-        { @MainActor [weak authManager] code in
-            guard let authManager, case .authenticated(let credential) = authManager.state else { return false }
-            let header = authManager.authClient.authHeader(token: credential.accessToken)
-            return try await authManager.authClient.authorizeQuickConnect(
-                baseURL: credential.baseURL, authHeader: header, code: code)
+    nonisolated static func quickConnectAuthorizer(authManager: AuthManager) -> SeerrHTTPClient.QuickConnectAuthorizer {
+        { [weak authManager] code in
+            guard let credential = await authManager?.state.credential else { return false }
+            return try await quickConnectAuthorizer(credential: credential)(code)
         }
     }
 
