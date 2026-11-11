@@ -1513,7 +1513,7 @@ final class DownloadManager: NSObject {
         let positions = all.indices.filter { downloadedIds.contains(all[$0].id) }
         let start = positions.first { all[$0].userData?.played != true } ?? positions.last.map { $0 + 1 } ?? 0
         Self.smartLog.notice("Smart Downloads: \(seriesId, privacy: .public) has \(all.count, privacy: .public) episodes, \(all.filter { $0.userData?.played == true }.count, privacy: .public) watched, downloaded at \(positions.map(String.init).joined(separator: ","), privacy: .public); starting at \(start, privacy: .public)")
-        return Array(all.dropFirst(start).filter { $0.userData?.played != true }.prefix(count))
+        return Array(all.dropFirst(start).filter { $0.userData?.played != true && $0.parentIndexNumber != 0 }.prefix(count))
     }
 
     private static func freeSpace() -> Int64? {

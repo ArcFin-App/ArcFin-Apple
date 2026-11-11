@@ -166,7 +166,7 @@ final class MediaRepository {
         async let la      = client.getLatestMedia(credential: credential, authHeader: header)
         async let libs    = client.getLibraries(credential: credential, authHeader: header)
         async let srvID   = client.getServerID(credential: credential)
-        async let nUp     = client.getNextUp(credential: credential, authHeader: header)
+        async let nUp     = client.getNextUpIncludingRecent(credential: credential, authHeader: header)
         async let raMov   = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")
         async let raShow  = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Series")
         async let rrMov   = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Movie")
@@ -257,7 +257,7 @@ final class MediaRepository {
         guard loaded, !isLoading else { return }
         let header = authClient.authHeader(token: credential.accessToken)
         async let cw = client.getContinueWatching(credential: credential, authHeader: header)
-        async let nUp = client.getNextUp(credential: credential, authHeader: header)
+        async let nUp = client.getNextUpIncludingRecent(credential: credential, authHeader: header)
         async let wAgain = client.getWatchAgain(credential: credential, authHeader: header)
         async let favs = client.getFavorites(credential: credential, authHeader: header)
         if let value = try? await cw { continueWatching = value }

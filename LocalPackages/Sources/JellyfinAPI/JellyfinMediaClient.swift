@@ -760,12 +760,10 @@ public struct JellyfinMediaClient: Sendable {
         count: Int
     ) async throws -> [MediaItem] {
         guard let next = try await getNextEpisode(credential: credential, authHeader: authHeader, seriesId: seriesId) else {
-            // Next Up leaves out shows past the server's Next Up cutoff, and on some versions
-            // shows with nothing watched yet, so work it out from the episode list instead:
-            // the first unwatched episode after the last watched one.
+            // Next Up leaves out shows past the server's Next Up cutoff, shows with nothing
+            // watched yet on some versions, and shows with a later season marked watched.
             let all = try await getEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, seasonId: nil)
-            let start = all.lastIndex { $0.userData?.played == true }.map { $0 + 1 } ?? 0
-            return Array(all.dropFirst(start).filter { $0.userData?.played != true }.prefix(count))
+            return Self.upcoming(in: all, count: count)
         }
         var comps = URLComponents(
             url: credential.baseURL.appendingPathComponent("Shows/\(seriesId)/Episodes"),
@@ -783,6 +781,70 @@ public struct JellyfinMediaClient: Sendable {
         let (data, _) = try await URLSession.arcfin.data(for: req)
         let episodes = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
         return episodes.isEmpty ? [next] : episodes.filter { $0.userData?.played != true }
+    }
+
+    /// From a series' full episode list, the unwatched episodes after the one watched most
+    /// recently (or, without dates, after the last one marked watched). Next Up goes from the
+    /// furthest episode marked watched instead, so a show with later seasons marked watched
+    /// from an earlier run had nothing up next. Specials are left out.
+    public static func upcoming(in all: [MediaItem], count: Int) -> [MediaItem] {
+        let played = all.indices.filter { all[$0].userData?.played == true && all[$0].parentIndexNumber != 0 }
+        let latest = played.compactMap { i in all[i].userData?.lastPlayedDate.map { (i, $0) } }.max { $0.1 < $1.1 }?.0
+        let start = (latest ?? played.last).map { $0 + 1 } ?? 0
+        return Array(all.dropFirst(start).filter { $0.userData?.played != true && $0.parentIndexNumber != 0 }.prefix(count))
+    }
+
+    /// Next Up, plus the shows it leaves out that were watched lately: one with a later season
+    /// marked watched gets the episode after the one watched most recently, in the place its
+    /// last watch puts it.
+    public func getNextUpIncludingRecent(
+        credential: ServerCredential,
+        authHeader: String,
+        limit: Int = 12
+    ) async throws -> [MediaItem] {
+        async let serverNextUp = getNextUp(credential: credential, authHeader: authHeader, limit: limit)
+        let recent = (try? await getRecentlyPlayedEpisodes(credential: credential, authHeader: authHeader)) ?? []
+        var items = try await serverNextUp
+        let recentSeries = recent.compactMap(\.seriesId).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+        let covered = Set(items.compactMap(\.seriesId))
+        for seriesId in recentSeries.filter({ !covered.contains($0) }).prefix(3) {
+            // One already part-way through is in Continue Watching instead.
+            guard let next = try? await getUpcomingEpisodes(credential: credential, authHeader: authHeader, seriesId: seriesId, count: 1).first,
+                  (next.userData?.playbackPositionTicks ?? 0) == 0 else { continue }
+            items.append(next)
+        }
+        let rank = Dictionary(recentSeries.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        let ordered = items.enumerated().sorted {
+            let a = $0.element.seriesId.flatMap { rank[$0] } ?? Int.max
+            let b = $1.element.seriesId.flatMap { rank[$0] } ?? Int.max
+            return a != b ? a < b : $0.offset < $1.offset
+        }
+        return Array(ordered.map(\.element).prefix(limit))
+    }
+
+    /// Episodes finished lately, newest first, for the shows being watched now.
+    private func getRecentlyPlayedEpisodes(credential: ServerCredential, authHeader: String) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Recursive", value: "true"),
+            .init(name: "IncludeItemTypes", value: "Episode"),
+            .init(name: "Filters", value: "IsPlayed"),
+            .init(name: "SortBy", value: "DatePlayed"),
+            .init(name: "SortOrder", value: "Descending"),
+            .init(name: "Limit", value: "40"),
+            .init(name: "Fields", value: "SeriesId,UserData"),
+            .init(name: "EnableImages", value: "false"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        // Older than Jellyfin's own Next Up cutoff (a year) isn't being watched now.
+        let cutoff = Date().addingTimeInterval(-365 * 24 * 3600)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+            .filter { ($0.userData?.lastPlayedDate ?? .distantFuture) > cutoff }
     }
 
     public func getNextEpisode(
