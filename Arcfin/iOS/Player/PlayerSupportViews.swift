@@ -175,15 +175,21 @@ enum PlayerOpeningOrientation: String, CaseIterable, Identifiable {
 /// Turns the player to the orientation Open Videos In asks for, on iPhone, until the rotate
 /// button changes it or the player closes (resetPlayerOrientation). A player taking over from
 /// the last one in the same cover keeps whatever orientation that one was left in.
+///
+/// A request made while the player's full-screen cover is still coming up is dropped, so it
+/// waits for the cover to settle, then asks again once if the first didn't take.
 func applyOpeningOrientation() {
-    guard UIDevice.current.userInterfaceIdiom == .phone,
-          let scene = UIApplication.shared.connectedScenes
-            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
-    else { return }
-    switch PlayerOpeningOrientation.current {
-    case .followDevice: return
-    case .landscape: scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { _ in }
-    case .portrait: scene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { _ in }
+    let wanted = PlayerOpeningOrientation.current
+    guard wanted != .followDevice, UIDevice.current.userInterfaceIdiom == .phone else { return }
+    Task { @MainActor in
+        for delay in [0.35, 0.6] {
+            try? await Task.sleep(for: .seconds(delay))
+            guard let scene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else { return }
+            let isLandscape = scene.effectiveGeometry.interfaceOrientation.isLandscape
+            if (wanted == .landscape) == isLandscape { return }
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: wanted == .landscape ? .landscapeRight : .portrait)) { _ in }
+        }
     }
 }
 
