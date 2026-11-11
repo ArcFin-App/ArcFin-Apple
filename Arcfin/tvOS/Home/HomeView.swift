@@ -106,6 +106,7 @@ struct HomeView: View {
     private var heroVideoAllowed: Bool {
         isHomeShowing && homePath.isEmpty && model.detailItem == nil && model.seerrDetailItem == nil
             && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil
+            && !PlayerActivity.shared.isPlayerOpen
     }
 
     private var heroDisplayItem: MediaItem? {
