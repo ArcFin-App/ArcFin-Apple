@@ -2,6 +2,7 @@
 
 import SwiftUI
 import SeerrAPI
+import AuthCore
 
 struct SeerrPluginView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -25,7 +26,9 @@ struct SeerrPluginView: View {
     var body: some View {
         List {
             if isConfigured && !form.isEditing {
-                SeerrConnectionSummary(url: seerrURL, authMethod: seerrAuthMethod, username: seerrUsername) {
+                SeerrConnectionSummary(url: seerrURL, authMethod: seerrAuthMethod, username: seerrUsername,
+                                       usesQuickConnect: seerrAuthMethod == .jellyfin && authManager.seerrPassword.isEmpty,
+                                       isManagedByServer: isLocked) {
                     showRemoveConfirm = true
                 }
             } else {
@@ -39,7 +42,7 @@ struct SeerrPluginView: View {
             ToolbarItem(placement: .primaryAction) {
                 if form.isEditing || !isConfigured {
                     Button("Save") { save() }
-                        .disabled(form.url.isEmpty || form.username.isEmpty || form.password.isEmpty)
+                        .disabled(!form.isComplete)
                 } else {
                     Button("Edit") { beginEditing() }
                         .disabled(isLocked)
@@ -83,37 +86,48 @@ struct SeerrPluginView: View {
                 .textCase(nil)
         }
 
-        // Account type picker
-        SeerrAccountTypeSection(form: form)
+        if form.usesPassword {
+            // Account type picker
+            SeerrAccountTypeSection(form: form)
 
-        // Credentials
-        Section {
-            TextField("Username", text: $form.username)
-                .autocorrectionDisabled()
-            SecureField("Password", text: $form.password)
-                .autocorrectionDisabled()
-        } header: {
-            Label("Credentials", systemImage: "person.fill")
-                .font(.system(.caption, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.textSecondary)
-                .textCase(nil)
+            // Credentials
+            Section {
+                TextField("Username", text: $form.username)
+                    .autocorrectionDisabled()
+                SecureField("Password", text: $form.password)
+                    .autocorrectionDisabled()
+            } header: {
+                Label("Credentials", systemImage: "person.fill")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            }
+
+            // Test connection
+            SeerrTestSection(form: form)
+        } else {
+            SeerrQuickConnectSection(form: form) { save() }
         }
 
-        // Test connection
-        SeerrTestSection(form: form)
+        SeerrOtherSignInSection(form: form)
     }
 
     // MARK: - Actions
 
     private func beginEditing() {
         form.beginEditing(url: seerrURL, username: seerrUsername,
-                          password: authManager.seerrPassword, authMethod: seerrAuthMethod)
+                          password: authManager.seerrPassword, authMethod: seerrAuthMethod,
+                          jellyfinUsername: authManager.state.credential?.displayName)
     }
 
     private func save() {
         seerrURL = form.url.trimmingCharacters(in: .whitespacesAndNewlines)
         seerrUsername = form.username
-        authManager.saveSeerrPassword(form.password)
+        if form.password.isEmpty {
+            authManager.removeSeerrPassword()
+        } else {
+            authManager.saveSeerrPassword(form.password)
+        }
         seerrAuthMethod = form.authMethod
         form.isEditing = false
     }

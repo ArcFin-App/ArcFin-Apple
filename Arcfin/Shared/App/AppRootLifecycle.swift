@@ -105,11 +105,8 @@ struct AppRootLifecycle: ViewModifier {
             .onChange(of: offlineModeEnabled) { _, isOffline in
                 if !isOffline { model.syncOfflineProgress(modelContext: modelContext) }
             }
-            // Quick Connect sign-in has no password to auto-fill Seerr with (see AuthView's
-            // attemptSeerrAutoLogin, which only runs on the password-based path) — once a sync
-            // confirms Seerr is locked to a Jellyfin account server-side but this profile still
-            // has no Seerr credential, offer to connect it interactively instead of leaving it
-            // silently broken with no way to fix it (Settings hides the fields while locked).
+            // Once a sync has brought the server's Seerr address, connect Seerr with the Jellyfin
+            // account if this profile hasn't yet (see checkSeerrSetupPrompt).
             .onChange(of: model.authManager.isSyncingArcfin) { _, isSyncing in
                 if !isSyncing {
                     model.checkSeerrSetupPrompt(seerrURL: seerrURL, seerrUsername: seerrUsername, seerrAuthMethod: seerrAuthMethod)
@@ -120,9 +117,15 @@ struct AppRootLifecycle: ViewModifier {
                     SeerrSetupPromptView(
                         seerrURL: seerrURL,
                         jellyfinUsername: cred.displayName,
+                        authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: model.authManager),
+                        initialError: model.seerrSetupError,
                         onConnected: { username, password in
                             seerrUsername = username
-                            model.authManager.saveSeerrPassword(password)
+                            if password.isEmpty {
+                                model.authManager.removeSeerrPassword()
+                            } else {
+                                model.authManager.saveSeerrPassword(password)
+                            }
                             model.markSeerrSetupPromptHandled(for: cred.id)
                         },
                         onDismiss: { model.markSeerrSetupPromptHandled(for: cred.id) }

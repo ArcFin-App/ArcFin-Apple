@@ -55,6 +55,8 @@ private final class PathWait: @unchecked Sendable {
 
 public enum JellyfinAuthError: Error, LocalizedError, Sendable, Equatable {
     case invalidServerURL
+    /// The address starts with something other than http:// or https://, such as "htt://".
+    case unsupportedScheme(String)
     case serverUnreachable
     case authFailed(String)
     case invalidResponse
@@ -81,6 +83,7 @@ public enum JellyfinAuthError: Error, LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .invalidServerURL:       return "Invalid server URL."
+        case .unsupportedScheme(let scheme): return "Server addresses start with http:// or https://, not \(scheme)://."
         case .serverUnreachable:      return "Cannot reach server — check the address and try again."
         case .authFailed(let msg):    return msg
         case .invalidResponse:        return "Unexpected server response."
@@ -209,18 +212,7 @@ public struct JellyfinAuthClient: Sendable {
     /// falls back to HTTP if that fails.
     public func validateServer(url rawURL: String) async throws -> (url: URL, serverName: String) {
         let trimmed = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw JellyfinAuthError.invalidServerURL }
-
-        let candidates: [URL]
-        if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
-            guard let url = normalise(trimmed) else { throw JellyfinAuthError.invalidServerURL }
-            candidates = [url]
-        } else {
-            guard let httpsURL = normalise("https://" + trimmed),
-                  let httpURL = normalise("http://" + trimmed)
-            else { throw JellyfinAuthError.invalidServerURL }
-            candidates = [httpsURL, httpURL]
-        }
+        let candidates = try Self.candidates(for: trimmed)
 
         // This is typically the very first network request the app ever makes (server
         // setup screen, right after a fresh install/cold launch) — exactly when iOS/macOS's
@@ -480,10 +472,33 @@ public struct JellyfinAuthClient: Sendable {
         return "MediaBrowser " + parts.joined(separator: ", ")
     }
 
-    private func normalise(_ raw: String) -> URL? {
-        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !s.hasPrefix("http://") && !s.hasPrefix("https://") { s = "https://" + s }
-        if s.hasSuffix("/") { s = String(s.dropLast()) }
-        return URL(string: s)
+    /// The addresses to try for what was typed, checked before anything goes over the network
+    /// so a typo fails at once instead of waiting for a timeout. A scheme given is used as is
+    /// (any case, and slips like "http:/" or "http//" are put right); none tries https:// then
+    /// http://. Any other scheme, e.g. "htt://", is refused.
+    static func candidates(for typed: String) throws -> [URL] {
+        let raw = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, !raw.contains(where: \.isWhitespace) else { throw JellyfinAuthError.invalidServerURL }
+
+        var scheme: String?
+        var rest = raw
+        if let match = raw.firstMatch(of: /^(?i)(https?)(:\/{0,3}|\/\/)(?=[^\/])/) {
+            scheme = match.1.lowercased()
+            rest = String(raw[match.range.upperBound...])
+        } else if let separator = raw.range(of: "://") {
+            let typedScheme = String(raw[..<separator.lowerBound])
+            // "http://" with nothing after it is an unfinished address, not a wrong scheme.
+            if ["http", "https"].contains(typedScheme.lowercased()) { throw JellyfinAuthError.invalidServerURL }
+            throw JellyfinAuthError.unsupportedScheme(typedScheme)
+        }
+        while rest.hasSuffix("/") { rest.removeLast() }
+
+        let schemes = scheme.map { [$0] } ?? ["https", "http"]
+        return try schemes.map { scheme in
+            guard let url = URL(string: "\(scheme)://\(rest)"),
+                  let host = url.host(), !host.isEmpty
+            else { throw JellyfinAuthError.invalidServerURL }
+            return url
+        }
     }
 }

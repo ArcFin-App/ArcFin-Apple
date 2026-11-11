@@ -29,9 +29,10 @@ public enum RequestMediaType: String, Sendable {
 
 /// Seerr's request.status — the approval state of the request itself, distinct from
 /// media.status (SeerrAvailabilityStatus), which tracks whether the requested title has
-/// actually shown up on the server yet. The API only ever sends 1/2/3 for this field.
+/// actually shown up on the server yet. Seerr's MediaRequestStatus: 1 pending, 2 approved,
+/// 3 declined, 4 failed (sending it to Radarr or Sonarr failed), 5 completed.
 public enum RequestStatus: Int, Sendable, Equatable {
-    case pending = 1, approved, declined
+    case pending = 1, approved, declined, failed, completed
 }
 
 public struct MediaRequest: Sendable, Identifiable, Equatable {
@@ -174,14 +175,19 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
     /// TMDB id of the requested title — lets the detail screen fetch the full
     /// movie/tv record (overview, genres, cast, etc.) beyond what the request list carries.
     public var tmdbId: Int?
+    /// Who asked for it. Someone who manages requests sees everyone's, not only their own.
+    public var requestedByID: Int?
+    public var requestedByName: String?
 
     public init(id: Int, mediaTitle: String, mediaType: RequestMediaType, status: RequestStatus,
                 mediaStatus: SeerrAvailabilityStatus? = nil, requestedAt: Date,
-                posterPath: String? = nil, backdropPath: String? = nil, tmdbId: Int? = nil) {
+                posterPath: String? = nil, backdropPath: String? = nil, tmdbId: Int? = nil,
+                requestedByID: Int? = nil, requestedByName: String? = nil) {
         self.id = id; self.mediaTitle = mediaTitle; self.mediaType = mediaType
         self.status = status; self.mediaStatus = mediaStatus; self.requestedAt = requestedAt
         self.posterPath = posterPath; self.backdropPath = backdropPath
         self.tmdbId = tmdbId
+        self.requestedByID = requestedByID; self.requestedByName = requestedByName
     }
 
     public var posterURL: URL? {
@@ -201,6 +207,8 @@ public struct SeerrRequestItem: Sendable, Identifiable, Equatable, Hashable {
         case .pending:  return ("Pending", "f59e0b")
         case .approved: return ("Approved", "10b981")
         case .declined: return ("Declined", "F43F5E")
+        case .failed: return ("Failed", "F43F5E")
+        case .completed: return ("Completed", "10b981")
         }
     }
 }

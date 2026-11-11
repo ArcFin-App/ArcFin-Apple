@@ -17,44 +17,59 @@ final class SeerrConnectionForm {
 
     var testResult: String? = nil
     private(set) var isTesting = false
+    /// Signing in with a username and password rather than Quick Connect, the usual way.
+    private(set) var usesPassword = false
+    private var jellyfinUsername = ""
 
-    func beginEditing(url: String, username: String, password: String, authMethod: SeerrAuthMethod) {
+    /// Whether Save can go ahead.
+    var isComplete: Bool {
+        !url.isEmpty && !username.isEmpty && (!usesPassword || !password.isEmpty)
+    }
+
+    /// A connection with no saved password signs in with Quick Connect, as the Jellyfin user.
+    func beginEditing(url: String, username: String, password: String, authMethod: SeerrAuthMethod,
+                      jellyfinUsername: String? = nil) {
+        self.jellyfinUsername = jellyfinUsername ?? ""
+        usesPassword = !password.isEmpty || authMethod == .local
         self.url = url
-        self.username = username
+        self.username = username.isEmpty ? self.jellyfinUsername : username
         self.password = password
         self.authMethod = authMethod
         testResult = nil
         isEditing = true
     }
 
-    func testConnection(seerrRepo: SeerrRepository) {
+    func useQuickConnect() {
+        usesPassword = false
+        authMethod = .jellyfin
+        password = ""
+        if !jellyfinUsername.isEmpty { username = jellyfinUsername }
+        testResult = nil
+    }
+
+    func usePassword() {
+        usesPassword = true
+        testResult = nil
+    }
+
+    /// `onSuccess` runs once Seerr has accepted the sign-in.
+    func testConnection(seerrRepo: SeerrRepository, authManager: AuthManager, onSuccess: (() -> Void)? = nil) {
         guard let url = URL(string: self.url.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            testResult = "✗ Invalid URL"; return
+            testResult = "✗ " + String(localized: "Invalid URL"); return
         }
         isTesting = true; testResult = nil
-        let path = authMethod.apiPath
-        let body = try? JSONSerialization.data(withJSONObject: [
-            "username": username,
-            "password": password,
-        ])
+        let client = SeerrHTTPClient(baseURL: url, username: username, password: password, authMethod: authMethod,
+                                     authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager))
         Task {
-            var req = URLRequest(url: url.appendingPathComponent(path))
-            req.httpMethod = "POST"
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = body
-            req.timeoutInterval = 10
             do {
-                let (_, resp) = try await URLSession.arcfin.data(for: req)
-                if let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                    testResult = "✓ Connected as \(authMethod.label)"
-                    seerrRepo.clearAuthFailure()
-                } else if let http = resp as? HTTPURLResponse, http.statusCode == 403 {
-                    testResult = "✗ Wrong account type — try the other option"
-                } else {
-                    testResult = "✗ Invalid credentials"
-                }
+                try await client.login()
+                testResult = "✓ " + (await client.usesQuickConnect
+                    ? String(localized: "Connected with Quick Connect")
+                    : String(localized: "Connected"))
+                seerrRepo.clearAuthFailure()
+                onSuccess?()
             } catch {
-                testResult = "✗ \(error.localizedDescription)"
+                testResult = "✗ " + SeerrSignInText.message(for: error)
             }
             isTesting = false
         }
@@ -66,9 +81,45 @@ struct SeerrConnectionSummary: View {
     let url: String
     let authMethod: SeerrAuthMethod
     let username: String
+    /// Connected through Quick Connect rather than a saved password.
+    var usesQuickConnect = false
+    /// The server's Arcfin Sync plugin sets this connection: it can't be removed here, since
+    /// the plugin would put it straight back.
+    var isManagedByServer = false
     let onRemove: () -> Void
 
+    @Environment(SeerrRepository.self) private var seerrRepo
+    @State private var isRetrying = false
+
     var body: some View {
+        if seerrRepo.authFailed {
+            Section {
+                Button {
+                    isRetrying = true
+                    Task {
+                        await seerrRepo.retrySignIn()
+                        isRetrying = false
+                    }
+                } label: {
+                    HStack {
+                        if isRetrying { ProgressView().scaleEffect(0.8) }
+                        Text("Try Again")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .disabled(isRetrying)
+            } header: {
+                Label("Couldn't Sign In", systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
+                    .textCase(nil)
+            } footer: {
+                Text("Seerr didn't accept the sign-in. Try again, or check the details below.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        }
+
         Section {
             // Focusable on tvOS so the page doesn't open with focus on Remove Connection.
             LabeledContent("Server URL", value: url)
@@ -78,6 +129,10 @@ struct SeerrConnectionSummary: View {
                 .tvReadOnlyRow()
             LabeledContent("Username", value: username)
                 .tvReadOnlyRow()
+            if usesQuickConnect {
+                LabeledContent("Signs In With", value: String(localized: "Quick Connect"))
+                    .tvReadOnlyRow()
+            }
         } header: {
             Label("Connection", systemImage: "server.rack")
                 .font(.system(.caption, design: .default, weight: .semibold))
@@ -85,10 +140,19 @@ struct SeerrConnectionSummary: View {
                 .textCase(nil)
         }
 
-        Section {
-            Button(role: .destructive, action: onRemove) {
-                Text("Remove Connection")
-                    .frame(maxWidth: .infinity, alignment: .center)
+        if isManagedByServer {
+            Section {
+            } footer: {
+                Text("Your server sets up this Seerr connection for everyone, so it can't be removed here. Ask your admin to change it.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        } else {
+            Section {
+                Button(role: .destructive, action: onRemove) {
+                    Text("Remove Connection")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
             }
         }
     }
@@ -114,9 +178,81 @@ struct SeerrAccountTypeSection: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .textCase(nil)
         } footer: {
-            Text(form.authMethod.description)
+            Text(form.authMethod == .jellyfin
+                 ? "Sign in with your Jellyfin username and password."
+                 : "Sign in with a local Seerr account.")
                 .font(.caption)
                 .foregroundStyle(DT.Color.textSecondary)
+        }
+    }
+}
+
+/// Settings › Seerr while editing, the usual way: sign in as the Jellyfin user through Quick
+/// Connect, with nothing to type. `onConnected` saves the connection.
+struct SeerrQuickConnectSection: View {
+    let form: SeerrConnectionForm
+    let onConnected: () -> Void
+    @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
+
+    var body: some View {
+        Section {
+            Button {
+                form.testConnection(seerrRepo: seerrRepo, authManager: authManager, onSuccess: onConnected)
+            } label: {
+                HStack(spacing: 8) {
+                    if form.isTesting { ProgressView().scaleEffect(0.8) }
+                    else { Image(systemName: "bolt.horizontal.circle.fill") }
+                    Text(form.isTesting ? "Signing In…" : "Sign In with Quick Connect")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .disabled(form.url.isEmpty || form.username.isEmpty || form.isTesting)
+
+            if let result = form.testResult {
+                Text(result)
+                    .font(.caption)
+                    .foregroundStyle(result.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("F43F5E"))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        } header: {
+            Label("Sign In", systemImage: "person.badge.key")
+                .font(.system(.caption, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+                .textCase(nil)
+        } footer: {
+            Text("Signs in to Seerr as \(form.username) with your Jellyfin account. There's no password to type, and none is saved.")
+                .font(.caption)
+                .foregroundStyle(DT.Color.textSecondary)
+        }
+    }
+}
+
+/// Switching between Quick Connect and a username and password, while editing.
+struct SeerrOtherSignInSection: View {
+    let form: SeerrConnectionForm
+
+    var body: some View {
+        Section {
+            if form.usesPassword {
+                Button("Sign In with Quick Connect Instead") { withAnimation { form.useQuickConnect() } }
+            } else {
+                Button("Use a Username and Password") { withAnimation { form.usePassword() } }
+            }
+        } header: {
+            if !form.usesPassword {
+                Text("Other Ways to Sign In")
+                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .textCase(nil)
+            }
+        } footer: {
+            if !form.usesPassword {
+                Text("For a local Seerr account, or when Quick Connect is turned off on your Jellyfin server.")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
         }
     }
 }
@@ -125,10 +261,11 @@ struct SeerrAccountTypeSection: View {
 struct SeerrTestSection: View {
     let form: SeerrConnectionForm
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
 
     var body: some View {
         Section {
-            Button { form.testConnection(seerrRepo: seerrRepo) } label: {
+            Button { form.testConnection(seerrRepo: seerrRepo, authManager: authManager) } label: {
                 HStack {
                     if form.isTesting { ProgressView().scaleEffect(0.8) }
                     else { Image(systemName: "network") }
@@ -136,7 +273,7 @@ struct SeerrTestSection: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
-            .disabled(form.url.isEmpty || form.username.isEmpty || form.password.isEmpty || form.isTesting)
+            .disabled(!form.isComplete || form.isTesting)
 
             if let result = form.testResult {
                 Text(result)

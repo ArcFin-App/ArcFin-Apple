@@ -154,6 +154,8 @@ enum SeerrSpotlightIndexer {
                 case .pending: status = "Requested"
                 case .approved: status = "Approved"
                 case .declined: status = "Declined"
+                case .failed: status = "Failed"
+                case .completed: status = "Completed"
                 }
             }
             let entry = SeerrSpotlightEntry(

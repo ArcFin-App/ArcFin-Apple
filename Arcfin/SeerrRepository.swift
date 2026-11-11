@@ -33,6 +33,9 @@ final class SeerrRepository {
     /// above. Used by the season picker (quota, auto-approve banner, whether specials/partial
     /// requests are even offered).
     @ObservationIgnored private(set) var currentUser: SeerrCurrentUser?
+    /// The Seerr user is an admin or can manage requests: they see everyone's requests and
+    /// can approve or decline the pending ones.
+    private(set) var canManageRequests = false
     @ObservationIgnored private(set) var publicSettings: SeerrPublicSettings?
 
     // Not @ObservationIgnored, unlike the bookkeeping vars below — isConfigured reads this,
@@ -47,6 +50,10 @@ final class SeerrRepository {
     @ObservationIgnored private var discoverLoad: Task<Void, Never>?
     @ObservationIgnored private var watchlistLoad: Task<Void, Never>?
     @ObservationIgnored private var requestsLoad: Task<Void, Never>?
+    // Trying again by itself after a failure, waiting longer each time (see scheduleRetry).
+    @ObservationIgnored private var retryTask: Task<Void, Never>?
+    @ObservationIgnored private var retryAttempt = 0
+    private static let retryDelays: [Duration] = [.seconds(15), .seconds(30), .seconds(60), .seconds(120), .seconds(300), .seconds(600)]
     @ObservationIgnored private var configuredURL: String = ""
     @ObservationIgnored private var configuredUsername: String = ""
     @ObservationIgnored private var configuredPassword: String = ""
@@ -67,6 +74,31 @@ final class SeerrRepository {
     func reloadTMDB() {
         tmdb = TMDBCredential.load().map(TMDBClient.init(key:))
         tmdbDetails = [:]
+        resetRetry()
+    }
+
+    /// After Seerr won't sign in, or a load from Seerr or TMDB fails, tries again by itself:
+    /// 15 s, 30 s, 1, 2 and 5 min, then every 10 min. One wait at a time.
+    private func scheduleRetry() {
+        guard retryTask == nil, hasCatalog else { return }
+        let delay = Self.retryDelays[min(retryAttempt, Self.retryDelays.count - 1)]
+        retryAttempt += 1
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard let self, !Task.isCancelled else { return }
+            self.retryTask = nil
+            await self.client?.allowSignInRetry()
+            await self.loadDiscover()
+            await self.loadRequests()
+            if !self.watchlist.isEmpty || self.authFailed { await self.loadWatchlist() }
+        }
+    }
+
+    /// A load worked, or the connection changed: the next failure starts the waits again.
+    private func resetRetry() {
+        retryTask?.cancel()
+        retryTask = nil
+        retryAttempt = 0
     }
 
     /// One TMDB details request serves a title page's facts, detail and age rating.
@@ -99,12 +131,17 @@ final class SeerrRepository {
         return result
     }
 
+    /// A Jellyfin account with no password connects through Quick Connect, approved with
+    /// `authorizeQuickConnect`; any other account needs its username and password.
     func configure(urlString: String, username: String, password: String,
-                   authMethod: SeerrAuthMethod = .jellyfin) {
+                   authMethod: SeerrAuthMethod = .jellyfin,
+                   authorizeQuickConnect: SeerrHTTPClient.QuickConnectAuthorizer? = nil) {
         let trimURL  = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimURL.isEmpty, !trimUser.isEmpty, !trimPass.isEmpty,
+        let viaQuickConnect = authMethod == .jellyfin && trimPass.isEmpty && authorizeQuickConnect != nil
+        // The username is set once someone chooses to connect, Quick Connect or not.
+        guard !trimURL.isEmpty, !trimUser.isEmpty, viaQuickConnect || !trimPass.isEmpty,
               let url = URL(string: trimURL) else {
             client = nil
             configuredURL = ""; configuredUsername = ""; configuredPassword = ""
@@ -124,7 +161,11 @@ final class SeerrRepository {
         configuredURL = trimURL; configuredUsername = trimUser
         configuredPassword = trimPass; configuredMethod = authMethod
         client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
-                                      authMethod: authMethod)
+                                 authMethod: authMethod, authorizeQuickConnect: authorizeQuickConnect)
+        resetRetry()
+        // A different Seerr user, whose permissions and quota are their own.
+        currentUser = nil
+        canManageRequests = false
         authFailed = false
         cachedRegion = nil
         trending = []; popularMovies = []; popularTV = []; requests = []
@@ -165,6 +206,7 @@ final class SeerrRepository {
         for error in errors {
             Telemetry.logger(category: "SeerrRepository").error("loadDiscover failed: \(error, privacy: .public)")
         }
+        if errors.isEmpty { resetRetry() } else { scheduleRetry() }
         if firstLoad { isLoadingDiscover = false }
     }
 
@@ -185,8 +227,8 @@ final class SeerrRepository {
             return ListResult(items: try await fetch())
         } catch where isCancellation(error) {
             return ListResult(wasCancelled: true)
-        } catch SeerrError.authFailed {
-            return ListResult(error: SeerrError.authFailed.localizedDescription, isAuthFailure: true)
+        } catch let error as SeerrError where error.isSignInFailure {
+            return ListResult(error: SeerrSignInText.message(for: error), isAuthFailure: true)
         } catch {
             return ListResult(error: error.localizedDescription)
         }
@@ -210,10 +252,17 @@ final class SeerrRepository {
             fetched = try await client.watchlist(refresh: refresh)
         } catch where Self.isCancellation(error) {
             return
+        } catch let error as SeerrError where error.isSignInFailure {
+            authFailed = true
+            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            scheduleRetry()
+            return
         } catch {
             Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            scheduleRetry()
             return
         }
+        authFailed = false
         watchlist = await visible(fetched)
         indexForSpotlight()
     }
@@ -258,8 +307,12 @@ final class SeerrRepository {
             }
             // Only on a refresh, never the first load — otherwise every request already
             // sitting at approved/available on first launch would fire a notification.
+            if let user = await ensureCurrentUser() {
+                canManageRequests = SeerrPermission.hasAny(of: [.manageRequests], in: user.permissions)
+            }
             if !firstLoad {
-                for item in requests {
+                // Someone who manages requests sees everyone's; only their own notify them.
+                for item in requests where item.requestedByID == nil || item.requestedByID == currentUser?.id {
                     guard let previous = known[item.id] else { continue }
                     if previous.status != .approved, item.status == .approved {
                         Task { await NotificationManager.notifyRequestApproved(title: item.mediaTitle) }
@@ -270,14 +323,16 @@ final class SeerrRepository {
             }
             authFailed = false
             indexForSpotlight()
-        } catch SeerrError.authFailed {
+        } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
+            scheduleRetry()
         } catch where Self.isCancellation(error) {
         } catch {
             let nsError = error as NSError
             Telemetry.logger(category: "SeerrRepository").error(
                 "loadRequests failed: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
             )
+            scheduleRetry()
         }
         if firstLoad { isLoadingRequests = false }
     }
@@ -328,6 +383,19 @@ final class SeerrRepository {
         }
         await loadRequests()
     }
+
+    /// Approves or declines someone's pending request, then reloads the list for the
+    /// request's new status and its media's.
+    func setRequestApproved(_ request: SeerrRequestItem, approved: Bool) async throws {
+        guard let client else { throw URLError(.badURL) }
+        try await client.setRequestApproved(requestID: request.id, approved: approved)
+        if let index = requests.firstIndex(where: { $0.id == request.id }) {
+            requests[index].status = approved ? .approved : .declined
+        }
+        await loadRequests()
+    }
+
+    var pendingRequestCount: Int { requests.count { $0.status == .pending } }
 
     func cancelRequest(id: Int) async throws {
         guard let client else { throw URLError(.badURL) }
@@ -393,11 +461,20 @@ final class SeerrRepository {
     /// this app), a profile switch is a reasonable moment to give it a fresh try instead of
     /// staying latched out for the rest of the cooldown.
     func retryAfterProfileSwitch() async {
+        await retrySignIn()
+    }
+
+    /// Try Again after Seerr wouldn't sign in: forgets the failure (waiting for that, so the
+    /// reload can't still see it) and loads Discover, requests and the watchlist again.
+    func retrySignIn() async {
         guard let client else { return }
+        resetRetry()
         await client.clearAuthFailure()
         authFailed = false
+        discoverError = nil
         await loadDiscover()
         await loadRequests()
+        await loadWatchlist()
     }
 
     func mediaDetail(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrMediaDetail? {

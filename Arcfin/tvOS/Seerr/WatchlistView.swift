@@ -16,6 +16,9 @@ struct WatchlistView: View {
             if model.isLoading && seerrRepo.watchlist.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if seerrRepo.watchlist.isEmpty, seerrRepo.authFailed {
+                SeerrSignInFailedView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if seerrRepo.watchlist.isEmpty {
                 ContentUnavailableView(
                     "Watchlist Empty",

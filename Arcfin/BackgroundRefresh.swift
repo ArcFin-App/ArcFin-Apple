@@ -131,11 +131,15 @@ nonisolated enum BackgroundRefresh {
         // Nobody signed in: the Seerr sign-in left behind isn't anyone's to check.
         guard defaults.string(forKey: "arcfin.activeProfileID") != nil,
               let urlString = defaults.string(forKey: "seerrURL"), let url = URL(string: urlString),
-              let username = defaults.string(forKey: "seerrUsername"), !username.isEmpty,
-              let password = (try? KeychainStore().loadSeerrPassword()) ?? nil, !password.isEmpty
+              let username = defaults.string(forKey: "seerrUsername"), !username.isEmpty
         else { return }
+        let password = ((try? KeychainStore().loadSeerrPassword()) ?? nil) ?? ""
         let method = defaults.string(forKey: "seerrAuthMethod").flatMap(SeerrAuthMethod.init(rawValue:)) ?? .jellyfin
-        let client = SeerrHTTPClient(baseURL: url, username: username, password: password, authMethod: method)
+        // No saved password: a Jellyfin account connected through Quick Connect.
+        let authorizer = IntentSession.credential().map(SeerrSignIn.quickConnectAuthorizer(credential:))
+        guard !password.isEmpty || (method == .jellyfin && authorizer != nil) else { return }
+        let client = SeerrHTTPClient(baseURL: url, username: username, password: password, authMethod: method,
+                                     authorizeQuickConnect: authorizer)
 
         if requestUpdates, let requests = try? await client.getRequests() {
             await announceRequestChanges(requests)

@@ -3,20 +3,21 @@
 import SwiftUI
 import SeerrAPI
 
-/// Shown once after a sign-in that left Seerr unconfigured because no password was available
-/// to auto-fill it (Quick Connect) — password-based sign-in already fills this in silently via
-/// AuthView's attemptSeerrAutoLogin. Seerr Account Type is locked to Jellyfin server-side here,
-/// which is exactly why Settings hides the manual username/password fields that would
-/// otherwise let the user fix this themselves — this is the one place that gap can still be
-/// closed, since the password only ever exists transiently at sign-in.
+/// Shown when the server gives a Seerr address but connecting it by itself through Quick
+/// Connect didn't work (see AppRootModel.checkSeerrSetupPrompt): it opens at the password,
+/// saying why. Connect tries Quick Connect again.
 struct SeerrSetupPromptView: View {
     let seerrURL: String
     let jellyfinUsername: String
+    let authorizeQuickConnect: SeerrHTTPClient.QuickConnectAuthorizer
+    /// Quick Connect was already tried and failed for this reason: start at the password.
+    var initialError: String?
+    /// An empty password means Seerr was connected through Quick Connect.
     let onConnected: (_ username: String, _ password: String) -> Void
     let onDismiss: () -> Void
 
     private enum Step {
-        case ask, password, testing, failed
+        case ask, connecting, password, testing, failed
     }
 
     @State private var step: Step = .ask
@@ -33,7 +34,7 @@ struct SeerrSetupPromptView: View {
                     .foregroundStyle(DT.Color.accent)
 
                 switch step {
-                case .ask:
+                case .ask, .connecting:
                     askContent
                 case .password, .testing:
                     passwordContent
@@ -51,6 +52,11 @@ struct SeerrSetupPromptView: View {
             }
         }
         .interactiveDismissDisabled()
+        .onAppear {
+            guard let initialError else { return }
+            errorMessage = initialError
+            step = .password
+        }
     }
 
     private var askContent: some View {
@@ -58,23 +64,29 @@ struct SeerrSetupPromptView: View {
             Text("Connect Seerr")
                 .font(.system(.title2, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("This server uses Seerr to handle media requests and more. Would you like to connect it now?")
+            Text("This server uses Seerr to handle media requests and more. Connect it with your Jellyfin account (\(jellyfinUsername)); there's no password to type.")
                 .font(.system(.subheadline))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
 
             VStack(spacing: 12) {
-                Button {
-                    step = .password
-                } label: {
-                    Text("Yes, Connect Now")
-                        .font(.system(.callout, design: .default, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                Button(action: connectWithQuickConnect) {
+                    Group {
+                        if step == .connecting {
+                            ProgressView().tint(DT.Color.onAccent)
+                        } else {
+                            Text("Connect")
+                                .font(.system(.callout, design: .default, weight: .semibold))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(DT.Color.accent)
                 .foregroundStyle(DT.Color.onAccent)
+                .disabled(step == .connecting)
+                .accessibilityLabel(step == .connecting ? "Connecting" : "Connect")
 
                 Button {
                     onDismiss()
@@ -84,6 +96,7 @@ struct SeerrSetupPromptView: View {
                         .font(.system(.subheadline))
                 }
                 .foregroundStyle(DT.Color.textSecondary)
+                .disabled(step == .connecting)
             }
             .frame(maxWidth: 320)
             .padding(.top, 8)
@@ -149,6 +162,27 @@ struct SeerrSetupPromptView: View {
         }
     }
 
+    private func connectWithQuickConnect() {
+        errorMessage = nil
+        step = .connecting
+        Task {
+            let client = SeerrHTTPClient(
+                baseURL: URL(string: seerrURL) ?? URL(fileURLWithPath: "/"),
+                username: jellyfinUsername, password: "", authMethod: .jellyfin,
+                authorizeQuickConnect: authorizeQuickConnect
+            )
+            do {
+                try await client.login()
+                onConnected(jellyfinUsername, "")
+                dismiss()
+            } catch {
+                // Quick Connect can't be used here: the password still can.
+                errorMessage = SeerrSignInText.message(for: error)
+                step = .password
+            }
+        }
+    }
+
     private func testPassword() {
         guard !password.isEmpty else { return }
         errorMessage = nil
@@ -177,6 +211,8 @@ struct SeerrSetupPromptView: View {
     SeerrSetupPromptView(
         seerrURL: "https://seerr.example.com",
         jellyfinUsername: "alex",
+        authorizeQuickConnect: { _ in true },
+        initialError: nil,
         onConnected: { _, _ in },
         onDismiss: {}
     )

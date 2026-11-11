@@ -8,6 +8,7 @@ struct SeerrView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var model = SeerrDiscoverModel()
+    @State private var review = SeerrRequestReview()
 
     private var trendingForType: [SeerrItem] { model.trending(in: seerrRepo) }
 
@@ -25,6 +26,7 @@ struct SeerrView: View {
                 }
             }
             .screenBackground()
+            .seerrRequestReview(review)
             .navigationDestination(for: SeerrItem.self) { SeerrItemDetailView(item: $0) }
             .navigationDestination(for: MediaItem.self) { MediaDetailView(item: $0) }
             .navigationDestination(for: SeerrGenre.self) { genre in
@@ -51,14 +53,13 @@ struct SeerrView: View {
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Check your Seerr credentials in Settings → Plugins → Seerr.")
+            Text("Seerr didn't accept the sign-in. Try again, or check Settings › Integrations › Seerr.")
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
             Button("Try Again") {
-                seerrRepo.clearAuthFailure()
-                Task { await seerrRepo.loadDiscover() }
+                Task { await seerrRepo.retrySignIn() }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -174,8 +175,7 @@ struct SeerrView: View {
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
             Button("Try Again") {
-                seerrRepo.clearAuthFailure()
-                Task { await seerrRepo.loadDiscover() }
+                Task { await seerrRepo.retrySignIn() }
             }
         }
         .padding(28)
@@ -249,7 +249,7 @@ struct SeerrView: View {
     private var requestsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("My Requests")
+                Text(seerrRepo.canManageRequests ? "Requests" : "My Requests")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(DT.Color.textPrimary)
                 if seerrRepo.isLoadingRequests {
@@ -280,12 +280,16 @@ struct SeerrView: View {
                                 id: tmdbId, title: req.mediaTitle, mediaType: req.mediaType,
                                 posterPath: req.posterPath, backdropPath: req.backdropPath,
                                 availabilityStatus: req.mediaStatus)) {
-                                TVRequestRow(req: req)
+                                TVRequestRow(req: req, requester: seerrRepo.requesterName(of: req))
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
+                            // Press and hold to approve or decline.
+                            .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
                         } else {
-                            TVRequestRow(req: req).focusable()
+                            TVRequestRow(req: req, requester: seerrRepo.requesterName(of: req))
+                                .focusable()
+                                .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
                         }
                     }
                 }
@@ -447,6 +451,7 @@ private struct TVSeerrCard: View {
 
 private struct TVRequestRow: View {
     let req: SeerrRequestItem
+    var requester: String?
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
@@ -484,6 +489,12 @@ private struct TVRequestRow: View {
                         mediaStatusPill(mediaStatus)
                     }
                 }
+                if let requester {
+                    Label("Requested by \(requester)", systemImage: "person")
+                        .font(.system(size: 21))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer()
@@ -504,6 +515,8 @@ private struct TVRequestRow: View {
         let (label, hex): (String, String) = switch status {
         case .approved:  ("Approved",  "10b981")
         case .declined:  ("Declined",  "F43F5E")
+        case .failed:  ("Failed",  "F43F5E")
+        case .completed: ("Completed", "10b981")
         case .pending:   ("Pending",   "f59e0b")
         }
         return pillView(label: label, hex: hex)

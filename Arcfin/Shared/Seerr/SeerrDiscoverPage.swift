@@ -448,8 +448,7 @@ struct SeerrDiscoverPage: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
             Button("Try Again") {
-                seerrRepo.clearAuthFailure()
-                Task { await seerrRepo.loadDiscover() }
+                Task { await seerrRepo.retrySignIn() }
             }
             .buttonStyle(.bordered)
             .tint(DT.Color.accent)
