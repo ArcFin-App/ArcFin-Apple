@@ -254,7 +254,7 @@ struct SeerrItemDetailView: View {
                 .tvFocusRing(cornerRadius: DT.Radius.md)
                 .disabled(model.isRequestingCollection)
                 .padding(.horizontal, 80)
-                .confirmationDialog("Request \(parts.count) movies?", isPresented: $model.isConfirmingCollectionRequest, titleVisibility: .visible) {
+                .alert("Request \(parts.count) movies?", isPresented: $model.isConfirmingCollectionRequest) {
                     Button("Request \(parts.count) Movies") { Task { await model.requestCollection(seerrRepo: seerrRepo) } }
                     Button("Cancel", role: .cancel) {}
                 } message: {

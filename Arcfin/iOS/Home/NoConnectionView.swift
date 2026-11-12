@@ -39,8 +39,9 @@ struct NoConnectionView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
-        .confirmationDialog("Sign out of this server?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+        .alert("Sign out of this server?", isPresented: $confirmSignOut) {
             Button("Sign Out", role: .destructive) { authManager.signOut() }
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("You'll need to sign in again to use it. Downloads stay on this device.")
         }

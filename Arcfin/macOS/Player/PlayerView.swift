@@ -176,7 +176,7 @@ struct PlayerView: View {
         .keepsScreenAwake(status: model.player.status)
         .onAppear { connectModel() }
         .task { if !model.isAskingToResume { await model.setup() } }
-        .confirmationDialog("Resume Playback?", isPresented: $model.isAskingToResume, titleVisibility: .visible) {
+        .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks
                 model.resumeAnswered = true

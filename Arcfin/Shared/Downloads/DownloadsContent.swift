@@ -420,9 +420,9 @@ struct DownloadsAlerts: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .confirmationDialog("Smart Downloads fetched this. Cancel it?", isPresented: Binding(
+            .alert("Smart Downloads fetched this. Cancel it?", isPresented: Binding(
                 get: { model.pendingSmartCancel != nil }, set: { if !$0 { model.pendingSmartCancel = nil } }
-            ), titleVisibility: .visible) {
+            )) {
                 Button("Cancel Download", role: .destructive) {
                     if let id = model.pendingSmartCancel { downloadManager.cancelDownload(itemId: id) }
                     model.pendingSmartCancel = nil
@@ -480,7 +480,7 @@ struct DownloadsAlerts: ViewModifier {
                 default: Text("Low Power Mode is on. Downloading uses more battery.")
                 }
             }
-            .confirmationDialog("Cancel all downloads?", isPresented: $model.showCancelAllConfirm, titleVisibility: .visible) {
+            .alert("Cancel all downloads?", isPresented: $model.showCancelAllConfirm) {
                 Button("Cancel All Downloads", role: .destructive) { downloadManager.cancelAllDownloads() }
                 Button("Keep Downloading", role: .cancel) {}
             } message: {

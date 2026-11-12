@@ -86,10 +86,9 @@ struct SeerrRequestDetailView: View {
         .navigationTitle("")
         .transparentInlineNavigationBar()
         .seerrRequestReview(review)
-        .confirmationDialog(
+        .alert(
             "Remove this request?",
-            isPresented: $showCancelConfirm,
-            titleVisibility: .visible
+            isPresented: $showCancelConfirm
         ) {
             Button("Remove Request", role: .destructive) { cancel() }
             Button("Cancel", role: .cancel) {}

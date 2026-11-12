@@ -92,13 +92,13 @@ struct LiveTVRecordingsView: View {
                 .padding(.bottom, 32)
             }
             .refreshable { await model.loadRecordings(authManager: authManager) }
-            .confirmationDialog("Delete \(deletingRecording?.item.name ?? "")?",
-                                isPresented: Binding(get: { deletingRecording != nil }, set: { if !$0 { deletingRecording = nil } }),
-                                titleVisibility: .visible) {
+            .alert("Delete \(deletingRecording?.item.name ?? "")?",
+                                isPresented: Binding(get: { deletingRecording != nil }, set: { if !$0 { deletingRecording = nil } })) {
                 Button("Delete Recording", role: .destructive) {
                     guard let recording = deletingRecording else { return }
                     Task { await model.delete(recording, authManager: authManager) }
                 }
+                Button("Cancel", role: .cancel) {}
             } message: {
                 Text("The recording is removed from your server for everyone.")
             }
@@ -210,9 +210,10 @@ private struct LiveTVTimerRow: View {
         .padding(.leading, 14)
         .padding(.trailing, 4)
         .padding(.vertical, 6)
-        .confirmationDialog(isActive ? "Stop recording \(timer.name)?" : "Cancel the recording of \(timer.name)?",
-                            isPresented: $confirming, titleVisibility: .visible) {
+        .alert(isActive ? "Stop recording \(timer.name)?" : "Cancel the recording of \(timer.name)?",
+                            isPresented: $confirming) {
             Button(isActive ? "Stop Recording" : "Cancel Recording", role: .destructive, action: cancel)
+            Button("Cancel", role: .cancel) {}
         }
     }
 
@@ -255,8 +256,9 @@ private struct LiveTVSeriesTimerRow: View {
         .padding(.leading, 14)
         .padding(.trailing, 4)
         .padding(.vertical, 8)
-        .confirmationDialog("Stop recording \(seriesTimer.name)?", isPresented: $confirming, titleVisibility: .visible) {
+        .alert("Stop recording \(seriesTimer.name)?", isPresented: $confirming) {
             Button("Stop Recording Series", role: .destructive, action: cancel)
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("Episodes already recorded stay on your server.")
         }

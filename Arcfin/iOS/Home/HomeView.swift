@@ -174,8 +174,8 @@ struct HomeView: View {
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
             if isFailed && !wasFailed { showOfflinePrompt = true }
         }
-        .confirmationDialog(
-            "Can't reach your server", isPresented: $showOfflinePrompt, titleVisibility: .visible
+        .alert(
+            "Can't reach your server", isPresented: $showOfflinePrompt
         ) {
             Button("Retry") {
                 guard case .authenticated(let cred) = authManager.state else { return }

@@ -92,7 +92,7 @@ struct DownloadButton: View {
             }
             Button("Cancel", role: .cancel) {}
         }
-        .confirmationDialog("Smart Downloads fetched this. Cancel it?", isPresented: $showSmartCancelConfirm, titleVisibility: .visible) {
+        .alert("Smart Downloads fetched this. Cancel it?", isPresented: $showSmartCancelConfirm) {
             Button("Cancel Download", role: .destructive) { downloadManager.cancelDownload(itemId: item.id) }
             Button("Cancel & Ignore in Smart Downloads", role: .destructive) { downloadManager.deleteAndIgnore(itemIds: [item.id]) }
             Button("Keep Downloading", role: .cancel) {}

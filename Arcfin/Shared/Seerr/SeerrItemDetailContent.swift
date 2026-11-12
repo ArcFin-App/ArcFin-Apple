@@ -271,7 +271,7 @@ struct SeerrItemDetailContent: View {
             .buttonStyle(.bordered)
             .tint(DT.Color.accent)
             .disabled(model.isRequestingCollection)
-            .confirmationDialog("Request \(parts.count) movies?", isPresented: $model.isConfirmingCollectionRequest, titleVisibility: .visible) {
+            .alert("Request \(parts.count) movies?", isPresented: $model.isConfirmingCollectionRequest) {
                 Button("Request \(parts.count) Movies") { Task { await model.requestCollection(seerrRepo: seerrRepo) } }
                 Button("Cancel", role: .cancel) {}
             } message: {

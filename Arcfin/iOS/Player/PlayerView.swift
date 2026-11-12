@@ -183,7 +183,7 @@ struct PlayerView: View {
             applyOpeningOrientation()
         }
         .task { if !model.isAskingToResume { await setup() } }
-        .confirmationDialog("Resume Playback?", isPresented: $model.isAskingToResume, titleVisibility: .visible) {
+        .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks
                 model.resumeAnswered = true
