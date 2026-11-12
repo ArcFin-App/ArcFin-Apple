@@ -372,6 +372,13 @@ final class AuthManager {
             self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
             self.arcfinSyncLastSyncedAt = .now
             self.watchSettingsChanges()
+            // Which encoders the server's hardware really has (plugin 0.3+); nil leaves it to
+            // the learn-on-failure path.
+            if let encoders = await self.syncClient.fetchEncoders(credential: credential, authHeader: header),
+               let av1 = encoders.encoders["av1"] {
+                AV1Encoding.apply(serverEncodesAV1: av1, on: credential.baseURL)
+                Self.syncLog.notice("Server encoders (\(encoders.hardwareAcceleration, privacy: .public)): AV1 \(av1 ? "works" : "unavailable", privacy: .public)")
+            }
             Self.syncLog.notice("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
         }
     }

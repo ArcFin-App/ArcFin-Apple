@@ -27,6 +27,18 @@ public struct ArcfinSyncedSetting: Sendable, Codable, Equatable {
     }
 }
 
+/// What the plugin's test encodes found: whether h264, hevc and av1 can be encoded with the
+/// server's hardware acceleration setting.
+public struct ArcfinSyncEncoders: Sendable, Decodable, Equatable {
+    public let hardwareAcceleration: String
+    public let encoders: [String: Bool]
+
+    enum CodingKeys: String, CodingKey {
+        case hardwareAcceleration = "HardwareAcceleration"
+        case encoders = "Encoders"
+    }
+}
+
 public enum ArcfinSyncError: Error, Sendable {
     case requestFailed
 }
@@ -47,6 +59,18 @@ public struct ArcfinSyncClient: Sendable {
               (resp as? HTTPURLResponse)?.statusCode == 200
         else { return nil }
         return try? JSONDecoder().decode(ArcfinSyncStatus.self, from: data)
+    }
+
+    /// Nil on a plugin from before the encoder check, or when it can't be reached.
+    public func fetchEncoders(credential: ServerCredential, authHeader: String) async -> ArcfinSyncEncoders? {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("ArcfinSync/Encoders"))
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        // The first call runs the server's test encodes, a few seconds each.
+        req.timeoutInterval = 90
+        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200
+        else { return nil }
+        return try? JSONDecoder().decode(ArcfinSyncEncoders.self, from: data)
     }
 
     public func fetchSettings(credential: ServerCredential, authHeader: String) async throws -> [ArcfinSyncedSetting] {
