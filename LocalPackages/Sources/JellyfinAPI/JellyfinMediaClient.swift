@@ -215,6 +215,27 @@ public struct JellyfinMediaClient: Sendable {
         return shelves
     }
 
+    /// Movies and shows a server admin has tagged themselves, such as `arcfin-featured`.
+    public func getTaggedTitles(credential: ServerCredential, authHeader: String, tag: String, limit: Int = 20) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Tags", value: tag),
+            .init(name: "SortBy", value: "SortName"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,RunTimeTicks,Genres,ProviderIds"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
     /// Collections a server admin has tagged for Home (`arcfin-featured` for the hero,
     /// `arcfin-promoted` for rows), each with its titles in the collection's own order.
     /// Only collections this user can see come back, so library access still applies.

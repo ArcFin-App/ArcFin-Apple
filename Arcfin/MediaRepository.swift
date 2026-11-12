@@ -61,7 +61,8 @@ final class MediaRepository {
     var watchAgain: [MediaItem] = []
     /// A few random genres, each with unwatched titles — refreshed on every Home load.
     var genreShelves: [(genre: String, items: [MediaItem])] = []
-    /// Titles from collections the server admin tagged `arcfin-featured`, for the hero.
+    /// Titles the server admin tagged `arcfin-featured`, and those in collections tagged so,
+    /// for the hero.
     var featuredItems: [MediaItem] = []
     /// Collections the server admin tagged `arcfin-promoted`, each its own Home row.
     var promotedCollections: [(collection: MediaItem, items: [MediaItem])] = []
@@ -183,6 +184,7 @@ final class MediaRepository {
         async let recs    = client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)
         async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
         async let featured = client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-featured")
+        async let featuredTitles = client.getTaggedTitles(credential: credential, authHeader: header, tag: "arcfin-featured")
         async let promoted = client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-promoted")
 
         // Every result is gathered first and only shown if the server answered: a failed or
@@ -220,6 +222,7 @@ final class MediaRepository {
         let recsResult = (try? await recs) ?? []
         let tmdbKeysResult = try? await tmdbKeys
         let featuredResult = try? await featured
+        let featuredTitlesResult = try? await featuredTitles
         let promotedResult = try? await promoted
         guard succeeded else { return false }
 
@@ -240,9 +243,9 @@ final class MediaRepository {
         suggestions            = suggResult
         recommendations        = recsResult.filter { $0.items.count >= 3 }
         if let tmdbKeysResult { libraryTMDBKeys = tmdbKeysResult }
-        if let featuredResult {
+        if featuredResult != nil || featuredTitlesResult != nil {
             var seen = Set<String>()
-            featuredItems = featuredResult.flatMap(\.items).filter { seen.insert($0.id).inserted }
+            featuredItems = ((featuredTitlesResult ?? []) + (featuredResult ?? []).flatMap(\.items)).filter { seen.insert($0.id).inserted }
         }
         if let promotedResult { promotedCollections = promotedResult }
 

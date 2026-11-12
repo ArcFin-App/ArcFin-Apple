@@ -1345,6 +1345,70 @@
         }
       }
     },
+    "Add %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ hinzufügen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Añadir %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ajouter %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aggiungi %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@を追加"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 추가"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ toevoegen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Adicionar %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Добавить %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "添加%@"
+          }
+        }
+      }
+    },
     "Add Tag" : {
       "localizations" : {
         "de" : {
@@ -2493,6 +2557,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Arcfin 会自动发现本地无线局域网中的服务器"
+          }
+        }
+      }
+    },
+    "arcfin-featured puts this collection's titles in Home's hero; arcfin-promoted gives it its own row on Home. The rest are tags already used on this server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured zeigt die Titel dieser Sammlung oben auf der Startseite; arcfin-promoted gibt ihr eine eigene Reihe auf der Startseite. Die übrigen Tags werden schon auf diesem Server verwendet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured pone los títulos de esta colección en la cabecera de Inicio; arcfin-promoted le da su propia fila en Inicio. Las demás son etiquetas que ya se usan en este servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured place les titres de cette collection dans la bannière de l'accueil ; arcfin-promoted lui donne sa propre rangée sur l'accueil. Les autres sont des tags déjà utilisés sur ce serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured mette i titoli di questa raccolta nel banner della Home; arcfin-promoted le dà una riga dedicata nella Home. Gli altri sono tag già usati su questo server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured はこのコレクションのタイトルをホーム上部に表示し、arcfin-promoted はホームに専用の列を作ります。その他はこのサーバーですでに使われているタグです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured는 이 컬렉션의 항목을 홈 상단에 표시하고, arcfin-promoted는 홈에 전용 줄을 만듭니다. 나머지는 이 서버에서 이미 쓰이는 태그입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured zet de titels van deze collectie in de banner op Home; arcfin-promoted geeft haar een eigen rij op Home. De rest zijn tags die al op deze server worden gebruikt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured coloca os títulos desta coleção no destaque do Início; arcfin-promoted dá a ela uma fileira própria no Início. As demais são tags já usadas neste servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured выводит фильмы и сериалы коллекции в главный блок на главной, arcfin-promoted даёт ей отдельный ряд. Остальные теги уже используются на этом сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured 会把此合集的内容放到主页顶部；arcfin-promoted 会让它在主页单独成行。其余是此服务器上已在使用的标签。"
+          }
+        }
+      }
+    },
+    "arcfin-featured puts this title in Home's hero. The rest are tags already used on this server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured zeigt diesen Titel oben auf der Startseite. Die übrigen Tags werden schon auf diesem Server verwendet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured pone este título en la cabecera de Inicio. Las demás son etiquetas que ya se usan en este servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured place ce titre dans la bannière de l'accueil. Les autres sont des tags déjà utilisés sur ce serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured mette questo titolo nel banner della Home. Gli altri sono tag già usati su questo server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured はこのタイトルをホーム上部に表示します。その他はこのサーバーですでに使われているタグです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured는 이 항목을 홈 상단에 표시합니다. 나머지는 이 서버에서 이미 쓰이는 태그입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured zet deze titel in de banner op Home. De rest zijn tags die al op deze server worden gebruikt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured coloca este título no destaque do Início. As demais são tags já usadas neste servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured выводит этот фильм или сериал в главный блок на главной. Остальные теги уже используются на этом сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "arcfin-featured 会把此内容放到主页顶部。其余是此服务器上已在使用的标签。"
           }
         }
       }
@@ -7809,70 +8001,6 @@
         }
       }
     },
-    "Feature on Home" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Auf der Startseite hervorheben"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Destacar en Inicio"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Mettre en avant sur l'accueil"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In evidenza nella Home"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ホームで特集"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "홈에 추천"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Uitlichten op Home"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Destacar no Início"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Показывать в главном блоке"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在主页精选"
-          }
-        }
-      }
-    },
     "Follow Device" : {
       "localizations" : {
         "de" : {
@@ -10241,70 +10369,6 @@
         }
       }
     },
-    "Its titles fill Home's hero for everyone on this server." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ihre Titel füllen für alle auf diesem Server den großen Bereich oben auf der Startseite."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sus títulos llenan la cabecera de Inicio para todos en este servidor."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ses titres remplissent la grande bannière de l'accueil pour tous les utilisateurs de ce serveur."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "I suoi titoli riempiono il banner della Home per tutti su questo server."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "このサーバーの全員のホーム上部に、収録タイトルが表示されます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 서버의 모든 사용자에게 홈 상단에 포함된 항목이 표시됩니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De titels vullen de grote banner op Home voor iedereen op deze server."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Os títulos preenchem o destaque do Início para todos neste servidor."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Её фильмы и сериалы займут главный блок на главной у всех пользователей сервера."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "其中的内容会出现在此服务器所有人的主页顶部。"
-          }
-        }
-      }
-    },
     "Join only" : {
       "localizations" : {
         "de" : {
@@ -12161,6 +12225,70 @@
         }
       }
     },
+    "No tags yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Noch keine Tags."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aún no hay etiquetas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aucun tag pour l'instant."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ancora nessun tag."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "タグはまだありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "아직 태그가 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nog geen tags."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nenhuma tag ainda."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Тегов пока нет."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "还没有标签。"
+          }
+        }
+      }
+    },
     "Not Enough Space" : {
       "localizations" : {
         "de" : {
@@ -13373,70 +13501,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "否则在视频串流时，下载和智能下载会暂停，让视频独享网络连接，关闭播放器后继续。"
-          }
-        }
-      }
-    },
-    "Own Row on Home" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Eigene Reihe auf der Startseite"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Fila propia en Inicio"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Rangée dédiée sur l'accueil"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Riga dedicata nella Home"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ホームに専用の列"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "홈에 전용 줄"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Eigen rij op Home"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Fileira própria no Início"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Отдельный ряд на главной"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在主页单独成行"
           }
         }
       }
@@ -18497,70 +18561,6 @@
         }
       }
     },
-    "Shows as a row named after the collection, under Server Picks." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Erscheint als Reihe mit dem Namen der Sammlung, unter „Vom Server empfohlen“."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Aparece como una fila con el nombre de la colección, en Selección del servidor."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Apparaît comme une rangée au nom de la collection, dans Sélection du serveur."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Appare come una riga con il nome della raccolta, in Scelte del server."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "コレクション名の列として「サーバーのおすすめ」に表示されます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "컬렉션 이름의 줄로 서버 추천에 표시됩니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Verschijnt als rij met de naam van de collectie, onder Keuze van de server."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Aparece como uma fileira com o nome da coleção, em Escolhas do servidor."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Появится рядом с названием коллекции в разделе «Подборки сервера»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "以合集名称作为一行显示在“服务器精选”中。"
-          }
-        }
-      }
-    },
     "Shows details and recording options" : {
       "localizations" : {
         "de" : {
@@ -20861,6 +20861,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "存储空间"
+          }
+        }
+      }
+    },
+    "Suggested" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vorschläge"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sugeridas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suggestions"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suggeriti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "候補"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "추천"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suggesties"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sugeridas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Предложения"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "建议"
           }
         }
       }
