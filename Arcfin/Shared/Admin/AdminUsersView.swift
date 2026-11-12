@@ -60,10 +60,7 @@ struct AdminUsersView: View {
                     AdminUserDetailView(user: user, model: model)
                 } label: {
                     HStack(spacing: 12) {
-                        Image(systemName: user.isAdministrator ? "person.badge.key.fill" : "person.crop.circle.fill")
-                            .font(.system(.title3))
-                            .foregroundStyle(user.isDisabled ? DT.Color.textSecondary : DT.Color.accent)
-                            .frame(width: 28)
+                        AdminUserAvatar(user: user, credential: AdminAccess.session(authManager)?.credential)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(user.name)
                                 .foregroundStyle(user.isDisabled ? DT.Color.textSecondary : DT.Color.textPrimary)
@@ -118,6 +115,47 @@ struct AdminUsersView: View {
             parts.append(String(localized: "Never signed in"))
         }
         return parts.joined(separator: " · ")
+    }
+}
+
+/// A user's Jellyfin picture, or their initials, with a key for an admin.
+private struct AdminUserAvatar: View {
+    let user: JellyfinUser
+    let credential: ServerCredential?
+
+    private var initials: String {
+        user.name.split(separator: " ").prefix(2).compactMap(\.first).map { String($0).uppercased() }.joined()
+    }
+
+    var body: some View {
+        ZStack {
+            Circle().fill(user.isDisabled ? DT.Color.textSecondary.opacity(0.4) : DT.Color.accent)
+            Text(initials)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(DT.Color.onAccent)
+            if let tag = user.primaryImageTag, let credential {
+                RetryingAsyncImage(
+                    url: JellyfinMediaClient.userImageURL(baseURL: credential.baseURL, userID: user.id, tag: tag,
+                                                          fillWidth: 108, token: credential.accessToken),
+                    logCategory: "AdminUserAvatar",
+                    content: { $0.resizable().scaledToFill() },
+                    placeholder: { Color.clear })
+            }
+        }
+        .frame(width: 36, height: 36)
+        .clipShape(Circle())
+        .saturation(user.isDisabled ? 0 : 1)
+        .overlay(alignment: .bottomTrailing) {
+            if user.isAdministrator {
+                Image(systemName: "key.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(DT.Color.onAccent)
+                    .padding(3)
+                    .background(Circle().fill(DT.Color.palette("60A5FA")))
+                    .offset(x: 3, y: 3)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
