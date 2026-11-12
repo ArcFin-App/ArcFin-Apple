@@ -174,8 +174,8 @@ struct HomeView: View {
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
             if isFailed && !wasFailed { showOfflinePrompt = true }
         }
-        .confirmationDialog(
-            "Can't reach your server", isPresented: $showOfflinePrompt, titleVisibility: .visible
+        .alert(
+            "Can't reach your server", isPresented: $showOfflinePrompt
         ) {
             Button("Retry") {
                 guard case .authenticated(let cred) = authManager.state else { return }
@@ -192,6 +192,10 @@ struct HomeView: View {
             hero.advance(itemCount: heroItems.count, isActive: scenePhase == .active)
         }
         .onChange(of: hero.index) { _, _ in loadHeroVideoBackdrop() }
+        .onChange(of: isHeroCovered, initial: true) { _, covered in
+            hero.isCovered = covered
+            if !covered { loadHeroVideoBackdrop() }
+        }
         .onChange(of: heroItems.count) { _, newCount in
             hero.clamp(toCount: newCount)
         }
@@ -303,6 +307,12 @@ struct HomeView: View {
         if UserDefaults.standard.bool(forKey: "arcfin.pendingResume") { model.resumeLatest(mediaRepo: mediaRepo) }
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
+    }
+
+    private var isHeroCovered: Bool {
+        model.detailItem != nil || seeAllShelf != nil || showSettings || model.seerrDetailItem != nil
+            || trailerLaunchItem != nil || model.playbackRequest != nil || hero.playbackRequest != nil
+            || PlayerActivity.shared.isPlayerOpen
     }
 
     private func loadHeroVideoBackdrop() {

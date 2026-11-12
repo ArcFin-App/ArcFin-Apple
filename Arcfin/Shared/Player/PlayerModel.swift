@@ -331,6 +331,7 @@ final class PlayerModel {
         // fallback); this is the engine giving up after playback had already started.
         // A channel's local stream is closed on purpose while casting.
         if case .failed = newStatus, loadingStage == nil, errorMessage == nil, !(isLive && CastManager.shared.isConnected) {
+            if retryWithoutAV1() { return }
             // A channel's stream dying is its source, not the engine: another engine won't help.
             errorMessage = isLive
                 ? String(localized: "This channel didn't send any video. Its source may be offline. Try again, or pick another channel.")
@@ -433,6 +434,58 @@ final class PlayerModel {
         Task { await player.setRate(rate) }
     }
 
+    // MARK: Dialogue boost
+
+    static let dialogueBoostKey = "dialogueBoost"
+
+    /// Only where the engine can shape the sound: VLC, for now.
+    var supportsDialogueBoost: Bool { player is DialogueBoosting }
+    private(set) var isDialogueBoosted = UserDefaults.standard.bool(forKey: PlayerModel.dialogueBoostKey)
+
+    /// Remembered for every title; applied again each time a stream loads.
+    func setDialogueBoost(_ on: Bool) {
+        isDialogueBoosted = on
+        UserDefaults.standard.set(on, forKey: Self.dialogueBoostKey)
+        (player as? DialogueBoosting)?.isDialogueBoosted = on
+    }
+
+    // MARK: Hold for speed
+
+    /// Settings › Playback › Hold Speed: how fast playback runs while held.
+    static let holdSpeedKey = "holdSpeedRate"
+    static let holdSpeedOptions: [Float] = [1.5, 2.0, 3.0]
+    var holdSpeed: Float {
+        let saved = UserDefaults.standard.float(forKey: Self.holdSpeedKey)
+        return Self.holdSpeedOptions.contains(saved) ? saved : 2.0
+    }
+
+    /// Held down: plays faster until let go, then back to the speed that was set.
+    private(set) var isSpeedBoosting = false
+    @ObservationIgnored private var rateBeforeBoost: Float?
+
+    /// Only while something is playing, and not on a channel: live has nothing ahead to speed to.
+    func beginSpeedBoost() {
+        guard !isSpeedBoosting, !isLive, player.status == .playing, !CastManager.shared.isConnected else { return }
+        rateBeforeBoost = player.playbackRate
+        isSpeedBoosting = true
+        HapticManager.impact(.medium)
+        let rate = holdSpeed
+        Task { await player.setRate(rate) }
+    }
+
+    /// When a hold last ended: letting go shouldn't also count as a tap that toggles the controls.
+    @ObservationIgnored private(set) var speedBoostEndedAt: Date?
+    var justEndedSpeedBoost: Bool { speedBoostEndedAt.map { Date().timeIntervalSince($0) < 0.4 } ?? false }
+
+    func endSpeedBoost() {
+        guard isSpeedBoosting else { return }
+        isSpeedBoosting = false
+        speedBoostEndedAt = Date()
+        let rate = rateBeforeBoost ?? 1.0
+        rateBeforeBoost = nil
+        Task { await player.setRate(rate) }
+    }
+
     /// One step along the speed menu's options, from whichever is closest to the current speed.
     func stepPlaybackRate(_ direction: Int) {
         let options = Self.rateOptions
@@ -479,6 +532,15 @@ final class PlayerModel {
     }
 
     func setup() async {
+        // Before the connection check below, which downloads running alongside would skew.
+        if !holdsPlayerActivity {
+            holdsPlayerActivity = true
+            PlayerActivity.shared.opened()
+        }
+        playStartedAt = nil
+        av1Watchdog?.cancel()
+        setupGeneration += 1
+        let generation = setupGeneration
         guard let credential, let authHeader else {
             errorMessage = "Not signed in."
             return
@@ -601,6 +663,10 @@ final class PlayerModel {
             // source's own structure breaks one engine but not another) falls back once to
             // the same AVFoundation/VLC split Auto used before Aether existed, rather than
             // surfacing a hard error over an engine that can't serve this specific source.
+            // Before the load, so the stream starts shaped rather than rebuilding once it plays.
+            (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
+            // Armed before the load: a conversion that never starts can hold the load itself.
+            watchAV1Conversion(startedFrom: resumeFrom)
             do {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
@@ -616,7 +682,11 @@ final class PlayerModel {
                 }
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
+            // The AV1 watchdog started over while this load hung; that attempt owns the player now.
+            guard generation == setupGeneration else { return }
             await player.play()
+            playStartedAt = Date()
+            (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
             loadingStage = nil
             await applyRememberedRate()
             if !isLive { sharePlay.playerOpened(item) }
@@ -645,7 +715,9 @@ final class PlayerModel {
             // The player closed, or moved to another channel, before this one had started.
             return
         } catch {
+            guard generation == setupGeneration else { return }
             log.error("Couldn't start \(self.item.id, privacy: .public): \(error, privacy: .public)")
+            if retryWithoutAV1() { return }
             errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
         }
 
@@ -906,6 +978,11 @@ final class PlayerModel {
         hideControlsTask?.cancel()
         stillWatchingTimeoutTask?.cancel()
         liveProgramTask?.cancel()
+        av1Watchdog?.cancel()
+        if holdsPlayerActivity {
+            holdsPlayerActivity = false
+            PlayerActivity.shared.closed()
+        }
     }
 
     /// Closing the player closes the group too — an orphaned WebSocket connection with
@@ -1138,6 +1215,77 @@ final class PlayerModel {
         Task { await setup() }
     }
 
+    /// The track Show Subtitles When Muted turned on, to turn off again when the sound returns.
+    @ObservationIgnored private var subtitleShownForMute: Int?
+
+    /// Show Subtitles When Muted: with the sound off and no subtitles on, the preferred
+    /// language's track (or the default, or the first) comes on, and goes off again with the
+    /// sound. Only tracks drawn here, so it never reloads the stream; forced tracks don't count.
+    func soundMutedChanged(_ muted: Bool) {
+        log.notice("Sound \(muted ? "muted" : "back", privacy: .public)")
+        guard (UserDefaults.standard.object(forKey: "subtitlesWhenMuted") as? Bool) ?? true,
+              !CastManager.shared.isConnected else { return }
+        if muted {
+            guard selectedSubtitleIndex == nil, let info = playbackInfo else {
+                log.notice("Muted: subtitles already on (\(self.selectedSubtitleIndex ?? -1, privacy: .public)) or nothing loaded")
+                return
+            }
+            let preferred = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
+            let candidates = info.subtitleStreams.filter { !$0.isForced }
+            // One drawn here switches on at once; one inside the file (an MKV's embedded text
+            // track) needs the stream reloaded with it, which is still better than no words.
+            let drawnHere = candidates.filter { drawsSubtitleHere($0.index) }
+            let tracks = drawnHere.isEmpty ? candidates : drawnHere
+            guard let pick = tracks.first(where: { !preferred.isEmpty && $0.language == preferred })
+                    ?? tracks.first(where: \.isDefault) ?? tracks.first else {
+                log.notice("Muted: no subtitle track to show")
+                return
+            }
+            log.notice("Muted: showing subtitle track \(pick.index, privacy: .public)")
+            changeTrack(subtitleIndex: .some(pick.index), remember: false)
+            subtitleShownForMute = pick.index
+        } else if let shown = subtitleShownForMute {
+            subtitleShownForMute = nil
+            if selectedSubtitleIndex == shown { changeTrack(subtitleIndex: .some(nil), remember: false) }
+        }
+    }
+
+    /// When playback started, for telling a stream that never played from one that broke later.
+    @ObservationIgnored private var playStartedAt: Date?
+    @ObservationIgnored private var av1Watchdog: Task<Void, Never>?
+    @ObservationIgnored private var setupGeneration = 0
+    @ObservationIgnored private var holdsPlayerActivity = false
+
+    /// A server whose AV1 encoder doesn't exist never sends a first segment, and the engine
+    /// keeps retrying rather than failing, so no error ever reaches retryWithoutAV1. A
+    /// conversion to AV1 that hasn't started playing 15 s after it was asked for counts as
+    /// that failure.
+    private func watchAV1Conversion(startedFrom startTicks: Int64) {
+        av1Watchdog?.cancel()
+        guard playbackInfo?.askedForAV1 == true else { return }
+        av1Watchdog = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard let self, !Task.isCancelled, self.playbackInfo?.askedForAV1 == true else { return }
+            let advanced = self.player.positionTicks > startTicks + 10_000_000
+            guard self.player.status != .playing || !advanced else { return }
+            self.playStartedAt = nil
+            _ = self.retryWithoutAV1()
+        }
+    }
+
+    /// A conversion to AV1 that fails as it starts means this server can't encode AV1 (its
+    /// setting allows it, but its GPU has no AV1 encoder): remember that, and start again,
+    /// which now asks for HEVC. Marking the server first keeps this to one go.
+    private func retryWithoutAV1() -> Bool {
+        guard let info = playbackInfo, info.askedForAV1, let credential,
+              playStartedAt.map({ Date().timeIntervalSince($0) < 20 }) ?? true else { return false }
+        AV1Encoding.markFailed(on: credential.baseURL)
+        log.notice("AV1 conversion failed on \(credential.baseURL.host ?? "", privacy: .public); using HEVC from now on")
+        errorMessage = nil
+        Task { await setup() }
+        return true
+    }
+
     // MARK: - Live TV
 
     private func closeLiveStream(_ liveStreamId: String) {
@@ -1202,6 +1350,13 @@ final class PlayerModel {
     private func autoSkipIfNeeded(positionTicks: Int64) {
         let seconds = Double(positionTicks) / 10_000_000
         let defaults = UserDefaults.standard
+        // Each ad break skips once, by itself, like the other segments.
+        if defaults.bool(forKey: "skipCommercials"),
+           let span = segments.commercials.first(where: { $0.contains(seconds) }),
+           autoSkipped.insert("commercial@\(span.lowerBound)").inserted {
+            startAutoSkip(kind: "commercial")
+            return
+        }
         for (kind, span, enabled) in [
             ("recap", segments.recap, defaults.bool(forKey: "skipRecap")),
             ("intro", segments.intro, defaults.bool(forKey: "skipIntro")),
@@ -1380,11 +1535,13 @@ final class PlayerModel {
     /// carry only one audio track, external subtitles aren't muxed into the asset at all) —
     /// AVMediaSelectionGroup on the local asset can't reflect that, so a track change reloads
     /// via a fresh PlaybackInfo call with the new stream index, same as a quality change.
-    func changeTrack(audioIndex: Int? = nil, subtitleIndex: Int?? = nil) {
+    func changeTrack(audioIndex: Int? = nil, subtitleIndex: Int?? = nil, remember: Bool = true) {
         let previousSubtitle = selectedSubtitleIndex
         if let audioIndex { selectedAudioIndex = audioIndex }
         if let subtitleIndex { selectedSubtitleIndex = subtitleIndex }
-        rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil)
+        // A change by hand keeps what was picked, rather than undoing it when the sound returns.
+        if remember { subtitleShownForMute = nil }
+        if remember { rememberTracks(audioChanged: audioIndex != nil, subtitleChanged: subtitleIndex != nil) }
         if audioIndex != nil, subtitleIndex == nil, !CastManager.shared.isConnected,
            playbackInfo?.playMethod == .directPlay {
             Task {
@@ -1439,7 +1596,8 @@ final class PlayerModel {
     /// to burn into the picture (an image format being transcoded) needs a new stream.
     private func drawsSubtitleHere(_ index: Int?) -> Bool {
         guard let index else { return true }
-        return playbackInfo?.subtitleStreams.first(where: { $0.index == index })?.deliveryUrl != nil
+        guard let info = playbackInfo, let stream = info.subtitleStreams.first(where: { $0.index == index }) else { return false }
+        return subtitlePath(for: stream, in: info) != nil
     }
 
     func changeVersion(_ id: String) {
@@ -1503,13 +1661,27 @@ final class PlayerModel {
     private func loadSubtitleCues(from info: JellyfinPlaybackInfo, credential: ServerCredential) async {
         guard let index = selectedSubtitleIndex,
               let stream = info.subtitleStreams.first(where: { $0.index == index }),
-              let deliveryUrl = stream.deliveryUrl
+              let deliveryUrl = subtitlePath(for: stream, in: info)
         else {
+            if let index = selectedSubtitleIndex {
+                log.notice("Subtitles: track \(index, privacy: .public) isn't drawn here (\(info.playMethod.rawValue, privacy: .public))")
+            }
             subtitleCues = []
             currentSubtitleText = nil
             return
         }
         subtitleCues = await SubtitleLoader.loadCues(deliveryUrl: deliveryUrl, credential: credential)
+        log.notice("Subtitles: track \(index, privacy: .public) has \(self.subtitleCues.count, privacy: .public) cues (server link: \(stream.deliveryUrl != nil, privacy: .public))")
+    }
+
+    /// Where to fetch a text subtitle as WebVTT. The server's own link when it gives one; a
+    /// text track inside a file played as is can come without one, and the server converts
+    /// it from the same address all the same. Never for a conversion, which may burn it in.
+    private func subtitlePath(for stream: JellyfinMediaStream, in info: JellyfinPlaybackInfo) -> String? {
+        if let deliveryUrl = stream.deliveryUrl { return deliveryUrl }
+        let textCodecs: Set<String> = ["subrip", "srt", "ass", "ssa", "webvtt", "vtt", "mov_text", "text", "ttml"]
+        guard info.playMethod != .transcode, textCodecs.contains(stream.codec?.lowercased() ?? "") else { return nil }
+        return "/Videos/\(item.id)/\(info.mediaSourceId)/Subtitles/\(stream.index)/0/Stream.vtt"
     }
 
     func updateSubtitleText(forTicks ticks: Int64) {
@@ -1547,6 +1719,7 @@ final class PlayerModel {
                 playbackInfo = info
                 await loadSubtitleCues(from: info, credential: credential)
                 lastLoadStartedAt = Date()
+                watchAV1Conversion(startedFrom: resumeTicks)
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
                 await player.play()
                 watchForMissingPicture()
@@ -1749,15 +1922,18 @@ final class PlayerModel {
         let seconds = Double(player.positionTicks) / 10_000_000
         guard seconds > 0.5 else { return nil }
         // Recap ("previously on") is the cold open ahead of the intro, so it's checked first.
-        if let span = segments.recap, span.contains(seconds) { return ("recap", "Skip Recap", span) }
-        if let span = segments.intro, span.contains(seconds) { return ("intro", "Skip Intro", span) }
+        if let span = segments.recap, span.contains(seconds) { return ("recap", String(localized: "Skip Recap"), span) }
+        if let span = segments.intro, span.contains(seconds) { return ("intro", String(localized: "Skip Intro"), span) }
         if let span = segments.credits, span.contains(seconds) {
             // Up Next and the suggestions panel already offer a way on from the credits,
             // unless an automatic skip is counting down and needs to be seen.
             guard !showUpNext, !showMoreLikeThis || autoSkipCountdown?.kind == "credits" else { return nil }
-            return ("credits", "Skip Credits", span)
+            return ("credits", String(localized: "Skip Credits"), span)
         }
-        if let span = segments.preview, span.contains(seconds) { return ("preview", "Skip Preview", span) }
+        if let span = segments.preview, span.contains(seconds) { return ("preview", String(localized: "Skip Preview"), span) }
+        if let span = segments.commercials.first(where: { $0.contains(seconds) }) {
+            return ("commercial", String(localized: "Skip Ad"), span)
+        }
         return nil
     }
 
@@ -1793,5 +1969,26 @@ final class PlayerModel {
     var currentSubtitleStream: JellyfinMediaStream? {
         guard let selectedSubtitleIndex else { return nil }
         return playbackInfo?.subtitleStreams.first(where: { $0.index == selectedSubtitleIndex })
+    }
+}
+
+/// Whether a player is streaming, for what makes way for it: downloads (unless Keep
+/// Downloading While Playing is on) and Home's hero trailers. A count, since a Mac can have
+/// more than one player window open.
+@MainActor @Observable
+final class PlayerActivity {
+    static let shared = PlayerActivity()
+    private(set) var openPlayers = 0
+    var isPlayerOpen: Bool { openPlayers > 0 }
+
+    func opened() {
+        openPlayers += 1
+        if openPlayers == 1 { AppServices.downloadManager.playerOpened() }
+    }
+
+    func closed() {
+        guard openPlayers > 0 else { return }
+        openPlayers -= 1
+        if openPlayers == 0 { AppServices.downloadManager.playerClosed() }
     }
 }

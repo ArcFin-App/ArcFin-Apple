@@ -65,6 +65,8 @@ struct PlayerView: View {
     @State var macWindow: NSWindow?
     @State var isMacFullScreen = false
     @State var macVolume: Double = 1.0
+    /// Watches for the right arrow being let go while it holds playback at speed.
+    @State var arrowReleaseMonitor: Any?
     @State var macVolumeHUD: Double?
     @State var macVolumeBeforeMute: Double?
     @State var macVolumeHUDTask: Task<Void, Never>?
@@ -142,6 +144,7 @@ struct PlayerView: View {
                 .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
 
             SkipSegmentButton(model: model)
+            SpeedBoostBadge(model: model)
 
             if model.showUpNext, let nextEpisode = model.nextEpisode {
                 UpNextCard(model: model, next: nextEpisode)
@@ -173,7 +176,7 @@ struct PlayerView: View {
         .keepsScreenAwake(status: model.player.status)
         .onAppear { connectModel() }
         .task { if !model.isAskingToResume { await model.setup() } }
-        .confirmationDialog("Resume Playback?", isPresented: $model.isAskingToResume, titleVisibility: .visible) {
+        .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks
                 model.resumeAnswered = true
@@ -221,7 +224,7 @@ struct PlayerView: View {
             return .handled
         }
         .onKeyPress(.rightArrow) {
-            if model.isLive { model.playNextEpisode() } else { model.seek(by: skipForwardSeconds) }
+            if model.isLive { model.playNextEpisode() } else { macSkip(1) }
             return .handled
         }
         .onKeyPress(.upArrow) { adjustMacVolume(by: 0.05); return .handled }
@@ -241,7 +244,7 @@ struct PlayerView: View {
         .focusedSceneValue(\.playerCommands, PlayerCommands(
             isPlaying: playPauseIconIsPlaying,
             togglePlay: { model.togglePlayPause() },
-            skip: { model.seek(by: $0 > 0 ? skipForwardSeconds : -skipBackwardSeconds) },
+            skip: { macSkip($0) },
             volume: { adjustMacVolume(by: $0) },
             toggleFullScreen: { toggleMacWindowFullScreen(macWindow) },
             close: { closePlayer() },

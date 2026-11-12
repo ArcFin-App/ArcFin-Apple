@@ -11,6 +11,10 @@ enum PlatformMetrics {
     static let backdropCard = CGSize(width: 320, height: 180)
     static let wideCard = CGSize(width: 280, height: 158)
     static let fontScale: CGFloat = 1.0
+    /// The player can tell when its sound is turned all the way down.
+    static let detectsMutedSound = true
+    /// How to hold playback at speed here, for Settings › Playback › Hold Speed.
+    static let holdSpeedHint: LocalizedStringKey = "Hold the right arrow key to play at this speed until you let go."
 
     /// The point size `scaledFont(size:)` starts from.
     static func scaledFontSize(_ size: CGFloat) -> CGFloat {

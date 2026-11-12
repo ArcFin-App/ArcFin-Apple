@@ -309,6 +309,12 @@ extension PlayerView {
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
         .prefersDefaultFocus(true, in: tvFocusNamespace)
+        // Press and hold the clickpad to play faster until it's let go.
+        .onLongPressGesture(minimumDuration: 0.5) {
+            model.beginSpeedBoost()
+        } onPressingChanged: { pressing in
+            if !pressing { model.endSpeedBoost() }
+        }
         .onMoveCommand { direction in
             switch direction {
             case .left where model.isLive: model.playPrevious()

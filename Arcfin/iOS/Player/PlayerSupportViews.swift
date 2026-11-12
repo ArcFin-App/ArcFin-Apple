@@ -153,6 +153,46 @@ final class PiPCoordinator: NSObject, AVPictureInPictureControllerDelegate, Obse
 
 // MARK: - Rotate button
 
+/// Settings › Player Features › Open Videos In, on iPhone.
+enum PlayerOpeningOrientation: String, CaseIterable, Identifiable {
+    case followDevice, landscape, portrait
+    static let key = "playerOpeningOrientation"
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .followDevice: String(localized: "Follow Device")
+        case .landscape: String(localized: "Landscape")
+        case .portrait: String(localized: "Portrait")
+        }
+    }
+
+    static var current: PlayerOpeningOrientation {
+        UserDefaults.standard.string(forKey: key).flatMap(Self.init(rawValue:)) ?? .followDevice
+    }
+}
+
+/// Turns the player to the orientation Open Videos In asks for, on iPhone, until the rotate
+/// button changes it or the player closes (resetPlayerOrientation). A player taking over from
+/// the last one in the same cover keeps whatever orientation that one was left in.
+///
+/// A request made while the player's full-screen cover is still coming up is dropped, so it
+/// waits for the cover to settle, then asks again once if the first didn't take.
+func applyOpeningOrientation() {
+    let wanted = PlayerOpeningOrientation.current
+    guard wanted != .followDevice, UIDevice.current.userInterfaceIdiom == .phone else { return }
+    Task { @MainActor in
+        for delay in [0.35, 0.6] {
+            try? await Task.sleep(for: .seconds(delay))
+            guard let scene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else { return }
+            let isLandscape = scene.effectiveGeometry.interfaceOrientation.isLandscape
+            if (wanted == .landscape) == isLandscape { return }
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: wanted == .landscape ? .landscapeRight : .portrait)) { _ in }
+        }
+    }
+}
+
 /// Flips between portrait and forced landscape — iPad/iPhone with multiple orientations
 /// enabled don't always rotate on their own for a video sheet, so this is a manual override.
 func togglePlayerOrientation() {

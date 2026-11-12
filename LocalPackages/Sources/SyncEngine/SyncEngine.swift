@@ -186,6 +186,8 @@ public enum SettingsSyncRegistry {
         .init("skipIntro", .bool),
         .init("skipCredits", .bool),
         .init("skipRecap", .bool),
+        .init("skipCommercials", .bool),
+        .init("subtitlesWhenMuted", .bool),
         .init("subtitleDefault", .bool),
         .init("trailersEnabled", .bool),
         .init("youtubeTrailersEnabled", .bool),
@@ -214,6 +216,7 @@ public enum SettingsSyncRegistry {
         .init("seasonDownloadUnwatchedOnly", .bool),
         .init("pauseDownloadsInLowPowerMode", .bool),
         .init("pauseDownloadsInLowDataMode", .bool),
+        .init("downloadWhilePlaying", .bool),
         .init("removeDownloadsAfterDays", .int),
         .init("removeWatchedWhenLowOnSpace", .bool),
         // Appearance
@@ -244,6 +247,8 @@ public enum SettingsSyncRegistry {
         .init("matchContentFrameRate", .bool),
         .init("autoPictureInPicture", .bool),
         .init("swipeGesturesEnabled", .bool),
+        .init("ignoreEdgeSwipes", .bool),
+        .init("playerOpeningOrientation", .string),
         .init("doubleTapToSkip", .bool),
         // Subtitle style
         .init("subtitleTextSize", .string),

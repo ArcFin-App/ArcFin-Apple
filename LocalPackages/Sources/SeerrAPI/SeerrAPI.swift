@@ -361,10 +361,23 @@ public struct SeerrRelatedInfo: Sendable, Equatable {
     public var numberOfSeasons: Int?
     public var nextEpisode: SeerrNextEpisode?
     public var imdbId: String?
+    /// The film series a movie belongs to, e.g. The Hangover Collection.
+    public var collection: SeerrNamedEntity?
 
     public init(companies: [SeerrNamedEntity], keywords: [SeerrNamedEntity]) {
         self.companies = companies
         self.keywords = keywords
+    }
+}
+
+/// A film series and its movies, in release order.
+public struct SeerrCollection: Sendable, Equatable {
+    public let id: Int
+    public let name: String
+    public let parts: [SeerrItem]
+
+    public init(id: Int, name: String, parts: [SeerrItem]) {
+        self.id = id; self.name = name; self.parts = parts
     }
 }
 

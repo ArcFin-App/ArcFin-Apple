@@ -18,7 +18,11 @@ final class HomeHeroCarousel {
     /// The rotation (and the trailer fetch each new slide starts) only runs while Home is
     /// actually on screen: the timer kept firing behind other tabs, pushed screens and a
     /// backgrounded app, loading hero trailers nobody could see.
-    var isHomeVisible = false
+    var isHomeVisible = false { didSet { if !isShowing { stopVideoBackdrop() } } }
+    /// Something over Home that onDisappear doesn't report: a title's page, a sheet, the
+    /// player (a full-screen cover, or a Mac's own window).
+    var isCovered = false { didSet { if !isShowing { stopVideoBackdrop() } } }
+    var isShowing: Bool { isHomeVisible && !isCovered }
     var playbackRequest: HeroPlaybackRequest?
 
     struct HeroPlaybackRequest: Identifiable, Equatable {
@@ -50,7 +54,7 @@ final class HomeHeroCarousel {
 
     /// The rotation timer's tick.
     func advance(itemCount: Int, isActive: Bool) {
-        guard itemCount > 1, isHomeVisible, isActive else { return }
+        guard itemCount > 1, isShowing, isActive else { return }
         // A trailer is actively showing for this slide — let loadVideoBackdrop's own
         // 15s timeout advance instead of jumping away mid-playback just because the
         // regular rotation interval happened to land first.
@@ -79,6 +83,13 @@ final class HomeHeroCarousel {
         }
     }
 
+    private func stopVideoBackdrop() {
+        videoBackdropTask?.cancel()
+        videoBackdropTask = nil
+        videoBackdropURL = nil
+        videoBackdropIndex = nil
+    }
+
     /// Fetches (after a short pause, so quickly swiping past several slides doesn't fire a
     /// burst of these) whether the current hero slide has a local trailer indexed on the
     /// server, and if so plays it behind the slide.
@@ -87,7 +98,7 @@ final class HomeHeroCarousel {
         videoBackdropURL = nil
         videoBackdropIndex = nil
         let items = Self.items(in: mediaRepo)
-        guard enabled, items.indices.contains(index),
+        guard enabled, isShowing, items.indices.contains(index),
               case .authenticated(let credential) = authManager.state
         else { return }
         let item = items[index]
@@ -116,7 +127,7 @@ final class HomeHeroCarousel {
             // trailer ends, rather than leaving the still image sitting until the timer's
             // next regular tick.
             let count = Self.items(in: mediaRepo).count
-            if count > 1 {
+            if count > 1, isShowing {
                 withAnimation(DT.Animation.slow) { self.index = (index + 1) % count }
             }
         }

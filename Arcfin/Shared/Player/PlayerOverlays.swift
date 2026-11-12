@@ -79,6 +79,36 @@ struct PlayerScrubber: View {
     }
 }
 
+/// "2× ▸▸" at the top while playback is held at speed.
+struct SpeedBoostBadge: View {
+    let model: PlayerModel
+
+    var body: some View {
+        VStack {
+            if model.isSpeedBoosting {
+                HStack(spacing: 6) {
+                    Text("\(model.holdSpeed.formatted())×")
+                        .font(.system(.subheadline, weight: .bold))
+                        .monospacedDigit()
+                    Image(systemName: "forward.fill")
+                        .font(.system(.caption, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(.black.opacity(0.55), in: Capsule())
+                .padding(.top, 24 * DT.Scale.font)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                .accessibilityLabel(Text("Playing at \(model.holdSpeed.formatted()) times speed"))
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .allowsHitTesting(false)
+        .animation(DT.Animation.fast, value: model.isSpeedBoosting)
+    }
+}
+
 struct SkipSegmentButton: View {
     let model: PlayerModel
 

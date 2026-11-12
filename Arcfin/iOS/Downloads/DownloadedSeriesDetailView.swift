@@ -77,6 +77,12 @@ struct DownloadedSeriesDetailView: View {
                 if let pendingDelete = model.pendingDelete { downloadManager.deleteDownload(pendingDelete) }
                 model.pendingDelete = nil
             }
+            if let pendingDelete = model.pendingDelete, downloadManager.smartIgnoreTarget(itemId: pendingDelete.itemId) != nil {
+                Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                    downloadManager.deleteAndIgnore(itemIds: [pendingDelete.itemId])
+                    model.pendingDelete = nil
+                }
+            }
             Button("Cancel", role: .cancel) { model.pendingDelete = nil }
         }
         .alert("Delete \(model.selection.count) selected episode\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {

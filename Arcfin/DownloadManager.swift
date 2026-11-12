@@ -46,6 +46,8 @@ final class DownloadManager: NSObject {
     private(set) var stats: [String: DownloadStats] = [:]
     private(set) var activeItemIds: Set<String> = []
     private(set) var activeItemTitles: [String: String] = [:]
+    /// The title being downloaded or waiting, for its show, season and episode in Downloads.
+    private(set) var activeItems: [String: MediaItem] = [:]
     /// Keyed by itemId — a shared single error string would show the wrong download's
     /// failure on an unrelated DownloadButton if more than one item is downloading at once.
     var errors: [String: String] = [:]
@@ -64,6 +66,8 @@ final class DownloadManager: NSObject {
     /// Queued titles whose video transfer was handed to the background session ahead of its
     /// turn, and how each ended if it did before its turn came.
     @ObservationIgnored private var handedOffItemIds: Set<String> = []
+    /// Cancelled on purpose (by hand, or by Delete & Ignore), so its transfer ending isn't a failure.
+    @ObservationIgnored private var cancelledItemIds: Set<String> = []
     @ObservationIgnored private var handedOffResults: [String: Result<Void, Error>] = [:]
     /// Where a handed-off transfer lands; renamed once the title's container is known.
     private nonisolated static let stagedVideoFileName = "video.download"
@@ -97,10 +101,12 @@ final class DownloadManager: NSObject {
 
     /// Why the queue is waiting instead of starting the next title.
     enum QueueHold: Equatable {
-        case mobileData, lowDataMode, lowPowerMode
+        case mobileData, lowDataMode, lowPowerMode, playing, storage
 
         var title: String {
             switch self {
+            case .storage: String(localized: "Not Enough Space")
+            case .playing: String(localized: "Waiting for the Video to End")
             case .mobileData: String(localized: "Waiting for Wi-Fi")
             case .lowDataMode: String(localized: "Low Data Mode Is On")
             case .lowPowerMode: String(localized: "Low Power Mode Is On")
@@ -108,6 +114,8 @@ final class DownloadManager: NSObject {
         }
         var detail: String {
             switch self {
+            case .playing: String(localized: "Downloads carry on when you close the player, so the video gets the whole connection.")
+            case .storage: String(localized: "The rest download once there's room. Delete watched titles in Manage Storage to make some.")
             case .mobileData: String(localized: "Downloads start when you're on Wi-Fi.")
             case .lowDataMode: String(localized: "Downloads start when Low Data Mode is off.")
             case .lowPowerMode: String(localized: "Downloads start when Low Power Mode is off.")
@@ -124,12 +132,51 @@ final class DownloadManager: NSObject {
 
     /// Smart Downloads has its own mobile data setting, separate from downloads people start.
     private func hold(viaSmart: Bool) -> QueueHold? {
+        if let need = storageNeeded {
+            if let room = roomForDownloads(), room < need { return .storage }
+            storageNeeded = nil
+        }
         guard !holdOverridden else { return nil }
         let defaults = UserDefaults.standard
+        if waitsForPlayer { return .playing }
         if isOnMobileData, viaSmart ? !smartDownloadsAllowMobileData : isWiFiOnly { return .mobileData }
         if isOnLowDataMode, defaults.bool(forKey: "pauseDownloadsInLowDataMode") { return .lowDataMode }
         if ProcessInfo.processInfo.isLowPowerModeEnabled, defaults.bool(forKey: "pauseDownloadsInLowPowerMode") { return .lowPowerMode }
         return nil
+    }
+
+    /// Settings › Downloads › Keep Downloading While Playing, off by default: a player open
+    /// pauses transfers, the queue and Smart Downloads until it closes.
+    static let downloadWhilePlayingKey = "downloadWhilePlaying"
+    @ObservationIgnored private var isPlayerOpen = false
+    /// Transfers suspended for the player, kept apart from ones paused by hand.
+    @ObservationIgnored private var pausedForPlayer: Set<String> = []
+    private var waitsForPlayer: Bool {
+        isPlayerOpen && !UserDefaults.standard.bool(forKey: Self.downloadWhilePlayingKey)
+    }
+
+    func playerOpened() {
+        isPlayerOpen = true
+        holdOverridden = false
+        guard waitsForPlayer else { return }
+        for id in Set(downloadTasks.keys).union(partTasks.keys) where !pausedItemIds.contains(id) {
+            let running = transfers(for: id).filter { $0.state == .running }
+            guard !running.isEmpty else { continue }
+            running.forEach { $0.suspend() }
+            pausedForPlayer.insert(id)
+            stats[id]?.bytesPerSecond = 0
+            speedSamples[id] = nil
+        }
+        Self.smartLog.notice("Player open: \(self.pausedForPlayer.count, privacy: .public) download(s) paused until it closes")
+    }
+
+    func playerClosed() {
+        let waited = waitsForPlayer
+        isPlayerOpen = false
+        for id in pausedForPlayer { transfers(for: id).forEach { $0.resume() } }
+        pausedForPlayer = []
+        recheckQueueHold()
+        if waited { refreshSmartDownloads() }
     }
 
     /// Settings › Downloads › Downloads at Once.
@@ -210,6 +257,53 @@ final class DownloadManager: NSObject {
     }
 
     private static let lowSpaceThreshold = 2_000_000_000
+
+    // MARK: - Room for downloads
+
+    /// Left free on the device after every download, so the system and other apps keep working.
+    private static let spaceReserve: Int64 = 1_000_000_000
+
+    /// Set when the next title didn't fit: the queue waits until this much is free.
+    @ObservationIgnored private var storageNeeded: Int64?
+    /// What each running transfer will take in all, for working out what's left for the next.
+    @ObservationIgnored private var expectedBytes: [String: Int64] = [:]
+
+    /// Free space a new download can use: what the device can give (purgeable space included),
+    /// less the reserve and what running transfers still have to write. Nil when unknown.
+    func roomForDownloads(excluding itemId: String? = nil) -> Int64? {
+        #if os(tvOS)
+        guard let free = Self.freeSpace() else { return nil }
+        #else
+        guard let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
+            .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey]),
+              let free = values.volumeAvailableCapacityForImportantUsage ?? values.volumeAvailableCapacity.map(Int64.init)
+        else { return nil }
+        #endif
+        let incoming = expectedBytes.filter { $0.key != itemId }.reduce(Int64(0)) { total, entry in
+            total + Int64(Double(entry.value) * (1 - (progress[entry.key] ?? 0)))
+        }
+        return max(free - Self.spaceReserve - incoming, 0)
+    }
+
+    /// The size a download will be: bitrate × runtime, or the chosen lower quality × runtime.
+    private static func expectedSize(of info: JellyfinPlaybackInfo, bitrateCap: Int?) -> Int64? {
+        guard let ticks = info.runTimeTicks, ticks > 0 else { return nil }
+        let seconds = Double(ticks) / 10_000_000
+        if let bitrateCap { return Int64((Double(min(bitrateCap, info.bitrate ?? bitrateCap)) + 320_000) / 8 * seconds) }
+        return info.bitrate.map { Int64(Double($0) / 8 * seconds) }
+    }
+
+    private struct NoRoomForDownload: Error { let bytes: Int64 }
+
+    /// A write that failed because the disk is full, however the system reported it.
+    private static func isOutOfSpace(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == NSCocoaErrorDomain, ns.code == NSFileWriteOutOfSpaceError { return true }
+        if ns.domain == NSPOSIXErrorDomain, ns.code == Int(ENOSPC) { return true }
+        if (error as? URLError)?.code == .cannotWriteToFile, let free = freeSpace(), free < spaceReserve { return true }
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? Error { return isOutOfSpace(underlying) }
+        return false
+    }
 
     private static let pendingWatchedDeleteKey = "pendingWatchedDeleteIDs"
 
@@ -555,6 +649,8 @@ final class DownloadManager: NSObject {
         var videoWidth: Int?
         var videoHeight: Int?
         var videoRange: String?
+        /// Set for a season: the sizes above cover this many episodes.
+        var episodeCount: Int?
     }
 
     /// What the confirmation sheet shows before actually starting — same PlaybackInfo call
@@ -633,6 +729,10 @@ final class DownloadManager: NSObject {
     }
 
     func pauseDownload(itemId: String) {
+        if pausedForPlayer.remove(itemId) != nil {
+            pausedItemIds.insert(itemId)
+            return
+        }
         let running = transfers(for: itemId).filter { $0.state == .running }
         guard !running.isEmpty else { return }
         running.forEach { $0.suspend() }
@@ -697,6 +797,9 @@ final class DownloadManager: NSObject {
         else { return false }
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
+        activeItems[item.id] = item
+        cancelledItemIds.remove(item.id)
+        if viaSmart { Self.smartItemIds.insert(item.id) }
         pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
         if isFreshQueue && liveActivityPendingFinish == nil {
@@ -823,6 +926,11 @@ final class DownloadManager: NSObject {
             let detail = try JellyfinMediaClient.decodeItemDetail(detailData)
             let info = try await playbackTask
 
+            if !skipVideoDownload, !handedOffItemIds.contains(item.id), let expected = Self.expectedSize(of: info, bitrateCap: bitrateCap) {
+                if let room = roomForDownloads(excluding: item.id), room < expected { throw NoRoomForDownload(bytes: expected) }
+                expectedBytes[item.id] = expected
+            }
+
             #if canImport(ActivityKit) && os(iOS)
             var posterItem = item
             posterItem.primaryImageTag = detail.item.primaryImageTag
@@ -904,10 +1012,34 @@ final class DownloadManager: NSObject {
                 await ensureSeriesMetadata(seriesId: seriesId, credential: credential, authHeader: authHeader)
             }
         } catch {
-            errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
+            let cancelled = cancelledItemIds.remove(item.id) != nil
+                || (error as? URLError)?.code == .cancelled || error is CancellationError
             DownloadStore.deleteDirectory(for: item.id)
+            // Out of room isn't a failure: the title goes back to the front and waits for space.
+            if !cancelled, let need = (error as? NoRoomForDownload)?.bytes ?? (Self.isOutOfSpace(error) ? expectedBytes[item.id] ?? Int64(Self.lowSpaceThreshold) : nil) {
+                Self.smartLog.notice("Downloads waiting for space: \(item.name, privacy: .public) needs \(need, privacy: .public) bytes")
+                removePendingDescriptor(itemId: item.id)
+                expectedBytes[item.id] = nil
+                activeItemIds.remove(item.id)
+                progress[item.id] = nil
+                stats[item.id] = nil
+                speedSamples[item.id] = nil
+                pendingQueue.insert((item, credential, authHeader, bitrateCap, Self.smartItemIds.contains(item.id)), at: 0)
+                storageNeeded = need
+                queueHold = .storage
+                endBackgroundTaskIfIdle()
+                #if canImport(ActivityKit) && os(iOS)
+                liveActivityItemMeta[item.id] = nil
+                refreshLiveActivity()
+                #endif
+                return
+            }
+            if !cancelled {
+                errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
+            }
         }
         removePendingDescriptor(itemId: item.id)
+        expectedBytes[item.id] = nil
 
         #if canImport(ActivityKit) && os(iOS)
         let finishedTitle = activeItemTitles[item.id] ?? item.name
@@ -915,6 +1047,7 @@ final class DownloadManager: NSObject {
         #endif
         activeItemIds.remove(item.id)
         activeItemTitles[item.id] = nil
+        activeItems[item.id] = nil
         progress[item.id] = nil
         stats[item.id] = nil
         speedSamples[item.id] = nil
@@ -1130,9 +1263,10 @@ final class DownloadManager: NSObject {
     }
 
     func cancelDownload(itemId: String) {
+        if activeItemIds.contains(itemId) { cancelledItemIds.insert(itemId) }
         let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
-        if pendingQueue.isEmpty { queueHold = nil }
+        if pendingQueue.isEmpty { queueHold = nil; storageNeeded = nil }
         transfers(for: itemId).forEach { $0.cancel() }
         downloadTasks[itemId] = nil
         clearParts(itemId: itemId)
@@ -1141,6 +1275,7 @@ final class DownloadManager: NSObject {
         pausedItemIds.remove(itemId)
         activeItemIds.remove(itemId)
         activeItemTitles[itemId] = nil
+        activeItems[itemId] = nil
         progress[itemId] = nil
         stats[itemId] = nil
         speedSamples[itemId] = nil
@@ -1254,12 +1389,14 @@ final class DownloadManager: NSObject {
     func deleteDownload(_ item: DownloadedItem) {
         guard let modelContext else { return }
         let seriesId = item.seriesId
+        Self.smartItemIds.remove(item.itemId)
         DownloadStore.deleteDirectory(for: item.itemId)
         modelContext.delete(item)
         try? modelContext.save()
         if let seriesId {
             deleteSeriesMetadataIfNoEpisodesRemain(seriesId: seriesId)
         }
+        if queueHold == .storage { recheckQueueHold() }
     }
 
     func deleteDownload(itemId: String) {
@@ -1314,13 +1451,134 @@ final class DownloadManager: NSObject {
         var shows = Self.keptShows
         shows[seriesId] = episodeCount.map { KeptShow(name: name, episodeCount: $0) }
         UserDefaults.standard.set(try? JSONEncoder().encode(shows), forKey: Self.keptShowsKey)
-        if episodeCount != nil { refreshSmartDownloads() }
+        keptShowsVersion += 1
+        if episodeCount != nil {
+            if ignoredTitles[seriesId] != nil { setIgnored(id: seriesId, name: name, ignored: false) }
+            refreshSmartDownloads()
+        }
+    }
+
+    /// Bumped on every Keep Downloaded change, for screens listing the kept shows.
+    private(set) var keptShowsVersion = 0
+
+    private static let ignoredKey = "smartDownloadsIgnored"
+    private static let smartMoviesKey = "smartDownloadsMovieIds"
+
+    /// Movies and shows (by series id) Smart Downloads leaves alone, with their names.
+    /// Keep Downloaded is asked for by name, so ignoring a show stops keeping it too.
+    private(set) var ignoredTitles: [String: String] =
+        UserDefaults.standard.dictionary(forKey: ignoredKey) as? [String: String] ?? [:]
+
+    func setIgnored(id: String, name: String, ignored: Bool) {
+        ignoredTitles[id] = ignored ? name : nil
+        UserDefaults.standard.set(ignoredTitles, forKey: Self.ignoredKey)
+        if ignored, Self.keptShows[id] != nil { setKeptShow(seriesId: id, name: name, episodeCount: nil) }
+        if ignored {
+            // What Smart Downloads queued for it goes too; downloads someone started stay.
+            let smart = Self.smartItemIds
+            for item in activeItems.values where (item.id == id || item.seriesId == id) && smart.contains(item.id) {
+                cancelDownload(itemId: item.id)
+            }
+        } else {
+            refreshSmartDownloads()
+        }
+    }
+
+    /// Movies Smart Downloads fetched from Continue Watching, so only those (not ones someone
+    /// downloaded themselves) go once watched.
+    /// Every title Smart Downloads or Keep Downloaded fetched, so deleting one by hand can
+    /// offer to ignore it from then on.
+    private static let smartItemsKey = "smartDownloadsItemIds"
+    private static var smartItemIds: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: smartItemsKey) ?? []) }
+        set { UserDefaults.standard.set(Array(newValue), forKey: smartItemsKey) }
+    }
+
+    /// What Delete & Ignore would ignore for a title Smart Downloads fetched: the movie, or
+    /// the episode's show. nil for a title someone downloaded themselves.
+    func smartIgnoreTarget(itemId: String) -> (id: String, name: String)? {
+        guard Self.smartItemIds.contains(itemId) else { return nil }
+        if let item = activeItems[itemId] {
+            return item.seriesId.map { ($0, item.seriesName ?? item.name) } ?? (item.id, item.name)
+        }
+        guard let modelContext,
+              let item = try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })).first
+        else { return nil }
+        return item.seriesId.map { ($0, item.seriesName ?? item.name) } ?? (item.itemId, item.name)
+    }
+
+    /// Ignore in Smart Downloads for a title with downloads here, waiting for the person to
+    /// say whether those go too.
+    struct IgnoreRequest: Identifiable {
+        let id: String
+        let name: String
+        let itemIds: [String]
+    }
+    var pendingIgnore: IgnoreRequest?
+
+    /// Ignore in Smart Downloads, asking first when the movie or show has downloads here.
+    func requestIgnore(id: String, name: String) {
+        let itemIds = downloadIds(forTitle: id)
+        if itemIds.isEmpty {
+            setIgnored(id: id, name: name, ignored: true)
+        } else {
+            pendingIgnore = IgnoreRequest(id: id, name: name, itemIds: itemIds)
+        }
+    }
+
+    /// Ignores the title, then removes its downloads, finished or under way.
+    func ignoreAndDelete(_ request: IgnoreRequest) {
+        setIgnored(id: request.id, name: request.name, ignored: true)
+        for id in request.itemIds {
+            if activeItemIds.contains(id) || pendingQueue.contains(where: { $0.item.id == id }) {
+                cancelDownload(itemId: id)
+            } else {
+                deleteDownload(itemId: id)
+            }
+        }
+    }
+
+    /// A movie's download, or a show's episodes, here or still downloading.
+    private func downloadIds(forTitle id: String) -> [String] {
+        let saved = modelContext.flatMap {
+            try? $0.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == id || $0.seriesId == id }))
+        } ?? []
+        let underway = activeItems.values.filter { $0.id == id || $0.seriesId == id }.map(\.id)
+        return Array(Set(saved.map(\.itemId) + underway))
+    }
+
+    /// Ignores the title in Smart Downloads first, so removing it doesn't start it again.
+    func deleteAndIgnore(itemIds: [String]) {
+        var ignored: Set<String> = []
+        for id in itemIds {
+            guard let target = smartIgnoreTarget(itemId: id), ignored.insert(target.id).inserted else { continue }
+            setIgnored(id: target.id, name: target.name, ignored: true)
+        }
+        for id in itemIds {
+            if activeItemIds.contains(id) || pendingQueue.contains(where: { $0.item.id == id }) {
+                cancelDownload(itemId: id)
+            } else {
+                deleteDownload(itemId: id)
+            }
+        }
+    }
+
+    /// What Smart Downloads has fetched that's still here, against its storage limit.
+    func smartDownloadsUsedBytes(of items: [DownloadedItem]) -> Int64 {
+        let smart = Self.smartItemIds
+        return items.filter { smart.contains($0.itemId) }.reduce(0) { $0 + $1.fileSizeBytes }
+    }
+
+    private static var smartMovieIds: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: smartMoviesKey) ?? []) }
+        set { UserDefaults.standard.set(Array(newValue), forKey: smartMoviesKey) }
     }
 
     /// Catches downloads up with the server's watched state, then re-checks kept shows, from
     /// places other than launch: the app coming to the foreground, the connection coming back,
     /// the player closing, or a show being switched on.
     func refreshSmartDownloads() {
+        if queueHold == .storage { recheckQueueHold() }
         guard let authManager, let credential = authManager.state.credential else {
             #if canImport(ActivityKit) && os(iOS)
             settleLiveActivity()
@@ -1356,6 +1614,10 @@ final class DownloadManager: NSObject {
             Self.smartLog.notice("Smart Downloads skipped: off, and no show set to Keep Downloaded")
             return
         }
+        guard !waitsForPlayer else {
+            Self.smartLog.notice("Smart Downloads skipped: a video is playing")
+            return
+        }
         guard !isOnMobileData || smartDownloadsAllowMobileData else {
             Self.smartLog.notice("Smart Downloads skipped: on mobile data with Use Mobile Data off")
             return
@@ -1387,12 +1649,27 @@ final class DownloadManager: NSObject {
 
         let allDownloaded = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
         var targets: [String: Int] = [:]
+        var movies: [MediaItem] = []
         if globalOn {
             for seriesId in Set(allDownloaded.compactMap(\.seriesId)) { targets[seriesId] = episodeCount }
+            // What's being watched: shows in Continue Watching or Next Up, and movies part-way through.
+            async let resuming = client.getContinueWatching(credential: credential, authHeader: authHeader)
+            async let upNext = client.getNextUpIncludingRecent(credential: credential, authHeader: authHeader)
+            for item in ((try? await resuming) ?? []) + ((try? await upNext) ?? []) {
+                if let seriesId = item.seriesId { targets[seriesId] = episodeCount }
+                else if item.type == .movie { movies.append(item) }
+            }
+            for id in ignoredTitles.keys { targets[id] = nil }
+            movies.removeAll { ignoredTitles[$0.id] != nil }
         }
         for (seriesId, show) in kept { targets[seriesId] = show.episodeCount }
-        Self.smartLog.notice("Smart Downloads check: \(targets.count, privacy: .public) show(s), keep \(episodeCount, privacy: .public), budget \(budgetGB, privacy: .public) GB")
-        guard !targets.isEmpty else { return }
+        Self.smartLog.notice("Smart Downloads check: \(targets.count, privacy: .public) show(s), \(movies.count, privacy: .public) movie(s), keep \(episodeCount, privacy: .public), budget \(budgetGB, privacy: .public) GB")
+
+        for item in allDownloaded where item.played && Self.smartMovieIds.contains(item.itemId) {
+            markForDeletionAfterWatching(itemId: item.itemId)
+            Self.smartMovieIds.remove(item.itemId)
+        }
+        guard !targets.isEmpty || !movies.isEmpty else { return }
 
         // Watched episodes are queued for removal rather than deleted here: this also runs
         // while a downloads screen may be showing those rows (see markForDeletionAfterWatching).
@@ -1405,9 +1682,12 @@ final class DownloadManager: NSObject {
         // would otherwise use up the budget and quietly stop every show.
         func totalDownloadedBytes() -> Int64 {
             let current = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
-            return current.filter { $0.seriesId.map { targets[$0] != nil } ?? false }.reduce(0) { $0 + $1.fileSizeBytes }
+            let smartMovies = Self.smartMovieIds
+            return current.filter { $0.seriesId.map { targets[$0] != nil } ?? smartMovies.contains($0.itemId) }
+                .reduce(0) { $0 + $1.fileSizeBytes }
         }
 
+        var smart: [MediaItem] = []
         for (seriesId, count) in targets {
             // The episode up next plus the `count` after it: the one you're on doesn't use
             // up the allowance.
@@ -1444,16 +1724,34 @@ final class DownloadManager: NSObject {
                 Task { await processQueue() }
                 continue
             }
-            for episode in nextUp {
-                guard !isDownloaded(episode.id), !activeItemIds.contains(episode.id) else { continue }
-                guard totalDownloadedBytes() < budgetBytes else {
-                    Self.smartLog.notice("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
-                    return
-                }
-                Self.smartLog.notice("Smart Downloads queuing \(episode.name, privacy: .public)")
-                await startDownload(item: episode, credential: credential, authHeader: authHeader, viaSmart: true)
+            smart.append(contentsOf: nextUp)
+        }
+        smart.append(contentsOf: movies)
+
+        // Downloads at Once titles at a time, each batch finishing before the budget is checked
+        // again, so it can go over by at most one batch less one title.
+        var batch = 0
+        for item in smart where !isDownloaded(item.id) && !activeItemIds.contains(item.id) {
+            // Ignored while an earlier batch ran.
+            if ignoredTitles[item.id] != nil || item.seriesId.map({ ignoredTitles[$0] != nil }) == true { continue }
+            if batch == 0, totalDownloadedBytes() >= budgetBytes {
+                Self.smartLog.notice("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
+                break
+            }
+            if batch == 0, queueHold == .storage {
+                Self.smartLog.notice("Smart Downloads stopped: the device is out of room")
+                break
+            }
+            guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true) else { continue }
+            Self.smartLog.notice("Smart Downloads queuing \(item.name, privacy: .public)")
+            if item.seriesId == nil { Self.smartMovieIds.insert(item.id) }
+            batch += 1
+            if batch >= concurrentDownloadLimit {
+                batch = 0
+                await processQueue()
             }
         }
+        if batch > 0 { await processQueue() }
     }
 
     /// When watch history gives no next episode (a later episode is marked watched, say), the
@@ -1468,7 +1766,7 @@ final class DownloadManager: NSObject {
         let positions = all.indices.filter { downloadedIds.contains(all[$0].id) }
         let start = positions.first { all[$0].userData?.played != true } ?? positions.last.map { $0 + 1 } ?? 0
         Self.smartLog.notice("Smart Downloads: \(seriesId, privacy: .public) has \(all.count, privacy: .public) episodes, \(all.filter { $0.userData?.played == true }.count, privacy: .public) watched, downloaded at \(positions.map(String.init).joined(separator: ","), privacy: .public); starting at \(start, privacy: .public)")
-        return Array(all.dropFirst(start).filter { $0.userData?.played != true }.prefix(count))
+        return Array(all.dropFirst(start).filter { $0.userData?.played != true && $0.parentIndexNumber != 0 }.prefix(count))
     }
 
     private static func freeSpace() -> Int64? {
@@ -1798,7 +2096,11 @@ extension DownloadedItem {
                 intro: span(introEndSeconds.map { _ in introStartSeconds ?? 0 }, introEndSeconds),
                 recap: span(recapStartSeconds, recapEndSeconds),
                 credits: span(creditsStartSeconds, creditsEndSeconds ?? creditsStartSeconds.map { _ in runtime }),
-                preview: span(previewStartSeconds, previewEndSeconds)
+                preview: span(previewStartSeconds, previewEndSeconds),
+                commercials: (commercialSpans ?? "").split(separator: ",").compactMap { pair in
+                    let bounds = pair.split(separator: "-").compactMap { Double($0) }
+                    return bounds.count == 2 ? span(bounds[0], bounds[1]) : nil
+                }
             )
         }
         set {
@@ -1810,6 +2112,8 @@ extension DownloadedItem {
             creditsEndSeconds = newValue.credits?.upperBound
             previewStartSeconds = newValue.preview?.lowerBound
             previewEndSeconds = newValue.preview?.upperBound
+            commercialSpans = newValue.commercials.isEmpty ? nil
+                : newValue.commercials.map { "\($0.lowerBound)-\($0.upperBound)" }.joined(separator: ",")
             skipSegmentsSaved = true
         }
     }

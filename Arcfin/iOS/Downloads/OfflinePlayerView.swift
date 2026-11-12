@@ -97,7 +97,7 @@ struct OfflinePlayerView: View {
         .persistentSystemOverlays(.hidden)
         .keepsScreenAwake(status: model.player.status)
         .task { await setup() }
-        .confirmationDialog("Resume Playback?", isPresented: $model.isAskingToResume, titleVisibility: .visible) {
+        .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(OfflinePlayerModel.timeText(model.askedResumeTicks))") { model.resumeAnswer = model.askedResumeTicks }
             Button("Start from Beginning") { model.resumeAnswer = 0 }
             Button("Cancel", role: .cancel) { dismiss() }

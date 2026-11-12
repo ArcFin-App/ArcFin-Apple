@@ -175,7 +175,7 @@ struct PlayerView: View {
         .keepsScreenAwake(status: model.player.status)
         .onAppear { connectModel() }
         .task { if !model.isAskingToResume { await model.setup() } }
-        .confirmationDialog("Resume Playback?", isPresented: $model.isAskingToResume, titleVisibility: .visible) {
+        .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks
                 model.resumeAnswered = true
@@ -321,7 +321,9 @@ struct PlayerView: View {
                 },
                 audioDescriptionIndices: model.audioDescriptionIndices,
                 rowBackground: Color.clear,
-                followsFocus: true
+                followsFocus: true,
+                dialogueBoost: model.supportsDialogueBoost
+                    ? Binding(get: { model.isDialogueBoosted }, set: { model.setDialogueBoost($0) }) : nil
             )
             .navigationTitle("Subtitles & Audio")
             .toolbar {

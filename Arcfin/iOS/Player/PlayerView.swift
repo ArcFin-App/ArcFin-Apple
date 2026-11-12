@@ -75,6 +75,7 @@ struct PlayerView: View {
     @State var displayCriteriaMatcher = DisplayCriteriaMatcher()
     @AppStorage("matchContentFrameRate") var matchContentFrameRate = false
     @AppStorage("swipeGesturesEnabled") var swipeGesturesEnabled = true
+    @AppStorage("ignoreEdgeSwipes") var ignoreEdgeSwipes = true
     @State var routeBridge = RouteButtonBridge()
     @State var isLandscape = false
 
@@ -157,6 +158,7 @@ struct PlayerView: View {
                 .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
 
             SkipSegmentButton(model: model)
+            SpeedBoostBadge(model: model)
 
             if model.showUpNext, let nextEpisode = model.nextEpisode {
                 UpNextCard(model: model, next: nextEpisode)
@@ -172,10 +174,16 @@ struct PlayerView: View {
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // With swipes allowed right to the edges, the player's swipes come before Control
+        // Center, Notification Center and the Home gesture, which then take a second swipe.
+        .defersSystemGestures(on: swipeGesturesEnabled && !ignoreEdgeSwipes ? .vertical : [])
         .keepsScreenAwake(status: model.player.status)
-        .onAppear { connectModel() }
+        .onAppear {
+            connectModel()
+            applyOpeningOrientation()
+        }
         .task { if !model.isAskingToResume { await setup() } }
-        .confirmationDialog("Resume Playback?", isPresented: $model.isAskingToResume, titleVisibility: .visible) {
+        .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks
                 model.resumeAnswered = true
@@ -291,7 +299,8 @@ struct PlayerView: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .contentShape(Rectangle())
                 .gesture(tapGesture(width: proxy.size.width))
-                .simultaneousGesture(dragGesture(width: proxy.size.width))
+                .simultaneousGesture(dragGesture(size: proxy.size))
+                .simultaneousGesture(holdForSpeedGesture)
                 .onChange(of: proxy.size) { _, newSize in
                     isLandscape = newSize.width > newSize.height
                 }
@@ -389,9 +398,11 @@ struct PlayerView: View {
         // without the isDraggingVolume guard this observer's own echo of that call kept
         // overwriting dragValue mid-drag with a quantized, async-delayed system value —
         // the touch tracked smoothly but the displayed % randomly jumped away from it.
-        volumeObservation = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.new]) { _, change in
+        volumeObservation = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.old, .new]) { _, change in
             guard let newValue = change.newValue else { return }
+            let wasMuted = (change.oldValue ?? 1) < 0.01, isMuted = newValue < 0.01
             Task { @MainActor in
+                if wasMuted != isMuted { model.soundMutedChanged(isMuted) }
                 guard !isDraggingVolume else { return }
                 dragAxis = .volume
                 dragValue = CGFloat(newValue)
@@ -400,6 +411,8 @@ struct PlayerView: View {
             }
         }
         await model.setup()
+        // Opened with the sound already off: the observer above only hears changes.
+        if AVAudioSession.sharedInstance().outputVolume < 0.01 { model.soundMutedChanged(true) }
     }
 
     /// Picture in picture, frame-rate matching and the AirPlay receiver's Now Playing card,

@@ -152,10 +152,9 @@ struct MediaDetailView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
-        .confirmationDialog(
+        .alert(
             "This is downloaded — play the offline copy or stream from the server?",
-            isPresented: Binding(get: { model.pendingPlaybackChoice != nil }, set: { if !$0 { model.pendingPlaybackChoice = nil } }),
-            titleVisibility: .visible
+            isPresented: Binding(get: { model.pendingPlaybackChoice != nil }, set: { if !$0 { model.pendingPlaybackChoice = nil } })
         ) {
             Button("Play Downloaded") { model.playDownloadedCopy(modelContext: modelContext) }
             Button("Stream Online") { model.streamInstead() }

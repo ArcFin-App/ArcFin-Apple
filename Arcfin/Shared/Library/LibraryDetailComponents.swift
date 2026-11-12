@@ -49,8 +49,9 @@ struct PlaylistModifiers: ViewModifier {
                     Button("Cancel", role: .cancel) {}
                     Button("Save") { onRename(renameText) }
                 }
-                .confirmationDialog("Delete \(playlistName)?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                .alert("Delete \(playlistName)?", isPresented: $confirmDelete) {
                     Button("Delete Playlist", role: .destructive, action: onDelete)
+                    Button("Cancel", role: .cancel) {}
                 } message: {
                     Text("The titles stay in your library.")
                 }

@@ -384,6 +384,29 @@ final class SeerrRepository {
         await loadRequests()
     }
 
+    /// A movie's film series, its parts filtered by the profile's parental controls.
+    func collection(id: Int) async -> SeerrCollection? {
+        guard let client, let collection = try? await client.collection(id: id) else { return nil }
+        return SeerrCollection(id: collection.id, name: collection.name, parts: await visible(collection.parts))
+    }
+
+    /// Requests each movie in turn, then reloads the requests once. Returns how many went through.
+    func requestAll(_ items: [SeerrItem]) async -> Int {
+        guard let client else { return 0 }
+        var requested = 0
+        for item in items {
+            do {
+                try await client.createRequest(mediaType: item.mediaType, mediaId: item.id, seasons: [])
+                requested += 1
+            } catch {
+                Telemetry.logger(category: "SeerrRepository").error(
+                    "Collection request failed for \(item.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        await loadRequests()
+        return requested
+    }
+
     /// Approves or declines someone's pending request, then reloads the list for the
     /// request's new status and its media's.
     func setRequestApproved(_ request: SeerrRequestItem, approved: Bool) async throws {

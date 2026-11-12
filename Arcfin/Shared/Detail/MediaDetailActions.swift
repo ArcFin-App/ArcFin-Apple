@@ -290,6 +290,7 @@ struct DetailMoreMenu: View {
             Button { PlaylistStore.shared.addingItem = item } label: {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }
+            OpenInPlayerMenu(item: item)
             if (item.type == .movie || item.type == .episode) && ProfileRules.shared.canManageSubtitles {
                 Button { searchSubtitles() } label: {
                     Label("Search for Subtitles…", systemImage: "captions.bubble")
@@ -308,6 +309,9 @@ struct DetailMoreMenu: View {
                     Label("Keep Downloaded", systemImage: "arrow.down.circle.dotted")
                 }
                 .pickerStyle(.menu)
+            }
+            if ProfileRules.shared.canDownload, let target = model.smartDownloadsTarget {
+                SmartDownloadsIgnoreButton(id: target.id, name: target.name)
             }
         } label: {
             Image(systemName: "ellipsis")
@@ -337,5 +341,40 @@ struct DetailRatingMenu: View {
         }
         .accessibilityLabel("Rate")
         .accessibilityValue(likes == true ? "Liked" : likes == false ? "Disliked" : "Not rated")
+    }
+}
+
+/// Ignore in Smart Downloads, or Include again, for a movie or a show.
+struct SmartDownloadsIgnoreButton: View {
+    @Environment(DownloadManager.self) private var downloadManager
+    let id: String
+    let name: String
+
+    var body: some View {
+        let ignored = downloadManager.ignoredTitles[id] != nil
+        Button {
+            if ignored { downloadManager.setIgnored(id: id, name: name, ignored: false) }
+            else { downloadManager.requestIgnore(id: id, name: name) }
+        } label: {
+            Label(ignored ? "Include in Smart Downloads" : "Ignore in Smart Downloads",
+                  systemImage: ignored ? "arrow.down.circle" : "nosign")
+        }
+    }
+}
+
+extension View {
+    /// Asks whether ignoring a title in Smart Downloads should remove its downloads too.
+    /// Shown from the app's root, since the button that asks sits inside a menu.
+    func smartDownloadsIgnorePrompt(_ downloadManager: DownloadManager) -> some View {
+        alert("Ignore \(downloadManager.pendingIgnore?.name ?? "") in Smart Downloads?",
+                     isPresented: Binding(get: { downloadManager.pendingIgnore != nil },
+                                          set: { if !$0 { downloadManager.pendingIgnore = nil } }),
+                     presenting: downloadManager.pendingIgnore) { request in
+            Button("Ignore & Delete Downloads", role: .destructive) { downloadManager.ignoreAndDelete(request) }
+            Button("Ignore, Keep Downloads") { downloadManager.setIgnored(id: request.id, name: request.name, ignored: true) }
+            Button("Cancel", role: .cancel) {}
+        } message: { request in
+            Text("This also removes its downloads from Arcfin on this device. Keep them to still watch them offline.")
+        }
     }
 }

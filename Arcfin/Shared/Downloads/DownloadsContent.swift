@@ -2,6 +2,7 @@
 
 import SwiftUI
 import Persistence
+import JellyfinAPI
 
 /// The Downloads list: storage, the queue, Continue Watching, shows and movies. `play` starts a
 /// download the way the platform does, and `manage` sits at the end of the storage card.
@@ -17,6 +18,8 @@ struct DownloadsContent<Manage: View>: View {
     private var movies: [DownloadedItem] { DownloadsModel.movies(in: items) }
     private var seriesGroups: [DownloadsModel.SeriesGroup] { DownloadsModel.seriesGroups(in: items) }
     private var inProgress: [DownloadedItem] { DownloadsModel.inProgress(in: items) }
+    private var upNext: [DownloadedItem] { DownloadsModel.upNext(in: items) }
+    @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueAndUpNext = false
     private var totalSizeBytes: Int64 { DownloadsModel.totalSizeBytes(of: items) }
 
     private let gridColumns = [GridItem(.adaptive(minimum: 104, maximum: 150), spacing: 14, alignment: .top)]
@@ -35,7 +38,14 @@ struct DownloadsContent<Manage: View>: View {
                         storageCard
                         if let hold = downloadManager.queueHold { heldCard(hold) }
                         if !downloadManager.activeItemTitles.isEmpty { downloadingSection }
-                        if !inProgress.isEmpty, !model.isSelecting { continueSection }
+                        if !model.isSelecting {
+                            if mergeContinueAndUpNext {
+                                if !(inProgress + upNext).isEmpty { continueSection(String(localized: "Continue Watching"), inProgress + upNext) }
+                            } else {
+                                if !inProgress.isEmpty { continueSection(String(localized: "Continue Watching"), inProgress) }
+                                if !upNext.isEmpty { continueSection(String(localized: "Up Next"), upNext) }
+                            }
+                        }
                         if !seriesGroups.isEmpty { showsSection }
                         if !movies.isEmpty { moviesSection }
                     }
@@ -59,42 +69,29 @@ struct DownloadsContent<Manage: View>: View {
     // MARK: - Storage
 
     private var storageCard: some View {
-        let used = totalSizeBytes
-        let free = model.freeBytes ?? 0
-        let share = used + free > 0 ? Double(used) / Double(used + free) : 0
-        return VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "arrow.down.circle.fill")
-                    .font(.system(.title2))
+                Image(systemName: "internaldrive.fill")
+                    .font(.system(.title3))
                     .foregroundStyle(DT.Color.accent)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(items.count == 1 ? "1 title" : "\(items.count) titles")
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Storage")
                         .font(.system(.headline, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text(model.storageCaption(used: used))
+                    Text(items.count == 1 ? "1 title" : "\(items.count) titles")
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
                 manage()
             }
-            if model.freeBytes != nil {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(DT.Color.textPrimary.opacity(0.1))
-                        Capsule()
-                            .fill(DT.Color.accent)
-                            .frame(width: max(geo.size.width * share, used > 0 ? 6 : 0))
-                    }
-                }
-                .frame(height: 6)
-                .accessibilityHidden(true)
-            }
+            StorageBreakdown(items: items,
+                             smartUsedBytes: downloadManager.smartDownloadsUsedBytes(of: items),
+                             freeBytes: model.freeBytes)
         }
         .padding(16)
         .background(cardBackground)
-        .accessibilityElement(children: .combine)
     }
 
     private var cardBackground: some View {
@@ -123,7 +120,7 @@ struct DownloadsContent<Manage: View>: View {
 
     private func heldCard(_ hold: DownloadManager.QueueHold) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
+            Image(systemName: hold == .storage ? "externaldrive.badge.exclamationmark" : hold == .playing ? "play.circle" : hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
                 .font(.system(.title3))
                 .foregroundStyle(.orange)
                 .accessibilityHidden(true)
@@ -136,11 +133,15 @@ struct DownloadsContent<Manage: View>: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             Spacer()
-            Button("Start") { model.showMobileDataConfirm = true }
-                .buttonStyle(.glassProminent)
-                .tint(DT.Color.accent)
-                .foregroundStyle(DT.Color.onAccent)
-                .accessibilityHint("Starts the downloads now")
+            if hold == .storage {
+                manage()
+            } else {
+                Button("Start") { model.showMobileDataConfirm = true }
+                    .buttonStyle(.glassProminent)
+                    .tint(DT.Color.accent)
+                    .foregroundStyle(DT.Color.onAccent)
+                    .accessibilityHint("Starts the downloads now")
+            }
         }
         .padding(16)
         .background(cardBackground)
@@ -188,7 +189,7 @@ struct DownloadsContent<Manage: View>: View {
                                     Label("Download Next", systemImage: "arrow.up.to.line")
                                 }
                             }
-                            Button(role: .destructive) { downloadManager.cancelDownload(itemId: itemId) } label: {
+                            Button(role: .destructive) { cancel(itemId) } label: {
                                 Label("Cancel Download", systemImage: "xmark.circle")
                             }
                         }
@@ -198,17 +199,36 @@ struct DownloadsContent<Manage: View>: View {
         }
     }
 
+    /// A title Smart Downloads fetched asks whether to ignore it too.
+    private func cancel(_ itemId: String) {
+        if downloadManager.smartIgnoreTarget(itemId: itemId) != nil {
+            model.pendingSmartCancel = itemId
+        } else {
+            downloadManager.cancelDownload(itemId: itemId)
+        }
+    }
+
     private func inProgressRow(_ itemId: String) -> some View {
         let stats = downloadManager.stats[itemId]
         let fraction = downloadManager.progress[itemId] ?? 0
         let isActive = downloadManager.activeItemIds.contains(itemId) && !downloadManager.queuedItemIds.contains(itemId)
         let isPaused = downloadManager.pausedItemIds.contains(itemId)
+        let item = downloadManager.activeItems[itemId]
+        let isEpisode = item?.type == .episode
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(downloadManager.activeItemTitles[itemId] ?? "Downloading…")
-                    .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(isActive ? DT.Color.textPrimary : DT.Color.textSecondary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text((isEpisode ? item?.seriesName : nil) ?? downloadManager.activeItemTitles[itemId] ?? "Downloading…")
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(isActive ? DT.Color.textPrimary : DT.Color.textSecondary)
+                        .lineLimit(1)
+                    if isEpisode, let item, let subtitle = HomeText.subtitle(item) {
+                        Text(subtitle)
+                            .font(.system(.caption))
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
                 Spacer()
                 if let stats, stats.totalBytes > 0 {
                     Text(Double(fraction), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
@@ -231,7 +251,7 @@ struct DownloadsContent<Manage: View>: View {
                     .accessibilityLabel(isPaused ? "Resume download" : "Pause download")
                     .buttonStyle(.plain)
                 }
-                Button { downloadManager.cancelDownload(itemId: itemId) } label: {
+                Button { cancel(itemId) } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(.title3))
                         .foregroundStyle(DT.Color.textSecondary)
@@ -269,7 +289,14 @@ struct DownloadsContent<Manage: View>: View {
                 if isPaused {
                     Text("Paused")
                 } else if let stats, stats.bytesPerSecond > 0 {
-                    Text("\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s")
+                    let speed = "\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s"
+                    if stats.totalBytes > stats.bytesWritten {
+                        let left = Duration.seconds(Double(stats.totalBytes - stats.bytesWritten) / stats.bytesPerSecond)
+                            .formatted(.units(allowed: [.hours, .minutes, .seconds], width: .abbreviated, maximumUnitCount: 2))
+                        Text("\(speed) · \(left) left")
+                    } else {
+                        Text(speed)
+                    }
                 }
             }
             .font(.system(.caption))
@@ -282,18 +309,20 @@ struct DownloadsContent<Manage: View>: View {
 
     // MARK: - Continue watching
 
-    private var continueSection: some View {
+    private func continueSection(_ title: String, _ shelf: [DownloadedItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Continue Watching")
+            sectionHeader(title)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DT.Spacing.shelfGap) {
-                    ForEach(inProgress) { item in
+                    ForEach(shelf) { item in
                         Button { play(item) } label: {
                             ContinueCard(item: item)
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
-                            Button { play(item) } label: { Label("Resume", systemImage: "play.fill") }
+                            Button { play(item) } label: {
+                                Label(item.playbackPositionTicks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+                            }
                             Button { open(item) } label: { Label("Details", systemImage: "info.circle") }
                         }
                     }
@@ -332,6 +361,7 @@ struct DownloadsContent<Manage: View>: View {
                             Button { openSeries(group.seriesId, name: group.seriesName) } label: {
                                 Label("Details", systemImage: "info.circle")
                             }
+                            SmartDownloadsIgnoreButton(id: group.seriesId, name: group.seriesName)
                             Button(role: .destructive) { model.pendingDeleteSeriesId = group.seriesId } label: {
                                 Label("Delete All Episodes", systemImage: "trash")
                             }
@@ -370,6 +400,7 @@ struct DownloadsContent<Manage: View>: View {
                                 Label(item.playbackPositionTicks > 0 && !item.played ? "Resume" : "Play", systemImage: "play.fill")
                             }
                             Button { open(item) } label: { Label("Details", systemImage: "info.circle") }
+                            SmartDownloadsIgnoreButton(id: item.itemId, name: item.name)
                             Button(role: .destructive) { model.pendingDelete = item } label: {
                                 Label("Delete Download", systemImage: "trash")
                             }
@@ -391,12 +422,31 @@ struct DownloadsAlerts: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .alert("Smart Downloads fetched this. Cancel it?", isPresented: Binding(
+                get: { model.pendingSmartCancel != nil }, set: { if !$0 { model.pendingSmartCancel = nil } }
+            )) {
+                Button("Cancel Download", role: .destructive) {
+                    if let id = model.pendingSmartCancel { downloadManager.cancelDownload(itemId: id) }
+                    model.pendingSmartCancel = nil
+                }
+                Button("Cancel & Ignore in Smart Downloads", role: .destructive) {
+                    if let id = model.pendingSmartCancel { downloadManager.deleteAndIgnore(itemIds: [id]) }
+                    model.pendingSmartCancel = nil
+                }
+                Button("Keep Downloading", role: .cancel) { model.pendingSmartCancel = nil }
+            }
             .alert("Delete this download?", isPresented: Binding(
                 get: { model.pendingDelete != nil }, set: { if !$0 { model.pendingDelete = nil } }
             )) {
                 Button("Delete", role: .destructive) {
                     if let pendingDelete = model.pendingDelete { downloadManager.deleteDownload(pendingDelete) }
                     model.pendingDelete = nil
+                }
+                if let pendingDelete = model.pendingDelete, downloadManager.smartIgnoreTarget(itemId: pendingDelete.itemId) != nil {
+                    Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                        downloadManager.deleteAndIgnore(itemIds: [pendingDelete.itemId])
+                        model.pendingDelete = nil
+                    }
                 }
                 Button("Cancel", role: .cancel) { model.pendingDelete = nil }
             }
@@ -409,6 +459,15 @@ struct DownloadsAlerts: ViewModifier {
                     }
                     model.pendingDeleteSeriesId = nil
                 }
+                if let seriesId = model.pendingDeleteSeriesId {
+                    let ids = items.filter { $0.seriesId == seriesId }.map(\.itemId)
+                    if ids.contains(where: { downloadManager.smartIgnoreTarget(itemId: $0) != nil }) {
+                        Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                            downloadManager.deleteAndIgnore(itemIds: ids)
+                            model.pendingDeleteSeriesId = nil
+                        }
+                    }
+                }
                 Button("Cancel", role: .cancel) { model.pendingDeleteSeriesId = nil }
             }
             .alert(downloadManager.queueHold == .mobileData ? "Download on Mobile Data?" : "Download Now?",
@@ -419,10 +478,11 @@ struct DownloadsAlerts: ViewModifier {
                 switch downloadManager.queueHold {
                 case .mobileData: Text("You're not on Wi-Fi. Downloading uses your mobile data, and charges may apply.")
                 case .lowDataMode: Text("Low Data Mode is on. Downloading uses data your device is trying to save.")
+                case .playing: Text("A video is playing. Downloading now shares its connection, which can lower its quality.")
                 default: Text("Low Power Mode is on. Downloading uses more battery.")
                 }
             }
-            .confirmationDialog("Cancel all downloads?", isPresented: $model.showCancelAllConfirm, titleVisibility: .visible) {
+            .alert("Cancel all downloads?", isPresented: $model.showCancelAllConfirm) {
                 Button("Cancel All Downloads", role: .destructive) { downloadManager.cancelAllDownloads() }
                 Button("Keep Downloading", role: .cancel) {}
             } message: {

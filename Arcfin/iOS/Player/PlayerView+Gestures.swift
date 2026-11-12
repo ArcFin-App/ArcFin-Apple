@@ -16,15 +16,35 @@ extension PlayerView {
             .onEnded { value in handleDoubleTap(at: value.location, width: width) }
             .exclusively(before:
                 SpatialTapGesture(count: 1)
-                    .onEnded { _ in model.toggleControls() }
+                    .onEnded { _ in if !model.justEndedSpeedBoost { model.toggleControls() } }
             )
     }
 
-    func dragGesture(width: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 12)
+    /// Touch and hold to play faster (Settings › Playback › Hold Speed), back to the set
+    /// speed on letting go.
+    var holdForSpeedGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0.45, maximumDistance: 12)
+            .sequenced(before: DragGesture(minimumDistance: 0))
+            .onChanged { value in
+                if case .second = value { model.beginSpeedBoost() }
+            }
+            .onEnded { _ in model.endSpeedBoost() }
+    }
+
+    /// How far from the top and bottom a swipe has to start to count, with Ignore Swipes Near
+    /// Edges on: room for Control Center, Notification Center and the Home gesture.
+    static let edgeSwipeMargin: CGFloat = 48
+
+    func dragGesture(size: CGSize) -> some Gesture {
+        let width = size.width
+        return DragGesture(minimumDistance: 12)
             .onChanged { value in
                 if dragAxis == nil {
-                    guard swipeGesturesEnabled else { return }
+                    guard swipeGesturesEnabled, !model.isSpeedBoosting else { return }
+                    if ignoreEdgeSwipes,
+                       value.startLocation.y < Self.edgeSwipeMargin || value.startLocation.y > size.height - Self.edgeSwipeMargin {
+                        return
+                    }
                     if abs(value.translation.width) > abs(value.translation.height) {
                         beginSwipeSeek()
                         return

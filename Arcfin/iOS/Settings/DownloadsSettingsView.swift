@@ -17,13 +17,13 @@ struct DownloadsSettingsView: View {
     @AppStorage("downloadTrickplay") private var downloadTrickplay = true
     @AppStorage("seasonDownloadUnwatchedOnly") private var seasonDownloadUnwatchedOnly = false
     @AppStorage("pauseDownloadsInLowPowerMode") private var pauseInLowPowerMode = false
+    @AppStorage(DownloadManager.downloadWhilePlayingKey) private var downloadWhilePlaying = false
     @AppStorage("pauseDownloadsInLowDataMode") private var pauseInLowDataMode = false
     @AppStorage("removeDownloadsAfterDays") private var removeAfterDays = 0
     @AppStorage("removeWatchedWhenLowOnSpace") private var removeWatchedWhenLow = false
     @Environment(AuthManager.self) private var authManager
     @Environment(DownloadManager.self) private var downloadManager
     @State private var imageCacheBytes = ImageCache.diskCacheSize
-    @State private var keptShows = DownloadManager.keptShows
 
     var body: some View {
         List {
@@ -80,6 +80,10 @@ struct DownloadsSettingsView: View {
                 }
                 .syncLocked("pauseDownloadsInLowDataMode", authManager)
                 .onChange(of: pauseInLowDataMode) { downloadManager.recheckQueueHold() }
+                Toggle(isOn: $downloadWhilePlaying) {
+                    TVRowLabelText(title: "Keep Downloading While Playing", detail: "Otherwise downloads and Smart Downloads wait while a video streams, so it gets the whole connection, and carry on when you close the player.")
+                }
+                .syncLocked(DownloadManager.downloadWhilePlayingKey, authManager)
             }
 
             Section {
@@ -121,7 +125,7 @@ struct DownloadsSettingsView: View {
 
             Section {
                 Toggle(isOn: $smartDownloadsEnabled) {
-                    TVRowLabelText(title: "Smart Downloads", detail: "Keeps the episode you're up to and the next ones of each show you've downloaded, removing watched ones.")
+                    TVRowLabelText(title: "Smart Downloads", detail: "Keeps what you're watching downloaded: the next episodes of shows in Continue Watching, Next Up or your downloads, and movies you're part-way through. Watched ones are removed.")
                 }
                 .syncLocked("smartDownloadsEnabled", authManager)
                 .onChange(of: smartDownloadsEnabled) { _, isOn in
@@ -154,31 +158,22 @@ struct DownloadsSettingsView: View {
                         downloadManager.recheckQueueHold()
                         if isOn { downloadManager.refreshSmartDownloads() }
                     }
+                    NavigationLink {
+                        SmartDownloadsIgnoredView()
+                    } label: {
+                        LabeledContent("Ignored", value: "\(downloadManager.ignoredTitles.count)")
+                    }
+                }
+                NavigationLink {
+                    KeptDownloadedView()
+                } label: {
+                    let _ = downloadManager.keptShowsVersion
+                    LabeledContent("Kept Downloaded", value: "\(DownloadManager.keptShows.count)")
                 }
             } footer: {
                 Text("Smart Downloads checks after a download finishes, when you open the app, when the connection returns and when you close the player.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            if !keptShows.isEmpty {
-                Section {
-                    ForEach(keptShows.sorted { $0.value.name < $1.value.name }, id: \.key) { seriesId, show in
-                        LabeledContent(show.name, value: show.episodeCount == 1 ? "Next episode" : "Next \(show.episodeCount)")
-                            .swipeActions {
-                                Button("Stop", role: .destructive) {
-                                    downloadManager.setKeptShow(seriesId: seriesId, name: show.name, episodeCount: nil)
-                                    keptShows = DownloadManager.keptShows
-                                }
-                            }
-                    }
-                } header: {
-                    Text("Kept Downloaded")
-                } footer: {
-                    Text("Shows set to Keep Downloaded from their page download straight away, outside the storage budget, and stop under 2 GB free. Swipe to stop.")
-                        .font(.caption)
-                        .foregroundStyle(DT.Color.textSecondary)
-                }
             }
 
             Section {

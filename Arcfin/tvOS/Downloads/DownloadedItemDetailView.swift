@@ -18,6 +18,12 @@ struct DownloadedItemDetailView: View {
                     downloadManager.deleteDownload(item)
                     dismiss()
                 }
+                if downloadManager.smartIgnoreTarget(itemId: item.itemId) != nil {
+                    Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                        downloadManager.deleteAndIgnore(itemIds: [item.itemId])
+                        dismiss()
+                    }
+                }
                 Button("Cancel", role: .cancel) {}
             }
     }

@@ -29,7 +29,8 @@ extension PlayerView {
                 Color.clear
                     .contentShape(Rectangle())
                     .gesture(tapGesture(width: proxy.size.width))
-                    .simultaneousGesture(dragGesture(width: proxy.size.width))
+                    .simultaneousGesture(dragGesture(size: proxy.size))
+                    .simultaneousGesture(holdForSpeedGesture)
                 bottomBar
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -672,7 +673,9 @@ extension PlayerView {
                     showTrackMenu = false
                     model.adoptDownloadedSubtitle()
                 },
-                audioDescriptionIndices: model.audioDescriptionIndices
+                audioDescriptionIndices: model.audioDescriptionIndices,
+                dialogueBoost: model.supportsDialogueBoost
+                    ? Binding(get: { model.isDialogueBoosted }, set: { model.setDialogueBoost($0) }) : nil
             )
             .navigationTitle("Subtitles & Audio")
             .navigationBarTitleDisplayMode(.inline)

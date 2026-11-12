@@ -15,6 +15,8 @@ struct DownloadedSeriesRef: Hashable {
 @MainActor @Observable
 final class DownloadsModel {
     var pendingDelete: DownloadedItem?
+    /// A title Smart Downloads fetched, waiting for Cancel or Cancel & Ignore.
+    var pendingSmartCancel: String?
     var pendingDeleteSeriesId: String?
     // Owned here rather than relying on an ancestor's navigationDestination(for:) — this
     // view is itself pushed non-root (Library's Downloads row, offline mode's stack), and a
@@ -51,6 +53,20 @@ final class DownloadsModel {
 
     static func inProgress(in items: [DownloadedItem]) -> [DownloadedItem] {
         items.filter { $0.playbackPositionTicks > 0 && !$0.played }
+    }
+
+    /// Each downloaded show's next episode, for one with nothing part-way through: the first
+    /// unwatched one downloaded, specials last.
+    static func upNext(in items: [DownloadedItem]) -> [DownloadedItem] {
+        Dictionary(grouping: items.filter { $0.seriesId != nil }) { $0.seriesId! }.values.compactMap { episodes in
+            guard !episodes.contains(where: { $0.playbackPositionTicks > 0 && !$0.played }) else { return nil }
+            return episodes.filter { !$0.played }.min {
+                let a = ($0.seasonNumber == 0 ? Int.max : $0.seasonNumber ?? 0, $0.episodeNumber ?? 0)
+                let b = ($1.seasonNumber == 0 ? Int.max : $1.seasonNumber ?? 0, $1.episodeNumber ?? 0)
+                return a < b
+            }
+        }
+        .sorted { ($0.seriesName ?? $0.name) < ($1.seriesName ?? $1.name) }
     }
 
     static func totalSizeBytes(of items: [DownloadedItem]) -> Int64 { items.reduce(0) { $0 + $1.fileSizeBytes } }
@@ -107,18 +123,10 @@ final class DownloadsModel {
 
     // MARK: - Storage
 
-    func refreshFreeBytes() { freeBytes = Self.availableBytes() }
-
-    private static func availableBytes() -> Int64? {
+    func refreshFreeBytes() {
         let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
             .resourceValues(forKeys: [.volumeAvailableCapacityKey])
-        return values?.volumeAvailableCapacity.map(Int64.init)
-    }
-
-    func storageCaption(used: Int64) -> String {
-        let usedText = ByteCountFormatter.string(fromByteCount: used, countStyle: .file)
-        guard let freeBytes else { return "\(usedText) used" }
-        return "\(usedText) used · \(ByteCountFormatter.string(fromByteCount: freeBytes, countStyle: .file)) free"
+        freeBytes = values?.volumeAvailableCapacity.map(Int64.init)
     }
 
     // MARK: - Artwork

@@ -49,7 +49,9 @@ extension PlayerView {
     /// rather than through a hidden system slider — macOS has no per-app "hidden MPVolumeView"
     /// trick to reach for the way iOS does.
     func adjustMacVolume(by delta: Double) {
+        let wasMuted = macVolume == 0
         macVolume = min(max(macVolume + delta, 0), 1)
+        if (macVolume == 0) != wasMuted { model.soundMutedChanged(macVolume == 0) }
         model.setEngineVolume(Float(macVolume))
         macVolumeHUD = macVolume
         macVolumeHUDTask?.cancel()
@@ -58,6 +60,28 @@ extension PlayerView {
             guard !Task.isCancelled else { return }
             macVolumeHUD = nil
         }
+    }
+
+    /// The right arrow, from the Playback menu or the player: a press skips forward; held down,
+    /// its key repeats play faster (Settings › Playback › Hold Speed) until it's let go.
+    func macSkip(_ direction: Int) {
+        if direction > 0, !model.isLive, let event = NSApp.currentEvent, event.type == .keyDown, event.isARepeat {
+            guard !model.isSpeedBoosting else { return }
+            model.beginSpeedBoost()
+            guard model.isSpeedBoosting else { return }
+            arrowReleaseMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyUp) { [model] event in
+                // 124: the right arrow.
+                if event.keyCode == 124 {
+                    model.endSpeedBoost()
+                    if let monitor = arrowReleaseMonitor { NSEvent.removeMonitor(monitor) }
+                    arrowReleaseMonitor = nil
+                }
+                return event
+            }
+            return
+        }
+        guard !model.isSpeedBoosting else { return }
+        model.seek(by: direction > 0 ? skipForwardSeconds : -skipBackwardSeconds)
     }
 
     func toggleMacMute() {

@@ -58,10 +58,9 @@ struct SeerrPluginView: View {
             }
         }
         .onAppear { if !isConfigured { beginEditing() } }
-        .confirmationDialog(
+        .alert(
             "Remove Seerr connection?",
-            isPresented: $showRemoveConfirm,
-            titleVisibility: .visible
+            isPresented: $showRemoveConfirm
         ) {
             Button("Remove", role: .destructive) { remove() }
             Button("Cancel", role: .cancel) {}

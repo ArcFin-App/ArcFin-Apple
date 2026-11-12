@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import JellyfinAPI
 
 /// Advanced/power-user override of what the client tells Jellyfin it can play directly —
 /// read by JellyfinPlaybackClient's deviceProfile via plain UserDefaults (it's a struct,
@@ -11,6 +12,7 @@ struct CodecProfileSettingsView: View {
     @AppStorage("codecForceHDRTranscode") private var forceHDR = false
     @AppStorage("codecForceDolbyVisionTranscode") private var forceDolbyVision = false
     @AppStorage("codecCompatibilityMode") private var compatibilityMode = false
+    @AppStorage(AV1Encoding.settingKey) private var allowAV1 = false
 
     var body: some View {
         List {
@@ -19,6 +21,17 @@ struct CodecProfileSettingsView: View {
                     TVRowLabelText(title: "Direct Play HEVC (H.265)", detail: "Turn off if HEVC videos stall or stay black on this device; they'll be converted to H.264 instead.")
                 }
                 .tvListRow()
+            }
+
+            // Only where this device decodes AV1 in hardware; elsewhere it's never asked for.
+            if JellyfinMediaClient.decodesAV1InHardware {
+                Section {
+                    Toggle(isOn: $allowAV1) {
+                        TVRowLabelText(title: "Convert to AV1", detail: "When the server converts a video, it's asked for AV1 first, which looks better at the same speed. A server that can't encode AV1 is noticed and gets HEVC instead. Turning this back on tries every server again.")
+                    }
+                    .tvListRow()
+                    .onChange(of: allowAV1) { _, on in if on { AV1Encoding.forgetFailures() } }
+                }
             }
 
             Section {

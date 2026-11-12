@@ -268,6 +268,12 @@ final class MediaDetailModel {
         )
     }
 
+    /// What Ignore in Smart Downloads applies to here: the movie, or the whole show.
+    var smartDownloadsTarget: (id: String, name: String)? {
+        if item.type == .movie { return (item.id, item.name) }
+        return seasonSeriesId.map { ($0, item.seriesName ?? item.name) }
+    }
+
     func readKeptEpisodeCount() {
         if let seriesId = seasonSeriesId {
             keptEpisodeCount = DownloadManager.keptShows[seriesId]?.episodeCount ?? 0
@@ -516,7 +522,8 @@ final class MediaDetailModel {
                 videoCodec: single?.videoCodec,
                 videoWidth: single?.videoWidth,
                 videoHeight: single?.videoHeight,
-                videoRange: single?.videoRange
+                videoRange: single?.videoRange,
+                episodeCount: pending.count
             )
         }
     }

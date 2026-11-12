@@ -532,6 +532,7 @@ public actor SeerrHTTPClient {
         info.networks = (decoded.networks ?? []).map(\.name)
         info.numberOfSeasons = decoded.numberOfSeasons
         info.imdbId = decoded.externalIds?.imdbId ?? decoded.imdbId
+        info.collection = decoded.collection.map { SeerrNamedEntity(id: $0.id, name: $0.name) }
         if let next = decoded.nextEpisodeToAir {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
@@ -541,6 +542,17 @@ public actor SeerrHTTPClient {
                 episodeNumber: next.episodeNumber ?? 0, airDate: next.airDate.flatMap(formatter.date(from:)))
         }
         return info
+    }
+
+    /// A film series' movies, each with its request and library status, oldest first.
+    public func collection(id: Int) async throws -> SeerrCollection {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/collection/\(id)"))
+        struct Response: Decodable { let id: Int; let name: String; let parts: [SeerrItemResponse]? }
+        let decoded = try JSONDecoder().decode(Response.self, from: data)
+        let parts = (decoded.parts ?? []).compactMap { $0.toItem(defaultMediaType: .movie) }
+            .sorted { ($0.year ?? "9999") < ($1.year ?? "9999") }
+        return SeerrCollection(id: decoded.id, name: decoded.name, parts: parts)
     }
 
     /// Rotten Tomatoes and IMDb scores (movies get both, shows Rotten Tomatoes only).
@@ -1183,4 +1195,5 @@ private struct SeerrRelatedResponse: Decodable {
     let nextEpisodeToAir: Episode?
     let externalIds: ExternalIds?
     let imdbId: String?
+    let collection: Named?
 }

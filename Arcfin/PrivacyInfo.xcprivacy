@@ -33,7 +33,7 @@
 				     downloads when the device runs low (DownloadManager). -->
 				<string>E174.1</string>
 				<!-- 85F4.1: free space shown to the user on the Downloads storage screen
-				     (DownloadsModel.storageCaption). -->
+				     (StorageBreakdown). -->
 				<string>85F4.1</string>
 			</array>
 		</dict>

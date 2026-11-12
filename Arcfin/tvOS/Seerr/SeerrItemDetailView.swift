@@ -48,6 +48,11 @@ struct SeerrItemDetailView: View {
             SeerrRequestConfirmSheet(item: item, requestingItem: $model.requestingItem)
         }
         .fullScreenCover(isPresented: $showFullDescription) { fullDescription }
+        .alert(model.collectionRequestMessage ?? "", isPresented: Binding(
+            get: { model.collectionRequestMessage != nil }, set: { if !$0 { model.collectionRequestMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        }
         .task(id: item.id) { await model.loadDetail(seerrRepo: seerrRepo) }
         .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
         .task(id: item.id) { await model.loadLibraryItem(authManager: authManager) }
@@ -223,6 +228,7 @@ struct SeerrItemDetailView: View {
                 .focusSection()
             if let seasons = detail?.seasons, !seasons.isEmpty { seasonsRow(seasons) }
             if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
+            if let collection = model.collection { collectionRow(collection) }
             if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
             if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
             if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
@@ -230,6 +236,33 @@ struct SeerrItemDetailView: View {
                 .padding(.horizontal, 80)
                 .focusSection()
         }
+    }
+
+    /// The film series, with Request Collection for the movies not yet in the library or asked for.
+    private func collectionRow(_ collection: SeerrCollection) -> some View {
+        let parts = model.requestableParts(seerrRepo: seerrRepo)
+        return VStack(alignment: .leading, spacing: 16) {
+            discoveryRow(collection.name, collection.parts)
+            if seerrRepo.isConfigured, !parts.isEmpty {
+                Button { model.isConfirmingCollectionRequest = true } label: {
+                    Label(model.isRequestingCollection ? "Requesting…" : "Request Collection", systemImage: "plus.circle.fill")
+                        .font(.system(size: 24, weight: .semibold))
+                        .padding(.horizontal, 24).padding(.vertical, 12)
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .tvFocusRing(cornerRadius: DT.Radius.md)
+                .disabled(model.isRequestingCollection)
+                .padding(.horizontal, 80)
+                .alert("Request \(parts.count) movies?", isPresented: $model.isConfirmingCollectionRequest) {
+                    Button("Request \(parts.count) Movies") { Task { await model.requestCollection(seerrRepo: seerrRepo) } }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text(parts.map(\.title).joined(separator: ", "))
+                }
+            }
+        }
+        .focusSection()
     }
 
     private func sectionTitle(_ title: String) -> some View {

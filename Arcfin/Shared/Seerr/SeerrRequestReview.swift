@@ -117,10 +117,9 @@ private struct SeerrRequestReviewPresentations: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .confirmationDialog(
+            .alert(
                 review.declining.map { String(localized: "Decline “\($0.mediaTitle)”?") } ?? "",
                 isPresented: Binding(get: { review.declining != nil }, set: { if !$0 { review.declining = nil } }),
-                titleVisibility: .visible,
                 presenting: review.declining
             ) { request in
                 Button("Decline Request", role: .destructive) { review.decline(request, seerrRepo: seerrRepo) }
