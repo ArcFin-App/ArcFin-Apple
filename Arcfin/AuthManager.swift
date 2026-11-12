@@ -353,6 +353,8 @@ final class AuthManager {
     private static let syncLog = Telemetry.logger(category: "ArcfinSync")
 
     private func refreshArcfinSync(for credential: ServerCredential) {
+        // A push the previous profile scheduled mustn't land in this one's record.
+        settingsPushTask?.cancel()
         arcfinSyncStatus = nil
         arcfinSyncLockedKeys = []
         arcfinSyncLastSyncedAt = nil
@@ -394,7 +396,7 @@ final class AuthManager {
             try? await Task.sleep(for: .seconds(2))
             guard let self, !Task.isCancelled, !self.isSyncingArcfin,
                   case .authenticated(let credential) = self.state,
-                  SettingsSyncEngine.hasLocalChanges()
+                  SettingsSyncEngine.hasLocalChanges(profile: credential.id.uuidString)
             else { return }
             self.isSyncingArcfin = true
             defer { self.isSyncingArcfin = false }
