@@ -224,6 +224,7 @@ public enum SettingsSyncRegistry {
         .init("hapticsEnabled", .bool),
         .init("mergeContinueWatchingAndUpNext", .bool),
         .init("showUnwatchedCount", .bool),
+        .init("homeEpisodeArtwork", .string),
         .init("heroVideoBackdropsEnabled", .bool),
         .init("heroTrailerSound", .bool),
         .init("modernHome", .bool),

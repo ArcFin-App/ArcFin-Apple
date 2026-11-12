@@ -599,10 +599,23 @@ enum HomeArtwork {
     @MainActor
     static func landscapeURL(for item: MediaItem, in mediaRepo: MediaRepository) -> URL? {
         if item.type == .episode {
+            if HomeEpisodeArtwork.current == .series, let show = mediaRepo.seriesBackdropURL(for: item, fillWidth: 400) {
+                return show
+            }
             return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
         }
         return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 400)
             ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 400)
+    }
+
+    /// Apple TV's cards: the same choice for episodes, and tvImageURL for everything else.
+    @MainActor
+    static func tvURL(for item: MediaItem, in mediaRepo: MediaRepository) -> URL? {
+        if item.type == .episode, HomeEpisodeArtwork.current == .series,
+           let show = mediaRepo.seriesBackdropURL(for: item, fillWidth: 640) {
+            return show
+        }
+        return mediaRepo.tvImageURL(for: item, fillWidth: 640)
     }
 }
 

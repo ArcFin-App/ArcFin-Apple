@@ -344,6 +344,15 @@ final class MediaRepository {
         return imageURL(for: item, type: .thumb, fillWidth: fillWidth)
     }
 
+    /// An episode's show artwork in landscape: the series backdrop the episode carries.
+    func seriesBackdropURL(for item: MediaItem, fillWidth: Int) -> URL? {
+        guard let base = baseURL, let token = accessToken,
+              let parentId = item.parentBackdropItemId ?? item.seriesId,
+              let tag = item.parentBackdropImageTags.first else { return nil }
+        return JellyfinMediaClient.imageURL(baseURL: base, itemID: parentId, tag: tag,
+                                            type: .backdrop, fillWidth: fillWidth, token: token)
+    }
+
     // Episode screenshot — uses the episode's own Primary (screenshot) or Thumb image,
     // bypassing the episode→series poster redirect in imageURL(for:type:).
     func episodeThumbnailURL(for item: MediaItem, fillWidth: Int = 240) -> URL? {

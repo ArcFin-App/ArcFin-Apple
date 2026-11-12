@@ -31,6 +31,8 @@ struct HomeShelfSettingsView: View {
                 }
             }
 
+            HomeEpisodeArtworkSection()
+
             Section {
                 ForEach(shown) { shelf in
                     HStack(spacing: 12) {

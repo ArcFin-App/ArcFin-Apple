@@ -544,7 +544,7 @@ struct HomeView: View {
                                     title: itemTitle(item),
                                     subtitle: itemSubtitle(item),
                                     progress: item.userData?.playedPercentage.map { $0 / 100 },
-                                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                                    imageURL: HomeArtwork.tvURL(for: item, in: mediaRepo)
                                 )
                                 .opacity(heroChromeOpacity)
                             }
@@ -907,7 +907,7 @@ struct HomeView: View {
                             title: itemTitle(item),
                             subtitle: itemSubtitle(item),
                             progress: item.userData?.playedPercentage.map { $0 / 100 },
-                            imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                            imageURL: HomeArtwork.tvURL(for: item, in: mediaRepo)
                         )
                         .unwatchedBadge(item)
                         .background { modernFocusProbe(row: title, subject: .media(item)) }
