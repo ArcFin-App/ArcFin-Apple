@@ -61,6 +61,10 @@ final class MediaRepository {
     var watchAgain: [MediaItem] = []
     /// A few random genres, each with unwatched titles — refreshed on every Home load.
     var genreShelves: [(genre: String, items: [MediaItem])] = []
+    /// Titles from collections the server admin tagged `arcfin-featured`, for the hero.
+    var featuredItems: [MediaItem] = []
+    /// Collections the server admin tagged `arcfin-promoted`, each its own Home row.
+    var promotedCollections: [(collection: MediaItem, items: [MediaItem])] = []
     /// The most recently finished title and unwatched titles similar to it.
     var becauseYouWatched: (source: MediaItem, items: [MediaItem])?
     var favorites: [MediaItem] = []
@@ -178,6 +182,8 @@ final class MediaRepository {
         async let sugg    = client.getSuggestions(credential: credential, authHeader: header)
         async let recs    = client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)
         async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
+        async let featured = client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-featured")
+        async let promoted = client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-promoted")
 
         // Every result is gathered first and only shown if the server answered: a failed or
         // cancelled attempt used to replace every shelf with an empty list, which with
@@ -213,6 +219,8 @@ final class MediaRepository {
         let suggResult = (try? await sugg) ?? []
         let recsResult = (try? await recs) ?? []
         let tmdbKeysResult = try? await tmdbKeys
+        let featuredResult = try? await featured
+        let promotedResult = try? await promoted
         guard succeeded else { return false }
 
         continueWatching       = cwResult
@@ -232,6 +240,11 @@ final class MediaRepository {
         suggestions            = suggResult
         recommendations        = recsResult.filter { $0.items.count >= 3 }
         if let tmdbKeysResult { libraryTMDBKeys = tmdbKeysResult }
+        if let featuredResult {
+            var seen = Set<String>()
+            featuredItems = featuredResult.flatMap(\.items).filter { seen.insert($0.id).inserted }
+        }
+        if let promotedResult { promotedCollections = promotedResult }
 
         return succeeded
     }

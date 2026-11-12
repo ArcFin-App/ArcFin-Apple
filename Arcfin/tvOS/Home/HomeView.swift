@@ -114,10 +114,10 @@ struct HomeView: View {
             switch modernHero {
             case .media(let item): return item
             case .seerr: return nil
-            case nil: return cwItems.first ?? mediaRepo.recentlyAdded.first
+            case nil: return mediaRepo.featuredItems.first ?? cwItems.first ?? mediaRepo.recentlyAdded.first
             }
         }
-        return focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
+        return focusedItem ?? mediaRepo.featuredItems.first ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
     }
 
     var body: some View {
@@ -611,6 +611,10 @@ struct HomeView: View {
         case .watchAgain:
             if !mediaRepo.watchAgain.isEmpty {
                 mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+            }
+        case .serverPicks:
+            ForEach(mediaRepo.promotedCollections, id: \.collection.id) { shelf in
+                mediaShelf(title: shelf.collection.name, rowID: "picks-\(shelf.collection.id)", items: shelf.items)
             }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in

@@ -215,6 +215,59 @@ public struct JellyfinMediaClient: Sendable {
         return shelves
     }
 
+    /// Collections a server admin has tagged for Home (`arcfin-featured` for the hero,
+    /// `arcfin-promoted` for rows), each with its titles in the collection's own order.
+    /// Only collections this user can see come back, so library access still applies.
+    public func getTaggedCollections(
+        credential: ServerCredential,
+        authHeader: String,
+        tag: String,
+        itemsPerCollection: Int = 30
+    ) async throws -> [(collection: MediaItem, items: [MediaItem])] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "BoxSet"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Tags", value: tag),
+            .init(name: "SortBy", value: "SortName"),
+            .init(name: "Fields", value: "DisplayOrder,PrimaryImageTags"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let collections = try JSONDecoder().decode(TaggedCollectionsPage.self, from: data).items
+
+        var result: [(collection: MediaItem, items: [MediaItem])] = []
+        for collection in collections {
+            var itemComps = URLComponents(
+                url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+                resolvingAgainstBaseURL: false)!
+            // A collection set to sort by release date keeps that order; anything else is by name.
+            let sortBy = collection.displayOrder == "PremiereDate" ? "PremiereDate,ProductionYear,SortName" : "SortName"
+            itemComps.queryItems = [
+                .init(name: "ParentId", value: collection.id),
+                .init(name: "SortBy", value: sortBy),
+                .init(name: "Limit", value: "\(itemsPerCollection)"),
+                .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,RunTimeTicks,Genres,ProviderIds"),
+                .init(name: "EnableUserData", value: "true"),
+            ]
+            var itemReq = URLRequest(url: itemComps.url!)
+            itemReq.setValue(authHeader, forHTTPHeaderField: "Authorization")
+            itemReq.timeoutInterval = 15
+            guard let (itemData, _) = try? await URLSession.arcfin.data(for: itemReq),
+                  let page = try? JSONDecoder().decode(ItemsPage.self, from: itemData),
+                  !page.items.isEmpty
+            else { continue }
+            let item = MediaItem(id: collection.id, name: collection.name, type: .boxSet,
+                                 primaryImageTag: collection.imageTags?["Primary"])
+            result.append((item, page.items.map { $0.toMediaItem() }))
+        }
+        return result
+    }
+
     /// Movies and series the user has favorited, for Home's Favorites shelf.
     public func getFavorites(
         credential: ServerCredential,
@@ -1196,6 +1249,20 @@ public struct JellyfinMediaClient: Sendable {
 }
 
 // MARK: - Private response types
+
+private struct TaggedCollectionsPage: Decodable {
+    struct Collection: Decodable {
+        let id: String
+        let name: String
+        let displayOrder: String?
+        let imageTags: [String: String]?
+        enum CodingKeys: String, CodingKey {
+            case id = "Id", name = "Name", displayOrder = "DisplayOrder", imageTags = "ImageTags"
+        }
+    }
+    let items: [Collection]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
 
 struct ItemsPage: Decodable {
     let items: [JellyfinItemResponse]

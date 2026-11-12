@@ -400,6 +400,14 @@ struct HomeShelfView<Card: View>: View {
                     posters(mediaRepo.watchAgain)
                 }
             }
+        case .serverPicks:
+            ForEach(mediaRepo.promotedCollections, id: \.collection.id) { shelf in
+                ShelfRow(title: shelf.collection.name, onSeeAll: {
+                    seeAll(SeeAllShelf(title: shelf.collection.name, items: shelf.items))
+                }) {
+                    posters(shelf.items)
+                }
+            }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
                 let title = "More \(shelf.genre)"

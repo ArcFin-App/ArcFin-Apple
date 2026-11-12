@@ -6,7 +6,7 @@ import AuthCore
 import SeerrAPI
 
 enum HomeShelf: String, CaseIterable, Identifiable {
-    case continueWatching, nextUp, recentlyAddedMovies, recentlyAddedShows
+    case continueWatching, nextUp, serverPicks, recentlyAddedMovies, recentlyAddedShows
     case recentlyReleasedMovies, recentlyAiredEpisodes, watchAgain, becauseYouWatched, genreShelves
     case favorites, topRatedUnwatched
     case nowAvailable
@@ -21,6 +21,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         switch self {
         case .continueWatching:       String(localized: "Continue Watching")
         case .nextUp:                 String(localized: "Next Up")
+        case .serverPicks:            String(localized: "Server Picks")
         case .recentlyAddedMovies:    String(localized: "Recently Added Movies")
         case .recentlyAddedShows:     String(localized: "Recently Added Shows")
         case .recentlyReleasedMovies: String(localized: "Recently Released Movies")
@@ -80,6 +81,7 @@ enum HomeShelf: String, CaseIterable, Identifiable {
         switch self {
         case .continueWatching:       "play.circle"
         case .nextUp:                 "forward.circle"
+        case .serverPicks:            "star.square.on.square"
         case .recentlyAddedMovies:    "film"
         case .recentlyAddedShows:     "tv"
         case .recentlyReleasedMovies: "sparkles"
