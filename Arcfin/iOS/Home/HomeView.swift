@@ -135,12 +135,13 @@ struct HomeView: View {
                     // this app doesn't have — only local, in-the-moment alerts (download
                     // complete, Seerr request status) exist, with no server-side feed and
                     // nothing to show a history of. A bell implying one would be misleading.
-                    Button { showSettings = true } label: {
+                    QuickProfileSwitchButton { showSettings = true } label: {
                         HomeAvatar()
                             .frame(width: 34, height: 34)
                             .glassEffect(.regular.tint(DT.Color.accent), in: .circle)
                     }
                     .accessibilityLabel("Settings")
+                    .accessibilityHint(authManager.profiles.count > 1 ? "Touch and hold to switch profile" : "")
                 }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
