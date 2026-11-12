@@ -32,8 +32,9 @@ struct ServerVersion: Comparable, Sendable, CustomStringConvertible {
 /// choice exists. Anything a server is too old for is left out.
 enum ServerCompatibility {
     static let oldestTested = ServerVersion(10, 9, 0)
-    /// The newest release line checked; a later one is editable after a warning.
-    static let newestTested = ServerVersion(10, 11, 999)
+    /// The newest release line checked (12.3, the version these screens were built against);
+    /// a later one is editable after a warning.
+    static let newestTested = ServerVersion(12, 3, 999)
 
     enum Status: Equatable {
         case unknown
