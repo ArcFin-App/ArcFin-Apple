@@ -741,6 +741,7 @@ final class DownloadManager: NSObject {
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
         activeItems[item.id] = item
+        if viaSmart { Self.smartItemIds.insert(item.id) }
         pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
         if isFreshQueue && liveActivityPendingFinish == nil {
@@ -1300,6 +1301,7 @@ final class DownloadManager: NSObject {
     func deleteDownload(_ item: DownloadedItem) {
         guard let modelContext else { return }
         let seriesId = item.seriesId
+        Self.smartItemIds.remove(item.itemId)
         DownloadStore.deleteDirectory(for: item.itemId)
         modelContext.delete(item)
         try? modelContext.save()
@@ -1387,6 +1389,43 @@ final class DownloadManager: NSObject {
 
     /// Movies Smart Downloads fetched from Continue Watching, so only those (not ones someone
     /// downloaded themselves) go once watched.
+    /// Every title Smart Downloads or Keep Downloaded fetched, so deleting one by hand can
+    /// offer to ignore it from then on.
+    private static let smartItemsKey = "smartDownloadsItemIds"
+    private static var smartItemIds: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: smartItemsKey) ?? []) }
+        set { UserDefaults.standard.set(Array(newValue), forKey: smartItemsKey) }
+    }
+
+    /// What Delete & Ignore would ignore for a title Smart Downloads fetched: the movie, or
+    /// the episode's show. nil for a title someone downloaded themselves.
+    func smartIgnoreTarget(itemId: String) -> (id: String, name: String)? {
+        guard Self.smartItemIds.contains(itemId) else { return nil }
+        if let item = activeItems[itemId] {
+            return item.seriesId.map { ($0, item.seriesName ?? item.name) } ?? (item.id, item.name)
+        }
+        guard let modelContext,
+              let item = try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })).first
+        else { return nil }
+        return item.seriesId.map { ($0, item.seriesName ?? item.name) } ?? (item.itemId, item.name)
+    }
+
+    /// Ignores the title in Smart Downloads first, so removing it doesn't start it again.
+    func deleteAndIgnore(itemIds: [String]) {
+        var ignored: Set<String> = []
+        for id in itemIds {
+            guard let target = smartIgnoreTarget(itemId: id), ignored.insert(target.id).inserted else { continue }
+            setIgnored(id: target.id, name: target.name, ignored: true)
+        }
+        for id in itemIds {
+            if activeItemIds.contains(id) || pendingQueue.contains(where: { $0.item.id == id }) {
+                cancelDownload(itemId: id)
+            } else {
+                deleteDownload(itemId: id)
+            }
+        }
+    }
+
     private static var smartMovieIds: Set<String> {
         get { Set(UserDefaults.standard.stringArray(forKey: smartMoviesKey) ?? []) }
         set { UserDefaults.standard.set(Array(newValue), forKey: smartMoviesKey) }

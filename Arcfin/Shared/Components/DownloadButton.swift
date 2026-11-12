@@ -13,6 +13,7 @@ struct DownloadButton: View {
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(AuthManager.self) private var authManager
     @State private var showDeleteConfirm = false
+    @State private var showSmartCancelConfirm = false
     @State private var errorMessage: String?
     @State private var isLoadingPreview = false
     @State private var previewSheet: DownloadManager.DownloadPreview?
@@ -40,7 +41,11 @@ struct DownloadButton: View {
             if isDownloaded {
                 showDeleteConfirm = true
             } else if progress != nil || isQueued {
-                downloadManager.cancelDownload(itemId: item.id)
+                if downloadManager.smartIgnoreTarget(itemId: item.id) != nil {
+                    showSmartCancelConfirm = true
+                } else {
+                    downloadManager.cancelDownload(itemId: item.id)
+                }
             } else {
                 loadPreview()
             }
@@ -82,7 +87,15 @@ struct DownloadButton: View {
                 // DownloadManager's public delete takes the record itself — look it up.
                 downloadManager.deleteDownload(itemId: item.id)
             }
+            if downloadManager.smartIgnoreTarget(itemId: item.id) != nil {
+                Button("Delete & Ignore in Smart Downloads", role: .destructive) { downloadManager.deleteAndIgnore(itemIds: [item.id]) }
+            }
             Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog("Smart Downloads fetched this. Cancel it?", isPresented: $showSmartCancelConfirm, titleVisibility: .visible) {
+            Button("Cancel Download", role: .destructive) { downloadManager.cancelDownload(itemId: item.id) }
+            Button("Cancel & Ignore in Smart Downloads", role: .destructive) { downloadManager.deleteAndIgnore(itemIds: [item.id]) }
+            Button("Keep Downloading", role: .cancel) {}
         }
         .alert("Download Failed", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("Retry") { loadPreview() }

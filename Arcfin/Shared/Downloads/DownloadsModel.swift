@@ -15,6 +15,8 @@ struct DownloadedSeriesRef: Hashable {
 @MainActor @Observable
 final class DownloadsModel {
     var pendingDelete: DownloadedItem?
+    /// A title Smart Downloads fetched, waiting for Cancel or Cancel & Ignore.
+    var pendingSmartCancel: String?
     var pendingDeleteSeriesId: String?
     // Owned here rather than relying on an ancestor's navigationDestination(for:) — this
     // view is itself pushed non-root (Library's Downloads row, offline mode's stack), and a

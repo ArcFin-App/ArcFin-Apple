@@ -125,6 +125,12 @@ struct StorageManagementAlerts: ViewModifier {
                     if let pendingDeleteMovie = model.pendingDeleteMovie { downloadManager.deleteDownload(pendingDeleteMovie) }
                     model.pendingDeleteMovie = nil
                 }
+                if let pendingDeleteMovie = model.pendingDeleteMovie, downloadManager.smartIgnoreTarget(itemId: pendingDeleteMovie.itemId) != nil {
+                    Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                        downloadManager.deleteAndIgnore(itemIds: [pendingDeleteMovie.itemId])
+                        model.pendingDeleteMovie = nil
+                    }
+                }
                 Button("Cancel", role: .cancel) { model.pendingDeleteMovie = nil }
             }
             .alert("Delete this show's downloads?", isPresented: Binding(
@@ -135,6 +141,15 @@ struct StorageManagementAlerts: ViewModifier {
                         downloadManager.deleteDownloads(items.filter { $0.seriesId == seriesId })
                     }
                     model.pendingDeleteSeriesId = nil
+                }
+                if let seriesId = model.pendingDeleteSeriesId {
+                    let ids = items.filter { $0.seriesId == seriesId }.map(\.itemId)
+                    if ids.contains(where: { downloadManager.smartIgnoreTarget(itemId: $0) != nil }) {
+                        Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                            downloadManager.deleteAndIgnore(itemIds: ids)
+                            model.pendingDeleteSeriesId = nil
+                        }
+                    }
                 }
                 Button("Cancel", role: .cancel) { model.pendingDeleteSeriesId = nil }
             }

@@ -2369,6 +2369,70 @@
         }
       }
     },
+    "Cancel & Ignore in Smart Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abbrechen und in Smart Downloads ignorieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cancelar e ignorar en descargas inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Annuler et ignorer dans les téléchargements intelligents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Annulla e ignora nei download intelligenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "キャンセルしてスマートダウンロードで無視"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "취소하고 스마트 다운로드에서 제외"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Annuleren en negeren in slimme downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cancelar e ignorar nos downloads inteligentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Отменить и не включать в умные загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "取消并在智能下载中忽略"
+          }
+        }
+      }
+    },
     "Cancel Recording" : {
       "localizations" : {
         "de" : {
@@ -5181,6 +5245,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "默认"
+          }
+        }
+      }
+    },
+    "Delete & Ignore in Smart Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Löschen und in Smart Downloads ignorieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eliminar e ignorar en descargas inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Supprimer et ignorer dans les téléchargements intelligents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Elimina e ignora nei download intelligenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "削除してスマートダウンロードで無視"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "삭제하고 스마트 다운로드에서 제외"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verwijderen en negeren in slimme downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apagar e ignorar nos downloads inteligentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Удалить и не включать в умные загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "删除并在智能下载中忽略"
           }
         }
       }
@@ -17085,6 +17213,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "即使它们在“继续观看”或“接下来”中，智能下载也不会下载。"
+          }
+        }
+      }
+    },
+    "Smart Downloads fetched this. Cancel it?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Smart Downloads hat dies geladen. Abbrechen?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Esto lo descargaron las descargas inteligentes. ¿Cancelarlo?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les téléchargements intelligents l'ont récupéré. L'annuler ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L'hanno scaricato i download intelligenti. Annullarlo?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "スマートダウンロードによるダウンロードです。キャンセルしますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "스마트 다운로드가 받은 항목입니다. 취소할까요?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Slimme downloads heeft dit opgehaald. Annuleren?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Os downloads inteligentes baixaram isto. Cancelar?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Это загрузили умные загрузки. Отменить?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这是智能下载获取的。要取消吗？"
           }
         }
       }

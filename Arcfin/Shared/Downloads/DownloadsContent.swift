@@ -189,13 +189,22 @@ struct DownloadsContent<Manage: View>: View {
                                     Label("Download Next", systemImage: "arrow.up.to.line")
                                 }
                             }
-                            Button(role: .destructive) { downloadManager.cancelDownload(itemId: itemId) } label: {
+                            Button(role: .destructive) { cancel(itemId) } label: {
                                 Label("Cancel Download", systemImage: "xmark.circle")
                             }
                         }
                 }
             }
             .background(cardBackground)
+        }
+    }
+
+    /// A title Smart Downloads fetched asks whether to ignore it too.
+    private func cancel(_ itemId: String) {
+        if downloadManager.smartIgnoreTarget(itemId: itemId) != nil {
+            model.pendingSmartCancel = itemId
+        } else {
+            downloadManager.cancelDownload(itemId: itemId)
         }
     }
 
@@ -242,7 +251,7 @@ struct DownloadsContent<Manage: View>: View {
                     .accessibilityLabel(isPaused ? "Resume download" : "Pause download")
                     .buttonStyle(.plain)
                 }
-                Button { downloadManager.cancelDownload(itemId: itemId) } label: {
+                Button { cancel(itemId) } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(.title3))
                         .foregroundStyle(DT.Color.textSecondary)
@@ -411,12 +420,31 @@ struct DownloadsAlerts: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .confirmationDialog("Smart Downloads fetched this. Cancel it?", isPresented: Binding(
+                get: { model.pendingSmartCancel != nil }, set: { if !$0 { model.pendingSmartCancel = nil } }
+            ), titleVisibility: .visible) {
+                Button("Cancel Download", role: .destructive) {
+                    if let id = model.pendingSmartCancel { downloadManager.cancelDownload(itemId: id) }
+                    model.pendingSmartCancel = nil
+                }
+                Button("Cancel & Ignore in Smart Downloads", role: .destructive) {
+                    if let id = model.pendingSmartCancel { downloadManager.deleteAndIgnore(itemIds: [id]) }
+                    model.pendingSmartCancel = nil
+                }
+                Button("Keep Downloading", role: .cancel) { model.pendingSmartCancel = nil }
+            }
             .alert("Delete this download?", isPresented: Binding(
                 get: { model.pendingDelete != nil }, set: { if !$0 { model.pendingDelete = nil } }
             )) {
                 Button("Delete", role: .destructive) {
                     if let pendingDelete = model.pendingDelete { downloadManager.deleteDownload(pendingDelete) }
                     model.pendingDelete = nil
+                }
+                if let pendingDelete = model.pendingDelete, downloadManager.smartIgnoreTarget(itemId: pendingDelete.itemId) != nil {
+                    Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                        downloadManager.deleteAndIgnore(itemIds: [pendingDelete.itemId])
+                        model.pendingDelete = nil
+                    }
                 }
                 Button("Cancel", role: .cancel) { model.pendingDelete = nil }
             }
@@ -428,6 +456,15 @@ struct DownloadsAlerts: ViewModifier {
                         downloadManager.deleteDownloads(items.filter { $0.seriesId == seriesId })
                     }
                     model.pendingDeleteSeriesId = nil
+                }
+                if let seriesId = model.pendingDeleteSeriesId {
+                    let ids = items.filter { $0.seriesId == seriesId }.map(\.itemId)
+                    if ids.contains(where: { downloadManager.smartIgnoreTarget(itemId: $0) != nil }) {
+                        Button("Delete & Ignore in Smart Downloads", role: .destructive) {
+                            downloadManager.deleteAndIgnore(itemIds: ids)
+                            model.pendingDeleteSeriesId = nil
+                        }
+                    }
                 }
                 Button("Cancel", role: .cancel) { model.pendingDeleteSeriesId = nil }
             }
