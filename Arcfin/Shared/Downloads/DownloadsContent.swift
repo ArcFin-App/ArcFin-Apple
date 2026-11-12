@@ -18,6 +18,8 @@ struct DownloadsContent<Manage: View>: View {
     private var movies: [DownloadedItem] { DownloadsModel.movies(in: items) }
     private var seriesGroups: [DownloadsModel.SeriesGroup] { DownloadsModel.seriesGroups(in: items) }
     private var inProgress: [DownloadedItem] { DownloadsModel.inProgress(in: items) }
+    private var upNext: [DownloadedItem] { DownloadsModel.upNext(in: items) }
+    @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueAndUpNext = false
     private var totalSizeBytes: Int64 { DownloadsModel.totalSizeBytes(of: items) }
 
     private let gridColumns = [GridItem(.adaptive(minimum: 104, maximum: 150), spacing: 14, alignment: .top)]
@@ -36,7 +38,14 @@ struct DownloadsContent<Manage: View>: View {
                         storageCard
                         if let hold = downloadManager.queueHold { heldCard(hold) }
                         if !downloadManager.activeItemTitles.isEmpty { downloadingSection }
-                        if !inProgress.isEmpty, !model.isSelecting { continueSection }
+                        if !model.isSelecting {
+                            if mergeContinueAndUpNext {
+                                if !(inProgress + upNext).isEmpty { continueSection(String(localized: "Continue Watching"), inProgress + upNext) }
+                            } else {
+                                if !inProgress.isEmpty { continueSection(String(localized: "Continue Watching"), inProgress) }
+                                if !upNext.isEmpty { continueSection(String(localized: "Up Next"), upNext) }
+                            }
+                        }
                         if !seriesGroups.isEmpty { showsSection }
                         if !movies.isEmpty { moviesSection }
                     }
@@ -61,8 +70,8 @@ struct DownloadsContent<Manage: View>: View {
 
     private var storageCard: some View {
         let used = totalSizeBytes
-        let free = model.freeBytes ?? 0
-        let share = used + free > 0 ? Double(used) / Double(used + free) : 0
+        let total = model.deviceTotalBytes ?? 0
+        let share = total > 0 ? Double(used) / Double(total) : 0
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
                 Image(systemName: "arrow.down.circle.fill")
@@ -76,11 +85,21 @@ struct DownloadsContent<Manage: View>: View {
                     Text(model.storageCaption(used: used))
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
+                    if let limit = model.smartLimitCaption(smartUsed: downloadManager.smartDownloadsUsedBytes(of: items)) {
+                        Text(limit)
+                            .font(.system(.caption))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                    if let device = model.deviceCaption() {
+                        Text(device)
+                            .font(.system(.caption))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
                 }
                 Spacer()
                 manage()
             }
-            if model.freeBytes != nil {
+            if model.deviceTotalBytes != nil {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(DT.Color.textPrimary.opacity(0.1))
@@ -309,18 +328,20 @@ struct DownloadsContent<Manage: View>: View {
 
     // MARK: - Continue watching
 
-    private var continueSection: some View {
+    private func continueSection(_ title: String, _ shelf: [DownloadedItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Continue Watching")
+            sectionHeader(title)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DT.Spacing.shelfGap) {
-                    ForEach(inProgress) { item in
+                    ForEach(shelf) { item in
                         Button { play(item) } label: {
                             ContinueCard(item: item)
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
-                            Button { play(item) } label: { Label("Resume", systemImage: "play.fill") }
+                            Button { play(item) } label: {
+                                Label(item.playbackPositionTicks > 0 ? "Resume" : "Play", systemImage: "play.fill")
+                            }
                             Button { open(item) } label: { Label("Details", systemImage: "info.circle") }
                         }
                     }

@@ -32,6 +32,7 @@ final class DownloadsModel {
     var showMobileDataConfirm = false
     var showCancelAllConfirm = false
     var freeBytes: Int64?
+    var deviceTotalBytes: Int64?
 
     struct SeriesGroup {
         let seriesId: String
@@ -53,6 +54,20 @@ final class DownloadsModel {
 
     static func inProgress(in items: [DownloadedItem]) -> [DownloadedItem] {
         items.filter { $0.playbackPositionTicks > 0 && !$0.played }
+    }
+
+    /// Each downloaded show's next episode, for one with nothing part-way through: the first
+    /// unwatched one downloaded, specials last.
+    static func upNext(in items: [DownloadedItem]) -> [DownloadedItem] {
+        Dictionary(grouping: items.filter { $0.seriesId != nil }) { $0.seriesId! }.values.compactMap { episodes in
+            guard !episodes.contains(where: { $0.playbackPositionTicks > 0 && !$0.played }) else { return nil }
+            return episodes.filter { !$0.played }.min {
+                let a = ($0.seasonNumber == 0 ? Int.max : $0.seasonNumber ?? 0, $0.episodeNumber ?? 0)
+                let b = ($1.seasonNumber == 0 ? Int.max : $1.seasonNumber ?? 0, $1.episodeNumber ?? 0)
+                return a < b
+            }
+        }
+        .sorted { ($0.seriesName ?? $0.name) < ($1.seriesName ?? $1.name) }
     }
 
     static func totalSizeBytes(of items: [DownloadedItem]) -> Int64 { items.reduce(0) { $0 + $1.fileSizeBytes } }
@@ -109,18 +124,29 @@ final class DownloadsModel {
 
     // MARK: - Storage
 
-    func refreshFreeBytes() { freeBytes = Self.availableBytes() }
-
-    private static func availableBytes() -> Int64? {
+    func refreshFreeBytes() {
         let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
-            .resourceValues(forKeys: [.volumeAvailableCapacityKey])
-        return values?.volumeAvailableCapacity.map(Int64.init)
+            .resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey])
+        freeBytes = values?.volumeAvailableCapacity.map(Int64.init)
+        deviceTotalBytes = values?.volumeTotalCapacity.map(Int64.init)
     }
 
+    private static func size(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }
+
     func storageCaption(used: Int64) -> String {
-        let usedText = ByteCountFormatter.string(fromByteCount: used, countStyle: .file)
-        guard let freeBytes else { return "\(usedText) used" }
-        return "\(usedText) used · \(ByteCountFormatter.string(fromByteCount: freeBytes, countStyle: .file)) free"
+        String(localized: "\(Self.size(used)) used by Arcfin")
+    }
+
+    /// Smart Downloads' storage limit and what's left of it, when Smart Downloads is on.
+    func smartLimitCaption(smartUsed: Int64) -> String? {
+        guard UserDefaults.standard.bool(forKey: "smartDownloadsEnabled") else { return nil }
+        let limit = Int64(UserDefaults.standard.object(forKey: "smartDownloadsStorageBudgetGB") as? Int ?? 10) * 1_000_000_000
+        return String(localized: "Smart Downloads limit \(Self.size(limit)) · \(Self.size(max(limit - smartUsed, 0))) left")
+    }
+
+    func deviceCaption() -> String? {
+        guard let freeBytes, let deviceTotalBytes else { return nil }
+        return String(localized: "Device: \(Self.size(freeBytes)) free of \(Self.size(deviceTotalBytes))")
     }
 
     // MARK: - Artwork

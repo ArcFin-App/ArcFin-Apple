@@ -66,6 +66,8 @@ final class DownloadManager: NSObject {
     /// Queued titles whose video transfer was handed to the background session ahead of its
     /// turn, and how each ended if it did before its turn came.
     @ObservationIgnored private var handedOffItemIds: Set<String> = []
+    /// Cancelled on purpose (by hand, or by Delete & Ignore), so its transfer ending isn't a failure.
+    @ObservationIgnored private var cancelledItemIds: Set<String> = []
     @ObservationIgnored private var handedOffResults: [String: Result<Void, Error>] = [:]
     /// Where a handed-off transfer lands; renamed once the title's container is known.
     private nonisolated static let stagedVideoFileName = "video.download"
@@ -741,6 +743,7 @@ final class DownloadManager: NSObject {
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
         activeItemTitles[item.id] = item.name
         activeItems[item.id] = item
+        cancelledItemIds.remove(item.id)
         if viaSmart { Self.smartItemIds.insert(item.id) }
         pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
@@ -949,7 +952,11 @@ final class DownloadManager: NSObject {
                 await ensureSeriesMetadata(seriesId: seriesId, credential: credential, authHeader: authHeader)
             }
         } catch {
-            errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
+            let cancelled = cancelledItemIds.remove(item.id) != nil
+                || (error as? URLError)?.code == .cancelled || error is CancellationError
+            if !cancelled {
+                errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
+            }
             DownloadStore.deleteDirectory(for: item.id)
         }
         removePendingDescriptor(itemId: item.id)
@@ -1176,6 +1183,7 @@ final class DownloadManager: NSObject {
     }
 
     func cancelDownload(itemId: String) {
+        if activeItemIds.contains(itemId) { cancelledItemIds.insert(itemId) }
         let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
         if pendingQueue.isEmpty { queueHold = nil }
@@ -1464,6 +1472,12 @@ final class DownloadManager: NSObject {
                 deleteDownload(itemId: id)
             }
         }
+    }
+
+    /// What Smart Downloads has fetched that's still here, against its storage limit.
+    func smartDownloadsUsedBytes(of items: [DownloadedItem]) -> Int64 {
+        let smart = Self.smartItemIds
+        return items.filter { smart.contains($0.itemId) }.reduce(0) { $0 + $1.fileSizeBytes }
     }
 
     private static var smartMovieIds: Set<String> {
