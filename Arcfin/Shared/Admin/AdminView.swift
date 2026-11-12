@@ -100,6 +100,7 @@ struct AdminView: View {
             } header: {
                 Text("Server")
             }
+            AdminEncodersSection()
             Section {
                 NavigationLink { AdminLibrariesView() } label: {
                     AdminRow(title: "Libraries", systemImage: "books.vertical", detail: nil)

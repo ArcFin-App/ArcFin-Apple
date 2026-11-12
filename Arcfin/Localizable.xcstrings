@@ -15233,6 +15233,70 @@
         }
       }
     },
+    "From a short test encode on the server. Arcfin only asks for AV1 where it works. Test again after changing the graphics card, its driver or the acceleration setting." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aus einer kurzen Testkodierung auf dem Server. Arcfin fordert AV1 nur an, wo es funktioniert. Teste erneut, wenn du Grafikkarte, Treiber oder Beschleunigung änderst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Según una breve codificación de prueba en el servidor. Arcfin solo pide AV1 donde funciona. Vuelve a probar si cambias la tarjeta gráfica, su controlador o la aceleración."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "D'après un court encodage de test sur le serveur. Arcfin ne demande l'AV1 que là où il fonctionne. Relancez le test après avoir changé de carte graphique, de pilote ou de réglage d'accélération."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Da una breve codifica di prova sul server. Arcfin chiede AV1 solo dove funziona. Ripeti il test dopo aver cambiato scheda grafica, driver o accelerazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーでの短いテストエンコードの結果です。ArcfinはAV1が使える場合だけAV1を要求します。グラフィックカード、ドライバ、アクセラレーション設定を変えたら再テストしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에서 짧게 시험 인코딩한 결과입니다. Arcfin은 AV1이 작동하는 경우에만 AV1을 요청합니다. 그래픽 카드, 드라이버 또는 가속 설정을 바꾼 후에는 다시 테스트하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Op basis van een korte testcodering op de server. Arcfin vraagt alleen om AV1 waar het werkt. Test opnieuw na een andere videokaart, driver of versnellingsinstelling."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Com base numa breve codificação de teste no servidor. O Arcfin só pede AV1 onde funciona. Teste de novo após trocar a placa de vídeo, o driver ou a aceleração."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "По короткому тестовому кодированию на сервере. Arcfin запрашивает AV1 только там, где он работает. Проверьте снова после смены видеокарты, драйвера или настройки ускорения."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "根据服务器上的一次简短测试编码。Arcfin 只会在 AV1 可用时请求 AV1。更换显卡、驱动或加速设置后请重新测试。"
+          }
+        }
+      }
+    },
     "Go Live" : {
       "localizations" : {
         "de" : {
@@ -15617,6 +15681,70 @@
         }
       }
     },
+    "Hardware acceleration: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardwarebeschleunigung: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aceleración por hardware: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accélération matérielle : %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accelerazione hardware: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ハードウェアアクセラレーション：%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "하드웨어 가속: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardwareversnelling: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aceleração por hardware: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Аппаратное ускорение: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "硬件加速：%@"
+          }
+        }
+      }
+    },
     "Hardware Decoding" : {
       "localizations" : {
         "de" : {
@@ -15677,6 +15805,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "硬件解码"
+          }
+        }
+      }
+    },
+    "Hardware Encoders" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardware-Encoder"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Codificadores por hardware"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Encodeurs matériels"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Encoder hardware"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ハードウェアエンコーダ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "하드웨어 인코더"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardware-encoders"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Codificadores por hardware"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Аппаратные кодировщики"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "硬件编码器"
           }
         }
       }
@@ -18237,6 +18429,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "安装"
+          }
+        }
+      }
+    },
+    "Install Arcfin Sync 0.3 or later on the server to see which encoders its hardware can use." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installiere Arcfin Sync 0.3 oder neuer auf dem Server, um zu sehen, welche Encoder seine Hardware nutzen kann."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Instala Arcfin Sync 0.3 o posterior en el servidor para ver qué codificadores puede usar su hardware."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installez Arcfin Sync 0.3 ou ultérieur sur le serveur pour voir quels encodeurs son matériel peut utiliser."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installa Arcfin Sync 0.3 o successivo sul server per vedere quali encoder può usare il suo hardware."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーにArcfin Sync 0.3以降をインストールすると、ハードウェアで使えるエンコーダを確認できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 Arcfin Sync 0.3 이상을 설치하면 하드웨어가 사용할 수 있는 인코더를 볼 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installeer Arcfin Sync 0.3 of nieuwer op de server om te zien welke encoders de hardware kan gebruiken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Instale o Arcfin Sync 0.3 ou posterior no servidor para ver quais codificadores o hardware dele pode usar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Установите на сервер Arcfin Sync 0.3 или новее, чтобы увидеть, какие кодировщики доступны его оборудованию."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在服务器上安装 Arcfin Sync 0.3 或更高版本，即可查看其硬件可用的编码器。"
           }
         }
       }
@@ -23357,6 +23613,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未全部保存"
+          }
+        }
+      }
+    },
+    "Not Available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nicht verfügbar"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No disponible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non disponible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non disponibile"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用不可"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사용 불가"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niet beschikbaar"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Indisponível"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Недоступно"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不可用"
           }
         }
       }
@@ -37249,6 +37569,134 @@
         }
       }
     },
+    "Test Again" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Erneut testen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Volver a probar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tester à nouveau"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ripeti il test"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再テスト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다시 테스트"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opnieuw testen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testar de novo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Проверить снова"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "重新测试"
+          }
+        }
+      }
+    },
+    "Tested %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Getestet %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Probado %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testé %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testato %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@にテスト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 테스트함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Getest %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testado %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Проверено %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@测试"
+          }
+        }
+      }
+    },
     "That password was incorrect — try again." : {
       "localizations" : {
         "de" : {
@@ -44413,6 +44861,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此视频没有画面，因此 Arcfin 已切换到其他播放器。"
+          }
+        }
+      }
+    },
+    "Works" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funktioniert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funciona"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Fonctionne"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funziona"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用可"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "작동함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Werkt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funciona"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Работает"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "可用"
           }
         }
       }

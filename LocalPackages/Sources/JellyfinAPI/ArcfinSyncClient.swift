@@ -32,10 +32,20 @@ public struct ArcfinSyncedSetting: Sendable, Codable, Equatable {
 public struct ArcfinSyncEncoders: Sendable, Decodable, Equatable {
     public let hardwareAcceleration: String
     public let encoders: [String: Bool]
+    /// When the server last ran its test encodes.
+    public let probedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case hardwareAcceleration = "HardwareAcceleration"
         case encoders = "Encoders"
+        case probedAt = "ProbedAt"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        hardwareAcceleration = try container.decode(String.self, forKey: .hardwareAcceleration)
+        encoders = try container.decode([String: Bool].self, forKey: .encoders)
+        probedAt = (try? container.decode(String.self, forKey: .probedAt)).flatMap(JellyfinDate.parse)
     }
 }
 
@@ -62,8 +72,11 @@ public struct ArcfinSyncClient: Sendable {
     }
 
     /// Nil on a plugin from before the encoder check, or when it can't be reached.
-    public func fetchEncoders(credential: ServerCredential, authHeader: String) async -> ArcfinSyncEncoders? {
-        var req = URLRequest(url: credential.baseURL.appendingPathComponent("ArcfinSync/Encoders"))
+    /// `refresh` makes the server run its test encodes again.
+    public func fetchEncoders(credential: ServerCredential, authHeader: String, refresh: Bool = false) async -> ArcfinSyncEncoders? {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("ArcfinSync/Encoders"), resolvingAgainstBaseURL: false)!
+        if refresh { comps.queryItems = [.init(name: "refresh", value: "true")] }
+        var req = URLRequest(url: comps.url!)
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         // The first call runs the server's test encodes, a few seconds each.
         req.timeoutInterval = 90

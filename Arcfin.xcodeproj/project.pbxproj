@@ -101,6 +101,7 @@
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
 				Shared/Admin/AdminActivityView.swift = (ios, macos, );
+				Shared/Admin/AdminEncodersSection.swift = (ios, macos, );
 				Shared/Admin/AdminLibrariesView.swift = (ios, macos, );
 				Shared/Admin/AdminMetadataEditor.swift = (ios, macos, );
 				Shared/Admin/AdminMaintenanceViews.swift = (ios, macos, );
