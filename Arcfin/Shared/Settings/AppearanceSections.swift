@@ -6,6 +6,7 @@ import SwiftUI
 struct AppearanceBrowsingSection: View {
     @AppStorage("spoilerProtection") private var spoilerProtection = false
     @AppStorage("libraryHideWatched") private var libraryHideWatched = false
+    @AppStorage("showUnwatchedCount") private var showUnwatchedCount = true
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
     @AppStorage("modernSearch") private var modernSearch = true
     @Environment(AuthManager.self) private var authManager
@@ -22,6 +23,11 @@ struct AppearanceBrowsingSection: View {
             }
             .tvListRow()
             .syncLocked("libraryHideWatched", authManager)
+            Toggle(isOn: $showUnwatchedCount) {
+                TVRowLabelText(title: "Show Unwatched Count", detail: "How many episodes are left, on the posters of shows, seasons and collections.")
+            }
+            .tvListRow()
+            .syncLocked("showUnwatchedCount", authManager)
             Toggle(isOn: $modernSearch) {
                 TVRowLabelText(title: "Modern Search", detail: "A top result, shelves by kind and a Discover list. Off shows plain poster grids.")
             }

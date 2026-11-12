@@ -238,6 +238,7 @@ struct LibraryDetailView: View {
                 title: LibraryItemText.title(item),
                 year: LibraryItemText.subtitle(item)
             )
+            .unwatchedBadge(item)
         }
         .buttonStyle(PressableButtonStyle())
         .contextMenu(menuItems: { libraryMenu(item) }, preview: { LibraryItemPreview(item: item) })

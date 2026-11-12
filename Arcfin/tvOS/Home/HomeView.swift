@@ -706,6 +706,7 @@ struct HomeView: View {
                         subtitle: item.productionYear.map { String($0) },
                         imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
                     )
+                    .unwatchedBadge(item)
                     .background { modernFocusProbe(row: rowID, subject: .media(item)) }
                 }
                 .buttonStyle(TVCardButtonStyle())
@@ -908,6 +909,7 @@ struct HomeView: View {
                             progress: item.userData?.playedPercentage.map { $0 / 100 },
                             imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
                         )
+                        .unwatchedBadge(item)
                         .background { modernFocusProbe(row: title, subject: .media(item)) }
                     }
                     .buttonStyle(TVCardButtonStyle())

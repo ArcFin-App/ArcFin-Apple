@@ -51,7 +51,7 @@ public struct JellyfinMediaClient: Sendable {
             resolvingAgainstBaseURL: false
         )!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "ImageTypeLimit", value: "1"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "Recursive", value: "true"),
@@ -78,7 +78,7 @@ public struct JellyfinMediaClient: Sendable {
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableImages", value: "true"),
         ]
@@ -106,7 +106,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "IncludeItemTypes", value: itemType),
             .init(name: "Recursive", value: "true"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
         ]
         var req = URLRequest(url: comps.url!)
@@ -281,7 +281,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: "Descending"),
             .init(name: "Filters", value: "IsResumable"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "IncludeItemTypes", value: "Movie,Episode"),
         ]
@@ -1033,7 +1033,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: sortOrder),
             .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,Genres,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,Genres,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableTotalRecordCount", value: "true"),
         ]
@@ -1303,7 +1303,8 @@ struct JellyfinItemResponse: Decodable {
                     played: $0.played ?? false,
                     playedPercentage: $0.playedPercentage,
                     likes: $0.likes,
-                    lastPlayedDate: $0.lastPlayed
+                    lastPlayedDate: $0.lastPlayed,
+                    unplayedItemCount: $0.unplayedItemCount
                 )
             },
             productionYear: productionYear,
@@ -1316,6 +1317,7 @@ struct JellyfinItemResponse: Decodable {
             parentBackdropItemId: parentBackdropItemId,
             parentBackdropImageTags: parentBackdropImageTags ?? [],
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            imdbId: providerIds?["Imdb"].flatMap { $0.isEmpty ? nil : $0 },
             premiereDate: premiereDate.flatMap(Self.parseDay),
             runTimeTicks: runTimeTicks,
             genres: genres ?? [],
@@ -1358,10 +1360,12 @@ struct UserDataResponse: Decodable {
     let playedPercentage: Double?
     let likes: Bool?
     let lastPlayedDate: String?
+    let unplayedItemCount: Int?
 
     var lastPlayed: Date? { lastPlayedDate.flatMap(JellyfinDate.parse) }
 
     enum CodingKeys: String, CodingKey {
+        case unplayedItemCount = "UnplayedItemCount"
         case likes = "Likes"
         case lastPlayedDate = "LastPlayedDate"
         case playbackPositionTicks = "PlaybackPositionTicks"
@@ -1462,7 +1466,8 @@ private struct ItemDetailResponse: Decodable {
                          played: ud.played ?? false,
                          playedPercentage: ud.playedPercentage,
                          likes: ud.likes,
-                         lastPlayedDate: ud.lastPlayed)
+                         lastPlayedDate: ud.lastPlayed,
+                         unplayedItemCount: ud.unplayedItemCount)
             },
             productionYear: productionYear,
             communityRating: communityRating,
@@ -1472,6 +1477,7 @@ private struct ItemDetailResponse: Decodable {
             seriesId: seriesId,
             seriesPrimaryImageTag: seriesPrimaryImageTag,
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            imdbId: providerIds?["Imdb"].flatMap { $0.isEmpty ? nil : $0 },
             premiereDate: premiereDate.flatMap(Self.parseDay),
             isVirtual: locationType == "Virtual"
         )

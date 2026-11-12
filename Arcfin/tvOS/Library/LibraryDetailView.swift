@@ -252,6 +252,7 @@ struct LibraryDetailView: View {
                 width: 200,
                 height: 356
             )
+            .unwatchedBadge(item)
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()

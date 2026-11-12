@@ -47,6 +47,7 @@ struct ItemQuickActions: View {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }
         }
+        CopyItemMenu(item: item)
     }
 
     private func perform(_ action: @escaping (JellyfinMediaClient, ServerCredential, String) async -> Void) {

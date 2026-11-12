@@ -414,6 +414,7 @@ struct HomeView: View {
                 subtitle: HomeText.subtitle(item),
                 imageURL: mediaRepo.imageURL(for: item)
             )
+            .unwatchedBadge(item)
         }
         .buttonStyle(PressableButtonStyle())
         .contextMenu { longPressMenu(item) }
