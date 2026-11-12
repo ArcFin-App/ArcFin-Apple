@@ -88,8 +88,7 @@ struct DownloadsContent<Manage: View>: View {
             }
             StorageBreakdown(items: items,
                              smartUsedBytes: downloadManager.smartDownloadsUsedBytes(of: items),
-                             freeBytes: model.freeBytes,
-                             deviceTotalBytes: model.deviceTotalBytes)
+                             freeBytes: model.freeBytes)
         }
         .padding(16)
         .background(cardBackground)
@@ -121,7 +120,7 @@ struct DownloadsContent<Manage: View>: View {
 
     private func heldCard(_ hold: DownloadManager.QueueHold) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: hold == .playing ? "play.circle" : hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
+            Image(systemName: hold == .storage ? "externaldrive.badge.exclamationmark" : hold == .playing ? "play.circle" : hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
                 .font(.system(.title3))
                 .foregroundStyle(.orange)
                 .accessibilityHidden(true)
@@ -134,11 +133,15 @@ struct DownloadsContent<Manage: View>: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
             Spacer()
-            Button("Start") { model.showMobileDataConfirm = true }
-                .buttonStyle(.glassProminent)
-                .tint(DT.Color.accent)
-                .foregroundStyle(DT.Color.onAccent)
-                .accessibilityHint("Starts the downloads now")
+            if hold == .storage {
+                manage()
+            } else {
+                Button("Start") { model.showMobileDataConfirm = true }
+                    .buttonStyle(.glassProminent)
+                    .tint(DT.Color.accent)
+                    .foregroundStyle(DT.Color.onAccent)
+                    .accessibilityHint("Starts the downloads now")
+            }
         }
         .padding(16)
         .background(cardBackground)

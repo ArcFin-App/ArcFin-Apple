@@ -32,7 +32,6 @@ final class DownloadsModel {
     var showMobileDataConfirm = false
     var showCancelAllConfirm = false
     var freeBytes: Int64?
-    var deviceTotalBytes: Int64?
 
     struct SeriesGroup {
         let seriesId: String
@@ -126,9 +125,8 @@ final class DownloadsModel {
 
     func refreshFreeBytes() {
         let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
-            .resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey])
+            .resourceValues(forKeys: [.volumeAvailableCapacityKey])
         freeBytes = values?.volumeAvailableCapacity.map(Int64.init)
-        deviceTotalBytes = values?.volumeTotalCapacity.map(Int64.init)
     }
 
     // MARK: - Artwork

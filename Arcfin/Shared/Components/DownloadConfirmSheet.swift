@@ -17,6 +17,7 @@ struct DownloadConfirmSheet: View {
     let onConfirm: (Int?) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(DownloadManager.self) private var downloadManager
     @State private var selectedOption: DownloadBitrateOption
 
     init(item: MediaItem, preview: DownloadManager.DownloadPreview, onConfirm: @escaping (Int?) -> Void) {
@@ -38,6 +39,44 @@ struct DownloadConfirmSheet: View {
         DownloadBitrateOption(label: "1 Mb/s", bitrate: 1_000_000),
         DownloadBitrateOption(label: "500 Kb/s", bitrate: 500_000),
     ]
+
+    private func sizeBytes(for option: DownloadBitrateOption) -> Int64? {
+        guard let bitrate = option.bitrate else { return preview.estimatedSizeBytes }
+        guard let ticks = preview.runtimeTicks, ticks > 0 else { return nil }
+        return Int64((Double(bitrate) + 320_000) / 8 * (Double(ticks) / 10_000_000))
+    }
+
+    /// Whether it fits, worked out before anything starts. A movie or episode that doesn't fit
+    /// can't be started; a season downloads the episodes that fit and the rest wait for room.
+    private var space: (message: String, blocks: Bool)? {
+        guard let bytes = sizeBytes(for: selectedOption), bytes > 0, let room = downloadManager.roomForDownloads(),
+              bytes > room else { return nil }
+        let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+        let free = ByteCountFormatter.string(fromByteCount: room, countStyle: .file)
+        guard let count = preview.episodeCount, count > 1 else {
+            return (String(localized: "This needs about \(size), and only \(free) is free for downloads. Delete some downloads, or pick a lower quality."), true)
+        }
+        let fits = min(Int(room / max(bytes / Int64(count), 1)), count)
+        if fits == 0 {
+            return (String(localized: "There's no room for these episodes yet (\(free) free for downloads). They'll download once there's space."), false)
+        }
+        return (String(localized: "Only \(fits) of \(count) episodes fit right now (\(free) free for downloads). The rest download once there's space."), false)
+    }
+
+    private func spaceNote(_ message: String, blocks: Bool) -> some View {
+        Label {
+            Text(message)
+                .font(.system(.footnote))
+                .foregroundStyle(DT.Color.textPrimary)
+        } icon: {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .foregroundStyle(blocks ? DT.Color.palette("F43F5E") : .orange)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background((blocks ? DT.Color.palette("F43F5E") : Color.orange).opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+    }
 
     private func estimatedSize(for option: DownloadBitrateOption) -> String {
         guard let bitrate = option.bitrate else {
@@ -130,6 +169,10 @@ struct DownloadConfirmSheet: View {
                         .background(DT.Color.textPrimary.opacity(0.04))
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
 
+                        if let space {
+                            spaceNote(space.message, blocks: space.blocks)
+                        }
+
                         if preview.willRemux || selectedOption.bitrate != nil {
                             Text("This download will be converted on your server before downloading — this may take longer than the file size alone suggests.")
                                 .font(.system(.caption))
@@ -143,15 +186,17 @@ struct DownloadConfirmSheet: View {
                     onConfirm(selectedOption.bitrate)
                     dismiss()
                 } label: {
-                    Text("Download")
+                    Text(space?.blocks == true ? "Not Enough Space" : "Download")
                         .font(.system(.subheadline, design: .default, weight: .bold))
                         .foregroundStyle(DT.Color.onAccent)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+                        .opacity(space?.blocks == true ? 0.4 : 1)
                 }
                 .buttonStyle(.plain)
+                .disabled(space?.blocks == true)
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.pagePad)
             }

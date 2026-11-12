@@ -522,7 +522,8 @@ final class MediaDetailModel {
                 videoCodec: single?.videoCodec,
                 videoWidth: single?.videoWidth,
                 videoHeight: single?.videoHeight,
-                videoRange: single?.videoRange
+                videoRange: single?.videoRange,
+                episodeCount: pending.count
             )
         }
     }

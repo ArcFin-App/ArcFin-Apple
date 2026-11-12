@@ -101,10 +101,11 @@ final class DownloadManager: NSObject {
 
     /// Why the queue is waiting instead of starting the next title.
     enum QueueHold: Equatable {
-        case mobileData, lowDataMode, lowPowerMode, playing
+        case mobileData, lowDataMode, lowPowerMode, playing, storage
 
         var title: String {
             switch self {
+            case .storage: String(localized: "Not Enough Space")
             case .playing: String(localized: "Waiting for the Video to End")
             case .mobileData: String(localized: "Waiting for Wi-Fi")
             case .lowDataMode: String(localized: "Low Data Mode Is On")
@@ -114,6 +115,7 @@ final class DownloadManager: NSObject {
         var detail: String {
             switch self {
             case .playing: String(localized: "Downloads carry on when you close the player, so the video gets the whole connection.")
+            case .storage: String(localized: "The rest download once there's room. Delete watched titles in Manage Storage to make some.")
             case .mobileData: String(localized: "Downloads start when you're on Wi-Fi.")
             case .lowDataMode: String(localized: "Downloads start when Low Data Mode is off.")
             case .lowPowerMode: String(localized: "Downloads start when Low Power Mode is off.")
@@ -130,6 +132,10 @@ final class DownloadManager: NSObject {
 
     /// Smart Downloads has its own mobile data setting, separate from downloads people start.
     private func hold(viaSmart: Bool) -> QueueHold? {
+        if let need = storageNeeded {
+            if let room = roomForDownloads(), room < need { return .storage }
+            storageNeeded = nil
+        }
         guard !holdOverridden else { return nil }
         let defaults = UserDefaults.standard
         if waitsForPlayer { return .playing }
@@ -251,6 +257,53 @@ final class DownloadManager: NSObject {
     }
 
     private static let lowSpaceThreshold = 2_000_000_000
+
+    // MARK: - Room for downloads
+
+    /// Left free on the device after every download, so the system and other apps keep working.
+    private static let spaceReserve: Int64 = 1_000_000_000
+
+    /// Set when the next title didn't fit: the queue waits until this much is free.
+    @ObservationIgnored private var storageNeeded: Int64?
+    /// What each running transfer will take in all, for working out what's left for the next.
+    @ObservationIgnored private var expectedBytes: [String: Int64] = [:]
+
+    /// Free space a new download can use: what the device can give (purgeable space included),
+    /// less the reserve and what running transfers still have to write. Nil when unknown.
+    func roomForDownloads(excluding itemId: String? = nil) -> Int64? {
+        #if os(tvOS)
+        guard let free = Self.freeSpace() else { return nil }
+        #else
+        guard let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
+            .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey]),
+              let free = values.volumeAvailableCapacityForImportantUsage ?? values.volumeAvailableCapacity.map(Int64.init)
+        else { return nil }
+        #endif
+        let incoming = expectedBytes.filter { $0.key != itemId }.reduce(Int64(0)) { total, entry in
+            total + Int64(Double(entry.value) * (1 - (progress[entry.key] ?? 0)))
+        }
+        return max(free - Self.spaceReserve - incoming, 0)
+    }
+
+    /// The size a download will be: bitrate × runtime, or the chosen lower quality × runtime.
+    private static func expectedSize(of info: JellyfinPlaybackInfo, bitrateCap: Int?) -> Int64? {
+        guard let ticks = info.runTimeTicks, ticks > 0 else { return nil }
+        let seconds = Double(ticks) / 10_000_000
+        if let bitrateCap { return Int64((Double(min(bitrateCap, info.bitrate ?? bitrateCap)) + 320_000) / 8 * seconds) }
+        return info.bitrate.map { Int64(Double($0) / 8 * seconds) }
+    }
+
+    private struct NoRoomForDownload: Error { let bytes: Int64 }
+
+    /// A write that failed because the disk is full, however the system reported it.
+    private static func isOutOfSpace(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == NSCocoaErrorDomain, ns.code == NSFileWriteOutOfSpaceError { return true }
+        if ns.domain == NSPOSIXErrorDomain, ns.code == Int(ENOSPC) { return true }
+        if (error as? URLError)?.code == .cannotWriteToFile, let free = freeSpace(), free < spaceReserve { return true }
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? Error { return isOutOfSpace(underlying) }
+        return false
+    }
 
     private static let pendingWatchedDeleteKey = "pendingWatchedDeleteIDs"
 
@@ -596,6 +649,8 @@ final class DownloadManager: NSObject {
         var videoWidth: Int?
         var videoHeight: Int?
         var videoRange: String?
+        /// Set for a season: the sizes above cover this many episodes.
+        var episodeCount: Int?
     }
 
     /// What the confirmation sheet shows before actually starting — same PlaybackInfo call
@@ -871,6 +926,11 @@ final class DownloadManager: NSObject {
             let detail = try JellyfinMediaClient.decodeItemDetail(detailData)
             let info = try await playbackTask
 
+            if !skipVideoDownload, !handedOffItemIds.contains(item.id), let expected = Self.expectedSize(of: info, bitrateCap: bitrateCap) {
+                if let room = roomForDownloads(excluding: item.id), room < expected { throw NoRoomForDownload(bytes: expected) }
+                expectedBytes[item.id] = expected
+            }
+
             #if canImport(ActivityKit) && os(iOS)
             var posterItem = item
             posterItem.primaryImageTag = detail.item.primaryImageTag
@@ -954,12 +1014,32 @@ final class DownloadManager: NSObject {
         } catch {
             let cancelled = cancelledItemIds.remove(item.id) != nil
                 || (error as? URLError)?.code == .cancelled || error is CancellationError
+            DownloadStore.deleteDirectory(for: item.id)
+            // Out of room isn't a failure: the title goes back to the front and waits for space.
+            if !cancelled, let need = (error as? NoRoomForDownload)?.bytes ?? (Self.isOutOfSpace(error) ? expectedBytes[item.id] ?? Int64(Self.lowSpaceThreshold) : nil) {
+                Self.smartLog.notice("Downloads waiting for space: \(item.name, privacy: .public) needs \(need, privacy: .public) bytes")
+                removePendingDescriptor(itemId: item.id)
+                expectedBytes[item.id] = nil
+                activeItemIds.remove(item.id)
+                progress[item.id] = nil
+                stats[item.id] = nil
+                speedSamples[item.id] = nil
+                pendingQueue.insert((item, credential, authHeader, bitrateCap, Self.smartItemIds.contains(item.id)), at: 0)
+                storageNeeded = need
+                queueHold = .storage
+                endBackgroundTaskIfIdle()
+                #if canImport(ActivityKit) && os(iOS)
+                liveActivityItemMeta[item.id] = nil
+                refreshLiveActivity()
+                #endif
+                return
+            }
             if !cancelled {
                 errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
             }
-            DownloadStore.deleteDirectory(for: item.id)
         }
         removePendingDescriptor(itemId: item.id)
+        expectedBytes[item.id] = nil
 
         #if canImport(ActivityKit) && os(iOS)
         let finishedTitle = activeItemTitles[item.id] ?? item.name
@@ -1186,7 +1266,7 @@ final class DownloadManager: NSObject {
         if activeItemIds.contains(itemId) { cancelledItemIds.insert(itemId) }
         let wasQueued = pendingQueue.contains(where: { $0.item.id == itemId }) || activeItemIds.contains(itemId)
         pendingQueue.removeAll { $0.item.id == itemId }
-        if pendingQueue.isEmpty { queueHold = nil }
+        if pendingQueue.isEmpty { queueHold = nil; storageNeeded = nil }
         transfers(for: itemId).forEach { $0.cancel() }
         downloadTasks[itemId] = nil
         clearParts(itemId: itemId)
@@ -1316,6 +1396,7 @@ final class DownloadManager: NSObject {
         if let seriesId {
             deleteSeriesMetadataIfNoEpisodesRemain(seriesId: seriesId)
         }
+        if queueHold == .storage { recheckQueueHold() }
     }
 
     func deleteDownload(itemId: String) {
@@ -1489,6 +1570,7 @@ final class DownloadManager: NSObject {
     /// places other than launch: the app coming to the foreground, the connection coming back,
     /// the player closing, or a show being switched on.
     func refreshSmartDownloads() {
+        if queueHold == .storage { recheckQueueHold() }
         guard let authManager, let credential = authManager.state.credential else {
             #if canImport(ActivityKit) && os(iOS)
             settleLiveActivity()
@@ -1644,6 +1726,10 @@ final class DownloadManager: NSObject {
         for item in smart where !isDownloaded(item.id) && !activeItemIds.contains(item.id) {
             if batch == 0, totalDownloadedBytes() >= budgetBytes {
                 Self.smartLog.notice("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
+                break
+            }
+            if batch == 0, queueHold == .storage {
+                Self.smartLog.notice("Smart Downloads stopped: the device is out of room")
                 break
             }
             guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true) else { continue }

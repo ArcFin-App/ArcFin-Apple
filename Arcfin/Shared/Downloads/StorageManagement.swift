@@ -73,7 +73,6 @@ struct StorageManagementContent: View {
     @State private var pendingDelete: StoragePendingDelete?
     @State private var expandedShows: Set<String> = []
     @State private var freeBytes: Int64?
-    @State private var deviceTotalBytes: Int64?
 
     private var shows: [StorageManagement.Show] { StorageManagement.shows(in: items) }
     private var movies: [DownloadedItem] { StorageManagement.movies(in: items) }
@@ -150,8 +149,7 @@ struct StorageManagementContent: View {
         return VStack(alignment: .leading, spacing: 14) {
             StorageBreakdown(items: items,
                              smartUsedBytes: downloadManager.smartDownloadsUsedBytes(of: items),
-                             freeBytes: freeBytes,
-                             deviceTotalBytes: deviceTotalBytes)
+                             freeBytes: freeBytes)
             if !watched.isEmpty {
                 Button {
                     pendingDelete = StoragePendingDelete(title: String(localized: "Delete everything you've watched?"),
@@ -169,9 +167,8 @@ struct StorageManagementContent: View {
 
     private func refreshDeviceSpace() {
         let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
-            .resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey])
+            .resourceValues(forKeys: [.volumeAvailableCapacityKey])
         freeBytes = values?.volumeAvailableCapacity.map(Int64.init)
-        deviceTotalBytes = values?.volumeTotalCapacity.map(Int64.init)
     }
 
     // MARK: - Shows

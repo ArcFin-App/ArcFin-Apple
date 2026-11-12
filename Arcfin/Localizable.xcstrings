@@ -257,70 +257,6 @@
         }
       }
     },
-    "%@ free of %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ von %2$@ frei"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ libres de %2$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ libres sur %2$@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ liberi su %2$@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%2$@中%1$@空き"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%2$@ 중 %1$@ 사용 가능"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ vrij van %2$@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ livres de %2$@"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Свободно %1$@ из %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%2$@ 中可用 %1$@"
-          }
-        }
-      }
-    },
     "%@ free of %@ on this device" : {
       "localizations" : {
         "de" : {
@@ -381,6 +317,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此设备 %2$@ 中可用 %1$@"
+          }
+        }
+      }
+    },
+    "%@ free on device" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ frei auf dem Gerät"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ libres en el dispositivo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ libres sur l'appareil"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ liberi sul dispositivo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "デバイスの空き %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "기기 여유 공간 %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ vrij op apparaat"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ livres no dispositivo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Свободно на устройстве: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "设备可用 %@"
           }
         }
       }
@@ -11329,6 +11329,70 @@
         }
       }
     },
+    "Not Enough Space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nicht genug Speicher"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No hay espacio suficiente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Espace insuffisant"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Spazio insufficiente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "空き容量が足りません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "공간 부족"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niet genoeg ruimte"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Espaço insuficiente"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Недостаточно места"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "空间不足"
+          }
+        }
+      }
+    },
     "Note your server address" : {
       "localizations" : {
         "de" : {
@@ -11905,6 +11969,70 @@
         }
       }
     },
+    "Only %lld of %lld episodes fit right now (%@ free for downloads). The rest download once there's space." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gerade passen nur %1$lld von %2$lld Folgen (%3$@ frei für Downloads). Der Rest wird geladen, sobald Platz ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ahora solo caben %1$lld de %2$lld episodios (%3$@ libres para descargas). El resto se descargará cuando haya espacio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seuls %1$lld épisodes sur %2$lld tiennent pour l'instant (%3$@ libres pour les téléchargements). Les autres se téléchargeront dès qu'il y aura de la place."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Al momento entrano solo %1$lld episodi su %2$lld (%3$@ liberi per i download). Gli altri verranno scaricati quando ci sarà spazio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "今は%2$lldエピソード中%1$lldエピソードしか入りません（ダウンロードに使える空き %3$@）。残りは空きができしだいダウンロードされます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "지금은 %2$lld개 에피소드 중 %1$lld개만 들어갑니다(다운로드에 쓸 수 있는 공간 %3$@). 나머지는 공간이 생기면 다운로드됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Er passen nu maar %1$lld van %2$lld afleveringen (%3$@ vrij voor downloads). De rest wordt gedownload zodra er ruimte is."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Agora só cabem %1$lld de %2$lld episódios (%3$@ livres para downloads). O resto será baixado quando houver espaço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сейчас помещается только %1$lld из %2$lld серий (для загрузок свободно %3$@). Остальные загрузятся, когда освободится место."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "目前只能放下 %2$lld 集中的 %1$lld 集（可用于下载 %3$@）。其余的会在有空间后下载。"
+          }
+        }
+      }
+    },
     "Open In" : {
       "localizations" : {
         "de" : {
@@ -12285,70 +12413,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@的选项"
-          }
-        }
-      }
-    },
-    "Other Apps" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Andere Apps"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Otras apps"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Autres apps"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Altre app"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "その他のApp"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "기타 앱"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Andere apps"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Outros apps"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Другие приложения"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "其他 App"
           }
         }
       }
@@ -20033,6 +20097,70 @@
         }
       }
     },
+    "The rest download once there's room. Delete watched titles in Manage Storage to make some." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Rest wird geladen, sobald Platz ist. Lösche gesehene Titel unter „Speicher verwalten“, um Platz zu schaffen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El resto se descargará cuando haya espacio. Elimina títulos vistos en Gestionar almacenamiento para liberar espacio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le reste se téléchargera dès qu'il y aura de la place. Supprimez des titres vus dans Gérer le stockage pour en libérer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il resto verrà scaricato quando ci sarà spazio. Elimina i titoli già visti in Gestisci spazio per liberarne."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "残りは空きができしだいダウンロードされます。「ストレージを管理」で視聴済みのタイトルを削除すると空きを作れます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "나머지는 공간이 생기면 다운로드됩니다. 저장 공간 관리에서 시청한 항목을 삭제해 공간을 확보하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De rest wordt gedownload zodra er ruimte is. Verwijder bekeken titels in Opslag beheren om ruimte te maken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O resto será baixado quando houver espaço. Apague títulos assistidos em Gerenciar armazenamento para liberar espaço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Остальное загрузится, когда освободится место. Удалите просмотренное в разделе «Управление хранилищем»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "其余的会在有空间后下载。在“管理存储空间”中删除已看过的内容即可腾出空间。"
+          }
+        }
+      }
+    },
     "The rotate button in the player still turns it either way." : {
       "localizations" : {
         "de" : {
@@ -20093,6 +20221,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "播放器中的旋转按钮仍可切换方向。"
+          }
+        }
+      }
+    },
+    "There's no room for these episodes yet (%@ free for downloads). They'll download once there's space." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Für diese Folgen ist noch kein Platz (%@ frei für Downloads). Sie werden geladen, sobald Platz ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Todavía no hay espacio para estos episodios (%@ libres para descargas). Se descargarán cuando haya espacio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pas encore de place pour ces épisodes (%@ libres pour les téléchargements). Ils se téléchargeront dès qu'il y aura de la place."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non c'è ancora spazio per questi episodi (%@ liberi per i download). Verranno scaricati quando ci sarà spazio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "これらのエピソードを入れる空きがまだありません（ダウンロードに使える空き %@）。空きができしだいダウンロードされます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "아직 이 에피소드를 넣을 공간이 없습니다(다운로드에 쓸 수 있는 공간 %@). 공간이 생기면 다운로드됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Er is nog geen ruimte voor deze afleveringen (%@ vrij voor downloads). Ze worden gedownload zodra er ruimte is."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ainda não há espaço para estes episódios (%@ livres para downloads). Eles serão baixados quando houver espaço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Для этих серий пока нет места (для загрузок свободно %@). Они загрузятся, когда освободится место."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "暂时没有空间放这些剧集（可用于下载 %@）。有空间后会自动下载。"
           }
         }
       }
@@ -20541,6 +20733,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此内容已不在服务器上，可能已被移动或删除。"
+          }
+        }
+      }
+    },
+    "This needs about %@, and only %@ is free for downloads. Delete some downloads, or pick a lower quality." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das braucht etwa %1$@, für Downloads sind aber nur %2$@ frei. Lösche einige Downloads oder wähle eine niedrigere Qualität."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Necesita unos %1$@ y solo hay %2$@ libres para descargas. Elimina algunas descargas o elige una calidad más baja."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il faut environ %1$@, et seuls %2$@ sont libres pour les téléchargements. Supprimez des téléchargements ou choisissez une qualité inférieure."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Servono circa %1$@ e per i download ne restano solo %2$@. Elimina qualche download o scegli una qualità inferiore."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "約%1$@必要ですが、ダウンロードに使える空きは%2$@しかありません。ダウンロードをいくつか削除するか、画質を下げてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "약 %1$@이(가) 필요하지만 다운로드에 쓸 수 있는 공간은 %2$@뿐입니다. 다운로드를 일부 삭제하거나 더 낮은 화질을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit heeft ongeveer %1$@ nodig, en er is maar %2$@ vrij voor downloads. Verwijder wat downloads of kies een lagere kwaliteit."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Isto precisa de cerca de %1$@, e só há %2$@ livres para downloads. Apague alguns downloads ou escolha uma qualidade menor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Нужно около %1$@, а для загрузок свободно только %2$@. Удалите часть загрузок или выберите качество пониже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这需要约 %1$@，但可用于下载的空间只有 %2$@。请删除一些下载内容，或选择较低的画质。"
           }
         }
       }
