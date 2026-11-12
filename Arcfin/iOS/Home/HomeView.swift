@@ -424,6 +424,7 @@ struct HomeView: View {
                 subtitle: HomeText.subtitle(item),
                 imageURL: mediaRepo.imageURL(for: item)
             )
+            .unwatchedBadge(item)
         }
         .buttonStyle(PressableButtonStyle())
         .contextMenu { longPressMenu(item) }
@@ -439,9 +440,6 @@ struct HomeView: View {
                 Label(ticks > 0 ? "Resume" : "Play", systemImage: "play.fill")
             }
         }
-        Button { trailerLaunchItem = item } label: {
-            Label("Play Trailer", systemImage: "play.rectangle")
-        }
-        HomeQuickLookMenu(item: item)
+        HomeQuickLookMenu(item: item, playTrailer: { trailerLaunchItem = item })
     }
 }

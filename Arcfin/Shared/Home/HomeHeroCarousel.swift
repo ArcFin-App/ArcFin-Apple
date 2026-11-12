@@ -39,7 +39,8 @@ final class HomeHeroCarousel {
         var items: [MediaItem] = []
         items.append(contentsOf: mediaRepo.continueWatching.prefix(2))
         items.append(contentsOf: mediaRepo.nextUp.prefix(2))
-        items.append(contentsOf: mediaRepo.recentlyAdded.prefix(6))
+        // The server admin's picks take the place of Recently Added when there are any.
+        items.append(contentsOf: mediaRepo.featuredItems.isEmpty ? Array(mediaRepo.recentlyAdded.prefix(6)) : Array(mediaRepo.featuredItems.prefix(8)))
         var seen = Set<String>()
         return items.filter { seen.insert($0.id).inserted }
     }

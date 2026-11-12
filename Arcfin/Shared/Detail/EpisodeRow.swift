@@ -108,20 +108,22 @@ struct EpisodeRow: View {
                       systemImage: isWatched ? "eye.slash" : "checkmark")
             }
         }, preview: {
-            EpisodeRowPreview(episode: ep)
+            EpisodeRowPreview(episode: ep, imageURL: mediaRepo.episodeThumbnailURL(for: ep))
         })
     }
 }
 
+/// Gets its image URL handed in: a context menu's preview is drawn outside the app's
+/// environment, so reading MediaRepository from it there traps.
 private struct EpisodeRowPreview: View {
-    @Environment(MediaRepository.self) private var mediaRepo
     let episode: MediaItem
+    let imageURL: URL?
 
     var body: some View {
         let ep = episode
         return VStack(alignment: .leading, spacing: 8) {
             Group {
-                if let url = mediaRepo.episodeThumbnailURL(for: ep) {
+                if let url = imageURL {
                     CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()

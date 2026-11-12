@@ -51,7 +51,7 @@ public struct JellyfinMediaClient: Sendable {
             resolvingAgainstBaseURL: false
         )!
         comps.queryItems = [
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "ImageTypeLimit", value: "1"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "Recursive", value: "true"),
@@ -78,7 +78,7 @@ public struct JellyfinMediaClient: Sendable {
         comps.queryItems = [
             .init(name: "UserId", value: credential.userID),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableImages", value: "true"),
         ]
@@ -106,7 +106,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "IncludeItemTypes", value: itemType),
             .init(name: "Recursive", value: "true"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
         ]
         var req = URLRequest(url: comps.url!)
@@ -215,6 +215,80 @@ public struct JellyfinMediaClient: Sendable {
         return shelves
     }
 
+    /// Movies and shows a server admin has tagged themselves, such as `arcfin-featured`.
+    public func getTaggedTitles(credential: ServerCredential, authHeader: String, tag: String, limit: Int = 20) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "Movie,Series"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Tags", value: tag),
+            .init(name: "SortBy", value: "SortName"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,RunTimeTicks,Genres,ProviderIds"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
+    /// Collections a server admin has tagged for Home (`arcfin-featured` for the hero,
+    /// `arcfin-promoted` for rows), each with its titles in the collection's own order.
+    /// Only collections this user can see come back, so library access still applies.
+    public func getTaggedCollections(
+        credential: ServerCredential,
+        authHeader: String,
+        tag: String,
+        itemsPerCollection: Int = 30
+    ) async throws -> [(collection: MediaItem, items: [MediaItem])] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "BoxSet"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Tags", value: tag),
+            .init(name: "SortBy", value: "SortName"),
+            .init(name: "Fields", value: "DisplayOrder,PrimaryImageTags"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let collections = try JSONDecoder().decode(TaggedCollectionsPage.self, from: data).items
+
+        var result: [(collection: MediaItem, items: [MediaItem])] = []
+        for collection in collections {
+            var itemComps = URLComponents(
+                url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+                resolvingAgainstBaseURL: false)!
+            // A collection set to sort by release date keeps that order; anything else is by name.
+            let sortBy = collection.displayOrder == "PremiereDate" ? "PremiereDate,ProductionYear,SortName" : "SortName"
+            itemComps.queryItems = [
+                .init(name: "ParentId", value: collection.id),
+                .init(name: "SortBy", value: sortBy),
+                .init(name: "Limit", value: "\(itemsPerCollection)"),
+                .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,RunTimeTicks,Genres,ProviderIds"),
+                .init(name: "EnableUserData", value: "true"),
+            ]
+            var itemReq = URLRequest(url: itemComps.url!)
+            itemReq.setValue(authHeader, forHTTPHeaderField: "Authorization")
+            itemReq.timeoutInterval = 15
+            guard let (itemData, _) = try? await URLSession.arcfin.data(for: itemReq),
+                  let page = try? JSONDecoder().decode(ItemsPage.self, from: itemData),
+                  !page.items.isEmpty
+            else { continue }
+            let item = MediaItem(id: collection.id, name: collection.name, type: .boxSet,
+                                 primaryImageTag: collection.imageTags?["Primary"])
+            result.append((item, page.items.map { $0.toMediaItem() }))
+        }
+        return result
+    }
+
     /// Movies and series the user has favorited, for Home's Favorites shelf.
     public func getFavorites(
         credential: ServerCredential,
@@ -281,7 +355,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: "Descending"),
             .init(name: "Filters", value: "IsResumable"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres"),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,SeriesName,SeriesId,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentBackdropItemId,RunTimeTicks,Genres,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "IncludeItemTypes", value: "Movie,Episode"),
         ]
@@ -980,6 +1054,40 @@ public struct JellyfinMediaClient: Sendable {
         _ = try await URLSession.arcfin.data(for: req)
     }
 
+    /// An item's tags, as an admin edits them.
+    public func getTags(credential: ServerCredential, authHeader: String, itemId: String) async throws -> [String] {
+        let object = try await itemObject(credential: credential, authHeader: authHeader, itemId: itemId)
+        return object["Tags"] as? [String] ?? []
+    }
+
+    /// Replaces an item's tags. Jellyfin takes the whole item back, so the item is fetched,
+    /// only its tags are changed and it's posted as it came; admins only.
+    public func setTags(credential: ServerCredential, authHeader: String, itemId: String, tags: [String]) async throws {
+        var object = try await itemObject(credential: credential, authHeader: authHeader, itemId: itemId)
+        object["Tags"] = tags
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Items/\(itemId)"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: object)
+        req.timeoutInterval = 20
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    private func itemObject(credential: ServerCredential, authHeader: String, itemId: String) async throws -> [String: Any] {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"))
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, response) = try await URLSession.arcfin.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { throw URLError(.badServerResponse) }
+        return object
+    }
+
     /// Thumbs rating: `true` likes, `false` dislikes, `nil` clears it.
     public func setRating(
         credential: ServerCredential,
@@ -1033,7 +1141,7 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "SortOrder", value: sortOrder),
             .init(name: "StartIndex", value: "\(startIndex)"),
             .init(name: "Limit", value: "\(limit)"),
-            .init(name: "Fields", value: "Overview,Genres,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId"),
+            .init(name: "Fields", value: "Overview,Genres,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,ParentBackdropImageTags,ParentBackdropItemId,ProviderIds"),
             .init(name: "EnableUserData", value: "true"),
             .init(name: "EnableTotalRecordCount", value: "true"),
         ]
@@ -1197,6 +1305,20 @@ public struct JellyfinMediaClient: Sendable {
 
 // MARK: - Private response types
 
+private struct TaggedCollectionsPage: Decodable {
+    struct Collection: Decodable {
+        let id: String
+        let name: String
+        let displayOrder: String?
+        let imageTags: [String: String]?
+        enum CodingKeys: String, CodingKey {
+            case id = "Id", name = "Name", displayOrder = "DisplayOrder", imageTags = "ImageTags"
+        }
+    }
+    let items: [Collection]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
 struct ItemsPage: Decodable {
     let items: [JellyfinItemResponse]
     let totalRecordCount: Int?
@@ -1303,7 +1425,8 @@ struct JellyfinItemResponse: Decodable {
                     played: $0.played ?? false,
                     playedPercentage: $0.playedPercentage,
                     likes: $0.likes,
-                    lastPlayedDate: $0.lastPlayed
+                    lastPlayedDate: $0.lastPlayed,
+                    unplayedItemCount: $0.unplayedItemCount
                 )
             },
             productionYear: productionYear,
@@ -1316,6 +1439,7 @@ struct JellyfinItemResponse: Decodable {
             parentBackdropItemId: parentBackdropItemId,
             parentBackdropImageTags: parentBackdropImageTags ?? [],
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            imdbId: providerIds?["Imdb"].flatMap { $0.isEmpty ? nil : $0 },
             premiereDate: premiereDate.flatMap(Self.parseDay),
             runTimeTicks: runTimeTicks,
             genres: genres ?? [],
@@ -1358,10 +1482,12 @@ struct UserDataResponse: Decodable {
     let playedPercentage: Double?
     let likes: Bool?
     let lastPlayedDate: String?
+    let unplayedItemCount: Int?
 
     var lastPlayed: Date? { lastPlayedDate.flatMap(JellyfinDate.parse) }
 
     enum CodingKeys: String, CodingKey {
+        case unplayedItemCount = "UnplayedItemCount"
         case likes = "Likes"
         case lastPlayedDate = "LastPlayedDate"
         case playbackPositionTicks = "PlaybackPositionTicks"
@@ -1462,7 +1588,8 @@ private struct ItemDetailResponse: Decodable {
                          played: ud.played ?? false,
                          playedPercentage: ud.playedPercentage,
                          likes: ud.likes,
-                         lastPlayedDate: ud.lastPlayed)
+                         lastPlayedDate: ud.lastPlayed,
+                         unplayedItemCount: ud.unplayedItemCount)
             },
             productionYear: productionYear,
             communityRating: communityRating,
@@ -1472,6 +1599,7 @@ private struct ItemDetailResponse: Decodable {
             seriesId: seriesId,
             seriesPrimaryImageTag: seriesPrimaryImageTag,
             tmdbId: providerIds.flatMap { Int($0["Tmdb"] ?? "") },
+            imdbId: providerIds?["Imdb"].flatMap { $0.isEmpty ? nil : $0 },
             premiereDate: premiereDate.flatMap(Self.parseDay),
             isVirtual: locationType == "Virtual"
         )

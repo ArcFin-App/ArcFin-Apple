@@ -45,6 +45,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public var parentBackdropItemId: String?
     public var parentBackdropImageTags: [String]
     public var tmdbId: Int?
+    public var imdbId: String?
     public var premiereDate: Date?
     public var runTimeTicks: Int64?
     public var genres: [String]
@@ -70,6 +71,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         parentBackdropItemId: String? = nil,
         parentBackdropImageTags: [String] = [],
         tmdbId: Int? = nil,
+        imdbId: String? = nil,
         premiereDate: Date? = nil,
         runTimeTicks: Int64? = nil,
         genres: [String] = [],
@@ -93,6 +95,7 @@ public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
         self.parentBackdropItemId = parentBackdropItemId
         self.parentBackdropImageTags = parentBackdropImageTags
         self.tmdbId = tmdbId
+        self.imdbId = imdbId
         self.premiereDate = premiereDate
         self.runTimeTicks = runTimeTicks
         self.genres = genres
@@ -123,6 +126,8 @@ public struct UserData: Sendable, Equatable, Hashable {
     public var likes: Bool?
     /// When it was last played anywhere, as the server records it.
     public var lastPlayedDate: Date?
+    /// Episodes left to watch, for a series, season or collection.
+    public var unplayedItemCount: Int?
 
     public init(
         playbackPositionTicks: Int64 = 0,
@@ -131,7 +136,8 @@ public struct UserData: Sendable, Equatable, Hashable {
         played: Bool = false,
         playedPercentage: Double? = nil,
         likes: Bool? = nil,
-        lastPlayedDate: Date? = nil
+        lastPlayedDate: Date? = nil,
+        unplayedItemCount: Int? = nil
     ) {
         self.playbackPositionTicks = playbackPositionTicks
         self.playCount = playCount
@@ -140,6 +146,7 @@ public struct UserData: Sendable, Equatable, Hashable {
         self.playedPercentage = playedPercentage
         self.likes = likes
         self.lastPlayedDate = lastPlayedDate
+        self.unplayedItemCount = unplayedItemCount
     }
 }
 

@@ -291,6 +291,8 @@ struct DetailMoreMenu: View {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }
             OpenInPlayerMenu(item: item)
+            CopyItemMenu(item: model.detail?.item ?? item)
+            EditTagsButton(item: item)
             if (item.type == .movie || item.type == .episode) && ProfileRules.shared.canManageSubtitles {
                 Button { searchSubtitles() } label: {
                     Label("Search for Subtitles…", systemImage: "captions.bubble")

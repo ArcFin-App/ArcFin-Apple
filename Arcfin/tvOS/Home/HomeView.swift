@@ -114,10 +114,10 @@ struct HomeView: View {
             switch modernHero {
             case .media(let item): return item
             case .seerr: return nil
-            case nil: return cwItems.first ?? mediaRepo.recentlyAdded.first
+            case nil: return cwItems.first ?? mediaRepo.featuredItems.first ?? mediaRepo.recentlyAdded.first
             }
         }
-        return focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
+        return focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.featuredItems.first ?? mediaRepo.recentlyAdded.first
     }
 
     var body: some View {
@@ -544,7 +544,7 @@ struct HomeView: View {
                                     title: itemTitle(item),
                                     subtitle: itemSubtitle(item),
                                     progress: item.userData?.playedPercentage.map { $0 / 100 },
-                                    imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                                    imageURL: HomeArtwork.tvURL(for: item, in: mediaRepo)
                                 )
                                 .opacity(heroChromeOpacity)
                             }
@@ -611,6 +611,10 @@ struct HomeView: View {
         case .watchAgain:
             if !mediaRepo.watchAgain.isEmpty {
                 mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+            }
+        case .serverPicks:
+            ForEach(mediaRepo.promotedCollections, id: \.collection.id) { shelf in
+                mediaShelf(title: shelf.collection.name, rowID: "picks-\(shelf.collection.id)", items: shelf.items)
             }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
@@ -706,6 +710,7 @@ struct HomeView: View {
                         subtitle: item.productionYear.map { String($0) },
                         imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
                     )
+                    .unwatchedBadge(item)
                     .background { modernFocusProbe(row: rowID, subject: .media(item)) }
                 }
                 .buttonStyle(TVCardButtonStyle())
@@ -906,8 +911,9 @@ struct HomeView: View {
                             title: itemTitle(item),
                             subtitle: itemSubtitle(item),
                             progress: item.userData?.playedPercentage.map { $0 / 100 },
-                            imageURL: mediaRepo.tvImageURL(for: item, fillWidth: 640)
+                            imageURL: HomeArtwork.tvURL(for: item, in: mediaRepo)
                         )
+                        .unwatchedBadge(item)
                         .background { modernFocusProbe(row: title, subject: .media(item)) }
                     }
                     .buttonStyle(TVCardButtonStyle())

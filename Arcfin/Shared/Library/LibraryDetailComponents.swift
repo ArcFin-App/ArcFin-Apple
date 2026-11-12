@@ -215,14 +215,15 @@ struct LibraryQuickLookMenu: View {
     }
 }
 
+/// Gets its image URL handed in: a context menu's preview is drawn outside the app's
+/// environment, so reading MediaRepository from it there traps.
 struct LibraryItemPreview: View {
     let item: MediaItem
-
-    @Environment(MediaRepository.self) private var mediaRepo
+    let imageURL: URL?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CachedAsyncImage(url: mediaRepo.imageURL(for: item)) { phase in
+            CachedAsyncImage(url: imageURL) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
                 default: DT.Color.backgroundSecondary

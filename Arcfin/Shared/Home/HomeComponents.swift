@@ -400,6 +400,14 @@ struct HomeShelfView<Card: View>: View {
                     posters(mediaRepo.watchAgain)
                 }
             }
+        case .serverPicks:
+            ForEach(mediaRepo.promotedCollections, id: \.collection.id) { shelf in
+                ShelfRow(title: shelf.collection.name, onSeeAll: {
+                    seeAll(SeeAllShelf(title: shelf.collection.name, items: shelf.items))
+                }) {
+                    posters(shelf.items)
+                }
+            }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
                 let title = "More \(shelf.genre)"
@@ -553,9 +561,16 @@ private struct HomeSeerrShelf: View {
 /// A title's quick actions and details, at the bottom of a poster's long-press menu.
 struct HomeQuickLookMenu: View {
     let item: MediaItem
+    /// Play Trailer, under the quick actions so Mark as Watched sits right below Play.
+    var playTrailer: (() -> Void)? = nil
 
     var body: some View {
         ItemQuickActions(item: item)
+        if let playTrailer {
+            Button(action: playTrailer) {
+                Label("Play Trailer", systemImage: "play.rectangle")
+            }
+        }
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear {
             Label(String(year), systemImage: "calendar")
@@ -599,10 +614,23 @@ enum HomeArtwork {
     @MainActor
     static func landscapeURL(for item: MediaItem, in mediaRepo: MediaRepository) -> URL? {
         if item.type == .episode {
+            if HomeEpisodeArtwork.current == .series, let show = mediaRepo.seriesBackdropURL(for: item, fillWidth: 400) {
+                return show
+            }
             return mediaRepo.imageURL(for: item, type: .primary, fillWidth: 400)
         }
         return mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 400)
             ?? mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 400)
+    }
+
+    /// Apple TV's cards: the same choice for episodes, and tvImageURL for everything else.
+    @MainActor
+    static func tvURL(for item: MediaItem, in mediaRepo: MediaRepository) -> URL? {
+        if item.type == .episode, HomeEpisodeArtwork.current == .series,
+           let show = mediaRepo.seriesBackdropURL(for: item, fillWidth: 640) {
+            return show
+        }
+        return mediaRepo.tvImageURL(for: item, fillWidth: 640)
     }
 }
 

@@ -9,6 +9,7 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
+    @Bindable private var tagEditor = TagEditor.shared
     @State private var searchQuery = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
 
@@ -55,6 +56,9 @@ struct MainTabView: View {
             // The focus ENGINE still works (remote nav, isFocused env); only
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
+            .appSheet(item: $tagEditor.item) { item in
+                EditTagsSheet(item: item)
+            }
             .appSheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
             }

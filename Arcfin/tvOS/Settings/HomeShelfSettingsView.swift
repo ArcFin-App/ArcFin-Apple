@@ -31,6 +31,8 @@ struct HomeShelfSettingsView: View {
                 }
             }
 
+            HomeEpisodeArtworkSection()
+
             Section {
                 // No dragging on tvOS: select turns a shelf on or off, and a long press moves it.
                 ForEach(Array(shown.enumerated()), id: \.element) { index, shelf in
