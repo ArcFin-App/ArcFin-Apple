@@ -85,6 +85,10 @@ public actor SeerrHTTPClient {
     private let password: String
     private let authMethod: SeerrAuthMethod
     private let authorizeQuickConnect: QuickConnectAuthorizer?
+    /// Called once Quick Connect has taken over from a saved password Seerr refused, so the
+    /// app can delete that password: often one saved by an earlier version, from before
+    /// Quick Connect sign-in existed.
+    private let onSavedPasswordRejected: (@Sendable () async -> Void)?
 
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
@@ -99,7 +103,9 @@ public actor SeerrHTTPClient {
 
     public init(baseURL: URL, username: String, password: String,
                 authMethod: SeerrAuthMethod = .jellyfin,
-                authorizeQuickConnect: QuickConnectAuthorizer? = nil) {
+                authorizeQuickConnect: QuickConnectAuthorizer? = nil,
+                onSavedPasswordRejected: (@Sendable () async -> Void)? = nil) {
+        self.onSavedPasswordRejected = onSavedPasswordRejected
         self.baseURL    = baseURL
         self.username   = username
         self.password   = password
@@ -171,6 +177,7 @@ public actor SeerrHTTPClient {
         if usesQuickConnect || (canQuickConnect && savedPasswordWasRejected) {
             try await loginWithQuickConnect()
             isAuthenticated = true
+            if !password.isEmpty { await onSavedPasswordRejected?() }
             return
         }
         do {
@@ -183,6 +190,7 @@ public actor SeerrHTTPClient {
             authPermanentlyFailed = false
             UserDefaults.standard.removeObject(forKey: authFailedKey)
             isAuthenticated = true
+            await onSavedPasswordRejected?()
         }
     }
 

@@ -240,7 +240,8 @@ final class AppRootModel {
     func configureSeerr(seerrURL: String, seerrUsername: String, seerrAuthMethod: SeerrAuthMethod) {
         seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
                             password: authManager.seerrPassword, authMethod: seerrAuthMethod,
-                            authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager))
+                            authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager),
+                            onSavedPasswordRejected: { [authManager] in await authManager.removeSeerrPassword() })
         // Warms Discover and the Browse > Your Requests sections in the background as soon
         // as Seerr is reachable, so they're already populated (no skeleton) the first time
         // the user actually taps into either.

@@ -196,7 +196,8 @@ nonisolated enum BackgroundRefresh {
         let authorizer = IntentSession.credential().map(SeerrSignIn.quickConnectAuthorizer(credential:))
         guard !password.isEmpty || (method == .jellyfin && authorizer != nil) else { return }
         let client = SeerrHTTPClient(baseURL: url, username: username, password: password, authMethod: method,
-                                     authorizeQuickConnect: authorizer)
+                                     authorizeQuickConnect: authorizer,
+                                     onSavedPasswordRejected: { try? KeychainStore().deleteSeerrPassword() })
 
         if requestUpdates, let requests = try? await client.getRequests() {
             await announceRequestChanges(requests)

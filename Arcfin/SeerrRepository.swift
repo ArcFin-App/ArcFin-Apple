@@ -135,7 +135,8 @@ final class SeerrRepository {
     /// `authorizeQuickConnect`; any other account needs its username and password.
     func configure(urlString: String, username: String, password: String,
                    authMethod: SeerrAuthMethod = .jellyfin,
-                   authorizeQuickConnect: SeerrHTTPClient.QuickConnectAuthorizer? = nil) {
+                   authorizeQuickConnect: SeerrHTTPClient.QuickConnectAuthorizer? = nil,
+                   onSavedPasswordRejected: (@Sendable () async -> Void)? = nil) {
         let trimURL  = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -161,7 +162,8 @@ final class SeerrRepository {
         configuredURL = trimURL; configuredUsername = trimUser
         configuredPassword = trimPass; configuredMethod = authMethod
         client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
-                                 authMethod: authMethod, authorizeQuickConnect: authorizeQuickConnect)
+                                 authMethod: authMethod, authorizeQuickConnect: authorizeQuickConnect,
+                                 onSavedPasswordRejected: onSavedPasswordRejected)
         resetRetry()
         // A different Seerr user, whose permissions and quota are their own.
         currentUser = nil
