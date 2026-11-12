@@ -146,13 +146,18 @@ extension DeviceProfileTests {
         #expect(transcoding(JellyfinMediaClient.deviceProfile(forCast: true, baseURL: Self.server))["Container"] as? String == "ts")
     }
 
-    @Test("AV1 leads the conversion only where the device decodes it, and never after the server failed at it")
+    @Test("AV1 leads the conversion only when turned on, where the device decodes it, and never after the server failed at it")
     func av1Conversion() {
         let server = URL(string: "http://av1-test.example.com")!
         AV1Encoding.forgetFailures()
         UserDefaults.standard.removeObject(forKey: AV1Encoding.settingKey)
-        defer { AV1Encoding.forgetFailures() }
+        defer {
+            AV1Encoding.forgetFailures()
+            UserDefaults.standard.removeObject(forKey: AV1Encoding.settingKey)
+        }
         let codecs = { (transcoding(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: server))["VideoCodec"] as? String) ?? "" }
+        #expect(!codecs().contains("av1"))
+        UserDefaults.standard.set(true, forKey: AV1Encoding.settingKey)
         #expect(codecs().hasPrefix("av1") == JellyfinMediaClient.decodesAV1InHardware)
         AV1Encoding.markFailed(on: server)
         #expect(!codecs().contains("av1"))

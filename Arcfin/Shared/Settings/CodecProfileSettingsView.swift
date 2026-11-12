@@ -12,7 +12,7 @@ struct CodecProfileSettingsView: View {
     @AppStorage("codecForceHDRTranscode") private var forceHDR = false
     @AppStorage("codecForceDolbyVisionTranscode") private var forceDolbyVision = false
     @AppStorage("codecCompatibilityMode") private var compatibilityMode = false
-    @AppStorage(AV1Encoding.settingKey) private var allowAV1 = true
+    @AppStorage(AV1Encoding.settingKey) private var allowAV1 = false
 
     var body: some View {
         List {

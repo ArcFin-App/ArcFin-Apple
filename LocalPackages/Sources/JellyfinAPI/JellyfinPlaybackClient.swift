@@ -663,12 +663,13 @@ extension JellyfinMediaClient {
 /// Whether to ask a server to convert to AV1. There's no API that says whether the server's
 /// GPU can encode AV1, so it's learned: a conversion to AV1 that fails marks the server,
 /// and it's asked for HEVC from then on. Turning the setting off and on again forgets that.
+/// Off unless someone turns it on.
 public enum AV1Encoding {
     public static let settingKey = "codecAllowAV1Transcode"
     private static func failedKey(_ baseURL: URL) -> String { "arcfin.av1EncodeFailed.\(baseURL.host ?? "")" }
 
     public static var isAllowed: Bool {
-        (UserDefaults.standard.object(forKey: settingKey) as? Bool) ?? true
+        UserDefaults.standard.bool(forKey: settingKey)
     }
 
     static func isOffered(for baseURL: URL) -> Bool {
