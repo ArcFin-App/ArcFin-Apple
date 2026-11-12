@@ -241,13 +241,16 @@ private struct DetailAwardsRow: View {
         } else {
             label = "Won \(names.count) Awards"
         }
-        return HStack(spacing: 4) {
+        return HStack(alignment: .firstTextBaseline, spacing: 4) {
             Image(systemName: "trophy.fill")
                 .font(.system(.caption2))
             Text(label)
                 .font(.system(.caption2, design: .default, weight: .semibold))
-                .lineLimit(1)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .foregroundStyle(DT.Color.palette("f59e0b"))
     }
 
