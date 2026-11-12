@@ -83,6 +83,9 @@ struct SeerrItemDetailContent: View {
                 if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
                 if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
                 if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+                if let collection = model.collection {
+                    discoveryRow(collection.name, collection.parts, accessory: AnyView(requestCollectionButton))
+                }
 
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
@@ -111,6 +114,11 @@ struct SeerrItemDetailContent: View {
         }
         .navigationDestination(item: $model.openLibraryItem) { MediaDetailView(item: $0) }
         .navigationDestination(item: $model.openSeerrItem) { SeerrItemDetailView(item: $0) }
+        .alert(model.collectionRequestMessage ?? "", isPresented: Binding(
+            get: { model.collectionRequestMessage != nil }, set: { if !$0 { model.collectionRequestMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        }
         .task(id: item.id) { await model.loadHeroTint() }
         .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
         .task { await model.loadDetail(seerrRepo: seerrRepo) }
@@ -251,13 +259,38 @@ struct SeerrItemDetailContent: View {
 
     // MARK: - Discovery
 
-    private func discoveryRow(_ title: String, _ items: [SeerrItem]) -> some View {
+    /// Requests every movie in the collection not yet in the library or asked for.
+    @ViewBuilder
+    private var requestCollectionButton: some View {
+        let parts = model.requestableParts(seerrRepo: seerrRepo)
+        if seerrRepo.isConfigured, !parts.isEmpty {
+            Button { model.isConfirmingCollectionRequest = true } label: {
+                if model.isRequestingCollection { ProgressView() } else { Text("Request Collection") }
+            }
+            .font(.system(.caption, weight: .semibold))
+            .buttonStyle(.bordered)
+            .tint(DT.Color.accent)
+            .disabled(model.isRequestingCollection)
+            .confirmationDialog("Request \(parts.count) movies?", isPresented: $model.isConfirmingCollectionRequest, titleVisibility: .visible) {
+                Button("Request \(parts.count) Movies") { Task { await model.requestCollection(seerrRepo: seerrRepo) } }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(parts.map(\.title).joined(separator: ", "))
+            }
+        }
+    }
+
+    private func discoveryRow(_ title: String, _ items: [SeerrItem], accessory: AnyView? = nil) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(DT.Font.cardTitle)
-                .foregroundStyle(DT.Color.textPrimary)
-                .lineLimit(1)
-                .padding(.horizontal, DT.Spacing.pagePad)
+            HStack {
+                Text(title)
+                    .font(DT.Font.cardTitle)
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                Spacer()
+                accessory
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 12) {
                     ForEach(items) { related in

@@ -22,6 +22,11 @@ final class SeerrItemDetailModel {
     private(set) var moreLikeThis: [SeerrItem] = []
     private(set) var companyRow: (name: String, items: [SeerrItem])?
     private(set) var keywordRow: (name: String, items: [SeerrItem])?
+    /// The film series this movie is part of, when it has more than one movie.
+    private(set) var collection: SeerrCollection?
+    private(set) var isRequestingCollection = false
+    var isConfirmingCollectionRequest = false
+    var collectionRequestMessage: String?
     var openLibraryItem: MediaItem?
     var openSeerrItem: SeerrItem?
     var requestingItem: SeerrItem?
@@ -78,6 +83,9 @@ final class SeerrItemDetailModel {
         async let info = seerrRepo.relatedInfo(mediaType: item.mediaType, tmdbId: item.id)
         moreLikeThis = Array(await related.filter { $0.id != item.id }.prefix(20))
         guard let info = await info else { return }
+        if let id = info.collection?.id, let collection = await seerrRepo.collection(id: id), collection.parts.count > 1 {
+            self.collection = collection
+        }
         if let company = info.companies.first {
             let items = await seerrRepo.discoverByCompany(company.id, mediaType: item.mediaType).filter { $0.id != item.id }
             if items.count >= 3 { companyRow = (company.name, Array(items.prefix(20))) }
@@ -87,6 +95,25 @@ final class SeerrItemDetailModel {
             let items = await seerrRepo.discoverByKeyword(keyword.id).filter { $0.id != item.id }
             if items.count >= 3 { keywordRow = (keyword.name, Array(items.prefix(20))) }
         }
+    }
+
+    /// The collection's movies that aren't in the library or asked for yet.
+    func requestableParts(seerrRepo: SeerrRepository) -> [SeerrItem] {
+        (collection?.parts ?? []).filter {
+            $0.availabilityStatus != .available && $0.availabilityStatus != .partiallyAvailable && !seerrRepo.isRequested($0)
+        }
+    }
+
+    func requestCollection(seerrRepo: SeerrRepository) async {
+        let parts = requestableParts(seerrRepo: seerrRepo)
+        guard !parts.isEmpty, let current = collection else { return }
+        isRequestingCollection = true
+        let requested = await seerrRepo.requestAll(parts)
+        isRequestingCollection = false
+        collectionRequestMessage = requested == parts.count
+            ? String(localized: "Requested \(requested) movies from \(current.name).")
+            : String(localized: "Requested \(requested) of \(parts.count) movies. Try the others from their own pages.")
+        collection = await seerrRepo.collection(id: current.id) ?? current
     }
 
     func toggleWatchlist(seerrRepo: SeerrRepository) {
