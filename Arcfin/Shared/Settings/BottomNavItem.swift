@@ -6,7 +6,7 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
     // Case name stays "requests" even though it now displays as "Discover" — the rawValue is
     // persisted in bottomNavOrder/bottomNavActive UserDefaults strings, renaming it would drop
     // the tab from every existing saved layout instead of just relabeling it.
-    case home, browse, stats, requests, watchlist
+    case home, browse, stats, requests, watchlist, admin
 
     var id: String { rawValue }
 
@@ -17,6 +17,7 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
         case .stats:     String(localized: "Stats")
         case .requests:  String(localized: "Discover")
         case .watchlist: String(localized: "Watchlist")
+        case .admin:     String(localized: "Admin")
         }
     }
 
@@ -27,12 +28,16 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
         case .stats:     "chart.xyaxis.line"
         case .requests:  "sparkle.magnifyingglass"
         case .watchlist: "bookmark"
+        case .admin:     "server.rack"
         }
     }
 }
 
 enum BottomNavPrefs {
-    static let maxActive = 5
+    /// iPhone's tab bar shows five; a sixth would fold into a "More" tab. iPad and the Mac
+    /// have room for all six.
+    static let maxActiveCompact = 5
+    static let maxActiveRegular = 6
     static let orderKey = "bottomNavOrder"
     static let activeKey = "bottomNavActive"
     static let launchTabKey = "launchTab"
@@ -49,10 +54,10 @@ enum BottomNavPrefs {
         items.map(\.rawValue).joined(separator: ",")
     }
 
-    /// Every tab except Stats until the user chooses; Stats is opt-in, from Navigation
-    /// settings (or Appearance on Apple TV).
+    /// Every tab except Stats and Admin until the user chooses; both are opt-in, from
+    /// Navigation settings (or Appearance on Apple TV, which has no Admin).
     static func active(from raw: String) -> Set<BottomNavItem> {
-        guard !raw.isEmpty else { return Set(BottomNavItem.allCases).subtracting([.stats]) }
+        guard !raw.isEmpty else { return Set(BottomNavItem.allCases).subtracting([.stats, .admin]) }
         return Set(raw.split(separator: ",").compactMap { BottomNavItem(rawValue: String($0)) })
     }
 

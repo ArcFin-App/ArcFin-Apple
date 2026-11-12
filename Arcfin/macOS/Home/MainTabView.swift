@@ -15,8 +15,11 @@ struct MainTabView: View {
     @State private var selectedTab = BottomNavItem(rawValue: UserDefaults.standard.string(forKey: BottomNavPrefs.launchTabKey) ?? "") ?? .home
 
     private var visibleTabs: [BottomNavItem] {
-        MainTabs.visible(orderString: orderString, activeString: activeString, seerrConfigured: seerrRepo.isConfigured)
+        MainTabs.visible(orderString: orderString, activeString: activeString, seerrConfigured: seerrRepo.isConfigured,
+                         isAdmin: authManager.isAdmin, limit: tabLimit)
     }
+
+    private var tabLimit: Int { BottomNavPrefs.maxActiveRegular }
 
     @ViewBuilder
     private func tabDestination(_ tab: BottomNavItem) -> some View {
@@ -26,6 +29,7 @@ struct MainTabView: View {
         case .stats:     StatsView()
         case .requests:  SeerrView()
         case .watchlist: NavigationStack { WatchlistView() }
+        case .admin:     NavigationStack { AdminView() }
         }
     }
 
@@ -41,6 +45,8 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
+            .adminTabOffer(limit: tabLimit)
+            .onChange(of: visibleTabs) { if !visibleTabs.contains(selectedTab) { selectedTab = .home } }
             .sheet(item: $tagEditor.item) { item in
                 EditTagsSheet(item: item)
             }

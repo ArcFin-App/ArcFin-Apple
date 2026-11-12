@@ -100,6 +100,12 @@
 			);
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
+				Shared/Admin/AdminActivityView.swift = (ios, macos, );
+				Shared/Admin/AdminSessions.swift = (ios, macos, );
+				Shared/Admin/AdminSessionsView.swift = (ios, macos, );
+				Shared/Admin/AdminTabOffer.swift = (ios, macos, );
+				Shared/Admin/AdminTasksView.swift = (ios, macos, );
+				Shared/Admin/AdminView.swift = (ios, macos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
 				iOS/App/ArcfinScenes.swift = (ios, );
 				iOS/App/ContentView.swift = (ios, );
@@ -177,7 +183,6 @@
 				iOS/Seerr/SeerrView.swift = (ios, );
 				iOS/Seerr/WatchlistView.swift = (ios, );
 				iOS/Settings/AddServerFlowView.swift = (ios, );
-				iOS/Settings/AdminSessionsView.swift = (ios, );
 				iOS/Settings/AppearanceView.swift = (ios, );
 				iOS/Settings/BottomNavSettingsView.swift = (ios, );
 				iOS/Settings/CustomHeadersView.swift = (ios, );
@@ -275,7 +280,6 @@
 				macOS/Seerr/SeerrView.swift = (macos, );
 				macOS/Seerr/WatchlistView.swift = (macos, );
 				macOS/Settings/AddServerFlowView.swift = (macos, );
-				macOS/Settings/AdminSessionsView.swift = (macos, );
 				macOS/Settings/AppearanceView.swift = (macos, );
 				macOS/Settings/BottomNavSettingsView.swift = (macos, );
 				macOS/Settings/CustomHeadersView.swift = (macos, );

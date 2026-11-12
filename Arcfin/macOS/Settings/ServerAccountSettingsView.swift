@@ -34,9 +34,9 @@ struct ServerAccountSettingsView: View {
                 }
                 if authManager.isAdmin {
                     NavigationLink {
-                        AdminSessionsView()
+                        AdminView()
                     } label: {
-                        TVRowLabelText(title: "Active Sessions", detail: "Who's watching on your server right now.")
+                        TVRowLabelText(title: "Admin", detail: "The server's dashboard, sessions, tasks and activity.")
                     }
                 }
             }
