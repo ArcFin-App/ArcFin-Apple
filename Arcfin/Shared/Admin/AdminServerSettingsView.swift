@@ -13,17 +13,30 @@ final class AdminConfigModel {
     private var original: [String: Any] = [:]
     private(set) var isLoading = true
     private(set) var isSaving = false
+    private(set) var version: ServerVersion?
     var error: String?
     var saved = false
+    /// Changed settings the server didn't keep as sent, after a save.
+    var notKept: [String] = []
 
     init(section: String?) { self.section = section }
 
-    var hasChanges: Bool { !NSDictionary(dictionary: values).isEqual(to: original) }
+    var hasChanges: Bool { !ServerEditGuard.changedKeys(from: original, to: values).isEmpty }
+    var compatibility: ServerCompatibility.Status { ServerCompatibility.status(version) }
 
-    func has(_ key: String) -> Bool { values[key] != nil && !(values[key] is NSNull) }
+    /// Shown only when the server sends the setting and its version has it.
+    func has(_ key: String) -> Bool {
+        values[key] != nil && !(values[key] is NSNull) && ServerCompatibility.allows(key, on: version)
+    }
+
+    /// Whether a choice of a setting exists in this server's version.
+    func offers(_ key: String, _ value: String) -> Bool {
+        ServerCompatibility.allows("\(key)=\(value)", on: version)
+    }
 
     func load(authManager: AuthManager) async {
         guard let access = AdminAccess.session(authManager) else { return }
+        version = await ServerVersions.version(for: access.credential)
         do {
             let data = try await JellyfinAdminClient().configuration(section, credential: access.credential, authHeader: access.header)
             values = (try JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
@@ -36,19 +49,36 @@ final class AdminConfigModel {
     }
 
     func save(authManager: AuthManager) {
+        guard compatibility.canSave else { return }
+        let mismatched = ServerEditGuard.mismatches(from: original, to: values)
+        guard mismatched.isEmpty else {
+            error = String(localized: "Nothing was saved: \(ServerEditGuard.describe(mismatched)) didn't match what the server expects.")
+            return
+        }
         guard let access = AdminAccess.session(authManager),
               let data = try? JSONSerialization.data(withJSONObject: values) else { return }
+        let changed = ServerEditGuard.changedKeys(from: original, to: values), sent = values
         isSaving = true
         Task {
             defer { isSaving = false }
+            let client = JellyfinAdminClient()
             do {
-                try await JellyfinAdminClient().setConfiguration(section, data, credential: access.credential, authHeader: access.header)
-                original = values
-                saved = true
-                HapticManager.impact(.light)
+                try await client.setConfiguration(section, data, credential: access.credential, authHeader: access.header)
             } catch {
                 self.error = String(localized: "The server didn't take the change.")
+                return
             }
+            // What the server kept, read back, so a setting it dropped or reset isn't reported as saved.
+            if let reread = try? await client.configuration(section, credential: access.credential, authHeader: access.header),
+               let object = try? JSONSerialization.jsonObject(with: reread) as? [String: Any] {
+                notKept = ServerEditGuard.notKept(changed, sent: sent, reread: object)
+                values = object
+                original = object
+            } else {
+                original = values
+            }
+            if notKept.isEmpty { saved = true }
+            HapticManager.impact(.light)
         }
     }
 
@@ -94,13 +124,16 @@ private struct AdminConfigPage<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     @Environment(AuthManager.self) private var authManager
+    @State private var confirmUntested = false
 
     var body: some View {
         List {
             if model.isLoading {
                 ProgressView().frame(maxWidth: .infinity)
             } else {
+                AdminCompatibilityNote(status: model.compatibility)
                 content()
+                    .disabled(!model.compatibility.canSave)
                 if restartNote {
                     Section {
                         Label("Some of these take effect only after the server restarts, from the Admin tab.", systemImage: "arrow.clockwise.circle")
@@ -115,11 +148,21 @@ private struct AdminConfigPage<Content: View>: View {
         .arcfinNavTitleLarge(title)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { model.save(authManager: authManager) }
-                    .disabled(!model.hasChanges || model.isSaving)
+                Button("Save") {
+                    if model.compatibility.needsConfirmation { confirmUntested = true } else { model.save(authManager: authManager) }
+                }
+                .disabled(!model.hasChanges || model.isSaving || !model.compatibility.canSave)
             }
         }
         .task { await model.load(authManager: authManager) }
+        .untestedServerConfirmation(isPresented: $confirmUntested, status: model.compatibility) {
+            model.save(authManager: authManager)
+        }
+        .alert("Not All Saved", isPresented: Binding(get: { !model.notKept.isEmpty }, set: { if !$0 { model.notKept = [] } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The server didn't keep \(ServerEditGuard.describe(model.notKept)) as sent. The page now shows what it has.")
+        }
         .alert("Couldn't Do That", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -144,7 +187,8 @@ private struct AdminNumberField: View {
         HStack {
             Text(title)
             Spacer()
-            TextField("0", value: $value, format: .number)
+            // No thousands separator: ports, limits and counts read as plain numbers.
+            TextField("0", value: $value, format: .number.grouping(.never))
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
                 .frame(maxWidth: 110)
@@ -234,7 +278,9 @@ struct AdminEncodingSettingsView: View {
             Section {
                 if model.has("HardwareAccelerationType") {
                     Picker("Hardware Acceleration", selection: model.text("HardwareAccelerationType")) {
-                        ForEach(Self.accelerations, id: \.value) { Text($0.label).tag($0.value) }
+                        ForEach(Self.accelerations.filter { model.offers("HardwareAccelerationType", $0.value) }, id: \.value) {
+                            Text($0.label).tag($0.value)
+                        }
                     }
                 }
                 if model.text("HardwareAccelerationType").wrappedValue != "none" {

@@ -167,6 +167,10 @@ private struct AdminUserDetailView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
     @State private var policy: [String: Any] = [:]
+    @State private var originalPolicy: [String: Any] = [:]
+    @State private var version: ServerVersion?
+    @State private var confirmUntested = false
+    @State private var notKept: [String] = []
     @State private var libraries: [JellyfinLibraryFolder] = []
     @State private var isLoading = true
     @State private var isSaving = false
@@ -220,10 +224,11 @@ private struct AdminUserDetailView: View {
             if isLoading {
                 ProgressView().frame(maxWidth: .infinity)
             } else {
+                AdminCompatibilityNote(status: ServerCompatibility.status(version))
                 ForEach(Self.groups.indices, id: \.self) { index in
                     let group = Self.groups[index]
                     Section(group.title) {
-                        ForEach(group.switches.filter { policy[$0.key] is Bool }, id: \.key) { entry in
+                        ForEach(group.switches.filter { policy[$0.key] is Bool && ServerCompatibility.allows($0.key, on: version) }, id: \.key) { entry in
                             Toggle(entry.title, isOn: flag(entry.key))
                                 .disabled(isSelf && (entry.key == "IsAdministrator" || entry.key == "IsDisabled"))
                         }
@@ -261,10 +266,20 @@ private struct AdminUserDetailView: View {
         .arcfinNavTitleLarge(user.name)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { save() }.disabled(isLoading || isSaving)
+                Button("Save") {
+                    if ServerCompatibility.status(version).needsConfirmation { confirmUntested = true } else { save() }
+                }
+                .disabled(isLoading || isSaving || !ServerCompatibility.status(version).canSave
+                          || ServerEditGuard.changedKeys(from: originalPolicy, to: policy).isEmpty)
             }
         }
         .task { await load() }
+        .untestedServerConfirmation(isPresented: $confirmUntested, status: ServerCompatibility.status(version)) { save() }
+        .alert("Not All Saved", isPresented: Binding(get: { !notKept.isEmpty }, set: { if !$0 { notKept = [] } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The server didn't keep \(ServerEditGuard.describe(notKept)) as sent. The page now shows what it has.")
+        }
         .alert("Set Password", isPresented: $showPassword) {
             SecureField("New Password", text: $password)
             Button("Set") {
@@ -310,10 +325,12 @@ private struct AdminUserDetailView: View {
 
     private func load() async {
         guard let access = AdminAccess.session(authManager) else { return }
+        version = await ServerVersions.version(for: access.credential)
         async let policyData = model.admin.policy(userId: user.id, credential: access.credential, authHeader: access.header)
         async let folders = model.admin.libraries(credential: access.credential, authHeader: access.header)
         if let data = try? await policyData, let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             policy = object
+            originalPolicy = object
         } else {
             model.actionError = String(localized: "Couldn't load \(user.name)'s permissions.")
         }
@@ -322,13 +339,35 @@ private struct AdminUserDetailView: View {
     }
 
     private func save() {
-        guard let data = try? JSONSerialization.data(withJSONObject: policy) else { return }
-        isSaving = true
-        model.perform(authManager, done: String(localized: "\(user.name)'s permissions were saved."),
-                      failure: String(localized: "The permissions weren't saved.")) { admin, credential, header in
-            try await admin.setPolicy(userId: user.id, data, credential: credential, authHeader: header)
+        guard ServerCompatibility.status(version).canSave else { return }
+        let mismatched = ServerEditGuard.mismatches(from: originalPolicy, to: policy)
+        guard mismatched.isEmpty else {
+            model.actionError = String(localized: "Nothing was saved: \(ServerEditGuard.describe(mismatched)) didn't match what the server expects.")
+            return
         }
-        isSaving = false
+        guard let access = AdminAccess.session(authManager),
+              let data = try? JSONSerialization.data(withJSONObject: policy) else { return }
+        let changed = ServerEditGuard.changedKeys(from: originalPolicy, to: policy), sent = policy
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                try await model.admin.setPolicy(userId: user.id, data, credential: access.credential, authHeader: access.header)
+            } catch {
+                model.actionError = String(localized: "The permissions weren't saved.")
+                return
+            }
+            // What the server kept, read back, so a permission it refused isn't reported as saved.
+            if let reread = try? await model.admin.policy(userId: user.id, credential: access.credential, authHeader: access.header),
+               let object = try? JSONSerialization.jsonObject(with: reread) as? [String: Any] {
+                notKept = ServerEditGuard.notKept(changed, sent: sent, reread: object)
+                policy = object
+                originalPolicy = object
+            }
+            if notKept.isEmpty { model.actionDone = String(localized: "\(user.name)'s permissions were saved.") }
+            HapticManager.impact(.light)
+            await model.load(authManager: authManager)
+        }
     }
 }
 

@@ -160,6 +160,17 @@ public struct JellyfinAdminClient: Sendable {
             localAddress: response.localAddress)
     }
 
+    /// The server's version from its public info, which needs no sign-in, e.g. "10.11.2".
+    public func version(baseURL: URL) async throws -> String {
+        var req = URLRequest(url: baseURL.appendingPathComponent("System/Info/Public"))
+        req.timeoutInterval = 10
+        let (data, response) = try await URLSession.arcfin.data(for: req)
+        try Self.check(response)
+        guard let version = (try JSONSerialization.jsonObject(with: data) as? [String: Any])?["Version"] as? String
+        else { throw URLError(.cannotParseResponse) }
+        return version
+    }
+
     public func restart(credential: ServerCredential, authHeader: String) async throws {
         try await send("POST", "System/Restart", credential: credential, authHeader: authHeader)
     }

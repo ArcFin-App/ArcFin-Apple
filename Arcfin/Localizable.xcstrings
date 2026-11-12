@@ -5825,6 +5825,70 @@
         }
       }
     },
+    "Arcfin hasn't been checked with Jellyfin %@. Only the settings you changed are different from what the server has, and Arcfin checks afterwards that it kept them." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin wurde noch nicht mit Jellyfin %@ geprüft. Nur die geänderten Einstellungen weichen von denen des Servers ab, und Arcfin prüft danach, ob er sie behalten hat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin no se ha probado con Jellyfin %@. Solo cambian los ajustes que has modificado, y Arcfin comprueba después que el servidor los haya guardado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin n'a pas été vérifié avec Jellyfin %@. Seuls les réglages modifiés diffèrent de ceux du serveur, et Arcfin vérifie ensuite qu'il les a conservés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin non è stato verificato con Jellyfin %@. Cambiano solo le impostazioni che hai modificato e Arcfin controlla poi che il server le abbia mantenute."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ArcfinはJellyfin %@で確認されていません。変わるのは変更した設定だけで、保存後にサーバーが保持したかを確認します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin은 Jellyfin %@에서 확인되지 않았습니다. 바꾼 설정만 서버와 달라지며, 저장 후 서버가 유지했는지 확인합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin is niet gecontroleerd met Jellyfin %@. Alleen de instellingen die je hebt gewijzigd verschillen van die van de server, en Arcfin controleert daarna of hij ze heeft gehouden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin não foi verificado com o Jellyfin %@. Só os ajustes que você mudou ficam diferentes dos do servidor, e o Arcfin confere depois se ele os manteve."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin не проверялся с Jellyfin %@. Изменятся только настройки, которые вы поменяли, а затем Arcfin проверит, что сервер их сохранил."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 尚未在 Jellyfin %@ 上验证过。只有你修改的设置会与服务器不同，Arcfin 之后会检查服务器是否保留了它们。"
+          }
+        }
+      }
+    },
     "Artwork" : {
       "localizations" : {
         "de" : {
@@ -18945,6 +19009,134 @@
         }
       }
     },
+    "Jellyfin %@ is newer than Arcfin has been checked with. Saving still works, but Arcfin asks first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@ ist neuer als die geprüften Versionen. Speichern geht weiterhin, Arcfin fragt aber vorher."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@ es más reciente que las versiones probadas con Arcfin. Puedes guardar, pero Arcfin te preguntará antes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@ est plus récent que les versions vérifiées avec Arcfin. L'enregistrement fonctionne, mais Arcfin demande d'abord."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@ è più recente delle versioni verificate con Arcfin. Il salvataggio funziona, ma Arcfin chiede prima."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@はArcfinで確認したバージョンより新しいです。保存はできますが、先に確認します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@은(는) Arcfin에서 확인한 버전보다 최신입니다. 저장은 되지만 먼저 확인합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@ is nieuwer dan Arcfin is gecontroleerd. Opslaan werkt nog, maar Arcfin vraagt het eerst."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Jellyfin %@ é mais novo do que as versões verificadas com o Arcfin. Dá para salvar, mas o Arcfin pergunta antes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@ новее версий, с которыми проверялся Arcfin. Сохранять можно, но Arcfin сначала спросит."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %@ 比 Arcfin 已验证的版本更新。仍可保存，但 Arcfin 会先询问。"
+          }
+        }
+      }
+    },
+    "Jellyfin %@ is older than Arcfin supports for editing (%@ and later), so these settings can only be viewed here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@ ist älter als die Versionen, die Arcfin bearbeiten kann (ab %2$@), deshalb lassen sich diese Einstellungen hier nur ansehen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@ es anterior a las versiones que Arcfin puede editar (%2$@ y posteriores), así que aquí solo se pueden ver estos ajustes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@ est plus ancien que ce qu'Arcfin peut modifier (%2$@ et ultérieur) : ces réglages sont ici en lecture seule."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@ è precedente alle versioni che Arcfin può modificare (%2$@ e successive), quindi qui queste impostazioni si possono solo vedere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@はArcfinで編集できるバージョン（%2$@以降）より古いため、ここでは表示のみできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@은(는) Arcfin에서 편집할 수 있는 버전(%2$@ 이상)보다 오래되어 여기서는 보기만 할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@ is ouder dan wat Arcfin kan bewerken (%2$@ en later), dus deze instellingen zijn hier alleen te bekijken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Jellyfin %1$@ é mais antigo do que o Arcfin consegue editar (%2$@ ou posterior), então aqui estes ajustes só podem ser vistos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@ старше версий, которые Arcfin может изменять (%2$@ и новее), поэтому здесь эти настройки только для просмотра."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin %1$@ 早于 Arcfin 支持编辑的版本（%2$@ 及更高），因此这里只能查看这些设置。"
+          }
+        }
+      }
+    },
     "Join only" : {
       "localizations" : {
         "de" : {
@@ -23105,6 +23297,70 @@
         }
       }
     },
+    "Not All Saved" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nicht alles gespeichert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se guardó todo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tout n'a pas été enregistré"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non tutto è stato salvato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "一部が保存されませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "일부가 저장되지 않음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niet alles opgeslagen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nem tudo foi salvo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сохранено не всё"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "未全部保存"
+          }
+        }
+      }
+    },
     "Not Enough Space" : {
       "localizations" : {
         "de" : {
@@ -23485,6 +23741,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "节目指南中目前没有此类节目。"
+          }
+        }
+      }
+    },
+    "Nothing was saved: %@ didn't match what the server expects." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nichts gespeichert: %@ passte nicht zu dem, was der Server erwartet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se guardó nada: %@ no coincidía con lo que espera el servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rien n'a été enregistré : %@ ne correspondait pas à ce qu'attend le serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non è stato salvato nulla: %@ non corrispondeva a ciò che il server si aspetta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "何も保存されませんでした：%@がサーバーの想定と一致しませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "아무것도 저장되지 않았습니다: %@이(가) 서버가 예상하는 형식과 맞지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niets opgeslagen: %@ kwam niet overeen met wat de server verwacht."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada foi salvo: %@ não corresponde ao que o servidor espera."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ничего не сохранено: %@ не соответствует тому, что ожидает сервер."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "未保存任何内容：%@与服务器预期的不符。"
           }
         }
       }
@@ -30973,6 +31293,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "秒"
+          }
+        }
+      }
+    },
+    "Save Anyway" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trotzdem speichern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Guardar igualmente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enregistrer quand même"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salva comunque"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "保存する"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "그래도 저장"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toch opslaan"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salvar mesmo assim"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Всё равно сохранить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "仍然保存"
+          }
+        }
+      }
+    },
+    "Save to a Newer Server?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Auf einem neueren Server speichern?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Guardar en un servidor más reciente?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enregistrer sur un serveur plus récent ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salvare su un server più recente?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新しいサーバーに保存しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "최신 서버에 저장할까요?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opslaan op een nieuwere server?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salvar num servidor mais novo?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сохранить на более новом сервере?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "保存到较新的服务器？"
           }
         }
       }
@@ -38525,6 +38973,198 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "扫描没有开始。"
+          }
+        }
+      }
+    },
+    "The server didn't keep %@ as sent. The editor now shows what it has." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server hat %@ nicht wie gesendet behalten. Der Editor zeigt jetzt, was er hat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor no guardó %@ tal como se envió. El editor muestra ahora lo que tiene."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur n'a pas conservé %@ tel qu'envoyé. L'éditeur affiche maintenant ce qu'il a."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non ha mantenuto %@ come inviato. L'editor mostra ora ciò che ha."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーは%@を送信どおりに保持しませんでした。エディタにはサーバーの内容を表示しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 %@을(를) 보낸 대로 유지하지 않았습니다. 편집기에 현재 서버 값을 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server heeft %@ niet gehouden zoals verstuurd. De editor toont nu wat hij heeft."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não manteve %@ como enviado. O editor agora mostra o que ele tem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер не сохранил %@ в том виде, как отправлено. Сейчас показано то, что на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器未按发送的内容保留%@。编辑器现在显示服务器中的内容。"
+          }
+        }
+      }
+    },
+    "The server didn't keep %@ as sent. The page now shows what it has." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server hat %@ nicht wie gesendet behalten. Die Seite zeigt jetzt, was er hat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor no guardó %@ tal como se envió. La página muestra ahora lo que tiene."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur n'a pas conservé %@ tel qu'envoyé. La page affiche maintenant ce qu'il a."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non ha mantenuto %@ come inviato. La pagina mostra ora ciò che ha."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーは%@を送信どおりに保持しませんでした。このページにはサーバーの内容を表示しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 %@을(를) 보낸 대로 유지하지 않았습니다. 페이지에 현재 서버 값을 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server heeft %@ niet gehouden zoals verstuurd. De pagina toont nu wat hij heeft."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não manteve %@ como enviado. A página agora mostra o que ele tem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер не сохранил %@ в том виде, как отправлено. Сейчас показано то, что на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器未按发送的内容保留%@。页面现在显示服务器中的内容。"
+          }
+        }
+      }
+    },
+    "The server didn't keep every tag as sent. The list now shows what it has." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Server hat nicht alle Tags wie gesendet behalten. Die Liste zeigt jetzt, was er hat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El servidor no guardó todas las etiquetas tal como se enviaron. La lista muestra ahora lo que tiene."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le serveur n'a pas conservé tous les tags tels qu'envoyés. La liste affiche maintenant ce qu'il a."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il server non ha mantenuto tutti i tag come inviati. L'elenco mostra ora ciò che ha."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーはすべてのタグを送信どおりに保持しませんでした。リストにはサーバーの内容を表示しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버가 모든 태그를 보낸 대로 유지하지 않았습니다. 목록에 현재 서버 값을 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De server heeft niet alle tags gehouden zoals verstuurd. De lijst toont nu wat hij heeft."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O servidor não manteve todas as tags como enviadas. A lista agora mostra o que ele tem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер сохранил не все теги в отправленном виде. В списке показано то, что на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器未按发送的内容保留所有标签。列表现在显示服务器中的内容。"
           }
         }
       }

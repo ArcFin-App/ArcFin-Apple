@@ -1086,6 +1086,8 @@ public struct JellyfinMediaClient: Sendable {
     /// only its tags are changed and it's posted as it came; admins only.
     public func setTags(credential: ServerCredential, authHeader: String, itemId: String, tags: [String]) async throws {
         var object = try await itemObject(credential: credential, authHeader: authHeader, itemId: itemId)
+        // Only replaces a list with a list: a server that keeps tags some other way is left alone.
+        if let existing = object["Tags"], !(existing is [Any]), !(existing is NSNull) { throw URLError(.cannotParseResponse) }
         object["Tags"] = tags
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Items/\(itemId)"))
         req.httpMethod = "POST"

@@ -17,8 +17,11 @@ struct AdminMetadataEditor: View {
     @State private var isSaving = false
     @State private var message: String?
     @State private var confirmReplace = false
+    @State private var version: ServerVersion?
+    @State private var confirmUntested = false
 
-    private var hasChanges: Bool { !NSDictionary(dictionary: values).isEqual(to: original) }
+    private var hasChanges: Bool { !ServerEditGuard.changedKeys(from: original, to: values).isEmpty }
+    private var compatibility: ServerCompatibility.Status { ServerCompatibility.status(version) }
 
     var body: some View {
         NavigationStack {
@@ -26,7 +29,9 @@ struct AdminMetadataEditor: View {
                 if isLoading {
                     ProgressView().frame(maxWidth: .infinity)
                 } else {
+                    AdminCompatibilityNote(status: compatibility)
                     details
+                        .disabled(!compatibility.canSave)
                     Section {
                         Button { refresh(replace: false) } label: {
                             Label("Refresh Metadata", systemImage: "arrow.clockwise")
@@ -60,10 +65,14 @@ struct AdminMetadataEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }.disabled(!hasChanges || isSaving)
+                    Button("Save") {
+                        if compatibility.needsConfirmation { confirmUntested = true } else { save() }
+                    }
+                    .disabled(!hasChanges || isSaving || !compatibility.canSave)
                 }
             }
             .task { await load() }
+            .untestedServerConfirmation(isPresented: $confirmUntested, status: compatibility) { save() }
             .alert("Replace All Metadata?", isPresented: $confirmReplace) {
                 Button("Replace", role: .destructive) { refresh(replace: true) }
                 Button("Cancel", role: .cancel) {}
@@ -160,6 +169,7 @@ struct AdminMetadataEditor: View {
 
     private func load() async {
         guard let access = AdminAccess.session(authManager) else { return }
+        version = await ServerVersions.version(for: access.credential)
         if let data = try? await JellyfinAdminClient().item(id: item.id, credential: access.credential, authHeader: access.header),
            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             values = object
@@ -171,18 +181,38 @@ struct AdminMetadataEditor: View {
     }
 
     private func save() {
+        guard compatibility.canSave else { return }
+        let mismatched = ServerEditGuard.mismatches(from: original, to: values)
+        guard mismatched.isEmpty else {
+            message = String(localized: "Nothing was saved: \(ServerEditGuard.describe(mismatched)) didn't match what the server expects.")
+            return
+        }
         guard let access = AdminAccess.session(authManager),
               let data = try? JSONSerialization.data(withJSONObject: values) else { return }
+        let changed = ServerEditGuard.changedKeys(from: original, to: values), sent = values
         isSaving = true
         Task {
             defer { isSaving = false }
+            let client = JellyfinAdminClient()
             do {
-                try await JellyfinAdminClient().updateItem(id: item.id, data, credential: access.credential, authHeader: access.header)
-                HapticManager.impact(.light)
-                dismiss()
+                try await client.updateItem(id: item.id, data, credential: access.credential, authHeader: access.header)
             } catch {
                 message = String(localized: "The server didn't take the change.")
+                return
             }
+            // What the server kept, read back, so a detail it dropped isn't reported as saved.
+            if let reread = try? await client.item(id: item.id, credential: access.credential, authHeader: access.header),
+               let object = try? JSONSerialization.jsonObject(with: reread) as? [String: Any] {
+                let lost = ServerEditGuard.notKept(changed, sent: sent, reread: object)
+                guard lost.isEmpty else {
+                    values = object
+                    original = object
+                    message = String(localized: "The server didn't keep \(ServerEditGuard.describe(lost)) as sent. The editor now shows what it has.")
+                    return
+                }
+            }
+            HapticManager.impact(.light)
+            dismiss()
         }
     }
 
