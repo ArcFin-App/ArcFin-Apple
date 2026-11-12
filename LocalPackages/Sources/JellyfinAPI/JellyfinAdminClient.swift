@@ -45,6 +45,37 @@ public struct JellyfinActivityEntry: Sendable, Identifiable, Equatable {
     public let severity: String
 }
 
+/// A library as the server configures it: its folders and kind.
+public struct JellyfinLibraryFolder: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let name: String
+    public let collectionType: String?
+    public let locations: [String]
+    /// 0–100 while the library scans.
+    public let refreshProgress: Double?
+}
+
+/// A server user, with the permissions the admin screens show.
+public struct JellyfinUser: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let name: String
+    public let hasPassword: Bool
+    public let lastActivity: Date?
+    public let isAdministrator: Bool
+    public let isDisabled: Bool
+    public let primaryImageTag: String?
+}
+
+/// A device that has signed in to the server.
+public struct JellyfinDevice: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let name: String
+    public let appName: String
+    public let appVersion: String?
+    public let lastUserName: String?
+    public let lastActivity: Date?
+}
+
 // MARK: - Client
 
 /// The server's admin endpoints. Every call needs an administrator's session.
@@ -104,6 +135,135 @@ public struct JellyfinAdminClient: Sendable {
                                   type: $0.type ?? "", date: $0.date.flatMap(JellyfinDate.parse),
                                   severity: $0.severity ?? "Information")
         }
+    }
+
+    // MARK: Libraries
+
+    public func libraries(credential: ServerCredential, authHeader: String) async throws -> [JellyfinLibraryFolder] {
+        let response: [VirtualFolderResponse] = try await get("Library/VirtualFolders", credential: credential, authHeader: authHeader)
+        return response.map {
+            JellyfinLibraryFolder(id: $0.itemId ?? $0.name, name: $0.name, collectionType: $0.collectionType,
+                                  locations: $0.locations ?? [], refreshProgress: $0.refreshProgress)
+        }
+    }
+
+    /// Scans every library for new and changed files.
+    public func scanAllLibraries(credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Library/Refresh", credential: credential, authHeader: authHeader)
+    }
+
+    /// Scans one library; `replaceMetadata` also fetches every title's details again.
+    public func scanLibrary(id: String, replaceMetadata: Bool = false, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Items/\(id)/Refresh", query: [
+            .init(name: "Recursive", value: "true"),
+            .init(name: "MetadataRefreshMode", value: replaceMetadata ? "FullRefresh" : "Default"),
+            .init(name: "ImageRefreshMode", value: replaceMetadata ? "FullRefresh" : "Default"),
+            .init(name: "ReplaceAllMetadata", value: replaceMetadata ? "true" : "false"),
+            .init(name: "ReplaceAllImages", value: "false"),
+        ], credential: credential, authHeader: authHeader)
+    }
+
+    public func addLibraryFolder(library: String, path: String, credential: ServerCredential, authHeader: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["Name": library, "PathInfo": ["Path": path]])
+        try await send("POST", "Library/VirtualFolders/Paths", query: [.init(name: "refreshLibrary", value: "true")],
+                       body: body, credential: credential, authHeader: authHeader)
+    }
+
+    public func removeLibraryFolder(library: String, path: String, credential: ServerCredential, authHeader: String) async throws {
+        try await send("DELETE", "Library/VirtualFolders/Paths", query: [
+            .init(name: "name", value: library), .init(name: "path", value: path), .init(name: "refreshLibrary", value: "true"),
+        ], credential: credential, authHeader: authHeader)
+    }
+
+    public func renameLibrary(_ name: String, to newName: String, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Library/VirtualFolders/Name", query: [
+            .init(name: "name", value: name), .init(name: "newName", value: newName), .init(name: "refreshLibrary", value: "true"),
+        ], credential: credential, authHeader: authHeader)
+    }
+
+    /// `collectionType`: movies, tvshows, music, musicvideos, homevideos, boxsets, books, mixed (nil).
+    public func addLibrary(name: String, collectionType: String?, paths: [String], credential: ServerCredential, authHeader: String) async throws {
+        var query: [URLQueryItem] = [.init(name: "name", value: name), .init(name: "refreshLibrary", value: "true")]
+        if let collectionType { query.append(.init(name: "collectionType", value: collectionType)) }
+        query += paths.map { .init(name: "paths", value: $0) }
+        let body = try JSONSerialization.data(withJSONObject: ["LibraryOptions": [String: Any]()])
+        try await send("POST", "Library/VirtualFolders", query: query, body: body, credential: credential, authHeader: authHeader)
+    }
+
+    /// Removes the library from the server. Its files on disk stay.
+    public func removeLibrary(name: String, credential: ServerCredential, authHeader: String) async throws {
+        try await send("DELETE", "Library/VirtualFolders", query: [
+            .init(name: "name", value: name), .init(name: "refreshLibrary", value: "true"),
+        ], credential: credential, authHeader: authHeader)
+    }
+
+    /// The folders in a directory on the server's own disk, for picking a library folder.
+    /// An empty `path` lists the drives (or `/` on Linux and macOS).
+    public func directories(at path: String, credential: ServerCredential, authHeader: String) async throws -> [String] {
+        let response: [FileSystemEntry] = path.isEmpty
+            ? try await get("Environment/Drives", credential: credential, authHeader: authHeader)
+            : try await get("Environment/DirectoryContents", query: [
+                .init(name: "path", value: path), .init(name: "includeFiles", value: "false"),
+                .init(name: "includeDirectories", value: "true"),
+            ], credential: credential, authHeader: authHeader)
+        return response.map(\.path).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    // MARK: Users
+
+    public func users(credential: ServerCredential, authHeader: String) async throws -> [JellyfinUser] {
+        let response: [UserResponse] = try await get("Users", credential: credential, authHeader: authHeader)
+        return response.map {
+            JellyfinUser(id: $0.id, name: $0.name, hasPassword: $0.hasPassword ?? true,
+                         lastActivity: $0.lastActivityDate.flatMap(JellyfinDate.parse),
+                         isAdministrator: $0.policy?.isAdministrator ?? false,
+                         isDisabled: $0.policy?.isDisabled ?? false, primaryImageTag: $0.primaryImageTag)
+        }
+    }
+
+    @discardableResult
+    public func createUser(name: String, password: String, credential: ServerCredential, authHeader: String) async throws -> String? {
+        let body = try JSONSerialization.data(withJSONObject: ["Name": name, "Password": password])
+        let data = try await send("POST", "Users/New", body: body, credential: credential, authHeader: authHeader)
+        return (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["Id"] as? String
+    }
+
+    public func deleteUser(id: String, credential: ServerCredential, authHeader: String) async throws {
+        try await send("DELETE", "Users/\(id)", credential: credential, authHeader: authHeader)
+    }
+
+    /// Sets a user's password as an admin, without their current one. Empty clears it.
+    public func setPassword(userId: String, to password: String, credential: ServerCredential, authHeader: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["NewPw": password])
+        try await send("POST", "Users/\(userId)/Password", body: body, credential: credential, authHeader: authHeader)
+    }
+
+    /// The user's policy as the server sends it (JSON), so a change can post every field back,
+    /// including ones this app doesn't know about.
+    public func policy(userId: String, credential: ServerCredential, authHeader: String) async throws -> Data {
+        let data = try await send("GET", "Users/\(userId)", credential: credential, authHeader: authHeader)
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let policy = object["Policy"] else { throw URLError(.cannotParseResponse) }
+        return try JSONSerialization.data(withJSONObject: policy)
+    }
+
+    public func setPolicy(userId: String, _ policy: Data, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Users/\(userId)/Policy", body: policy, credential: credential, authHeader: authHeader)
+    }
+
+    // MARK: Devices
+
+    public func devices(credential: ServerCredential, authHeader: String) async throws -> [JellyfinDevice] {
+        let response: DevicesPage = try await get("Devices", credential: credential, authHeader: authHeader)
+        return response.items.map {
+            JellyfinDevice(id: $0.id, name: $0.name ?? $0.id, appName: $0.appName ?? "", appVersion: $0.appVersion,
+                           lastUserName: $0.lastUserName, lastActivity: $0.dateLastActivity.flatMap(JellyfinDate.parse))
+        }
+    }
+
+    /// Signs the device out and forgets it; it has to sign in again.
+    public func deleteDevice(id: String, credential: ServerCredential, authHeader: String) async throws {
+        try await send("DELETE", "Devices", query: [.init(name: "id", value: id)], credential: credential, authHeader: authHeader)
     }
 
     // MARK: Requests
@@ -200,5 +360,57 @@ private struct ActivityPage: Decodable {
         }
     }
     let items: [Entry]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+private struct VirtualFolderResponse: Decodable {
+    let name: String
+    let itemId: String?
+    let collectionType: String?
+    let locations: [String]?
+    let refreshProgress: Double?
+    enum CodingKeys: String, CodingKey {
+        case name = "Name", itemId = "ItemId", collectionType = "CollectionType", locations = "Locations"
+        case refreshProgress = "RefreshProgress"
+    }
+}
+
+private struct FileSystemEntry: Decodable {
+    let path: String
+    enum CodingKeys: String, CodingKey { case path = "Path" }
+}
+
+private struct UserResponse: Decodable {
+    struct Policy: Decodable {
+        let isAdministrator: Bool?
+        let isDisabled: Bool?
+        enum CodingKeys: String, CodingKey { case isAdministrator = "IsAdministrator", isDisabled = "IsDisabled" }
+    }
+    let id: String
+    let name: String
+    let hasPassword: Bool?
+    let lastActivityDate: String?
+    let primaryImageTag: String?
+    let policy: Policy?
+    enum CodingKeys: String, CodingKey {
+        case id = "Id", name = "Name", hasPassword = "HasPassword", lastActivityDate = "LastActivityDate"
+        case primaryImageTag = "PrimaryImageTag", policy = "Policy"
+    }
+}
+
+private struct DevicesPage: Decodable {
+    struct Device: Decodable {
+        let id: String
+        let name: String?
+        let appName: String?
+        let appVersion: String?
+        let lastUserName: String?
+        let dateLastActivity: String?
+        enum CodingKeys: String, CodingKey {
+            case id = "Id", name = "Name", appName = "AppName", appVersion = "AppVersion"
+            case lastUserName = "LastUserName", dateLastActivity = "DateLastActivity"
+        }
+    }
+    let items: [Device]
     enum CodingKeys: String, CodingKey { case items = "Items" }
 }

@@ -101,6 +101,19 @@ struct AdminView: View {
                 Text("Server")
             }
             Section {
+                NavigationLink { AdminLibrariesView() } label: {
+                    AdminRow(title: "Libraries", systemImage: "books.vertical", detail: nil)
+                }
+                NavigationLink { AdminUsersView() } label: {
+                    AdminRow(title: "Users", systemImage: "person.2", detail: nil)
+                }
+                NavigationLink { AdminDevicesView() } label: {
+                    AdminRow(title: "Devices", systemImage: "laptopcomputer.and.iphone", detail: nil)
+                }
+            } header: {
+                Text("Manage")
+            }
+            Section {
                 Button { confirmRestart = true } label: {
                     Label("Restart Server", systemImage: "arrow.clockwise")
                 }

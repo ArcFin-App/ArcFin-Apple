@@ -101,10 +101,12 @@
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
 				Shared/Admin/AdminActivityView.swift = (ios, macos, );
+				Shared/Admin/AdminLibrariesView.swift = (ios, macos, );
 				Shared/Admin/AdminSessions.swift = (ios, macos, );
 				Shared/Admin/AdminSessionsView.swift = (ios, macos, );
 				Shared/Admin/AdminTabOffer.swift = (ios, macos, );
 				Shared/Admin/AdminTasksView.swift = (ios, macos, );
+				Shared/Admin/AdminUsersView.swift = (ios, macos, );
 				Shared/Admin/AdminView.swift = (ios, macos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
 				iOS/App/ArcfinScenes.swift = (ios, );
