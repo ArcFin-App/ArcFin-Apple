@@ -561,9 +561,16 @@ private struct HomeSeerrShelf: View {
 /// A title's quick actions and details, at the bottom of a poster's long-press menu.
 struct HomeQuickLookMenu: View {
     let item: MediaItem
+    /// Play Trailer, under the quick actions so Mark as Watched sits right below Play.
+    var playTrailer: (() -> Void)? = nil
 
     var body: some View {
         ItemQuickActions(item: item)
+        if let playTrailer {
+            Button(action: playTrailer) {
+                Label("Play Trailer", systemImage: "play.rectangle")
+            }
+        }
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear {
             Label(String(year), systemImage: "calendar")

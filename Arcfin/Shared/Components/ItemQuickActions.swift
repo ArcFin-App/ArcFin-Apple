@@ -22,7 +22,7 @@ struct ItemQuickActions: View {
                 _ = try? await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: !played)
             }
         } label: {
-            Label(played ? "Mark Unwatched" : "Mark Watched", systemImage: played ? "eye.slash" : "eye")
+            Label(played ? "Mark as Unwatched" : "Mark as Watched", systemImage: played ? "eye.slash" : "checkmark")
         }
         if (item.userData?.playbackPositionTicks ?? 0) > 0, !played {
             Button {
@@ -48,6 +48,7 @@ struct ItemQuickActions: View {
             }
         }
         CopyItemMenu(item: item)
+        EditTagsButton(item: item)
     }
 
     private func perform(_ action: @escaping (JellyfinMediaClient, ServerCredential, String) async -> Void) {

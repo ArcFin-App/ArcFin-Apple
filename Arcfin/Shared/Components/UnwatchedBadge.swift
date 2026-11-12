@@ -4,16 +4,24 @@ import SwiftUI
 import JellyfinAPI
 
 /// How many episodes are left on a series, season or collection's poster, or a check once
-/// they're all watched. Settings › Appearance › Show Unwatched Count turns it off.
+/// they're all watched; a watched movie or episode gets the check too. Settings › Appearance
+/// › Show Unwatched Count turns it off.
 struct UnwatchedBadge: ViewModifier {
     let item: MediaItem
 
     @AppStorage("showUnwatchedCount") private var isShown = true
 
+    /// Episodes left, or 0 for the watched check. Movies and episodes only ever get the check.
     private var count: Int? {
-        guard [.series, .season, .boxSet].contains(item.type) else { return nil }
-        if let count = item.userData?.unplayedItemCount { return count }
-        return item.userData?.played == true ? 0 : nil
+        switch item.type {
+        case .series, .season, .boxSet:
+            if let count = item.userData?.unplayedItemCount { return count }
+            return item.userData?.played == true ? 0 : nil
+        case .movie, .episode:
+            return item.userData?.played == true ? 0 : nil
+        default:
+            return nil
+        }
     }
 
     func body(content: Content) -> some View {
