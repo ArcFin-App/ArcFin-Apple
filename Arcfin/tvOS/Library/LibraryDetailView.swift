@@ -257,7 +257,7 @@ struct LibraryDetailView: View {
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
         .focused($focusedItemID, equals: item.id)
-        .contextMenu(menuItems: { libraryMenu(item) }, preview: { LibraryItemPreview(item: item) })
+        .contextMenu(menuItems: { libraryMenu(item) }, preview: { LibraryItemPreview(item: item, imageURL: mediaRepo.imageURL(for: item)) })
     }
 
     private func showGroupCell(_ episodes: [MediaItem]) -> some View {
