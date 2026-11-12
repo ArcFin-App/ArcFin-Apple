@@ -61,7 +61,7 @@ let package = Package(
         // own LGPLv2.1 terms below).
         .package(
             url: "https://github.com/superuser404notfound/AetherEngine",
-            from: "7.62.1"
+            from: "7.63.0"
         ),
         // Fallback player engine — libVLC (LGPLv2.1) via a Swift 6/@Observable wrapper, used
         // when AetherEngine itself fails to open a source. Still directly selectable in
