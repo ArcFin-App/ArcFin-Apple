@@ -76,6 +76,10 @@ struct SeerrItemDetailContent: View {
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.md)
 
+                if let collection = model.collection {
+                    discoveryRow(collection.name, collection.parts, accessory: AnyView(requestCollectionButton))
+                }
+
                 TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.lg)
@@ -83,9 +87,6 @@ struct SeerrItemDetailContent: View {
                 if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
                 if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
                 if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
-                if let collection = model.collection {
-                    discoveryRow(collection.name, collection.parts, accessory: AnyView(requestCollectionButton))
-                }
 
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }

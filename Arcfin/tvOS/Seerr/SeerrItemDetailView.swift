@@ -228,10 +228,10 @@ struct SeerrItemDetailView: View {
                 .focusSection()
             if let seasons = detail?.seasons, !seasons.isEmpty { seasonsRow(seasons) }
             if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
+            if let collection = model.collection { collectionRow(collection) }
             if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
             if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
             if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
-            if let collection = model.collection { collectionRow(collection) }
             TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
                 .padding(.horizontal, 80)
                 .focusSection()
