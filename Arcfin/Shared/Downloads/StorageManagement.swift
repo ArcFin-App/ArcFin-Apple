@@ -72,6 +72,7 @@ struct StorageManagementContent: View {
     @Environment(DownloadManager.self) private var downloadManager
     @State private var pendingDelete: StoragePendingDelete?
     @State private var expandedShows: Set<String> = []
+    @State private var width: CGFloat = 0
     @State private var freeBytes: Int64?
 
     private var shows: [StorageManagement.Show] { StorageManagement.shows(in: items) }
@@ -108,20 +109,36 @@ struct StorageManagementContent: View {
                     description: Text("Downloaded movies and shows will appear here once you have some.")
                 )
             } else {
-                List {
-                    Section { summary }
-                    Section("Largest First") {
-                        ForEach(entries) { entry in
-                            switch entry {
-                            case .show(let show): showGroup(show)
-                            case .movie(let movie): movieRow(movie)
-                            }
+                // A wide window (Mac, iPad landscape) keeps the summary in a panel beside the
+                // list rather than stretching it across the top.
+                if width >= Self.wideLayoutWidth {
+                    HStack(alignment: .top, spacing: 0) {
+                        ScrollView {
+                            summary
+                                .padding(20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous)
+                                        .fill(DT.Color.backgroundSecondary)
+                                        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous)
+                                            .stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
+                                )
+                                .padding(20)
                         }
+                        .frame(width: 360)
+                        Divider().overlay(DT.Color.textPrimary.opacity(0.06))
+                        List { entriesSection }
+                            .arcfinListStyle()
                     }
+                } else {
+                    List {
+                        Section { summary }
+                        entriesSection
+                    }
+                    .arcfinListStyle()
                 }
-                .arcfinListStyle()
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .screenBackground()
         .onAppear(perform: refreshDeviceSpace)
         .onChange(of: items.count) { refreshDeviceSpace() }
@@ -139,6 +156,19 @@ struct StorageManagementContent: View {
             Button("Cancel", role: .cancel) {}
         } message: { pending in
             Text("Frees up \(StorageManagement.formatted(pending.sizeBytes)) on this device.")
+        }
+    }
+
+    private static let wideLayoutWidth: CGFloat = 820
+
+    private var entriesSection: some View {
+        Section("Largest First") {
+            ForEach(entries) { entry in
+                switch entry {
+                case .show(let show): showGroup(show)
+                case .movie(let movie): movieRow(movie)
+                }
+            }
         }
     }
 
@@ -318,9 +348,10 @@ private struct StorageRow<MenuContent: View>: View {
                 rowLabel
             }
             Text(StorageManagement.formatted(sizeBytes))
-                .font(.system(.caption, weight: .medium))
+                .font(.system(.footnote, weight: .medium))
                 .monospacedDigit()
                 .foregroundStyle(DT.Color.textSecondary)
+                .frame(minWidth: 64, alignment: .trailing)
             Menu(content: menu) { StorageMenuLabel() }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
@@ -352,12 +383,12 @@ private struct StorageRow<MenuContent: View>: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(.footnote, weight: artwork == nil ? .regular : .semibold))
+                    .font(.system(.subheadline, weight: artwork == nil ? .regular : .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 if let detail, !detail.isEmpty {
                     Text(detail)
-                        .font(.system(.caption2))
+                        .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(1)
                 }
