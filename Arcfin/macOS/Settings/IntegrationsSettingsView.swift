@@ -11,7 +11,7 @@ struct IntegrationsSettingsView: View {
     @AppStorage("seerrURL")            private var seerrURL             = ""
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 Toggle(isOn: $seerrDiscoverEnabled) {
                     TVRowLabelText(title: "Show Discover on Home", detail: "Adds your Seerr watchlist and its trending and popular rows to Home.")

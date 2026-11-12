@@ -10,6 +10,8 @@ struct PlayerFeatureToggleSections: View {
     @AppStorage("castEnabled") private var castEnabled = true
     @AppStorage("stillWatchingPromptEnabled") private var stillWatchingPromptEnabled = true
     @AppStorage("matchContentFrameRate") private var matchContentFrameRate = false
+    /// The Mac leaves the display's refresh rate alone, so the switch would do nothing there.
+    var showsFrameRateMatch = true
 
     var body: some View {
         Section {
@@ -44,12 +46,14 @@ struct PlayerFeatureToggleSections: View {
             .syncLocked("stillWatchingPromptEnabled", authManager)
         }
 
-        Section {
+        if showsFrameRateMatch {
+            Section {
             Toggle(isOn: $matchContentFrameRate) {
                 TVRowLabelText(title: "Match Content Frame Rate", detail: "Switches the display to the video's frame rate so motion doesn't judder. AVFoundation only; some TVs flash black when it switches.")
             }
             .tvListRow()
             .syncLocked("matchContentFrameRate", authManager)
+            }
         }
     }
 }

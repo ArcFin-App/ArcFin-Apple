@@ -11,7 +11,7 @@ struct PlaybackSettingsView: View {
     @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 SettingsPicker("Video Quality", detail: "Auto picks from your connection; a fixed choice caps every stream.", selection: $videoQuality,
                                options: VideoQuality.allCases) { q in

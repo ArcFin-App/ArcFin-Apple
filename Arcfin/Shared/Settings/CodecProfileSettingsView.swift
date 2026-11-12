@@ -15,7 +15,7 @@ struct CodecProfileSettingsView: View {
     @AppStorage(AV1Encoding.settingKey) private var allowAV1 = false
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 Toggle(isOn: $allowHEVC) {
                     TVRowLabelText(title: "Direct Play HEVC (H.265)", detail: "Turn off if HEVC videos stall or stay black on this device; they'll be converted to H.264 instead.")

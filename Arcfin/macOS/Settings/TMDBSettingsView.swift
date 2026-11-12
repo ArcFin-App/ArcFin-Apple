@@ -11,7 +11,7 @@ struct TMDBSettingsView: View {
     @State private var model = TMDBKeyModel()
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 SecureField("API key or read access token", text: $model.key)
                     .autocorrectionDisabled()

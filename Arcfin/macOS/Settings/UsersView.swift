@@ -30,7 +30,7 @@ struct UsersView: View {
     }
 
     var body: some View {
-        List {
+        SettingsForm {
             // ── Current profile ──────────────────────────────────────────
             if let active = activeProfile {
                 Section {

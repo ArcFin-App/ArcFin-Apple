@@ -28,7 +28,7 @@ struct NotificationsSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 Toggle(isOn: $notifyNewEpisodes) {
                     TVRowLabelText(title: "New Episodes", detail: "When a new episode arrives of a show in your Continue Watching or Next Up.")
@@ -61,13 +61,13 @@ struct NotificationsSettingsView: View {
                     }
                     .syncLocked("notifyServerEvents", authManager)
                     Toggle(isOn: $showsStreamBadge) {
-                        TVRowLabelText(title: "Show Active Streams on App Icon", detail: "The app icon's badge counts what's playing on the server.")
+                        TVRowLabelText(title: "Show Active Streams in the Dock", detail: "Arcfin's Dock icon counts what's playing on the server.")
                     }
                     .syncLocked(StreamBadge.key, authManager)
                 } header: {
                     Text("Admin")
                 } footer: {
-                    Text("The badge updates every half minute while Arcfin is open. In the background, the system decides how often Arcfin checks: on iPhone and iPad usually a few times a day.")
+                    Text("The badge updates every half minute while a window is open, and about every half hour while Arcfin runs in the background.")
                 }
             }
 

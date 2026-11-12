@@ -13,7 +13,7 @@ struct ProfileAccessView: View {
     private var rules: ProfileRules { .shared }
 
     var body: some View {
-        List {
+        SettingsForm {
             if let credential = authManager.state.credential {
                 identitySection(credential)
             }

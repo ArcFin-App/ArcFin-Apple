@@ -10,8 +10,8 @@ struct PlayerFeaturesSettingsView: View {
     @AppStorage("doubleTapToSkip") private var doubleTapToSkip = true
 
     var body: some View {
-        List {
-            PlayerFeatureToggleSections()
+        SettingsForm {
+            PlayerFeatureToggleSections(showsFrameRateMatch: false)
 
             Section {
                 Toggle(isOn: $doubleTapToSkip) {

@@ -24,7 +24,7 @@ struct SeerrPluginView: View {
     }
 
     var body: some View {
-        List {
+        SettingsForm {
             if isConfigured && !form.isEditing {
                 SeerrConnectionSummary(url: seerrURL, authMethod: seerrAuthMethod, username: seerrUsername,
                                        usesQuickConnect: seerrAuthMethod == .jellyfin && authManager.seerrPassword.isEmpty,

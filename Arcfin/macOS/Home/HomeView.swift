@@ -27,7 +27,7 @@ struct HomeView: View {
     @State private var model = HomeModel()
     @State private var hero = HomeHeroCarousel()
     @State private var showSettings = false
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
     @State private var trailerLaunchItem: MediaItem?
@@ -146,7 +146,7 @@ struct HomeView: View {
                     .help("Refresh")
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button { openSettings() } label: {
+                    Button { openWindow(id: MacSettingsWindow.id) } label: {
                         HomeAvatar()
                             .frame(width: 22, height: 22)
                     }

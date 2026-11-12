@@ -9,7 +9,7 @@ struct CustomHeadersView: View {
     @State private var model = CustomHeadersModel()
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 ForEach($model.headers) { $header in
                     VStack(alignment: .leading, spacing: 6) {

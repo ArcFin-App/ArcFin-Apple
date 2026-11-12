@@ -6,6 +6,8 @@ import AuthCore
 /// Arcfin › Settings… (⌘,): the same panes as the iPhone's Settings, in their own window with
 /// a sidebar, as Mac apps keep their settings.
 struct MacSettingsWindow: View {
+    static let id = "settings"
+
     private enum Pane: String, CaseIterable, Identifiable {
         case general, profile, playback, downloads, appearance, notifications, server, integrations
 
@@ -44,11 +46,12 @@ struct MacSettingsWindow: View {
         Group {
             // The main window holds the PIN lock; settings stay closed until it's passed.
             if AppServices.hasPassedLock, AppServices.authManager.state.credential != nil {
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: .constant(.all)) {
                     List(Pane.allCases, selection: $pane) { pane in
                         Label(pane.title, systemImage: pane.icon).tag(pane)
                     }
                     .navigationSplitViewColumnWidth(190)
+                    .toolbar(removing: .sidebarToggle)
                 } detail: {
                     NavigationStack {
                         detail(for: pane ?? .general)
@@ -81,5 +84,15 @@ struct MacSettingsWindow: View {
         case .server: ServerAccountSettingsView()
         case .integrations: IntegrationsSettingsView()
         }
+    }
+}
+
+/// Arcfin › Settings… (⌘,), opening the Settings window.
+struct SettingsMenuButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Settings…") { openWindow(id: MacSettingsWindow.id) }
+            .keyboardShortcut(",", modifiers: .command)
     }
 }
