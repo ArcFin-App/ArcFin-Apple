@@ -129,6 +129,7 @@ final class AuthManager {
             self.upsert(updated)
             self.state = .authenticated(updated)
         }
+        BottomNavPrefs.switchLayout(toProfile: cred.id.uuidString)
         refreshIsAdmin(for: cred)
         refreshArcfinSync(for: cred)
     }
@@ -306,6 +307,7 @@ final class AuthManager {
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
+        BottomNavPrefs.switchLayout(toProfile: credential.id.uuidString)
         refreshIsAdmin(for: credential)
         refreshArcfinSync(for: credential)
     }
@@ -317,6 +319,7 @@ final class AuthManager {
         upsert(credential)
         persist(active: credential)
         state = .authenticated(credential)
+        BottomNavPrefs.switchLayout(toProfile: credential.id.uuidString)
         refreshIsAdmin(for: credential)
         refreshArcfinSync(for: credential)
     }
@@ -324,6 +327,7 @@ final class AuthManager {
     func switchTo(_ credential: ServerCredential) {
         persist(active: credential)
         state = .authenticated(credential)
+        BottomNavPrefs.switchLayout(toProfile: credential.id.uuidString)
         refreshIsAdmin(for: credential)
         refreshArcfinSync(for: credential)
     }

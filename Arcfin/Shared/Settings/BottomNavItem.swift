@@ -65,3 +65,27 @@ enum BottomNavPrefs {
         items.map(\.rawValue).joined(separator: ",")
     }
 }
+
+extension BottomNavPrefs {
+    /// The profile whose tab layout the keys above hold.
+    private static let layoutProfileKey = "bottomNavProfile"
+    private static func storeKey(_ profile: String) -> String { "bottomNavLayout.\(profile)" }
+    private static var layoutKeys: [String] { [orderKey, activeKey, launchTabKey] }
+
+    /// Each profile keeps its own tabs: the layout in use is put away under the profile it
+    /// belonged to, and the new profile's comes back, or the defaults if it has none yet.
+    static func switchLayout(toProfile profile: String) {
+        let defaults = UserDefaults.standard
+        let current = defaults.string(forKey: layoutProfileKey)
+        defaults.set(profile, forKey: layoutProfileKey)
+        // The first time, the layout already there is this profile's.
+        guard let current, current != profile else { return }
+        var saved: [String: String] = [:]
+        for key in layoutKeys { saved[key] = defaults.string(forKey: key) }
+        defaults.set(saved, forKey: storeKey(current))
+        let restored = defaults.dictionary(forKey: storeKey(profile)) as? [String: String] ?? [:]
+        for key in layoutKeys {
+            if let value = restored[key] { defaults.set(value, forKey: key) } else { defaults.removeObject(forKey: key) }
+        }
+    }
+}
