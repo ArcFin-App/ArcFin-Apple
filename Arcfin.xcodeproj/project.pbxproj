@@ -102,6 +102,7 @@
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
 				Shared/Admin/AdminActivityView.swift = (ios, macos, );
 				Shared/Admin/AdminLibrariesView.swift = (ios, macos, );
+				Shared/Admin/AdminMetadataEditor.swift = (ios, macos, );
 				Shared/Admin/AdminMaintenanceViews.swift = (ios, macos, );
 				Shared/Admin/AdminPluginsView.swift = (ios, macos, );
 				Shared/Admin/AdminServerSettingsView.swift = (ios, macos, );
@@ -156,6 +157,7 @@
 				iOS/Platform/AppSheet.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
+				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/ExternalApps.swift = (ios, );
 				iOS/Platform/FieldBackground.swift = (ios, );
 				iOS/Platform/FocusRing.swift = (ios, );
@@ -255,6 +257,7 @@
 				macOS/Platform/AppSheet.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
+				macOS/Platform/AdminPlatform.swift = (macos, );
 				macOS/Platform/ExternalApps.swift = (macos, );
 				macOS/Platform/FieldBackground.swift = (macos, );
 				macOS/Platform/FocusRing.swift = (macos, );
@@ -349,6 +352,7 @@
 				tvOS/Platform/AppSheet.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
+				tvOS/Platform/AdminPlatform.swift = (tvos, );
 				tvOS/Platform/ExternalApps.swift = (tvos, );
 				tvOS/Platform/FieldBackground.swift = (tvos, );
 				tvOS/Platform/FocusRing.swift = (tvos, );

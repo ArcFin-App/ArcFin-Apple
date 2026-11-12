@@ -113,6 +113,28 @@ public struct JellyfinLogFile: Sendable, Identifiable, Equatable {
     public var id: String { name }
 }
 
+/// A match from a metadata provider, for Identify.
+public struct JellyfinRemoteMatch: Sendable, Identifiable {
+    public let id = UUID()
+    public let name: String
+    public let year: Int?
+    public let overview: String?
+    public let imageURL: URL?
+    public let provider: String?
+    /// The result as the server sent it, posted back unchanged to apply it.
+    public let json: Data
+}
+
+/// Artwork a metadata provider offers for a title.
+public struct JellyfinRemoteImage: Sendable, Identifiable, Equatable {
+    public var id: String { url.absoluteString }
+    public let url: URL
+    public let provider: String?
+    public let width: Int?
+    public let height: Int?
+    public let language: String?
+}
+
 /// A server backup (Jellyfin 10.11 and later).
 public struct JellyfinBackup: Sendable, Identifiable, Equatable {
     public let path: String
@@ -403,6 +425,70 @@ public struct JellyfinAdminClient: Sendable {
         try await send("POST", "Backup/Create", body: body, credential: credential, authHeader: authHeader)
     }
 
+    // MARK: Metadata
+
+    /// The item as JSON, for editing and posting back whole.
+    public func item(id: String, credential: ServerCredential, authHeader: String) async throws -> Data {
+        try await send("GET", "Users/\(credential.userID)/Items/\(id)", credential: credential, authHeader: authHeader)
+    }
+
+    public func updateItem(id: String, _ json: Data, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Items/\(id)", body: json, credential: credential, authHeader: authHeader)
+    }
+
+    /// Fetches the item's details again; `replace` overwrites what's there, artwork included.
+    public func refreshItem(id: String, replace: Bool, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Items/\(id)/Refresh", query: [
+            .init(name: "Recursive", value: "true"),
+            .init(name: "MetadataRefreshMode", value: "FullRefresh"),
+            .init(name: "ImageRefreshMode", value: replace ? "FullRefresh" : "Default"),
+            .init(name: "ReplaceAllMetadata", value: replace ? "true" : "false"),
+            .init(name: "ReplaceAllImages", value: replace ? "true" : "false"),
+        ], credential: credential, authHeader: authHeader)
+    }
+
+    /// Matches from the metadata providers. `kind` is the item type the search is for:
+    /// Movie, Series, BoxSet, Person, MusicAlbum, MusicArtist, Book or Trailer.
+    public func identify(itemId: String, kind: String, name: String, year: Int?,
+                         credential: ServerCredential, authHeader: String) async throws -> [JellyfinRemoteMatch] {
+        var info: [String: Any] = ["Name": name]
+        if let year { info["Year"] = year }
+        let body = try JSONSerialization.data(withJSONObject: ["SearchInfo": info, "ItemId": itemId, "IncludeDisabledProviders": false])
+        let data = try await send("POST", "Items/RemoteSearch/\(kind)", body: body, credential: credential, authHeader: authHeader)
+        let results = (try JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
+        return results.compactMap { result in
+            guard let name = result["Name"] as? String, let json = try? JSONSerialization.data(withJSONObject: result) else { return nil }
+            return JellyfinRemoteMatch(name: name, year: result["ProductionYear"] as? Int, overview: result["Overview"] as? String,
+                                       imageURL: (result["ImageUrl"] as? String).flatMap(URL.init(string:)),
+                                       provider: result["SearchProviderName"] as? String, json: json)
+        }
+    }
+
+    /// Makes the item that match, fetching its details and, with `replaceImages`, its artwork.
+    public func apply(_ match: JellyfinRemoteMatch, to itemId: String, replaceImages: Bool,
+                      credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Items/RemoteSearch/Apply/\(itemId)",
+                       query: [.init(name: "replaceAllImages", value: replaceImages ? "true" : "false")],
+                       body: match.json, credential: credential, authHeader: authHeader)
+    }
+
+    /// `type`: Primary, Backdrop, Logo, Thumb, Banner or Art.
+    public func remoteImages(itemId: String, type: String, credential: ServerCredential, authHeader: String) async throws -> [JellyfinRemoteImage] {
+        let response: RemoteImagesPage = try await get("Items/\(itemId)/RemoteImages", query: [
+            .init(name: "type", value: type), .init(name: "limit", value: "60"), .init(name: "includeAllLanguages", value: "true"),
+        ], credential: credential, authHeader: authHeader)
+        return response.images.compactMap { image in
+            guard let url = URL(string: image.url) else { return nil }
+            return JellyfinRemoteImage(url: url, provider: image.providerName, width: image.width, height: image.height, language: image.language)
+        }
+    }
+
+    public func setImage(itemId: String, type: String, from url: URL, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Items/\(itemId)/RemoteImages/Download", query: [
+            .init(name: "type", value: type), .init(name: "imageUrl", value: url.absoluteString),
+        ], credential: credential, authHeader: authHeader)
+    }
+
     // MARK: Server settings
 
     /// The server's configuration as JSON: the main one (nil), or a named section such as
@@ -615,4 +701,19 @@ private struct BackupResponse: Decodable {
     let serverVersion: String?
     let dateCreated: String?
     enum CodingKeys: String, CodingKey { case path = "Path", serverVersion = "ServerVersion", dateCreated = "DateCreated" }
+}
+
+private struct RemoteImagesPage: Decodable {
+    struct Image: Decodable {
+        let url: String
+        let providerName: String?
+        let width: Int?
+        let height: Int?
+        let language: String?
+        enum CodingKeys: String, CodingKey {
+            case url = "Url", providerName = "ProviderName", width = "Width", height = "Height", language = "Language"
+        }
+    }
+    let images: [Image]
+    enum CodingKeys: String, CodingKey { case images = "Images" }
 }

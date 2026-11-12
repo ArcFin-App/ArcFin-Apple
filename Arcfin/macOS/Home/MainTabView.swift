@@ -10,6 +10,7 @@ struct MainTabView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
     @Bindable private var tagEditor = TagEditor.shared
+    @Bindable private var metadataEditor = MetadataEditor.shared
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     @AppStorage(StreamBadge.key) private var showsStreamBadge = false
@@ -54,6 +55,9 @@ struct MainTabView: View {
             .onChange(of: visibleTabs) { if !visibleTabs.contains(selectedTab) { selectedTab = .home } }
             .sheet(item: $tagEditor.item) { item in
                 EditTagsSheet(item: item)
+            }
+            .sheet(item: $metadataEditor.item) { item in
+                AdminMetadataEditor(item: item)
             }
             .sheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)

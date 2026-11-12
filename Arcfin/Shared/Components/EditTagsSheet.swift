@@ -13,6 +13,28 @@ final class TagEditor {
     var item: MediaItem?
 }
 
+/// The title whose details are being edited, for the metadata editor at the tab root.
+@Observable
+@MainActor
+final class MetadataEditor {
+    static let shared = MetadataEditor()
+    var item: MediaItem?
+}
+
+/// Edit Metadata…, for admins on iPhone, iPad and Mac.
+struct EditMetadataButton: View {
+    let item: MediaItem
+
+    var body: some View {
+        if AdminPlatform.isAvailable, ProfileRules.shared.canEditMetadata,
+           [.movie, .series, .season, .episode, .boxSet].contains(item.type) {
+            Button { MetadataEditor.shared.item = item } label: {
+                Label("Edit Metadata…", systemImage: "square.and.pencil")
+            }
+        }
+    }
+}
+
 /// Edit Tags…, for admins, in a title's menus.
 struct EditTagsButton: View {
     let item: MediaItem
