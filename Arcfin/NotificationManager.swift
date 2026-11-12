@@ -14,7 +14,7 @@ enum NotificationManager {
         case .authorized, .provisional:
             return true
         case .notDetermined:
-            return (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
+            return (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
         default:
             // .denied, .ephemeral — the user said no, or this is a transient context where
             // asking again isn't appropriate. Respect it silently rather than re-prompting.
@@ -62,13 +62,36 @@ enum NotificationManager {
         _ = await ensureAuthorized()
     }
 
-    /// `firstItemID` is the title a tap opens when several arrived at once.
-    static func notifyNewContent(titles: [String], firstItemID: String?) async {
+    /// `episodes` are (show, "S2 · E5 Title") pairs; a tap opens the first.
+    static func notifyNewEpisodes(_ episodes: [(show: String, episode: String)], firstItemID: String?) async {
+        guard let first = episodes.first else { return }
+        let shows = Set(episodes.map(\.show))
+        let title = episodes.count == 1 ? String(localized: "New Episode of \(first.show)")
+            : shows.count == 1 ? String(localized: "\(episodes.count) New Episodes of \(first.show)")
+            : String(localized: "New Episodes")
+        let body = episodes.count == 1 || shows.count == 1 ? first.episode
+            : String(localized: "\(first.show) and \(shows.count - 1) more of your shows")
+        await send(title: title, body: body, identifier: "episodes-new.\(UUID().uuidString)", route: firstItemID.map(Route.item))
+    }
+
+    static func notifyNewFilms(titles: [String], firstItemID: String?) async {
         guard let first = titles.first else { return }
-        let body = titles.count == 1 ? first : "\(first) and \(titles.count - 1) more"
-        await send(
-            title: "New in Your Library", body: body, identifier: "library-new.\(UUID().uuidString)",
-            route: firstItemID.map(Route.item))
+        let body = titles.count == 1 ? first : String(localized: "\(first) and \(titles.count - 1) more")
+        await send(title: titles.count == 1 ? String(localized: "New Film") : String(localized: "New Films"),
+                   body: body, identifier: "films-new.\(UUID().uuidString)", route: firstItemID.map(Route.item))
+    }
+
+    /// For admins: a failed task, a failed sign-in, a plugin change.
+    static func notifyServerEvent(title: String, detail: String?) async {
+        await send(title: String(localized: "Server: \(title)"), body: detail ?? "",
+                   identifier: "server-event.\(UUID().uuidString)")
+    }
+
+    /// The app icon's badge; 0 clears it. Not on Apple TV.
+    static func setBadge(_ count: Int) async {
+        #if !os(tvOS)
+        try? await UNUserNotificationCenter.current().setBadgeCount(count)
+        #endif
     }
 
     static func notifyRequestDeclined(title: String) async {

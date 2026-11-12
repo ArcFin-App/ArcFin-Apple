@@ -23,7 +23,9 @@ import os
 /// existed.
 nonisolated enum BackgroundRefresh {
     private static let log = Telemetry.logger(category: "BackgroundRefresh")
-    private static let seenLibraryKey = "arcfin.notify.seenLibraryIDs"
+    private static let seenFilmsKey = "arcfin.notify.seenFilmIDs"
+    private static let seenEpisodesKey = "arcfin.notify.seenEpisodeIDs"
+    private static let lastActivityKey = "arcfin.notify.lastActivityID"
     private static let seerrStatusKey = "arcfin.notify.seerrRequestStatus"
     private static let announcedWatchlistKey = "arcfin.notify.announcedWatchlistIDs"
 
@@ -37,7 +39,7 @@ nonisolated enum BackgroundRefresh {
     /// instead of announcing its whole library.
     static func resetState() {
         let defaults = UserDefaults.standard
-        for key in [seenLibraryKey, seerrStatusKey, announcedWatchlistKey] {
+        for key in [seenFilmsKey, seenEpisodesKey, lastActivityKey, seerrStatusKey, announcedWatchlistKey] {
             defaults.removeObject(forKey: key)
         }
     }
@@ -91,11 +93,21 @@ nonisolated enum BackgroundRefresh {
     }
     #endif
 
+    /// New Episodes and New Films start from the old single New Content setting.
+    private static func isOn(_ key: String) -> Bool {
+        let defaults = UserDefaults.standard
+        return defaults.object(forKey: key) as? Bool ?? defaults.object(forKey: "notifyNewContent") as? Bool ?? true
+    }
+
     static func check() async {
         let defaults = UserDefaults.standard
-        if defaults.object(forKey: "notifyNewContent") as? Bool ?? true {
-            await checkLibrary()
-        }
+        if isOn("notifyNewFilms") { await checkFilms() }
+        guard !Task.isCancelled else { return }
+        if isOn("notifyNewEpisodes") { await checkEpisodes() }
+        guard !Task.isCancelled else { return }
+        if defaults.bool(forKey: "notifyServerEvents") { await checkServerEvents() }
+        guard !Task.isCancelled else { return }
+        if defaults.bool(forKey: StreamBadge.key) { await StreamBadge.refresh() }
         guard !Task.isCancelled else { return }
         await checkSeerr(
             requestUpdates: defaults.object(forKey: "notifyRequestUpdates") as? Bool ?? true,
@@ -104,23 +116,68 @@ nonisolated enum BackgroundRefresh {
 
     // MARK: - Jellyfin
 
-    private static func checkLibrary() async {
+    private static func checkFilms() async {
         // Nil for a profile with an app-lock PIN, so titles never surface past that lock.
         guard let credential = IntentSession.credential() else { return }
         let header = IntentSession.authHeader(for: credential)
         guard let latest = try? await JellyfinMediaClient().getLatestMedia(
-            credential: credential, authHeader: header, limit: 20)
+            credential: credential, authHeader: header, itemTypes: "Movie", limit: 20)
         else { return }
+        guard let fresh = remember(latest.map(\.id), key: seenFilmsKey) else { return }
+        let films = latest.filter { fresh.contains($0.id) }
+        await NotificationManager.notifyNewFilms(titles: films.map(\.name), firstItemID: films.first?.id)
+    }
 
+    /// New episodes of the shows in Continue Watching and Next Up, the ones being watched.
+    private static func checkEpisodes() async {
+        guard let credential = IntentSession.credential() else { return }
+        let header = IntentSession.authHeader(for: credential)
+        let client = JellyfinMediaClient()
+        guard let latest = try? await client.getRecentlyAddedEpisodes(credential: credential, authHeader: header)
+        else { return }
+        guard let fresh = remember(latest.map(\.id), key: seenEpisodesKey) else { return }
+        async let nextUp = client.getNextUpIncludingRecent(credential: credential, authHeader: header)
+        async let resume = client.getContinueWatching(credential: credential, authHeader: header)
+        let watching = Set(((try? await nextUp) ?? []).compactMap(\.seriesId) + ((try? await resume) ?? []).compactMap(\.seriesId))
+        let episodes = latest.filter { fresh.contains($0.id) && $0.seriesId.map(watching.contains) == true && $0.userData?.played != true }
+        guard !episodes.isEmpty else { return }
+        await NotificationManager.notifyNewEpisodes(episodes.map { episode in
+            let code = [episode.parentIndexNumber.map { "S\($0)" }, episode.indexNumber.map { "E\($0)" }]
+                .compactMap { $0 }.joined(separator: " · ")
+            return (episode.seriesName ?? episode.name, code.isEmpty ? episode.name : "\(code) \(episode.name)")
+        }, firstItemID: episodes.first?.id)
+    }
+
+    /// Records `ids` as seen and returns the ones that are new, or nil on the first run, which
+    /// only records what's there.
+    private static func remember(_ ids: [String], key: String) -> Set<String>? {
         let defaults = UserDefaults.standard
-        let seen = defaults.stringArray(forKey: seenLibraryKey)
-        let ids = latest.map(\.id)
-        defer { defaults.set(Array((ids + (seen ?? [])).prefix(100)), forKey: seenLibraryKey) }
-        guard let seen else { return }
+        let seen = defaults.stringArray(forKey: key)
+        defaults.set(Array((ids + (seen ?? [])).prefix(200)), forKey: key)
+        guard let seen else { return nil }
+        let fresh = Set(ids).subtracting(seen)
+        return fresh.isEmpty ? nil : fresh
+    }
 
-        let fresh = latest.filter { !seen.contains($0.id) }
-        guard !fresh.isEmpty else { return }
-        await NotificationManager.notifyNewContent(titles: fresh.map(\.name), firstItemID: fresh.first?.id)
+    // MARK: - Server events (admins)
+
+    /// Failed tasks and sign-ins, warnings, and plugin changes from the activity log since the
+    /// last check. A non-admin profile gets nothing back, so nothing is sent.
+    private static func checkServerEvents() async {
+        guard let credential = IntentSession.credential() else { return }
+        let header = IntentSession.authHeader(for: credential)
+        guard let entries = try? await JellyfinAdminClient().activity(limit: 30, credential: credential, authHeader: header)
+        else { return }
+        let defaults = UserDefaults.standard
+        let last = defaults.object(forKey: lastActivityKey) as? Int
+        if let newest = entries.map(\.id).max() { defaults.set(max(newest, last ?? 0), forKey: lastActivityKey) }
+        guard let last else { return }
+        let notable = entries.filter { entry in
+            entry.id > last && (entry.severity != "Information" || entry.type.hasPrefix("Plugin"))
+        }
+        for entry in notable.sorted(by: { $0.id < $1.id }).prefix(3) {
+            await NotificationManager.notifyServerEvent(title: entry.name, detail: entry.overview)
+        }
     }
 
     // MARK: - Seerr

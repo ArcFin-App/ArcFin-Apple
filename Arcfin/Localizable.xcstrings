@@ -257,6 +257,134 @@
         }
       }
     },
+    "%@ and %lld more" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ und %2$lld weitere"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ y %2$lld más"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ et %2$lld autres"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ e altri %2$lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ほか%2$lld件"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ 외 %2$lld개"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ en nog %2$lld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ e mais %2$lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ и ещё %2$lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@等 %2$lld 部"
+          }
+        }
+      }
+    },
+    "%@ and %lld more of your shows" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ und %2$lld weitere deiner Serien"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ y %2$lld series más que ves"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ et %2$lld autres de vos séries"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ e altre %2$lld delle tue serie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ほか、視聴中の番組%2$lld件"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ 외 보고 있는 프로그램 %2$lld개"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ en nog %2$lld van je series"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ e mais %2$lld das suas séries"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ и ещё %2$lld ваших сериалов"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@以及你在看的另外 %2$lld 部剧"
+          }
+        }
+      }
+    },
     "%@ can't use the server with it any more." : {
       "localizations" : {
         "de" : {
@@ -1341,6 +1469,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%lld Mb/s"
+          }
+        }
+      }
+    },
+    "%lld New Episodes of %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$lld neue Folgen von %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$lld episodios nuevos de %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$lld nouveaux épisodes de %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$lld nuovi episodi di %2$@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%2$@の新しいエピソード%1$lld件"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%2$@의 새 에피소드 %1$lld개"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$lld nieuwe afleveringen van %2$@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$lld episódios novos de %2$@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Новые серии «%2$@»: %1$lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%2$@的 %1$lld 集新剧集"
           }
         }
       }
@@ -12033,6 +12225,70 @@
         }
       }
     },
+    "Failed tasks and sign-ins, warnings, and plugins installed or updated." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Fehlgeschlagene Aufgaben und Anmeldungen, Warnungen sowie installierte oder aktualisierte Plug-ins."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tareas e inicios de sesión fallidos, avisos y plugins instalados o actualizados."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tâches et connexions échouées, avertissements, et plugins installés ou mis à jour."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Attività e accessi non riusciti, avvisi e plugin installati o aggiornati."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "失敗したタスクやサインイン、警告、インストール・アップデートされたプラグイン。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "실패한 작업과 로그인, 경고, 설치되거나 업데이트된 플러그인."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mislukte taken en aanmeldingen, waarschuwingen, en geïnstalleerde of bijgewerkte plug-ins."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tarefas e logins com falha, avisos e plugins instalados ou atualizados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сбои задач и входов, предупреждения, установка и обновление плагинов."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "失败的任务和登录、警告，以及插件的安装或更新。"
+          }
+        }
+      }
+    },
     "Failed to load" : {
       "localizations" : {
         "de" : {
@@ -17793,6 +18049,70 @@
         }
       }
     },
+    "New Episode of %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neue Folge von %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuevo episodio de %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nouvel épisode de %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuovo episodio di %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@の新しいエピソード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@의 새 에피소드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nieuwe aflevering van %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Episódio novo de %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Новая серия «%@»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@有新剧集"
+          }
+        }
+      }
+    },
     "New episodes" : {
       "localizations" : {
         "de" : {
@@ -17847,6 +18167,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Новые эпизоды"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新剧集"
+          }
+        }
+      }
+    },
+    "New Episodes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neue Folgen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Episodios nuevos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nouveaux épisodes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuovi episodi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新しいエピソード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "새 에피소드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nieuwe afleveringen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Episódios novos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Новые серии"
           }
         },
         "zh-Hans" : {
@@ -17917,6 +18301,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "仅新剧集"
+          }
+        }
+      }
+    },
+    "New Film" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neuer Film"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Película nueva"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nouveau film"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuovo film"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新しい映画"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "새 영화"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nieuwe film"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Filme novo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Новый фильм"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新电影"
+          }
+        }
+      }
+    },
+    "New Films" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neue Filme"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Películas nuevas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nouveaux films"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuovi film"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新しい映画"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "새 영화"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nieuwe films"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Filmes novos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Новые фильмы"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新电影"
           }
         }
       }
@@ -26689,6 +27201,70 @@
         }
       }
     },
+    "Server Events" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Server-Ereignisse"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eventos del servidor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Événements du serveur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eventi del server"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーのイベント"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버 이벤트"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Servergebeurtenissen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eventos do servidor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "События сервера"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器事件"
+          }
+        }
+      }
+    },
     "Server Folders" : {
       "localizations" : {
         "de" : {
@@ -26813,6 +27389,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "服务器精选"
+          }
+        }
+      }
+    },
+    "Server: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Server: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Servidor: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Serveur : %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Server: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバー：%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Server: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Servidor: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器：%@"
           }
         }
       }
@@ -27197,6 +27837,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "剧集"
+          }
+        }
+      }
+    },
+    "Show Active Streams on App Icon" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aktive Streams am App-Symbol zeigen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar reproducciones activas en el icono"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Afficher les lectures en cours sur l'icône"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra le riproduzioni attive sull'icona"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生中のストリーム数をアイコンに表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "앱 아이콘에 재생 중인 스트림 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Actieve streams op appsymbool tonen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar reproduções ativas no ícone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Активные потоки на значке приложения"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 App 图标上显示正在播放数"
           }
         }
       }
@@ -30785,6 +31489,70 @@
         }
       }
     },
+    "The app icon's badge counts what's playing on the server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Kennzeichen am App-Symbol zählt, was auf dem Server gerade läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El globo del icono cuenta lo que se está reproduciendo en el servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La pastille de l'icône compte ce qui est en cours de lecture sur le serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il badge dell'icona conta cosa è in riproduzione sul server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "アプリアイコンのバッジに、サーバーで再生中の数を表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "앱 아이콘 배지에 서버에서 재생 중인 수가 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De badge op het appsymbool telt wat er op de server wordt afgespeeld."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O indicador do ícone conta o que está tocando no servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Значок приложения показывает, сколько всего воспроизводится на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "App 图标上的标记会显示服务器上正在播放的数量。"
+          }
+        }
+      }
+    },
     "The backup is done." : {
       "localizations" : {
         "de" : {
@@ -30909,6 +31677,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未完成备份。"
+          }
+        }
+      }
+    },
+    "The badge updates every half minute while Arcfin is open. In the background, the system decides how often Arcfin checks: on iPhone and iPad usually a few times a day." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Kennzeichen aktualisiert sich alle halbe Minute, solange Arcfin geöffnet ist. Im Hintergrund entscheidet das System, wie oft Arcfin nachsieht – auf iPhone und iPad meist ein paar Mal am Tag."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El globo se actualiza cada medio minuto mientras Arcfin está abierto. En segundo plano, el sistema decide cada cuánto comprueba Arcfin: en iPhone y iPad, normalmente unas cuantas veces al día."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La pastille se met à jour toutes les 30 secondes quand Arcfin est ouvert. En arrière-plan, le système décide de la fréquence des vérifications : sur iPhone et iPad, en général quelques fois par jour."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il badge si aggiorna ogni mezzo minuto mentre Arcfin è aperto. In background è il sistema a decidere ogni quanto Arcfin controlla: su iPhone e iPad di solito qualche volta al giorno."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinを開いている間、バッジは30秒ごとに更新されます。バックグラウンドでの確認頻度はシステムが決めます。iPhoneやiPadでは通常1日に数回です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin이 열려 있는 동안 배지는 30초마다 업데이트됩니다. 백그라운드에서 얼마나 자주 확인할지는 시스템이 정하며, iPhone과 iPad에서는 보통 하루에 몇 번입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De badge wordt elke halve minuut bijgewerkt zolang Arcfin open is. Op de achtergrond bepaalt het systeem hoe vaak Arcfin kijkt: op iPhone en iPad meestal een paar keer per dag."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O indicador atualiza a cada meio minuto enquanto o Arcfin está aberto. Em segundo plano, o sistema decide com que frequência o Arcfin verifica: no iPhone e iPad, normalmente algumas vezes por dia."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Пока Arcfin открыт, значок обновляется каждые полминуты. В фоне частоту проверок определяет система: на iPhone и iPad обычно несколько раз в день."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 打开时，标记每半分钟更新一次。在后台，检查频率由系统决定：在 iPhone 和 iPad 上通常每天几次。"
           }
         }
       }
@@ -35581,6 +36413,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "周末"
+          }
+        }
+      }
+    },
+    "When a new episode arrives of a show in your Continue Watching or Next Up." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn eine neue Folge einer Serie aus „Weiterschauen“ oder „Als Nächstes“ eintrifft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cuando llega un episodio nuevo de una serie de Seguir viendo o A continuación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quand un nouvel épisode d'une série de Reprendre ou À suivre arrive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quando arriva un nuovo episodio di una serie in Continua a guardare o Prossimi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「視聴を続ける」や「次に見る」にある番組の新しいエピソードが届いたとき。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이어서 보기나 다음 화에 있는 프로그램의 새 에피소드가 도착할 때."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Als er een nieuwe aflevering komt van een serie in Verder kijken of Volgende."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quando chega um episódio novo de uma série em Continuar assistindo ou A seguir."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Когда выходит новая серия сериала из «Продолжить просмотр» или «Далее»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "当“继续观看”或“下一集”中的剧集有新的一集时。"
+          }
+        }
+      }
+    },
+    "When a new film lands in your libraries." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn ein neuer Film in deinen Mediatheken landet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cuando llega una película nueva a tus bibliotecas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quand un nouveau film arrive dans vos médiathèques."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quando arriva un nuovo film nelle tue librerie."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ライブラリに新しい映画が追加されたとき。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "보관함에 새 영화가 들어올 때."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Als er een nieuwe film in je bibliotheken komt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quando chega um filme novo às suas bibliotecas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Когда в медиатеках появляется новый фильм."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "当资料库中加入新电影时。"
           }
         }
       }

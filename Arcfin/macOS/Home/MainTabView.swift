@@ -12,6 +12,7 @@ struct MainTabView: View {
     @Bindable private var tagEditor = TagEditor.shared
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
+    @AppStorage(StreamBadge.key) private var showsStreamBadge = false
     @State private var selectedTab = BottomNavItem(rawValue: UserDefaults.standard.string(forKey: BottomNavPrefs.launchTabKey) ?? "") ?? .home
 
     private var visibleTabs: [BottomNavItem] {
@@ -46,6 +47,10 @@ struct MainTabView: View {
             }
             .tabViewStyle(.sidebarAdaptable)
             .adminTabOffer(limit: tabLimit)
+            // The playing-streams badge, kept current while Arcfin is open.
+            .task(id: showsStreamBadge && authManager.isAdmin) {
+                if showsStreamBadge && authManager.isAdmin { await StreamBadge.keepCurrent() } else { await StreamBadge.refresh() }
+            }
             .onChange(of: visibleTabs) { if !visibleTabs.contains(selectedTab) { selectedTab = .home } }
             .sheet(item: $tagEditor.item) { item in
                 EditTagsSheet(item: item)

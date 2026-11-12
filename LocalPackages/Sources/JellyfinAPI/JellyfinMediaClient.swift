@@ -289,6 +289,28 @@ public struct JellyfinMediaClient: Sendable {
         return result
     }
 
+    /// The episodes added to the server most recently, one by one rather than grouped by show,
+    /// for New Episodes notifications.
+    public func getRecentlyAddedEpisodes(credential: ServerCredential, authHeader: String, limit: Int = 40) async throws -> [MediaItem] {
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "IncludeItemTypes", value: "Episode"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "SortBy", value: "DateCreated"),
+            .init(name: "SortOrder", value: "Descending"),
+            .init(name: "Limit", value: "\(limit)"),
+            .init(name: "Fields", value: "SeriesId,SeriesName,UserData"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+    }
+
     /// Movies and series the user has favorited, for Home's Favorites shelf.
     public func getFavorites(
         credential: ServerCredential,

@@ -4,7 +4,11 @@ import SwiftUI
 
 struct NotificationsSettingsView: View {
     @Environment(AuthManager.self) private var authManager
-    @AppStorage("notifyNewContent") private var notifyNewContent = true
+    /// Both start from the old single New Content Added setting.
+    @AppStorage("notifyNewEpisodes") private var notifyNewEpisodes = UserDefaults.standard.object(forKey: "notifyNewContent") as? Bool ?? true
+    @AppStorage("notifyNewFilms") private var notifyNewFilms = UserDefaults.standard.object(forKey: "notifyNewContent") as? Bool ?? true
+    @AppStorage("notifyServerEvents") private var notifyServerEvents = false
+    @AppStorage(StreamBadge.key) private var showsStreamBadge = false
     @AppStorage("notifyDownload")   private var notifyDownload   = true
     @AppStorage("notifyRequestUpdates") private var notifyRequestUpdates = true
     @AppStorage("notifyWatchlistAvailable") private var notifyWatchlistAvailable = true
@@ -26,11 +30,16 @@ struct NotificationsSettingsView: View {
     var body: some View {
         List {
             Section {
-                Toggle(isOn: $notifyNewContent) {
-                    TVRowLabelText(title: "New Content Added", detail: "When a new movie or episode lands in your libraries.")
+                Toggle(isOn: $notifyNewEpisodes) {
+                    TVRowLabelText(title: "New Episodes", detail: "When a new episode arrives of a show in your Continue Watching or Next Up.")
                 }
                 .tvListRow()
-                .syncLocked("notifyNewContent", authManager)
+                .syncLocked("notifyNewEpisodes", authManager)
+                Toggle(isOn: $notifyNewFilms) {
+                    TVRowLabelText(title: "New Films", detail: "When a new film lands in your libraries.")
+                }
+                .tvListRow()
+                .syncLocked("notifyNewFilms", authManager)
                 Toggle(isOn: $notifyRequestUpdates) {
                     TVRowLabelText(title: "Request Updates", detail: "When a Seerr request is approved, declined or available.")
                 }
@@ -43,6 +52,23 @@ struct NotificationsSettingsView: View {
                     TVRowLabelText(title: "Download Complete", detail: "When a download finishes.")
                 }
                 .syncLocked("notifyDownload", authManager)
+            }
+
+            if authManager.isAdmin {
+                Section {
+                    Toggle(isOn: $notifyServerEvents) {
+                        TVRowLabelText(title: "Server Events", detail: "Failed tasks and sign-ins, warnings, and plugins installed or updated.")
+                    }
+                    .syncLocked("notifyServerEvents", authManager)
+                    Toggle(isOn: $showsStreamBadge) {
+                        TVRowLabelText(title: "Show Active Streams on App Icon", detail: "The app icon's badge counts what's playing on the server.")
+                    }
+                    .syncLocked(StreamBadge.key, authManager)
+                } header: {
+                    Text("Admin")
+                } footer: {
+                    Text("The badge updates every half minute while Arcfin is open. In the background, the system decides how often Arcfin checks: on iPhone and iPad usually a few times a day.")
+                }
             }
 
             Section {
@@ -59,7 +85,15 @@ struct NotificationsSettingsView: View {
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Notifications")
-        .onChange(of: notifyNewContent) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .onChange(of: notifyNewEpisodes) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .onChange(of: notifyNewFilms) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .onChange(of: notifyServerEvents) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .onChange(of: showsStreamBadge) { _, isOn in
+            Task {
+                if isOn { await NotificationManager.requestAuthorizationIfNeeded() }
+                await StreamBadge.refresh()
+            }
+        }
         .onChange(of: notifyRequestUpdates) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
         .onChange(of: notifyWatchlistAvailable) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
     }
