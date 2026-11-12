@@ -36,12 +36,11 @@ final class HomeHeroCarousel {
     /// page plus its immediate neighbors, so this doesn't mean 10 images loading at once —
     /// each poster/backdrop loads lazily as the user actually swipes to it.
     static func items(in mediaRepo: MediaRepository) -> [MediaItem] {
-        // The server admin's picks take the place of the usual ones when there are any.
-        if !mediaRepo.featuredItems.isEmpty { return Array(mediaRepo.featuredItems.prefix(10)) }
         var items: [MediaItem] = []
         items.append(contentsOf: mediaRepo.continueWatching.prefix(2))
         items.append(contentsOf: mediaRepo.nextUp.prefix(2))
-        items.append(contentsOf: mediaRepo.recentlyAdded.prefix(6))
+        // The server admin's picks take the place of Recently Added when there are any.
+        items.append(contentsOf: mediaRepo.featuredItems.isEmpty ? Array(mediaRepo.recentlyAdded.prefix(6)) : Array(mediaRepo.featuredItems.prefix(8)))
         var seen = Set<String>()
         return items.filter { seen.insert($0.id).inserted }
     }

@@ -114,10 +114,10 @@ struct HomeView: View {
             switch modernHero {
             case .media(let item): return item
             case .seerr: return nil
-            case nil: return mediaRepo.featuredItems.first ?? cwItems.first ?? mediaRepo.recentlyAdded.first
+            case nil: return cwItems.first ?? mediaRepo.featuredItems.first ?? mediaRepo.recentlyAdded.first
             }
         }
-        return focusedItem ?? mediaRepo.featuredItems.first ?? mediaRepo.continueWatching.first ?? mediaRepo.recentlyAdded.first
+        return focusedItem ?? mediaRepo.continueWatching.first ?? mediaRepo.featuredItems.first ?? mediaRepo.recentlyAdded.first
     }
 
     var body: some View {
