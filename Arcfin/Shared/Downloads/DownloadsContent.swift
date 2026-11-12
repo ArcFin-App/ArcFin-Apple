@@ -69,52 +69,30 @@ struct DownloadsContent<Manage: View>: View {
     // MARK: - Storage
 
     private var storageCard: some View {
-        let used = totalSizeBytes
-        let total = model.deviceTotalBytes ?? 0
-        let share = total > 0 ? Double(used) / Double(total) : 0
-        return VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "arrow.down.circle.fill")
-                    .font(.system(.title2))
+                Image(systemName: "internaldrive.fill")
+                    .font(.system(.title3))
                     .foregroundStyle(DT.Color.accent)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(items.count == 1 ? "1 title" : "\(items.count) titles")
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Storage")
                         .font(.system(.headline, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text(model.storageCaption(used: used))
+                    Text(items.count == 1 ? "1 title" : "\(items.count) titles")
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
-                    if let limit = model.smartLimitCaption(smartUsed: downloadManager.smartDownloadsUsedBytes(of: items)) {
-                        Text(limit)
-                            .font(.system(.caption))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    if let device = model.deviceCaption() {
-                        Text(device)
-                            .font(.system(.caption))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
                 }
                 Spacer()
                 manage()
             }
-            if model.deviceTotalBytes != nil {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(DT.Color.textPrimary.opacity(0.1))
-                        Capsule()
-                            .fill(DT.Color.accent)
-                            .frame(width: max(geo.size.width * share, used > 0 ? 6 : 0))
-                    }
-                }
-                .frame(height: 6)
-                .accessibilityHidden(true)
-            }
+            StorageBreakdown(items: items,
+                             smartUsedBytes: downloadManager.smartDownloadsUsedBytes(of: items),
+                             freeBytes: model.freeBytes,
+                             deviceTotalBytes: model.deviceTotalBytes)
         }
         .padding(16)
         .background(cardBackground)
-        .accessibilityElement(children: .combine)
     }
 
     private var cardBackground: some View {

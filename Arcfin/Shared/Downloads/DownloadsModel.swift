@@ -131,24 +131,6 @@ final class DownloadsModel {
         deviceTotalBytes = values?.volumeTotalCapacity.map(Int64.init)
     }
 
-    private static func size(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }
-
-    func storageCaption(used: Int64) -> String {
-        String(localized: "\(Self.size(used)) used by Arcfin")
-    }
-
-    /// Smart Downloads' storage limit and what's left of it, when Smart Downloads is on.
-    func smartLimitCaption(smartUsed: Int64) -> String? {
-        guard UserDefaults.standard.bool(forKey: "smartDownloadsEnabled") else { return nil }
-        let limit = Int64(UserDefaults.standard.object(forKey: "smartDownloadsStorageBudgetGB") as? Int ?? 10) * 1_000_000_000
-        return String(localized: "Smart Downloads limit \(Self.size(limit)) · \(Self.size(max(limit - smartUsed, 0))) left")
-    }
-
-    func deviceCaption() -> String? {
-        guard let freeBytes, let deviceTotalBytes else { return nil }
-        return String(localized: "Device: \(Self.size(freeBytes)) free of \(Self.size(deviceTotalBytes))")
-    }
-
     // MARK: - Artwork
 
     static func fileURL(_ name: String?, in itemId: String) -> URL? {

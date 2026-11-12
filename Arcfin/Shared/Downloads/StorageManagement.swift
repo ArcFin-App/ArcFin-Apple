@@ -79,6 +79,27 @@ struct StorageManagementContent: View {
     private var movies: [DownloadedItem] { StorageManagement.movies(in: items) }
     private var watched: [DownloadedItem] { items.filter(\.played) }
 
+    private enum Entry: Identifiable {
+        case show(StorageManagement.Show)
+        case movie(DownloadedItem)
+        var id: String {
+            switch self {
+            case .show(let show): "show:\(show.id)"
+            case .movie(let movie): "movie:\(movie.itemId)"
+            }
+        }
+        var sizeBytes: Int64 {
+            switch self {
+            case .show(let show): show.sizeBytes
+            case .movie(let movie): movie.fileSizeBytes
+            }
+        }
+    }
+
+    private var entries: [Entry] {
+        (shows.map(Entry.show) + movies.map(Entry.movie)).sorted { $0.sizeBytes > $1.sizeBytes }
+    }
+
     var body: some View {
         Group {
             if items.isEmpty {
@@ -90,14 +111,12 @@ struct StorageManagementContent: View {
             } else {
                 List {
                     Section { summary }
-                    if !shows.isEmpty {
-                        Section("Shows") {
-                            ForEach(shows) { show in showGroup(show) }
-                        }
-                    }
-                    if !movies.isEmpty {
-                        Section("Movies") {
-                            ForEach(movies) { movie in movieRow(movie) }
+                    Section("Largest First") {
+                        ForEach(entries) { entry in
+                            switch entry {
+                            case .show(let show): showGroup(show)
+                            case .movie(let movie): movieRow(movie)
+                            }
                         }
                     }
                 }
@@ -127,39 +146,12 @@ struct StorageManagementContent: View {
     // MARK: - Summary
 
     private var summary: some View {
-        let used = StorageManagement.size(of: items)
-        let share = (deviceTotalBytes ?? 0) > 0 ? Double(used) / Double(deviceTotalBytes!) : 0
         let watchedSize = StorageManagement.size(of: watched)
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(StorageManagement.formatted(used))
-                    .font(.system(.title2, weight: .bold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                Text("used by Arcfin")
-                    .font(.system(.subheadline))
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-            if deviceTotalBytes != nil {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(DT.Color.textPrimary.opacity(0.1))
-                        Capsule().fill(DT.Color.accent).frame(width: max(geo.size.width * share, used > 0 ? 6 : 0))
-                    }
-                }
-                .frame(height: 8)
-                .accessibilityHidden(true)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                if let limit = smartLimitCaption {
-                    Label(limit, systemImage: "sparkles")
-                }
-                if let freeBytes, let deviceTotalBytes {
-                    Label("\(StorageManagement.formatted(freeBytes)) free of \(StorageManagement.formatted(deviceTotalBytes)) on this device",
-                          systemImage: "internaldrive")
-                }
-            }
-            .font(.system(.caption))
-            .foregroundStyle(DT.Color.textSecondary)
+        return VStack(alignment: .leading, spacing: 14) {
+            StorageBreakdown(items: items,
+                             smartUsedBytes: downloadManager.smartDownloadsUsedBytes(of: items),
+                             freeBytes: freeBytes,
+                             deviceTotalBytes: deviceTotalBytes)
             if !watched.isEmpty {
                 Button {
                     pendingDelete = StoragePendingDelete(title: String(localized: "Delete everything you've watched?"),
@@ -170,18 +162,9 @@ struct StorageManagementContent: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(DT.Color.accent)
-                .padding(.top, 4)
             }
         }
         .padding(.vertical, 6)
-        .accessibilityElement(children: .contain)
-    }
-
-    private var smartLimitCaption: String? {
-        guard UserDefaults.standard.bool(forKey: "smartDownloadsEnabled") else { return nil }
-        let limit = Int64(UserDefaults.standard.object(forKey: "smartDownloadsStorageBudgetGB") as? Int ?? 10) * 1_000_000_000
-        let left = max(limit - downloadManager.smartDownloadsUsedBytes(of: items), 0)
-        return String(localized: "Smart Downloads limit \(StorageManagement.formatted(limit)) · \(StorageManagement.formatted(left)) left")
     }
 
     private func refreshDeviceSpace() {
