@@ -41,7 +41,10 @@ final class AuthManager {
 
     var state: AuthState = .unauthenticated {
         didSet {
-            if let id = state.credential?.id, id != oldValue.credential?.id { activateSeerrAccount(for: id) }
+            if let id = state.credential?.id, id != oldValue.credential?.id {
+                activateSeerrAccount(for: id)
+                if oldValue.credential != nil { forgetPreviousProfile() }
+            }
         }
     }
     var isChecking: Bool = true
@@ -408,6 +411,20 @@ final class AuthManager {
         refreshArcfinSync(for: credential)
     }
 
+    /// What belonged to the profile just switched away from: its playlists, its titles in
+    /// Spotlight and the widgets, and what the background check had seen, so the next check
+    /// only records the new profile's library instead of announcing it.
+    private func forgetPreviousProfile() {
+        #if !os(tvOS)
+        Task { await SpotlightIndexer.clear() }
+        WidgetSnapshotUpdater.clear()
+        SeerrSpotlightStore.clear()
+        BackgroundRefresh.resetState()
+        #endif
+        SplashMosaicStore.clear()
+        PlaylistStore.shared.clear()
+    }
+
     func removeProfile(id: UUID) {
         if let removed = profiles.first(where: { $0.id == id }) {
             let client = authClient
@@ -416,6 +433,8 @@ final class AuthManager {
         let k = keychain
         Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id); try? k.deleteSeerrPassword(profile: id) }
         UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
+        for key in Self.perProfileSeerrKeys { UserDefaults.standard.removeObject(forKey: Self.perProfileKey(key, for: id)) }
+        try? TMDBCredential.save("", profile: id)
         profiles.removeAll { $0.id == id }
         #if !os(tvOS)
         // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
@@ -521,6 +540,10 @@ final class AuthManager {
     private static let seerrOwnerKey = "arcfin.seerrAccountOwner"
 
     private static func seerrUsernameKey(for id: UUID) -> String { "seerrUsername.\(id.uuidString)" }
+    /// Each profile's own Seerr address and sign-in method, like its username: profiles can
+    /// use different Seerr servers.
+    private static let perProfileSeerrKeys = ["seerrURL", "seerrAuthMethod"]
+    private static func perProfileKey(_ key: String, for id: UUID) -> String { "\(key).\(id.uuidString)" }
 
     /// Sets the outgoing profile's Seerr sign-in aside and puts the incoming one's in place
     /// (or none, when it hasn't connected Seerr), which reconfigures Seerr through the
@@ -539,8 +562,21 @@ final class AuthManager {
         let stashOutgoing = profiles.contains { $0.id == owner }
         if stashOutgoing {
             defaults.set(defaults.string(forKey: "seerrUsername") ?? "", forKey: Self.seerrUsernameKey(for: owner))
+            for key in Self.perProfileSeerrKeys {
+                defaults.set(defaults.string(forKey: key) ?? "", forKey: Self.perProfileKey(key, for: owner))
+            }
+            // The TMDB key is each profile's too; swapped here, before anything reloads TMDB.
+            try? TMDBCredential.save(TMDBCredential.load() ?? "", profile: owner)
         }
         defaults.set(defaults.string(forKey: Self.seerrUsernameKey(for: id)) ?? "", forKey: "seerrUsername")
+        for key in Self.perProfileSeerrKeys {
+            if let value = defaults.string(forKey: Self.perProfileKey(key, for: id)), !value.isEmpty {
+                defaults.set(value, forKey: key)
+            } else {
+                defaults.removeObject(forKey: key)
+            }
+        }
+        try? TMDBCredential.save(TMDBCredential.load(profile: id) ?? "")
         seerrPassword = ""
         Task {
             let incoming = await Task.detached(priority: .userInitiated) { () -> String in

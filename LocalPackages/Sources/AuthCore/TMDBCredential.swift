@@ -8,7 +8,17 @@ public enum TMDBCredential {
     private static let service = "com.psmattas.arcfin.tmdb"
     private static let account = "key"
 
-    public static func load() -> String? {
+    public static func load() -> String? { load(account: account) }
+
+    /// An empty key removes it.
+    public static func save(_ key: String) throws { try save(key, account: account) }
+
+    /// A profile's own key, kept aside while another profile is active.
+    public static func load(profile: UUID) -> String? { load(account: "key.\(profile.uuidString)") }
+
+    public static func save(_ key: String, profile: UUID) throws { try save(key, account: "key.\(profile.uuidString)") }
+
+    private static func load(account: String) -> String? {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
@@ -24,8 +34,7 @@ public enum TMDBCredential {
         return key
     }
 
-    /// An empty key removes it.
-    public static func save(_ key: String) throws {
+    private static func save(_ key: String, account: String) throws {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,

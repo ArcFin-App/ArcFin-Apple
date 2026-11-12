@@ -79,7 +79,13 @@ struct AppRootLifecycle: ViewModifier {
             // configureSeerr() above would just no-op as "nothing changed" — this instead clears
             // any stuck auth-failure cooldown and retries directly (see
             // SeerrRepository.retryAfterProfileSwitch).
-            .onChange(of: model.authManager.state) { Task { await model.seerrRepo.retryAfterProfileSwitch() } }
+            .onChange(of: model.authManager.state.credential?.id) {
+                // The profile's own TMDB key and Seerr; configureSeerr follows from the URL and
+                // username observers once the new profile's values are in place.
+                model.seerrRepo.reloadTMDB()
+                configureSeerr()
+                Task { await model.seerrRepo.retryAfterProfileSwitch() }
+            }
             .onChange(of: model.authManager.profiles.isEmpty) { _, isEmpty in
                 if isEmpty { model.seerrRepo.reloadTMDB() }
             }

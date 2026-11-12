@@ -114,8 +114,14 @@ final class MediaRepository {
         // user-initiated refresh (force: true) always bypasses it too.
         if !force, loaded, credential.userID == lastLoadedUserID,
            let t = lastLoadedAt, Date().timeIntervalSince(t) < 60 { return }
-        guard !isLoading else { return }
+        // A load already running is for whoever asked last; a different profile's load waits
+        // for it and then runs, rather than being dropped and leaving the old profile's shelves.
+        guard !isLoading else {
+            if credential.userID != loadingUserID { pendingLoad = (credential, authClient) }
+            return
+        }
         isLoading = true
+        loadingUserID = credential.userID
 
         // AuthManager.checkStoredAuth() treats an unreachable validateToken call as "still
         // valid" (by design — a network blip shouldn't force a logout), so the app can reach
@@ -136,6 +142,7 @@ final class MediaRepository {
         }
 
         isLoading = false
+        loadingUserID = nil
         connectionFailed = !succeeded
         // Only cache-guard a successful load — a failed attempt shouldn't block Retry
         // behind the cooldown window.
@@ -144,7 +151,14 @@ final class MediaRepository {
             lastLoadedAt = Date()
             lastLoadedUserID = credential.userID
         }
+        if let next = pendingLoad {
+            pendingLoad = nil
+            await performLoad(credential: next.credential, authClient: next.authClient, force: true)
+        }
     }
+
+    @ObservationIgnored private var loadingUserID: String?
+    @ObservationIgnored private var pendingLoad: (credential: ServerCredential, authClient: JellyfinAuthClient)?
 
     /// Seeded from the latest finished title; unwatched results only, since a "recommendation"
     /// the user has already seen isn't one.
@@ -276,10 +290,13 @@ final class MediaRepository {
         async let nUp = client.getNextUpIncludingRecent(credential: credential, authHeader: header)
         async let wAgain = client.getWatchAgain(credential: credential, authHeader: header)
         async let favs = client.getFavorites(credential: credential, authHeader: header)
-        if let value = try? await cw { continueWatching = value }
-        if let value = try? await nUp { nextUp = value }
-        if let value = try? await wAgain { watchAgain = value }
-        if let value = try? await favs { favorites = value }
+        let cwValue = try? await cw, nUpValue = try? await nUp, wAgainValue = try? await wAgain, favsValue = try? await favs
+        // A profile switch while this was out: these are the old profile's, not the shelves'.
+        guard credential.userID == lastLoadedUserID, !isLoading else { return }
+        if let cwValue { continueWatching = cwValue }
+        if let nUpValue { nextUp = nUpValue }
+        if let wAgainValue { watchAgain = wAgainValue }
+        if let favsValue { favorites = favsValue }
     }
 
     /// Shelves that follow what's in the library, after titles are added or removed.
@@ -290,10 +307,12 @@ final class MediaRepository {
         async let raMov = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")
         async let raShow = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Series")
         async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
-        if let value = try? await la { recentlyAdded = value }
-        if let value = try? await raMov { recentlyAddedMovies = value }
-        if let value = try? await raShow { recentlyAddedShows = value }
-        if let value = try? await tmdbKeys { libraryTMDBKeys = value }
+        let laValue = try? await la, raMovValue = try? await raMov, raShowValue = try? await raShow, keysValue = try? await tmdbKeys
+        guard credential.userID == lastLoadedUserID, !isLoading else { return }
+        if let laValue { recentlyAdded = laValue }
+        if let raMovValue { recentlyAddedMovies = raMovValue }
+        if let raShowValue { recentlyAddedShows = raShowValue }
+        if let keysValue { libraryTMDBKeys = keysValue }
     }
 
     /// Whether the server already has a Seerr title: Seerr says so, or the library holds its
