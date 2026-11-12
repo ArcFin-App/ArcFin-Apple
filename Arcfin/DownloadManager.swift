@@ -1410,6 +1410,46 @@ final class DownloadManager: NSObject {
         return item.seriesId.map { ($0, item.seriesName ?? item.name) } ?? (item.itemId, item.name)
     }
 
+    /// Ignore in Smart Downloads for a title with downloads here, waiting for the person to
+    /// say whether those go too.
+    struct IgnoreRequest: Identifiable {
+        let id: String
+        let name: String
+        let itemIds: [String]
+    }
+    var pendingIgnore: IgnoreRequest?
+
+    /// Ignore in Smart Downloads, asking first when the movie or show has downloads here.
+    func requestIgnore(id: String, name: String) {
+        let itemIds = downloadIds(forTitle: id)
+        if itemIds.isEmpty {
+            setIgnored(id: id, name: name, ignored: true)
+        } else {
+            pendingIgnore = IgnoreRequest(id: id, name: name, itemIds: itemIds)
+        }
+    }
+
+    /// Ignores the title, then removes its downloads, finished or under way.
+    func ignoreAndDelete(_ request: IgnoreRequest) {
+        setIgnored(id: request.id, name: request.name, ignored: true)
+        for id in request.itemIds {
+            if activeItemIds.contains(id) || pendingQueue.contains(where: { $0.item.id == id }) {
+                cancelDownload(itemId: id)
+            } else {
+                deleteDownload(itemId: id)
+            }
+        }
+    }
+
+    /// A movie's download, or a show's episodes, here or still downloading.
+    private func downloadIds(forTitle id: String) -> [String] {
+        let saved = modelContext.flatMap {
+            try? $0.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == id || $0.seriesId == id }))
+        } ?? []
+        let underway = activeItems.values.filter { $0.id == id || $0.seriesId == id }.map(\.id)
+        return Array(Set(saved.map(\.itemId) + underway))
+    }
+
     /// Ignores the title in Smart Downloads first, so removing it doesn't start it again.
     func deleteAndIgnore(itemIds: [String]) {
         var ignored: Set<String> = []

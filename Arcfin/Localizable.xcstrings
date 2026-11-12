@@ -7297,6 +7297,134 @@
         }
       }
     },
+    "Ignore %@ in Smart Downloads?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ in Smart Downloads ignorieren?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Ignorar %@ en descargas inteligentes?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorer %@ dans les téléchargements intelligents ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorare %@ nei download intelligenti?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@をスマートダウンロードで無視しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@을(를) 스마트 다운로드에서 제외할까요?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ negeren in slimme downloads?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar %@ nos downloads inteligentes?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не включать «%@» в умные загрузки?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "要在智能下载中忽略%@吗？"
+          }
+        }
+      }
+    },
+    "Ignore & Delete Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorieren und Downloads löschen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar y eliminar descargas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorer et supprimer les téléchargements"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignora ed elimina i download"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "無視してダウンロードを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "제외하고 다운로드 삭제"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Negeren en downloads verwijderen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar e apagar downloads"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Исключить и удалить загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "忽略并删除下载"
+          }
+        }
+      }
+    },
     "Ignore in Smart Downloads" : {
       "localizations" : {
         "de" : {
@@ -7421,6 +7549,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "忽略边缘附近的轻扫"
+          }
+        }
+      }
+    },
+    "Ignore, Keep Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorieren, Downloads behalten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar y conservar descargas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorer et garder les téléchargements"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignora e mantieni i download"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "無視してダウンロードを残す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "제외하고 다운로드 유지"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Negeren, downloads houden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ignorar e manter downloads"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Исключить, сохранить загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "忽略并保留下载"
           }
         }
       }
@@ -18429,6 +18621,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这些会立即下载，不计入存储空间上限，可用空间低于 2 GB 时停止。"
+          }
+        }
+      }
+    },
+    "This also removes its downloads from Arcfin on this device. Keep them to still watch them offline." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dabei werden auch die Downloads davon aus Arcfin auf diesem Gerät entfernt. Behalte sie, um sie weiter offline zu schauen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "También elimina sus descargas de Arcfin en este dispositivo. Consérvalas para seguir viéndolas sin conexión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cela supprime aussi ses téléchargements d'Arcfin sur cet appareil. Gardez-les pour continuer à les regarder hors ligne."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rimuove anche i suoi download da Arcfin su questo dispositivo. Mantienili per guardarli ancora offline."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このデバイスのArcfinにあるダウンロードも削除されます。オフラインで見たい場合は残してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 기기의 Arcfin에서 해당 다운로드도 삭제됩니다. 오프라인으로 계속 보려면 유지하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dit verwijdert ook de downloads ervan uit Arcfin op dit apparaat. Houd ze om ze offline te blijven kijken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Isto também apaga os downloads dele do Arcfin neste dispositivo. Mantenha-os para continuar assistindo offline."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Его загрузки в Arcfin на этом устройстве тоже удалятся. Сохраните их, чтобы смотреть офлайн."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这也会从此设备上的 Arcfin 中移除其下载内容。若仍想离线观看，请保留。"
           }
         }
       }

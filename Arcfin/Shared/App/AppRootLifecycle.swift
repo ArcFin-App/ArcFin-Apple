@@ -35,6 +35,7 @@ struct AppRootLifecycle: ViewModifier {
             .environment(model.sharePlayManager)
             .onOpenURL { model.handleDeepLink($0) }
             .appIntentRoutes(model)
+            .smartDownloadsIgnorePrompt(model.downloadManager)
             .task { await model.checkLaunch() }
             .task { model.authManager.startNetworkMonitoring() }
             .task {
