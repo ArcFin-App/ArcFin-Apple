@@ -43,6 +43,25 @@ public protocol DialogueBoosting: AnyObject {
     var isDialogueBoosted: Bool { get set }
 }
 
+/// An engine that raises a quiet source to an everyday loudness; never turns a loud one down.
+@MainActor
+public protocol QuietAudioRaising: AnyObject {
+    var raisesQuietAudio: Bool { get set }
+}
+
+/// An engine that can upscale drawn content (anime, cartoons) with a line-art network.
+@MainActor
+public protocol LineArtUpscaling: AnyObject {
+    /// Set before a load, or during playback, which reloads at the playhead.
+    var upscalesLineArt: Bool { get set }
+}
+
+/// An engine that keeps picture subtitles for a timing shift, and how far each way.
+@MainActor
+public protocol SubtitleReaching: AnyObject {
+    func setSubtitleReach(laterSeconds: Double, earlierSeconds: Double)
+}
+
 @MainActor
 public protocol LiveRewindable: AnyObject {
     /// What can be gone back into so far, up to the live edge; nil before anything is kept.

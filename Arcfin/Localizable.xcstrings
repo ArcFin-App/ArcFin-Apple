@@ -2817,6 +2817,70 @@
         }
       }
     },
+    "Aether" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether"
+          }
+        }
+      }
+    },
     "All episodes" : {
       "localizations" : {
         "de" : {
@@ -3965,6 +4029,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "远程播放始终转码"
+          }
+        }
+      }
+    },
+    "Animation Upscaling" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hochskalierung für Animation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reescalado de animación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mise à l'échelle des animations"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Upscaling per l'animazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "アニメのアップスケーリング"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "애니메이션 업스케일링"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opschalen van animatie"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Upscaling de animação"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Улучшение анимации"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "动画超分辨率"
           }
         }
       }
@@ -5181,6 +5309,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "图书"
+          }
+        }
+      }
+    },
+    "Brings a quiet film up to an everyday volume, without making loud ones louder. Also in the player's Subtitles & Audio menu." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hebt einen leisen Film auf eine normale Lautstärke an, ohne laute lauter zu machen. Auch im Menü „Untertitel & Audio“ des Players."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sube una película baja a un volumen normal, sin subir las que ya suenan fuerte. También está en el menú Subtítulos y audio del reproductor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Amène un film trop faible à un volume normal, sans rendre les films forts plus forts. Aussi dans le menu Sous-titres et audio du lecteur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Porta un film troppo basso a un volume normale, senza alzare quelli già forti. Anche nel menu Sottotitoli e audio del player."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音の小さい映画を普段の音量まで上げます。大きい映画はそれ以上大きくしません。プレーヤーの「字幕とオーディオ」メニューにもあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "소리가 작은 영화를 평소 음량으로 올리며 큰 영화는 더 키우지 않습니다. 플레이어의 자막 및 오디오 메뉴에도 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Brengt een zachte film op een normaal volume, zonder harde films harder te maken. Ook in het menu Ondertitels en audio van de speler."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Leva um filme baixo a um volume normal, sem deixar os altos mais altos. Também fica no menu Legendas e áudio do player."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Поднимает громкость тихого фильма до обычной, не делая громкие ещё громче. Также есть в меню «Субтитры и звук» плеера."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "把声音偏小的影片提升到正常音量，不会让本来就响的更响。播放器的“字幕与音频”菜单中也有此选项。"
           }
         }
       }
@@ -10497,6 +10689,70 @@
         }
       }
     },
+    "Dialogue Boost makes speech easier to hear over music and effects. Raise Quiet Audio brings a quiet film up to an everyday volume, without making loud ones louder. With Aether, Atmos plays as surround sound while either is on." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dialoge verstärken macht Sprache neben Musik und Effekten besser hörbar. Leises Audio anheben bringt einen leisen Film auf normale Lautstärke, ohne laute lauter zu machen. Mit Aether wird Atmos als Surround-Ton abgespielt, solange eines davon aktiv ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Realzar diálogos hace que las voces se oigan mejor sobre la música y los efectos. Subir audio bajo lleva una película baja a un volumen normal, sin subir las que ya suenan fuerte. Con Aether, Atmos se reproduce como sonido envolvente mientras cualquiera de los dos esté activado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Renforcer les dialogues rend les voix plus audibles par-dessus la musique et les effets. Relever l'audio faible amène un film trop faible à un volume normal, sans rendre les films forts plus forts. Avec Aether, l'Atmos est lu en son surround tant que l'un des deux est activé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Potenzia dialoghi rende le voci più udibili sopra musica ed effetti. Alza l'audio basso porta un film troppo basso a un volume normale, senza alzare quelli già forti. Con Aether, l'Atmos viene riprodotto come audio surround finché uno dei due è attivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「ダイアログブースト」は音楽や効果音の中でもセリフを聞き取りやすくします。「小さい音を上げる」は音の小さい映画を普段の音量まで上げ、大きい映画はそれ以上大きくしません。Aetherではどちらかがオンの間、Atmosはサラウンドとして再生されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "대사 강조는 음악과 효과음 속에서 대사를 더 잘 들리게 합니다. 작은 소리 키우기는 소리가 작은 영화를 평소 음량으로 올리며 큰 영화는 더 키우지 않습니다. Aether에서는 둘 중 하나라도 켜져 있으면 Atmos가 서라운드로 재생됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dialoogversterking maakt spraak beter hoorbaar boven muziek en effecten. Zacht geluid versterken brengt een zachte film op normaal volume, zonder harde films harder te maken. Met Aether speelt Atmos als surroundgeluid zolang een van beide aan staat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Realçar diálogos deixa as falas mais fáceis de ouvir sobre a música e os efeitos. Aumentar áudio baixo leva um filme baixo a um volume normal, sem deixar os altos mais altos. Com o Aether, o Atmos toca como som surround enquanto um deles estiver ativado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "«Усиление диалогов» делает речь разборчивее на фоне музыки и эффектов. «Поднять тихий звук» доводит тихий фильм до обычной громкости, не делая громкие ещё громче. В Aether, пока включено любое из них, Atmos воспроизводится как объёмный звук."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“对白增强”让对白在音乐和音效中更清楚。“提升小音量”把声音偏小的影片提升到正常音量，不会让本来就响的更响。使用 Aether 时，只要开启其中任意一项，Atmos 会以环绕声播放。"
+          }
+        }
+      }
+    },
     "Disable" : {
       "localizations" : {
         "de" : {
@@ -13437,6 +13693,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "首页、作品页面、统计和设置的间距更均匀，更易阅读，用遥控器浏览也更方便。"
+          }
+        }
+      }
+    },
+    "How far it can move them earlier. A longer reach reads further ahead over the network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wie weit es sie nach vorne verschieben kann. Ein größerer Bereich liest übers Netzwerk weiter voraus."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hasta dónde puede adelantarlos. Un alcance mayor lee más por delante a través de la red."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jusqu'où il peut les avancer. Une portée plus longue lit plus loin à l'avance sur le réseau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Di quanto può anticiparli. Un intervallo più ampio legge più avanti tramite la rete."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "どこまで早められるか。範囲が広いほどネットワーク経由で先まで読み込みます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "얼마나 앞당길 수 있는지. 범위가 길수록 네트워크로 더 앞까지 읽어 둡니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hoe ver het ze eerder kan zetten. Een groter bereik leest verder vooruit via het netwerk."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Até onde pode adiantá-las. Um alcance maior lê mais à frente pela rede."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Насколько их можно сдвинуть раньше. Чем больше диапазон, тем дальше вперёд читается поток по сети."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "可将其提前多少。范围越大，会通过网络预读得越远。"
+          }
+        }
+      }
+    },
+    "How far Subtitle Timing can move picture subtitles later." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wie weit „Untertitel-Timing“ Bilduntertitel nach hinten verschieben kann."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hasta dónde puede Sincronizar subtítulos retrasar los subtítulos de imagen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jusqu'où le Décalage des sous-titres peut retarder les sous-titres image."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Di quanto Sincronizzazione sottotitoli può ritardare i sottotitoli a immagini."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「字幕のタイミング」で画像字幕をどこまで遅らせられるか。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "자막 타이밍으로 이미지 자막을 얼마나 늦출 수 있는지."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hoe ver Ondertiteltiming beeldondertitels later kan zetten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Até onde Sincronizar legendas pode atrasar legendas de imagem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Насколько «Синхронизация субтитров» может сдвинуть графические субтитры позже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“字幕时间”可将图像字幕延后多少。"
           }
         }
       }
@@ -21889,6 +22273,70 @@
         }
       }
     },
+    "Raise Quiet Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Leises Audio anheben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Subir audio bajo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Relever l'audio faible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alza l'audio basso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "小さい音を上げる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "작은 소리 키우기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zacht geluid versterken"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aumentar áudio baixo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Поднять тихий звук"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "提升小音量"
+          }
+        }
+      }
+    },
     "Ran %@" : {
       "localizations" : {
         "de" : {
@@ -26561,6 +27009,134 @@
         }
       }
     },
+    "Sharpens anime and cartoons on a larger screen, for titles in an Anime or Animation genre; you can turn it off for one in the player. It's heavy on the graphics chip: if playback stutters or drops frames, turn it off." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Schärft Anime und Zeichentrick auf größeren Bildschirmen, für Titel im Genre Anime oder Animation; im Player lässt es sich für einen Titel ausschalten. Es belastet den Grafikchip stark: Ruckelt die Wiedergabe oder fallen Bilder aus, schalte es aus."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Afina el anime y los dibujos animados en pantallas más grandes, para títulos del género Anime o Animación; puedes desactivarlo para uno en el reproductor. Exige mucho a la gráfica: si la reproducción va a tirones o pierde fotogramas, desactívalo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rend l'anime et les dessins animés plus nets sur un grand écran, pour les titres du genre Anime ou Animation ; vous pouvez le désactiver pour un titre dans le lecteur. Il sollicite beaucoup la puce graphique : si la lecture saccade ou perd des images, désactivez-le."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rende più nitidi anime e cartoni su uno schermo più grande, per i titoli del genere Anime o Animazione; puoi disattivarlo per un titolo nel player. Impegna molto il chip grafico: se la riproduzione scatta o perde fotogrammi, disattivalo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ジャンルが「アニメ」または「アニメーション」のタイトルを、大きな画面でくっきり表示します。プレーヤーでタイトルごとにオフにできます。グラフィックスへの負荷が大きいため、再生がカクついたりコマ落ちしたりする場合はオフにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "애니메이션 또는 애니 장르의 항목을 큰 화면에서 더 선명하게 합니다. 플레이어에서 항목별로 끌 수 있습니다. 그래픽 칩에 부담이 크므로 재생이 끊기거나 프레임이 빠지면 끄세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Maakt anime en tekenfilms scherper op een groter scherm, voor titels in het genre Anime of Animatie; in de speler kun je het per titel uitzetten. Het vraagt veel van de grafische chip: als de weergave hapert of frames overslaat, zet het uit."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deixa anime e desenhos mais nítidos numa tela maior, para títulos do gênero Anime ou Animação; dá para desativar por título no player. Exige muito do chip gráfico: se a reprodução travar ou perder quadros, desative."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Делает аниме и мультфильмы чётче на большом экране — для позиций жанра «Аниме» или «Мультфильм»; в плеере можно отключить для отдельной позиции. Сильно нагружает графику: если видео подтормаживает или теряет кадры, выключите."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在较大的屏幕上让动漫和卡通更清晰，适用于“动漫”或“动画”类型的内容；可在播放器中针对单部内容关闭。它对图形芯片负担很大：如果播放卡顿或掉帧，请关闭。"
+          }
+        }
+      }
+    },
+    "Sharpens the lines of anime and cartoons on a larger screen. It's heavy on the graphics chip: if playback stutters or drops frames, turn it off." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Schärft die Linien von Anime und Zeichentrick auf größeren Bildschirmen. Es belastet den Grafikchip stark: Ruckelt die Wiedergabe oder fallen Bilder aus, schalte es aus."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Afina los trazos del anime y los dibujos animados en pantallas más grandes. Exige mucho a la gráfica: si la reproducción va a tirones o pierde fotogramas, desactívalo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rend plus nets les traits de l'anime et des dessins animés sur un grand écran. Il sollicite beaucoup la puce graphique : si la lecture saccade ou perd des images, désactivez-le."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rende più nitide le linee di anime e cartoni su uno schermo più grande. Impegna molto il chip grafico: se la riproduzione scatta o perde fotogrammi, disattivalo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "アニメや漫画風の映像の線を、大きな画面でくっきり表示します。グラフィックスへの負荷が大きいため、再生がカクついたりコマ落ちしたりする場合はオフにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "큰 화면에서 애니메이션과 만화의 선을 더 선명하게 합니다. 그래픽 칩에 부담이 크므로 재생이 끊기거나 프레임이 빠지면 끄세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Maakt de lijnen van anime en tekenfilms scherper op een groter scherm. Het vraagt veel van de grafische chip: als de weergave hapert of frames overslaat, zet het uit."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deixa mais nítidos os traços de anime e desenhos numa tela maior. Exige muito do chip gráfico: se a reprodução travar ou perder quadros, desative."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Делает линии аниме и мультфильмов чётче на большом экране. Сильно нагружает графику: если видео подтормаживает или теряет кадры, выключите."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在较大的屏幕上让动漫和卡通的线条更清晰。它对图形芯片负担很大：如果播放卡顿或掉帧，请关闭。"
+          }
+        }
+      }
+    },
     "Show" : {
       "localizations" : {
         "de" : {
@@ -29569,6 +30145,134 @@
         }
       }
     },
+    "Subtitle Timing: Earlier" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Untertitel-Timing: früher"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sincronizar subtítulos: antes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Décalage des sous-titres : plus tôt"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sincronizzazione sottotitoli: prima"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "字幕のタイミング：早める"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "자막 타이밍: 앞당기기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ondertiteltiming: eerder"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sincronizar legendas: antes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Синхронизация субтитров: раньше"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "字幕时间：提前"
+          }
+        }
+      }
+    },
+    "Subtitle Timing: Later" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Untertitel-Timing: später"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sincronizar subtítulos: después"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Décalage des sous-titres : plus tard"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sincronizzazione sottotitoli: dopo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "字幕のタイミング：遅らせる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "자막 타이밍: 늦추기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ondertiteltiming: later"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sincronizar legendas: depois"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Синхронизация субтитров: позже"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "字幕时间：延后"
+          }
+        }
+      }
+    },
     "Support" : {
       "localizations" : {
         "de" : {
@@ -32125,6 +32829,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这些会立即下载，不计入存储空间上限，可用空间低于 2 GB 时停止。"
+          }
+        }
+      }
+    },
+    "These need the Aether player engine, which Auto uses for most videos." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Diese brauchen die Player-Engine Aether, die „Automatisch“ für die meisten Videos verwendet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Necesitan el motor de reproducción Aether, que Automático usa para la mayoría de los vídeos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ces options nécessitent le moteur de lecture Aether, qu'Auto utilise pour la plupart des vidéos."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Richiedono il motore di riproduzione Aether, che Automatico usa per la maggior parte dei video."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "これらにはAetherプレーヤーエンジンが必要です。「自動」ではほとんどのビデオでAetherを使います。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aether 플레이어 엔진이 필요합니다. 자동 설정은 대부분의 비디오에 Aether를 사용합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiervoor is de spelerengine Aether nodig, die Automatisch voor de meeste video's gebruikt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Precisam do mecanismo de reprodução Aether, que o Automático usa na maioria dos vídeos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Нужен движок плеера Aether — в режиме «Авто» он используется для большинства видео."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这些需要 Aether 播放引擎，“自动”模式下大多数视频都会使用它。"
           }
         }
       }

@@ -506,7 +506,11 @@ extension PlayerView {
                 },
                 audioDescriptionIndices: model.audioDescriptionIndices,
                 dialogueBoost: model.supportsDialogueBoost
-                    ? Binding(get: { model.isDialogueBoosted }, set: { model.setDialogueBoost($0) }) : nil
+                    ? Binding(get: { model.isDialogueBoosted }, set: { model.setDialogueBoost($0) }) : nil,
+                raiseQuietAudio: model.supportsQuietAudio
+                    ? Binding(get: { model.raisesQuietAudio }, set: { model.setRaiseQuietAudio($0) }) : nil,
+                lineArt: model.supportsLineArt
+                    ? Binding(get: { model.upscalesLineArt }, set: { model.setLineArt($0) }) : nil
             )
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }

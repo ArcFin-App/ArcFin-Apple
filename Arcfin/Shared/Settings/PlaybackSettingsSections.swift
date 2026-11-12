@@ -207,6 +207,53 @@ struct PlaybackTrackMemorySection: View {
     }
 }
 
+/// Aether's sound and picture enhancements: quiet audio, animation upscaling, and how far
+/// Subtitle Timing reaches for picture subtitles.
+struct PlaybackEnhancementsSection: View {
+    @Environment(AuthManager.self) private var authManager
+    @AppStorage(PlayerModel.raiseQuietAudioKey) private var raiseQuietAudio = false
+    @AppStorage(PlayerModel.animationUpscalingKey) private var animationUpscaling = false
+    @AppStorage(PlayerModel.subtitleReachLaterKey) private var reachLater = 60
+    @AppStorage(PlayerModel.subtitleReachEarlierKey) private var reachEarlier = 60
+
+    var body: some View {
+        Section {
+            Toggle(isOn: $raiseQuietAudio) {
+                TVRowLabelText(title: "Raise Quiet Audio", detail: "Brings a quiet film up to an everyday volume, without making loud ones louder. Also in the player's Subtitles & Audio menu.")
+            }
+            .tvListRow()
+            .syncLocked(PlayerModel.raiseQuietAudioKey, authManager)
+            Toggle(isOn: $animationUpscaling) {
+                TVRowLabelText(title: "Animation Upscaling", detail: "Sharpens anime and cartoons on a larger screen, for titles in an Anime or Animation genre; you can turn it off for one in the player. It's heavy on the graphics chip: if playback stutters or drops frames, turn it off.")
+            }
+            .tvListRow()
+            .syncLocked(PlayerModel.animationUpscalingKey, authManager)
+            Picker(selection: $reachLater) {
+                ForEach(PlayerModel.subtitleReachOptions, id: \.self) { Text(Self.reachLabel($0)).tag($0) }
+            } label: {
+                TVRowLabelText(title: "Subtitle Timing: Later", detail: "How far Subtitle Timing can move picture subtitles later.")
+            }
+            .tvListRow()
+            .syncLocked(PlayerModel.subtitleReachLaterKey, authManager)
+            Picker(selection: $reachEarlier) {
+                ForEach(PlayerModel.subtitleReachOptions, id: \.self) { Text(Self.reachLabel($0)).tag($0) }
+            } label: {
+                TVRowLabelText(title: "Subtitle Timing: Earlier", detail: "How far it can move them earlier. A longer reach reads further ahead over the network.")
+            }
+            .tvListRow()
+            .syncLocked(PlayerModel.subtitleReachEarlierKey, authManager)
+        } header: {
+            Text("Aether")
+        } footer: {
+            Text("These need the Aether player engine, which Auto uses for most videos.")
+        }
+    }
+
+    private static func reachLabel(_ seconds: Int) -> String {
+        Duration.seconds(seconds).formatted(.units(allowed: [.minutes], width: .wide))
+    }
+}
+
 /// Settings › Playback's links to Codec Compatibility, Player Features and Subtitle Style.
 struct PlaybackMoreSettingsSection: View {
     var body: some View {

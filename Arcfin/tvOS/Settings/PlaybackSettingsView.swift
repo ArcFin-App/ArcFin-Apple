@@ -43,6 +43,7 @@ struct PlaybackSettingsView: View {
             PlaybackLanguageSection()
 
             PlaybackTrackMemorySection()
+            PlaybackEnhancementsSection()
 
             PlaybackMoreSettingsSection()
         }

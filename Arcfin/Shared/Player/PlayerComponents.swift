@@ -604,6 +604,10 @@ struct TrackSelectionSheet: View {
     var followsFocus = false
     /// Set where the engine can lift speech above music and effects.
     var dialogueBoost: Binding<Bool>? = nil
+    /// Set where the engine can raise a quiet source.
+    var raiseQuietAudio: Binding<Bool>? = nil
+    /// Set for anime and cartoons where the engine can upscale line art.
+    var lineArt: Binding<Bool>? = nil
 
     var body: some View {
         List {
@@ -622,12 +626,34 @@ struct TrackSelectionSheet: View {
                         .tint(DT.Color.accent)
                         .listRowBackground(rowBackground)
                     }
+                    if let raiseQuietAudio {
+                        Toggle(isOn: raiseQuietAudio) {
+                            Label("Raise Quiet Audio", systemImage: "speaker.wave.3")
+                                .foregroundStyle(DT.Color.textPrimary)
+                        }
+                        .tint(DT.Color.accent)
+                        .listRowBackground(rowBackground)
+                    }
                 } header: {
                     Text("Audio")
                 } footer: {
                     if dialogueBoost != nil {
-                        Text("Makes speech easier to hear over music and effects. With Aether, Atmos plays as surround sound while it's on.")
+                        Text("Dialogue Boost makes speech easier to hear over music and effects. Raise Quiet Audio brings a quiet film up to an everyday volume, without making loud ones louder. With Aether, Atmos plays as surround sound while either is on.")
                     }
+                }
+            }
+            if let lineArt {
+                Section {
+                    Toggle(isOn: lineArt) {
+                        Label("Animation Upscaling", systemImage: "sparkles.tv")
+                            .foregroundStyle(DT.Color.textPrimary)
+                    }
+                    .tint(DT.Color.accent)
+                    .listRowBackground(rowBackground)
+                } header: {
+                    Text("Video")
+                } footer: {
+                    Text("Sharpens the lines of anime and cartoons on a larger screen. It's heavy on the graphics chip: if playback stutters or drops frames, turn it off.")
                 }
             }
             Section("Subtitles") {
