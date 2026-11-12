@@ -114,6 +114,22 @@ struct AdminView: View {
                 Text("Manage")
             }
             Section {
+                NavigationLink { AdminPluginsView() } label: {
+                    AdminRow(title: "Plugins", systemImage: "puzzlepiece.extension", detail: nil)
+                }
+                NavigationLink { AdminAPIKeysView() } label: {
+                    AdminRow(title: "API Keys", systemImage: "key", detail: nil)
+                }
+                NavigationLink { AdminLogsView() } label: {
+                    AdminRow(title: "Logs", systemImage: "doc.text.magnifyingglass", detail: nil)
+                }
+                NavigationLink { AdminBackupsView() } label: {
+                    AdminRow(title: "Backups", systemImage: "externaldrive", detail: nil)
+                }
+            } header: {
+                Text("System")
+            }
+            Section {
                 Button { confirmRestart = true } label: {
                     Label("Restart Server", systemImage: "arrow.clockwise")
                 }

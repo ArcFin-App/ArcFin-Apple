@@ -76,6 +76,51 @@ public struct JellyfinDevice: Sendable, Identifiable, Equatable {
     public let lastActivity: Date?
 }
 
+/// An installed server plugin.
+public struct JellyfinPlugin: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let name: String
+    public let version: String
+    public let description: String?
+    /// "Active", "Disabled", "Restart", "NotSupported", "Malfunctioned", "Superceded", "Deleted".
+    public let status: String
+    public let canUninstall: Bool
+}
+
+/// A plugin in the server's catalogue, with its newest version.
+public struct JellyfinPackage: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let name: String
+    public let overview: String?
+    public let category: String?
+    public let latestVersion: String?
+    public let repositoryUrl: String?
+}
+
+/// An API key the server hands out to apps.
+public struct JellyfinAPIKey: Sendable, Identifiable, Equatable {
+    public let token: String
+    public let appName: String
+    public let created: Date?
+    public var id: String { token }
+}
+
+/// One of the server's log files.
+public struct JellyfinLogFile: Sendable, Identifiable, Equatable {
+    public let name: String
+    public let size: Int64
+    public let modified: Date?
+    public var id: String { name }
+}
+
+/// A server backup (Jellyfin 10.11 and later).
+public struct JellyfinBackup: Sendable, Identifiable, Equatable {
+    public let path: String
+    public let serverVersion: String?
+    public let created: Date?
+    public var id: String { path }
+}
+
 // MARK: - Client
 
 /// The server's admin endpoints. Every call needs an administrator's session.
@@ -266,6 +311,98 @@ public struct JellyfinAdminClient: Sendable {
         try await send("DELETE", "Devices", query: [.init(name: "id", value: id)], credential: credential, authHeader: authHeader)
     }
 
+    // MARK: Plugins
+
+    public func plugins(credential: ServerCredential, authHeader: String) async throws -> [JellyfinPlugin] {
+        let response: [PluginResponse] = try await get("Plugins", credential: credential, authHeader: authHeader)
+        return response.map {
+            JellyfinPlugin(id: $0.id, name: $0.name, version: $0.version ?? "", description: $0.description,
+                           status: $0.status ?? "Active", canUninstall: $0.canUninstall ?? false)
+        }
+    }
+
+    public func setPlugin(_ plugin: JellyfinPlugin, enabled: Bool, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Plugins/\(plugin.id)/\(plugin.version)/\(enabled ? "Enable" : "Disable")",
+                       credential: credential, authHeader: authHeader)
+    }
+
+    public func uninstall(_ plugin: JellyfinPlugin, credential: ServerCredential, authHeader: String) async throws {
+        try await send("DELETE", "Plugins/\(plugin.id)/\(plugin.version)", credential: credential, authHeader: authHeader)
+    }
+
+    public func catalogue(credential: ServerCredential, authHeader: String) async throws -> [JellyfinPackage] {
+        let response: [PackageResponse] = try await get("Packages", credential: credential, authHeader: authHeader)
+        return response.compactMap { package in
+            guard let guid = package.guid else { return nil }
+            let latest = package.versions?.first
+            return JellyfinPackage(id: guid, name: package.name, overview: package.overview ?? package.description,
+                                   category: package.category, latestVersion: latest?.version,
+                                   repositoryUrl: latest?.repositoryUrl)
+        }
+    }
+
+    /// Installs a catalogue plugin, or updates an installed one to `version`. It takes
+    /// effect after the server restarts.
+    public func install(_ package: JellyfinPackage, version: String? = nil, credential: ServerCredential, authHeader: String) async throws {
+        var query: [URLQueryItem] = [.init(name: "assemblyGuid", value: package.id)]
+        if let version = version ?? package.latestVersion { query.append(.init(name: "version", value: version)) }
+        if let repository = package.repositoryUrl { query.append(.init(name: "repositoryUrl", value: repository)) }
+        let name = package.name.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? package.name
+        try await send("POST", "Packages/Installed/\(name)", query: query, credential: credential, authHeader: authHeader)
+    }
+
+    // MARK: API keys
+
+    public func apiKeys(credential: ServerCredential, authHeader: String) async throws -> [JellyfinAPIKey] {
+        let response: KeysPage = try await get("Auth/Keys", credential: credential, authHeader: authHeader)
+        return response.items.map {
+            JellyfinAPIKey(token: $0.accessToken, appName: $0.appName ?? "", created: $0.dateCreated.flatMap(JellyfinDate.parse))
+        }
+    }
+
+    public func createAPIKey(appName: String, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", "Auth/Keys", query: [.init(name: "app", value: appName)], credential: credential, authHeader: authHeader)
+    }
+
+    public func revokeAPIKey(_ token: String, credential: ServerCredential, authHeader: String) async throws {
+        try await send("DELETE", "Auth/Keys/\(token)", credential: credential, authHeader: authHeader)
+    }
+
+    // MARK: Logs
+
+    public func logFiles(credential: ServerCredential, authHeader: String) async throws -> [JellyfinLogFile] {
+        let response: [LogFileResponse] = try await get("System/Logs", credential: credential, authHeader: authHeader)
+        return response.map {
+            JellyfinLogFile(name: $0.name, size: $0.size ?? 0, modified: $0.dateModified.flatMap(JellyfinDate.parse))
+        }
+        .sorted { ($0.modified ?? .distantPast) > ($1.modified ?? .distantPast) }
+    }
+
+    public func logFile(named name: String, credential: ServerCredential, authHeader: String) async throws -> String {
+        let data = try await send("GET", "System/Logs/Log", query: [.init(name: "name", value: name)],
+                                  credential: credential, authHeader: authHeader)
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    // MARK: Backups
+
+    /// The server's backups, newest first. Throws on servers before 10.11, which have none.
+    public func backups(credential: ServerCredential, authHeader: String) async throws -> [JellyfinBackup] {
+        let response: [BackupResponse] = try await get("Backup", credential: credential, authHeader: authHeader)
+        return response.map {
+            JellyfinBackup(path: $0.path, serverVersion: $0.serverVersion, created: $0.dateCreated.flatMap(JellyfinDate.parse))
+        }
+        .sorted { ($0.created ?? .distantPast) > ($1.created ?? .distantPast) }
+    }
+
+    /// Backs up the database and settings, and optionally metadata, trickplay and subtitles.
+    public func createBackup(metadata: Bool, trickplay: Bool, subtitles: Bool, credential: ServerCredential, authHeader: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "Metadata": metadata, "Trickplay": trickplay, "Subtitles": subtitles, "Database": true,
+        ])
+        try await send("POST", "Backup/Create", body: body, credential: credential, authHeader: authHeader)
+    }
+
     // MARK: Requests
 
     func get<T: Decodable>(_ path: String, query: [URLQueryItem] = [], credential: ServerCredential, authHeader: String) async throws -> T {
@@ -413,4 +550,55 @@ private struct DevicesPage: Decodable {
     }
     let items: [Device]
     enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+private struct PluginResponse: Decodable {
+    let id: String
+    let name: String
+    let version: String?
+    let description: String?
+    let status: String?
+    let canUninstall: Bool?
+    enum CodingKeys: String, CodingKey {
+        case id = "Id", name = "Name", version = "Version", description = "Description", status = "Status"
+        case canUninstall = "CanUninstall"
+    }
+}
+
+private struct PackageResponse: Decodable {
+    struct Version: Decodable {
+        let version: String?
+        let repositoryUrl: String?
+    }
+    let name: String
+    let description: String?
+    let overview: String?
+    let category: String?
+    let guid: String?
+    let versions: [Version]?
+}
+
+private struct KeysPage: Decodable {
+    struct Key: Decodable {
+        let accessToken: String
+        let appName: String?
+        let dateCreated: String?
+        enum CodingKeys: String, CodingKey { case accessToken = "AccessToken", appName = "AppName", dateCreated = "DateCreated" }
+    }
+    let items: [Key]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+private struct LogFileResponse: Decodable {
+    let name: String
+    let size: Int64?
+    let dateModified: String?
+    enum CodingKeys: String, CodingKey { case name = "Name", size = "Size", dateModified = "DateModified" }
+}
+
+private struct BackupResponse: Decodable {
+    let path: String
+    let serverVersion: String?
+    let dateCreated: String?
+    enum CodingKeys: String, CodingKey { case path = "Path", serverVersion = "ServerVersion", dateCreated = "DateCreated" }
 }

@@ -102,6 +102,8 @@
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
 				Shared/Admin/AdminActivityView.swift = (ios, macos, );
 				Shared/Admin/AdminLibrariesView.swift = (ios, macos, );
+				Shared/Admin/AdminMaintenanceViews.swift = (ios, macos, );
+				Shared/Admin/AdminPluginsView.swift = (ios, macos, );
 				Shared/Admin/AdminSessions.swift = (ios, macos, );
 				Shared/Admin/AdminSessionsView.swift = (ios, macos, );
 				Shared/Admin/AdminTabOffer.swift = (ios, macos, );
