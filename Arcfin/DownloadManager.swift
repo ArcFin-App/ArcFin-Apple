@@ -1473,7 +1473,15 @@ final class DownloadManager: NSObject {
         ignoredTitles[id] = ignored ? name : nil
         UserDefaults.standard.set(ignoredTitles, forKey: Self.ignoredKey)
         if ignored, Self.keptShows[id] != nil { setKeptShow(seriesId: id, name: name, episodeCount: nil) }
-        if !ignored { refreshSmartDownloads() }
+        if ignored {
+            // What Smart Downloads queued for it goes too; downloads someone started stay.
+            let smart = Self.smartItemIds
+            for item in activeItems.values where (item.id == id || item.seriesId == id) && smart.contains(item.id) {
+                cancelDownload(itemId: item.id)
+            }
+        } else {
+            refreshSmartDownloads()
+        }
     }
 
     /// Movies Smart Downloads fetched from Continue Watching, so only those (not ones someone
@@ -1724,6 +1732,8 @@ final class DownloadManager: NSObject {
         // again, so it can go over by at most one batch less one title.
         var batch = 0
         for item in smart where !isDownloaded(item.id) && !activeItemIds.contains(item.id) {
+            // Ignored while an earlier batch ran.
+            if ignoredTitles[item.id] != nil || item.seriesId.map({ ignoredTitles[$0] != nil }) == true { continue }
             if batch == 0, totalDownloadedBytes() >= budgetBytes {
                 Self.smartLog.notice("Smart Downloads stopped: storage budget of \(budgetGB, privacy: .public) GB reached")
                 break
