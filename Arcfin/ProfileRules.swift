@@ -30,6 +30,8 @@ final class ProfileRules {
     var restrictsContent: Bool { policy.restrictsContent }
     var canDownload: Bool { policy.enableContentDownloading }
     var canManageSubtitles: Bool { policy.isAdministrator || policy.enableSubtitleManagement }
+    /// Editing an item's metadata, tags included: Jellyfin allows it for admins only.
+    var canEditMetadata: Bool { policy.isAdministrator }
     var canUseSyncPlay: Bool { policy.syncPlayAccess != "None" }
     /// The server's LiveTvAccess and LiveTvManagement policies: watching, and recording.
     var canWatchLiveTV: Bool { policy.enableLiveTvAccess }

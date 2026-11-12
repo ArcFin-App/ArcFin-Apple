@@ -10,6 +10,7 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
+    @Bindable private var tagEditor = TagEditor.shared
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     @State private var selectedTab = BottomNavItem(rawValue: UserDefaults.standard.string(forKey: BottomNavPrefs.launchTabKey) ?? "") ?? .home
@@ -41,6 +42,9 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
+            .sheet(item: $tagEditor.item) { item in
+                EditTagsSheet(item: item)
+            }
             .sheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
                     .presentationDetents([.medium, .large])

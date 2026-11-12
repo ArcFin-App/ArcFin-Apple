@@ -1033,6 +1033,40 @@ public struct JellyfinMediaClient: Sendable {
         _ = try await URLSession.arcfin.data(for: req)
     }
 
+    /// An item's tags, as an admin edits them.
+    public func getTags(credential: ServerCredential, authHeader: String, itemId: String) async throws -> [String] {
+        let object = try await itemObject(credential: credential, authHeader: authHeader, itemId: itemId)
+        return object["Tags"] as? [String] ?? []
+    }
+
+    /// Replaces an item's tags. Jellyfin takes the whole item back, so the item is fetched,
+    /// only its tags are changed and it's posted as it came; admins only.
+    public func setTags(credential: ServerCredential, authHeader: String, itemId: String, tags: [String]) async throws {
+        var object = try await itemObject(credential: credential, authHeader: authHeader, itemId: itemId)
+        object["Tags"] = tags
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Items/\(itemId)"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: object)
+        req.timeoutInterval = 20
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    private func itemObject(credential: ServerCredential, authHeader: String, itemId: String) async throws -> [String: Any] {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items/\(itemId)"))
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, response) = try await URLSession.arcfin.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { throw URLError(.badServerResponse) }
+        return object
+    }
+
     /// Thumbs rating: `true` likes, `false` dislikes, `nil` clears it.
     public func setRating(
         credential: ServerCredential,
