@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import Foundation
 import Testing
 @testable import SyncEngine
 
@@ -63,5 +64,31 @@ struct SettingsMergeTests {
             local: ["somethingElse": "1"], remote: ["somethingElse": "2"], base: nil, locked: [])
         #expect(result.apply.isEmpty)
         #expect(result.push.isEmpty)
+    }
+
+    @Test("A profile's first sync after a switch takes the server's values and sends nothing")
+    func adoptRemoteAfterSwitch() {
+        let result = SettingsSyncEngine.merge(
+            local: ["seerrURL": "https://a.example", "autoPlayNext": "true"],
+            remote: ["seerrURL": "https://b.example"],
+            base: nil, locked: [], adoptRemote: true)
+        #expect(result.apply == ["seerrURL": "https://b.example"])
+        #expect(result.push.isEmpty)
+    }
+
+    @Test("Each profile starts from its own record; another profile's last sync means adopt")
+    func startingPointPerProfile() {
+        let defaults = UserDefaults(suiteName: "SettingsMergeTests.\(UUID().uuidString)")!
+        defaults.set(["autoPlayNext": "true"], forKey: "arcfin.settingsSync.lastSynced")
+        let first = SettingsSyncEngine.startingPoint(profile: "A", defaults: defaults)
+        #expect(first.base == ["autoPlayNext": "true"])
+        #expect(first.adoptRemote == false)
+        defaults.set("A", forKey: "arcfin.settingsSync.lastProfile")
+        defaults.set(["autoPlayNext": "true"], forKey: "arcfin.settingsSync.lastSynced.A")
+        let other = SettingsSyncEngine.startingPoint(profile: "B", defaults: defaults)
+        #expect(other.base == nil)
+        #expect(other.adoptRemote == true)
+        let again = SettingsSyncEngine.startingPoint(profile: "A", defaults: defaults)
+        #expect(again.base == ["autoPlayNext": "true"])
     }
 }

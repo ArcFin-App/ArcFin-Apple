@@ -6,7 +6,7 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
     // Case name stays "requests" even though it now displays as "Discover" — the rawValue is
     // persisted in bottomNavOrder/bottomNavActive UserDefaults strings, renaming it would drop
     // the tab from every existing saved layout instead of just relabeling it.
-    case home, browse, stats, requests, watchlist
+    case home, browse, stats, requests, watchlist, admin
 
     var id: String { rawValue }
 
@@ -17,6 +17,7 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
         case .stats:     String(localized: "Stats")
         case .requests:  String(localized: "Discover")
         case .watchlist: String(localized: "Watchlist")
+        case .admin:     String(localized: "Admin")
         }
     }
 
@@ -27,12 +28,16 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
         case .stats:     "chart.xyaxis.line"
         case .requests:  "sparkle.magnifyingglass"
         case .watchlist: "bookmark"
+        case .admin:     "server.rack"
         }
     }
 }
 
 enum BottomNavPrefs {
-    static let maxActive = 5
+    /// iPhone's tab bar shows five; a sixth would fold into a "More" tab. iPad and the Mac
+    /// have room for all six.
+    static let maxActiveCompact = 5
+    static let maxActiveRegular = 6
     static let orderKey = "bottomNavOrder"
     static let activeKey = "bottomNavActive"
     static let launchTabKey = "launchTab"
@@ -49,14 +54,38 @@ enum BottomNavPrefs {
         items.map(\.rawValue).joined(separator: ",")
     }
 
-    /// Every tab except Stats until the user chooses; Stats is opt-in, from Navigation
-    /// settings (or Appearance on Apple TV).
+    /// Every tab except Stats and Admin until the user chooses; both are opt-in, from
+    /// Navigation settings (or Appearance on Apple TV, which has no Admin).
     static func active(from raw: String) -> Set<BottomNavItem> {
-        guard !raw.isEmpty else { return Set(BottomNavItem.allCases).subtracting([.stats]) }
+        guard !raw.isEmpty else { return Set(BottomNavItem.allCases).subtracting([.stats, .admin]) }
         return Set(raw.split(separator: ",").compactMap { BottomNavItem(rawValue: String($0)) })
     }
 
     static func encode(_ items: Set<BottomNavItem>) -> String {
         items.map(\.rawValue).joined(separator: ",")
+    }
+}
+
+extension BottomNavPrefs {
+    /// The profile whose tab layout the keys above hold.
+    private static let layoutProfileKey = "bottomNavProfile"
+    private static func storeKey(_ profile: String) -> String { "bottomNavLayout.\(profile)" }
+    private static var layoutKeys: [String] { [orderKey, activeKey, launchTabKey] }
+
+    /// Each profile keeps its own tabs: the layout in use is put away under the profile it
+    /// belonged to, and the new profile's comes back, or the defaults if it has none yet.
+    static func switchLayout(toProfile profile: String) {
+        let defaults = UserDefaults.standard
+        let current = defaults.string(forKey: layoutProfileKey)
+        defaults.set(profile, forKey: layoutProfileKey)
+        // The first time, the layout already there is this profile's.
+        guard let current, current != profile else { return }
+        var saved: [String: String] = [:]
+        for key in layoutKeys { saved[key] = defaults.string(forKey: key) }
+        defaults.set(saved, forKey: storeKey(current))
+        let restored = defaults.dictionary(forKey: storeKey(profile)) as? [String: String] ?? [:]
+        for key in layoutKeys {
+            if let value = restored[key] { defaults.set(value, forKey: key) } else { defaults.removeObject(forKey: key) }
+        }
     }
 }

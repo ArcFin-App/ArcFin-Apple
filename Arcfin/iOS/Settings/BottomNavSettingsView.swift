@@ -8,7 +8,14 @@ struct BottomNavSettingsView: View {
     @AppStorage(BottomNavPrefs.launchTabKey) private var launchTab = BottomNavItem.home
     @Environment(\.horizontalSizeClass) private var sizeClass
 
-    private var order: [BottomNavItem] { BottomNavPrefs.order(from: orderString) }
+    @Environment(AuthManager.self) private var authManager
+    @State private var replacing: BottomNavItem?
+
+    /// Admin is only listed for an admin profile.
+    private var order: [BottomNavItem] {
+        BottomNavPrefs.order(from: orderString).filter { $0 != .admin || authManager.isAdmin }
+    }
+    private var limit: Int { usesBottomBar ? BottomNavPrefs.maxActiveCompact : BottomNavPrefs.maxActiveRegular }
     private var active: Set<BottomNavItem> { BottomNavPrefs.active(from: activeString) }
 
     /// Same reasoning as AppearanceView.usesBottomBar — iPad/Mac show this exact order as
@@ -46,7 +53,7 @@ struct BottomNavSettingsView: View {
             } header: {
                 Text(navTitle)
             } footer: {
-                Text("Drag to reorder. Up to \(BottomNavPrefs.maxActive) tabs can be active at once — the rest stay hidden but keep their place in the order if you turn them back on.")
+                Text("Drag to reorder. Up to \(limit) tabs can be active at once — the rest stay hidden but keep their place in the order if you turn them back on.")
             }
 
             Section {
@@ -60,6 +67,7 @@ struct BottomNavSettingsView: View {
             }
         }
         .environment(\.editMode, .constant(.active))
+        .tabReplacementAlert(pending: $replacing)
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge(navTitle)
@@ -83,7 +91,10 @@ struct BottomNavSettingsView: View {
             guard items.count > 1 else { return }
             items.remove(tab)
         } else {
-            guard items.count < BottomNavPrefs.maxActive else { return }
+            guard items.count < limit else {
+                replacing = tab
+                return
+            }
             items.insert(tab)
         }
         activeString = BottomNavPrefs.encode(items)

@@ -449,6 +449,78 @@ final class PlayerModel {
         (player as? DialogueBoosting)?.isDialogueBoosted = on
     }
 
+    /// Dialogue boost, quiet audio, line art and subtitle reach, on whichever engine took the
+    /// stream; called before a load and again after, as a fallback engine may have taken over.
+    private func applyEngineOptions() {
+        (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
+        (player as? QuietAudioRaising)?.raisesQuietAudio = raisesQuietAudio
+        (player as? LineArtUpscaling)?.upscalesLineArt = upscalesLineArt
+        (player as? SubtitleReaching)?.setSubtitleReach(laterSeconds: Self.subtitleReach(Self.subtitleReachLaterKey),
+                                                        earlierSeconds: Self.subtitleReach(Self.subtitleReachEarlierKey))
+    }
+
+    // MARK: Raise quiet audio
+
+    static let raiseQuietAudioKey = "raiseQuietAudio"
+
+    var supportsQuietAudio: Bool { player is QuietAudioRaising }
+    private(set) var raisesQuietAudio = UserDefaults.standard.bool(forKey: PlayerModel.raiseQuietAudioKey)
+
+    /// Remembered for every title, like dialogue boost; Settings › Playback sets it too.
+    func setRaiseQuietAudio(_ on: Bool) {
+        raisesQuietAudio = on
+        UserDefaults.standard.set(on, forKey: Self.raiseQuietAudioKey)
+        (player as? QuietAudioRaising)?.raisesQuietAudio = on
+    }
+
+    // MARK: Animation upscaling
+
+    /// Settings › Playback › Animation Upscaling: line-art upscaling on by default for anime
+    /// and cartoons. Off unless turned on, as it's heavy on the GPU.
+    static let animationUpscalingKey = "animationUpscaling"
+
+    /// The title (or its show) is in an Anime or Animation genre.
+    private(set) var isAnimation = false
+    private(set) var upscalesLineArt = false
+    var supportsLineArt: Bool { isAnimation && player is LineArtUpscaling }
+
+    /// For this title only; the setting decides where the next one starts.
+    func setLineArt(_ on: Bool) {
+        upscalesLineArt = on
+        (player as? LineArtUpscaling)?.upscalesLineArt = on
+    }
+
+    static func isAnimation(_ genres: [String]) -> Bool {
+        genres.contains { genre in
+            let name = genre.lowercased()
+            return name.contains("anim") || name.contains("cartoon")
+        }
+    }
+
+    /// An episode rarely carries genres of its own, so its show's are read when it has none.
+    private func detectAnimation(genres: [String], credential: ServerCredential, authHeader: String) async {
+        var genres = genres
+        if genres.isEmpty, let seriesId = item.seriesId,
+           let series = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: seriesId) {
+            genres = series.genres
+        }
+        isAnimation = Self.isAnimation(genres)
+        upscalesLineArt = isAnimation && UserDefaults.standard.bool(forKey: Self.animationUpscalingKey)
+    }
+
+    // MARK: Subtitle reach
+
+    /// Settings › Subtitles › Timing Range: how far Subtitle Timing can move picture subtitles
+    /// later and earlier, in seconds. A minute each way unless changed.
+    static let subtitleReachLaterKey = "subtitleReachLater"
+    static let subtitleReachEarlierKey = "subtitleReachEarlier"
+    static let subtitleReachOptions = [60, 120, 300, 600]
+
+    static func subtitleReach(_ key: String) -> Double {
+        let saved = UserDefaults.standard.integer(forKey: key)
+        return Double(subtitleReachOptions.contains(saved) ? saved : 60)
+    }
+
     // MARK: Hold for speed
 
     /// Settings › Playback › Hold Speed: how fast playback runs while held.
@@ -655,6 +727,7 @@ final class PlayerModel {
             chapters = detail?.chapters ?? []
             castMembers = detail?.cast ?? []
             currentLikes = detail?.item.userData?.likes
+            await detectAnimation(genres: detail?.genres ?? item.genres, credential: credential, authHeader: authHeader)
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
             loadingStage = info.playMethod == .transcode ? "The server is converting this video…" : "Opening the video…"
@@ -664,7 +737,7 @@ final class PlayerModel {
             // the same AVFoundation/VLC split Auto used before Aether existed, rather than
             // surfacing a hard error over an engine that can't serve this specific source.
             // Before the load, so the stream starts shaped rather than rebuilding once it plays.
-            (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
+            applyEngineOptions()
             // Armed before the load: a conversion that never starts can hold the load itself.
             watchAV1Conversion(startedFrom: resumeFrom)
             do {
@@ -686,7 +759,7 @@ final class PlayerModel {
             guard generation == setupGeneration else { return }
             await player.play()
             playStartedAt = Date()
-            (player as? DialogueBoosting)?.isDialogueBoosted = isDialogueBoosted
+            applyEngineOptions()
             loadingStage = nil
             await applyRememberedRate()
             if !isLive { sharePlay.playerOpened(item) }

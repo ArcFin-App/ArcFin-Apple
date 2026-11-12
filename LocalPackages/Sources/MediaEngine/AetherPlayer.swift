@@ -57,6 +57,8 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     public private(set) var playbackRate: Float = 1.0
     /// Dialogue boost, carried into each load and kept across them.
     var dialogueBoostRequested = false
+    var quietAudioRaiseRequested = false
+    var lineArtRequested = false
 
     /// Native PGS/DVB bitmap cues the engine decodes itself — additive to the app's own
     /// Jellyfin-delivery-URL text-cue path (SubtitleLoader.SubtitleCue), which stays the
@@ -181,7 +183,10 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         // paused too. Held on disk, not in memory, and the engine stops at a quarter of the free
         // space, so a large title on a full device buffers less rather than crowding it out.
         options.forwardBufferSegments = 150
-        options.audioShaping = Self.shaping(dialogueBoosted: dialogueBoostRequested)
+        options.audioShaping = Self.shaping(dialogueBoosted: dialogueBoostRequested, raisesQuiet: quietAudioRaiseRequested)
+        // Line art runs as the upscale stage, so it's on only while that's asked for.
+        options.upscalesLowResolutionVideo = lineArtRequested
+        options.upscaleScaler = lineArtRequested ? .lineArt : .automatic
         // The engine's open-time probe reads up to 50 MB / 60 s, which a remux with sparse PGS
         // tracks always exhausts — over a remote link that held the first frame for over a
         // minute. Video and audio resolve within the first few MB; subtitle tracks come from
@@ -267,11 +272,59 @@ extension AetherEnginePlayer: DialogueBoosting {
         set {
             guard newValue != dialogueBoostRequested else { return }
             dialogueBoostRequested = newValue
-            engine.setAudioShaping(Self.shaping(dialogueBoosted: newValue))
+            engine.setAudioShaping(Self.shaping(dialogueBoosted: newValue, raisesQuiet: quietAudioRaiseRequested))
         }
     }
 
-    static func shaping(dialogueBoosted: Bool) -> AudioShaping {
-        AudioShaping(dialogueGainDB: dialogueBoosted ? 6 : 0)
+}
+
+extension AetherEnginePlayer: QuietAudioRaising {
+    /// The engine measures the source's loudness (EBU R128) as it plays and lifts a quiet one
+    /// towards -24 LUFS, broadcast loudness, over seconds rather than per scene. A source at or
+    /// above it plays as it was.
+    public var raisesQuietAudio: Bool {
+        get { quietAudioRaiseRequested }
+        set {
+            guard newValue != quietAudioRaiseRequested else { return }
+            quietAudioRaiseRequested = newValue
+            engine.setAudioShaping(Self.shaping(dialogueBoosted: dialogueBoostRequested, raisesQuiet: newValue))
+        }
+    }
+
+    static func shaping(dialogueBoosted: Bool, raisesQuiet: Bool) -> AudioShaping {
+        AudioShaping(dialogueGainDB: dialogueBoosted ? 6 : 0, loudnessTargetLUFS: raisesQuiet ? -24 : nil)
+    }
+}
+
+// MARK: - Line-art upscaling
+
+extension AetherEnginePlayer: LineArtUpscaling {
+    /// Anime4K's line-art network in place of the usual upscaler, for 1080p and lower sources on
+    /// a larger display. GPU-heavy: when it can't keep up, the engine first drops a pass, then
+    /// falls back to the usual upscaler or switches it off, so playback never stalls on it.
+    public var upscalesLineArt: Bool {
+        get { lineArtRequested }
+        set {
+            guard newValue != lineArtRequested else { return }
+            lineArtRequested = newValue
+            guard status != .idle else { return }
+            Task { [engine] in
+                _ = try? await engine.reloadAtCurrentPosition { options in
+                    options.upscalesLowResolutionVideo = newValue
+                    options.upscaleScaler = newValue ? .lineArt : .automatic
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Subtitle reach
+
+extension AetherEnginePlayer: SubtitleReaching {
+    /// How far a timing shift can move picture subtitles: later keeps that much history, earlier
+    /// reads that far ahead. The engine's own default is a minute each way.
+    public func setSubtitleReach(laterSeconds: Double, earlierSeconds: Double) {
+        engine.maximumSubtitleDelaySeconds = laterSeconds
+        engine.maximumSubtitleAdvanceSeconds = earlierSeconds
     }
 }

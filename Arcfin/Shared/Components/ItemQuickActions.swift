@@ -49,6 +49,7 @@ struct ItemQuickActions: View {
         }
         CopyItemMenu(item: item)
         EditTagsButton(item: item)
+        EditMetadataButton(item: item)
     }
 
     private func perform(_ action: @escaping (JellyfinMediaClient, ServerCredential, String) async -> Void) {

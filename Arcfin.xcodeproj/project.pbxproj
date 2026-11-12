@@ -100,6 +100,18 @@
 			);
 			platformFiltersByRelativePath = {
 				Intents/AppShortcuts.xcstrings = (ios, macos, );
+				Shared/Admin/AdminActivityView.swift = (ios, macos, );
+				Shared/Admin/AdminLibrariesView.swift = (ios, macos, );
+				Shared/Admin/AdminMetadataEditor.swift = (ios, macos, );
+				Shared/Admin/AdminMaintenanceViews.swift = (ios, macos, );
+				Shared/Admin/AdminPluginsView.swift = (ios, macos, );
+				Shared/Admin/AdminServerSettingsView.swift = (ios, macos, );
+				Shared/Admin/AdminSessions.swift = (ios, macos, );
+				Shared/Admin/AdminSessionsView.swift = (ios, macos, );
+				Shared/Admin/AdminTabOffer.swift = (ios, macos, );
+				Shared/Admin/AdminTasksView.swift = (ios, macos, );
+				Shared/Admin/AdminUsersView.swift = (ios, macos, );
+				Shared/Admin/AdminView.swift = (ios, macos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
 				iOS/App/ArcfinScenes.swift = (ios, );
 				iOS/App/ContentView.swift = (ios, );
@@ -145,6 +157,7 @@
 				iOS/Platform/AppSheet.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
+				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/ExternalApps.swift = (ios, );
 				iOS/Platform/FieldBackground.swift = (ios, );
 				iOS/Platform/FocusRing.swift = (ios, );
@@ -177,7 +190,6 @@
 				iOS/Seerr/SeerrView.swift = (ios, );
 				iOS/Seerr/WatchlistView.swift = (ios, );
 				iOS/Settings/AddServerFlowView.swift = (ios, );
-				iOS/Settings/AdminSessionsView.swift = (ios, );
 				iOS/Settings/AppearanceView.swift = (ios, );
 				iOS/Settings/BottomNavSettingsView.swift = (ios, );
 				iOS/Settings/CustomHeadersView.swift = (ios, );
@@ -245,6 +257,7 @@
 				macOS/Platform/AppSheet.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
+				macOS/Platform/AdminPlatform.swift = (macos, );
 				macOS/Platform/ExternalApps.swift = (macos, );
 				macOS/Platform/FieldBackground.swift = (macos, );
 				macOS/Platform/FocusRing.swift = (macos, );
@@ -275,7 +288,6 @@
 				macOS/Seerr/SeerrView.swift = (macos, );
 				macOS/Seerr/WatchlistView.swift = (macos, );
 				macOS/Settings/AddServerFlowView.swift = (macos, );
-				macOS/Settings/AdminSessionsView.swift = (macos, );
 				macOS/Settings/AppearanceView.swift = (macos, );
 				macOS/Settings/BottomNavSettingsView.swift = (macos, );
 				macOS/Settings/CustomHeadersView.swift = (macos, );
@@ -340,6 +352,7 @@
 				tvOS/Platform/AppSheet.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
+				tvOS/Platform/AdminPlatform.swift = (tvos, );
 				tvOS/Platform/ExternalApps.swift = (tvos, );
 				tvOS/Platform/FieldBackground.swift = (tvos, );
 				tvOS/Platform/FocusRing.swift = (tvos, );
@@ -867,7 +880,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -911,7 +924,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1078,7 +1091,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
@@ -1149,7 +1162,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
@@ -1219,7 +1232,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1246,7 +1259,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1272,7 +1285,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1299,7 +1312,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1328,7 +1341,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
@@ -1361,7 +1374,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;

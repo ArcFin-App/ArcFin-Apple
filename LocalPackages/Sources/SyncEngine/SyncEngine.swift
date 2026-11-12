@@ -225,6 +225,14 @@ public enum SettingsSyncRegistry {
         .init("mergeContinueWatchingAndUpNext", .bool),
         .init("showUnwatchedCount", .bool),
         .init("homeEpisodeArtwork", .string),
+        .init("raiseQuietAudio", .bool),
+        .init("notifyNewEpisodes", .bool),
+        .init("notifyNewFilms", .bool),
+        .init("notifyServerEvents", .bool),
+        .init("showStreamsOnAppIcon", .bool),
+        .init("animationUpscaling", .bool),
+        .init("subtitleReachLater", .int),
+        .init("subtitleReachEarlier", .int),
         .init("heroVideoBackdropsEnabled", .bool),
         .init("heroTrailerSound", .bool),
         .init("modernHome", .bool),
@@ -319,16 +327,26 @@ public enum SettingsSyncEngine {
 
     /// The values this device and the server last agreed on, so a sync can tell which side
     /// changed a setting since.
+    /// Before 0.5.0, one record for the whole device; now each profile keeps its own.
     private static let lastSyncedKey = "arcfin.settingsSync.lastSynced"
+    private static func lastSyncedKey(profile: String) -> String { "\(lastSyncedKey).\(profile)" }
+    /// The profile that synced last on this device.
+    private static let lastProfileKey = "arcfin.settingsSync.lastProfile"
 
     /// Which values to take from the server and which to send it. `base` is what both last
     /// agreed on, nil before the first sync that kept it.
+    /// `adoptRemote`: this device's values belong to another profile (its first sync here after
+    /// a switch), so the server's are taken and nothing is sent.
     static func merge(local: [String: String], remote: [String: String], base: [String: String]?,
-                      locked: Set<String>) -> (apply: [String: String], push: [String: String]) {
+                      locked: Set<String>, adoptRemote: Bool = false) -> (apply: [String: String], push: [String: String]) {
         var toApply: [String: String] = [:]
         var toPush: [String: String] = [:]
         for key in Set(remote.keys).union(local.keys) where SettingsSyncRegistry.allKeys.contains(key) {
             let remoteValue = remote[key], localValue = local[key]
+            if adoptRemote {
+                if let remoteValue, remoteValue != localValue { toApply[key] = remoteValue }
+                continue
+            }
             if locked.contains(key) {
                 if let remoteValue, remoteValue != localValue { toApply[key] = remoteValue }
                 continue
@@ -344,8 +362,8 @@ public enum SettingsSyncEngine {
     }
 
     /// Whether this device has a setting the server hasn't heard yet.
-    public static func hasLocalChanges(defaults: UserDefaults = .standard) -> Bool {
-        guard let base = defaults.dictionary(forKey: lastSyncedKey) as? [String: String] else { return false }
+    public static func hasLocalChanges(profile: String, defaults: UserDefaults = .standard) -> Bool {
+        guard let base = defaults.dictionary(forKey: lastSyncedKey(profile: profile)) as? [String: String] else { return false }
         return collectLocalPayload(defaults: defaults).settings != base
     }
 
@@ -364,18 +382,36 @@ public enum SettingsSyncEngine {
         let locked = Set(((try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader)) ?? [])
             .filter { $0.isLocked }.map { $0.key })
         let local = collectLocalPayload(defaults: defaults).settings
-        // No record yet (the first sync since this was kept): a value set here counts as this
-        // device's choice, since the old sync would already have replaced anything it pulled.
-        let base = defaults.dictionary(forKey: lastSyncedKey) as? [String: String]
+        let profile = credential.id.uuidString
+        let (base, adoptRemote) = startingPoint(profile: profile, defaults: defaults)
 
-        let (toApply, toPush) = merge(local: local, remote: remote.settings, base: base, locked: locked)
+        let (toApply, toPush) = merge(local: local, remote: remote.settings, base: base, locked: locked, adoptRemote: adoptRemote)
         apply(SyncPayload(settings: toApply), defaults: defaults)
         var agreed = collectLocalPayload(defaults: defaults).settings
         if !toPush.isEmpty, (try? await pluginClient.push(SyncPayload(settings: toPush))) == nil {
             // Not sent: keep those as changed here, so the next sync sends them again.
             for key in toPush.keys { agreed[key] = base?[key] }
         }
-        defaults.set(agreed, forKey: lastSyncedKey)
+        defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
+        defaults.set(profile, forKey: lastProfileKey)
         return locked
+    }
+
+    /// What this profile last agreed on here, and whether the device's values are someone
+    /// else's: another profile synced last and this one has no record here yet, so sending them
+    /// would put that profile's settings (its Seerr server, say) into this one's.
+    static func startingPoint(profile: String, defaults: UserDefaults) -> (base: [String: String]?, adoptRemote: Bool) {
+        if let base = defaults.dictionary(forKey: lastSyncedKey(profile: profile)) as? [String: String] {
+            return (base, false)
+        }
+        let previous = defaults.string(forKey: lastProfileKey)
+        // The device-wide record from before 0.5.0 belongs to whoever is active at the update.
+        if previous == nil, let legacy = defaults.dictionary(forKey: lastSyncedKey) as? [String: String] {
+            defaults.removeObject(forKey: lastSyncedKey)
+            return (legacy, false)
+        }
+        if let previous, previous != profile { return (nil, true) }
+        // No record at all: a value set here counts as this device's choice.
+        return (nil, false)
     }
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
+import CryptoKit
 import Network
 import Telemetry
 // Needed for the privacy-annotated string interpolation in the error log below — Telemetry
@@ -84,6 +85,10 @@ public actor SeerrHTTPClient {
     private let password: String
     private let authMethod: SeerrAuthMethod
     private let authorizeQuickConnect: QuickConnectAuthorizer?
+    /// Called once Quick Connect has taken over from a saved password Seerr refused, so the
+    /// app can delete that password: often one saved by an earlier version, from before
+    /// Quick Connect sign-in existed.
+    private let onSavedPasswordRejected: (@Sendable () async -> Void)?
 
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
@@ -98,7 +103,9 @@ public actor SeerrHTTPClient {
 
     public init(baseURL: URL, username: String, password: String,
                 authMethod: SeerrAuthMethod = .jellyfin,
-                authorizeQuickConnect: QuickConnectAuthorizer? = nil) {
+                authorizeQuickConnect: QuickConnectAuthorizer? = nil,
+                onSavedPasswordRejected: (@Sendable () async -> Void)? = nil) {
+        self.onSavedPasswordRejected = onSavedPasswordRejected
         self.baseURL    = baseURL
         self.username   = username
         self.password   = password
@@ -130,7 +137,21 @@ public actor SeerrHTTPClient {
     /// Clears any persisted auth-failure cooldown. Call this when the user updates credentials.
     public func clearAuthFailure() {
         UserDefaults.standard.removeObject(forKey: authFailedKey)
+        UserDefaults.standard.removeObject(forKey: rejectedPasswordKey)
         authPermanentlyFailed = false
+    }
+
+    /// Where the hash of a saved password Seerr refused is kept, per server and user, so the
+    /// same password is never sent again: each attempt is a failed Jellyfin sign-in in the
+    /// server's log. Only a hash, never the password.
+    private var rejectedPasswordKey: String { authFailedKey.replacingOccurrences(of: "authFailedUntil", with: "passwordRejected") }
+
+    private var passwordHash: String {
+        SHA256.hash(data: Data(password.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private var savedPasswordWasRejected: Bool {
+        UserDefaults.standard.string(forKey: rejectedPasswordKey) == passwordHash
     }
 
     // MARK: - Auth
@@ -150,20 +171,26 @@ public actor SeerrHTTPClient {
 
     public func login() async throws {
         await Self.waitForNetworkPath()
-        if usesQuickConnect {
+        let canQuickConnect = authMethod == .jellyfin && authorizeQuickConnect != nil
+        // No saved password, or one Seerr already refused: straight to Quick Connect, so the
+        // stale password isn't checked against Jellyfin (and logged as a failed sign-in) again.
+        if usesQuickConnect || (canQuickConnect && savedPasswordWasRejected) {
             try await loginWithQuickConnect()
             isAuthenticated = true
+            if !password.isEmpty { await onSavedPasswordRejected?() }
             return
         }
         do {
             try await loginWithPassword()
-        } catch SeerrError.authFailed where authMethod == .jellyfin && authorizeQuickConnect != nil {
+        } catch SeerrError.authFailed where canQuickConnect {
             // A saved Jellyfin password that no longer works (changed since, or saved for
             // another profile): the Jellyfin session can still sign in through Quick Connect.
+            UserDefaults.standard.set(passwordHash, forKey: rejectedPasswordKey)
             try await loginWithQuickConnect()
             authPermanentlyFailed = false
             UserDefaults.standard.removeObject(forKey: authFailedKey)
             isAuthenticated = true
+            await onSavedPasswordRejected?()
         }
     }
 

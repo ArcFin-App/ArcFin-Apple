@@ -13,6 +13,28 @@ final class TagEditor {
     var item: MediaItem?
 }
 
+/// The title whose details are being edited, for the metadata editor at the tab root.
+@Observable
+@MainActor
+final class MetadataEditor {
+    static let shared = MetadataEditor()
+    var item: MediaItem?
+}
+
+/// Edit Metadata…, for admins on iPhone, iPad and Mac.
+struct EditMetadataButton: View {
+    let item: MediaItem
+
+    var body: some View {
+        if AdminPlatform.isAvailable, ProfileRules.shared.canEditMetadata,
+           [.movie, .series, .season, .episode, .boxSet].contains(item.type) {
+            Button { MetadataEditor.shared.item = item } label: {
+                Label("Edit Metadata…", systemImage: "square.and.pencil")
+            }
+        }
+    }
+}
+
 /// Edit Tags…, for admins, in a title's menus.
 struct EditTagsButton: View {
     let item: MediaItem
@@ -38,6 +60,9 @@ struct EditTagsSheet: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var error: String?
+    @State private var version: ServerVersion?
+    @State private var confirmUntested = false
+    private var compatibility: ServerCompatibility.Status { ServerCompatibility.status(version) }
 
     static let featuredTag = "arcfin-featured"
     static let promotedTag = "arcfin-promoted"
@@ -58,8 +83,10 @@ struct EditTagsSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(isLoading || isSaving)
+                    Button("Save") {
+                        if compatibility.needsConfirmation { confirmUntested = true } else { save() }
+                    }
+                    .disabled(isLoading || isSaving || !compatibility.canSave)
                 }
             }
             .alert("Couldn't Save Tags", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
@@ -69,10 +96,12 @@ struct EditTagsSheet: View {
             }
         }
         .task { await load() }
+        .untestedServerConfirmation(isPresented: $confirmUntested, status: compatibility) { save() }
     }
 
     private var form: some View {
         List {
+            AdminCompatibilityNote(status: compatibility)
             if canFeature {
                 Section {
                     Toggle(isOn: binding(for: Self.featuredTag)) {
@@ -163,19 +192,28 @@ struct EditTagsSheet: View {
     private func load() async {
         guard let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
+        version = await ServerVersions.version(for: credential)
         tags = (try? await JellyfinMediaClient().getTags(credential: credential, authHeader: header, itemId: item.id)) ?? []
         isLoading = false
     }
 
     private func save() {
-        guard let credential = authManager.state.credential else { return }
+        guard compatibility.canSave, let credential = authManager.state.credential else { return }
         add(newTag)
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         isSaving = true
         Task {
             defer { isSaving = false }
             do {
-                try await JellyfinMediaClient().setTags(credential: credential, authHeader: header, itemId: item.id, tags: tags)
+                let client = JellyfinMediaClient(), sent = tags
+                try await client.setTags(credential: credential, authHeader: header, itemId: item.id, tags: sent)
+                // What the server kept, read back, so a tag it refused isn't reported as saved.
+                if let kept = try? await client.getTags(credential: credential, authHeader: header, itemId: item.id),
+                   Set(kept.map { $0.lowercased() }) != Set(sent.map { $0.lowercased() }) {
+                    tags = kept
+                    self.error = String(localized: "The server didn't keep every tag as sent. The list now shows what it has.")
+                    return
+                }
                 HapticManager.impact(.light)
                 dismiss()
                 // A Home tag changes what Home shows.

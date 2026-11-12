@@ -11,13 +11,19 @@ struct MainTabView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
     @Bindable private var tagEditor = TagEditor.shared
+    @Bindable private var metadataEditor = MetadataEditor.shared
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
+    @AppStorage(StreamBadge.key) private var showsStreamBadge = false
     @State private var selectedTab = BottomNavItem(rawValue: UserDefaults.standard.string(forKey: BottomNavPrefs.launchTabKey) ?? "") ?? .home
 
     private var visibleTabs: [BottomNavItem] {
-        MainTabs.visible(orderString: orderString, activeString: activeString, seerrConfigured: seerrRepo.isConfigured)
+        MainTabs.visible(orderString: orderString, activeString: activeString, seerrConfigured: seerrRepo.isConfigured,
+                         isAdmin: authManager.isAdmin, limit: tabLimit)
     }
+
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var tabLimit: Int { sizeClass == .compact ? BottomNavPrefs.maxActiveCompact : BottomNavPrefs.maxActiveRegular }
 
     @ViewBuilder
     private func tabDestination(_ tab: BottomNavItem) -> some View {
@@ -27,6 +33,7 @@ struct MainTabView: View {
         case .stats:     StatsView()
         case .requests:  SeerrView()
         case .watchlist: NavigationStack { WatchlistView() }
+        case .admin:     NavigationStack { AdminView() }
         }
     }
 
@@ -42,8 +49,17 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
+            .adminTabOffer(limit: tabLimit)
+            // The playing-streams badge, kept current while Arcfin is open.
+            .task(id: showsStreamBadge && authManager.isAdmin) {
+                if showsStreamBadge && authManager.isAdmin { await StreamBadge.keepCurrent() } else { await StreamBadge.refresh() }
+            }
+            .onChange(of: visibleTabs) { if !visibleTabs.contains(selectedTab) { selectedTab = .home } }
             .sheet(item: $tagEditor.item) { item in
                 EditTagsSheet(item: item)
+            }
+            .sheet(item: $metadataEditor.item) { item in
+                AdminMetadataEditor(item: item)
             }
             .sheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
