@@ -130,6 +130,19 @@ struct AdminView: View {
                 Text("System")
             }
             Section {
+                NavigationLink { AdminGeneralSettingsView() } label: {
+                    AdminRow(title: "General", systemImage: "gearshape", detail: nil)
+                }
+                NavigationLink { AdminEncodingSettingsView() } label: {
+                    AdminRow(title: "Playback & Transcoding", systemImage: "film.stack", detail: nil)
+                }
+                NavigationLink { AdminNetworkSettingsView() } label: {
+                    AdminRow(title: "Networking", systemImage: "network", detail: nil)
+                }
+            } header: {
+                Text("Server Settings")
+            }
+            Section {
                 Button { confirmRestart = true } label: {
                     Label("Restart Server", systemImage: "arrow.clockwise")
                 }

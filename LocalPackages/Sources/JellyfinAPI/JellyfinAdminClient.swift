@@ -403,6 +403,20 @@ public struct JellyfinAdminClient: Sendable {
         try await send("POST", "Backup/Create", body: body, credential: credential, authHeader: authHeader)
     }
 
+    // MARK: Server settings
+
+    /// The server's configuration as JSON: the main one (nil), or a named section such as
+    /// "encoding" or "network". Posting it back with only some fields changed keeps the rest.
+    public func configuration(_ section: String?, credential: ServerCredential, authHeader: String) async throws -> Data {
+        try await send("GET", section.map { "System/Configuration/\($0)" } ?? "System/Configuration",
+                       credential: credential, authHeader: authHeader)
+    }
+
+    public func setConfiguration(_ section: String?, _ json: Data, credential: ServerCredential, authHeader: String) async throws {
+        try await send("POST", section.map { "System/Configuration/\($0)" } ?? "System/Configuration",
+                       body: json, credential: credential, authHeader: authHeader)
+    }
+
     // MARK: Requests
 
     func get<T: Decodable>(_ path: String, query: [URLQueryItem] = [], credential: ServerCredential, authHeader: String) async throws -> T {

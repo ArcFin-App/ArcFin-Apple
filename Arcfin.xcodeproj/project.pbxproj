@@ -104,6 +104,7 @@
 				Shared/Admin/AdminLibrariesView.swift = (ios, macos, );
 				Shared/Admin/AdminMaintenanceViews.swift = (ios, macos, );
 				Shared/Admin/AdminPluginsView.swift = (ios, macos, );
+				Shared/Admin/AdminServerSettingsView.swift = (ios, macos, );
 				Shared/Admin/AdminSessions.swift = (ios, macos, );
 				Shared/Admin/AdminSessionsView.swift = (ios, macos, );
 				Shared/Admin/AdminTabOffer.swift = (ios, macos, );
