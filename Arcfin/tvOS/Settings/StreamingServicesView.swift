@@ -17,11 +17,11 @@ struct StreamingServicesView: View {
         List {
             if query.isEmpty {
                 Section {
-                    Picker("Country", selection: $regionOverride) {
-                        Text("Automatic (\(model.regionName(model.automaticRegion)))").tag("")
-                        ForEach(model.regions, id: \.code) { region in
-                            Text(region.name).tag(region.code)
-                        }
+                    SettingsPicker("Country", selection: $regionOverride,
+                                   options: [""] + model.regions.map(\.code)) { code in
+                        code.isEmpty
+                            ? Text("Automatic (\(model.regionName(model.automaticRegion)))")
+                            : Text(verbatim: model.regions.first { $0.code == code }?.name ?? model.regionName(code))
                     }
                 } footer: {
                     Text("Automatic uses the region set in Seerr, the same one its own pages use. Choose a country to see what streams there instead.")
