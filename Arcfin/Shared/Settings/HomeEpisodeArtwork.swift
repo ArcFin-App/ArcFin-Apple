@@ -27,12 +27,8 @@ struct HomeEpisodeArtworkSection: View {
 
     var body: some View {
         Section {
-            Picker(selection: $artwork) {
-                ForEach(HomeEpisodeArtwork.allCases) { Text($0.label).tag($0) }
-            } label: {
-                TVRowLabelText(title: "Episode Artwork", detail: "In Continue Watching and Next Up: the episode's own still, or its show's artwork.")
-            }
-            .tvListRow()
+            SettingsPicker("Episode Artwork", detail: "In Continue Watching and Next Up: the episode's own still, or its show's artwork.",
+                           selection: $artwork, options: HomeEpisodeArtwork.allCases) { Text($0.label) }
             .syncLocked(HomeEpisodeArtwork.key, authManager)
         }
     }
