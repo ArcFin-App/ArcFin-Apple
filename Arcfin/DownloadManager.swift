@@ -36,6 +36,9 @@ struct DownloadStats: Sendable {
     var bytesWritten: Int64
     var totalBytes: Int64
     var bytesPerSecond: Double
+    /// The server didn't say how big it is (a conversion streams out as it's made), so
+    /// `totalBytes` is the size worked out from the bitrate and runtime.
+    var isEstimate = false
 }
 
 @MainActor
@@ -268,6 +271,8 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private var storageNeeded: Int64?
     /// What each running transfer will take in all, for working out what's left for the next.
     @ObservationIgnored private var expectedBytes: [String: Int64] = [:]
+    /// The video file's own expected size, for progress when the server sends no length.
+    @ObservationIgnored private var estimatedStreamBytes: [String: Int64] = [:]
 
     /// Free space a new download can use: what the device can give (purgeable space included),
     /// less the reserve and what running transfers still have to write. Nil when unknown.
@@ -980,6 +985,7 @@ final class DownloadManager: NSObject {
                let expected = Self.expectedSize(of: info, bitrateCap: conversionBitrate, extraAudioTracks: conversionBitrate == nil ? 0 : keptAudio.count - 1) {
                 if let room = roomForDownloads(excluding: item.id), room < expected { throw NoRoomForDownload(bytes: expected) }
                 expectedBytes[item.id] = expected
+                estimatedStreamBytes[item.id] = Self.expectedSize(of: info, bitrateCap: conversionBitrate)
             }
 
             #if canImport(ActivityKit) && os(iOS)
@@ -1079,6 +1085,7 @@ final class DownloadManager: NSObject {
                 Self.smartLog.notice("Downloads waiting for space: \(item.name, privacy: .public) needs \(need, privacy: .public) bytes")
                 removePendingDescriptor(itemId: item.id)
                 expectedBytes[item.id] = nil
+                estimatedStreamBytes[item.id] = nil
                 activeItemIds.remove(item.id)
                 progress[item.id] = nil
                 stats[item.id] = nil
@@ -1099,6 +1106,7 @@ final class DownloadManager: NSObject {
         }
         removePendingDescriptor(itemId: item.id)
         expectedBytes[item.id] = nil
+        estimatedStreamBytes[item.id] = nil
 
         #if canImport(ActivityKit) && os(iOS)
         let finishedTitle = activeItemTitles[item.id] ?? item.name
@@ -2043,8 +2051,15 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 totalBytesWritten = (self.partTasks[itemId] ?? []).reduce(0) { $0 + (self.partBytes[$1.taskIdentifier] ?? 0) }
                 totalBytesExpectedToWrite = total
             }
+            var isEstimate = false
+            if totalBytesExpectedToWrite <= 0, let estimate = self.estimatedStreamBytes[itemId], estimate > 0 {
+                // A guess can come in under the real size; keep it ahead of what's arrived so
+                // the bar never claims it's finished before it is.
+                totalBytesExpectedToWrite = max(estimate, Int64(Double(totalBytesWritten) * 1.02))
+                isEstimate = true
+            }
             if totalBytesExpectedToWrite > 0 {
-                self.progress[itemId] = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+                self.progress[itemId] = min(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite), isEstimate ? 0.99 : 1)
             }
             // Sampled rather than computed from this single delta — didWriteData can fire
             // many times a second, which would make the displayed speed jump around.
@@ -2062,7 +2077,8 @@ extension DownloadManager: URLSessionDownloadDelegate {
             } else {
                 bytesPerSecond = self.stats[itemId]?.bytesPerSecond ?? 0
             }
-            self.stats[itemId] = DownloadStats(bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite, bytesPerSecond: bytesPerSecond)
+            self.stats[itemId] = DownloadStats(bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite,
+                                               bytesPerSecond: bytesPerSecond, isEstimate: isEstimate)
             #if canImport(ActivityKit) && os(iOS)
             // Throttled to the same ~0.5s cadence as the speed sample above — updating on
             // every didWriteData tick would hammer ActivityKit with far more writes than a
