@@ -37,6 +37,9 @@ extension ArcfinApp {
                     }
                     .keyboardShortcut("f", modifiers: .command)
                 }
+                CommandGroup(replacing: .appSettings) {
+                    SettingsMenuButton()
+                }
                 CommandGroup(after: .newItem) {
                     Button("Open Video File…") {
                         NotificationCenter.default.post(name: .arcfinOpenFile, object: nil)
@@ -67,10 +70,14 @@ extension ArcfinApp {
                 }
             }
 
-        Settings {
+        // A window of its own rather than a Settings scene: that one centres its toolbar for
+        // tabs, which put a page's back button in the middle of the title bar.
+        Window("Settings", id: MacSettingsWindow.id) {
             MacSettingsWindow()
                 .modelContainer(sharedModelContainer)
         }
+        .defaultSize(width: 860, height: 640)
+        .windowResizability(.contentMinSize)
 
         WindowGroup("Player", id: "player", for: PlayerWindowRequest.self) { $request in
             if let request {

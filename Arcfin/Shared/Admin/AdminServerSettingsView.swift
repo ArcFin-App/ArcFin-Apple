@@ -275,6 +275,7 @@ struct AdminEncodingSettingsView: View {
 
     var body: some View {
         AdminConfigPage(title: String(localized: "Playback & Transcoding"), model: model, restartNote: false) {
+            AdminEncodersSection()
             Section {
                 if model.has("HardwareAccelerationType") {
                     Picker("Hardware Acceleration", selection: model.text("HardwareAccelerationType")) {

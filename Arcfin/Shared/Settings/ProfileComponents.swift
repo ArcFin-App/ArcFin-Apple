@@ -56,7 +56,7 @@ struct ProfileDetailView: View {
     }
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 LabeledContent("Name") {
                     Text(profile.displayName).foregroundStyle(.secondary)

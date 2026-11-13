@@ -17,7 +17,7 @@ struct AppearanceView: View {
     private var navSectionTitle: LocalizedStringKey { usesBottomBar ? "Bottom Navigation" : "Navigation" }
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 Toggle(isOn: $mergeContinueWatchingAndUpNext) {
                     TVRowLabelText(title: "Merge Continue Watching & Up Next", detail: "Shows them as one row instead of two.")

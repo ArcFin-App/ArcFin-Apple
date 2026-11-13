@@ -13,7 +13,7 @@ struct SettingsView: View {
     @State private var usersDetent: PresentationDetent = .medium
 
     var body: some View {
-        List {
+        SettingsForm {
             rows
         }
         .arcfinListStyle()

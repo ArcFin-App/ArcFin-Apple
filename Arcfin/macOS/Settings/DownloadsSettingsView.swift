@@ -4,14 +4,12 @@ import SwiftUI
 import ImageCache
 
 struct DownloadsSettingsView: View {
-    @AppStorage("wifiOnly")        private var wifiOnly        = true
     @AppStorage("downloadQuality") private var downloadQuality = VideoQuality.max
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
     @AppStorage("smartDownloadsEnabled")       private var smartDownloadsEnabled       = false
     @AppStorage("smartDownloadsEpisodeCount")  private var smartDownloadsEpisodeCount  = 2
     @AppStorage("smartDownloadsStorageBudgetGB") private var smartDownloadsStorageBudgetGB = 10
-    @AppStorage("smartDownloadsAllowMobileData") private var smartDownloadsAllowMobileData = false
     @AppStorage("concurrentDownloads") private var concurrentDownloads = 1
     @AppStorage("downloadSubtitles") private var downloadSubtitles = "all"
     @AppStorage("downloadTrickplay") private var downloadTrickplay = true
@@ -26,13 +24,8 @@ struct DownloadsSettingsView: View {
     @State private var imageCacheBytes = ImageCache.diskCacheSize
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
-                // Stored as "wifiOnly" so the existing, synced setting carries over.
-                Toggle(isOn: Binding(get: { !wifiOnly }, set: { wifiOnly = !$0 })) {
-                    TVRowLabelText(title: "Download on Mobile Data", detail: "Off, downloads wait for Wi-Fi. Charges may apply.")
-                }
-                .syncLocked("wifiOnly", authManager)
                 Picker(selection: $downloadQuality) {
                     ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
                         Text(q.label).tag(q)
@@ -42,7 +35,6 @@ struct DownloadsSettingsView: View {
                 }
                 .syncLocked("downloadQuality", authManager)
             }
-            .onChange(of: wifiOnly) { downloadManager.recheckQueueHold() }
 
             Section {
                 Picker(selection: $concurrentDownloads) {
@@ -150,14 +142,6 @@ struct DownloadsSettingsView: View {
                     }
                     .syncLocked("smartDownloadsStorageBudgetGB", authManager)
                     .onChange(of: smartDownloadsStorageBudgetGB) { downloadManager.refreshSmartDownloads() }
-                    Toggle(isOn: $smartDownloadsAllowMobileData) {
-                        TVRowLabelText(title: "Use Mobile Data", detail: "Lets Smart Downloads download on mobile data. Charges may apply.")
-                    }
-                    .syncLocked("smartDownloadsAllowMobileData", authManager)
-                    .onChange(of: smartDownloadsAllowMobileData) { _, isOn in
-                        downloadManager.recheckQueueHold()
-                        if isOn { downloadManager.refreshSmartDownloads() }
-                    }
                     NavigationLink {
                         SmartDownloadsIgnoredView()
                     } label: {

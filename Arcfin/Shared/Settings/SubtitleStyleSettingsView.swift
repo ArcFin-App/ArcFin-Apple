@@ -11,7 +11,7 @@ struct SubtitleStyleSettingsView: View {
     @AppStorage("subtitleBackgroundStyle") private var background = SubtitleBackgroundStyle.outline
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8).fill(.black)

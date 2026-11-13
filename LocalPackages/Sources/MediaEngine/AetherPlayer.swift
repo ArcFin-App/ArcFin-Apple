@@ -307,7 +307,8 @@ extension AetherEnginePlayer: LineArtUpscaling {
         set {
             guard newValue != lineArtRequested else { return }
             lineArtRequested = newValue
-            guard status != .idle else { return }
+            // A load in flight reads it from the options; rebuilding under it opens a second session.
+            guard status == .playing || status == .paused else { return }
             Task { [engine] in
                 _ = try? await engine.reloadAtCurrentPosition { options in
                     options.upscalesLowResolutionVideo = newValue

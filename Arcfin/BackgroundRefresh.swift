@@ -83,6 +83,33 @@ nonisolated enum BackgroundRefresh {
         }
     }
 
+    /// While Arcfin is open: a check as it comes to the front (at most every few minutes), then
+    /// every 15 minutes, so news doesn't wait for iOS to schedule a background refresh.
+    @MainActor private static var whileOpen: Task<Void, Never>?
+    private static let lastOpenCheckKey = "arcfin.notify.lastOpenCheck"
+
+    @MainActor static func startWhileOpen() {
+        whileOpen?.cancel()
+        whileOpen = Task {
+            let last = UserDefaults.standard.object(forKey: lastOpenCheckKey) as? Date ?? .distantPast
+            if Date().timeIntervalSince(last) > 5 * 60 {
+                UserDefaults.standard.set(Date(), forKey: lastOpenCheckKey)
+                await check()
+            }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(15 * 60))
+                guard !Task.isCancelled else { return }
+                UserDefaults.standard.set(Date(), forKey: lastOpenCheckKey)
+                await check()
+            }
+        }
+    }
+
+    @MainActor static func stopWhileOpen() {
+        whileOpen?.cancel()
+        whileOpen = nil
+    }
+
     private static func handle(_ box: TaskBox) {
         schedule()
         let work = Task {

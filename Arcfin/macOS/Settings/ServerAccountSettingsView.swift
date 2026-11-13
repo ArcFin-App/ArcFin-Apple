@@ -13,7 +13,7 @@ struct ServerAccountSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsForm {
             Section {
                 serverRow
                 Button { showSwitchServerSheet = true } label: {
@@ -25,11 +25,11 @@ struct ServerAccountSettingsView: View {
                 } label: {
                     TVRowLabelText(title: "Add Server", detail: "Sign in to another Jellyfin server.")
                 }
-                if let activeID = authManager.state.credential?.id {
+                if authManager.state.credential != nil {
                     NavigationLink {
-                        ServerSettingsView(profileID: activeID)
+                        ServerSettingsView()
                     } label: {
-                        TVRowLabelText(title: "Server Settings", detail: "Addresses, home Wi-Fi, custom headers and settings sync.")
+                        TVRowLabelText(title: "Server Settings", detail: "Server details, custom headers and settings sync.")
                     }
                 }
                 if authManager.isAdmin {

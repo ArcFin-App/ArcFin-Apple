@@ -371,8 +371,14 @@ final class DownloadManager: NSObject {
         guard wifiPathMonitor == nil else { return }
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
-            // isExpensive covers a personal hotspot too, which bills the same mobile data.
+            // isExpensive covers a personal hotspot too, which bills the same mobile data. A Mac
+            // has no mobile data settings of its own, so a phone's synced ones never hold it;
+            // Low Data Mode, which a hotspot usually has on, still does.
+            #if os(macOS)
+            let onMobileData = false
+            #else
             let onMobileData = path.status == .satisfied && path.isExpensive
+            #endif
             let lowDataMode = path.status == .satisfied && path.isConstrained
             guard let self else { return }
             Task { @MainActor in self.networkChanged(onMobileData: onMobileData, lowDataMode: lowDataMode) }

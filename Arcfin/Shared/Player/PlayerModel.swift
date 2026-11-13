@@ -43,7 +43,16 @@ final class PlayerModel {
     @ObservationIgnored var engineReleased: () -> Void = {}
     @ObservationIgnored var replacementEngineStarting: () async -> Void = {}
 
-    var player: any MediaPlayerProtocol = AVFoundationPlayer()
+    /// An engine that's replaced is stopped, or a load still in flight on it plays on unseen.
+    var player: any MediaPlayerProtocol = AVFoundationPlayer() {
+        didSet {
+            guard oldValue !== player else { return }
+            let replaced = oldValue
+            Task { await replaced.stop() }
+        }
+    }
+    /// Set once the screen closes: a load that finishes after that stops instead of playing.
+    @ObservationIgnored private var isClosed = false
     var playbackInfo: JellyfinPlaybackInfo? {
         didSet {
             // Every new PlaybackInfo for a channel opens another tuner stream; the one it
@@ -232,6 +241,7 @@ final class PlayerModel {
         self.syncPlayManager = syncPlayManager
         self.sharePlay = sharePlay
         self.scenePhase = scenePhase
+        isClosed = false
     }
 
     private var credential: ServerCredential? { authManager.state.credential }
@@ -604,6 +614,7 @@ final class PlayerModel {
     }
 
     func setup() async {
+        guard !isClosed else { return }
         // Before the connection check below, which downloads running alongside would skew.
         if !holdsPlayerActivity {
             holdsPlayerActivity = true
@@ -754,6 +765,10 @@ final class PlayerModel {
                     await loadSubtitleCues(from: info, credential: credential)
                 }
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
+            }
+            guard !isClosed else {
+                await player.stop()
+                return
             }
             // The AV1 watchdog started over while this load hung; that attempt owns the player now.
             guard generation == setupGeneration else { return }
@@ -1041,6 +1056,7 @@ final class PlayerModel {
 
     /// The first part of closing: lets SharePlay know and stops every timer.
     func stopTasks() {
+        isClosed = true
         sharePlay.playerClosed(item.id)
         progressReportTask?.cancel()
         autoRecoveryTask?.cancel()
@@ -1794,6 +1810,10 @@ final class PlayerModel {
                 lastLoadStartedAt = Date()
                 watchAV1Conversion(startedFrom: resumeTicks)
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
+                guard !isClosed else {
+                    await player.stop()
+                    return
+                }
                 await player.play()
                 watchForMissingPicture()
                 if selectedAudioIndex != nil { await selectAudioInEngine() }

@@ -164,6 +164,22 @@ extension DeviceProfileTests {
         #expect(transcoding(JellyfinMediaClient.deviceProfile(forCast: true, baseURL: server))["VideoCodec"] as? String == "h264")
     }
 
+    @Test("The plugin's encoder check decides AV1: unavailable stops it, available lifts an old failure")
+    func av1FromPlugin() {
+        let server = URL(string: "http://av1-plugin.example.com")!
+        AV1Encoding.forgetFailures()
+        UserDefaults.standard.set(true, forKey: AV1Encoding.settingKey)
+        defer {
+            AV1Encoding.forgetFailures()
+            UserDefaults.standard.removeObject(forKey: AV1Encoding.settingKey)
+        }
+        let codecs = { (transcoding(JellyfinMediaClient.deviceProfile(forCast: false, baseURL: server))["VideoCodec"] as? String) ?? "" }
+        AV1Encoding.apply(serverEncodesAV1: false, on: server)
+        #expect(!codecs().contains("av1"))
+        AV1Encoding.apply(serverEncodesAV1: true, on: server)
+        #expect(codecs().hasPrefix("av1") == JellyfinMediaClient.decodesAV1InHardware)
+    }
+
     @Test("Without an AV1 decoder, native engines keep AV1 to 1080p")
     func av1SoftwareLimit() {
         let limited = (JellyfinMediaClient.nativeDecoderProfile(baseURL: Self.server)["CodecProfiles"] as? [[String: Any]] ?? [])

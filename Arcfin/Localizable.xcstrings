@@ -3329,6 +3329,70 @@
         }
       }
     },
+    "Address" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Adresse"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dirección"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Adresse"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Indirizzo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "アドレス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "주소"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Adres"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Endereço"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Адрес"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "地址"
+          }
+        }
+      }
+    },
     "Addresses" : {
       "localizations" : {
         "de" : {
@@ -5885,6 +5949,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Arcfin 尚未在 Jellyfin %@ 上验证过。只有你修改的设置会与服务器不同，Arcfin 之后会检查服务器是否保留了它们。"
+          }
+        }
+      }
+    },
+    "Arcfin's Dock icon counts what's playing on the server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfins Dock-Symbol zählt, was auf dem Server läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El icono de Arcfin en el Dock cuenta lo que se reproduce en el servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L'icône d'Arcfin dans le Dock compte ce qui est en lecture sur le serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L'icona di Arcfin nel Dock conta ciò che è in riproduzione sul server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dock の Arcfin アイコンに、サーバーで再生中の数を表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dock의 Arcfin 아이콘에 서버에서 재생 중인 수를 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Het Dock-symbool van Arcfin telt wat er op de server speelt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O ícone do Arcfin no Dock conta o que está tocando no servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Значок Arcfin в Dock показывает, сколько сейчас воспроизводится на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dock 中的 Arcfin 图标会显示服务器上正在播放的数量。"
           }
         }
       }
@@ -15233,6 +15361,70 @@
         }
       }
     },
+    "From a short test encode on the server. Arcfin only asks for AV1 where it works. Test again after changing the graphics card, its driver or the acceleration setting." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aus einer kurzen Testkodierung auf dem Server. Arcfin fordert AV1 nur an, wo es funktioniert. Teste erneut, wenn du Grafikkarte, Treiber oder Beschleunigung änderst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Según una breve codificación de prueba en el servidor. Arcfin solo pide AV1 donde funciona. Vuelve a probar si cambias la tarjeta gráfica, su controlador o la aceleración."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "D'après un court encodage de test sur le serveur. Arcfin ne demande l'AV1 que là où il fonctionne. Relancez le test après avoir changé de carte graphique, de pilote ou de réglage d'accélération."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Da una breve codifica di prova sul server. Arcfin chiede AV1 solo dove funziona. Ripeti il test dopo aver cambiato scheda grafica, driver o accelerazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーでの短いテストエンコードの結果です。ArcfinはAV1が使える場合だけAV1を要求します。グラフィックカード、ドライバ、アクセラレーション設定を変えたら再テストしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에서 짧게 시험 인코딩한 결과입니다. Arcfin은 AV1이 작동하는 경우에만 AV1을 요청합니다. 그래픽 카드, 드라이버 또는 가속 설정을 바꾼 후에는 다시 테스트하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Op basis van een korte testcodering op de server. Arcfin vraagt alleen om AV1 waar het werkt. Test opnieuw na een andere videokaart, driver of versnellingsinstelling."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Com base numa breve codificação de teste no servidor. O Arcfin só pede AV1 onde funciona. Teste de novo após trocar a placa de vídeo, o driver ou a aceleração."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "По короткому тестовому кодированию на сервере. Arcfin запрашивает AV1 только там, где он работает. Проверьте снова после смены видеокарты, драйвера или настройки ускорения."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "根据服务器上的一次简短测试编码。Arcfin 只会在 AV1 可用时请求 AV1。更换显卡、驱动或加速设置后请重新测试。"
+          }
+        }
+      }
+    },
     "Go Live" : {
       "localizations" : {
         "de" : {
@@ -15617,6 +15809,70 @@
         }
       }
     },
+    "Hardware acceleration: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardwarebeschleunigung: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aceleración por hardware: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accélération matérielle : %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accelerazione hardware: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ハードウェアアクセラレーション：%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "하드웨어 가속: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardwareversnelling: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aceleração por hardware: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Аппаратное ускорение: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "硬件加速：%@"
+          }
+        }
+      }
+    },
     "Hardware Decoding" : {
       "localizations" : {
         "de" : {
@@ -15677,6 +15933,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "硬件解码"
+          }
+        }
+      }
+    },
+    "Hardware Encoders" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardware-Encoder"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Codificadores por hardware"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Encodeurs matériels"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Encoder hardware"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ハードウェアエンコーダ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "하드웨어 인코더"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hardware-encoders"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Codificadores por hardware"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Аппаратные кодировщики"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "硬件编码器"
           }
         }
       }
@@ -18237,6 +18557,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "安装"
+          }
+        }
+      }
+    },
+    "Install Arcfin Sync 0.3 or later on the server to see which encoders its hardware can use." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installiere Arcfin Sync 0.3 oder neuer auf dem Server, um zu sehen, welche Encoder seine Hardware nutzen kann."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Instala Arcfin Sync 0.3 o posterior en el servidor para ver qué codificadores puede usar su hardware."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installez Arcfin Sync 0.3 ou ultérieur sur le serveur pour voir quels encodeurs son matériel peut utiliser."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installa Arcfin Sync 0.3 o successivo sul server per vedere quali encoder può usare il suo hardware."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーにArcfin Sync 0.3以降をインストールすると、ハードウェアで使えるエンコーダを確認できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 Arcfin Sync 0.3 이상을 설치하면 하드웨어가 사용할 수 있는 인코더를 볼 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Installeer Arcfin Sync 0.3 of nieuwer op de server om te zien welke encoders de hardware kan gebruiken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Instale o Arcfin Sync 0.3 ou posterior no servidor para ver quais codificadores o hardware dele pode usar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Установите на сервер Arcfin Sync 0.3 или новее, чтобы увидеть, какие кодировщики доступны его оборудованию."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在服务器上安装 Arcfin Sync 0.3 或更高版本，即可查看其硬件可用的编码器。"
           }
         }
       }
@@ -23357,6 +23741,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未全部保存"
+          }
+        }
+      }
+    },
+    "Not Available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nicht verfügbar"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No disponible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non disponible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Non disponibile"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用不可"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사용 불가"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niet beschikbaar"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Indisponível"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Недоступно"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不可用"
           }
         }
       }
@@ -32769,6 +33217,70 @@
         }
       }
     },
+    "Server details, custom headers and settings sync." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Serverdetails, eigene Header und Einstellungssync."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Detalles del servidor, encabezados personalizados y sincronización de ajustes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Détails du serveur, en-têtes personnalisés et synchronisation des réglages."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dettagli del server, intestazioni personalizzate e sincronizzazione delle impostazioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーの詳細、カスタムヘッダ、設定の同期。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버 정보, 사용자 지정 헤더, 설정 동기화."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Servergegevens, eigen headers en instellingen synchroniseren."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Detalhes do servidor, cabeçalhos personalizados e sincronização de ajustes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сведения о сервере, свои заголовки и синхронизация настроек."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器详情、自定义标头和设置同步。"
+          }
+        }
+      }
+    },
     "Server Events" : {
       "localizations" : {
         "de" : {
@@ -33153,6 +33665,70 @@
         }
       }
     },
+    "Settings…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Einstellungen …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ajustes…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Réglages…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impostazioni…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "設定…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "설정…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Instellingen…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ajustes…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настройки…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "设置…"
+          }
+        }
+      }
+    },
     "Share Log" : {
       "localizations" : {
         "de" : {
@@ -33405,6 +33981,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "剧集"
+          }
+        }
+      }
+    },
+    "Show Active Streams in the Dock" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aktive Streams im Dock zeigen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar reproducciones activas en el Dock"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Afficher les lectures en cours dans le Dock"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra le riproduzioni attive nel Dock"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生中のストリームを Dock に表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dock에 재생 중인 스트림 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Actieve streams in het Dock tonen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar reproduções ativas no Dock"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показывать активные потоки в Dock"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 Dock 中显示正在播放的串流"
           }
         }
       }
@@ -37249,6 +37889,134 @@
         }
       }
     },
+    "Test Again" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Erneut testen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Volver a probar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tester à nouveau"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ripeti il test"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再テスト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다시 테스트"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opnieuw testen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testar de novo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Проверить снова"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "重新测试"
+          }
+        }
+      }
+    },
+    "Tested %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Getestet %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Probado %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testé %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testato %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@にテスト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 테스트함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Getest %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testado %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Проверено %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@测试"
+          }
+        }
+      }
+    },
     "That password was incorrect — try again." : {
       "localizations" : {
         "de" : {
@@ -37629,6 +38397,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未完成备份。"
+          }
+        }
+      }
+    },
+    "The badge updates every half minute while a window is open, and about every half hour while Arcfin runs in the background." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Kennzeichen aktualisiert sich alle 30 Sekunden, solange ein Fenster offen ist, und etwa alle 30 Minuten, während Arcfin im Hintergrund läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La insignia se actualiza cada medio minuto mientras haya una ventana abierta, y cada media hora más o menos mientras Arcfin se ejecuta en segundo plano."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La pastille se met à jour toutes les 30 secondes tant qu'une fenêtre est ouverte, et environ toutes les 30 minutes quand Arcfin tourne en arrière-plan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il badge si aggiorna ogni mezzo minuto con una finestra aperta, e circa ogni mezz'ora mentre Arcfin è in background."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ウインドウが開いている間は30秒ごと、Arcfin がバックグラウンドで動作している間は約30分ごとにバッジを更新します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "창이 열려 있으면 30초마다, Arcfin이 백그라운드에서 실행 중이면 약 30분마다 배지를 업데이트합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De badge wordt elke halve minuut bijgewerkt zolang er een venster open is, en ongeveer elk half uur terwijl Arcfin op de achtergrond draait."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O indicador é atualizado a cada meio minuto com uma janela aberta, e mais ou menos a cada meia hora enquanto o Arcfin roda em segundo plano."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Значок обновляется каждые полминуты, пока открыто окно, и примерно раз в полчаса, пока Arcfin работает в фоне."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "窗口打开时每半分钟更新一次标记，Arcfin 在后台运行时约每半小时更新一次。"
           }
         }
       }
@@ -44413,6 +45245,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此视频没有画面，因此 Arcfin 已切换到其他播放器。"
+          }
+        }
+      }
+    },
+    "Works" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funktioniert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funciona"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Fonctionne"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funziona"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用可"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "작동함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Werkt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Funciona"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Работает"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "可用"
           }
         }
       }

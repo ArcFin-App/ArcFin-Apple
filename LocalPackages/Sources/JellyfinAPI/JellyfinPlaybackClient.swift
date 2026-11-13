@@ -681,6 +681,17 @@ public enum AV1Encoding {
         UserDefaults.standard.set(true, forKey: failedKey(baseURL))
     }
 
+    /// What the Arcfin Sync plugin's test encode found on this server: when it can't encode
+    /// AV1 it's never asked for, without waiting for a conversion to fail first; when it can,
+    /// an old failure from before (a driver since updated, say) is forgotten.
+    public static func apply(serverEncodesAV1: Bool, on baseURL: URL) {
+        if serverEncodesAV1 {
+            UserDefaults.standard.removeObject(forKey: failedKey(baseURL))
+        } else {
+            markFailed(on: baseURL)
+        }
+    }
+
     /// Forgets every server's failure, for when the setting is turned back on.
     public static func forgetFailures() {
         let defaults = UserDefaults.standard

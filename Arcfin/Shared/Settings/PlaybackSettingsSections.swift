@@ -228,19 +228,11 @@ struct PlaybackEnhancementsSection: View {
             }
             .tvListRow()
             .syncLocked(PlayerModel.animationUpscalingKey, authManager)
-            Picker(selection: $reachLater) {
-                ForEach(PlayerModel.subtitleReachOptions, id: \.self) { Text(Self.reachLabel($0)).tag($0) }
-            } label: {
-                TVRowLabelText(title: "Subtitle Timing: Later", detail: "How far Subtitle Timing can move picture subtitles later.")
-            }
-            .tvListRow()
+            SettingsPicker("Subtitle Timing: Later", detail: "How far Subtitle Timing can move picture subtitles later.", selection: $reachLater,
+                           options: PlayerModel.subtitleReachOptions) { Text(Self.reachLabel($0)) }
             .syncLocked(PlayerModel.subtitleReachLaterKey, authManager)
-            Picker(selection: $reachEarlier) {
-                ForEach(PlayerModel.subtitleReachOptions, id: \.self) { Text(Self.reachLabel($0)).tag($0) }
-            } label: {
-                TVRowLabelText(title: "Subtitle Timing: Earlier", detail: "How far it can move them earlier. A longer reach reads further ahead over the network.")
-            }
-            .tvListRow()
+            SettingsPicker("Subtitle Timing: Earlier", detail: "How far it can move them earlier. A longer reach reads further ahead over the network.", selection: $reachEarlier,
+                           options: PlayerModel.subtitleReachOptions) { Text(Self.reachLabel($0)) }
             .syncLocked(PlayerModel.subtitleReachEarlierKey, authManager)
         } header: {
             Text("Aether")

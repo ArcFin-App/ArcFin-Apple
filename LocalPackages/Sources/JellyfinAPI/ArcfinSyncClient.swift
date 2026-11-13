@@ -27,6 +27,28 @@ public struct ArcfinSyncedSetting: Sendable, Codable, Equatable {
     }
 }
 
+/// What the plugin's test encodes found: whether h264, hevc and av1 can be encoded with the
+/// server's hardware acceleration setting.
+public struct ArcfinSyncEncoders: Sendable, Decodable, Equatable {
+    public let hardwareAcceleration: String
+    public let encoders: [String: Bool]
+    /// When the server last ran its test encodes.
+    public let probedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case hardwareAcceleration = "HardwareAcceleration"
+        case encoders = "Encoders"
+        case probedAt = "ProbedAt"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        hardwareAcceleration = try container.decode(String.self, forKey: .hardwareAcceleration)
+        encoders = try container.decode([String: Bool].self, forKey: .encoders)
+        probedAt = (try? container.decode(String.self, forKey: .probedAt)).flatMap(JellyfinDate.parse)
+    }
+}
+
 public enum ArcfinSyncError: Error, Sendable {
     case requestFailed
 }
@@ -47,6 +69,21 @@ public struct ArcfinSyncClient: Sendable {
               (resp as? HTTPURLResponse)?.statusCode == 200
         else { return nil }
         return try? JSONDecoder().decode(ArcfinSyncStatus.self, from: data)
+    }
+
+    /// Nil on a plugin from before the encoder check, or when it can't be reached.
+    /// `refresh` makes the server run its test encodes again.
+    public func fetchEncoders(credential: ServerCredential, authHeader: String, refresh: Bool = false) async -> ArcfinSyncEncoders? {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("ArcfinSync/Encoders"), resolvingAgainstBaseURL: false)!
+        if refresh { comps.queryItems = [.init(name: "refresh", value: "true")] }
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        // The first call runs the server's test encodes, a few seconds each.
+        req.timeoutInterval = 90
+        guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200
+        else { return nil }
+        return try? JSONDecoder().decode(ArcfinSyncEncoders.self, from: data)
     }
 
     public func fetchSettings(credential: ServerCredential, authHeader: String) async throws -> [ArcfinSyncedSetting] {

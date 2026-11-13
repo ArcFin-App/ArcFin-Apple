@@ -27,3 +27,13 @@ extension View {
         self
     }
 }
+
+/// A settings page: a grouped form, as System Settings draws one.
+struct SettingsForm<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        Form { content }
+            .formStyle(.grouped)
+    }
+}

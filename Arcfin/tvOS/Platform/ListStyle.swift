@@ -42,3 +42,12 @@ private struct TVListRowFocusTextModifier: ViewModifier {
             .animation(DT.Animation.fast, value: isFocused)
     }
 }
+
+/// A settings page. A grouped form on the Mac.
+struct SettingsForm<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        List { content }
+    }
+}
