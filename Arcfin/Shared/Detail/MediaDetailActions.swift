@@ -233,15 +233,10 @@ struct DetailSeriesSection: View {
                 Spacer()
 
                 Button {
-                    if model.isLoadingSeasonPreview { return }
-                    model.loadSeasonPreview(authManager: authManager, downloadManager: downloadManager)
+                    model.openSeasonDownload(downloadManager: downloadManager)
                 } label: {
                     HStack(spacing: 5) {
-                        if model.isLoadingSeasonPreview {
-                            ProgressView().scaleEffect(0.7).tint(DT.Color.accent)
-                        } else {
-                            Image(systemName: isSeasonFullyDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
-                        }
+                        Image(systemName: isSeasonFullyDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
                         Text(isSeasonFullyDownloaded ? "Season Downloaded" : "Download Season")
                     }
                     .font(.system(.caption, design: .default, weight: .semibold))

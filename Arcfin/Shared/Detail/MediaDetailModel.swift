@@ -52,8 +52,7 @@ final class MediaDetailModel {
     var offlinePlaybackTarget: DownloadedItem?
     private(set) var offlineStartOverride: Int64?
 
-    var seasonDownloadPreview: DownloadManager.DownloadPreview?
-    private(set) var isLoadingSeasonPreview = false
+    var isSeasonDownloadSheetShown = false
     /// Surfaces a season download failure that would otherwise only show up as a raw
     /// NSURLError buried in per-episode state nobody's looking at during a bulk download.
     var seasonDownloadErrorMessage: String?
@@ -494,46 +493,36 @@ final class MediaDetailModel {
         return episodes.filter { !$0.isVirtual && !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
     }
 
-    /// Fetches one representative preview (from the first not-yet-downloaded episode) to
-    /// show real quality/size info in the confirm sheet, instead of the bare "Download all
-    /// N episodes?" text alert that gave no size/quality info at all.
-    func loadSeasonPreview(authManager: AuthManager, downloadManager: DownloadManager) {
-        guard case .authenticated(let credential) = authManager.state else { return }
-        let pending = seasonEpisodesToDownload(in: downloadManager)
-        guard let firstPending = pending.first else { return }
-        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        isLoadingSeasonPreview = true
-        Task {
-            let single = await downloadManager.preview(for: firstPending, credential: credential, authHeader: authHeader)
-            isLoadingSeasonPreview = false
-            let count = Int64(pending.count)
-            // Scaled from one representative episode to the whole season's pending count —
-            // an honest total rather than one episode's numbers presented for the whole
-            // season, without needing a HEAD/playback-info round trip per episode.
-            seasonDownloadPreview = DownloadManager.DownloadPreview(
-                subtitleLanguages: single?.subtitleLanguages ?? [],
-                audioLanguages: single?.audioLanguages ?? [],
-                estimatedSizeBytes: single?.estimatedSizeBytes.map { $0 * count },
-                estimatedSizeIsApproximate: true,
-                willRemux: single?.willRemux ?? false,
-                sourceBitrate: single?.sourceBitrate,
-                runtimeTicks: single?.runtimeTicks.map { $0 * count },
-                container: single?.container,
-                videoCodec: single?.videoCodec,
-                videoWidth: single?.videoWidth,
-                videoHeight: single?.videoHeight,
-                videoRange: single?.videoRange,
-                episodeCount: pending.count,
-                encoding: single?.encoding ?? .unknown
-            )
-        }
+    /// Opens the download sheet for the season at once; it fills in from `seasonPreview`.
+    func openSeasonDownload(downloadManager: DownloadManager) {
+        guard !seasonEpisodesToDownload(in: downloadManager).isEmpty else { return }
+        isSeasonDownloadSheetShown = true
     }
 
-    func downloadSeason(bitrateCap: Int?, authManager: AuthManager, downloadManager: DownloadManager) {
+    /// One representative preview (the first episode not downloaded yet), scaled to every
+    /// episode still to download rather than a playback-info round trip per episode.
+    func seasonPreview(authManager: AuthManager, downloadManager: DownloadManager) async -> DownloadManager.DownloadPreview? {
+        guard case .authenticated(let credential) = authManager.state else { return nil }
+        let pending = seasonEpisodesToDownload(in: downloadManager)
+        guard let firstPending = pending.first else { return nil }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        guard var preview = await downloadManager.preview(for: firstPending, credential: credential, authHeader: authHeader) else { return nil }
+        let count = Int64(pending.count)
+        preview.estimatedSizeBytes = preview.estimatedSizeBytes.map { $0 * count }
+        preview.estimatedSizeIsApproximate = true
+        preview.runtimeTicks = preview.runtimeTicks.map { $0 * count }
+        preview.episodeCount = pending.count
+        return preview
+    }
+
+    func downloadSeason(_ choice: DownloadChoice, authManager: AuthManager, downloadManager: DownloadManager) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         for episode in seasonEpisodesToDownload(in: downloadManager) {
-            Task { await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap) }
+            Task {
+                await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader,
+                                                    bitrateCap: choice.bitrateCap, tracks: choice.tracks)
+            }
         }
     }
 

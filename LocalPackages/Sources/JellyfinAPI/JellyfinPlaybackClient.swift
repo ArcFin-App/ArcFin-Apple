@@ -1030,3 +1030,53 @@ private final class ThroughputProbe: NSObject, URLSessionDataDelegate, @unchecke
         lock.withLock { finished = true }
     }
 }
+
+/// Which audio and subtitle tracks a download keeps. A key names a track the same way across
+/// a season's episodes, whose stream numbers can differ. Nil keeps every audio track, and for
+/// subtitles follows Settings › Downloads › Subtitles.
+public struct DownloadTracks: Codable, Sendable, Equatable, Hashable {
+    public var audio: [String]?
+    public var subtitles: [String]?
+
+    public init(audio: [String]? = nil, subtitles: [String]? = nil) {
+        self.audio = audio
+        self.subtitles = subtitles
+    }
+
+    public static let all = DownloadTracks()
+
+    public static func key(_ stream: JellyfinMediaStream) -> String {
+        let title = (stream.displayTitle ?? "").replacingOccurrences(of: " - Default", with: "")
+        return [stream.language ?? "", stream.codec ?? "", stream.isForced ? "forced" : "", title].joined(separator: "|")
+    }
+
+    /// The audio tracks to keep, the default one first: a converted video carries the first
+    /// and the rest are added to it. Never empty when there's any audio. An episode without
+    /// the exact tracks picked keeps those in the same languages, else its default track.
+    public func audioStreams(from streams: [JellyfinMediaStream], defaultIndex: Int?) -> [JellyfinMediaStream] {
+        var picked = streams
+        if let audio {
+            let keys = Set(audio)
+            picked = streams.filter { keys.contains(Self.key($0)) }
+            if picked.isEmpty {
+                let languages = Set(audio.compactMap { $0.split(separator: "|", omittingEmptySubsequences: false).first.map(String.init) }
+                    .filter { !$0.isEmpty })
+                picked = streams.filter { languages.contains($0.language ?? "") }
+            }
+            if picked.isEmpty {
+                picked = streams.filter { $0.index == defaultIndex }
+                if picked.isEmpty { picked = Array(streams.prefix(1)) }
+            }
+        }
+        let first = picked.firstIndex { $0.index == defaultIndex } ?? picked.firstIndex(where: \.isDefault)
+        if let first, first > 0 { picked.insert(picked.remove(at: first), at: 0) }
+        return picked
+    }
+
+    /// The subtitle tracks to save, or nil to follow the setting.
+    public func subtitleStreams(from streams: [JellyfinMediaStream]) -> [JellyfinMediaStream]? {
+        guard let subtitles else { return nil }
+        let keys = Set(subtitles)
+        return streams.filter { keys.contains(Self.key($0)) }
+    }
+}

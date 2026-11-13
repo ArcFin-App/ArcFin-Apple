@@ -15,8 +15,7 @@ struct DownloadButton: View {
     @State private var showDeleteConfirm = false
     @State private var showSmartCancelConfirm = false
     @State private var errorMessage: String?
-    @State private var isLoadingPreview = false
-    @State private var previewSheet: DownloadManager.DownloadPreview?
+    @State private var isSheetShown = false
 
     private var isDownloaded: Bool { downloadManager.isDownloaded(item.id) }
     private var progress: Double? { downloadManager.progress[item.id] }
@@ -25,7 +24,7 @@ struct DownloadButton: View {
     private var downloadAccessibilityLabel: LocalizedStringKey {
         if isDownloaded { return "Downloaded, tap to delete" }
         if progress != nil || isQueued { return "Cancel download" }
-        return isLoadingPreview ? "Preparing download" : "Download"
+        return "Download"
     }
 
     var body: some View {
@@ -47,13 +46,11 @@ struct DownloadButton: View {
                     downloadManager.cancelDownload(itemId: item.id)
                 }
             } else {
-                loadPreview()
+                isSheetShown = true
             }
         } label: {
             ZStack {
-                if isLoadingPreview {
-                    ProgressView().tint(DT.Color.textPrimary)
-                } else if let progress {
+                if let progress {
                     Circle().stroke(DT.Color.textPrimary.opacity(0.2), lineWidth: 2)
                     Circle()
                         .trim(from: 0, to: max(progress, 0.02))
@@ -98,7 +95,7 @@ struct DownloadButton: View {
             Button("Keep Downloading", role: .cancel) {}
         }
         .alert("Download Failed", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("Retry") { loadPreview() }
+            Button("Retry") { isSheetShown = true }
             Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
@@ -108,32 +105,27 @@ struct DownloadButton: View {
             errorMessage = newValue
             downloadManager.errors[item.id] = nil
         }
-        .appSheet(item: $previewSheet) { preview in
-            DownloadConfirmSheet(item: item, preview: preview) { bitrateCap in
-                startDownload(bitrateCap: bitrateCap)
+        .appSheet(isPresented: $isSheetShown) {
+            DownloadConfirmSheet(item: item, load: loadPreview) { choice in
+                startDownload(choice)
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
     }
 
-    private func loadPreview() {
-        guard case .authenticated(let credential) = authManager.state else { return }
+    private func loadPreview() async -> DownloadManager.DownloadPreview? {
+        guard case .authenticated(let credential) = authManager.state else { return nil }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        isLoadingPreview = true
-        Task {
-            let preview = await downloadManager.preview(for: item, credential: credential, authHeader: authHeader)
-            isLoadingPreview = false
-            previewSheet = preview ?? DownloadManager.DownloadPreview(
-                subtitleLanguages: [], audioLanguages: [], estimatedSizeBytes: nil,
-                estimatedSizeIsApproximate: false, willRemux: false
-            )
-        }
+        return await downloadManager.preview(for: item, credential: credential, authHeader: authHeader)
     }
 
-    private func startDownload(bitrateCap: Int? = nil) {
+    private func startDownload(_ choice: DownloadChoice) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        Task { await downloadManager.startDownload(item: item, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap) }
+        Task {
+            await downloadManager.startDownload(item: item, credential: credential, authHeader: authHeader,
+                                                bitrateCap: choice.bitrateCap, tracks: choice.tracks)
+        }
     }
 }

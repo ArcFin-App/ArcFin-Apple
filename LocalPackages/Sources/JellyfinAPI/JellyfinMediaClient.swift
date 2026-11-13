@@ -455,7 +455,8 @@ public struct JellyfinMediaClient: Sendable {
     /// remuxed downloads look bad, not the codec change itself. Callers decide the value:
     /// source bitrate (with a generous fallback) for an unrequested remux, or the user's
     /// own picked cap when they deliberately asked for a smaller download.
-    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, videoCodecs: String, videoBitRate: Int, token: String) -> URL {
+    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, videoCodecs: String, videoBitRate: Int,
+                                        audioStreamIndex: Int?, token: String) -> URL {
         var comps = URLComponents(
             url: baseURL.appendingPathComponent("Videos/\(itemID)/stream.mp4"),
             resolvingAgainstBaseURL: false)!
@@ -466,6 +467,30 @@ public struct JellyfinMediaClient: Sendable {
             .init(name: "AudioCodec", value: "aac"),
             .init(name: "VideoBitRate", value: "\(videoBitRate)"),
             .init(name: "AudioBitRate", value: "320000"),
+            .init(name: "api_key", value: token),
+        ]
+        if let audioStreamIndex { comps.queryItems?.append(.init(name: "AudioStreamIndex", value: "\(audioStreamIndex)")) }
+        return comps.url!
+    }
+
+    /// One more audio track for a converted download, on a server without Arcfin Sync.
+    /// Jellyfin's audio-only streams ignore AudioStreamIndex (their ffmpeg command maps no
+    /// track), so this asks for a conversion with that track and a postage-stamp picture;
+    /// only its audio is kept.
+    public static func audioTrackFallbackURL(baseURL: URL, itemID: String, mediaSourceId: String, audioStreamIndex: Int, token: String) -> URL {
+        var comps = URLComponents(
+            url: baseURL.appendingPathComponent("Videos/\(itemID)/stream.mp4"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Static", value: "false"),
+            .init(name: "mediaSourceId", value: mediaSourceId),
+            .init(name: "VideoCodec", value: "h264"),
+            .init(name: "MaxWidth", value: "256"),
+            .init(name: "MaxHeight", value: "144"),
+            .init(name: "VideoBitRate", value: "64000"),
+            .init(name: "AudioCodec", value: "aac"),
+            .init(name: "AudioBitRate", value: "320000"),
+            .init(name: "AudioStreamIndex", value: "\(audioStreamIndex)"),
             .init(name: "api_key", value: token),
         ]
         return comps.url!
