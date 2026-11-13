@@ -237,14 +237,14 @@ struct OfflinePlayerView: View {
             // AirPlayButton's macOS variant), and offline playback is VLC-only with no
             // AVPlayer to hand it. Not something VLC's macOS backend bridges either — a
             // genuine gap, not an oversight.
-            if !downloadedItem.subtitleFileNames.isEmpty {
+            if !downloadedItem.subtitleFileNames.isEmpty || model.player.availableAudioTracks.count > 1 {
                 Button { model.showTrackMenu = true } label: {
                     Image(systemName: "captions.bubble")
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 44, height: 44)
                 }
-                .accessibilityLabel("Subtitles")
+                .accessibilityLabel("Audio and subtitles")
             }
             HStack(spacing: 14) {
                 Button { model.isFillScreen.toggle() } label: {

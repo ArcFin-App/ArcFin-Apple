@@ -161,13 +161,50 @@ struct OfflinePlayerBottomBar: View {
     }
 }
 
-/// Off or one of the subtitle files saved with the download.
+/// The download's audio tracks, when it has more than one, and off or one of the subtitle
+/// files saved with it.
 struct OfflineSubtitleSheet: View {
     let model: OfflinePlayerModel
 
     var body: some View {
         NavigationStack {
             List {
+                if model.player.availableAudioTracks.count > 1 {
+                    Section("Audio") {
+                        ForEach(model.player.availableAudioTracks) { track in
+                            Button {
+                                Task { await model.player.setAudioTrack(index: track.id) }
+                                model.showTrackMenu = false
+                            } label: {
+                                HStack {
+                                    Text(verbatim: Self.audioName(track))
+                                    Spacer()
+                                    if model.player.selectedAudioTrackIndex == track.id { Image(systemName: "checkmark") }
+                                }
+                            }
+                        }
+                    }
+                }
+                if !model.downloadedItem.subtitleFileNames.isEmpty {
+                    Section("Subtitles") { subtitleRows }
+                }
+            }
+            .navigationTitle(model.downloadedItem.subtitleFileNames.isEmpty ? "Audio" : "Audio & Subtitles")
+            .inlineNavigationTitle()
+        }
+        .presentationDetents([.medium])
+    }
+
+    /// A track added to a converted download has no title, only its language.
+    private static func audioName(_ track: AudioTrack) -> String {
+        guard track.displayName.isEmpty || track.displayName.lowercased().hasPrefix("track"),
+              let language = track.language, let name = Locale.current.localizedString(forLanguageCode: language)
+        else { return track.displayName }
+        return name
+    }
+
+    @ViewBuilder
+    private var subtitleRows: some View {
                 Button {
                     model.loadSubtitles(index: nil)
                     model.showTrackMenu = false
@@ -190,10 +227,5 @@ struct OfflineSubtitleSheet: View {
                         }
                     }
                 }
-            }
-            .navigationTitle("Subtitles")
-            .inlineNavigationTitle()
-        }
-        .presentationDetents([.medium])
     }
 }
