@@ -29,6 +29,35 @@ enum VideoQuality: String, CaseIterable, Identifiable {
     }
 }
 
+/// Settings › Downloads › Download Quality: what a download starts at, in the download sheet
+/// and for Smart Downloads. "Max" is the stored value from before, so it stays the original.
+enum DownloadQuality: String, CaseIterable, Identifiable {
+    case original = "Max", high, balanced, spaceSaver
+    static let key = "downloadQuality"
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .original: String(localized: "Original")
+        case .high: String(localized: "High")
+        case .balanced: String(localized: "Balanced")
+        case .spaceSaver: String(localized: "Space Saver")
+        }
+    }
+    /// What H.264 needs for the picture; a download converts at less in HEVC or AV1.
+    /// Nil downloads the file as it is.
+    var tier: Int? {
+        switch self {
+        case .original: nil
+        case .high: 8_000_000
+        case .balanced: 4_000_000
+        case .spaceSaver: 1_500_000
+        }
+    }
+    static var saved: DownloadQuality {
+        UserDefaults.standard.string(forKey: key).flatMap(DownloadQuality.init(rawValue:)) ?? .original
+    }
+}
+
 /// Settings › Playback › When Resuming: what Play does for a title that's part-watched.
 enum ResumeBehavior: String, CaseIterable, Identifiable {
     case ask, resume, startOver

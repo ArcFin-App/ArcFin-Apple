@@ -6657,6 +6657,70 @@
         }
       }
     },
+    "Balanced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ausgewogen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Equilibrada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Équilibrée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bilanciata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "バランス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "균형"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gebalanceerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Equilibrada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сбалансированное"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "均衡"
+          }
+        }
+      }
+    },
     "Base URL (e.g. /jellyfin)" : {
       "localizations" : {
         "de" : {
@@ -16513,6 +16577,70 @@
         }
       }
     },
+    "High" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hoch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Élevée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "高画質"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "높음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hoog"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alta"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Высокое"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "高"
+          }
+        }
+      }
+    },
     "Hold Speed" : {
       "localizations" : {
         "de" : {
@@ -25085,6 +25213,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@的选项"
+          }
+        }
+      }
+    },
+    "Original" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Originale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "オリジナル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "원본"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Origineel"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Оригинал"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "原始"
           }
         }
       }
@@ -36609,6 +36801,70 @@
         }
       }
     },
+    "Space Saver" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Platz sparen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ahorro de espacio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Économie d'espace"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Risparmio spazio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "省スペース"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "공간 절약"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ruimtebesparend"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Economia de espaço"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Экономия места"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "节省空间"
+          }
+        }
+      }
+    },
     "Specials" : {
       "localizations" : {
         "de" : {
@@ -44861,6 +45117,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "周末"
+          }
+        }
+      }
+    },
+    "What downloads and Smart Downloads start at; you can change it for each download. Lower qualities are converted on your server, in HEVC or AV1 where it can, so they take less space." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Womit Downloads und Smart Downloads beginnen; du kannst es für jeden Download ändern. Niedrigere Qualitäten wandelt dein Server um, wo möglich in HEVC oder AV1, damit sie weniger Platz brauchen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Con qué empiezan las descargas y las descargas inteligentes; puedes cambiarlo en cada descarga. Las calidades más bajas las convierte tu servidor, en HEVC o AV1 cuando puede, para que ocupen menos espacio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La qualité de départ des téléchargements et des téléchargements intelligents ; vous pouvez la changer pour chaque téléchargement. Les qualités inférieures sont converties par votre serveur, en HEVC ou AV1 quand il le peut, pour prendre moins de place."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La qualità iniziale dei download e dei download intelligenti; puoi cambiarla per ogni download. Le qualità più basse vengono convertite dal tuo server, in HEVC o AV1 dove possibile, così occupano meno spazio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロードとスマートダウンロードの初期画質です。ダウンロードごとに変更できます。低い画質はサーバーで変換され、可能な場合は HEVC または AV1 になるため、容量が少なくて済みます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다운로드와 스마트 다운로드의 기본 화질입니다. 다운로드마다 바꿀 수 있습니다. 낮은 화질은 서버에서 변환되며, 가능하면 HEVC 또는 AV1로 변환되어 공간을 덜 차지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Waarmee downloads en slimme downloads beginnen; je kunt het per download wijzigen. Lagere kwaliteiten worden door je server omgezet, waar mogelijk naar HEVC of AV1, zodat ze minder ruimte innemen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Com qual qualidade os downloads e os downloads inteligentes começam; você pode mudá-la em cada download. Qualidades mais baixas são convertidas pelo seu servidor, em HEVC ou AV1 quando possível, para ocupar menos espaço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "С какого качества начинаются загрузки и умные загрузки; его можно изменить для каждой загрузки. Более низкое качество сервер перекодирует, по возможности в HEVC или AV1, чтобы файлы занимали меньше места."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "下载和智能下载的默认画质；每次下载时都可以更改。较低的画质由服务器转换，尽可能转为 HEVC 或 AV1，以减少占用空间。"
           }
         }
       }

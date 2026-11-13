@@ -25,28 +25,24 @@ struct DownloadConfirmSheet: View {
         self.item = item
         self.preview = preview
         self.onConfirm = onConfirm
-        self._selectedOption = State(initialValue: Self.original)
-        self.options = [Self.original] + Self.tiers.compactMap { tier in
+        let options = DownloadQuality.allCases.compactMap { quality -> (DownloadQuality, DownloadBitrateOption)? in
+            guard let tier = quality.tier else { return (quality, DownloadBitrateOption(label: quality.label, bitrate: nil)) }
             let encoding = preview.encoding
             guard !encoding.keepsOriginal(forTier: tier, sourceBitrate: preview.sourceBitrate, sourceCodec: preview.videoCodec) else { return nil }
             let rate = encoding.videoBitrate(forTier: tier, sourceBitrate: preview.sourceBitrate, sourceCodec: preview.videoCodec)
-            return DownloadBitrateOption(label: Self.rateLabel(rate), bitrate: tier, videoBitrate: rate)
+            return (quality, DownloadBitrateOption(label: "\(quality.label) · \(Self.rateLabel(rate))", bitrate: tier, videoBitrate: rate))
         }
+        self.options = options.map(\.1)
+        self._selectedOption = State(initialValue: options.first { $0.0 == DownloadQuality.saved }?.1 ?? options[0].1)
     }
 
     private let options: [DownloadBitrateOption]
-    private static let original = DownloadBitrateOption(label: "Max", bitrate: nil)
 
     private static func rateLabel(_ bitsPerSecond: Int) -> String {
         bitsPerSecond >= 1_000_000
             ? "\((Double(bitsPerSecond) / 1_000_000).formatted(.number.precision(.fractionLength(0...1)))) Mb/s"
             : "\(bitsPerSecond / 1000) Kb/s"
     }
-
-    /// Quality tiers as H.264 bitrates. With no bitrate reported for the source (plenty of
-    /// libraries never get a deep metadata scan) all of them are offered; otherwise those
-    /// that wouldn't make the file meaningfully smaller are left out.
-    private static let tiers = [8_000_000, 4_000_000, 2_000_000, 1_000_000, 500_000]
 
     private func sizeBytes(for option: DownloadBitrateOption) -> Int64? {
         guard let bitrate = option.videoBitrate else { return preview.estimatedSizeBytes }

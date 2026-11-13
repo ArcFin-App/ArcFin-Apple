@@ -1754,7 +1754,7 @@ final class DownloadManager: NSObject {
                 // only shown with Smart Downloads on) doesn't hold it back; the device's own
                 // free space still does. Queued together, so they show in Downloads at once.
                 for episode in nextUp where Self.freeSpace().map({ $0 > Int64(Self.lowSpaceThreshold) }) ?? true {
-                    addToQueue(item: episode, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true)
+                    addToQueue(item: episode, credential: credential, authHeader: authHeader, bitrateCap: DownloadQuality.saved.tier, viaSmart: true)
                 }
                 Task { await processQueue() }
                 continue
@@ -1777,7 +1777,7 @@ final class DownloadManager: NSObject {
                 Self.smartLog.notice("Smart Downloads stopped: the device is out of room")
                 break
             }
-            guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true) else { continue }
+            guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: DownloadQuality.saved.tier, viaSmart: true) else { continue }
             Self.smartLog.notice("Smart Downloads queuing \(item.name, privacy: .public)")
             if item.seriesId == nil { Self.smartMovieIds.insert(item.id) }
             batch += 1
