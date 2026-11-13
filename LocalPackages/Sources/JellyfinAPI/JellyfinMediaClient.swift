@@ -455,14 +455,14 @@ public struct JellyfinMediaClient: Sendable {
     /// remuxed downloads look bad, not the codec change itself. Callers decide the value:
     /// source bitrate (with a generous fallback) for an unrequested remux, or the user's
     /// own picked cap when they deliberately asked for a smaller download.
-    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, videoBitRate: Int, token: String) -> URL {
+    public static func remuxDownloadURL(baseURL: URL, itemID: String, mediaSourceId: String, videoCodecs: String, videoBitRate: Int, token: String) -> URL {
         var comps = URLComponents(
             url: baseURL.appendingPathComponent("Videos/\(itemID)/stream.mp4"),
             resolvingAgainstBaseURL: false)!
         comps.queryItems = [
             .init(name: "Static", value: "false"),
             .init(name: "mediaSourceId", value: mediaSourceId),
-            .init(name: "VideoCodec", value: "h264"),
+            .init(name: "VideoCodec", value: videoCodecs),
             .init(name: "AudioCodec", value: "aac"),
             .init(name: "VideoBitRate", value: "\(videoBitRate)"),
             .init(name: "AudioBitRate", value: "320000"),

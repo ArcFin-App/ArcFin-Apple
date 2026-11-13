@@ -3,12 +3,13 @@
 import SwiftUI
 import JellyfinAPI
 
-/// A selectable download quality — nil bitrate means "Original" (no forced re-encode
-/// unless one was already needed for container/codec reasons).
+/// A selectable download quality: nil bitrate is the original file. `bitrate` is the tier,
+/// what H.264 needs for its picture; `videoBitrate` is what it's converted at.
 struct DownloadBitrateOption: Identifiable, Hashable {
     let id = UUID()
     let label: String
     let bitrate: Int?
+    var videoBitrate: Int? = nil
 }
 
 struct DownloadConfirmSheet: View {
@@ -24,24 +25,31 @@ struct DownloadConfirmSheet: View {
         self.item = item
         self.preview = preview
         self.onConfirm = onConfirm
-        self._selectedOption = State(initialValue: Self.options.first!)
+        self._selectedOption = State(initialValue: Self.original)
+        self.options = [Self.original] + Self.tiers.compactMap { tier in
+            let encoding = preview.encoding
+            guard !encoding.keepsOriginal(forTier: tier, sourceBitrate: preview.sourceBitrate, sourceCodec: preview.videoCodec) else { return nil }
+            let rate = encoding.videoBitrate(forTier: tier, sourceBitrate: preview.sourceBitrate, sourceCodec: preview.videoCodec)
+            return DownloadBitrateOption(label: Self.rateLabel(rate), bitrate: tier, videoBitrate: rate)
+        }
     }
 
-    /// Fixed quality tiers — always the same list regardless of what the server reports for
-    /// this source, since gating this on server-reported bitrate metadata is unreliable:
-    /// plenty of libraries never get a deep metadata scan and report no bitrate on either
-    /// the source or its streams at all.
-    private static let options: [DownloadBitrateOption] = [
-        DownloadBitrateOption(label: "Max", bitrate: nil),
-        DownloadBitrateOption(label: "8 Mb/s", bitrate: 8_000_000),
-        DownloadBitrateOption(label: "4 Mb/s", bitrate: 4_000_000),
-        DownloadBitrateOption(label: "2 Mb/s", bitrate: 2_000_000),
-        DownloadBitrateOption(label: "1 Mb/s", bitrate: 1_000_000),
-        DownloadBitrateOption(label: "500 Kb/s", bitrate: 500_000),
-    ]
+    private let options: [DownloadBitrateOption]
+    private static let original = DownloadBitrateOption(label: "Max", bitrate: nil)
+
+    private static func rateLabel(_ bitsPerSecond: Int) -> String {
+        bitsPerSecond >= 1_000_000
+            ? "\((Double(bitsPerSecond) / 1_000_000).formatted(.number.precision(.fractionLength(0...1)))) Mb/s"
+            : "\(bitsPerSecond / 1000) Kb/s"
+    }
+
+    /// Quality tiers as H.264 bitrates. With no bitrate reported for the source (plenty of
+    /// libraries never get a deep metadata scan) all of them are offered; otherwise those
+    /// that wouldn't make the file meaningfully smaller are left out.
+    private static let tiers = [8_000_000, 4_000_000, 2_000_000, 1_000_000, 500_000]
 
     private func sizeBytes(for option: DownloadBitrateOption) -> Int64? {
-        guard let bitrate = option.bitrate else { return preview.estimatedSizeBytes }
+        guard let bitrate = option.videoBitrate else { return preview.estimatedSizeBytes }
         guard let ticks = preview.runtimeTicks, ticks > 0 else { return nil }
         return Int64((Double(bitrate) + 320_000) / 8 * (Double(ticks) / 10_000_000))
     }
@@ -79,7 +87,7 @@ struct DownloadConfirmSheet: View {
     }
 
     private func estimatedSize(for option: DownloadBitrateOption) -> String {
-        guard let bitrate = option.bitrate else {
+        guard let bitrate = option.videoBitrate else {
             guard let bytes = preview.estimatedSizeBytes else { return "Unknown" }
             let prefix = preview.estimatedSizeIsApproximate ? "~" : ""
             return prefix + ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
@@ -131,7 +139,7 @@ struct DownloadConfirmSheet: View {
                                 .font(.system(.caption, design: .default, weight: .semibold))
                                 .foregroundStyle(DT.Color.textSecondary)
                             Picker("Quality", selection: $selectedOption) {
-                                ForEach(Self.options) { option in
+                                ForEach(options) { option in
                                     Text(option.label).tag(option)
                                 }
                             }
@@ -163,7 +171,7 @@ struct DownloadConfirmSheet: View {
                             }
                             if preview.willRemux || selectedOption.bitrate != nil {
                                 divider
-                                row(label: "Converted", value: "Yes — offline quality change")
+                                row(label: "Converted", value: preview.encoding.codec.map { "Yes, to \($0.uppercased())" } ?? "Yes — offline quality change")
                             }
                         }
                         .background(DT.Color.textPrimary.opacity(0.04))

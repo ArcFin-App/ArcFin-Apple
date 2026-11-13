@@ -523,7 +523,8 @@ final class MediaDetailModel {
                 videoWidth: single?.videoWidth,
                 videoHeight: single?.videoHeight,
                 videoRange: single?.videoRange,
-                episodeCount: pending.count
+                episodeCount: pending.count,
+                encoding: single?.encoding ?? .unknown
             )
         }
     }

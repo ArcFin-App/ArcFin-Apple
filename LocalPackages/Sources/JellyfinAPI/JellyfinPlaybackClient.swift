@@ -701,6 +701,61 @@ public enum AV1Encoding {
     }
 }
 
+// MARK: - Download conversion
+
+/// What a lower-quality download is converted to. A quality tier's bitrate is what H.264
+/// needs for that picture; HEVC needs about 60% of it and AV1 about half, so the same tier
+/// comes out smaller. A codec is only counted on when the server is known to encode it:
+/// Jellyfin falls back to H.264 when Allow HEVC/AV1 Encoding is off, and H.264 at HEVC's
+/// bitrate would look worse than before.
+public struct DownloadEncoding: Sendable, Equatable {
+    /// For Jellyfin's VideoCodec, best first.
+    public let videoCodecs: String
+    /// The codec the download comes down in, when that's known.
+    public let codec: String?
+    let efficiency: Double
+
+    /// The server's settings couldn't be read: HEVC if it allows it, at H.264's bitrate.
+    public static let unknown = DownloadEncoding(videoCodecs: "hevc,h264", codec: nil, efficiency: 1)
+
+    /// `allowsHEVC`/`allowsAV1`: the server's encoding settings, nil when they can't be read
+    /// (only admins can). `encodesAV1`: the Arcfin Sync plugin's test encode, nil without it.
+    public static func choose(allowsHEVC: Bool?, allowsAV1: Bool?, encodesAV1: Bool?) -> DownloadEncoding {
+        if allowsAV1 == true, encodesAV1 == true, JellyfinMediaClient.decodesAV1InHardware {
+            return DownloadEncoding(videoCodecs: "av1,hevc,h264", codec: "av1", efficiency: 0.5)
+        }
+        switch allowsHEVC {
+        case true?: return DownloadEncoding(videoCodecs: "hevc,h264", codec: "hevc", efficiency: 0.6)
+        case false?: return DownloadEncoding(videoCodecs: "h264", codec: "h264", efficiency: 1)
+        case nil: return .unknown
+        }
+    }
+
+    /// The video bitrate to ask for a tier: the tier's own scaled to the codec, no more than
+    /// the source's picture needs in that codec, and never more than the source itself.
+    public func videoBitrate(forTier tier: Int, sourceBitrate: Int?, sourceCodec: String?) -> Int {
+        let scaled = Double(tier) * efficiency
+        guard let sourceBitrate, sourceBitrate > 0 else { return Int(scaled) }
+        let source = Double(sourceBitrate)
+        return Int(min(scaled, source * efficiency / Self.efficiency(of: sourceCodec), source))
+    }
+
+    /// When converting would save less than a tenth, the original is the better download.
+    public func keepsOriginal(forTier tier: Int, sourceBitrate: Int?, sourceCodec: String?) -> Bool {
+        guard let sourceBitrate, sourceBitrate > 0 else { return false }
+        return Double(videoBitrate(forTier: tier, sourceBitrate: sourceBitrate, sourceCodec: sourceCodec)) >= Double(sourceBitrate) * 0.9
+    }
+
+    static func efficiency(of codec: String?) -> Double {
+        switch codec?.lowercased() {
+        case "hevc", "h265": 0.6
+        case "av1": 0.5
+        case "vp9": 0.65
+        default: 1
+        }
+    }
+}
+
 // MARK: - Private response decoders
 
 struct SessionResponse: Decodable {

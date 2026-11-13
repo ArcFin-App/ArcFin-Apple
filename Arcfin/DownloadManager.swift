@@ -57,6 +57,7 @@ final class DownloadManager: NSObject {
     /// normal download call site already passes its own credential/authHeader explicitly.
     @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private let client = JellyfinMediaClient()
+    @ObservationIgnored private var encodingByServer: [String: DownloadEncoding] = [:]
     @ObservationIgnored private var downloadTasks: [String: URLSessionDownloadTask] = [:]
     /// A title downloading as several byte ranges at once (see downloadInParts).
     @ObservationIgnored private var partTasks: [String: [URLSessionDownloadTask]] = [:]
@@ -657,12 +658,30 @@ final class DownloadManager: NSObject {
         var videoRange: String?
         /// Set for a season: the sizes above cover this many episodes.
         var episodeCount: Int?
+        /// What a lower quality tier is converted to.
+        var encoding = DownloadEncoding.unknown
+    }
+
+    /// Per server for this launch: what its encoding settings (readable by admins) and the
+    /// Arcfin Sync plugin's test encodes say a converted download can be.
+    func downloadEncoding(credential: ServerCredential, authHeader: String) async -> DownloadEncoding {
+        let key = credential.baseURL.absoluteString
+        if let known = encodingByServer[key] { return known }
+        async let settings = try? JellyfinAdminClient().configuration("encoding", credential: credential, authHeader: authHeader)
+        async let encoders = ArcfinSyncClient().fetchEncoders(credential: credential, authHeader: authHeader)
+        let options = await settings.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        let encoding = DownloadEncoding.choose(allowsHEVC: options?["AllowHevcEncoding"] as? Bool,
+                                               allowsAV1: options?["AllowAv1Encoding"] as? Bool,
+                                               encodesAV1: await encoders?.encoders["av1"])
+        encodingByServer[key] = encoding
+        return encoding
     }
 
     /// What the confirmation sheet shows before actually starting — same PlaybackInfo call
     /// the real download makes, plus a HEAD request against the resolved video URL for its
     /// size (Content-Length), without downloading anything yet.
     func preview(for item: MediaItem, credential: ServerCredential, authHeader: String) async -> DownloadPreview? {
+        async let encoding = downloadEncoding(credential: credential, authHeader: authHeader)
         guard let info = try? await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id) else {
             return nil
         }
@@ -698,7 +717,8 @@ final class DownloadManager: NSObject {
             sourceBitrate: info.bitrate, runtimeTicks: info.runTimeTicks,
             container: info.container, videoCodec: info.videoStream?.codec,
             videoWidth: info.videoStream?.width, videoHeight: info.videoStream?.height,
-            videoRange: info.videoStream?.videoRange
+            videoRange: info.videoStream?.videoRange,
+            encoding: await encoding
         )
     }
 
@@ -931,8 +951,15 @@ final class DownloadManager: NSObject {
             let detailData = try await detailTask
             let detail = try JellyfinMediaClient.decodeItemDetail(detailData)
             let info = try await playbackTask
+            let encoding = bitrateCap == nil ? nil : await downloadEncoding(credential: credential, authHeader: authHeader)
+            let conversionBitrate: Int? = bitrateCap.flatMap { tier in
+                guard let encoding,
+                      !encoding.keepsOriginal(forTier: tier, sourceBitrate: info.bitrate, sourceCodec: info.videoStream?.codec)
+                else { return nil }
+                return encoding.videoBitrate(forTier: tier, sourceBitrate: info.bitrate, sourceCodec: info.videoStream?.codec)
+            }
 
-            if !skipVideoDownload, !handedOffItemIds.contains(item.id), let expected = Self.expectedSize(of: info, bitrateCap: bitrateCap) {
+            if !skipVideoDownload, !handedOffItemIds.contains(item.id), let expected = Self.expectedSize(of: info, bitrateCap: conversionBitrate) {
                 if let room = roomForDownloads(excluding: item.id), room < expected { throw NoRoomForDownload(bytes: expected) }
                 expectedBytes[item.id] = expected
             }
@@ -958,15 +985,17 @@ final class DownloadManager: NSObject {
                                            credential: credential, authHeader: authHeader, dir: dir)
 
             // Playback is always VLC for downloads, which plays the original file's container/
-            // codec natively — no remux needed for compatibility. Only an explicit bitrateCap
-            // (the user picking a lower quality tier) still forces one, since that's the only
-            // way to actually shrink a download below the source's own size.
+            // codec natively — no remux needed for compatibility. Only a lower quality tier
+            // that actually makes the file smaller converts it.
             let sourceContainer = (info.container ?? "").lowercased()
-            let needsRemux = bitrateCap != nil
+            let needsRemux = conversionBitrate != nil
             let videoFileName = needsRemux ? "video.mp4" : "video.\(sourceContainer.nilIfEmpty ?? "mp4")"
-            let videoURL = needsRemux
-                ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, videoBitRate: min(bitrateCap!, info.bitrate ?? bitrateCap!), token: credential.accessToken)
-                : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
+            let videoURL = if let conversionBitrate, let encoding {
+                JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId,
+                                                     videoCodecs: encoding.videoCodecs, videoBitRate: conversionBitrate, token: credential.accessToken)
+            } else {
+                JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
+            }
             if handedOffItemIds.contains(item.id) {
                 try await awaitHandedOff(itemId: item.id)
             } else if !skipVideoDownload {
