@@ -35,6 +35,8 @@ struct DownloadConfirmSheet: View {
     @State private var quality = DownloadQuality.original
     @State private var audioKeys: Set<String> = []
     @State private var subtitleKeys: Set<String> = []
+    @State private var isAtEnd = true
+    @State private var hasReachedEnd = false
 
     private var options: [DownloadQualityOption] {
         guard let preview else { return [DownloadQualityOption(quality: .original, tier: nil, videoBitrate: nil)] }
@@ -118,6 +120,18 @@ struct DownloadConfirmSheet: View {
                     }
                     .padding(DT.Spacing.pagePad)
                 }
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.visibleRect.maxY >= geometry.contentSize.height - 8
+                } action: { _, atEnd in
+                    isAtEnd = atEnd
+                    if atEnd && !isLoading { hasReachedEnd = true }
+                }
+                .overlay(alignment: .bottom) {
+                    if !isLoading && !isAtEnd && !hasReachedEnd {
+                        scrollHint
+                    }
+                }
+                .animation(.easeOut(duration: 0.2), value: hasReachedEnd)
 
                 Button {
                     onConfirm(choice)
@@ -245,6 +259,9 @@ struct DownloadConfirmSheet: View {
                 .pickerStyle(.menu)
                 .tint(DT.Color.textPrimary)
                 .padding(.horizontal, 4)
+                if let space {
+                    spaceNote(space.message, blocks: space.blocks)
+                }
             }
 
             card {
@@ -272,10 +289,6 @@ struct DownloadConfirmSheet: View {
 
             audioSection(preview)
             subtitleSection(preview)
-
-            if let space {
-                spaceNote(space.message, blocks: space.blocks)
-            }
 
             if isConverted {
                 Text(keptAudioCount > 1
@@ -423,6 +436,19 @@ struct DownloadConfirmSheet: View {
                 .multilineTextAlignment(.trailing)
         }
         .padding(12)
+    }
+
+    /// Only a nudge: it never blocks a tap, and it goes for good once the end has been seen.
+    private var scrollHint: some View {
+        Label("Scroll for more", systemImage: "chevron.down")
+            .font(.system(.caption, design: .default, weight: .semibold))
+            .foregroundStyle(DT.Color.textPrimary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .glassEffect(.regular, in: Capsule())
+            .padding(.bottom, DT.Spacing.sm)
+            .allowsHitTesting(false)
+            .transition(.opacity)
     }
 
     private func spaceNote(_ message: String, blocks: Bool) -> some View {
