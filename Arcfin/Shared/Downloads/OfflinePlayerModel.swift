@@ -198,7 +198,9 @@ final class OfflinePlayerModel {
         if status == .playing { scheduleAutoHide() }
         if status == .ended {
             savePosition(final: true)
-            if deleteAfterWatching {
+            // The player's end can come early (a converted file cut short), so only a title
+            // that counts as watched goes.
+            if deleteAfterWatching && downloadedItem.played {
                 downloadManager.markForDeletionAfterWatching(itemId: downloadedItem.itemId)
             }
             closePlayer()
