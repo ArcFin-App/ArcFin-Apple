@@ -41,7 +41,8 @@ struct DetailPlayButton: View {
         let left = resumeTimeLabel.map { Text($0) }
         switch (left, ends) {
         case let (left?, ends?):
-            let separator = Text("  •  ").contentFont(.footnote, weight: .heavy)
+            // .font, not .contentFont: it has to stay a Text to go inside the line below.
+            let separator = Text("  •  ").font(PlatformMetrics.contentFont(.footnote, design: nil, weight: .heavy))
             return Text("\(left)\(separator)\(ends)")
         case let (left?, nil): return left
         case let (nil, ends?): return ends
