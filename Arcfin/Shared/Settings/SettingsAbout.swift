@@ -43,6 +43,7 @@ struct SignOutSection: View {
                     .foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
+            .formRowButton()
         }
         .confirmingProfileRemoval($signOutTarget, signingOut: true,
                                   isLastProfile: authManager.profiles.count <= 1) { _ in

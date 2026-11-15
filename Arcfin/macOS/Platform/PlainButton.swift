@@ -16,4 +16,10 @@ extension View {
             buttonStyle(.plain)
         }
     }
+
+    /// A form row's action, such as Sign Out or Save. Its label fills the row, so the Mac's
+    /// bordered push button would draw around the whole row; plain lets the row be the button.
+    func formRowButton() -> some View {
+        buttonStyle(.plain).contentShape(Rectangle())
+    }
 }

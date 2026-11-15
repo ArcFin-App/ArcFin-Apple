@@ -115,6 +115,7 @@ struct ArcfinSyncSection: View {
                 Text(authManager.isSyncingArcfin ? "Syncing…" : "Sync Now")
                     .frame(maxWidth: .infinity, alignment: .center)
             }
+            .formRowButton()
             .disabled(authManager.isSyncingArcfin)
         } header: {
             Label("Arcfin Sync", systemImage: "arrow.triangle.2.circlepath")
