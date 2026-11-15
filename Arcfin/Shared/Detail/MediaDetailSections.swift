@@ -166,6 +166,7 @@ struct DetailCrewSection: View {
                 DetailCrewRow(label: "Writer", people: Array(writers.prefix(3)))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
     }
