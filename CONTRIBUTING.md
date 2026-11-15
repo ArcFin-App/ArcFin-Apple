@@ -36,7 +36,7 @@ For anything bigger than a small fix, **open an issue first** and say what you'd
 2. Choose the **Arcfin** scheme and an iPhone, iPad, Mac or Apple TV destination.
 3. To run on a device, set your own team and bundle identifier under **Signing & Capabilities**.
 
-The packages in `LocalPackages/` are already part of the project, and dependencies resolve on the first build. Package versions are pinned in the committed `Package.resolved` files. Don't update them in an unrelated pull request.
+The packages in `LocalPackages/` are already part of the project, and dependencies resolve on the first build. Package versions are pinned in the committed `Package.resolved` files. Don't update them in an unrelated pull request. When you add, remove or update a dependency, run `python3 .gitea/scripts/update-licenses.py` and commit the regenerated `Arcfin/Shared/Settings/ThirdPartyLicenses.json`: it holds every bundled licence shown under Settings › About › Legal & Licenses, and CI fails while it's out of date.
 
 **To run the package tests:**
 
@@ -101,7 +101,7 @@ Branch from `main` and open your pull request against `main`.
 2. **Fill in the template.** Say *why* as well as *what*, link the issue (`Fixes #123`), and say how you tested it, including the platforms.
 3. **Sign off every commit** (`git commit -s`). See [License and the DCO](#license-and-the-dco).
 4. **Keep commits meaningful:** a short, plain-English subject line ("Library: remember the sort order per library"). Each commit should build.
-5. **CI must pass:** package tests, the three platform builds, the String Catalog check, the Release build and the sign-off check.
+5. **CI must pass:** package tests, the three platform builds, the String Catalog check, the Release build, the platform folder check, the licence check and the sign-off check.
 6. **Review:** the maintainer reviews and merges every pull request.
 
 ## AI-assisted contributions
