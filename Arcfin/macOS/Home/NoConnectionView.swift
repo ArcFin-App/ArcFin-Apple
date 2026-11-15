@@ -22,6 +22,7 @@ struct NoConnectionView: View {
                     .frame(height: 48)
                     .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.md))
             }
+            .buttonStyle(.plain)
 
             // A way out when the server is gone for good: another saved server,
             // or back to sign-in.
@@ -31,6 +32,7 @@ struct NoConnectionView: View {
                     .foregroundStyle(DT.Color.accent)
                     .frame(minHeight: 44)
             }
+            .buttonStyle(.plain)
         }
         .sheet(isPresented: $showSwitchServer) {
             NavigationStack { SwitchServerView() }

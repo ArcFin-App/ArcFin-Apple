@@ -165,6 +165,7 @@ private struct HomeHeroInfo: View {
                         .foregroundStyle(DT.Color.onAccent)
                         .padding(.horizontal, 28).padding(.vertical, 11)
                     }
+                    .buttonStyle(.plain)
                     .glassEffect(.regular.tint(DT.Color.accent).interactive(), in: .rect(cornerRadius: 10))
 
                     Button {
@@ -177,6 +178,7 @@ private struct HomeHeroInfo: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 20).padding(.vertical, 11)
                     }
+                    .buttonStyle(.plain)
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
                 }
             }

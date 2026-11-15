@@ -71,6 +71,7 @@ struct YouTubeTrailerPlayerView: View {
                     .frame(width: 44, height: 44)
                     .contentShape(Circle())
             }
+            .buttonStyle(.plain)
             .accessibilityLabel("Close trailer")
             .padding(.top, 16)
             .padding(.trailing, 16)

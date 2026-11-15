@@ -135,6 +135,7 @@ struct SkipSegmentButton: View {
                             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                             .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
                         }
+                        .buttonStyle(.plain)
                         .padding(.trailing, DT.Spacing.pagePad)
                         .padding(.bottom, 100)
                     }
