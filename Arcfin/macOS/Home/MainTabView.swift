@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import AppKit
 import JellyfinAPI
 import SeerrAPI
 
@@ -47,6 +48,21 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
+            // The system toggle sits at the top of the sidebar, which is too narrow for it
+            // beside the window buttons, so macOS moved it to the toolbar's overflow menu at
+            // the far right. Arcfin's own sits at the leading edge instead.
+            .toolbar(removing: .sidebarToggle)
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil, from: nil)
+                    } label: {
+                        Image(systemName: "sidebar.leading")
+                    }
+                    .accessibilityLabel("Toggle Sidebar")
+                    .help("Show or hide the sidebar")
+                }
+            }
             .adminTabOffer(limit: tabLimit)
             // The playing-streams badge, kept current while Arcfin is open.
             .task(id: showsStreamBadge && authManager.isAdmin) {
