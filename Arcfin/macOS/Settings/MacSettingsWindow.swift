@@ -56,6 +56,7 @@ struct MacSettingsWindow: View {
                     NavigationStack {
                         detail(for: pane ?? .general)
                     }
+                    .environment(\.listFillsWidth, true)
                     .id(pane)
                 }
             } else {
