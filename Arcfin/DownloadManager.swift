@@ -358,7 +358,17 @@ final class DownloadManager: NSObject {
             else { continue }
             for item in items {
                 guard let remote = server[item.itemId] else { continue }
-                let newlyWatched = remote.played && !item.played
+                let wasFinished = item.finishedSinceDownload
+                if item.playCountAtDownload == nil {
+                    // Downloaded before the count was kept: it counts as finished since then only
+                    // if the server's last finish (watched, position back at the start) came after
+                    // the download. A rewatch under way keeps its position, so it doesn't.
+                    let finishedAfter = remote.played && remote.playbackPositionTicks == 0
+                        && (remote.lastPlayedDate.map { $0 > item.downloadedAt } ?? false)
+                    item.playCountAtDownload = finishedAfter ? max(0, remote.playCount - 1) : remote.playCount
+                }
+                item.serverPlayCount = remote.playCount
+                let newlyWatched = item.finishedSinceDownload && !wasFinished
                 item.played = remote.played
                 item.playbackPositionTicks = remote.played ? 0 : remote.playbackPositionTicks
                 // Delete After Watching counts finishing it anywhere, not only here.
@@ -1043,6 +1053,10 @@ final class DownloadManager: NSObject {
 
             let fileSize = (try? FileManager.default.attributesOfItem(atPath: dir.appendingPathComponent(videoFileName).path)[.size] as? Int64) ?? 0
 
+            // Starts from the server's watched state: a title already watched would otherwise
+            // look newly watched at the next sync, and Delete After Watching would remove it.
+            let userData = detail.item.userData ?? item.userData
+            let alreadyPlayed = userData?.played ?? false
             let downloaded = DownloadedItem(
                 itemId: item.id, name: detail.item.name, typeRaw: detail.item.type.rawValue,
                 overview: detail.item.overview, runtimeTicks: detail.runTimeTicks ?? 0,
@@ -1057,8 +1071,11 @@ final class DownloadManager: NSObject {
                 trickplayWidth: savedTrickplay?.width, trickplayHeight: savedTrickplay?.height,
                 trickplayTileWidth: savedTrickplay?.tileWidth, trickplayTileHeight: savedTrickplay?.tileHeight,
                 trickplayIntervalMs: savedTrickplay?.intervalMs, trickplayThumbnailCount: savedTrickplay?.thumbnailCount,
-                fileSizeBytes: fileSize
+                fileSizeBytes: fileSize,
+                playbackPositionTicks: alreadyPlayed ? 0 : (userData?.playbackPositionTicks ?? 0), played: alreadyPlayed
             )
+            downloaded.playCountAtDownload = userData?.playCount ?? 0
+            downloaded.serverPlayCount = userData?.playCount ?? 0
             downloaded.skipSegments = fetched.skips
             downloaded.tagline = detail.taglines.first
             downloaded.studios = detail.studios
@@ -1741,7 +1758,9 @@ final class DownloadManager: NSObject {
         for (seriesId, show) in kept { targets[seriesId] = show.episodeCount }
         Self.smartLog.notice("Smart Downloads check: \(targets.count, privacy: .public) show(s), \(movies.count, privacy: .public) movie(s), keep \(episodeCount, privacy: .public), budget \(budgetGB, privacy: .public) GB")
 
-        for item in allDownloaded where item.played && Self.smartMovieIds.contains(item.itemId) {
+        // Finished since it was downloaded, not just marked watched: a movie in Continue
+        // Watching can be a rewatch of one watched before, and is still wanted.
+        for item in allDownloaded where item.finishedSinceDownload && Self.smartMovieIds.contains(item.itemId) {
             markForDeletionAfterWatching(itemId: item.itemId)
             Self.smartMovieIds.remove(item.itemId)
         }
@@ -1749,7 +1768,7 @@ final class DownloadManager: NSObject {
 
         // Watched episodes are queued for removal rather than deleted here: this also runs
         // while a downloads screen may be showing those rows (see markForDeletionAfterWatching).
-        for item in allDownloaded where item.played {
+        for item in allDownloaded where item.finishedSinceDownload {
             guard let seriesId = item.seriesId, targets[seriesId] != nil else { continue }
             markForDeletionAfterWatching(itemId: item.itemId)
         }
