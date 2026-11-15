@@ -104,7 +104,7 @@ struct MediaDetailView: View {
             }
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .primaryAction) {
-                    DownloadButton(item: item).help("Download")
+                    DownloadButton(item: item, hitSize: 24).help("Download")
                 }
             }
             if let shareURL {
@@ -146,9 +146,11 @@ struct MediaDetailView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
-        .sheet(item: $model.seasonDownloadPreview) { preview in
-            DownloadConfirmSheet(item: model.selectedSeason ?? item, preview: preview) { bitrateCap in
-                model.downloadSeason(bitrateCap: bitrateCap, authManager: authManager, downloadManager: downloadManager)
+        .sheet(isPresented: $model.isSeasonDownloadSheetShown) {
+            DownloadConfirmSheet(item: model.selectedSeason ?? item) {
+                await model.seasonPreview(authManager: authManager, downloadManager: downloadManager)
+            } onConfirm: { choice in
+                model.downloadSeason(choice, authManager: authManager, downloadManager: downloadManager)
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)

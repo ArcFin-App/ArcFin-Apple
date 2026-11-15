@@ -39,7 +39,7 @@ struct EpisodeRow: View {
                         if isWatched {
                             Color.black.opacity(0.45)
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(.title2))
+                                .contentFont(.title2)
                                 .foregroundStyle(DT.Color.palette("10b981"))
                         } else if pct > 0 {
                             VStack(spacing: 0) {
@@ -64,19 +64,19 @@ struct EpisodeRow: View {
                         HStack(spacing: 6) {
                             if let epNum = ep.indexNumber {
                                 Text("E\(epNum)")
-                                    .font(.system(.caption2, design: .default, weight: .semibold))
+                                    .contentFont(.caption2, design: .default, weight: .semibold)
                                     .foregroundStyle(DT.Color.accent)
                             }
                             if let badge {
                                 Text(badge)
-                                    .font(.system(.caption2, design: .default, weight: .bold))
+                                    .contentFont(.caption2, design: .default, weight: .bold)
                                     .padding(.horizontal, 6).padding(.vertical, 1)
                                     .background(DT.Color.accent.opacity(0.18), in: Capsule())
                                     .foregroundStyle(DT.Color.accent)
                             }
                         }
                         Text(ep.name)
-                            .font(.system(.footnote, design: .default, weight: .semibold))
+                            .contentFont(.footnote, design: .default, weight: .semibold)
                             .foregroundStyle(DT.Color.textPrimary)
                             .lineLimit(2)
                     }
@@ -87,7 +87,7 @@ struct EpisodeRow: View {
 
                 if !hidesSpoilers, let overview = ep.overview, !overview.isEmpty {
                     Text(overview)
-                        .font(.system(.caption2, design: .default))
+                        .contentFont(.caption2, design: .default)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(3)
                         .padding(.top, 8)
@@ -138,7 +138,7 @@ private struct EpisodeRowPreview: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(ep.name)
-                .font(.system(.footnote, design: .default, weight: .semibold))
+                .contentFont(.footnote, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 240, alignment: .leading)
@@ -153,7 +153,7 @@ private struct EpisodeThumbPlaceholder: View {
             .fill(DT.Color.backgroundSecondary)
             .overlay(
                 Image(systemName: "play.rectangle")
-                    .font(.system(.title3))
+                    .contentFont(.title3)
                     .foregroundStyle(DT.Color.textSecondary.opacity(0.3))
             )
     }
@@ -182,15 +182,15 @@ struct DetailSeriesLabel: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "tv")
-                .font(.system(.subheadline))
+                .contentFont(.subheadline)
                 .foregroundStyle(DT.Color.accent)
             Text(series.name)
-                .font(.system(.footnote, design: .default, weight: .semibold))
+                .contentFont(.footnote, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             Spacer()
             Image(systemName: "chevron.right")
-                .font(.system(.caption2))
+                .contentFont(.caption2)
                 .foregroundStyle(DT.Color.textSecondary)
         }
         .padding(.horizontal, 12)

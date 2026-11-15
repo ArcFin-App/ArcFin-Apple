@@ -41,7 +41,8 @@ struct DetailPlayButton: View {
         let left = resumeTimeLabel.map { Text($0) }
         switch (left, ends) {
         case let (left?, ends?):
-            let separator = Text("  •  ").font(.system(.footnote, weight: .heavy))
+            // .font, not .contentFont: it has to stay a Text to go inside the line below.
+            let separator = Text("  •  ").font(PlatformMetrics.contentFont(.footnote, design: nil, weight: .heavy))
             return Text("\(left)\(separator)\(ends)")
         case let (left?, nil): return left
         case let (nil, ends?): return ends
@@ -53,7 +54,7 @@ struct DetailPlayButton: View {
         let isResumable = model.isResumable
         if model.playTarget.isVirtual {
             Label(MediaDetailView.unavailableText(model.playTarget), systemImage: "calendar")
-                .font(.system(.callout, design: .default, weight: .bold))
+                .contentFont(.callout, design: .default, weight: .bold)
                 .foregroundStyle(DT.Color.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -67,22 +68,22 @@ struct DetailPlayButton: View {
                                       downloadManager: downloadManager)
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "play.fill").font(.system(.subheadline))
+                    Image(systemName: "play.fill").contentFont(.subheadline)
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 5) {
                             Text(isResumable ? "Resume" : "Play")
-                                .font(.system(.callout, design: .default, weight: .bold))
+                                .contentFont(.callout, design: .default, weight: .bold)
                             if let playEpisodeLabel {
                                 Text(playEpisodeLabel)
-                                    .font(.system(.callout, design: .default, weight: .semibold))
+                                    .contentFont(.callout, design: .default, weight: .semibold)
                                     .opacity(0.85)
                             }
                             if !isResumable, let endsAt = model.endTime {
                                 Text("•")
-                                    .font(.system(.callout, design: .default, weight: .heavy))
+                                    .contentFont(.callout, design: .default, weight: .heavy)
                                     .opacity(0.9)
                                 Text("Ends \(endsAt.formatted(date: .omitted, time: .shortened))")
-                                    .font(.system(.callout, design: .default, weight: .semibold))
+                                    .contentFont(.callout, design: .default, weight: .semibold)
                                     .opacity(0.85)
                             }
                         }
@@ -90,7 +91,7 @@ struct DetailPlayButton: View {
                         .minimumScaleFactor(0.85)
                         if let playDetailLine {
                             playDetailLine
-                                .font(.system(.caption2, design: .default, weight: .semibold))
+                                .contentFont(.caption2, design: .default, weight: .semibold)
                                 .opacity(0.85)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.85)
@@ -114,7 +115,7 @@ struct DetailPlayButton: View {
                     model.requestPlayback(startTicks: 0, isExplicitStartOver: true, downloadManager: downloadManager)
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(.body, weight: .semibold))
+                        .contentFont(.body, weight: .semibold)
                         .foregroundStyle(DT.Color.textPrimary)
                         .frame(width: 48, height: 48)
                         .background(DT.Color.backgroundSecondary)
@@ -150,8 +151,8 @@ struct DetailTrailerButton: View {
             }
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "film").font(.system(.subheadline))
-                Text("Play Trailer").font(.system(.subheadline, design: .default, weight: .semibold))
+                Image(systemName: "film").contentFont(.subheadline)
+                Text("Play Trailer").contentFont(.subheadline, design: .default, weight: .semibold)
             }
             .foregroundStyle(DT.Color.textPrimary)
             .frame(maxWidth: .infinity)
@@ -198,10 +199,10 @@ struct DetailSeriesSection: View {
                 } label: {
                     HStack(spacing: 5) {
                         Text(model.selectedSeason?.name ?? "Season")
-                            .font(.system(.callout, design: .default, weight: .bold))
+                            .contentFont(.callout, design: .default, weight: .bold)
                             .foregroundStyle(DT.Color.textPrimary)
                         Image(systemName: "chevron.down")
-                            .font(.system(.caption2, weight: .semibold))
+                            .contentFont(.caption2, weight: .semibold)
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
@@ -224,7 +225,7 @@ struct DetailSeriesSection: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .font(.system(.body, weight: .semibold))
+                        .contentFont(.body, weight: .semibold)
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 .accessibilityLabel("Mark watched options")
@@ -233,18 +234,13 @@ struct DetailSeriesSection: View {
                 Spacer()
 
                 Button {
-                    if model.isLoadingSeasonPreview { return }
-                    model.loadSeasonPreview(authManager: authManager, downloadManager: downloadManager)
+                    model.openSeasonDownload(downloadManager: downloadManager)
                 } label: {
                     HStack(spacing: 5) {
-                        if model.isLoadingSeasonPreview {
-                            ProgressView().scaleEffect(0.7).tint(DT.Color.accent)
-                        } else {
-                            Image(systemName: isSeasonFullyDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
-                        }
+                        Image(systemName: isSeasonFullyDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
                         Text(isSeasonFullyDownloaded ? "Season Downloaded" : "Download Season")
                     }
-                    .font(.system(.caption, design: .default, weight: .semibold))
+                    .contentFont(.caption, design: .default, weight: .semibold)
                     // A hardcoded accent color didn't dim when disabled (episodes still
                     // loading, or the whole season already downloaded) — tapping it then
                     // did nothing with zero visual feedback, which read as "no confirm
@@ -281,12 +277,20 @@ struct DetailSeriesSection: View {
 /// Add to a playlist, find subtitles, and keep a show's next episodes downloaded.
 struct DetailMoreMenu: View {
     @Environment(DownloadManager.self) private var downloadManager
+    @Environment(AuthManager.self) private var authManager
     let model: MediaDetailModel
     let searchSubtitles: () -> Void
 
     var body: some View {
         let item = model.item
+        let isWatched = model.isWatched
         Menu {
+            if item.type == .movie || item.type == .episode {
+                Button { model.markWatched(!isWatched, authManager: authManager) } label: {
+                    Label(isWatched ? "Mark as Unwatched" : "Mark as Watched", systemImage: isWatched ? "eye.slash" : "checkmark")
+                }
+                Divider()
+            }
             Button { PlaylistStore.shared.addingItem = item } label: {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }

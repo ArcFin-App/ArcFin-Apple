@@ -4,7 +4,7 @@ import SwiftUI
 import ImageCache
 
 struct DownloadsSettingsView: View {
-    @AppStorage("downloadQuality") private var downloadQuality = VideoQuality.max
+    @AppStorage(DownloadQuality.key) private var downloadQuality = DownloadQuality.original
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
     @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
     @AppStorage("smartDownloadsEnabled")       private var smartDownloadsEnabled       = false
@@ -27,11 +27,9 @@ struct DownloadsSettingsView: View {
         SettingsForm {
             Section {
                 Picker(selection: $downloadQuality) {
-                    ForEach(VideoQuality.allCases.filter { $0 != .auto }) { q in
-                        Text(q.label).tag(q)
-                    }
+                    ForEach(DownloadQuality.allCases) { Text($0.label).tag($0) }
                 } label: {
-                    TVRowLabelText(title: "Download Quality", detail: "Higher takes more space.")
+                    TVRowLabelText(title: "Download Quality", detail: "What downloads and Smart Downloads start at; you can change it for each download. Lower qualities are converted on your server, in HEVC or AV1 where it can, so they take less space.")
                 }
                 .syncLocked("downloadQuality", authManager)
             }

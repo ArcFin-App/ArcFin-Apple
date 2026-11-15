@@ -2,13 +2,27 @@
 
 import SwiftUI
 
+extension EnvironmentValues {
+    /// Set by the Settings window, whose panes fill it as a Mac's settings do.
+    @Entry var listFillsWidth = false
+}
+
+private struct ArcfinListWidth: ViewModifier {
+    @Environment(\.listFillsWidth) private var fillsWidth
+
+    func body(content: Content) -> some View {
+        // In the main window a list across the full width spreads each label and its
+        // value edge to edge, so it stays a compact column there.
+        content
+            .frame(maxWidth: fillsWidth ? .infinity : 720)
+            .frame(maxWidth: .infinity)
+    }
+}
+
 extension View {
     func arcfinListStyle() -> some View {
-        // Settings Lists were stretching full window width on macOS — every row's
-        // label/value pair spread edge to edge instead of reading as a compact form.
         self.scrollContentBackground(.hidden)
-            .frame(maxWidth: 720)
-            .frame(maxWidth: .infinity)
+            .modifier(ArcfinListWidth())
     }
 
     /// On tvOS a row has to take focus for the remote to reach it, and a page with nothing

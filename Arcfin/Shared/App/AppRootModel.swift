@@ -79,7 +79,7 @@ final class AppRootModel {
         Task {
             guard let item = try? await JellyfinMediaClient().getItemDetail(credential: credential, authHeader: header, itemId: id).item
             else { return }
-            await downloadManager.startDownload(item: item, credential: credential, authHeader: header)
+            await downloadManager.startDownload(item: item, credential: credential, authHeader: header, bitrateCap: DownloadQuality.saved.tier)
         }
     }
 

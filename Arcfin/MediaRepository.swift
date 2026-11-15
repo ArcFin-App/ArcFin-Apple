@@ -103,9 +103,16 @@ final class MediaRepository {
 
     /// Runs in its own task, so a caller being cancelled (pull to refresh ending, a view
     /// going away) can't cancel the requests halfway and leave a half-finished load.
-    func load(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool = false) async {
+    /// `shelfOrder` is Home's rows as they stand now, shuffled or not: after the hero and the
+    /// first rows, the rest load one at a time in that order. Without one, the last is kept.
+    func load(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool = false,
+              shelfOrder: [HomeShelf]? = nil) async {
+        if let shelfOrder { self.shelfOrder = shelfOrder }
         await Task { await performLoad(credential: credential, authClient: authClient, force: force) }.value
     }
+
+    @ObservationIgnored private var shelfOrder: [HomeShelf] = HomeShelf.allCases
+    @ObservationIgnored private var rowsTask: Task<Void, Never>?
 
     private func performLoad(credential: ServerCredential, authClient: JellyfinAuthClient, force: Bool) async {
         // Skip if already loaded within the last 60 s for the SAME profile — prevents
@@ -181,25 +188,18 @@ final class MediaRepository {
         accessToken = credential.accessToken
         let header = authClient.authHeader(token: credential.accessToken)
 
+        // A load for another profile, or a refresh, starts the rows over.
+        rowsTask?.cancel()
+
+        // First, together: what the hero and the first rows are made of. These also decide
+        // whether the server answered at all.
+        async let srvID   = client.getServerID(credential: credential)
         async let cw      = client.getContinueWatching(credential: credential, authHeader: header)
+        async let nUp     = client.getNextUpIncludingRecent(credential: credential, authHeader: header)
         async let la      = client.getLatestMedia(credential: credential, authHeader: header)
         async let libs    = client.getLibraries(credential: credential, authHeader: header)
-        async let srvID   = client.getServerID(credential: credential)
-        async let nUp     = client.getNextUpIncludingRecent(credential: credential, authHeader: header)
-        async let raMov   = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")
-        async let raShow  = client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Series")
-        async let rrMov   = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Movie")
-        async let raEp    = client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Episode")
-        async let wAgain  = client.getWatchAgain(credential: credential, authHeader: header)
-        async let genres  = client.getGenreShelves(credential: credential, authHeader: header)
-        async let favs    = client.getFavorites(credential: credential, authHeader: header)
-        async let topUnw  = client.getTopRatedUnwatched(credential: credential, authHeader: header)
-        async let sugg    = client.getSuggestions(credential: credential, authHeader: header)
-        async let recs    = client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)
-        async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
         async let featured = client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-featured")
         async let featuredTitles = client.getTaggedTitles(credential: credential, authHeader: header, tag: "arcfin-featured")
-        async let promoted = client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-promoted")
 
         // Every result is gathered first and only shown if the server answered: a failed or
         // cancelled attempt used to replace every shelf with an empty list, which with
@@ -221,49 +221,99 @@ final class MediaRepository {
             )
         }
         let cwResult = (try? await cw) ?? []
+        let nUpResult = (try? await nUp) ?? []
         let laResult = (try? await la) ?? []
         let libsResult = (try? await libs) ?? []
-        let nUpResult = (try? await nUp) ?? []
-        let raMovResult = (try? await raMov) ?? []
-        let raShowResult = (try? await raShow) ?? []
-        let rrMovResult = (try? await rrMov) ?? []
-        let raEpResult = (try? await raEp) ?? []
-        let wAgainResult = (try? await wAgain) ?? []
-        let genresResult = (try? await genres) ?? []
-        let favsResult = (try? await favs) ?? []
-        let topUnwResult = (try? await topUnw) ?? []
-        let suggResult = (try? await sugg) ?? []
-        let recsResult = (try? await recs) ?? []
-        let tmdbKeysResult = try? await tmdbKeys
         let featuredResult = try? await featured
         let featuredTitlesResult = try? await featuredTitles
-        let promotedResult = try? await promoted
         guard succeeded else { return false }
 
-        continueWatching       = cwResult
-        recentlyAdded          = laResult
-        libraries              = libsResult
-        Task { await loadLibraryCounts(libsResult, credential: credential, header: header) }
-        nextUp                 = nUpResult
-        recentlyAddedMovies    = raMovResult
-        recentlyAddedShows     = raShowResult
-        recentlyReleasedMovies = rrMovResult
-        recentlyAiredEpisodes  = raEpResult
-        watchAgain             = wAgainResult
-        genreShelves           = genresResult
-        becauseYouWatched      = await loadBecauseYouWatched(credential: credential, header: header)
-        favorites              = favsResult
-        topRatedUnwatched      = topUnwResult
-        suggestions            = suggResult
-        recommendations        = recsResult.filter { $0.items.count >= 3 }
-        if let tmdbKeysResult { libraryTMDBKeys = tmdbKeysResult }
+        // Another profile's rows would otherwise stay up until each of this one's arrives.
+        if credential.userID != lastLoadedUserID {
+            recentlyAddedMovies = []; recentlyAddedShows = []; recentlyReleasedMovies = []
+            recentlyAiredEpisodes = []; watchAgain = []; becauseYouWatched = nil; genreShelves = []
+            favorites = []; topRatedUnwatched = []; suggestions = []; recommendations = []
+            promotedCollections = []
+        }
+        continueWatching = cwResult
+        nextUp           = nUpResult
+        recentlyAdded    = laResult
+        libraries        = libsResult
         if featuredResult != nil || featuredTitlesResult != nil {
             var seen = Set<String>()
             featuredItems = ((featuredTitlesResult ?? []) + (featuredResult ?? []).flatMap(\.items)).filter { seen.insert($0.id).inserted }
         }
-        if let promotedResult { promotedCollections = promotedResult }
+        Task { await loadLibraryCounts(libsResult, credential: credential, header: header) }
+
+        // Then the other rows one at a time, in Home's order, each shown as it arrives. Rows
+        // turned off load last: Search and Spotlight use some of them too.
+        let userID = credential.userID
+        let order = shelfOrder + HomeShelf.allCases.filter { !shelfOrder.contains($0) }
+        rowsTask = Task {
+            async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
+            for shelf in order {
+                guard !Task.isCancelled else { return }
+                await loadRow(shelf, credential: credential, header: header, userID: userID)
+            }
+            if let keys = try? await tmdbKeys, !Task.isCancelled, lastLoadedUserID == userID || loadingUserID == userID {
+                libraryTMDBKeys = keys
+            }
+        }
 
         return succeeded
+    }
+
+    /// One of Home's rows after the first ones. Rows that aren't from the library (Seerr,
+    /// Live TV, Popular Elsewhere) load elsewhere.
+    private func loadRow(_ shelf: HomeShelf, credential: ServerCredential, header: String, userID: String) async {
+        func current() -> Bool { !Task.isCancelled && (loadingUserID ?? lastLoadedUserID) == userID }
+        switch shelf {
+        case .recentlyAddedMovies:
+            let r = (try? await client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Movie")) ?? []
+            if current() { recentlyAddedMovies = r }
+        case .recentlyAddedShows:
+            let r = (try? await client.getLatestMedia(credential: credential, authHeader: header, itemTypes: "Series")) ?? []
+            if current() { recentlyAddedShows = r }
+        case .recentlyReleasedMovies:
+            let r = (try? await client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Movie")) ?? []
+            if current() { recentlyReleasedMovies = r }
+        case .recentlyAiredEpisodes:
+            let r = (try? await client.getRecentlyPremiered(credential: credential, authHeader: header, itemType: "Episode")) ?? []
+            if current() { recentlyAiredEpisodes = r }
+        case .watchAgain:
+            let r = (try? await client.getWatchAgain(credential: credential, authHeader: header)) ?? []
+            if current() { watchAgain = r }
+        case .becauseYouWatched:
+            // Seeded from Watch Again's first title, so that comes first when it hasn't yet.
+            if watchAgain.isEmpty, let r = try? await client.getWatchAgain(credential: credential, authHeader: header), current() {
+                watchAgain = r
+            }
+            let r = await loadBecauseYouWatched(credential: credential, header: header)
+            if current() { becauseYouWatched = r }
+        case .genreShelves:
+            let r = (try? await client.getGenreShelves(credential: credential, authHeader: header)) ?? []
+            if current() { genreShelves = r }
+        case .favorites:
+            let r = (try? await client.getFavorites(credential: credential, authHeader: header)) ?? []
+            if current() { favorites = r }
+        case .topRatedUnwatched:
+            let r = (try? await client.getTopRatedUnwatched(credential: credential, authHeader: header)) ?? []
+            if current() { topRatedUnwatched = r }
+        case .suggested:
+            let r = (try? await client.getSuggestions(credential: credential, authHeader: header)) ?? []
+            if current() { suggestions = r }
+        case .recommendations:
+            let r = (try? await client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)) ?? []
+            if current() { recommendations = r.filter { $0.items.count >= 3 } }
+        case .serverPicks:
+            if let r = try? await client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-promoted"), current() {
+                promotedCollections = r
+            }
+        case .continueWatching, .nextUp, .nowAvailable, .streamingServices,
+             .seerrWatchlist, .seerrTrending, .seerrPopularMovies, .seerrPopularSeries,
+             .liveFavoriteChannels, .liveOnNow, .liveRecentChannels:
+            break
+        }
     }
 
     /// After the main load, so Home doesn't wait on it; a library whose count fails keeps

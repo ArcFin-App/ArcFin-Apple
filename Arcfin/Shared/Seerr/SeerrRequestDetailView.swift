@@ -227,6 +227,7 @@ struct SeerrRequestDetailView: View {
             .background(DT.Color.palette("F43F5E").opacity(0.85))
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
         }
+        .buttonStyle(.plain)
         .disabled(isCancelling)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)

@@ -11,7 +11,7 @@ struct DetailSectionTitle: View {
 
     var body: some View {
         Text(title)
-            .font(.system(.callout, design: .default, weight: .bold))
+            .contentFont(.callout, design: .default, weight: .bold)
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.3)
     }
@@ -25,7 +25,7 @@ struct DetailGenreChips: View {
             HStack(spacing: 8) {
                 ForEach(genres, id: \.self) { genre in
                     Text(genre)
-                        .font(.system(.caption2, design: .default, weight: .medium))
+                        .contentFont(.caption2, design: .default, weight: .medium)
                         .foregroundStyle(DT.Color.textSecondary)
                         .padding(.horizontal, 12).padding(.vertical, 5)
                         .background(DT.Color.textPrimary.opacity(0.05))
@@ -47,12 +47,11 @@ struct DetailOverviewSection: View {
         VStack(alignment: .leading, spacing: 8) {
             DetailSectionTitle(title: "Overview")
             Text(text)
-                .font(.system(.footnote, design: .default))
+                .contentFont(.footnote, design: .default)
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
-                // Lines across a whole iPad are too long to read comfortably.
-                .frame(maxWidth: 720, alignment: .leading)
+                .frame(maxWidth: PlatformMetrics.descriptionMaxWidth, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DT.Spacing.pagePad)
@@ -102,7 +101,7 @@ private struct DetailPersonPlaceholder: View {
         Circle()
             .fill(DT.Color.backgroundSecondary)
             .overlay(Image(systemName: "person.fill")
-                .font(.system(.title2))
+                .contentFont(.title2)
                 .foregroundStyle(DT.Color.textSecondary.opacity(0.4)))
     }
 }
@@ -136,14 +135,14 @@ struct CastPersonCard<Placeholder: View>: View {
             .scaleEffect(hovered ? 1.06 : 1)
 
             Text(name)
-                .font(.system(.caption2, design: .default, weight: .semibold))
+                .contentFont(.caption2, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
             if let role, !role.isEmpty {
                 Text(role)
-                    .font(.system(.caption2, design: .default))
+                    .contentFont(.caption2, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
             }
@@ -167,6 +166,7 @@ struct DetailCrewSection: View {
                 DetailCrewRow(label: "Writer", people: Array(writers.prefix(3)))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.bottom, DT.Spacing.md)
     }
@@ -179,11 +179,11 @@ private struct DetailCrewRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(label)
-                .font(.system(.caption2, design: .default, weight: .bold))
+                .contentFont(.caption2, design: .default, weight: .bold)
                 .foregroundStyle(DT.Color.textSecondary)
                 .frame(width: 60, alignment: .leading)
             Text(people.map { $0.name }.joined(separator: ", "))
-                .font(.system(.caption, design: .default))
+                .contentFont(.caption, design: .default)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
         }

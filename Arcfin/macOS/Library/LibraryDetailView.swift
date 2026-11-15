@@ -121,7 +121,7 @@ struct LibraryDetailView: View {
                         .accessibilityHidden(true)
                     VStack(spacing: 0) {
                         HStack {
-                            Text("Filter & Sort").font(.system(.subheadline, design: .default, weight: .semibold))
+                            Text("Filter & Sort").contentFont(.subheadline, design: .default, weight: .semibold)
                             Spacer()
                             Button("Done") { showFilterSheet = false }
                         }

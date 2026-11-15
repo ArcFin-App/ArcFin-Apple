@@ -205,14 +205,14 @@ struct OfflinePlayerView: View {
             }
             Spacer()
             AirPlayButton().frame(width: 44, height: 44)
-            if !downloadedItem.subtitleFileNames.isEmpty {
+            if !downloadedItem.subtitleFileNames.isEmpty || model.player.availableAudioTracks.count > 1 {
                 Button { model.showTrackMenu = true } label: {
                     Image(systemName: "captions.bubble")
                         .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 44, height: 44)
                 }
-                .accessibilityLabel("Subtitles")
+                .accessibilityLabel("Audio and subtitles")
             }
             Menu {
                 if canPictureInPicture {

@@ -86,6 +86,15 @@ public struct ArcfinSyncClient: Sendable {
         return try? JSONDecoder().decode(ArcfinSyncEncoders.self, from: data)
     }
 
+    /// One audio track of an item, copied out by Arcfin Sync with the server's ffmpeg as AAC
+    /// in an .m4a. A plugin from before this answers 404.
+    public static func audioTrackURL(baseURL: URL, itemID: String, mediaSourceId: String, audioStreamIndex: Int, token: String) -> URL {
+        var comps = URLComponents(url: baseURL.appendingPathComponent("ArcfinSync/Items/\(itemID)/Audio/\(audioStreamIndex)"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [.init(name: "mediaSourceId", value: mediaSourceId), .init(name: "api_key", value: token)]
+        return comps.url!
+    }
+
     public func fetchSettings(credential: ServerCredential, authHeader: String) async throws -> [ArcfinSyncedSetting] {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("ArcfinSync/Settings"))
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")

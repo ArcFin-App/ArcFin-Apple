@@ -4,6 +4,8 @@ import SwiftUI
 
 /// The design tokens that differ on this platform; `DT` reads them.
 enum PlatformMetrics {
+    /// How wide a title's description may run: lines across a whole iPad are too long to read.
+    static let descriptionMaxWidth: CGFloat = 720
     static let pagePad: CGFloat = 20
     static let shelfGap: CGFloat = 12
     static let posterCard = CGSize(width: 110, height: 165)
@@ -18,5 +20,10 @@ enum PlatformMetrics {
     /// The point size `scaledFont(size:)` starts from.
     static func scaledFontSize(_ size: CGFloat) -> CGFloat {
         size * DT.Scale.font
+    }
+
+    /// Browsing text (shelves, cards, title pages): the system text style, with Dynamic Type.
+    static func contentFont(_ style: Font.TextStyle, design: Font.Design?, weight: Font.Weight?) -> Font {
+        .system(style, design: design, weight: weight)
     }
 }

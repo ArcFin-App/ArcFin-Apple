@@ -17,3 +17,8 @@ extension View {
         }
     }
 }
+
+extension View {
+    /// A form row's action. The list row is already the button here.
+    func formRowButton() -> some View { self }
+}

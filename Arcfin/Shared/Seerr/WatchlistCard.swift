@@ -32,7 +32,7 @@ struct WatchlistCard: View {
                 if showsRemoveButton {
                     Button(action: remove) {
                         Image(systemName: "bookmark.fill")
-                            .font(.system(.caption2, weight: .semibold))
+                            .contentFont(.caption2, weight: .semibold)
                             .foregroundStyle(.white)
                             .padding(5)
                             .background(.black.opacity(0.5))
@@ -59,12 +59,12 @@ struct WatchlistCard: View {
             })
 
             Text(item.title)
-                .font(.system(.caption, design: .default, weight: .semibold))
+                .contentFont(.caption, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             if let year = item.year {
                 Text(year)
-                    .font(.system(.caption2, design: .default))
+                    .contentFont(.caption2, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
@@ -88,7 +88,7 @@ struct WatchlistCard: View {
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card))
 
             Text(item.title)
-                .font(.system(.footnote, design: .default, weight: .semibold))
+                .contentFont(.footnote, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
                 .frame(width: 200, alignment: .leading)

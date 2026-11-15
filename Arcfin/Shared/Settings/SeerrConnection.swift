@@ -107,6 +107,7 @@ struct SeerrConnectionSummary: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
+                .formRowButton()
                 .disabled(isRetrying)
             } header: {
                 Label("Couldn't Sign In", systemImage: "exclamationmark.triangle.fill")
@@ -153,6 +154,7 @@ struct SeerrConnectionSummary: View {
                     Text("Remove Connection")
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
+                .formRowButton()
             }
         }
     }
@@ -208,6 +210,7 @@ struct SeerrQuickConnectSection: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
+            .formRowButton()
             .disabled(form.url.isEmpty || form.username.isEmpty || form.isTesting)
 
             if let result = form.testResult {
@@ -273,6 +276,7 @@ struct SeerrTestSection: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
+            .formRowButton()
             .disabled(!form.isComplete || form.isTesting)
 
             if let result = form.testResult {

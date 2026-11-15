@@ -76,6 +76,7 @@ struct NoConnectionContent<MoreActions: View>: View {
                             .frame(height: 48)
                             .background(DT.Color.accent, in: RoundedRectangle(cornerRadius: DT.Radius.md))
                         }
+                        .buttonStyle(.plain)
                         .disabled(mediaRepo.isLoading)
 
                         moreActions

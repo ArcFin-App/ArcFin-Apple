@@ -121,6 +121,7 @@ struct LibraryFilterList: View {
                     } label: {
                         Text("Clear All Filters").frame(maxWidth: .infinity, alignment: .center)
                     }
+                    .formRowButton()
                 }
             }
         }

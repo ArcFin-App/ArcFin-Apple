@@ -36,6 +36,9 @@ struct DownloadStats: Sendable {
     var bytesWritten: Int64
     var totalBytes: Int64
     var bytesPerSecond: Double
+    /// The server didn't say how big it is (a conversion streams out as it's made), so
+    /// `totalBytes` is the size worked out from the bitrate and runtime.
+    var isEstimate = false
 }
 
 @MainActor
@@ -57,6 +60,7 @@ final class DownloadManager: NSObject {
     /// normal download call site already passes its own credential/authHeader explicitly.
     @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private let client = JellyfinMediaClient()
+    @ObservationIgnored private var encodingByServer: [String: DownloadEncoding] = [:]
     @ObservationIgnored private var downloadTasks: [String: URLSessionDownloadTask] = [:]
     /// A title downloading as several byte ranges at once (see downloadInParts).
     @ObservationIgnored private var partTasks: [String: [URLSessionDownloadTask]] = [:]
@@ -267,6 +271,8 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private var storageNeeded: Int64?
     /// What each running transfer will take in all, for working out what's left for the next.
     @ObservationIgnored private var expectedBytes: [String: Int64] = [:]
+    /// The video file's own expected size, for progress when the server sends no length.
+    @ObservationIgnored private var estimatedStreamBytes: [String: Int64] = [:]
 
     /// Free space a new download can use: what the device can give (purgeable space included),
     /// less the reserve and what running transfers still have to write. Nil when unknown.
@@ -285,11 +291,15 @@ final class DownloadManager: NSObject {
         return max(free - Self.spaceReserve - incoming, 0)
     }
 
-    /// The size a download will be: bitrate × runtime, or the chosen lower quality × runtime.
-    private static func expectedSize(of info: JellyfinPlaybackInfo, bitrateCap: Int?) -> Int64? {
+    /// The size a download will be: bitrate × runtime, or the chosen lower quality × runtime
+    /// with each audio track it keeps.
+    private static func expectedSize(of info: JellyfinPlaybackInfo, bitrateCap: Int?, extraAudioTracks: Int = 0) -> Int64? {
         guard let ticks = info.runTimeTicks, ticks > 0 else { return nil }
         let seconds = Double(ticks) / 10_000_000
-        if let bitrateCap { return Int64((Double(min(bitrateCap, info.bitrate ?? bitrateCap)) + 320_000) / 8 * seconds) }
+        if let bitrateCap {
+            let audio = Double(320_000 * (1 + max(extraAudioTracks, 0)))
+            return Int64((Double(min(bitrateCap, info.bitrate ?? bitrateCap)) + audio) / 8 * seconds)
+        }
         return info.bitrate.map { Int64(Double($0) / 8 * seconds) }
     }
 
@@ -606,7 +616,7 @@ final class DownloadManager: NSObject {
             downloadTasks[itemId] = task
             handedOffItemIds.insert(itemId)
             // Lets a relaunch after the app was ended finish the title from the file alone.
-            savePendingDescriptor(itemId: itemId, credentialId: entry.credential.id.uuidString, bitrateCap: nil)
+            savePendingDescriptor(itemId: itemId, credentialId: entry.credential.id.uuidString, bitrateCap: nil, tracks: entry.tracks)
             task.resume()
         }
         #endif
@@ -657,12 +667,35 @@ final class DownloadManager: NSObject {
         var videoRange: String?
         /// Set for a season: the sizes above cover this many episodes.
         var episodeCount: Int?
+        /// What a lower quality tier is converted to.
+        var encoding = DownloadEncoding.unknown
+        var audioStreams: [JellyfinMediaStream] = []
+        /// Subtitle tracks saved as their own files; embedded ones come with an original file.
+        var subtitleStreams: [JellyfinMediaStream] = []
+        var defaultAudioIndex: Int?
+        var videoStream: JellyfinMediaStream?
+    }
+
+    /// Per server for this launch: what its encoding settings (readable by admins) and the
+    /// Arcfin Sync plugin's test encodes say a converted download can be.
+    func downloadEncoding(credential: ServerCredential, authHeader: String) async -> DownloadEncoding {
+        let key = credential.baseURL.absoluteString
+        if let known = encodingByServer[key] { return known }
+        async let settings = try? JellyfinAdminClient().configuration("encoding", credential: credential, authHeader: authHeader)
+        async let encoders = ArcfinSyncClient().fetchEncoders(credential: credential, authHeader: authHeader)
+        let options = await settings.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        let encoding = DownloadEncoding.choose(allowsHEVC: options?["AllowHevcEncoding"] as? Bool,
+                                               allowsAV1: options?["AllowAv1Encoding"] as? Bool,
+                                               encodesAV1: await encoders?.encoders["av1"])
+        encodingByServer[key] = encoding
+        return encoding
     }
 
     /// What the confirmation sheet shows before actually starting — same PlaybackInfo call
     /// the real download makes, plus a HEAD request against the resolved video URL for its
     /// size (Content-Length), without downloading anything yet.
     func preview(for item: MediaItem, credential: ServerCredential, authHeader: String) async -> DownloadPreview? {
+        async let encoding = downloadEncoding(credential: credential, authHeader: authHeader)
         guard let info = try? await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id) else {
             return nil
         }
@@ -698,13 +731,18 @@ final class DownloadManager: NSObject {
             sourceBitrate: info.bitrate, runtimeTicks: info.runTimeTicks,
             container: info.container, videoCodec: info.videoStream?.codec,
             videoWidth: info.videoStream?.width, videoHeight: info.videoStream?.height,
-            videoRange: info.videoStream?.videoRange
+            videoRange: info.videoStream?.videoRange,
+            encoding: await encoding,
+            audioStreams: info.audioStreams,
+            subtitleStreams: info.subtitleStreams.filter { $0.deliveryUrl != nil },
+            defaultAudioIndex: info.defaultAudioStreamIndex,
+            videoStream: info.videoStream
         )
     }
 
     // MARK: - Start download
 
-    private typealias PendingEntry = (item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool)
+    private typealias PendingEntry = (item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, tracks: DownloadTracks, viaSmart: Bool)
 
     @ObservationIgnored private var pendingQueue: [PendingEntry] = [] {
         // pendingQueue itself isn't observed (a tuple array), so the UI reads this mirror.
@@ -790,14 +828,16 @@ final class DownloadManager: NSObject {
     /// time; the rest wait their turn here. `bitrateCap` (bits/sec), when set, forces a
     /// remux even for an otherwise direct-downloadable source — that's the only way to
     /// actually reduce a download's bitrate below the source's own.
-    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil, viaSmart: Bool = false) async {
-        guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap, viaSmart: viaSmart) else { return }
+    func startDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil,
+                       tracks: DownloadTracks = .all, viaSmart: Bool = false) async {
+        guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap, tracks: tracks, viaSmart: viaSmart) else { return }
         await processQueue()
     }
 
     /// Queues without waiting for the queue to run. False when it's already downloaded or queued.
     @discardableResult
-    private func addToQueue(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, viaSmart: Bool) -> Bool {
+    private func addToQueue(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?,
+                            tracks: DownloadTracks = .all, viaSmart: Bool) -> Bool {
         guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
               !pendingQueue.contains(where: { $0.item.id == item.id })
         else { return false }
@@ -806,7 +846,7 @@ final class DownloadManager: NSObject {
         activeItems[item.id] = item
         cancelledItemIds.remove(item.id)
         if viaSmart { Self.smartItemIds.insert(item.id) }
-        pendingQueue.append((item, credential, authHeader, bitrateCap, viaSmart))
+        pendingQueue.append((item, credential, authHeader, bitrateCap, tracks, viaSmart))
         #if canImport(ActivityKit) && os(iOS)
         if isFreshQueue && liveActivityPendingFinish == nil {
             queueCompletedCount = 0
@@ -869,7 +909,7 @@ final class DownloadManager: NSObject {
                 while running < concurrentDownloadLimit, let next = nextToStart() {
                     running += 1
                     group.addTask { @MainActor in
-                        await self.performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap)
+                        await self.performDownload(item: next.item, credential: next.credential, authHeader: next.authHeader, bitrateCap: next.bitrateCap, tracks: next.tracks)
                         return .finished(isEpisode: next.item.type == .episode)
                     }
                 }
@@ -914,12 +954,13 @@ final class DownloadManager: NSObject {
     /// the video file is already correctly at its destination by that point (the OS-level
     /// delegate callback moved it there independent of whether this app process was alive),
     /// so only the metadata/subtitles/trickplay/poster/SwiftData tail needs to run.
-    private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?, skipVideoDownload: Bool = false) async {
+    private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?,
+                                 tracks: DownloadTracks, skipVideoDownload: Bool = false) async {
         guard let modelContext else { return }
         activeItemIds.insert(item.id)
         progress[item.id] = skipVideoDownload ? 1 : 0
         beginBackgroundTaskIfNeeded()
-        savePendingDescriptor(itemId: item.id, credentialId: credential.id.uuidString, bitrateCap: bitrateCap)
+        savePendingDescriptor(itemId: item.id, credentialId: credential.id.uuidString, bitrateCap: bitrateCap, tracks: tracks)
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = (nil, item.parentIndexNumber, item.indexNumber)
         refreshLiveActivity()
@@ -931,10 +972,20 @@ final class DownloadManager: NSObject {
             let detailData = try await detailTask
             let detail = try JellyfinMediaClient.decodeItemDetail(detailData)
             let info = try await playbackTask
+            let keptAudio = tracks.audioStreams(from: info.audioStreams, defaultIndex: info.defaultAudioStreamIndex)
+            let encoding = bitrateCap == nil ? nil : await downloadEncoding(credential: credential, authHeader: authHeader)
+            let conversionBitrate: Int? = bitrateCap.flatMap { tier in
+                guard let encoding,
+                      !encoding.keepsOriginal(forTier: tier, sourceBitrate: info.bitrate, sourceCodec: info.videoStream?.codec)
+                else { return nil }
+                return encoding.videoBitrate(forTier: tier, sourceBitrate: info.bitrate, sourceCodec: info.videoStream?.codec)
+            }
 
-            if !skipVideoDownload, !handedOffItemIds.contains(item.id), let expected = Self.expectedSize(of: info, bitrateCap: bitrateCap) {
+            if !skipVideoDownload, !handedOffItemIds.contains(item.id),
+               let expected = Self.expectedSize(of: info, bitrateCap: conversionBitrate, extraAudioTracks: conversionBitrate == nil ? 0 : keptAudio.count - 1) {
                 if let room = roomForDownloads(excluding: item.id), room < expected { throw NoRoomForDownload(bytes: expected) }
                 expectedBytes[item.id] = expected
+                estimatedStreamBytes[item.id] = Self.expectedSize(of: info, bitrateCap: conversionBitrate)
             }
 
             #if canImport(ActivityKit) && os(iOS)
@@ -955,18 +1006,22 @@ final class DownloadManager: NSObject {
             // Everything besides the video, fetched side by side while the video comes down
             // rather than one request at a time after it.
             async let extras = fetchExtras(itemId: item.id, detail: detail, info: info, trickplay: savedTrickplay,
+                                           subtitles: tracks.subtitleStreams(from: info.subtitleStreams),
                                            credential: credential, authHeader: authHeader, dir: dir)
 
             // Playback is always VLC for downloads, which plays the original file's container/
-            // codec natively — no remux needed for compatibility. Only an explicit bitrateCap
-            // (the user picking a lower quality tier) still forces one, since that's the only
-            // way to actually shrink a download below the source's own size.
+            // codec natively — no remux needed for compatibility. Only a lower quality tier
+            // that actually makes the file smaller converts it.
             let sourceContainer = (info.container ?? "").lowercased()
-            let needsRemux = bitrateCap != nil
+            let needsRemux = conversionBitrate != nil
             let videoFileName = needsRemux ? "video.mp4" : "video.\(sourceContainer.nilIfEmpty ?? "mp4")"
-            let videoURL = needsRemux
-                ? JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId, videoBitRate: min(bitrateCap!, info.bitrate ?? bitrateCap!), token: credential.accessToken)
-                : JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
+            let videoURL = if let conversionBitrate, let encoding {
+                JellyfinMediaClient.remuxDownloadURL(baseURL: credential.baseURL, itemID: item.id, mediaSourceId: info.mediaSourceId,
+                                                     videoCodecs: encoding.videoCodecs, videoBitRate: conversionBitrate,
+                                                     audioStreamIndex: keptAudio.first?.index, token: credential.accessToken)
+            } else {
+                JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
+            }
             if handedOffItemIds.contains(item.id) {
                 try await awaitHandedOff(itemId: item.id)
             } else if !skipVideoDownload {
@@ -978,6 +1033,10 @@ final class DownloadManager: NSObject {
                 let final = dir.appendingPathComponent(videoFileName)
                 try? FileManager.default.removeItem(at: final)
                 try FileManager.default.moveItem(at: staged, to: final)
+            }
+            if needsRemux, keptAudio.count > 1 {
+                await DownloadAudioTracks.add(Array(keptAudio.dropFirst()), to: dir.appendingPathComponent(videoFileName), itemID: item.id,
+                                              mediaSourceId: info.mediaSourceId, credential: credential, authHeader: authHeader)
             }
 
             let fetched = await extras
@@ -1026,11 +1085,12 @@ final class DownloadManager: NSObject {
                 Self.smartLog.notice("Downloads waiting for space: \(item.name, privacy: .public) needs \(need, privacy: .public) bytes")
                 removePendingDescriptor(itemId: item.id)
                 expectedBytes[item.id] = nil
+                estimatedStreamBytes[item.id] = nil
                 activeItemIds.remove(item.id)
                 progress[item.id] = nil
                 stats[item.id] = nil
                 speedSamples[item.id] = nil
-                pendingQueue.insert((item, credential, authHeader, bitrateCap, Self.smartItemIds.contains(item.id)), at: 0)
+                pendingQueue.insert((item, credential, authHeader, bitrateCap, tracks, Self.smartItemIds.contains(item.id)), at: 0)
                 storageNeeded = need
                 queueHold = .storage
                 endBackgroundTaskIfIdle()
@@ -1046,6 +1106,7 @@ final class DownloadManager: NSObject {
         }
         removePendingDescriptor(itemId: item.id)
         expectedBytes[item.id] = nil
+        estimatedStreamBytes[item.id] = nil
 
         #if canImport(ActivityKit) && os(iOS)
         let finishedTitle = activeItemTitles[item.id] ?? item.name
@@ -1088,9 +1149,9 @@ final class DownloadManager: NSObject {
 
     /// Subtitles, preview tiles, artwork, cast photos and skip markers, all at once.
     private func fetchExtras(itemId: String, detail: MediaItemDetail, info: JellyfinPlaybackInfo, trickplay: JellyfinTrickplayInfo?,
-                             credential: ServerCredential, authHeader: String, dir: URL) async -> DownloadExtras {
+                             subtitles picked: [JellyfinMediaStream]?, credential: ServerCredential, authHeader: String, dir: URL) async -> DownloadExtras {
         let client = client
-        async let subtitles = Self.saveSubtitles(info: info, credential: credential, to: dir)
+        async let subtitles = Self.saveSubtitles(info: info, picked: picked, credential: credential, to: dir)
         async let tiles = Self.saveTrickplayTiles(itemId: itemId, trickplay: trickplay, client: client,
                                                   credential: credential, authHeader: authHeader, to: dir)
         async let poster = Self.saveImage(itemId: itemId, tag: detail.item.primaryImageTag, type: .primary, width: 400,
@@ -1106,12 +1167,12 @@ final class DownloadManager: NSObject {
             skips: skips, castPhotoFileNames: cast)
     }
 
-    /// External tracks only (embedded ones travel with the video file itself), per Settings ›
-    /// Downloads › Subtitles: all, only the preferred language, or none.
-    private static func saveSubtitles(info: JellyfinPlaybackInfo, credential: ServerCredential, to dir: URL) async -> [(fileName: String, language: String)] {
+    /// Settings › Downloads › Subtitles: all, only the preferred language, or none. Also what
+    /// the download sheet starts with ticked.
+    static func subtitlesFromSettings(_ streams: [JellyfinMediaStream]) -> [JellyfinMediaStream] {
         let choice = UserDefaults.standard.string(forKey: "downloadSubtitles") ?? "all"
         let preferred = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
-        let wanted = info.subtitleStreams.filter { stream in
+        return streams.filter { stream in
             guard stream.deliveryUrl != nil else { return false }
             switch choice {
             case "none": return false
@@ -1119,6 +1180,13 @@ final class DownloadManager: NSObject {
             default: return true
             }
         }
+    }
+
+    /// External tracks only (embedded ones travel with the video file itself): the ones picked
+    /// in the download sheet, else per Settings › Downloads › Subtitles.
+    private static func saveSubtitles(info: JellyfinPlaybackInfo, picked: [JellyfinMediaStream]?, credential: ServerCredential,
+                                      to dir: URL) async -> [(fileName: String, language: String)] {
+        let wanted = (picked ?? subtitlesFromSettings(info.subtitleStreams)).filter { $0.deliveryUrl != nil }
         return await withTaskGroup(of: (Int, String, String)?.self) { group in
             for (order, stream) in wanted.enumerated() {
                 guard let deliveryUrl = stream.deliveryUrl else { continue }
@@ -1309,13 +1377,14 @@ final class DownloadManager: NSObject {
         let itemId: String
         let credentialId: String
         let bitrateCap: Int?
+        var tracks: DownloadTracks?
     }
 
     private static let pendingDownloadsKey = "arcfin.pendingDownloads"
 
-    private func savePendingDescriptor(itemId: String, credentialId: String, bitrateCap: Int?) {
+    private func savePendingDescriptor(itemId: String, credentialId: String, bitrateCap: Int?, tracks: DownloadTracks) {
         var all = loadPendingDescriptors().filter { $0.itemId != itemId }
-        all.append(PendingDownloadDescriptor(itemId: itemId, credentialId: credentialId, bitrateCap: bitrateCap))
+        all.append(PendingDownloadDescriptor(itemId: itemId, credentialId: credentialId, bitrateCap: bitrateCap, tracks: tracks))
         if let data = try? JSONEncoder().encode(all) {
             UserDefaults.standard.set(data, forKey: Self.pendingDownloadsKey)
         }
@@ -1360,7 +1429,8 @@ final class DownloadManager: NSObject {
         // Activity meta, neither of which meaningfully applies to a recovery that's already
         // finished downloading its video by the time this runs.
         let placeholder = MediaItem(id: itemId, name: "Resuming…", type: .movie)
-        await performDownload(item: placeholder, credential: credential, authHeader: authHeader, bitrateCap: descriptor.bitrateCap, skipVideoDownload: true)
+        await performDownload(item: placeholder, credential: credential, authHeader: authHeader, bitrateCap: descriptor.bitrateCap,
+                              tracks: descriptor.tracks ?? .all, skipVideoDownload: true)
     }
 
     // MARK: - Background continuation
@@ -1725,7 +1795,7 @@ final class DownloadManager: NSObject {
                 // only shown with Smart Downloads on) doesn't hold it back; the device's own
                 // free space still does. Queued together, so they show in Downloads at once.
                 for episode in nextUp where Self.freeSpace().map({ $0 > Int64(Self.lowSpaceThreshold) }) ?? true {
-                    addToQueue(item: episode, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true)
+                    addToQueue(item: episode, credential: credential, authHeader: authHeader, bitrateCap: DownloadQuality.saved.tier, viaSmart: true)
                 }
                 Task { await processQueue() }
                 continue
@@ -1748,7 +1818,7 @@ final class DownloadManager: NSObject {
                 Self.smartLog.notice("Smart Downloads stopped: the device is out of room")
                 break
             }
-            guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: nil, viaSmart: true) else { continue }
+            guard addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: DownloadQuality.saved.tier, viaSmart: true) else { continue }
             Self.smartLog.notice("Smart Downloads queuing \(item.name, privacy: .public)")
             if item.seriesId == nil { Self.smartMovieIds.insert(item.id) }
             batch += 1
@@ -1981,8 +2051,15 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 totalBytesWritten = (self.partTasks[itemId] ?? []).reduce(0) { $0 + (self.partBytes[$1.taskIdentifier] ?? 0) }
                 totalBytesExpectedToWrite = total
             }
+            var isEstimate = false
+            if totalBytesExpectedToWrite <= 0, let estimate = self.estimatedStreamBytes[itemId], estimate > 0 {
+                // A guess can come in under the real size; keep it ahead of what's arrived so
+                // the bar never claims it's finished before it is.
+                totalBytesExpectedToWrite = max(estimate, Int64(Double(totalBytesWritten) * 1.02))
+                isEstimate = true
+            }
             if totalBytesExpectedToWrite > 0 {
-                self.progress[itemId] = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+                self.progress[itemId] = min(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite), isEstimate ? 0.99 : 1)
             }
             // Sampled rather than computed from this single delta — didWriteData can fire
             // many times a second, which would make the displayed speed jump around.
@@ -2000,7 +2077,8 @@ extension DownloadManager: URLSessionDownloadDelegate {
             } else {
                 bytesPerSecond = self.stats[itemId]?.bytesPerSecond ?? 0
             }
-            self.stats[itemId] = DownloadStats(bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite, bytesPerSecond: bytesPerSecond)
+            self.stats[itemId] = DownloadStats(bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite,
+                                               bytesPerSecond: bytesPerSecond, isEstimate: isEstimate)
             #if canImport(ActivityKit) && os(iOS)
             // Throttled to the same ~0.5s cadence as the speed sample above — updating on
             // every didWriteData tick would hammer ActivityKit with far more writes than a

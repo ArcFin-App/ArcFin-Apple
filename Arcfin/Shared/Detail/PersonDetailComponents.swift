@@ -34,7 +34,7 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
                 } else {
                     if let overview = model.detail?.overview, !overview.isEmpty {
                         Text(overview)
-                            .font(.system(.footnote, design: .default))
+                            .contentFont(.footnote, design: .default)
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -117,13 +117,13 @@ struct PersonDetailHeader: View {
             .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
 
             Text(person.name)
-                .font(.system(.title3, design: .default, weight: .heavy))
+                .contentFont(.title3, design: .default, weight: .heavy)
                 .foregroundStyle(DT.Color.textPrimary)
                 .multilineTextAlignment(.center)
 
             if let role = person.role, !role.isEmpty {
                 Text(role)
-                    .font(.system(.footnote, design: .default))
+                    .contentFont(.footnote, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
@@ -146,7 +146,7 @@ private struct PersonSectionHeader: View {
 
     var body: some View {
         Text(title)
-            .font(.system(.footnote, design: .default, weight: .semibold))
+            .contentFont(.footnote, design: .default, weight: .semibold)
             .foregroundStyle(DT.Color.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -180,17 +180,17 @@ struct PersonCreditCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
 
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(.title3))
+                    .contentFont(.title3)
                     .foregroundStyle(.white, DT.Color.accent)
                     .background(Circle().fill(.black.opacity(0.3)))
                     .padding(6)
             }
             Text(credit.title)
-                .font(.system(.caption2, design: .default, weight: .semibold))
+                .contentFont(.caption2, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2, reservesSpace: true)
             Text(credit.role ?? "")
-                .font(.system(.caption2, design: .default))
+                .contentFont(.caption2, design: .default)
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineLimit(1, reservesSpace: true)
         }

@@ -80,11 +80,11 @@ struct LiveTVHomeCard: View {
                 .tvLabelFocusRing(cornerRadius: DT.Radius.card)
             VStack(alignment: .leading, spacing: 2) {
                 Text(program?.name ?? channel.name)
-                    .font(.system(.subheadline, weight: .semibold))
+                    .contentFont(.subheadline, weight: .semibold)
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
                 Text(subtitle)
-                    .font(.system(.caption))
+                    .contentFont(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
             }

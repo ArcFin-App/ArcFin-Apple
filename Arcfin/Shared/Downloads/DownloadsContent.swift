@@ -276,7 +276,8 @@ struct DownloadsContent<Manage: View>: View {
             }
             HStack {
                 if let stats, stats.bytesWritten > 0, stats.totalBytes > 0 {
-                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: stats.totalBytes, countStyle: .file))")
+                    let total = (stats.isEstimate ? "~" : "") + ByteCountFormatter.string(fromByteCount: stats.totalBytes, countStyle: .file)
+                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) of \(total)")
                 } else if let stats, stats.bytesWritten > 0 {
                     Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) downloaded")
                 } else if downloadManager.queuedItemIds.contains(itemId) {
@@ -291,7 +292,7 @@ struct DownloadsContent<Manage: View>: View {
                 } else if let stats, stats.bytesPerSecond > 0 {
                     let speed = "\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s"
                     if stats.totalBytes > stats.bytesWritten {
-                        let left = Duration.seconds(Double(stats.totalBytes - stats.bytesWritten) / stats.bytesPerSecond)
+                        let left = (stats.isEstimate ? "~" : "") + Duration.seconds(Double(stats.totalBytes - stats.bytesWritten) / stats.bytesPerSecond)
                             .formatted(.units(allowed: [.hours, .minutes, .seconds], width: .abbreviated, maximumUnitCount: 2))
                         Text("\(speed) · \(left) left")
                     } else {

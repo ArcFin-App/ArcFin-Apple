@@ -19,7 +19,7 @@ struct ShelfRow<Content: View>: View {
 
                 if let badge {
                     Text(badge)
-                        .font(.system(.caption2, design: .default, weight: .bold))
+                        .contentFont(.caption2, design: .default, weight: .bold)
                         .tracking(0.5)
                         .foregroundStyle(DT.Color.textPrimary)
                         .padding(.horizontal, 7)

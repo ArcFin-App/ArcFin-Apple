@@ -449,70 +449,6 @@
         }
       }
     },
-    "%@ free of %@ on this device" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ von %2$@ frei auf diesem Gerät"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ libres de %2$@ en este dispositivo"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ libres sur %2$@ sur cet appareil"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ liberi su %2$@ su questo dispositivo"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "このデバイスの%2$@中%1$@空き"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 기기의 %2$@ 중 %1$@ 사용 가능"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ vrij van %2$@ op dit apparaat"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ livres de %2$@ neste dispositivo"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "На устройстве свободно %1$@ из %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "此设备 %2$@ 中可用 %1$@"
-          }
-        }
-      }
-    },
     "%@ free on device" : {
       "localizations" : {
         "de" : {
@@ -765,70 +701,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "《%1$@》将于 %3$@ 在 %2$@ 开播。"
-          }
-        }
-      }
-    },
-    "%@ used by Arcfin" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ von Arcfin belegt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ usados por Arcfin"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ utilisés par Arcfin"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ usati da Arcfin"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfinの使用量 %@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin 사용량 %@"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ gebruikt door Arcfin"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ usados pelo Arcfin"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin занимает %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin 已用 %@"
           }
         }
       }
@@ -1917,6 +1789,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%lld%%"
+          }
+        }
+      }
+    },
+    "%lld-bit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld Bit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld bits"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld bits"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld bit"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lldビット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld비트"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld-bits"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld bits"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld бит"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld 位"
           }
         }
       }
@@ -4737,70 +4673,6 @@
         }
       }
     },
-    "Already in Your Library" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Schon in deiner Mediathek"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ya en tu biblioteca"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Déjà dans votre bibliothèque"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Già nella tua libreria"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ライブラリにある作品がわかる"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이미 보관함에 있는 작품"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Al in je bibliotheek"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Já na sua biblioteca"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Уже в вашей медиатеке"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "已在你的媒体库中"
-          }
-        }
-      }
-    },
     "Always Convert Remote Sources" : {
       "localizations" : {
         "de" : {
@@ -6145,6 +6017,134 @@
         }
       }
     },
+    "Audio & Subtitles" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio & Untertitel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio y subtítulos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio et sous-titres"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio e sottotitoli"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音声と字幕"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "오디오 및 자막"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio en ondertiteling"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Áudio e legendas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Аудио и субтитры"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音频和字幕"
+          }
+        }
+      }
+    },
+    "Audio and subtitles" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio und Untertitel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio y subtítulos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio et sous-titres"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio e sottotitoli"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音声と字幕"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "오디오 및 자막"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Audio en ondertiteling"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Áudio e legendas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Аудио и субтитры"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音频和字幕"
+          }
+        }
+      }
+    },
     "Audio Transcoding" : {
       "localizations" : {
         "de" : {
@@ -6653,6 +6653,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "备份需要 Jellyfin 10.11 或更高版本。"
+          }
+        }
+      }
+    },
+    "Balanced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ausgewogen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Equilibrada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Équilibrée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bilanciata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "バランス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "균형"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gebalanceerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Equilibrada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сбалансированное"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "均衡"
           }
         }
       }
@@ -7809,70 +7873,6 @@
         }
       }
     },
-    "Clearer Server Setup" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Klarere Servereinrichtung"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Configuración del servidor más clara"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Configuration du serveur plus claire"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Configurazione del server più chiara"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "わかりやすくなったサーバ設定"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "더 명확해진 서버 설정"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Duidelijkere serverinstelling"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Configuração do servidor mais clara"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Понятнее настройка сервера"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "更清晰的服务器设置"
-          }
-        }
-      }
-    },
     "Collections" : {
       "localizations" : {
         "de" : {
@@ -8829,6 +8829,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "转换为 AV1"
+          }
+        }
+      }
+    },
+    "Converted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Umgewandelt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Convertido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Converti"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Convertito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "変換"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "변환"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Omgezet"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Convertido"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Перекодирование"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "转换"
           }
         }
       }
@@ -12481,70 +12545,6 @@
         }
       }
     },
-    "Device: %@ free of %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Gerät: %1$@ von %2$@ frei"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dispositivo: %1$@ libres de %2$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Appareil : %1$@ libres sur %2$@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dispositivo: %1$@ liberi su %2$@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "デバイス：%2$@中%1$@空き"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "기기: %2$@ 중 %1$@ 사용 가능"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Apparaat: %1$@ vrij van %2$@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dispositivo: %1$@ livres de %2$@"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Устройство: свободно %1$@ из %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "设备：%2$@ 中可用 %1$@"
-          }
-        }
-      }
-    },
     "Devices" : {
       "localizations" : {
         "de" : {
@@ -12865,70 +12865,6 @@
         }
       }
     },
-    "Discover, Search and Seerr pages show which titles you already have, so you won't request them twice." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Entdecken, Suche und Seerr-Seiten zeigen, welche Titel du schon hast, damit du sie nicht doppelt anfragst."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Descubrir, Buscar y las páginas de Seerr muestran qué títulos ya tienes, para que no los pidas dos veces."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Découvrir, Rechercher et les pages Seerr indiquent les titres que vous avez déjà, pour ne pas les demander deux fois."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Scopri, Cerca e le pagine di Seerr mostrano quali titoli hai già, così non li richiedi due volte."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ディスカバー、検索、Seerrのページで、すでに持っている作品がわかるので、二重にリクエストすることはありません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "탐색, 검색, Seerr 페이지에서 이미 가진 작품을 보여 주므로 두 번 요청할 일이 없습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ontdek, Zoeken en de Seerr-pagina’s laten zien welke titels je al hebt, zodat je ze niet twee keer aanvraagt."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Descobrir, Buscar e as páginas do Seerr mostram quais títulos você já tem, para você não pedir duas vezes."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "«Обзор», поиск и страницы Seerr показывают, какие фильмы и сериалы у вас уже есть, чтобы вы не запрашивали их дважды."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "“发现”、搜索和 Seerr 页面会标出你已拥有的作品，避免重复请求。"
-          }
-        }
-      }
-    },
     "Discoverable on the Network" : {
       "localizations" : {
         "de" : {
@@ -13121,70 +13057,6 @@
         }
       }
     },
-    "Downloaded movies and episodes now offer to skip the recap, intro, credits and preview, just like streaming, and skip them for you if you've turned that on." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Heruntergeladene Filme und Folgen bieten jetzt wie beim Streaming an, Rückblick, Intro, Abspann und Vorschau zu überspringen – und tun es automatisch, wenn du das eingeschaltet hast."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Las películas y episodios descargados ahora ofrecen saltar el resumen, la intro, los créditos y el avance, igual que en streaming, y los saltan solos si lo tienes activado."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Les films et épisodes téléchargés proposent désormais de passer le récapitulatif, l’intro, le générique et l’aperçu, comme en streaming, et les passent tout seuls si vous l’avez activé."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Film ed episodi scaricati ora permettono di saltare riassunto, sigla, titoli di coda e anteprima, come in streaming, e li saltano da soli se l’hai attivato."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ダウンロードした映画やエピソードでも、ストリーミングと同じように前回のあらすじ、イントロ、クレジット、予告をスキップできます。自動スキップをオンにしていれば自動で飛ばします。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "다운로드한 영화와 에피소드에서도 스트리밍처럼 지난 이야기, 인트로, 크레딧, 미리보기를 건너뛸 수 있으며, 자동 건너뛰기를 켰다면 알아서 건너뜁니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Gedownloade films en afleveringen bieden nu net als bij streamen aan om de terugblik, intro, aftiteling en preview over te slaan, en doen dat vanzelf als je dat hebt aangezet."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Filmes e episódios baixados agora oferecem pular a recapitulação, a abertura, os créditos e a prévia, como no streaming, e pulam sozinhos se você ativou isso."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Скачанные фильмы и серии теперь, как и при стриминге, позволяют пропустить пересказ, заставку, титры и превью, а если вы это включили, пропускают их сами."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "下载的电影和剧集现在也能像在线播放一样跳过前情提要、片头、片尾和预告，开启自动跳过后会自动跳过。"
-          }
-        }
-      }
-    },
     "Downloads carry on when you close the player, so the video gets the whole connection." : {
       "localizations" : {
         "de" : {
@@ -13245,6 +13117,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "关闭播放器后下载会继续，让视频独享网络连接。"
+          }
+        }
+      }
+    },
+    "Dynamic Range" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dynamikumfang"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rango dinámico"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Plage dynamique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gamma dinamica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダイナミックレンジ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다이내믹 레인지"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dynamisch bereik"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Faixa dinâmica"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Динамический диапазон"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "动态范围"
           }
         }
       }
@@ -15169,6 +15105,70 @@
         }
       }
     },
+    "Forced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Erzwungen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forzados"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forcés"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forzati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "強制"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "강제"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geforceerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Forçadas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Принудительные"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "强制"
+          }
+        }
+      }
+    },
     "Forced only" : {
       "localizations" : {
         "de" : {
@@ -15229,6 +15229,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "仅强制字幕"
+          }
+        }
+      }
+    },
+    "Format" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Format"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Formato"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Format"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Formato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "形式"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "형식"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Formaat"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Formato"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Формат"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "格式"
           }
         }
       }
@@ -15421,6 +15485,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "根据服务器上的一次简短测试编码。Arcfin 只会在 AV1 可用时请求 AV1。更换显卡、驱动或加速设置后请重新测试。"
+          }
+        }
+      }
+    },
+    "Getting the file's details…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dateidetails werden geladen …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Obteniendo los detalles del archivo…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Récupération des détails du fichier…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Recupero dei dettagli del file…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ファイルの詳細を取得中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "파일 정보를 가져오는 중…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bestandsgegevens ophalen…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Obtendo os detalhes do arquivo…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Получение сведений о файле…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在获取文件详情…"
           }
         }
       }
@@ -16129,70 +16257,6 @@
         }
       }
     },
-    "Help for Videos That Won't Play" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Hilfe für Videos, die nicht abspielen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ayuda con vídeos que no se reproducen"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De l’aide pour les vidéos récalcitrantes"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Aiuto per i video che non partono"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "再生できない動画への対策"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "재생되지 않는 동영상 해결"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Hulp bij video’s die niet afspelen"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ajuda para vídeos que não tocam"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Помощь с видео, которые не воспроизводятся"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "解决无法播放的视频"
-          }
-        }
-      }
-    },
     "HEVC Quality (CRF)" : {
       "localizations" : {
         "de" : {
@@ -16513,6 +16577,70 @@
         }
       }
     },
+    "High" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hoch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Élevée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "高画質"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "높음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hoog"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alta"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Высокое"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "高"
+          }
+        }
+      }
+    },
     "Hold Speed" : {
       "localizations" : {
         "de" : {
@@ -16701,70 +16829,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "家庭视频和照片"
-          }
-        }
-      }
-    },
-    "Home, title pages, Stats and Settings are evenly spaced, easier to read and simpler to get around with the remote." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Startseite, Titelseiten, Statistiken und Einstellungen sind gleichmäßig aufgeteilt, besser lesbar und mit der Fernbedienung leichter zu bedienen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Inicio, las páginas de títulos, Estadísticas y Ajustes tienen un espaciado uniforme, se leen mejor y se recorren más fácil con el mando."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "L’accueil, les pages des titres, les Statistiques et les Réglages sont mieux espacés, plus lisibles et plus simples à parcourir avec la télécommande."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Home, pagine dei titoli, Statistiche e Impostazioni sono spaziate in modo uniforme, più leggibili e più facili da usare con il telecomando."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ホーム、作品ページ、統計、設定の余白がそろい、読みやすく、リモコンで操作しやすくなりました。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "홈, 작품 페이지, 통계, 설정의 간격이 고르게 정리되어 읽기 쉽고 리모컨으로 이동하기도 편해졌습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Beginscherm, titelpagina’s, Statistieken en Instellingen zijn gelijkmatig ingedeeld, beter leesbaar en makkelijker te bedienen met de afstandsbediening."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Início, páginas de títulos, Estatísticas e Ajustes têm espaçamento uniforme, são mais fáceis de ler e de navegar com o controle."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Главная, страницы фильмов, статистика и настройки получили ровные отступы, читаются легче, и по ним удобнее перемещаться пультом."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "首页、作品页面、统计和设置的间距更均匀，更易阅读，用遥控器浏览也更方便。"
           }
         }
       }
@@ -17345,134 +17409,6 @@
         }
       }
     },
-    "If a video won't play, or HDR or Dolby Vision looks dim or off-colour, new switches in Settings › Playback › Codec Compatibility have your server convert it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Wenn ein Video nicht abspielt oder HDR bzw. Dolby Vision zu dunkel oder farbstichig aussieht, lassen neue Schalter unter Einstellungen › Wiedergabe › Codec-Kompatibilität deinen Server es umwandeln."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Si un vídeo no se reproduce, o el HDR o Dolby Vision se ve apagado o con colores raros, los nuevos interruptores de Ajustes › Reproducción › Compatibilidad de códecs hacen que tu servidor lo convierta."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Si une vidéo ne se lit pas, ou si le HDR ou le Dolby Vision paraît terne ou aux couleurs faussées, de nouveaux interrupteurs dans Réglages › Lecture › Compatibilité des codecs demandent à votre serveur de la convertir."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Se un video non parte, o l’HDR o il Dolby Vision appare spento o con colori sbagliati, i nuovi interruttori in Impostazioni › Riproduzione › Compatibilità codec fanno convertire il video al tuo server."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "動画が再生できないときや、HDR・ドルビービジョンが暗い・色がおかしいときは、設定 › 再生 › コーデックの互換性の新しいスイッチでサーバに変換させられます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "동영상이 재생되지 않거나 HDR 또는 돌비 비전이 어둡거나 색이 이상하게 보이면, 설정 › 재생 › 코덱 호환성의 새 스위치로 서버가 변환하도록 할 수 있습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Speelt een video niet af, of ziet HDR of Dolby Vision er dof of verkleurd uit? Met nieuwe schakelaars in Instellingen › Afspelen › Codeccompatibiliteit laat je je server hem omzetten."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Se um vídeo não toca, ou o HDR ou Dolby Vision parece apagado ou com cores erradas, novas chaves em Ajustes › Reprodução › Compatibilidade de codecs fazem seu servidor convertê-lo."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Если видео не воспроизводится или HDR и Dolby Vision выглядят тусклыми или с неправильными цветами, новые переключатели в разделе «Настройки › Воспроизведение › Совместимость кодеков» попросят сервер его перекодировать."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "如果视频无法播放，或 HDR、杜比视界画面偏暗或偏色，可以用“设置 › 播放 › 编解码器兼容性”中的新开关让服务器进行转换。"
-          }
-        }
-      }
-    },
-    "If your server stops accepting your sign-in, Arcfin asks you to sign in again instead of showing empty pages. Signing out of your last profile asks first and removes your sign-ins from this device. Downloads stay." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Akzeptiert dein Server deine Anmeldung nicht mehr, bittet Arcfin dich, dich erneut anzumelden, statt leere Seiten zu zeigen. Beim Abmelden des letzten Profils fragt Arcfin zuerst nach und entfernt deine Anmeldungen von diesem Gerät. Downloads bleiben erhalten."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Si tu servidor deja de aceptar tu inicio de sesión, Arcfin te pide que vuelvas a entrar en vez de mostrar páginas vacías. Al cerrar la sesión del último perfil, primero te pregunta y quita tus inicios de sesión de este dispositivo. Las descargas se quedan."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Si votre serveur n’accepte plus votre connexion, Arcfin vous demande de vous reconnecter au lieu d’afficher des pages vides. La déconnexion du dernier profil demande d’abord confirmation et retire vos identifiants de cet appareil. Les téléchargements restent."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Se il server non accetta più il tuo accesso, Arcfin ti chiede di accedere di nuovo invece di mostrare pagine vuote. Uscire dall’ultimo profilo chiede prima conferma e rimuove i tuoi accessi da questo dispositivo. I download restano."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "サーバがサインインを受け付けなくなると、Arcfinは空のページを表示せずに再度サインインを求めます。最後のプロファイルからサインアウトするときは確認したうえで、このデバイスのサインイン情報を削除します。ダウンロードは残ります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "서버가 로그인을 더 이상 받지 않으면 Arcfin이 빈 페이지 대신 다시 로그인하도록 안내합니다. 마지막 프로필에서 로그아웃할 때는 먼저 확인한 뒤 이 기기의 로그인 정보를 지웁니다. 다운로드는 그대로 남습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Accepteert je server je inlog niet meer, dan vraagt Arcfin je opnieuw in te loggen in plaats van lege pagina’s te tonen. Uitloggen bij je laatste profiel vraagt eerst om bevestiging en verwijdert je inloggegevens van dit apparaat. Downloads blijven staan."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Se o servidor deixar de aceitar seu login, o Arcfin pede que você entre de novo em vez de mostrar páginas vazias. Sair do último perfil pede confirmação antes e remove seus logins deste dispositivo. Os downloads ficam."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Если сервер перестал принимать ваш вход, Arcfin попросит войти снова, а не покажет пустые страницы. Выход из последнего профиля сначала просит подтверждения и удаляет ваши данные входа с этого устройства. Загрузки остаются."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "当服务器不再接受你的登录时，Arcfin 会请你重新登录，而不是显示空白页面。退出最后一个个人资料前会先确认，并清除此设备上的登录信息。下载内容会保留。"
-          }
-        }
-      }
-    },
     "Ignore %@ in Smart Downloads?" : {
       "localizations" : {
         "de" : {
@@ -17853,134 +17789,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "已忽略"
-          }
-        }
-      }
-    },
-    "In a library sorted by name, pick a letter under Filter & Sort to jump straight to it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In einer nach Namen sortierten Mediathek wählst du unter „Filtern & Sortieren“ einen Buchstaben, um direkt dorthin zu springen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "En una biblioteca ordenada por nombre, elige una letra en Filtrar y ordenar para saltar directamente a ella."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dans une bibliothèque triée par nom, choisissez une lettre sous Filtrer et trier pour y aller directement."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In una libreria ordinata per nome, scegli una lettera sotto Filtra e ordina per andarci subito."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "名前順に並べたライブラリでは、「フィルタと並べ替え」の下で文字を選ぶと、そこへすぐに移動できます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이름순으로 정렬한 보관함에서 필터 및 정렬 아래의 글자를 선택하면 바로 이동합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In een bibliotheek die op naam is gesorteerd, kies je onder Filter en sorteer een letter om er meteen naartoe te springen."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Em uma biblioteca ordenada por nome, escolha uma letra em Filtrar e ordenar para ir direto até ela."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "В медиатеке, отсортированной по названию, выберите букву под «Фильтр и сортировка», чтобы сразу перейти к ней."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在按名称排序的媒体库中，在“筛选与排序”下选择一个字母即可直接跳转。"
-          }
-        }
-      }
-    },
-    "In a library sorted by name, use the A to Z index at the edge to jump straight to a letter." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In einer nach Namen sortierten Mediathek springst du mit dem A–Z-Index am Rand direkt zu einem Buchstaben."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "En una biblioteca ordenada por nombre, usa el índice de la A a la Z del borde para saltar directamente a una letra."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dans une bibliothèque triée par nom, utilisez l’index de A à Z sur le bord pour aller directement à une lettre."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In una libreria ordinata per nome, usa l’indice dalla A alla Z sul bordo per andare subito a una lettera."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "名前順に並べたライブラリでは、端のA〜Zインデックスで目的の文字へすぐに移動できます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이름순으로 정렬한 보관함에서 가장자리의 A–Z 색인을 사용해 원하는 글자로 바로 이동하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In een bibliotheek die op naam is gesorteerd, spring je met de A-tot-Z-index aan de rand meteen naar een letter."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Em uma biblioteca ordenada por nome, use o índice de A a Z na borda para ir direto a uma letra."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "В медиатеке, отсортированной по названию, указатель от A до Z у края сразу переносит к нужной букве."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在按名称排序的媒体库中，使用边缘的 A–Z 索引即可直接跳到某个字母。"
           }
         }
       }
@@ -19585,70 +19393,6 @@
         }
       }
     },
-    "Jump to a Letter" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Zu einem Buchstaben springen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Salta a una letra"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Allez à une lettre"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Vai a una lettera"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "文字へジャンプ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "글자로 바로 이동"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Spring naar een letter"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Pule para uma letra"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Переход к букве"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "按字母跳转"
-          }
-        }
-      }
-    },
     "Keep" : {
       "localizations" : {
         "de" : {
@@ -19709,6 +19453,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "保留"
+          }
+        }
+      }
+    },
+    "Keep at least one. The first goes into the converted file and the others are added to it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Behalte mindestens eine. Die erste kommt in die umgewandelte Datei, die anderen werden ihr hinzugefügt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conserva al menos una. La primera va en el archivo convertido y las demás se le añaden."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gardez-en au moins une. La première est intégrée au fichier converti, les autres y sont ajoutées."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tienine almeno una. La prima va nel file convertito e le altre vengono aggiunte."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "少なくとも1つは残してください。最初のトラックが変換後のファイルに入り、残りは後から追加されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "하나 이상은 남겨 두세요. 첫 번째 트랙이 변환된 파일에 들어가고 나머지는 추가됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houd er minstens één. De eerste gaat in het omgezette bestand en de rest wordt eraan toegevoegd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantenha pelo menos uma. A primeira vai no arquivo convertido e as outras são adicionadas a ele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Оставьте хотя бы одну. Первая попадёт в перекодированный файл, остальные будут добавлены к нему."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "至少保留一条。第一条放入转换后的文件，其余的随后添加进去。"
           }
         }
       }
@@ -20925,70 +20733,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在所有资料库中查找新增、更改和删除的文件。"
-          }
-        }
-      }
-    },
-    "Makes speech easier to hear over music and effects. With Aether, Atmos plays as surround sound while it's on." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Macht Sprache neben Musik und Effekten besser hörbar. Mit Aether wird Atmos währenddessen als Surround-Ton wiedergegeben."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Hace que las voces se oigan mejor sobre la música y los efectos. Con Aether, el Atmos se reproduce como sonido envolvente mientras está activado."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Rend les voix plus audibles par-dessus la musique et les effets. Avec Aether, l’Atmos est lu en son surround tant que l’option est activée."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Rende le voci più udibili sopra musica ed effetti. Con Aether, l’Atmos viene riprodotto come audio surround finché è attivo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "音楽や効果音の中でも会話が聞き取りやすくなります。Aetherでは、オンの間はAtmosがサラウンドとして再生されます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "음악과 효과음 속에서도 대사가 더 잘 들리게 합니다. Aether에서는 켜져 있는 동안 Atmos가 서라운드로 재생됩니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Maakt spraak beter hoorbaar boven muziek en effecten. Met Aether speelt Atmos zolang dit aanstaat als surroundgeluid."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Deixa as falas mais fáceis de ouvir sobre a música e os efeitos. Com o Aether, o Atmos toca como som surround enquanto estiver ativado."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Делает речь разборчивее на фоне музыки и эффектов. С Aether, пока функция включена, Atmos воспроизводится как объёмный звук."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "让对白在音乐和音效中更清晰。使用 Aether 时，开启期间 Atmos 会以环绕声播放。"
           }
         }
       }
@@ -25085,6 +24829,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@的选项"
+          }
+        }
+      }
+    },
+    "Original" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Originale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "オリジナル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "원본"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Origineel"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Original"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Оригинал"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "原始"
           }
         }
       }
@@ -31681,6 +31489,70 @@
         }
       }
     },
+    "Runtime" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Laufzeit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Duración"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Durée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Durata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生時間"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "재생 시간"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Speelduur"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Duração"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Длительность"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "时长"
+          }
+        }
+      }
+    },
     "s" : {
       "localizations" : {
         "de" : {
@@ -31741,6 +31613,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "秒"
+          }
+        }
+      }
+    },
+    "S%lld E%lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "S%1$lld E%2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "T%1$lld E%2$lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "S%1$lld E%2$lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "S%1$lld E%2$lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "S%1$lld E%2$lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "S%1$lld E%2$lld"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "S%1$lld A%2$lld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "T%1$lld E%2$lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "С%1$lld Э%2$lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "第 %1$lld 季第 %2$lld 集"
           }
         }
       }
@@ -32189,6 +32125,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "计划任务"
+          }
+        }
+      }
+    },
+    "Scroll for more" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Für mehr scrollen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Desliza para ver más"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Faites défiler pour en voir plus"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scorri per vedere altro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "スクロールして続きを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "스크롤하여 더 보기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scroll voor meer"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Role para ver mais"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Прокрутите, чтобы увидеть больше"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "滚动查看更多"
           }
         }
       }
@@ -34113,6 +34113,70 @@
         }
       }
     },
+    "Show or hide the sidebar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seitenleiste ein- oder ausblenden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Muestra u oculta la barra lateral"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Affiche ou masque la barre latérale"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra o nasconde la barra laterale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サイドバーを表示または非表示にします"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사이드바를 보거나 가립니다"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toon of verberg de navigatiekolom"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra ou oculta a barra lateral"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показать или скрыть боковое меню"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "显示或隐藏边栏"
+          }
+        }
+      }
+    },
     "Show Subtitles When Muted" : {
       "localizations" : {
         "de" : {
@@ -35329,70 +35393,6 @@
         }
       }
     },
-    "Signing In and Out" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "An- und Abmelden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Iniciar y cerrar sesión"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Connexion et déconnexion"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Accesso e uscita"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "サインインとサインアウト"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "로그인과 로그아웃"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "In- en uitloggen"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Entrar e sair"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Вход и выход"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "登录与退出登录"
-          }
-        }
-      }
-    },
     "Signing In…" : {
       "localizations" : {
         "de" : {
@@ -35837,70 +35837,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "跳过片头"
-          }
-        }
-      }
-    },
-    "Skip Intros in Downloads" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Intros auch in Downloads überspringen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Salta intros también en descargas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Passez les intros des téléchargements"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Salta le sigle anche nei download"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ダウンロードでもイントロをスキップ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "다운로드에서도 인트로 건너뛰기"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Intro’s overslaan in downloads"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Pule aberturas nos downloads"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Пропуск заставок в загрузках"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "下载内容也能跳过片头"
           }
         }
       }
@@ -36353,70 +36289,6 @@
         }
       }
     },
-    "Smart Downloads limit %@ · %@ left" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Smart-Downloads-Limit %1$@ · noch %2$@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Límite de descargas inteligentes %1$@ · quedan %2$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Limite des téléchargements intelligents %1$@ · %2$@ restants"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Limite download intelligenti %1$@ · %2$@ rimanenti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "スマートダウンロードの上限 %1$@・残り %2$@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "스마트 다운로드 한도 %1$@ · %2$@ 남음"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Limiet slimme downloads %1$@ · nog %2$@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Limite dos downloads inteligentes %1$@ · restam %2$@"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Лимит умных загрузок %1$@ · осталось %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "智能下载上限 %1$@ · 剩余 %2$@"
-          }
-        }
-      }
-    },
     "Some of these take effect only after the server restarts, from the Admin tab." : {
       "localizations" : {
         "de" : {
@@ -36605,6 +36477,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "排序标题"
+          }
+        }
+      }
+    },
+    "Space Saver" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Platz sparen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ahorro de espacio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Économie d'espace"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Risparmio spazio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "省スペース"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "공간 절약"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ruimtebesparend"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Economia de espaço"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Экономия места"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "节省空间"
           }
         }
       }
@@ -38721,70 +38657,6 @@
         }
       }
     },
-    "The featured title's trailer now plays all the way through while the details fade away. For sound, turn on Hero Trailer Sound in Settings › Appearance." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Der Trailer des vorgestellten Titels läuft jetzt komplett durch, während die Details ausblenden. Für Ton schalte „Ton für Trailer im Hero-Bereich“ unter Einstellungen › Darstellung ein."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "El tráiler del título destacado ahora se reproduce entero mientras los detalles se desvanecen. Para oírlo, activa Sonido del tráiler en destacados en Ajustes › Apariencia."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La bande-annonce du titre à la une se lit désormais en entier pendant que les détails s’effacent. Pour le son, activez Son de la bande-annonce à la une dans Réglages › Apparence."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Il trailer del titolo in evidenza ora si riproduce per intero mentre i dettagli svaniscono. Per l’audio, attiva Audio del trailer in evidenza in Impostazioni › Aspetto."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "注目作品の予告編が最後まで再生され、その間は詳細表示が消えます。音声を出すには、設定 › 外観で「注目作品の予告編の音声」をオンにします。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "추천 작품의 예고편이 이제 끝까지 재생되며, 그동안 세부 정보는 사라집니다. 소리를 들으려면 설정 › 화면 스타일에서 추천 영역 예고편 소리를 켜세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De trailer van de uitgelichte titel speelt nu helemaal af terwijl de details vervagen. Voor geluid zet je Geluid van trailer bij uitgelicht aan in Instellingen › Weergave."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "O trailer do título em destaque agora toca até o fim enquanto os detalhes somem. Para ter som, ative Som do trailer no destaque em Ajustes › Aparência."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Трейлер рекомендуемого фильма теперь играет до конца, а подробности на это время скрываются. Чтобы слышать звук, включите «Звук трейлера в рекомендуемом» в разделе «Настройки › Оформление»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "精选内容的预告片现在会完整播放，播放时详细信息会淡出。如需声音，请在“设置 › 外观”中打开“精选区预告片声音”。"
-          }
-        }
-      }
-    },
     "The folder wasn't added." : {
       "localizations" : {
         "de" : {
@@ -39293,6 +39165,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未应用匹配结果。"
+          }
+        }
+      }
+    },
+    "The original file keeps every audio track. Pick a lower quality to choose which to keep." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Originaldatei behält alle Audiospuren. Wähle eine niedrigere Qualität, um auszuwählen, welche du behältst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El archivo original conserva todas las pistas de audio. Elige una calidad más baja para decidir cuáles conservar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le fichier original garde toutes les pistes audio. Choisissez une qualité inférieure pour décider lesquelles garder."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il file originale mantiene tutte le tracce audio. Scegli una qualità inferiore per decidere quali tenere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "元のファイルにはすべての音声トラックが含まれます。残すトラックを選ぶには、低い画質を選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "원본 파일에는 모든 오디오 트랙이 포함됩니다. 남길 트랙을 고르려면 더 낮은 화질을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Het originele bestand houdt alle audiosporen. Kies een lagere kwaliteit om te kiezen welke je houdt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O arquivo original mantém todas as faixas de áudio. Escolha uma qualidade menor para decidir quais manter."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Исходный файл сохраняет все звуковые дорожки. Выберите качество ниже, чтобы решить, какие оставить."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "原始文件保留所有音轨。选择较低画质即可挑选要保留的音轨。"
           }
         }
       }
@@ -42049,6 +41985,70 @@
         }
       }
     },
+    "Toggle Sidebar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seitenleiste ein-/ausblenden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar u ocultar barra lateral"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Afficher/masquer la barre latérale"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra/nascondi barra laterale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サイドバーの表示/非表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사이드바 보기/가리기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Navigatiekolom tonen/verbergen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar/ocultar barra lateral"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показать/скрыть боковое меню"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "显示/隐藏边栏"
+          }
+        }
+      }
+    },
     "Tone Mapping" : {
       "localizations" : {
         "de" : {
@@ -42177,6 +42177,70 @@
         }
       }
     },
+    "Total Runtime" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gesamtlaufzeit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Duración total"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Durée totale"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Durata totale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "合計再生時間"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "총 재생 시간"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Totale speelduur"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Duração total"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Общая длительность"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "总时长"
+          }
+        }
+      }
+    },
     "Touch and hold the video to play at this speed until you let go." : {
       "localizations" : {
         "de" : {
@@ -42301,70 +42365,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "按住以切换个人资料"
-          }
-        }
-      }
-    },
-    "Trailers on Home" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Trailer auf der Startseite"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Tráileres en Inicio"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Bandes-annonces sur l’accueil"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Trailer nella Home"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ホームで予告編"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "홈에서 예고편 재생"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Trailers op het beginscherm"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Trailers no Início"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Трейлеры на главной"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "首页播放预告片"
           }
         }
       }
@@ -42877,6 +42877,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "卸载%@？"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Unbekannt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Desconocido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inconnu"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sconosciuto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不明"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "알 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Onbekend"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Desconhecido"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Неизвестно"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "未知"
           }
         }
       }
@@ -44865,6 +44929,70 @@
         }
       }
     },
+    "What downloads and Smart Downloads start at; you can change it for each download. Lower qualities are converted on your server, in HEVC or AV1 where it can, so they take less space." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Womit Downloads und Smart Downloads beginnen; du kannst es für jeden Download ändern. Niedrigere Qualitäten wandelt dein Server um, wo möglich in HEVC oder AV1, damit sie weniger Platz brauchen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Con qué empiezan las descargas y las descargas inteligentes; puedes cambiarlo en cada descarga. Las calidades más bajas las convierte tu servidor, en HEVC o AV1 cuando puede, para que ocupen menos espacio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La qualité de départ des téléchargements et des téléchargements intelligents ; vous pouvez la changer pour chaque téléchargement. Les qualités inférieures sont converties par votre serveur, en HEVC ou AV1 quand il le peut, pour prendre moins de place."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La qualità iniziale dei download e dei download intelligenti; puoi cambiarla per ogni download. Le qualità più basse vengono convertite dal tuo server, in HEVC o AV1 dove possibile, così occupano meno spazio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロードとスマートダウンロードの初期画質です。ダウンロードごとに変更できます。低い画質はサーバーで変換され、可能な場合は HEVC または AV1 になるため、容量が少なくて済みます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다운로드와 스마트 다운로드의 기본 화질입니다. 다운로드마다 바꿀 수 있습니다. 낮은 화질은 서버에서 변환되며, 가능하면 HEVC 또는 AV1로 변환되어 공간을 덜 차지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Waarmee downloads en slimme downloads beginnen; je kunt het per download wijzigen. Lagere kwaliteiten worden door je server omgezet, waar mogelijk naar HEVC of AV1, zodat ze minder ruimte innemen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Com qual qualidade os downloads e os downloads inteligentes começam; você pode mudá-la em cada download. Qualidades mais baixas são convertidas pelo seu servidor, em HEVC ou AV1 quando possível, para ocupar menos espaço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "С какого качества начинаются загрузки и умные загрузки; его можно изменить для каждой загрузки. Более низкое качество сервер перекодирует, по возможности в HEVC или AV1, чтобы файлы занимали меньше места."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "下载和智能下载的默认画质；每次下载时都可以更改。较低的画质由服务器转换，尽可能转为 HEVC 或 AV1，以减少占用空间。"
+          }
+        }
+      }
+    },
     "When a new episode arrives of a show in your Continue Watching or Next Up." : {
       "localizations" : {
         "de" : {
@@ -44989,70 +45117,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "当资料库中加入新电影时。"
-          }
-        }
-      }
-    },
-    "When an address doesn't work, setup tells you why, and servers that redirect to another address now play reliably." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Funktioniert eine Adresse nicht, sagt dir die Einrichtung, warum, und Server, die auf eine andere Adresse umleiten, spielen jetzt zuverlässig ab."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Cuando una dirección no funciona, la configuración te dice por qué, y los servidores que redirigen a otra dirección ahora reproducen sin problemas."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quand une adresse ne fonctionne pas, la configuration vous dit pourquoi, et les serveurs qui redirigent vers une autre adresse lisent désormais sans souci."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quando un indirizzo non funziona, la configurazione ti dice perché, e i server che reindirizzano a un altro indirizzo ora riproducono senza problemi."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "アドレスが使えないときは理由が表示され、別のアドレスへリダイレクトするサーバでも確実に再生できるようになりました。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "주소가 작동하지 않으면 설정에서 이유를 알려 주며, 다른 주소로 리디렉션하는 서버도 이제 안정적으로 재생됩니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Werkt een adres niet, dan vertelt de instelling je waarom, en servers die naar een ander adres doorsturen spelen nu betrouwbaar af."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quando um endereço não funciona, a configuração diz o motivo, e servidores que redirecionam para outro endereço agora tocam sem problemas."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Если адрес не работает, настройка объяснит почему, а серверы, которые перенаправляют на другой адрес, теперь воспроизводят надёжно."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "地址无法使用时，设置会告诉你原因；会重定向到其他地址的服务器现在也能稳定播放。"
           }
         }
       }
@@ -45313,6 +45377,134 @@
         }
       }
     },
+    "Yes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ja"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sí"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oui"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sì"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "はい"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "예"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ja"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sim"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Да"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "是"
+          }
+        }
+      }
+    },
+    "Yes, to %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ja, in %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sí, a %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oui, en %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sì, in %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "はい（%@）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "예, %@(으)로"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ja, naar %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sim, para %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Да, в %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "是，转为 %@"
+          }
+        }
+      }
+    },
     "You can't remove your own admin rights or delete yourself here." : {
       "localizations" : {
         "de" : {
@@ -45565,6 +45757,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你的请求"
+          }
+        }
+      }
+    },
+    "Your server converts this before it downloads, so it can take longer than its size suggests." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server wandelt dies vor dem Download um, daher kann es länger dauern, als die Größe vermuten lässt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor lo convierte antes de descargarlo, así que puede tardar más de lo que sugiere su tamaño."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur le convertit avant le téléchargement, cela peut donc prendre plus de temps que sa taille ne le laisse penser."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il tuo server lo converte prima del download, quindi può richiedere più tempo di quanto suggerisca la dimensione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロード前にサーバーで変換されるため、サイズから想像するより時間がかかることがあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다운로드 전에 서버에서 변환하므로 크기보다 시간이 더 걸릴 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server zet dit om voordat het downloadt, dus het kan langer duren dan de grootte doet vermoeden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seu servidor converte isto antes do download, então pode demorar mais do que o tamanho sugere."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер перекодирует файл перед загрузкой, поэтому она может занять больше времени, чем можно ожидать по размеру."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器会在下载前转换，所以耗时可能比文件大小显示的更长。"
+          }
+        }
+      }
+    },
+    "Your server converts this before it downloads, so it can take longer than its size suggests. Each extra audio track is fetched on its own and added to the file afterwards." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein Server wandelt dies vor dem Download um, daher kann es länger dauern, als die Größe vermuten lässt. Jede weitere Audiospur wird einzeln geladen und danach der Datei hinzugefügt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu servidor lo convierte antes de descargarlo, así que puede tardar más de lo que sugiere su tamaño. Cada pista de audio adicional se descarga por separado y se añade al archivo después."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre serveur le convertit avant le téléchargement, cela peut donc prendre plus de temps que sa taille ne le laisse penser. Chaque piste audio supplémentaire est récupérée à part puis ajoutée au fichier."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il tuo server lo converte prima del download, quindi può richiedere più tempo di quanto suggerisca la dimensione. Ogni traccia audio in più viene scaricata a parte e aggiunta al file dopo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ダウンロード前にサーバーで変換されるため、サイズから想像するより時間がかかることがあります。追加の音声トラックは個別に取得され、後からファイルに追加されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다운로드 전에 서버에서 변환하므로 크기보다 시간이 더 걸릴 수 있습니다. 추가 오디오 트랙은 각각 따로 받아 나중에 파일에 추가됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je server zet dit om voordat het downloadt, dus het kan langer duren dan de grootte doet vermoeden. Elk extra audiospoor wordt apart opgehaald en daarna aan het bestand toegevoegd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seu servidor converte isto antes do download, então pode demorar mais do que o tamanho sugere. Cada faixa de áudio extra é baixada separadamente e adicionada ao arquivo depois."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сервер перекодирует файл перед загрузкой, поэтому она может занять больше времени, чем можно ожидать по размеру. Каждая дополнительная звуковая дорожка загружается отдельно и потом добавляется в файл."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器会在下载前转换，所以耗时可能比文件大小显示的更长。每条额外音轨会单独获取，之后再加入文件。"
           }
         }
       }
@@ -47037,70 +47357,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@ / %@"
-          }
-        }
-      }
-    },
-    "%@ used by %lld download%@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ von %2$lld Downloads belegt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ usados por %2$lld descargas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ utilisés par %2$lld téléchargement(s)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ usati da %2$lld download"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@（%2$lld件のダウンロード）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ 사용 중(다운로드 %2$lld개)"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ gebruikt door %2$lld downloads"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ usados por %2$lld download(s)"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@, загрузок: %2$lld"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@，共 %2$lld 个下载项"
           }
         }
       }
@@ -51007,70 +51263,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "一个最佳结果、按类型分组的行和一个发现列表。关闭后显示简单的海报网格。"
-          }
-        }
-      }
-    },
-    "A Tour of Arcfin" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Eine Tour durch Arcfin"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Un recorrido por Arcfin"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Une visite d’Arcfin"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Un tour di Arcfin"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfinのツアー"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin 둘러보기"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Een rondleiding door Arcfin"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Um tour pelo Arcfin"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Знакомство с Arcfin"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin 导览"
           }
         }
       }
@@ -58431,70 +58623,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "关闭演员与角色"
-          }
-        }
-      }
-    },
-    "Code" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Code"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Código"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Code"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Codice"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "コード"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "코드"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Code"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Código"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Код"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "代码"
           }
         }
       }
@@ -67907,134 +68035,6 @@
         }
       }
     },
-    "Free Up Space (%lld)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Speicher freigeben (%lld)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Liberar espacio (%lld)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Libérer de l’espace (%lld)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Libera spazio (%lld)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "空き領域を確保（%lld）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "공간 확보(%lld)"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Maak ruimte vrij (%lld)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Liberar espaço (%lld)"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Освободить место (%lld)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "释放空间（%lld）"
-          }
-        }
-      }
-    },
-    "Free up space by deleting %lld selected download%@?" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Speicher freigeben, indem %1$lld ausgewählte Downloads gelöscht werden?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "¿Liberar espacio eliminando %1$lld descargas seleccionadas?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Libérer de l’espace en supprimant %1$lld téléchargement(s) sélectionné(s) ?"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Liberare spazio eliminando %1$lld download selezionati?"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "選択した%lld件のダウンロードを削除して空き領域を確保しますか？"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "선택한 다운로드 %lld개를 삭제하여 공간을 확보하겠습니까?"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ruimte vrijmaken door %1$lld geselecteerde downloads te verwijderen?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Liberar espaço apagando %1$lld download(s) selecionado(s)?"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Освободить место, удалив выбранные загрузки (%1$lld)?"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "要删除 %lld 个所选下载项以释放空间吗？"
-          }
-        }
-      }
-    },
     "From" : {
       "localizations" : {
         "de" : {
@@ -68543,70 +68543,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "只需几步即可让你的服务器运行起来"
-          }
-        }
-      }
-    },
-    "Glide across the Siri Remote's touch surface to move freely through a movie or episode, then click to jump there." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Streiche über die Touch-Oberfläche der Siri Remote, um frei durch einen Film oder eine Folge zu spulen, und klicke, um dorthin zu springen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Desliza por la superficie táctil del Siri Remote para moverte libremente por una película o episodio y haz clic para ir allí."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Glissez sur la surface tactile de la Siri Remote pour vous déplacer librement dans un film ou un épisode, puis cliquez pour y aller."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Scorri sulla superficie touch del Siri Remote per muoverti liberamente in un film o episodio, poi fai clic per andarci."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Siri Remoteのタッチサーフェスをなぞって映画やエピソードを自由に移動し、クリックしてその位置へ。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Siri Remote의 터치 표면을 쓸어 영화나 에피소드를 자유롭게 이동한 다음 클릭하여 그 위치로 이동합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Veeg over het aanraakoppervlak van de Siri Remote om vrij door een film of aflevering te gaan en klik om erheen te springen."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Deslize na superfície de toque do Siri Remote para percorrer livremente um filme ou episódio e clique para ir até lá."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Проводите по сенсорной поверхности Siri Remote, чтобы свободно перемещаться по фильму или серии, и нажмите, чтобы перейти."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在 Siri Remote 的触控表面上滑动，即可在电影或剧集中自由移动，然后按下即可跳转。"
           }
         }
       }
@@ -69695,70 +69631,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在媒体库中隐藏已观看"
-          }
-        }
-      }
-    },
-    "Higher takes more space." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Höher braucht mehr Speicher."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Más alta ocupa más espacio."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Plus élevé prend plus de place."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Più alta occupa più spazio."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "高いほど容量を使います。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "높을수록 공간을 더 많이 차지합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Hoger neemt meer ruimte in."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Maior ocupa mais espaço."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Чем выше, тем больше места."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "越高占用空间越多。"
           }
         }
       }
@@ -71167,70 +71039,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "继续下载"
-          }
-        }
-      }
-    },
-    "Keeps the episode you're up to and the next ones of each show you've downloaded, removing watched ones." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Behält die Folge, bei der du bist, und die nächsten jeder geladenen Serie und entfernt gesehene."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Conserva el episodio por el que vas y los siguientes de cada serie descargada, y elimina los ya vistos."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Conserve l’épisode où vous en êtes et les suivants de chaque série téléchargée, en supprimant ceux qui sont vus."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Tiene l’episodio a cui sei arrivato e i successivi di ogni serie scaricata, rimuovendo quelli visti."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ダウンロードした各シリーズで、視聴中のエピソードとその次のエピソードを残し、視聴済みのものを削除します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "다운로드한 각 시리즈에서 보고 있는 에피소드와 그다음 에피소드를 유지하고 시청한 것은 제거합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Bewaart de aflevering waar je bent en de volgende van elke gedownloade serie, en verwijdert bekeken afleveringen."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Mantém o episódio em que você está e os próximos de cada série baixada, removendo os já assistidos."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Хранит эпизод, на котором вы остановились, и следующие эпизоды каждого загруженного сериала, удаляя просмотренные."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "保留你看到的那一集以及每部已下载剧集的后续几集，并移除已观看的。"
           }
         }
       }
@@ -74179,134 +73987,6 @@
         }
       }
     },
-    "Mark Unwatched" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Als ungesehen markieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Marcar como no visto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Marquer comme non vu"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Segna come non visto"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "未視聴にする"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "시청 안 함으로 표시"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Markeer als niet bekeken"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Marcar como não assistido"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Отметить как непросмотренное"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "标记为未观看"
-          }
-        }
-      }
-    },
-    "Mark Watched" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Als gesehen markieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Marcar como visto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Marquer comme vu"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Segna come visto"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "視聴済みにする"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "시청함으로 표시"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Markeer als bekeken"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Marcar como assistido"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Отметить как просмотренное"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "标记为已观看"
-          }
-        }
-      }
-    },
     "Mark watched options" : {
       "localizations" : {
         "de" : {
@@ -76931,70 +76611,6 @@
         }
       }
     },
-    "New Content Added" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Neue Inhalte hinzugefügt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Contenido nuevo añadido"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Nouveau contenu ajouté"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Nuovi contenuti aggiunti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "新しいコンテンツが追加されました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "새 콘텐츠 추가됨"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Nieuwe inhoud toegevoegd"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Novo conteúdo adicionado"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Добавлен новый контент"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "已添加新内容"
-          }
-        }
-      }
-    },
     "New order each time you open Home; Continue Watching and Next Up stay on top. Turns off reordering." : {
       "localizations" : {
         "de" : {
@@ -77183,70 +76799,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "新播放列表"
-          }
-        }
-      }
-    },
-    "New to Arcfin, or want a refresher? Take the tour any time from Settings." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Neu bei Arcfin oder brauchst du eine Auffrischung? Starte die Tour jederzeit in den Einstellungen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "¿Eres nuevo en Arcfin o quieres repasar? Haz el recorrido cuando quieras desde Ajustes."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Nouveau sur Arcfin ou besoin d’un rappel ? Suivez la visite à tout moment depuis les Réglages."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sei nuovo su Arcfin o vuoi un ripasso? Fai il tour quando vuoi dalle Impostazioni."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfinを初めて使う方や、おさらいしたい方は、いつでも設定からツアーを見られます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin이 처음이거나 다시 살펴보고 싶다면 언제든지 설정에서 둘러보기를 시작하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Nieuw bij Arcfin of wil je het nog eens zien? Volg de rondleiding wanneer je wilt via Instellingen."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Novo no Arcfin ou quer relembrar? Faça o tour quando quiser em Ajustes."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Впервые в Arcfin или хотите освежить память? Знакомство всегда доступно в настройках."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "初次使用 Arcfin，或想再熟悉一下？随时可以在“设置”中开始导览。"
           }
         }
       }
@@ -85575,70 +85127,6 @@
         }
       }
     },
-    "Preparing download" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Download wird vorbereitet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Preparando descarga"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Préparation du téléchargement"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Preparazione del download"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ダウンロードを準備しています"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "다운로드 준비 중"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Download voorbereiden"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Preparando download"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Подготовка загрузки"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "正在准备下载"
-          }
-        }
-      }
-    },
     "Preparing…" : {
       "localizations" : {
         "de" : {
@@ -86147,70 +85635,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "描述文件"
-          }
-        }
-      }
-    },
-    "Progress That Keeps Up" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Fortschritt, der mithält"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Un progreso siempre al día"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Une progression toujours à jour"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Progressi sempre aggiornati"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "視聴状況がすぐ反映"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "바로 반영되는 시청 기록"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Voortgang die bijblijft"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Progresso sempre em dia"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Прогресс всегда актуален"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "进度即时更新"
           }
         }
       }
@@ -91463,70 +90887,6 @@
         }
       }
     },
-    "Scrub with the Touch Surface" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Spulen mit der Touch-Oberfläche"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Avanza con la superficie táctil"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Naviguez avec la surface tactile"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Scorri con la superficie touch"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "タッチサーフェスで移動"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "터치 표면으로 탐색"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Spoelen met het aanraakoppervlak"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Navegue com a superfície de toque"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Перемотка сенсорной поверхностью"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "用触控表面拖动进度"
-          }
-        }
-      }
-    },
     "Scrubbing Previews" : {
       "localizations" : {
         "de" : {
@@ -95365,70 +94725,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "当服务器有预告片时显示“播放预告片”。"
-          }
-        }
-      }
-    },
-    "Shows set to Keep Downloaded from their page download straight away, outside the storage budget, and stop under 2 GB free. Swipe to stop." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Serien, die auf ihrer Seite auf „Heruntergeladen behalten“ stehen, laden sofort, außerhalb des Speicherbudgets, und stoppen unter 2 GB freiem Speicher. Zum Stoppen wischen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Las series marcadas como Mantener descargado en su página se descargan enseguida, fuera del presupuesto de almacenamiento, y se detienen con menos de 2 GB libres. Desliza para detener."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Les séries réglées sur Garder téléchargé depuis leur page se téléchargent immédiatement, hors budget de stockage, et s’arrêtent sous 2 Go libres. Balayez pour arrêter."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Le serie impostate su Mantieni scaricato dalla loro pagina si scaricano subito, fuori dal budget di spazio, e si fermano sotto i 2 GB liberi. Scorri per fermarle."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ページで「ダウンロードを保持」に設定したシリーズはすぐにダウンロードされ、ストレージの上限には含まれず、空き容量が2 GB未満になると停止します。スワイプして停止します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "페이지에서 ‘다운로드 유지’로 설정한 시리즈는 저장 공간 예산과 별도로 즉시 다운로드되며, 여유 공간이 2GB 미만이면 멈춥니다. 쓸어서 중지하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Series die op hun pagina op ‘Gedownload houden’ staan, downloaden meteen, buiten het opslagbudget, en stoppen onder 2 GB vrij. Veeg om te stoppen."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Séries definidas como Manter baixado na página delas baixam na hora, fora do limite de armazenamento, e param com menos de 2 GB livres. Deslize para parar."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Сериалы, для которых на их странице включено «Хранить загруженным», загружаются сразу, вне бюджета хранилища, и останавливаются, когда свободно меньше 2 ГБ. Смахните, чтобы остановить."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在其页面上设为“保持下载”的剧集会立即下载，不计入存储空间预算，在剩余空间不足 2 GB 时停止。轻扫以停止。"
           }
         }
       }
@@ -102281,70 +101577,6 @@
         }
       }
     },
-    "This download will be converted on your server before downloading — this may take longer than the file size alone suggests." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dieser Download wird vor dem Laden auf deinem Server umgewandelt – das kann länger dauern, als die Dateigröße vermuten lässt."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Esta descarga se convertirá en tu servidor antes de descargarse; puede tardar más de lo que indica el tamaño del archivo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ce téléchargement sera converti sur votre serveur avant le téléchargement — cela peut prendre plus de temps que la taille du fichier ne le laisse penser."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Questo download verrà convertito sul tuo server prima dello scaricamento: potrebbe richiedere più tempo di quanto suggerisca la dimensione del file."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "このダウンロードはダウンロード前にサーバで変換されます。ファイルサイズから想像するより時間がかかる場合があります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 항목은 다운로드 전에 서버에서 변환됩니다. 파일 크기로 예상하는 것보다 오래 걸릴 수 있습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Deze download wordt op je server geconverteerd voor het downloaden — dit kan langer duren dan de bestandsgrootte doet vermoeden."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Este download será convertido no seu servidor antes de baixar — isso pode levar mais tempo do que o tamanho do arquivo sugere."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Перед загрузкой файл будет преобразован на сервере — это может занять больше времени, чем предполагает размер файла."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "此下载项会先在你的服务器上转换再下载——所需时间可能比文件大小显示的更长。"
-          }
-        }
-      }
-    },
     "This is downloaded — play the offline copy or stream from the server?" : {
       "localizations" : {
         "de" : {
@@ -102859,70 +102091,6 @@
         }
       }
     },
-    "Tidier Apple TV Pages" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Aufgeräumtere Apple TV-Seiten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Páginas de Apple TV más ordenadas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Des pages Apple TV plus nettes"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Pagine di Apple TV più ordinate"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "見やすくなったApple TVのページ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "더 깔끔해진 Apple TV 페이지"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Overzichtelijkere Apple TV-pagina’s"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Páginas da Apple TV mais organizadas"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Аккуратнее страницы на Apple TV"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "更整洁的 Apple TV 页面"
-          }
-        }
-      }
-    },
     "Title" : {
       "localizations" : {
         "de" : {
@@ -102983,70 +102151,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "标题"
-          }
-        }
-      }
-    },
-    "Title pages show where you stopped as soon as you close the player." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Titelseiten zeigen, wo du aufgehört hast, sobald du den Player schließt."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Las páginas de títulos muestran dónde lo dejaste en cuanto cierras el reproductor."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Les pages de titre indiquent où vous vous êtes arrêté dès que vous fermez le lecteur."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Le pagine dei titoli mostrano dove ti sei fermato appena chiudi il player."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "プレーヤーを閉じるとすぐに、作品ページに止めた位置が表示されます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "플레이어를 닫으면 작품 페이지에 멈춘 위치가 바로 표시됩니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Titelpagina’s laten zien waar je bent gestopt zodra je de speler sluit."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "As páginas de títulos mostram onde você parou assim que você fecha o player."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Страницы фильмов показывают, где вы остановились, сразу после закрытия плеера."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "关闭播放器后，作品页面会立即显示你停下的位置。"
           }
         }
       }
@@ -107787,70 +106891,6 @@
         }
       }
     },
-    "When a new movie or episode lands in your libraries." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Wenn ein neuer Film oder eine neue Folge in deinen Mediatheken landet."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Cuando llega una película o episodio nuevo a tus bibliotecas."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quand un nouveau film ou épisode arrive dans vos bibliothèques."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quando un nuovo film o episodio arriva nelle tue librerie."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "新しい映画やエピソードがライブラリに追加されたとき。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "새 영화나 에피소드가 보관함에 추가되었을 때."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Als er een nieuwe film of aflevering in je bibliotheken verschijnt."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quando um novo filme ou episódio chega às suas bibliotecas."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Когда в медиатеках появляется новый фильм или эпизод."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "当新电影或单集添加到你的媒体库时。"
-          }
-        }
-      }
-    },
     "When a Seerr request is approved, declined or available." : {
       "localizations" : {
         "de" : {
@@ -108551,70 +107591,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "白色"
-          }
-        }
-      }
-    },
-    "Who's watching on your server right now." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Wer gerade auf deinem Server schaut."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quién está viendo en tu servidor ahora mismo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Qui regarde sur votre serveur en ce moment."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Chi sta guardando sul tuo server in questo momento."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "現在サーバで視聴している人。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "지금 서버에서 시청 중인 사람입니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Wie er nu op je server kijkt."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quem está assistindo no seu servidor agora."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Кто сейчас смотрит на вашем сервере."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "当前正在你的服务器上观看的人。"
           }
         }
       }

@@ -41,6 +41,7 @@ struct TMDBSettingsView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
+                .formRowButton()
                 .disabled(model.key.trimmingCharacters(in: .whitespaces).isEmpty || model.isTesting)
 
                 if let result = model.testResult {
@@ -60,6 +61,7 @@ struct TMDBSettingsView: View {
                     } label: {
                         Text("Remove Key").frame(maxWidth: .infinity, alignment: .center)
                     }
+                    .formRowButton()
                 }
             }
         }

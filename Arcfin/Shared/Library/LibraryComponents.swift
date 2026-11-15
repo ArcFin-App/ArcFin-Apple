@@ -169,12 +169,12 @@ struct LibraryItemCard: View {
                     LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .top)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title)
-                            .font(.system(.caption2, design: .default, weight: .semibold))
+                            .contentFont(.caption2, design: .default, weight: .semibold)
                             .foregroundStyle(.white)
                             .lineLimit(2)
                         if let year {
                             Text(year)
-                                .font(.system(.caption2))
+                                .contentFont(.caption2)
                                 .foregroundStyle(.white.opacity(0.6))
                                 .lineLimit(2)
                         }
@@ -220,22 +220,22 @@ struct LibraryLinkRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
-                .font(.system(.title3))
+                .contentFont(.title3)
                 .foregroundStyle(DT.Color.accent)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(.subheadline, design: .default, weight: .semibold))
+                    .contentFont(.subheadline, design: .default, weight: .semibold)
                     .foregroundStyle(DT.Color.textPrimary)
                 Text(subtitle)
-                    .font(.system(.caption))
+                    .contentFont(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.system(.footnote))
+                .contentFont(.footnote)
                 .foregroundStyle(DT.Color.textSecondary)
         }
         .padding(.horizontal, 16)
