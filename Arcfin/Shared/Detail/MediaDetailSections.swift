@@ -51,8 +51,7 @@ struct DetailOverviewSection: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
-                // Lines across a whole iPad are too long to read comfortably.
-                .frame(maxWidth: 720, alignment: .leading)
+                .frame(maxWidth: PlatformMetrics.descriptionMaxWidth, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DT.Spacing.pagePad)

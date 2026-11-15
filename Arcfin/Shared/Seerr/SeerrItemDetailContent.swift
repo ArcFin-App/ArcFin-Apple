@@ -57,10 +57,10 @@ struct SeerrItemDetailContent: View {
 
                     if let overview = detail?.overview, !overview.isEmpty {
                         Text(overview)
-                            .font(.system(.footnote))
+                            .contentFont(.footnote)
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
                             .lineSpacing(3)
-                            .frame(maxWidth: 720, alignment: .leading)
+                            .frame(maxWidth: PlatformMetrics.descriptionMaxWidth, alignment: .leading)
                     }
 
                     if let seasons = detail?.seasons, !seasons.isEmpty {
