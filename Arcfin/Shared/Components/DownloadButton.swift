@@ -9,6 +9,8 @@ import AuthCore
 /// downloaded (checkmark, tap to delete).
 struct DownloadButton: View {
     let item: MediaItem
+    /// The tappable square. A Mac toolbar sizes its own buttons, so it passes a smaller one.
+    var hitSize: CGFloat = 44
 
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(AuthManager.self) private var authManager
@@ -68,7 +70,7 @@ struct DownloadButton: View {
                         .foregroundStyle(isDownloaded ? DT.Color.palette("10b981") : DT.Color.textPrimary)
                 }
             }
-            .frame(width: 30, height: 30)
+            .frame(width: min(30, hitSize), height: min(30, hitSize))
         }
         .accessibilityLabel(downloadAccessibilityLabel)
         .buttonStyle(.plain)
@@ -76,7 +78,7 @@ struct DownloadButton: View {
         // the 44pt default. This button is the trailing-most element in its row with
         // nothing else to its right, so the extra hit area only reclaims mis-taps at this
         // one edge rather than overlapping a neighboring control.
-        .frame(width: 44, height: 44)
+        .frame(width: hitSize, height: hitSize)
         .contentShape(Rectangle())
         .alert("Delete this download?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {

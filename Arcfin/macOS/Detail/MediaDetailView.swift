@@ -104,7 +104,7 @@ struct MediaDetailView: View {
             }
             if item.type == .movie || item.type == .episode {
                 ToolbarItem(placement: .primaryAction) {
-                    DownloadButton(item: item).help("Download")
+                    DownloadButton(item: item, hitSize: 24).help("Download")
                 }
             }
             if let shareURL {
