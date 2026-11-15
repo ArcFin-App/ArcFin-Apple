@@ -216,7 +216,7 @@ struct HomeView: View {
     // MARK: - Load
 
     private func load() async {
-        guard await model.loadShelves(force: false, authManager: authManager, mediaRepo: mediaRepo) else { return }
+        guard await model.loadShelves(force: false, shelves: orderedShelves, authManager: authManager, mediaRepo: mediaRepo) else { return }
         // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
         // backdrop transitions are instant with no load jump.
         let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),

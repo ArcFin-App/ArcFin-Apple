@@ -58,9 +58,10 @@ final class HomeModel {
     // MARK: - Loading
 
     /// Loads the library's shelves; false when nobody is signed in.
-    func loadShelves(force: Bool, authManager: AuthManager, mediaRepo: MediaRepository) async -> Bool {
+    /// `shelves` is Home's rows in their current order; they load one at a time in it.
+    func loadShelves(force: Bool, shelves: [HomeShelf], authManager: AuthManager, mediaRepo: MediaRepository) async -> Bool {
         guard case .authenticated(let cred) = authManager.state else { return false }
-        await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: force)
+        await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: force, shelfOrder: shelves)
         mediaRepo.prefetchQuickLookAssets(for: mediaRepo.continueWatching + mediaRepo.recentlyAdded)
         return true
     }

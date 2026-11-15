@@ -295,7 +295,7 @@ struct HomeView: View {
     // MARK: - Home data load
 
     private func loadHome(force: Bool = false) async {
-        guard await model.loadShelves(force: force, authManager: authManager, mediaRepo: mediaRepo) else { return }
+        guard await model.loadShelves(force: force, shelves: orderedVisibleShelves, authManager: authManager, mediaRepo: mediaRepo) else { return }
         // Everything the shelves already hold: titles in progress or queued up, favorites,
         // recent additions and what was watched lately, so search covers more than "latest".
         let indexable = mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.favorites
