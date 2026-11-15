@@ -23,6 +23,7 @@ If the report contains sensitive details, say so in your first email and we can 
 | Acknowledgement of your report | Within 48 hours |
 | First assessment: confirmed or not, and how severe | Within 7 days |
 | A fix on TestFlight for a confirmed critical or high-severity problem | Within 30 days |
+| The same fix on the App Store, once Arcfin is there | As soon as Apple's review allows, without waiting for the usual release cycle |
 | A fix for other confirmed problems | In a following release, usually within 90 days |
 
 Arcfin is maintained by one person, so these are targets rather than guarantees. You'll get an update at least every two weeks until the report is closed.
@@ -48,12 +49,13 @@ This covers Arcfin only. Servers and services that Arcfin connects to have their
 
 ## Supported versions
 
-Only the **latest build on TestFlight** gets security fixes. Older builds and versions don't; TestFlight updates testers automatically.
+Only the **latest build on TestFlight** and, from the first App Store release (0.5.1), the **latest App Store version** get security fixes. Older builds and versions don't. TestFlight and the App Store update people automatically.
 
 | Version | Supported |
 |---|---|
 | Latest TestFlight build | Yes |
-| Older builds | No |
+| Latest App Store version (from 0.5.1) | Yes |
+| Older builds and versions | No |
 
 ## Scope
 

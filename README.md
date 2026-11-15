@@ -1,10 +1,10 @@
 # Arcfin
 
-<img src="https://git.psmattas.com/ArcFin/ArcFin/media/branch/main/assets/badges/app-store-badge-black.svg" alt="App Store — coming with 1.0.0, not yet available" height="48" style="opacity:0.45">
+<img src="https://git.psmattas.com/ArcFin/ArcFin/media/branch/main/assets/badges/app-store-badge-black.svg" alt="App Store — coming with 0.5.1, not yet available" height="48" style="opacity:0.45">
 
 [<img src="https://git.psmattas.com/ArcFin/ArcFin/media/branch/main/assets/badges/testflight-badge.png" alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)
 
-> **Not yet on the App Store.** Arcfin is in beta on [TestFlight](https://testflight.apple.com/join/kkC58n2w). It goes to Apple for review at 1.0.0.
+> **Not yet on the App Store.** Arcfin is in beta on [TestFlight](https://testflight.apple.com/join/kkC58n2w). Version 0.5.1, the last beta, goes to Apple for review and becomes the first App Store release. See [How releases work](#how-releases-work).
 
 [![Build](https://git.psmattas.com/ArcFin/ArcFin/actions/workflows/build.yml/badge.svg?branch=main)](https://git.psmattas.com/ArcFin/ArcFin/actions?workflow=build.yml)
 ![Version](https://img.shields.io/badge/version-0.2.0-blue)
@@ -41,6 +41,28 @@ Internal testers get each build **as soon as it's uploaded**, before it's sent t
 
 - **Seats are limited.** To ask for one, email **[support.arcfin@psmattas.com](mailto:support.arcfin@psmattas.com)** with the Apple Account email to invite and the devices you'd test on.
 - **Expect rough edges.** Internal builds are the newest and least tested, so please report problems with **Settings › About › Report a Problem**.
+
+### How releases work
+
+**Until the App Store release**
+
+- **0.5.0** brings the last big batch of features.
+- **0.5.1** is the last beta. It adds no new features: it's for stability fixes, and tests covering everything Arcfin does.
+- Once testers are happy with 0.5.1, it goes to Apple for review. When Apple approves it, that build is Arcfin's first App Store release.
+
+**After the App Store release**
+
+Arcfin moves to a rolling cycle. New features and improvements go through three stages:
+
+1. **Internal builds** go to the [internal beta](#internal-beta) first, as soon as they're ready. Anyone can ask for a seat.
+2. **Nightly builds** go to the [public beta](#public-beta) on TestFlight. It's the same invite link, so nothing changes if you've already joined.
+3. **App Store updates** reach everyone once both beta groups have used a build without problems.
+
+**Security fixes** skip the wait. They go out as fast as the targets in [SECURITY.md](SECURITY.md#what-happens-next), on TestFlight and on the App Store.
+
+### Thank you, testers
+
+Between 100 and 150 people have been testing Arcfin on TestFlight, reporting bugs and suggesting ideas. Arcfin wouldn't be what it is without you. Thank you.
 
 ## Features
 
@@ -123,7 +145,7 @@ Code, translations, bug reports and testing are all welcome.
 
 - **Code:** new here? Pick an issue from [Start here: good first issues](https://git.psmattas.com/ArcFin/ArcFin/issues/255). Then read [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, the project's conventions and the pull request process. [ARCHITECTURE.md](ARCHITECTURE.md) explains how the app fits together.
 - **Translations:** Arcfin's first ten translations were machine made and need native speakers to check them. See [Translating Arcfin](CONTRIBUTING.md#translating-arcfin).
-- **Testing:** join the [TestFlight beta](https://testflight.apple.com/join/kkC58n2w) and report what you find.
+- **Testing:** join the [TestFlight beta](https://testflight.apple.com/join/kkC58n2w) and report what you find. See [How releases work](#how-releases-work) for what each beta gets.
 
 Every commit needs a DCO sign-off (`git commit -s`). Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
