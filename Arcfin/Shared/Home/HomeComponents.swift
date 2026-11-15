@@ -232,7 +232,7 @@ struct HomeAvatar: View {
 
     private var initialsView: some View {
         Text(authManager.state.displayInitials)
-            .font(.system(.caption2, design: .default, weight: .bold))
+            .contentFont(.caption2, design: .default, weight: .bold)
             .foregroundStyle(DT.Color.onAccent)
     }
 }
@@ -259,16 +259,16 @@ struct HomeConnectionBanner: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 Image(systemName: "wifi.slash")
-                    .font(.system(.title3))
+                    .contentFont(.title3)
                     .foregroundStyle(DT.Color.palette("f59e0b"))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(mediaRepo.isLoading ? "Still trying to reach your server" : "Can't reach your server")
-                        .font(.system(.footnote, design: .default, weight: .semibold))
+                        .contentFont(.footnote, design: .default, weight: .semibold)
                         .foregroundStyle(DT.Color.textPrimary)
                     Text(mediaRepo.isLoading
                          ? "This is taking longer than usual. Your downloads work without a connection."
                          : "Check your connection or Server Settings, then retry.")
-                        .font(.system(.caption))
+                        .contentFont(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
@@ -279,7 +279,7 @@ struct HomeConnectionBanner: View {
                         guard case .authenticated(let cred) = authManager.state else { return }
                         Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: true) }
                     }
-                    .font(.system(.footnote, design: .default, weight: .semibold))
+                    .contentFont(.footnote, design: .default, weight: .semibold)
                     .foregroundStyle(DT.Color.accent)
                 }
             }
@@ -290,7 +290,7 @@ struct HomeConnectionBanner: View {
                     Image(systemName: "arrow.down.circle.fill")
                     Text(hasDownloads ? "Watch Downloads Instead" : "Turn On Offline Mode")
                 }
-                .font(.system(.caption, design: .default, weight: .semibold))
+                .contentFont(.caption, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.accent)
             }
         }

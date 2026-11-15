@@ -133,7 +133,7 @@ struct MediaDetailTitleBlock: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
-                    .font(.system(metrics.titleStyle, design: .default, weight: .heavy))
+                    .contentFont(metrics.titleStyle, design: .default, weight: .heavy)
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.5)
                     .lineLimit(3)
@@ -164,42 +164,42 @@ private struct DetailMetaRow: View {
         HStack(spacing: 6) {
             if let year = item.productionYear {
                 Text(String(year))
-                    .font(.system(.caption, design: .default))
+                    .contentFont(.caption, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = detail?.officialRating, !rating.isEmpty {
-                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).contentFont(.caption, design: .default)
                 Text(rating)
-                    .font(.system(.caption2, design: .default, weight: .semibold))
+                    .contentFont(.caption2, design: .default, weight: .semibold)
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
             }
             if let mins = detail?.runtimeMinutes {
-                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).contentFont(.caption, design: .default)
                 Text("\(mins)m")
-                    .font(.system(.caption, design: .default))
+                    .contentFont(.caption, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
             }
             if let rating = item.communityRating {
-                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).contentFont(.caption, design: .default)
                 HStack(spacing: 3) {
                     Image(systemName: "star.fill")
-                        .font(.system(.caption2))
+                        .contentFont(.caption2)
                         .foregroundStyle(DT.Color.accent)
                     Text(String(format: "%.1f", rating))
-                        .font(.system(.caption2, design: .default, weight: .bold))
+                        .contentFont(.caption2, design: .default, weight: .bold)
                         .foregroundStyle(DT.Color.accent)
                 }
             }
             if let critics = detail?.criticRating {
-                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).font(.system(.caption, design: .default))
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).contentFont(.caption, design: .default)
                 HStack(spacing: 3) {
                     // Positive at 60% and up, the usual critics threshold.
                     Image(systemName: critics >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill")
-                        .font(.system(.caption2))
+                        .contentFont(.caption2)
                     Text(Double(critics) / 100, format: .percent.precision(.fractionLength(0)))
-                        .font(.system(.caption2, design: .default, weight: .bold))
+                        .contentFont(.caption2, design: .default, weight: .bold)
                 }
                 .foregroundStyle(critics >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"))
                 .accessibilityElement(children: .ignore)
@@ -243,9 +243,9 @@ private struct DetailAwardsRow: View {
         }
         return HStack(alignment: .firstTextBaseline, spacing: 4) {
             Image(systemName: "trophy.fill")
-                .font(.system(.caption2))
+                .contentFont(.caption2)
             Text(label)
-                .font(.system(.caption2, design: .default, weight: .semibold))
+                .contentFont(.caption2, design: .default, weight: .semibold)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
@@ -262,7 +262,7 @@ private struct DetailQualityBadge: View {
 
     var body: some View {
         Text(label)
-            .font(.system(.caption2, design: .default, weight: .bold))
+            .contentFont(.caption2, design: .default, weight: .bold)
             .tracking(0.5)
             .foregroundStyle(color)
             .padding(.horizontal, 6).padding(.vertical, 2)

@@ -92,12 +92,12 @@ private struct ShelfSeeAllCard: View {
             .shadow(color: hovered ? DT.Color.accent.opacity(0.2) : .clear, radius: hovered ? 12 : 0)
 
             Text(title)
-                .font(.system(.caption, design: .default, weight: .semibold))
+                .contentFont(.caption, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(.caption2, design: .default))
+                    .contentFont(.caption2, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)
             }

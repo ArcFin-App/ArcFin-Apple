@@ -21,7 +21,7 @@ struct RecentSearchesList<Row: View>: View {
                         .accessibilityAddTraits(.isHeader)
                     Spacer()
                     Button("Clear", action: clear)
-                        .font(.system(.footnote, weight: .semibold))
+                        .contentFont(.footnote, weight: .semibold)
                         .foregroundStyle(DT.Color.accent)
                 }
                 ForEach(terms, id: \.self) { term in
@@ -43,7 +43,7 @@ struct SearchRecentLabel: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .accessibilityHidden(true)
             Text(term)
-                .font(.system(.body))
+                .contentFont(.body)
                 .foregroundStyle(DT.Color.textPrimary)
             Spacer()
         }
@@ -76,7 +76,7 @@ struct SearchingRow: View {
         HStack(spacing: 10) {
             ProgressView()
             Text(text)
-                .font(.system(.subheadline))
+                .contentFont(.subheadline)
                 .foregroundStyle(DT.Color.textSecondary)
         }
         .padding(.horizontal, DT.Spacing.pagePad)
@@ -94,7 +94,7 @@ struct SearchSectionHeader: View {
                 .foregroundStyle(DT.Color.textPrimary)
             if let count {
                 Text("\(count)")
-                    .font(.system(.subheadline, weight: .semibold))
+                    .contentFont(.subheadline, weight: .semibold)
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
@@ -127,15 +127,15 @@ struct SearchTopResultCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("TOP RESULT")
-                    .font(.system(.caption2, weight: .bold))
+                    .contentFont(.caption2, weight: .bold)
                     .tracking(1)
                     .foregroundStyle(.white.opacity(0.75))
                 Text(item.name)
-                    .font(.system(.title2, weight: .bold))
+                    .contentFont(.title2, weight: .bold)
                     .foregroundStyle(.white)
                     .lineLimit(2)
                 Text(details.joined(separator: " · "))
-                    .font(.system(.footnote, weight: .medium))
+                    .contentFont(.footnote, weight: .medium)
                     .foregroundStyle(.white.opacity(0.8))
                     .lineLimit(1)
             }
@@ -184,7 +184,7 @@ struct SearchDiscoverSection<Row: View>: View {
         VStack(alignment: .leading, spacing: DT.Spacing.sm) {
             HStack(spacing: 10) {
                 Image(systemName: "sparkles")
-                    .font(.system(.subheadline, weight: .bold))
+                    .contentFont(.subheadline, weight: .bold)
                     .foregroundStyle(DT.Color.onAccent)
                     .frame(width: 30, height: 30)
                     .background(LinearGradient(colors: [DT.Color.accentDeep, DT.Color.accent],
@@ -196,7 +196,7 @@ struct SearchDiscoverSection<Row: View>: View {
                         .font(DT.Font.sectionTitle)
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("Not in your library yet · from Seerr")
-                        .font(.system(.caption))
+                        .contentFont(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer(minLength: 0)
@@ -242,15 +242,15 @@ struct SearchDiscoverRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.title)
-                    .font(.system(.subheadline, weight: .semibold))
+                    .contentFont(.subheadline, weight: .semibold)
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(2)
                 Text([item.mediaType == .movie ? "Movie" : "Show", item.year].compactMap { $0 }.joined(separator: " · "))
-                    .font(.system(.caption, weight: .medium))
+                    .contentFont(.caption, weight: .medium)
                     .foregroundStyle(DT.Color.textSecondary)
                 if let overview = item.overview, !overview.isEmpty {
                     Text(overview)
-                        .font(.system(.caption))
+                        .contentFont(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                         .lineLimit(2)
                 }
@@ -273,13 +273,13 @@ private struct SearchDiscoverStatus: View {
     var body: some View {
         if let status = item.availabilityStatus, status != .unknown {
             Text(status == .pending || status == .processing ? "Requested" : status.label)
-                .font(.system(.caption2, weight: .bold))
+                .contentFont(.caption2, weight: .bold)
                 .foregroundStyle(DT.Color.palette(status.colorHex))
                 .padding(.horizontal, 8).padding(.vertical, 4)
                 .background(DT.Color.palette(status.colorHex).opacity(0.15), in: Capsule())
         } else {
             Text("Request")
-                .font(.system(.caption, weight: .bold))
+                .contentFont(.caption, weight: .bold)
                 .foregroundStyle(DT.Color.onAccent)
                 .padding(.horizontal, 12).padding(.vertical, 6)
                 .background(DT.Color.accent, in: Capsule())
@@ -295,7 +295,7 @@ struct SearchClassicDiscover<Content: View>: View {
         VStack(alignment: .leading, spacing: DT.Spacing.sectionGap) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(.footnote, weight: .semibold))
+                    .contentFont(.footnote, weight: .semibold)
                     .foregroundStyle(DT.Color.accent)
                 Text("Discover")
                     .font(DT.Font.cardTitle)
@@ -343,12 +343,12 @@ struct SearchResultCard: View {
             .shadow(color: highlighted ? DT.Color.accent.opacity(isFocused ? 0.4 : 0.2) : .clear, radius: highlighted ? 12 : 0)
 
             Text(title)
-                .font(.system(.caption, design: .default, weight: .semibold))
+                .contentFont(.caption, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(1)
             // Every card keeps the subtitle's line, so a row stays level without one.
             Text(subtitle ?? "")
-                .font(.system(.caption2))
+                .contentFont(.caption2)
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineLimit(1, reservesSpace: true)
         }

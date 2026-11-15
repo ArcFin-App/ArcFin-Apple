@@ -32,7 +32,7 @@ struct PosterCard: View {
             // scale/glow treatment without needing an icon.
             if hovered {
                 Image(systemName: "play.fill")
-                    .font(.system(.callout, weight: .bold))
+                    .contentFont(.callout, weight: .bold)
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(.black.opacity(0.45), in: Circle())
@@ -62,13 +62,13 @@ struct PosterCard: View {
                 Spacer()
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(Self.titleStyle, design: .default, weight: .semibold))
+                        .contentFont(Self.titleStyle, design: .default, weight: .semibold)
                         .foregroundStyle(.white)
                         .lineLimit(2)
                         .shadow(color: .black.opacity(0.8), radius: 2)
                     if let subtitle {
                         Text(subtitle)
-                            .font(.system(Self.subtitleStyle, design: .default, weight: .medium))
+                            .contentFont(Self.subtitleStyle, design: .default, weight: .medium)
                             .foregroundStyle(.white.opacity(0.7))
                             .lineLimit(1)
                             .truncationMode(.tail)

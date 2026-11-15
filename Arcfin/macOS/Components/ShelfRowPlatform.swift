@@ -9,7 +9,7 @@ struct ShelfSeeAllButton: View {
     var body: some View {
         Button("See All", action: action)
             .buttonStyle(.plain)
-            .font(.system(.caption2, design: .default, weight: .semibold))
+            .contentFont(.caption2, design: .default, weight: .semibold)
             .foregroundStyle(DT.Color.textPrimary)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)

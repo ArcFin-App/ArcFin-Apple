@@ -20,4 +20,9 @@ enum PlatformMetrics {
         // 23 pt is tvOS's smallest text style; anything under it is unreadable from the couch.
         max(size * DT.Scale.font, 23)
     }
+
+    /// Browsing text (shelves, cards, title pages): the system text style, with Dynamic Type.
+    static func contentFont(_ style: Font.TextStyle, design: Font.Design?, weight: Font.Weight?) -> Font {
+        .system(style, design: design, weight: weight)
+    }
 }

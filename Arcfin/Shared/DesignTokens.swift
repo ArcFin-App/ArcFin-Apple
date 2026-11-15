@@ -78,23 +78,23 @@ public enum DT {
 
     public enum Font {
         /// SF Pro Display Bold — hero banner title
-        public static let hero          = SwiftUI.Font.system(.largeTitle,  design: .default, weight: .bold)
+        public static let hero          = PlatformMetrics.contentFont(.largeTitle, design: .default, weight: .bold)
         /// SF Pro Display Semibold — section headers
-        public static let sectionTitle  = SwiftUI.Font.system(.title2,      design: .default, weight: .semibold)
+        public static let sectionTitle  = PlatformMetrics.contentFont(.title2, design: .default, weight: .semibold)
         /// SF Pro Display Medium — card titles
-        public static let cardTitle     = SwiftUI.Font.system(.headline,    design: .default, weight: .medium)
+        public static let cardTitle     = PlatformMetrics.contentFont(.headline, design: .default, weight: .medium)
         /// SF Pro Text Regular — body copy
-        public static let body          = SwiftUI.Font.system(.body,        design: .default, weight: .regular)
+        public static let body          = PlatformMetrics.contentFont(.body, design: .default, weight: .regular)
         /// SF Pro Text Regular — supporting body
-        public static let callout       = SwiftUI.Font.system(.callout,     design: .default, weight: .regular)
+        public static let callout       = PlatformMetrics.contentFont(.callout, design: .default, weight: .regular)
         /// SF Pro Text Regular — captions, metadata
-        public static let caption       = SwiftUI.Font.system(.caption,     design: .default, weight: .regular)
+        public static let caption       = PlatformMetrics.contentFont(.caption, design: .default, weight: .regular)
         /// SF Pro Text Regular — micro metadata
-        public static let caption2      = SwiftUI.Font.system(.caption2,    design: .default, weight: .regular)
+        public static let caption2      = PlatformMetrics.contentFont(.caption2, design: .default, weight: .regular)
         /// SF Pro Text Semibold — button labels
-        public static let button        = SwiftUI.Font.system(.subheadline, design: .default, weight: .semibold)
+        public static let button        = PlatformMetrics.contentFont(.subheadline, design: .default, weight: .semibold)
         /// SF Pro Text Medium — tab bar labels
-        public static let tabLabel      = SwiftUI.Font.system(.caption2,    design: .default, weight: .medium)
+        public static let tabLabel      = PlatformMetrics.contentFont(.caption2, design: .default, weight: .medium)
     }
 
     // MARK: - Spacing
@@ -236,6 +236,12 @@ private struct ScaledSystemFont: ViewModifier {
 }
 
 extension View {
+    /// Text on browsing screens: shelves, cards and title pages. The system text style on
+    /// iPhone, iPad and Apple TV; a step larger on the Mac (see `PlatformMetrics.contentFont`).
+    func contentFont(_ style: Font.TextStyle, design: Font.Design? = nil, weight: Font.Weight? = nil) -> some View {
+        font(PlatformMetrics.contentFont(style, design: design, weight: weight))
+    }
+
     /// The player, splash and lock screen are dark in either system appearance: video and
     /// artwork read best on black. Set on the view's own subtree, not the window, so the rest
     /// of the app keeps following the system.
