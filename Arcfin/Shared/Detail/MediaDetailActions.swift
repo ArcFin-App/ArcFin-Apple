@@ -276,12 +276,20 @@ struct DetailSeriesSection: View {
 /// Add to a playlist, find subtitles, and keep a show's next episodes downloaded.
 struct DetailMoreMenu: View {
     @Environment(DownloadManager.self) private var downloadManager
+    @Environment(AuthManager.self) private var authManager
     let model: MediaDetailModel
     let searchSubtitles: () -> Void
 
     var body: some View {
         let item = model.item
+        let isWatched = model.isWatched
         Menu {
+            if item.type == .movie || item.type == .episode {
+                Button { model.markWatched(!isWatched, authManager: authManager) } label: {
+                    Label(isWatched ? "Mark as Unwatched" : "Mark as Watched", systemImage: isWatched ? "eye.slash" : "checkmark")
+                }
+                Divider()
+            }
             Button { PlaylistStore.shared.addingItem = item } label: {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }
