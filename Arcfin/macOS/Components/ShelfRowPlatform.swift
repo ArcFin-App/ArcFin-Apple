@@ -9,10 +9,10 @@ struct ShelfSeeAllButton: View {
     var body: some View {
         Button("See All", action: action)
             .buttonStyle(.plain)
-            .contentFont(.caption2, design: .default, weight: .semibold)
+            .contentFont(.subheadline, design: .default, weight: .semibold)
             .foregroundStyle(DT.Color.textPrimary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
             // Untinted: tint is kept for the page's main action, not every shelf's.
             .glassEffect(.regular.interactive(), in: .capsule)
             .frame(minHeight: 44)
