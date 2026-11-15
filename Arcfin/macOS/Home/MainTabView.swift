@@ -48,10 +48,14 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
-            // The system toggle sits at the top of the sidebar, which is too narrow for it
-            // beside the window buttons, so macOS moved it to the toolbar's overflow menu at
-            // the far right. Arcfin's own sits at the leading edge instead.
-            .toolbar(removing: .sidebarToggle)
+            // The tab sidebar's own toggle ends up in the toolbar's overflow menu at the far
+            // right, and `.toolbar(removing: .sidebarToggle)` doesn't reach it, so it's taken
+            // off the window's toolbar and Arcfin's own sits at the leading edge instead.
+            .background(WindowAccessor { SystemSidebarToggle.remove(from: $0) })
+            // Artwork runs up under a clear toolbar, as in Apple's own media apps, with a soft
+            // fade at the edge rather than the default hard strip.
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+            .scrollEdgeEffectStyle(.soft, for: .top)
             .toolbar {
                 ToolbarItem(placement: .navigation) {
                     Button {
@@ -130,4 +134,38 @@ struct MainTabView: View {
         .environment(AuthManager())
         .environment(MediaRepository())
         .environment(SeerrRepository())
+}
+
+/// Takes the tab sidebar's own toggle off the window's toolbar, and again whenever SwiftUI
+/// rebuilds the toolbar (switching tabs does).
+@MainActor
+private enum SystemSidebarToggle {
+    private static var observer: NSObjectProtocol?
+
+    static func remove(from window: NSWindow?) {
+        if let toolbar = window?.toolbar { removeItems(from: toolbar) }
+        guard observer == nil else { return }
+        observer = NotificationCenter.default.addObserver(forName: NSToolbar.willAddItemNotification, object: nil, queue: .main) { note in
+            guard let item = note.userInfo?["item"] as? NSToolbarItem, isSystemToggle(item),
+                  let toolbar = note.object as? NSToolbar
+            else { return }
+            // Still being added at this point; take it off once it's in.
+            MainActor.assumeIsolated {
+                DispatchQueue.main.async { removeItems(from: toolbar) }
+            }
+        }
+    }
+
+    private static func removeItems(from toolbar: NSToolbar) {
+        for index in toolbar.items.indices.reversed() where isSystemToggle(toolbar.items[index]) {
+            toolbar.removeItem(at: index)
+        }
+    }
+
+    private nonisolated static func isSystemToggle(_ item: NSToolbarItem) -> Bool {
+        item.itemIdentifier == .toggleSidebar
+            || item.itemIdentifier.rawValue.localizedCaseInsensitiveContains("togglesidebar")
+            || item.itemIdentifier.rawValue.localizedCaseInsensitiveContains("sidebartoggle")
+            || item.action == #selector(NSSplitViewController.toggleSidebar(_:))
+    }
 }
