@@ -18,6 +18,9 @@ struct TitleInsights: View {
     /// Space under the section, left out while it has nothing to show so an empty one
     /// doesn't open a gap in a stack of sections.
     var spacingBelow: CGFloat = 0
+    /// The page margin for the scores row, set inside its scroll view so a chip that grows
+    /// when focused isn't cut off at the edges.
+    var rowInset: CGFloat = 0
 
     enum Part { case ratings, details }
 
@@ -86,7 +89,9 @@ struct TitleInsights: View {
                               value: String(format: "%.1f", imdb), label: "IMDb", url: ratings.imdbURL)
                 }
             }
+            .padding(.horizontal, rowInset)
         }
+        .scrollClipDisabled(rowInset > 0)
         .shelfScrollButtons()
     }
 

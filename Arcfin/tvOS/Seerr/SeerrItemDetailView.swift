@@ -223,8 +223,7 @@ struct SeerrItemDetailView: View {
 
     private var belowFold: some View {
         VStack(alignment: .leading, spacing: 56) {
-            TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .ratings)
-                .padding(.horizontal, 80)
+            TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .ratings, rowInset: 80)
                 .focusSection()
             if let seasons = detail?.seasons, !seasons.isEmpty { seasonsRow(seasons) }
             if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
