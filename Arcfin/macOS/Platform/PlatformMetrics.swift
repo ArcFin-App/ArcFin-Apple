@@ -5,6 +5,8 @@ import SwiftUI
 /// The design tokens that differ on this platform; `DT` reads them.
 enum PlatformMetrics {
     /// How wide a title's description may run. The window sets it here; it's resized at will.
+    /// Which platform's components the Licenses screen lists.
+    static let licensePlatform = "macOS"
     static let descriptionMaxWidth: CGFloat = .infinity
     static let pagePad: CGFloat = 28
     static let shelfGap: CGFloat = 16

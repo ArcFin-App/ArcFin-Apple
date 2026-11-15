@@ -5441,6 +5441,70 @@
         }
       }
     },
+    "Apple Standard EULA" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple-Standard-EULA"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "EULA estándar de Apple"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CLUF standard d’Apple"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "EULA standard di Apple"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple標準EULA"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple 표준 EULA"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Standaard-EULA van Apple"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "EULA padrão da Apple"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Стандартное лицензионное соглашение Apple"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple 标准 EULA"
+          }
+        }
+      }
+    },
     "Apple VideoToolbox" : {
       "localizations" : {
         "de" : {
@@ -5825,6 +5889,70 @@
         }
       }
     },
+    "Arcfin Name and Logo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin-Name und -Logo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nombre y logotipo de Arcfin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nom et logo Arcfin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nome e logo di Arcfin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinの名称とロゴ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 이름 및 로고"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Naam en logo van Arcfin"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nome e logotipo do Arcfin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Название и логотип Arcfin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 名称和标志"
+          }
+        }
+      }
+    },
     "Arcfin's Dock icon counts what's playing on the server." : {
       "localizations" : {
         "de" : {
@@ -5885,6 +6013,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Dock 中的 Arcfin 图标会显示服务器上正在播放的数量。"
+          }
+        }
+      }
+    },
+    "Arcfin's own licence, trademark policy and legal terms. The website has the current, binding version of each." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfins eigene Lizenz, Markenrichtlinie und Rechtstexte. Die aktuelle, verbindliche Fassung steht jeweils auf der Website."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La licencia, la política de marca y los términos legales de Arcfin. La versión vigente y vinculante de cada uno está en el sitio web."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La licence, la politique de marque et les conditions juridiques d’Arcfin. La version en vigueur, qui fait foi, de chacun se trouve sur le site web."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La licenza, la politica sul marchio e i termini legali di Arcfin. La versione attuale e vincolante di ciascuno è sul sito web."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin自身のライセンス、商標ポリシー、法的条項です。それぞれの最新かつ正式な版はウェブサイトにあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 자체의 라이선스, 상표 정책 및 법적 약관입니다. 각 문서의 현재 구속력 있는 버전은 웹사이트에 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De eigen licentie, het merkbeleid en de juridische voorwaarden van Arcfin. De actuele, bindende versie van elk staat op de website."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A licença, a política de marca e os termos legais do próprio Arcfin. A versão atual e vinculante de cada um está no site."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Собственная лицензия Arcfin, политика в отношении товарного знака и юридические условия. Действующая обязательная версия каждого документа — на сайте."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 自己的许可、商标政策和法律条款。每份文件的现行有效版本以网站为准。"
           }
         }
       }
@@ -20097,6 +20289,70 @@
         }
       }
     },
+    "Legal & Licenses" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rechtliches & Lizenzen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Avisos legales y licencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mentions légales et licences"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Note legali e licenze"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "法的情報とライセンス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "법적 고지 및 라이선스"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Juridisch en licenties"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Informações legais e licenças"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Правовая информация и лицензии"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "法律信息与许可"
+          }
+        }
+      }
+    },
     "Library Access" : {
       "localizations" : {
         "de" : {
@@ -20157,6 +20413,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "资料库访问权限"
+          }
+        }
+      }
+    },
+    "License" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lizenz"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Licencia"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Licence"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Licenza"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ライセンス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "라이선스"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Licentie"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Licença"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Лицензия"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "许可"
           }
         }
       }
@@ -24701,6 +25021,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "视频打开方向"
+          }
+        }
+      }
+    },
+    "Open-source and third-party components Arcfin includes. Each shows its full licence, as written, and the exact version Arcfin is built with." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Open-Source- und Drittanbieter-Komponenten in Arcfin. Jede zeigt ihre vollständige Lizenz im Originalwortlaut und die genaue Version, mit der Arcfin gebaut ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Componentes de código abierto y de terceros que incluye Arcfin. Cada uno muestra su licencia completa, tal como está escrita, y la versión exacta con la que se compila Arcfin."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Composants open source et tiers inclus dans Arcfin. Chacun affiche sa licence complète, telle qu’elle est rédigée, et la version exacte avec laquelle Arcfin est compilé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Componenti open source e di terze parti inclusi in Arcfin. Ognuno mostra la licenza completa, così come è scritta, e la versione esatta con cui è compilato Arcfin."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinに含まれるオープンソースおよびサードパーティ製コンポーネント。それぞれのライセンス全文を原文のまま表示し、Arcfinのビルドに使われている正確なバージョンを示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin에 포함된 오픈 소스 및 타사 구성 요소입니다. 각 항목은 전체 라이선스를 원문 그대로 보여 주며, Arcfin 빌드에 사용된 정확한 버전도 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opensource- en externe onderdelen in Arcfin. Bij elk staat de volledige licentie, zoals die is geschreven, en de precieze versie waarmee Arcfin is gebouwd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Componentes de código aberto e de terceiros incluídos no Arcfin. Cada um mostra a licença completa, como foi escrita, e a versão exata com que o Arcfin é compilado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Компоненты с открытым исходным кодом и сторонние компоненты в Arcfin. Для каждого показана полная лицензия в исходном виде и точная версия, с которой собран Arcfin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 包含的开源和第三方组件。每项都显示其完整的原文许可，以及构建 Arcfin 所用的确切版本。"
           }
         }
       }
@@ -36481,6 +36865,70 @@
         }
       }
     },
+    "Source Code" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quellcode"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Código fuente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Code source"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Codice sorgente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ソースコード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "소스 코드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Broncode"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Código-fonte"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Исходный код"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "源代码"
+          }
+        }
+      }
+    },
     "Space Saver" : {
       "localizations" : {
         "de" : {
@@ -44797,6 +45245,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "一起观看（SyncPlay）"
+          }
+        }
+      }
+    },
+    "Website" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Website"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sitio web"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Site web"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sito web"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ウェブサイト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "웹사이트"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Website"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Site"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сайт"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "网站"
           }
         }
       }
@@ -72319,134 +72831,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "媒体库屏幕保护程序"
-          }
-        }
-      }
-    },
-    "Licenses & Third-Party Notices" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Lizenzen & Hinweise zu Drittanbietern"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licencias y avisos de terceros"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licences et mentions de tiers"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licenze e note di terze parti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ライセンスとサードパーティの表記"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "라이선스 및 타사 고지"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licenties en kennisgevingen van derden"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licenças e avisos de terceiros"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Лицензии и сведения о сторонних компонентах"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "许可与第三方声明"
-          }
-        }
-      }
-    },
-    "Licenses and other third-party components Arcfin uses." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Lizenzen und andere Komponenten von Drittanbietern, die Arcfin nutzt."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licencias y otros componentes de terceros que usa Arcfin."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licences et autres composants tiers utilisés par Arcfin."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licenze e altri componenti di terze parti usati da Arcfin."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfinが使用しているライセンスとその他のサードパーティ製コンポーネント。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin이 사용하는 라이선스와 기타 타사 구성 요소입니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licenties en andere onderdelen van derden die Arcfin gebruikt."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Licenças e outros componentes de terceiros que o Arcfin usa."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Лицензии и другие сторонние компоненты, которые использует Arcfin."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin 使用的许可和其他第三方组件。"
           }
         }
       }

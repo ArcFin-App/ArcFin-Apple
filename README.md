@@ -194,4 +194,4 @@ The **Arcfin name, logo and app icon aren't covered by the license**. Forks are 
 
 ## Acknowledgements
 
-Arcfin builds on the work of the [Jellyfin](https://jellyfin.org) project and these open-source projects, among others: [AetherEngine](https://github.com/superuser404notfound/AetherEngine), [SwiftVLC](https://github.com/harflabs/SwiftVLC) and [Nuke](https://github.com/kean/Nuke). The full list, with licenses, is in the app under **Settings › About › Licenses & Third-Party Notices**.
+Arcfin builds on the work of the [Jellyfin](https://jellyfin.org) project and these open-source projects, among others: [AetherEngine](https://github.com/superuser404notfound/AetherEngine), [SwiftVLC](https://github.com/harflabs/SwiftVLC) and [Nuke](https://github.com/kean/Nuke). The full list, with licenses, is in the app under **Settings › About › Legal & Licenses**, along with the Privacy Policy, Terms of Use and Data Protection notice.
