@@ -182,6 +182,7 @@ struct SettingsView: View {
                     }
                 }
                 QuickConnectRow()
+                ScanAppleTVCodeRow()
             } footer: {
                 Text("Enter the code shown on another device to sign it in instantly using this account.")
                     .font(.caption)

@@ -8,30 +8,8 @@ import VisionKit
 struct QuickConnectRow: View {
     @Environment(AuthManager.self) private var authManager
     @State private var quickConnect = QuickConnectModel()
-    @State private var isScanning = false
 
     var body: some View {
-        codeRow
-            .listRowSeparator(.visible, edges: .bottom)
-        // Its own row: a second button inside the code's row was hard to hit, and a tap on the
-        // row could reach the wrong one.
-        if QuickConnectScanner.isAvailable {
-            Button { isScanning = true } label: {
-                Label {
-                    Text("Scan Apple TV Code")
-                        .foregroundStyle(DT.Color.textPrimary)
-                } icon: {
-                    Image(systemName: "qrcode.viewfinder")
-                        .foregroundStyle(DT.Color.accent)
-                        .frame(width: 22)
-                }
-            }
-            .listRowSeparator(.visible, edges: .top)
-            .sheet(isPresented: $isScanning) { scannerSheet }
-        }
-    }
-
-    private var codeRow: some View {
         VStack(alignment: .leading, spacing: 6) {
             // A Label, as the Your Profile row above uses, so the icon gets the same size.
             Label {
@@ -58,6 +36,28 @@ struct QuickConnectRow: View {
                     .font(.caption)
                     .foregroundStyle(quickConnectResult.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("F43F5E"))
             }
+        }
+    }
+}
+
+/// Settings › Scan Apple TV Code: its own row under Quick Connect, so it's easy to hit and
+/// a tap can't reach Authorize instead.
+struct ScanAppleTVCodeRow: View {
+    @State private var isScanning = false
+
+    var body: some View {
+        if QuickConnectScanner.isAvailable {
+            Button { isScanning = true } label: {
+                Label {
+                    Text("Scan Apple TV Code")
+                        .foregroundStyle(DT.Color.textPrimary)
+                } icon: {
+                    Image(systemName: "qrcode.viewfinder")
+                        .foregroundStyle(DT.Color.accent)
+                        .frame(width: 22)
+                }
+            }
+            .sheet(isPresented: $isScanning) { scannerSheet }
         }
     }
 
