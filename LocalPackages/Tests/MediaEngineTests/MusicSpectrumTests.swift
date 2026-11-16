@@ -53,3 +53,42 @@ struct MusicSpectrumTests {
         #expect(MusicLevels().latest(1024, into: &buffer) == nil)
     }
 }
+
+@Suite("MusicEqualizer")
+struct MusicEqualizerTests {
+    @Test func offHasNoFilters() {
+        #expect(MusicEqualizer.off.coefficients(sampleRate: 44_100).isEmpty)
+        #expect(MusicEqualizer.off.preampDB == 0)
+    }
+
+    @Test func bassBoosterLiftsTheLowsOnly() {
+        let bass = MusicEqualizer.bassBooster
+        #expect(abs(bass.response(atHz: 30, sampleRate: 44_100) - 6) < 0.5)
+        #expect(abs(bass.response(atHz: 8000, sampleRate: 44_100)) < 0.3)
+        #expect(bass.preampDB == -6)
+    }
+
+    @Test func trebleReducerCutsTheHighsOnly() {
+        let treble = MusicEqualizer.trebleReducer
+        #expect(abs(treble.response(atHz: 16_000, sampleRate: 48_000) + 6) < 0.6)
+        #expect(abs(treble.response(atHz: 100, sampleRate: 48_000)) < 0.3)
+        #expect(treble.preampDB == 0)
+    }
+
+    @Test func vocalBoosterPeaksInTheMiddle() {
+        let vocal = MusicEqualizer.vocalBooster
+        #expect(vocal.response(atHz: 2500, sampleRate: 44_100) > 3)
+        #expect(vocal.response(atHz: 2500, sampleRate: 44_100) > vocal.response(atHz: 8000, sampleRate: 44_100))
+    }
+
+    @Test(arguments: MusicEqualizer.allCases)
+    func everyPresetIsStable(preset: MusicEqualizer) {
+        let c = preset.coefficients(sampleRate: 44_100)
+        #expect(c.count % 5 == 0)
+        for section in stride(from: 0, to: c.count, by: 5) {
+            // Poles inside the unit circle: |a2| < 1 and |a1| < 1 + a2.
+            #expect(abs(c[section + 4]) < 1)
+            #expect(abs(c[section + 3]) < 1 + c[section + 4])
+        }
+    }
+}

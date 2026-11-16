@@ -6,6 +6,7 @@ import SwiftUI
 struct MusicSettingsView: View {
     var body: some View {
         List {
+            MusicPlaybackSection()
             MusicStreamingSection(showsMobileData: false)
             MusicAppearanceSection()
         }

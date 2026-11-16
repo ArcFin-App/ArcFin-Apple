@@ -28,14 +28,24 @@ public final class MusicQueuePlayer {
     public var isMuted = false { didSet { player.isMuted = isMuted } }
     /// Goes up on every seek, for anything that shows the position without following it.
     public private(set) var seekCount = 0
-    /// Copies each song's audio into `levels` as it plays, for a visualizer; off, nothing is tapped.
-    public var isMetering = false {
+    /// Copies each song's audio into `levels` as it plays, for a visualizer.
+    public var isMetering = false { didSet { refreshTaps() } }
+    /// Evens out loudness between songs with the server's per-song gain.
+    public var soundCheck = false {
         didSet {
-            guard isMetering != oldValue else { return }
-            player.items().forEach(meter)
+            levels.setSoundCheck(soundCheck)
+            refreshTaps()
+        }
+    }
+    public var equalizer = MusicEqualizer.off {
+        didSet {
+            levels.setEqualizer(equalizer)
+            refreshTaps()
         }
     }
     @ObservationIgnored public let levels = MusicLevels()
+    /// Each song is tapped while any of the above needs its audio; with none, nothing is.
+    @ObservationIgnored private var isTapped = false
 
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
     @ObservationIgnored private let streamURL: (MusicSong) -> URL?
@@ -247,20 +257,30 @@ public final class MusicQueuePlayer {
             let failed = ObjectIdentifier(item)
             Task { @MainActor [weak self] in self?.itemFailed(failed, path: path) }
         }
-        if isMetering { meter(item) }
+        if isTapped { tap(item, gain: entry.track.normalizationGain) }
         return item
     }
 
+    private func refreshTaps() {
+        let needed = isMetering || soundCheck || equalizer != .off
+        guard needed != isTapped else { return }
+        isTapped = needed
+        for item in player.items() {
+            let id = entryIDs[ObjectIdentifier(item)]
+            tap(item, gain: queue.entries.first { $0.id == id }?.track.normalizationGain)
+        }
+    }
+
     /// The track only exists once a streamed file has started loading, so the tap goes on after.
-    private func meter(_ item: AVPlayerItem) {
-        guard isMetering else {
+    private func tap(_ item: AVPlayerItem, gain: Double?) {
+        guard isTapped else {
             item.audioMix = nil
             return
         }
         Task { @MainActor [weak self] in
             guard let track = try? await item.asset.loadTracks(withMediaType: .audio).first,
-                  let self, isMetering, entryIDs[ObjectIdentifier(item)] != nil else { return }
-            item.audioMix = levels.audioMix(for: track)
+                  let self, isTapped, entryIDs[ObjectIdentifier(item)] != nil else { return }
+            item.audioMix = levels.audioMix(for: track, gain: gain)
         }
     }
 

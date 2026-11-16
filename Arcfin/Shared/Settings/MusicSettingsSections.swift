@@ -1,6 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import MediaEngine
+
+/// Settings › Music › Playback: how songs sound and run into each other.
+struct MusicPlaybackSection: View {
+    @Environment(AuthManager.self) private var authManager
+    @AppStorage(MusicSettings.soundCheckKey) private var soundCheck = false
+    @AppStorage(MusicSettings.equalizerKey) private var equalizer = MusicEqualizer.off
+
+    var body: some View {
+        Section {
+            Toggle(isOn: $soundCheck) {
+                TVRowLabelText(title: "Sound Check", detail: "Plays songs at about the same volume, using the loudness your server measured for each. Needs Jellyfin 10.9 or later.")
+            }
+            .tvListRow()
+            .syncLocked(MusicSettings.soundCheckKey, authManager)
+            SettingsPicker("Equalizer", detail: "Shapes the sound of everything that plays here, including on AirPlay. Not on a Chromecast.",
+                           selection: $equalizer, options: MusicEqualizer.allCases) { Text($0.label) }
+                .syncLocked(MusicSettings.equalizerKey, authManager)
+        } header: {
+            Text("Playback")
+        }
+    }
+}
 
 /// Settings › Music › Streaming: the quality songs stream at, on Wi-Fi and on mobile data.
 struct MusicStreamingSection: View {

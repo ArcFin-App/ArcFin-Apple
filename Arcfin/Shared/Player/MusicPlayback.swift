@@ -59,16 +59,23 @@ final class MusicPlayback {
     }
 
     private func followVisualizerSetting() {
-        applyVisualizerSetting()
+        applySettings()
         // A synced change from another device lands without the Settings screen open.
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil,
                                                                   queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.applyVisualizerSetting() }
+            MainActor.assumeIsolated { self?.applySettings() }
         }
     }
 
-    private func applyVisualizerSetting() {
-        player.isMetering = UserDefaults.standard.object(forKey: MusicSettings.visualizerKey) as? Bool ?? true
+    private func applySettings() {
+        let defaults = UserDefaults.standard
+        // Any setting changing lands here; only a real change touches the player.
+        let metering = defaults.object(forKey: MusicSettings.visualizerKey) as? Bool ?? true
+        let soundCheck = defaults.bool(forKey: MusicSettings.soundCheckKey)
+        let equalizer = defaults.string(forKey: MusicSettings.equalizerKey).flatMap(MusicEqualizer.init(rawValue:)) ?? .off
+        if player.isMetering != metering { player.isMetering = metering }
+        if player.soundCheck != soundCheck { player.soundCheck = soundCheck }
+        if player.equalizer != equalizer { player.equalizer = equalizer }
     }
 
     /// Signing out or switching profile stops the music: the queue was the last profile's.

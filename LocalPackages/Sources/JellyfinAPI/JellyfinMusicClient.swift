@@ -74,12 +74,15 @@ public struct MusicSong: Sendable, Identifiable, Equatable, Hashable, Codable {
     public var container: String?
     /// Its place in a playlist, which removing it from the playlist needs.
     public var playlistEntryId: String?
+    /// The change in dB that brings it to the server's common loudness (Jellyfin 10.9+).
+    public var normalizationGain: Double?
 
     public init(id: String, name: String, albumId: String? = nil, albumName: String? = nil, albumArtist: String? = nil,
                 artists: [MusicArtistRef] = [], trackNumber: Int? = nil, discNumber: Int? = nil,
                 runTimeTicks: Int64? = nil, primaryImageTag: String? = nil, albumPrimaryImageTag: String? = nil,
                 isFavorite: Bool = false, playCount: Int = 0, hasLyrics: Bool = false, container: String? = nil,
-                playlistEntryId: String? = nil) {
+                playlistEntryId: String? = nil, normalizationGain: Double? = nil) {
+        self.normalizationGain = normalizationGain
         self.container = container
         self.playlistEntryId = playlistEntryId
         self.id = id; self.name = name; self.albumId = albumId; self.albumName = albumName
@@ -490,6 +493,7 @@ struct MusicItemResponse: Decodable {
     let container: String?
     let type: String?
     let playlistItemId: String?
+    let normalizationGain: Double?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", overview = "Overview", albumArtist = "AlbumArtist"
@@ -499,6 +503,7 @@ struct MusicItemResponse: Decodable {
         case indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber", runTimeTicks = "RunTimeTicks"
         case childCount = "ChildCount", genres = "Genres", userData = "UserData", hasLyrics = "HasLyrics"
         case container = "Container", type = "Type", playlistItemId = "PlaylistItemId"
+        case normalizationGain = "NormalizationGain"
     }
 
     private static func refs(_ items: [NameId]?) -> [MusicArtistRef] {
@@ -522,7 +527,8 @@ struct MusicItemResponse: Decodable {
                    artists: Self.refs(artistItems), trackNumber: indexNumber, discNumber: parentIndexNumber,
                    runTimeTicks: runTimeTicks, primaryImageTag: imageTags?["Primary"],
                    albumPrimaryImageTag: albumPrimaryImageTag, isFavorite: userData?.isFavorite ?? false,
-                   playCount: userData?.playCount ?? 0, hasLyrics: hasLyrics ?? false, container: container, playlistEntryId: playlistItemId)
+                   playCount: userData?.playCount ?? 0, hasLyrics: hasLyrics ?? false, container: container, playlistEntryId: playlistItemId,
+                   normalizationGain: normalizationGain)
     }
 }
 

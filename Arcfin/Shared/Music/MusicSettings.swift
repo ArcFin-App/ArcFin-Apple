@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
+import MediaEngine
 
 /// How music streams or downloads: the file as it is, or converted to MP3 at a rate.
 enum MusicQuality: String, CaseIterable, Identifiable {
@@ -23,6 +24,8 @@ enum MusicSettings {
     static let mobileStreamQualityKey = "musicMobileStreamQuality"
     static let downloadQualityKey = "musicDownloadQuality"
     static let downloadOnMobileDataKey = "musicDownloadOnMobileData"
+    static let soundCheckKey = "musicSoundCheck"
+    static let equalizerKey = "musicEqualizer"
 
     private static var defaults: UserDefaults { .standard }
 
@@ -41,5 +44,20 @@ enum MusicSettings {
 
     static var downloadsWaitForWiFi: Bool {
         !defaults.bool(forKey: downloadOnMobileDataKey) && DownloadManager.isOnMobileDataNow
+    }
+}
+
+extension MusicEqualizer {
+    var label: String {
+        switch self {
+        case .off: String(localized: "Off")
+        case .bassBooster: String(localized: "Bass Booster")
+        case .bassReducer: String(localized: "Bass Reducer")
+        case .trebleBooster: String(localized: "Treble Booster")
+        case .trebleReducer: String(localized: "Treble Reducer")
+        case .vocalBooster: String(localized: "Vocal Booster")
+        case .loudness: String(localized: "Loudness")
+        case .smallSpeakers: String(localized: "Small Speakers")
+        }
     }
 }
