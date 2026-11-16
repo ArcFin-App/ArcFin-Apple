@@ -49,6 +49,10 @@ final class AppRootModel {
             // Buffered too: the Browse tab that shows Downloads may not be mounted yet.
             UserDefaults.standard.set(true, forKey: "arcfin.pendingShowDownloads")
             NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
+        case "remote":
+            // arcfin://remote/<sessionId>, from the Live Activity for another device playing.
+            AppServices.remoteSessions.selectedID = url.pathComponents.dropFirst().first
+            AppServices.remoteSessions.open()
         case "resume":
             UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
             NotificationCenter.default.post(name: .arcfinResume, object: nil)

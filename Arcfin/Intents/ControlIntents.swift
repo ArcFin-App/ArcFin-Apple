@@ -57,4 +57,46 @@ struct OpenDiscoverIntent: AppIntent {
         return .result()
     }
 }
+#if os(iOS)
+/// A button on the Live Activity for another device playing (#457).
+enum RemotePlaybackAction: String, AppEnum {
+    case playPause, skipBackward, skipForward, volumeDown, volumeUp
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Remote Button"
+    static let caseDisplayRepresentations: [RemotePlaybackAction: DisplayRepresentation] = [
+        .playPause: "Play or Pause",
+        .skipBackward: "Skip Back",
+        .skipForward: "Skip Forward",
+        .volumeDown: "Volume Down",
+        .volumeUp: "Volume Up",
+    ]
+}
+
+/// Set by the app at launch. The extension only declares the intent: a Live Activity's
+/// intent runs in the app, which sends the command to the device.
+enum RemotePlaybackCommands {
+    @MainActor static var handler: ((RemotePlaybackAction, String) async -> Void)?
+}
+
+struct RemotePlaybackIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Control Another Device"
+    static let isDiscoverable = false
+
+    @Parameter(title: "Button") var action: RemotePlaybackAction
+    @Parameter(title: "Device") var sessionID: String
+
+    init() {}
+
+    init(action: RemotePlaybackAction, sessionID: String) {
+        self.action = action
+        self.sessionID = sessionID
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        await RemotePlaybackCommands.handler?(action, sessionID)
+        return .result()
+    }
+}
+#endif
 #endif

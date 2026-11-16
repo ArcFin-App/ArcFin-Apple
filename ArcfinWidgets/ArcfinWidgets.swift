@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 #if os(iOS)
+import AppIntents
 import WidgetKit
 import SwiftUI
 import UIKit
@@ -373,5 +374,191 @@ private extension DownloadState {
     DownloadLiveActivity()
 } contentStates: {
     DownloadState.downloading
+}
+// MARK: - Another device playing
+
+private typealias RemoteState = RemotePlaybackActivityAttributes.ContentState
+
+/// Another device playing while this iPhone is its remote (#457): what and where, the
+/// position, and play and pause, skip and volume, which run in the app.
+struct RemotePlaybackLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: RemotePlaybackActivityAttributes.self) { context in
+            RemoteLockScreenView(state: context.state, sessionID: context.attributes.sessionID)
+                .activityBackgroundTint(WidgetDT.background)
+                .activitySystemActionForegroundColor(.white)
+                .widgetURL(remoteURL(context.attributes.sessionID))
+        } dynamicIsland: { context in
+            let state = context.state
+            let sessionID = context.attributes.sessionID
+            return DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    RemoteArtwork(state: state, width: 44)
+                        .padding(.leading, 4)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    RemoteTitle(state: state)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(spacing: 8) {
+                        RemoteProgress(state: state)
+                        RemoteButtons(state: state, sessionID: sessionID)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.top, 4)
+                }
+            } compactLeading: {
+                Image(systemName: "av.remote")
+                    .foregroundStyle(WidgetDT.accent)
+            } compactTrailing: {
+                Image(systemName: state.isPaused ? "pause.fill" : "play.fill")
+                    .foregroundStyle(.white)
+            } minimal: {
+                Image(systemName: "av.remote")
+                    .foregroundStyle(WidgetDT.accent)
+            }
+            .keylineTint(WidgetDT.accent)
+            .widgetURL(remoteURL(sessionID))
+        }
+    }
+}
+
+private func remoteURL(_ sessionID: String) -> URL? {
+    URL(string: "arcfin://remote/\(sessionID)")
+}
+
+private struct RemoteLockScreenView: View {
+    let state: RemoteState
+    let sessionID: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                RemoteArtwork(state: state, width: 48)
+                RemoteTitle(state: state)
+                Spacer(minLength: 0)
+            }
+            RemoteProgress(state: state)
+            RemoteButtons(state: state, sessionID: sessionID)
+        }
+        .padding(14)
+    }
+}
+
+private struct RemoteArtwork: View {
+    let state: RemoteState
+    let width: CGFloat
+
+    var body: some View {
+        Group {
+            if let data = state.artwork, let image = UIImage(data: data) {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                LinearGradient(colors: [WidgetDT.accentDeep, WidgetDT.background], startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
+        }
+        .frame(width: width, height: width * 1.5)
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .accessibilityHidden(true)
+    }
+}
+
+private struct RemoteTitle: View {
+    let state: RemoteState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label {
+                Text("Playing on \(state.deviceName)")
+            } icon: {
+                Image(systemName: "av.remote")
+            }
+            .font(.system(.caption, weight: .semibold))
+            .foregroundStyle(WidgetDT.accent)
+            .lineLimit(1)
+            Text(state.title)
+                .font(.system(.headline, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(2)
+            if let subtitle = state.subtitle {
+                Text(subtitle)
+                    .font(.system(.footnote, weight: .medium))
+                    .foregroundStyle(WidgetDT.textSecondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+}
+
+/// Runs by itself while the title plays, so it stays right with the app suspended.
+private struct RemoteProgress: View {
+    let state: RemoteState
+
+    var body: some View {
+        Group {
+            if let span = state.playbackSpan {
+                ProgressView(timerInterval: span, countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+            } else {
+                ProgressView(value: state.fraction)
+            }
+        }
+        .progressViewStyle(.linear)
+        .tint(WidgetDT.accent)
+        .labelsHidden()
+    }
+}
+
+private struct RemoteButtons: View {
+    let state: RemoteState
+    let sessionID: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            button(.volumeDown, "speaker.minus.fill", "Volume Down")
+            Spacer()
+            button(.skipBackward, "gobackward", "Skip Back")
+            Spacer()
+            button(.playPause, state.isPaused ? "play.fill" : "pause.fill", state.isPaused ? "Play" : "Pause", large: true)
+            Spacer()
+            button(.skipForward, "goforward", "Skip Forward")
+            Spacer()
+            button(.volumeUp, "speaker.plus.fill", "Volume Up")
+        }
+        .foregroundStyle(.white)
+    }
+
+    private func button(_ action: RemotePlaybackAction, _ symbol: String, _ label: LocalizedStringKey, large: Bool = false) -> some View {
+        Button(intent: RemotePlaybackIntent(action: action, sessionID: sessionID)) {
+            Image(systemName: symbol)
+                .font(large ? .title2 : .body)
+                .frame(width: 44, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+}
+
+private extension RemoteState {
+    static let playing = RemoteState(
+        title: "Crossing Over", subtitle: "The Long Way Home · S2 E5", deviceName: "Living Room",
+        isPaused: false, positionSeconds: 1_240, durationSeconds: 2_700, updatedAt: .now, artwork: nil)
+    static let paused = RemoteState(
+        title: "Crossing Over", subtitle: "The Long Way Home · S2 E5", deviceName: "Living Room",
+        isPaused: true, positionSeconds: 1_240, durationSeconds: 2_700, updatedAt: .now, artwork: nil)
+}
+
+#Preview("Remote · Lock Screen", as: .content, using: RemotePlaybackActivityAttributes(sessionID: "preview")) {
+    RemotePlaybackLiveActivity()
+} contentStates: {
+    RemoteState.playing
+    RemoteState.paused
+}
+
+#Preview("Remote · Expanded", as: .dynamicIsland(.expanded), using: RemotePlaybackActivityAttributes(sessionID: "preview")) {
+    RemotePlaybackLiveActivity()
+} contentStates: {
+    RemoteState.playing
 }
 #endif

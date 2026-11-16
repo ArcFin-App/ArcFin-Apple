@@ -109,6 +109,14 @@ private struct CastMiniControllerAccessory: ViewModifier {
     private var casting: Bool { CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil }
 
     func body(content: Content) -> some View {
+        accessory(content)
+            .onChange(of: AppServices.remoteSessions.refreshCount) {
+                Task { await RemotePlaybackActivity.shared.sync() }
+            }
+    }
+
+    @ViewBuilder
+    private func accessory(_ content: Content) -> some View {
         if #available(iOS 26.1, *) {
             content.tabViewBottomAccessory(isEnabled: casting || AppServices.remoteSessions.selected != nil) {
                 // Casting from here comes first; otherwise another device playing on this profile.

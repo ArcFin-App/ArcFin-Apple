@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import ActivityKit
 import AVFoundation
 import CastKit
 import JellyfinAPI
+import LiveActivityKit
 
 /// The compact "now casting" bar shown above the tab bar (via tabViewBottomAccessory) while a
 /// Cast session has something loaded and the player screen isn't open — so playback on the
@@ -459,5 +461,112 @@ final class RemoteVolumeButtons {
     private func put(_ volume: Float) {
         settingTo = volume
         hiddenSlider?.setVolume(volume)
+    }
+}
+
+// MARK: - Live Activity
+
+/// Another device playing, on the Lock Screen and in the Dynamic Island, with play and pause,
+/// skip and volume. iOS only gives the system Now Playing card to an app playing audio
+/// itself, so this is a Live Activity instead. It's updated whenever the list comes back from
+/// the server, and after each of its buttons; while the app is suspended its bar keeps moving
+/// on its own.
+@MainActor
+final class RemotePlaybackActivity {
+    static let shared = RemotePlaybackActivity()
+
+    private typealias Attributes = RemotePlaybackActivityAttributes
+    private var activity: Activity<Attributes>?
+    private var shown: Attributes.ContentState?
+    private var artworkItemID: String?
+    private var artwork: Data?
+
+    func install() {
+        activity = Activity<Attributes>.activities.first
+        RemotePlaybackCommands.handler = { action, sessionID in
+            await RemotePlaybackActivity.shared.perform(action, sessionID: sessionID)
+        }
+    }
+
+    private func perform(_ action: RemotePlaybackAction, sessionID: String) async {
+        let remote = AppServices.remoteSessions
+        remote.attach(AppServices.authManager)
+        remote.selectedID = sessionID
+        if remote.selected?.id != sessionID { await remote.refresh() }
+        guard remote.selected?.id == sessionID else { return }
+        let defaults = UserDefaults.standard
+        switch action {
+        case .playPause: remote.playPause()
+        case .skipBackward: remote.skip(seconds: -((defaults.object(forKey: "skipBackwardSeconds") as? Int) ?? 10))
+        case .skipForward: remote.skip(seconds: (defaults.object(forKey: "skipForwardSeconds") as? Int) ?? 10)
+        case .volumeDown: remote.stepVolume(up: false)
+        case .volumeUp: remote.stepVolume(up: true)
+        }
+        try? await Task.sleep(for: .milliseconds(800))
+        await remote.refresh()
+        await sync()
+    }
+
+    /// Matches the activity to what the list says: started, updated, or ended.
+    func sync() async {
+        guard let session = AppServices.remoteSessions.selected else {
+            await end()
+            return
+        }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        if let activity, activity.attributes.sessionID != session.id { await end() }
+        if artworkItemID != session.nowPlayingItemId {
+            artworkItemID = session.nowPlayingItemId
+            artwork = await thumbnail(for: session)
+        }
+        let state = Attributes.ContentState(
+            title: session.nowPlayingItemName ?? "",
+            subtitle: session.nowPlayingSeriesName.map { [$0, session.nowPlayingEpisodeCode].compactMap { $0 }.joined(separator: " · ") },
+            deviceName: session.deviceName,
+            isPaused: session.isPaused,
+            positionSeconds: Double(session.positionTicks ?? 0) / 10_000_000,
+            durationSeconds: Double(session.runTimeTicks ?? 0) / 10_000_000,
+            updatedAt: .now,
+            artwork: artwork
+        )
+        let content = ActivityContent(state: state, staleDate: state.playbackSpan?.upperBound.addingTimeInterval(60))
+        if let activity {
+            guard needsUpdate(state) else { return }
+            await activity.update(content)
+        } else {
+            activity = try? Activity.request(attributes: Attributes(sessionID: session.id), content: content)
+        }
+        shown = state
+    }
+
+    private func end() async {
+        guard let activity else { return }
+        self.activity = nil
+        shown = nil
+        await activity.end(nil, dismissalPolicy: .immediate)
+    }
+
+    /// The bar moves by itself, so a new position only counts when it's drifted from it.
+    private func needsUpdate(_ state: Attributes.ContentState) -> Bool {
+        guard let shown else { return true }
+        if shown.title != state.title || shown.subtitle != state.subtitle || shown.deviceName != state.deviceName
+            || shown.isPaused != state.isPaused || shown.durationSeconds != state.durationSeconds || shown.artwork != state.artwork {
+            return true
+        }
+        let expected = shown.isPaused ? shown.positionSeconds
+            : shown.positionSeconds + state.updatedAt.timeIntervalSince(shown.updatedAt)
+        return abs(expected - state.positionSeconds) > 3
+    }
+
+    private func thumbnail(for session: JellyfinSession) async -> Data? {
+        guard let url = AppServices.remoteSessions.artworkURL(for: session, type: "Primary", width: 160),
+              let response = try? await URLSession.shared.data(from: url),
+              let image = UIImage(data: response.0),
+              let small = await image.byPreparingThumbnail(ofSize: CGSize(width: 64, height: 64 * image.size.height / max(image.size.width, 1)))
+        else { return nil }
+        for quality in [0.6, 0.4, 0.25] {
+            if let jpeg = small.jpegData(compressionQuality: quality), jpeg.count < 2_500 { return jpeg }
+        }
+        return nil
     }
 }

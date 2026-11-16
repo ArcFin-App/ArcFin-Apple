@@ -16,6 +16,9 @@ final class RemoteSessions {
     var isShowingRemote = false
     /// Position counted on between polls, so the scrubber moves smoothly.
     private(set) var estimatedTicks: Int64 = 0
+    /// Counts the times the list came back from the server, so the Live Activity can tell an
+    /// empty list from one that was only cleared when the app went to the background.
+    private(set) var refreshCount = 0
 
     @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
@@ -32,7 +35,7 @@ final class RemoteSessions {
     /// Looks every ten seconds while the app is in front, and every second while the remote
     /// screen is open.
     func start(authManager: AuthManager) {
-        self.authManager = authManager
+        attach(authManager)
         guard pollTask == nil else { return }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -48,6 +51,11 @@ final class RemoteSessions {
                 self.estimatedTicks = min(self.estimatedTicks + 5_000_000, session.runTimeTicks ?? .max)
             }
         }
+    }
+
+    /// Without polling: for a Live Activity button pressed while the app is in the background.
+    func attach(_ authManager: AuthManager) {
+        self.authManager = authManager
     }
 
     func stop() {
@@ -67,6 +75,7 @@ final class RemoteSessions {
         sessions = found.filter { $0.supportsRemoteControl && $0.deviceId != ownDevice }
         if let ticks = selected?.positionTicks { estimatedTicks = ticks }
         if isShowingRemote, selected == nil { isShowingRemote = false }
+        refreshCount += 1
     }
 
     func open(_ session: JellyfinSession? = nil) {
@@ -139,11 +148,11 @@ final class RemoteSessions {
     }
 
     /// Artwork for what a session plays, straight from the server by item id.
-    func artworkURL(for session: JellyfinSession, type: String = "Backdrop") -> URL? {
+    func artworkURL(for session: JellyfinSession, type: String = "Backdrop", width: Int = 800) -> URL? {
         guard let id = session.nowPlayingItemId, let credential = authManager?.state.credential,
               var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Items/\(id)/Images/\(type)"),
                                         resolvingAgainstBaseURL: false) else { return nil }
-        comps.queryItems = [.init(name: "fillWidth", value: "800"), .init(name: "api_key", value: credential.accessToken)]
+        comps.queryItems = [.init(name: "fillWidth", value: String(width)), .init(name: "api_key", value: credential.accessToken)]
         return comps.url
     }
 }
