@@ -27,16 +27,36 @@ struct LiveTVProgramDetails: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            header
-            actions
-                .task { await model.loadReminders() }
-            if let overview = current.overview, !overview.isEmpty {
-                Text(overview)
-                    .font(DT.Font.body)
-                    .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
-                    .fixedSize(horizontal: false, vertical: true)
+        if PlatformMetrics.sheetsSideBySide {
+            // Apple TV: what's on, on the left; what to do with it, on the right.
+            HStack(alignment: .top, spacing: 48) {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    overview
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                actions
+                    .task { await model.loadReminders() }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .loginFocusSection()
             }
+        } else {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                actions
+                    .task { await model.loadReminders() }
+                overview
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var overview: some View {
+        if let overview = current.overview, !overview.isEmpty {
+            Text(overview)
+                .font(DT.Font.body)
+                .foregroundStyle(DT.Color.textPrimary.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
