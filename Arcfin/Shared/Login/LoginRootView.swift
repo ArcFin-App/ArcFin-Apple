@@ -11,6 +11,7 @@ private enum LoginStep {
 struct LoginRootView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var step: LoginStep?
+    @State private var setupHost = AppleTVSetupHost()
 
     private var currentStep: LoginStep {
         if let step { return step }
@@ -45,6 +46,22 @@ struct LoginRootView: View {
             }
         }
         .animation(DT.Animation.standard, value: stepTag)
+        .task {
+            if PlatformMetrics.hostsAppleTVSetup { setupHost.start(authManager: authManager) }
+        }
+        .onDisappear { setupHost.stop() }
+        .appSheet(isPresented: Binding(get: { setupHost.phase != .idle },
+                                       set: { if !$0 { setupHost.cancelSession() } })) {
+            AppleTVSetupHostView(host: setupHost)
+        }
+        // Quick Connect is off on the server the phone sent: its password page.
+        .onChange(of: setupHost.passwordServer) { _, url in
+            guard let url else { return }
+            setupHost.passwordServer = nil
+            withAnimation(DT.Animation.standard) {
+                step = .auth(serverURL: url, serverName: url.host() ?? url.absoluteString)
+            }
+        }
     }
 
     private var stepTag: Int {

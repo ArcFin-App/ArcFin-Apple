@@ -116,37 +116,7 @@ struct AppRootLifecycle: ViewModifier {
                     AppServices.liveUpdates.disconnect()
                 }
             }
-            // A scanned Quick Connect code: nothing is signed in until it's confirmed here.
-            .alert("Sign In Apple TV?",
-                   isPresented: Binding(get: { QuickConnectApproval.shared.request != nil },
-                                        set: { if !$0 { QuickConnectApproval.shared.request = nil } }),
-                   presenting: QuickConnectApproval.shared.request) { request in
-                Button("Sign In") { QuickConnectApproval.shared.approve(request, authManager: model.authManager) }
-                Button("Cancel", role: .cancel) {}
-            } message: { _ in
-                if let name = model.authManager.state.credential?.displayName {
-                    Text("The Apple TV showing this code signs in to your server as \(name).")
-                } else {
-                    Text("Sign in to Arcfin on this device first.")
-                }
-            }
-            .alert(QuickConnectApproval.shared.outcome?.succeeded == true ? Text("Apple TV Signed In") : Text("Couldn't Sign In Apple TV"),
-                   isPresented: Binding(get: { QuickConnectApproval.shared.outcome != nil },
-                                        set: { if !$0 { QuickConnectApproval.shared.outcome = nil } }),
-                   presenting: QuickConnectApproval.shared.outcome) { _ in
-                Button("OK") {}
-            } message: { outcome in
-                Text(outcome.message)
-            }
-            // A message from the dashboard while nothing is playing; the player shows its own.
-            .alert(Text(verbatim: RemoteControl.shared.message.flatMap { $0.header.isEmpty ? nil : $0.header } ?? "Arcfin"),
-                   isPresented: Binding(get: { RemoteControl.shared.message != nil },
-                                        set: { if !$0 { RemoteControl.shared.message = nil } }),
-                   presenting: RemoteControl.shared.message) { _ in
-                Button("OK") {}
-            } message: { message in
-                Text(verbatim: message.text)
-            }
+            .modifier(AppRootPrompts(model: model))
             .onChange(of: offlineModeEnabled) { _, isOffline in
                 if !isOffline { model.syncOfflineProgress(modelContext: modelContext) }
             }
@@ -181,5 +151,68 @@ struct AppRootLifecycle: ViewModifier {
 
     private func configureSeerr() {
         model.configureSeerr(seerrURL: seerrURL, seerrUsername: seerrUsername, seerrAuthMethod: seerrAuthMethod)
+    }
+}
+
+/// What can pop up over any screen: a scanned Apple TV code, an Apple TV to set up, and a
+/// message from the server's dashboard. Kept apart from AppRootLifecycle, whose chain of
+/// modifiers was getting too long to type-check.
+private struct AppRootPrompts: ViewModifier {
+    let model: AppRootModel
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var setupGuide = AppleTVSetupGuide()
+
+    /// Prompts that act for the signed-in profile wait for the launch checks and the PIN lock.
+    private var canPrompt: Bool { model.launchChecked && !model.isAppLocked }
+
+    /// Looks for an Apple TV to set up only while it could be offered: signed in, in front,
+    /// unlocked and not watching something.
+    private var offersAppleTVSetup: Bool {
+        PlatformMetrics.setsUpAppleTV && canPrompt && scenePhase == .active
+            && model.authManager.state.credential != nil && !PlayerActivity.shared.isPlayerOpen
+    }
+
+    func body(content: Content) -> some View {
+        content
+        // A scanned Quick Connect code: nothing is signed in until it's confirmed here.
+        .alert("Sign In Apple TV?",
+               isPresented: Binding(get: { QuickConnectApproval.shared.request != nil && canPrompt },
+                                    set: { if !$0 { QuickConnectApproval.shared.request = nil } }),
+               presenting: QuickConnectApproval.shared.request) { request in
+            Button("Sign In") { QuickConnectApproval.shared.approve(request, authManager: model.authManager) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            if let name = model.authManager.state.credential?.displayName {
+                Text("The Apple TV showing this code signs in to your server as \(name).")
+            } else {
+                Text("Sign in to Arcfin on this device first.")
+            }
+        }
+        .alert(QuickConnectApproval.shared.outcome?.succeeded == true ? Text("Apple TV Signed In") : Text("Couldn't Sign In Apple TV"),
+               isPresented: Binding(get: { QuickConnectApproval.shared.outcome != nil },
+                                    set: { if !$0 { QuickConnectApproval.shared.outcome = nil } }),
+               presenting: QuickConnectApproval.shared.outcome) { _ in
+            Button("OK") {}
+        } message: { outcome in
+            Text(outcome.message)
+        }
+        // A signed-out Apple TV on the network, offered for setup with this profile (#481).
+        .task(id: offersAppleTVSetup) {
+            if offersAppleTVSetup { setupGuide.start(authManager: model.authManager) } else { setupGuide.stop() }
+        }
+        .sheet(isPresented: Binding(get: { setupGuide.phase != .idle && canPrompt },
+                                    set: { if !$0 { setupGuide.notNow() } })) {
+            AppleTVSetupCard(guide: setupGuide, authManager: model.authManager)
+                    .environment(model.authManager)
+        }
+        // A message from the dashboard while nothing is playing; the player shows its own.
+        .alert(Text(verbatim: RemoteControl.shared.message.flatMap { $0.header.isEmpty ? nil : $0.header } ?? "Arcfin"),
+               isPresented: Binding(get: { RemoteControl.shared.message != nil },
+                                    set: { if !$0 { RemoteControl.shared.message = nil } }),
+               presenting: RemoteControl.shared.message) { _ in
+            Button("OK") {}
+        } message: { message in
+            Text(verbatim: message.text)
+        }
     }
 }

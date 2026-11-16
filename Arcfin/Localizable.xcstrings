@@ -705,6 +705,70 @@
         }
       }
     },
+    "%@ wants to sign this Apple TV in to %@ from an iPhone or iPad." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ möchte dieses Apple TV von einem iPhone oder iPad aus bei %2$@ anmelden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ quiere iniciar sesión en este Apple TV en %2$@ desde un iPhone o iPad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ souhaite connecter cette Apple TV à %2$@ depuis un iPhone ou un iPad."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ vuole collegare questa Apple TV a %2$@ da un iPhone o iPad."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@さんがiPhoneまたはiPadから、このApple TVを%2$@にサインインしようとしています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ 님이 iPhone 또는 iPad에서 이 Apple TV를 %2$@에 로그인하려고 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ wil deze Apple TV vanaf een iPhone of iPad inloggen op %2$@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ quer conectar esta Apple TV a %2$@ a partir de um iPhone ou iPad."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ хочет выполнить вход на этой Apple TV в %2$@ с iPhone или iPad."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ 想从 iPhone 或 iPad 将这台 Apple TV 登录到 %2$@。"
+          }
+        }
+      }
+    },
     "%@ wasn't signed out." : {
       "localizations" : {
         "de" : {
@@ -2497,6 +2561,70 @@
         }
       }
     },
+    "A quicker way to sign this Apple TV in than typing with its remote." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Schneller, als dieses Apple TV mit der Fernbedienung anzumelden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Una forma más rápida de iniciar sesión en este Apple TV que escribir con el mando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Plus rapide que de saisir avec la télécommande pour connecter cette Apple TV."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un modo più rapido per collegare questa Apple TV che digitare con il telecomando."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "リモコンで入力するより手早く、このApple TVにサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "리모컨으로 입력하는 것보다 빠르게 이 Apple TV에 로그인합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sneller dan met de afstandsbediening typen om deze Apple TV in te loggen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Um jeito mais rápido de conectar esta Apple TV do que digitar com o controle remoto."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Быстрее, чем вводить данные пультом на этой Apple TV."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "比用遥控器输入更快地登录这台 Apple TV。"
+          }
+        }
+      }
+    },
     "A video is playing. Downloading now shares its connection, which can lower its quality." : {
       "localizations" : {
         "de" : {
@@ -3969,6 +4097,70 @@
         }
       }
     },
+    "Allow" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Erlauben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Permitir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Autoriser"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Consenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "許可"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "허용"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sta toe"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Permitir"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Разрешить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "允许"
+          }
+        }
+      }
+    },
     "Allow Audio Conversion" : {
       "localizations" : {
         "de" : {
@@ -4285,6 +4477,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "允许 HEVC 编码"
+          }
+        }
+      }
+    },
+    "Allow on the Apple TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Auf dem Apple TV erlauben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Permítelo en el Apple TV"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Autorisez sur l’Apple TV"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Consenti sull’Apple TV"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVで許可してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV에서 허용하세요"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sta het toe op de Apple TV"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Permita na Apple TV"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Разрешите на Apple TV"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 Apple TV 上允许"
           }
         }
       }
@@ -4989,6 +5245,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "动画超分辨率"
+          }
+        }
+      }
+    },
+    "Another device is already setting up this Apple TV." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ein anderes Gerät richtet dieses Apple TV bereits ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Otro dispositivo ya está configurando este Apple TV."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un autre appareil configure déjà cette Apple TV."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un altro dispositivo sta già configurando questa Apple TV."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "別のデバイスがすでにこのApple TVを設定しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다른 기기에서 이미 이 Apple TV를 설정하고 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Een ander apparaat stelt deze Apple TV al in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Outro dispositivo já está configurando esta Apple TV."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Эту Apple TV уже настраивает другое устройство."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "另一台设备正在设置这台 Apple TV。"
           }
         }
       }
@@ -7937,6 +8257,134 @@
         }
       }
     },
+    "Check that %@ shows this code." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prüfe, ob %@ diesen Code zeigt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Comprueba que %@ muestra este código."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vérifiez que %@ affiche ce code."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controlla che %@ mostri questo codice."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@にこのコードが表示されていることを確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@에 이 코드가 표시되는지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controleer of %@ deze code toont."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verifique se %@ mostra este código."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Убедитесь, что %@ показывает этот код."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "请确认 %@ 显示的是此代码。"
+          }
+        }
+      }
+    },
+    "Check the Code" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Code prüfen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Comprueba el código"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vérifiez le code"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controlla il codice"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "コードを確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "코드 확인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controleer de code"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Confira o código"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Проверьте код"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "核对代码"
+          }
+        }
+      }
+    },
     "Check your connection and try again." : {
       "localizations" : {
         "de" : {
@@ -8701,6 +9149,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "正在连接…"
+          }
+        }
+      }
+    },
+    "Contacting Your Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Server wird kontaktiert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contactando con tu servidor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion à votre serveur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contatto del server in corso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーに接続中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 연결하는 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contact met je server"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contatando seu servidor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подключение к серверу"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在联系你的服务器"
           }
         }
       }
@@ -11393,6 +11905,134 @@
         }
       }
     },
+    "Couldn't Set Up Apple TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV konnte nicht eingerichtet werden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudo configurar el Apple TV"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de configurer l’Apple TV"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile configurare l’Apple TV"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVを設定できませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV를 설정할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan Apple TV niet instellen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível configurar a Apple TV"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось настроить Apple TV"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法设置 Apple TV"
+          }
+        }
+      }
+    },
+    "Couldn't Set Up This Apple TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieses Apple TV konnte nicht eingerichtet werden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudo configurar este Apple TV"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de configurer cette Apple TV"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile configurare questa Apple TV"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このApple TVを設定できませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 Apple TV를 설정할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan deze Apple TV niet instellen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível configurar esta Apple TV"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось настроить эту Apple TV"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法设置这台 Apple TV"
+          }
+        }
+      }
+    },
     "Couldn't Sign In" : {
       "localizations" : {
         "de" : {
@@ -13309,6 +13949,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在网络上可被发现"
+          }
+        }
+      }
+    },
+    "Does the Code Match?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Stimmt der Code überein?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Coincide el código?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le code correspond-il ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il codice corrisponde?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "コードは一致していますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "코드가 일치합니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Komt de code overeen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O código confere?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Код совпадает?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "代码一致吗？"
           }
         }
       }
@@ -16641,6 +17345,70 @@
         }
       }
     },
+    "Has a PIN. Switch to this profile to add it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hat eine PIN. Wechsle zu diesem Profil, um es hinzuzufügen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tiene PIN. Cambia a este perfil para añadirlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A un code PIN. Passez à ce profil pour l’ajouter."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ha un PIN. Passa a questo profilo per aggiungerlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "PINが設定されています。追加するには、このプロフィールに切り替えてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "PIN이 있습니다. 추가하려면 이 프로필로 전환하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Heeft een pincode. Schakel over naar dit profiel om het toe te voegen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tem PIN. Mude para este perfil para adicioná-lo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Есть PIN-код. Переключитесь на этот профиль, чтобы добавить его."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已设置 PIN。请切换到此个人资料以添加它。"
+          }
+        }
+      }
+    },
     "Hasn't run yet" : {
       "localizations" : {
         "de" : {
@@ -19201,6 +19969,70 @@
         }
       }
     },
+    "It Matches" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Stimmt überein"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Coincide"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il correspond"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Corrisponde"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "一致しています"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "일치함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Komt overeen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Confere"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Совпадает"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "一致"
+          }
+        }
+      }
+    },
     "It replaces the current one for everyone on this server." : {
       "localizations" : {
         "de" : {
@@ -21309,6 +22141,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在所有资料库中查找新增、更改和删除的文件。"
+          }
+        }
+      }
+    },
+    "Make sure %@'s iPhone or iPad shows the same code, then confirm it there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prüfe, ob das iPhone oder iPad von %@ denselben Code zeigt, und bestätige ihn dort."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Asegúrate de que el iPhone o iPad de %@ muestra el mismo código y confírmalo allí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vérifiez que l’iPhone ou l’iPad de %@ affiche le même code, puis confirmez-le sur cet appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Assicurati che l’iPhone o l’iPad di %@ mostri lo stesso codice, poi confermalo lì."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@さんのiPhoneまたはiPadに同じコードが表示されていることを確認し、そちらで確定してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 님의 iPhone 또는 iPad에 같은 코드가 표시되는지 확인한 다음 그 기기에서 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controleer of de iPhone of iPad van %@ dezelfde code toont en bevestig hem daar."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verifique se o iPhone ou iPad de %@ mostra o mesmo código e confirme lá."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Убедитесь, что iPhone или iPad пользователя %@ показывает тот же код, и подтвердите его там."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "请确认 %@ 的 iPhone 或 iPad 显示相同的代码，然后在那台设备上确认。"
           }
         }
       }
@@ -25473,6 +26369,70 @@
         }
       }
     },
+    "Or set this Apple TV up from Arcfin on an iPhone or iPad on this network. It's quicker than typing with the remote." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oder richte dieses Apple TV mit Arcfin auf einem iPhone oder iPad in diesem Netzwerk ein. Das geht schneller als Tippen mit der Fernbedienung."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O configura este Apple TV desde Arcfin en un iPhone o iPad de esta red. Es más rápido que escribir con el mando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ou configurez cette Apple TV depuis Arcfin sur un iPhone ou un iPad de ce réseau. C’est plus rapide que de saisir avec la télécommande."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oppure configura questa Apple TV da Arcfin su un iPhone o iPad in questa rete. È più rapido che digitare con il telecomando."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "または、このネットワーク上のiPhoneやiPadのArcfinからこのApple TVを設定できます。リモコンで入力するより手早く済みます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "또는 이 네트워크의 iPhone이나 iPad에서 Arcfin으로 이 Apple TV를 설정하세요. 리모컨으로 입력하는 것보다 빠릅니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Of stel deze Apple TV in vanuit Arcfin op een iPhone of iPad in dit netwerk. Dat gaat sneller dan typen met de afstandsbediening."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ou configure esta Apple TV pelo Arcfin em um iPhone ou iPad nesta rede. É mais rápido do que digitar com o controle remoto."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Или настройте эту Apple TV из Arcfin на iPhone или iPad в этой сети. Это быстрее, чем вводить данные пультом."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "或在同一网络中的 iPhone 或 iPad 上用 Arcfin 设置这台 Apple TV，比用遥控器输入更快。"
+          }
+        }
+      }
+    },
     "Original" : {
       "localizations" : {
         "de" : {
@@ -27713,6 +28673,70 @@
         }
       }
     },
+    "Press Allow on %@ with its remote." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Drücke auf %@ mit der Fernbedienung „Erlauben“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pulsa Permitir en %@ con su mando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Appuyez sur Autoriser sur %@ avec sa télécommande."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Premi Consenti su %@ con il telecomando."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@のリモコンで「許可」を押してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@의 리모컨으로 허용을 누르세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Druk met de afstandsbediening op Sta toe op %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pressione Permitir em %@ com o controle remoto."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Нажмите «Разрешить» на %@ с помощью пульта."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用遥控器在 %@ 上按“允许”。"
+          }
+        }
+      }
+    },
     "Press and hold the clickpad to play at this speed until you let go." : {
       "localizations" : {
         "de" : {
@@ -28285,6 +29309,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "用于登录的二维码"
+          }
+        }
+      }
+    },
+    "Quick Connect is off on your server, so the Apple TV is showing its password page instead." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect ist auf deinem Server aus, daher zeigt das Apple TV stattdessen die Passwortseite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect está desactivado en tu servidor, así que el Apple TV muestra la página de contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect est désactivé sur votre serveur : l’Apple TV affiche donc la page du mot de passe."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect è disattivato sul server, quindi l’Apple TV mostra la pagina della password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーでQuick Connectがオフのため、Apple TVにはパスワードのページが表示されています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에서 Quick Connect가 꺼져 있어 Apple TV에 암호 페이지가 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect staat uit op je server, dus de Apple TV toont de wachtwoordpagina."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Quick Connect está desativado no seu servidor, então a Apple TV está mostrando a página de senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quick Connect на сервере выключен, поэтому Apple TV показывает страницу ввода пароля."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的服务器关闭了 Quick Connect，因此 Apple TV 显示了密码页面。"
           }
         }
       }
@@ -34561,6 +35649,198 @@
         }
       }
     },
+    "Set Up" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Einrichten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configura"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "설정"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Stel in"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настроить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "设置"
+          }
+        }
+      }
+    },
+    "Set Up Apple TV?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV einrichten?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Configurar Apple TV?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurer l’Apple TV ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurare l’Apple TV?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVを設定しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV를 설정하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV instellen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurar a Apple TV?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настроить Apple TV?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "要设置 Apple TV 吗？"
+          }
+        }
+      }
+    },
+    "Set Up This Apple TV?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieses Apple TV einrichten?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Configurar este Apple TV?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurer cette Apple TV ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurare questa Apple TV?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このApple TVを設定しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 Apple TV를 설정하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze Apple TV instellen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurar esta Apple TV?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настроить эту Apple TV?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "要设置这台 Apple TV 吗？"
+          }
+        }
+      }
+    },
     "Settings…" : {
       "localizations" : {
         "de" : {
@@ -34621,6 +35901,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "设置…"
+          }
+        }
+      }
+    },
+    "Setup was cancelled on the Apple TV." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Einrichtung wurde auf dem Apple TV abgebrochen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La configuración se canceló en el Apple TV."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La configuration a été annulée sur l’Apple TV."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La configurazione è stata annullata sull’Apple TV."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVで設定がキャンセルされました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV에서 설정이 취소되었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De instelling is geannuleerd op de Apple TV."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A configuração foi cancelada na Apple TV."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настройка отменена на Apple TV."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV 上已取消设置。"
           }
         }
       }
@@ -35901,6 +37245,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "要登录 Apple TV 吗？"
+          }
+        }
+      }
+    },
+    "Sign In As" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anmelden als"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Iniciar sesión como"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se connecter en tant que"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi come"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サインインするプロフィール"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "로그인할 프로필"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inloggen als"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entrar como"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Войти как"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "登录身份"
           }
         }
       }
@@ -39361,6 +40769,198 @@
         }
       }
     },
+    "The Apple TV couldn't reach your server. It needs to be on a network that can reach it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Apple TV konnte deinen Server nicht erreichen. Es muss in einem Netzwerk sein, das ihn erreicht."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El Apple TV no pudo conectar con tu servidor. Tiene que estar en una red que llegue a él."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV n’a pas pu joindre votre serveur. Elle doit être sur un réseau qui y a accès."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV non ha raggiunto il server. Deve trovarsi su una rete che possa raggiungerlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVからサーバーに接続できませんでした。サーバーに届くネットワークにつないでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV가 서버에 연결할 수 없습니다. 서버에 연결할 수 있는 네트워크에 있어야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De Apple TV kon je server niet bereiken. Hij moet op een netwerk zitten dat de server kan bereiken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A Apple TV não conseguiu acessar seu servidor. Ela precisa estar em uma rede que alcance o servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV не удалось связаться с сервером. Она должна быть в сети, из которой сервер доступен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV 无法连接你的服务器。它需要连接到能访问服务器的网络。"
+          }
+        }
+      }
+    },
+    "The Apple TV is signed in as %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Apple TV ist als %@ angemeldet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El Apple TV ha iniciado sesión como %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV est connectée en tant que %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV ha effettuato l’accesso come %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVは%@としてサインインしました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV가 %@(으)로 로그인했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De Apple TV is ingelogd als %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A Apple TV está conectada como %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход на Apple TV выполнен как %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV 已以 %@ 的身份登录。"
+          }
+        }
+      }
+    },
+    "The Apple TV is signed in with %lld profiles." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Apple TV ist mit %lld Profilen angemeldet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El Apple TV ha iniciado sesión con %lld perfiles."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV est connectée avec %lld profils."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV ha effettuato l’accesso con %lld profili."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVは%lld個のプロフィールでサインインしました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV가 프로필 %lld개로 로그인했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De Apple TV is ingelogd met %lld profielen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A Apple TV está conectada com %lld perfis."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "На Apple TV выполнен вход в профили: %lld."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV 已登录 %lld 个个人资料。"
+          }
+        }
+      }
+    },
     "The Apple TV is signing in as %@." : {
       "localizations" : {
         "de" : {
@@ -39485,6 +41085,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "显示此代码的 Apple TV 将以 %@ 的身份登录你的服务器。"
+          }
+        }
+      }
+    },
+    "The Apple TV stopped answering. Try again from its sign-in page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Apple TV antwortet nicht mehr. Versuch es auf seiner Anmeldeseite noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El Apple TV dejó de responder. Vuelve a intentarlo desde su página de inicio de sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV ne répond plus. Réessayez depuis sa page de connexion."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV non risponde più. Riprova dalla sua pagina di accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVが応答しなくなりました。サインインのページからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV가 응답하지 않습니다. 로그인 페이지에서 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De Apple TV reageert niet meer. Probeer het opnieuw vanaf de inlogpagina."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A Apple TV parou de responder. Tente de novo pela página de entrada."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV перестала отвечать. Повторите попытку со страницы входа."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV 停止了响应。请在其登录页面重试。"
           }
         }
       }
@@ -39997,6 +41661,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "代码已过期或已被使用。请在 Apple TV 上获取新代码并重新扫描。"
+          }
+        }
+      }
+    },
+    "The code has expired or was already used. Start again from the Apple TV's sign-in page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Code ist abgelaufen oder wurde schon verwendet. Beginne auf der Anmeldeseite des Apple TV neu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El código ha caducado o ya se usó. Empieza de nuevo desde la página de inicio de sesión del Apple TV."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le code a expiré ou a déjà été utilisé. Recommencez depuis la page de connexion de l’Apple TV."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il codice è scaduto o è già stato usato. Ricomincia dalla pagina di accesso dell’Apple TV."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "コードの期限が切れているか、すでに使用されています。Apple TVのサインインのページからやり直してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "코드가 만료되었거나 이미 사용되었습니다. Apple TV의 로그인 페이지에서 다시 시작하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De code is verlopen of al gebruikt. Begin opnieuw vanaf de inlogpagina van de Apple TV."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O código expirou ou já foi usado. Recomece pela página de entrada da Apple TV."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Срок действия кода истёк, или он уже использован. Начните заново со страницы входа на Apple TV."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "代码已过期或已被使用。请从 Apple TV 的登录页面重新开始。"
+          }
+        }
+      }
+    },
+    "The code ran out before it was confirmed. Start again from the Apple TV's sign-in page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Code ist abgelaufen, bevor er bestätigt wurde. Beginne auf der Anmeldeseite des Apple TV neu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El código caducó antes de confirmarse. Empieza de nuevo desde la página de inicio de sesión del Apple TV."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le code a expiré avant d’être confirmé. Recommencez depuis la page de connexion de l’Apple TV."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il codice è scaduto prima della conferma. Ricomincia dalla pagina di accesso dell’Apple TV."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "確定する前にコードの期限が切れました。Apple TVのサインインのページからやり直してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "확인하기 전에 코드가 만료되었습니다. Apple TV의 로그인 페이지에서 다시 시작하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De code verliep voordat hij was bevestigd. Begin opnieuw vanaf de inlogpagina van de Apple TV."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O código expirou antes de ser confirmado. Recomece pela página de entrada da Apple TV."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Срок действия кода истёк до подтверждения. Начните заново со страницы входа на Apple TV."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "代码在确认前已过期。请从 Apple TV 的登录页面重新开始。"
           }
         }
       }
@@ -41985,6 +43777,70 @@
         }
       }
     },
+    "The sign-in didn't finish. Try again from your iPhone or iPad." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Anmeldung wurde nicht abgeschlossen. Versuch es von deinem iPhone oder iPad aus noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El inicio de sesión no terminó. Vuelve a intentarlo desde tu iPhone o iPad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La connexion n’a pas abouti. Réessayez depuis votre iPhone ou iPad."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’accesso non è stato completato. Riprova dal tuo iPhone o iPad."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サインインが完了しませんでした。iPhoneまたはiPadからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "로그인이 완료되지 않았습니다. iPhone 또는 iPad에서 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Het inloggen is niet voltooid. Probeer het opnieuw vanaf je iPhone of iPad."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A entrada não foi concluída. Tente de novo pelo seu iPhone ou iPad."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход не завершён. Повторите попытку с iPhone или iPad."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "登录未完成。请在 iPhone 或 iPad 上重试。"
+          }
+        }
+      }
+    },
     "The tab bar is full. %@ takes the place of the tab you pick." : {
       "localizations" : {
         "de" : {
@@ -42557,6 +44413,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "这也会从此设备上的 Arcfin 中移除其下载内容。若仍想离线观看，请保留。"
+          }
+        }
+      }
+    },
+    "This Apple TV couldn't reach %@. Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dieses Apple TV konnte %@ nicht erreichen. Prüfe, ob es im selben Netzwerk wie dein Server ist. Braucht dein Server eigene Header, füge sie hier zuerst unter „Eigene Header“ hinzu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este Apple TV no pudo conectar con %@. Comprueba que está en la misma red que tu servidor. Si tu servidor necesita encabezados personalizados, añádelos aquí primero en Encabezados personalizados."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cette Apple TV n’a pas pu joindre %@. Vérifiez qu’elle est sur le même réseau que votre serveur. Si votre serveur a besoin d’en-têtes personnalisés, ajoutez-les d’abord ici dans En-têtes personnalisés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Questa Apple TV non ha raggiunto %@. Controlla che sia sulla stessa rete del server. Se il server richiede intestazioni personalizzate, aggiungile prima qui in Intestazioni personalizzate."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このApple TVから%@に接続できませんでした。サーバーと同じネットワークにあるか確認してください。サーバーにカスタムヘッダが必要な場合は、先にここの「カスタムヘッダ」で追加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 Apple TV가 %@에 연결할 수 없습니다. 서버와 같은 네트워크에 있는지 확인하세요. 서버에 사용자 지정 헤더가 필요하면 먼저 여기의 사용자 지정 헤더에서 추가하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deze Apple TV kon %@ niet bereiken. Controleer of hij op hetzelfde netwerk zit als je server. Heeft je server aangepaste headers nodig, voeg ze dan eerst hier toe onder Aangepaste headers."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Esta Apple TV não conseguiu acessar %@. Verifique se ela está na mesma rede do seu servidor. Se o servidor precisar de cabeçalhos personalizados, adicione-os primeiro aqui em Cabeçalhos personalizados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Эта Apple TV не смогла связаться с %@. Убедитесь, что она в той же сети, что и сервер. Если серверу нужны собственные заголовки, сначала добавьте их здесь в разделе «Собственные заголовки»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这台 Apple TV 无法连接 %@。请确认它与服务器在同一网络中。如果服务器需要自定义标头，请先在此处的“自定义标头”中添加。"
           }
         }
       }

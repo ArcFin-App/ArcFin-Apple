@@ -9,6 +9,10 @@ enum PlatformMetrics {
     /// The sign-in pages: two columns across the screen (what to do, and what to do it with),
     /// or one readable column.
     static let loginSideBySide = false
+    /// Can be set up from an iPhone or iPad on the same network (#481).
+    static let hostsAppleTVSetup = false
+    /// Offers to set up a signed-out Apple TV on the same network (#481).
+    static let setsUpAppleTV = true
     static let licensePlatform = "iOS"
     static let descriptionMaxWidth: CGFloat = 720
     static let pagePad: CGFloat = 20
