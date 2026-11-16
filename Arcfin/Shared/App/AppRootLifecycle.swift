@@ -34,6 +34,11 @@ struct AppRootLifecycle: ViewModifier {
             .environment(model.syncPlayManager)
             .environment(model.sharePlayManager)
             .onOpenURL { model.handleDeepLink($0) }
+            // A link to arcfin.psmattas.com that opens the app (the Apple TV's QR code) comes as
+            // a browsing activity, not through onOpenURL.
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                if let url = activity.webpageURL { model.handleDeepLink(url) }
+            }
             .appIntentRoutes(model)
             .smartDownloadsIgnorePrompt(model.downloadManager)
             .task { await model.checkLaunch() }
