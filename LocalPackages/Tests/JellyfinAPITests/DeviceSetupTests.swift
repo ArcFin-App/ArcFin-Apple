@@ -79,7 +79,7 @@ struct DeviceSetupTests {
     func directions() throws {
         let k = try keys(phone: .init(), tv: .init())
         var phone = DeviceSetup.Cipher(send: k.phoneToTV, receive: k.tvToPhone)
-        let sealed = try phone.seal(.allowed)
+        let sealed = try phone.seal(.allowed(signedIn: []))
         #expect(throws: (any Error).self) { try phone.open(sealed) }
     }
 
@@ -103,10 +103,10 @@ struct DeviceSetupTests {
         var tvMessages = tv.messages.makeAsyncIterator()
         #expect(await tvMessages.next() == .hello(profiles: [profile]))
 
-        tv.send(.allowed)
+        tv.send(.allowed(signedIn: ["u1"]))
         tv.send(.code(profile: 0, code: "123456"))
         var phoneMessages = phone.messages.makeAsyncIterator()
-        #expect(await phoneMessages.next() == .allowed)
+        #expect(await phoneMessages.next() == .allowed(signedIn: ["u1"]))
         #expect(await phoneMessages.next() == .code(profile: 0, code: "123456"))
 
         phone.send(.approved(profile: 0))

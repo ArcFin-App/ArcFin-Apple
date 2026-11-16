@@ -50,11 +50,13 @@ public enum DeviceSetup {
 
     /// What the two say once the code is confirmed. Only ever sent sealed.
     public enum Message: Codable, Equatable, Sendable {
-        /// Phone → TV, after the person confirmed the code there: the profiles to sign in,
-        /// the one to use first.
+        /// Phone → TV, once the person there confirmed the code and picked them: the profiles
+        /// to sign in, the one to use first.
         case hello(profiles: [Profile])
-        /// TV → phone: the person at the TV pressed Allow.
-        case allowed
+        /// TV → phone: the person at the TV pressed Allow. `signedIn` is the Jellyfin user ids
+        /// already on the TV, so the phone doesn't offer them again; sent only after Allow, so
+        /// nobody can connect just to learn who uses this Apple TV.
+        case allowed(signedIn: [String])
         /// TV → phone: the Quick Connect code for `profile` (an index into hello's list).
         case code(profile: Int, code: String)
         /// TV → phone: that profile couldn't be started; the others carry on.

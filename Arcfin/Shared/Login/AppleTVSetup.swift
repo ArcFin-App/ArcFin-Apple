@@ -26,6 +26,8 @@ final class AppleTVSetupHost {
     private(set) var phase: Phase = .idle
     /// Quick Connect is off on the server the phone sent: its password page, instead.
     var passwordServer: URL?
+    /// Goes up each time a phone signs this Apple TV in, so Add Profile can close.
+    private(set) var completedSetups = 0
 
     @ObservationIgnored private var listener: DeviceSetupListener?
     @ObservationIgnored private var listenTask: Task<Void, Never>?
@@ -98,7 +100,7 @@ final class AppleTVSetupHost {
             endSession(sending: .failed(.declined))
             return
         }
-        session.send(.allowed)
+        session.send(.allowed(signedIn: authManager.profiles.map(\.userID)))
         phase = .waitingForPhone(code: session.code)
 
         // The phone sends its profiles only once its person has confirmed the same code.
@@ -168,6 +170,7 @@ final class AppleTVSetupHost {
         }
         authManager.save(primary)
         Self.keepTMDBKeys(profiles: profiles, signedIn: signedIn, authManager: authManager)
+        completedSetups += 1
     }
 
     /// Each profile's TMDB key, under the id the profile got here, and the active one's in
@@ -284,6 +287,8 @@ final class AppleTVSetupGuide {
         case confirming(code: String, name: String)
         /// Confirmed here; waiting for the person at the Apple TV to press Allow.
         case waitingForTV(String)
+        /// Both confirmed: which profiles to sign in, leaving out those already on the TV.
+        case choosing(String)
         case approving
         case done(String)
         case failed(String)
@@ -304,7 +309,9 @@ final class AppleTVSetupGuide {
     @ObservationIgnored private var session: DeviceSetupSession?
     @ObservationIgnored private var declined: Set<String> = []
     @ObservationIgnored private var sending: [ServerCredential] = []
-    @ObservationIgnored private var tvAllowed = false
+    /// Set once the Apple TV allowed it: the user ids it already has.
+    private(set) var onTV: Set<String>?
+    @ObservationIgnored private var phoneConfirmed = false
     @ObservationIgnored private var found: [DeviceSetupBrowser.AppleTV] = []
     @ObservationIgnored private var searchTimeout: Task<Void, Never>?
 
@@ -378,7 +385,8 @@ final class AppleTVSetupGuide {
             if await authManager.pin(for: profile.id) != nil { withPIN.insert(profile.id) }
         }
         locked = withPIN
-        selected = active.map { [$0] } ?? []
+        let free = authManager.profiles.filter { !(onTV?.contains($0.userID) ?? false) && !withPIN.contains($0.id) }
+        selected = Set([free.first { $0.id == active } ?? free.first].compactMap { $0?.id })
     }
 
     func toggle(_ id: UUID) {
@@ -399,13 +407,9 @@ final class AppleTVSetupGuide {
     }
 
     func setUp(_ tv: DeviceSetupBrowser.AppleTV, authManager: AuthManager) {
-        let active = authManager.state.credential?.id
-        // The active profile first: it's the one the Apple TV ends up using.
-        sending = authManager.profiles
-            .filter { selected.contains($0.id) && !locked.contains($0.id) }
-            .sorted { ($0.id == active ? 0 : 1) < ($1.id == active ? 0 : 1) }
-        guard !sending.isEmpty else { return }
-        tvAllowed = false
+        sending = []
+        onTV = nil
+        phoneConfirmed = false
         phase = .connecting(tv.name)
         Task {
             guard let session = try? await withTimeout(seconds: 10, { try await DeviceSetupSession.connect(to: tv.endpoint) }) else {
@@ -420,9 +424,10 @@ final class AppleTVSetupGuide {
             phase = .confirming(code: session.code, name: tv.name)
             for await message in session.messages {
                 switch message {
-                case .allowed:
-                    tvAllowed = true
-                    if case .waitingForTV = phase { phase = .approving }
+                case .allowed(let signedIn):
+                    onTV = Set(signedIn)
+                    await prepareChoices(authManager: authManager)
+                    if phoneConfirmed, case .waitingForTV(let name) = phase { phase = .choosing(name) }
                 case .code(let index, let code):
                     approve(index: index, code: code, authManager: authManager)
                 case .done(let count):
@@ -437,7 +442,7 @@ final class AppleTVSetupGuide {
             }
             if self.session === session { self.session = nil }
             switch phase {
-            case .confirming, .waitingForTV:
+            case .confirming, .waitingForTV, .choosing:
                 phase = .failed(String(localized: "The Apple TV stopped answering. Try again from its sign-in page."))
             case .approving:
                 phase = .failed(String(localized: "The Apple TV stopped answering before it confirmed. Check whether it's signed in."))
@@ -447,11 +452,27 @@ final class AppleTVSetupGuide {
         }
     }
 
-    /// The person saw the same code on both screens: the connection is the Apple TV's, so
-    /// the profiles go to it, sealed, with their TMDB keys.
-    func confirm(authManager: AuthManager) {
-        guard let session, case .confirming(_, let name) = phase else { return }
+    /// The person saw the same code on both screens: the connection is the Apple TV's.
+    /// Profiles are picked once the Apple TV has allowed it too.
+    func confirm() {
+        guard case .confirming(_, let name) = phase else { return }
+        phoneConfirmed = true
+        phase = onTV == nil ? .waitingForTV(name) : .choosing(name)
+    }
+
+    /// The profiles that can still go to the Apple TV.
+    func available(_ authManager: AuthManager) -> [ServerCredential] {
+        authManager.profiles.filter { !(onTV?.contains($0.userID) ?? false) }
+    }
+
+    /// Sends the picked profiles, sealed, each with its TMDB key, the active one first.
+    func signIn(authManager: AuthManager) {
+        guard let session, case .choosing = phase else { return }
         let activeID = authManager.state.credential?.id
+        sending = available(authManager)
+            .filter { selected.contains($0.id) && !locked.contains($0.id) }
+            .sorted { ($0.id == activeID ? 0 : 1) < ($1.id == activeID ? 0 : 1) }
+        guard !sending.isEmpty else { return }
         session.send(.hello(profiles: sending.map { profile in
             let key = profile.id == activeID ? TMDBCredential.load() : TMDBCredential.load(profile: profile.id)
             return DeviceSetup.Profile(userName: profile.displayName,
@@ -459,7 +480,7 @@ final class AppleTVSetupGuide {
                                        servers: Self.addresses(for: profile).map(\.absoluteString),
                                        tmdbKey: key.flatMap { $0.isEmpty ? nil : $0 })
         }))
-        phase = tvAllowed ? .approving : .waitingForTV(name)
+        phase = .approving
     }
 
     private func approve(index: Int, code: String, authManager: AuthManager) {
@@ -562,9 +583,7 @@ struct AppleTVSetupCard: View {
                 .font(.headline)
                 .foregroundStyle(DT.Color.textSecondary)
             note(Text("Sign this Apple TV in with your profile from here."))
-            if authManager.profiles.count > 1 { profilePicker }
             primary("Set Up") { guide.setUp(tv, authManager: authManager) }
-                .disabled(guide.selected.isEmpty)
             Button("Not Now") { guide.notNow() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .connecting(let name):
@@ -581,7 +600,7 @@ struct AppleTVSetupCard: View {
                 .tracking(6)
                 .foregroundStyle(DT.Color.textPrimary)
                 .accessibilityLabel("Code \(code.map(String.init).joined(separator: " "))")
-            primary("It Matches") { guide.confirm(authManager: authManager) }
+            primary("It Matches") { guide.confirm() }
             Button("Cancel") { guide.cancel() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .waitingForTV(let name):
@@ -590,6 +609,19 @@ struct AppleTVSetupCard: View {
             ProgressView()
             Button("Cancel") { guide.cancel() }
                 .foregroundStyle(DT.Color.textSecondary)
+        case .choosing:
+            if guide.available(authManager).isEmpty {
+                heading("Already Signed In")
+                note(Text("All your profiles are already on this Apple TV."))
+                primary("Done") { guide.cancel() }
+            } else {
+                heading("Sign In As")
+                profilePicker
+                primary("Sign In") { guide.signIn(authManager: authManager) }
+                    .disabled(guide.selected.isEmpty)
+                Button("Cancel") { guide.cancel() }
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
         case .approving:
             heading("Signing In the Apple TV")
             ProgressView()
@@ -604,22 +636,24 @@ struct AppleTVSetupCard: View {
         }
     }
 
-    /// Which of this device's profiles to sign in; one with a PIN needs switching to first.
+    /// Which of this device's profiles to sign in. One already on the Apple TV isn't offered;
+    /// one with a PIN needs switching to first.
     private var profilePicker: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Sign In As")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(DT.Color.textSecondary)
-                .padding(.bottom, 8)
             ForEach(authManager.profiles) { profile in
-                let isLocked = guide.locked.contains(profile.id)
+                let onTV = guide.onTV?.contains(profile.userID) ?? false
+                let isLocked = onTV || guide.locked.contains(profile.id)
                 Button { guide.toggle(profile.id) } label: {
                     HStack(spacing: 12) {
                         ProfileAvatar(profile: profile, size: 32)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: profile.displayName)
                                 .foregroundStyle(DT.Color.textPrimary)
-                            if isLocked {
+                            if onTV {
+                                Text("Already on this Apple TV.")
+                                    .font(.caption)
+                                    .foregroundStyle(DT.Color.textSecondary)
+                            } else if isLocked {
                                 Text("Has a PIN. Switch to this profile to add it.")
                                     .font(.caption)
                                     .foregroundStyle(DT.Color.textSecondary)
