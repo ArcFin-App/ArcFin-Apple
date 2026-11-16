@@ -86,6 +86,25 @@ struct ScanAppleTVCodeRow: View {
     }
 }
 
+/// Settings › Set Up Nearby Apple TV: looks for a signed-out Apple TV on the network now,
+/// rather than waiting for one to turn up (#481).
+struct SetUpNearbyAppleTVRow: View {
+    @Environment(AuthManager.self) private var authManager
+
+    var body: some View {
+        Button { AppServices.appleTVSetup.findNearby(authManager: authManager) } label: {
+            Label {
+                Text("Set Up Nearby Apple TV")
+                    .foregroundStyle(DT.Color.textPrimary)
+            } icon: {
+                Image(systemName: "appletv")
+                    .foregroundStyle(DT.Color.accent)
+                    .frame(width: 22)
+            }
+        }
+    }
+}
+
 /// The camera, looking for the QR code an Apple TV shows on its Quick Connect screen.
 private struct QuickConnectScanner: UIViewControllerRepresentable {
     let onFound: (URL) -> Void

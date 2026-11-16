@@ -74,7 +74,7 @@ struct ServerURLView: View {
             LoginSplitHeader(title: "Connect to Your Server",
                              message: Text("Enter the address of your Jellyfin server, or pick one found on your network."))
             if PlatformMetrics.hostsAppleTVSetup {
-                Label("Or set this Apple TV up from Arcfin on an iPhone or iPad on this network. It's quicker than typing with the remote.",
+                Label("You can also set up this Apple TV from Arcfin on an iPhone or iPad on this network.",
                       systemImage: "iphone")
                     .font(.callout)
                     .foregroundStyle(DT.Color.textSecondary)

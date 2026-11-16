@@ -262,6 +262,8 @@ struct AppleTVSetupHostView: View {
 final class AppleTVSetupGuide {
     enum Phase: Equatable {
         case idle
+        /// Settings › Set Up Nearby Apple TV: looking, with nothing found yet.
+        case searching
         case offering(DeviceSetupBrowser.AppleTV)
         /// Waiting for the person at the Apple TV to press Allow.
         case waitingForTV(String)
@@ -286,16 +288,25 @@ final class AppleTVSetupGuide {
     @ObservationIgnored private var waitingCodes: [Int: String] = [:]
     @ObservationIgnored private var skipped = 0
 
+    @ObservationIgnored private var found: [DeviceSetupBrowser.AppleTV] = []
+    @ObservationIgnored private var searchTimeout: Task<Void, Never>?
+
+    /// Keeps looking while the app is in front. The search stops when the Local Network
+    /// permission is first asked for, or the network changes, so it starts again after a
+    /// moment rather than staying stopped.
     func start(authManager: AuthManager) {
-        guard browser == nil else { return }
-        let browser = DeviceSetupBrowser()
-        self.browser = browser
+        guard browseTask == nil else { return }
         browseTask = Task { [weak self] in
-            for await found in browser.results {
-                guard let self, self.phase == .idle,
-                      let tv = found.first(where: { !self.declined.contains($0.name) }) else { continue }
-                await self.prepareChoices(authManager: authManager)
-                self.phase = .offering(tv)
+            while !Task.isCancelled {
+                let browser = DeviceSetupBrowser()
+                self?.browser = browser
+                for await results in browser.results {
+                    guard let self else { return }
+                    self.found = results
+                    await self.offer(authManager: authManager)
+                }
+                browser.stop()
+                try? await Task.sleep(for: .seconds(3))
             }
         }
     }
@@ -303,9 +314,36 @@ final class AppleTVSetupGuide {
     /// The phone leaves the foreground, plays something or locks.
     func stop() {
         browseTask?.cancel()
+        browseTask = nil
         browser?.stop()
         browser = nil
+        found = []
         if case .offering = phase { phase = .idle }
+        if phase == .searching { phase = .idle }
+    }
+
+    /// Settings › Set Up Nearby Apple TV: offers one even after Not Now, and says so when
+    /// there's none.
+    func findNearby(authManager: AuthManager) {
+        declined = []
+        phase = .searching
+        start(authManager: authManager)
+        Task { await offer(authManager: authManager) }
+        searchTimeout?.cancel()
+        searchTimeout = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard let self, !Task.isCancelled, self.phase == .searching else { return }
+            self.phase = .failed(String(localized: "No Apple TV to set up was found. Open Arcfin on the Apple TV, go to its sign-in page, and make sure both are on the same network."))
+        }
+    }
+
+    private func offer(authManager: AuthManager) async {
+        guard phase == .idle || phase == .searching,
+              let tv = found.first(where: { !declined.contains($0.name) }) else { return }
+        await prepareChoices(authManager: authManager)
+        guard phase == .idle || phase == .searching else { return }
+        searchTimeout?.cancel()
+        phase = .offering(tv)
     }
 
     private func prepareChoices(authManager: AuthManager) async {
@@ -469,12 +507,18 @@ struct AppleTVSetupCard: View {
         switch guide.phase {
         case .idle, .approving:
             ProgressView()
+        case .searching:
+            heading("Looking for Apple TVs")
+            note(Text("Open Arcfin on the Apple TV and go to its sign-in page. It needs to be on the same network as this device."))
+            ProgressView()
+            Button("Cancel") { guide.dismiss() }
+                .foregroundStyle(DT.Color.textSecondary)
         case .offering(let tv):
             heading("Set Up Apple TV?")
             Text(verbatim: tv.name)
                 .font(.headline)
                 .foregroundStyle(DT.Color.textSecondary)
-            note(Text("A quicker way to sign this Apple TV in than typing with its remote."))
+            note(Text("Sign this Apple TV in with your profile from here."))
             if authManager.profiles.count > 1 { profilePicker }
             primary("Set Up") { guide.setUp(tv, authManager: authManager) }
                 .disabled(guide.selected.isEmpty)

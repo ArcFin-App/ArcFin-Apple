@@ -160,10 +160,10 @@ struct AppRootLifecycle: ViewModifier {
 private struct AppRootPrompts: ViewModifier {
     let model: AppRootModel
     @Environment(\.scenePhase) private var scenePhase
-    @State private var setupGuide = AppleTVSetupGuide()
+    private var setupGuide: AppleTVSetupGuide { AppServices.appleTVSetup }
 
     /// Prompts that act for the signed-in profile wait for the launch checks and the PIN lock.
-    private var canPrompt: Bool { model.launchChecked && !model.isAppLocked }
+    private var canPrompt: Bool { model.splashDone && model.launchChecked && !model.isAppLocked }
 
     /// Looks for an Apple TV to set up only while it could be offered: signed in, in front,
     /// unlocked and not watching something.
