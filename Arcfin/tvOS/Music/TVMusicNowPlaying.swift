@@ -34,6 +34,8 @@ struct TVMusicNowPlaying: View {
                                     Text(verbatim: album).font(.callout).foregroundStyle(.white.opacity(0.5))
                                 }
                             }
+                            MusicVisualizer(bars: 28, spacing: 6, color: .white.opacity(0.85))
+                                .frame(width: 420, height: 56)
                             progress
                             controls(song)
                         }

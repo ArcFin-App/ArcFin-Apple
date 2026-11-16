@@ -61,6 +61,7 @@ struct PlaybackSettingsView: View {
 
             PlaybackTrackMemorySection()
             PlaybackEnhancementsSection()
+            PlaybackMusicSection()
 
             PlaybackMoreSettingsSection()
         }

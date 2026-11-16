@@ -32,6 +32,8 @@ struct MusicMiniPlayer: View {
                         }
                         .lineLimit(1)
                         Spacer(minLength: DT.Spacing.xs)
+                        MusicVisualizer(bars: 4, spacing: 2)
+                            .frame(width: 18, height: 16)
                     }
                     .contentShape(Rectangle())
                 }
@@ -98,7 +100,15 @@ struct MusicNowPlayingView: View {
                 }
                 .padding(.horizontal, DT.Spacing.lg)
                 .padding(.bottom, DT.Spacing.sm)
-                .background { MusicArtworkBackdrop(url: MusicAPI.artworkURL(song, width: 600)) }
+                .background {
+                    MusicArtworkBackdrop(url: MusicAPI.artworkURL(song, width: 600))
+                        .overlay(alignment: .bottom) {
+                            MusicVisualizer(bars: 32, spacing: 4, color: .white.opacity(0.14))
+                                .frame(height: 240)
+                                .padding(.horizontal, DT.Spacing.sm)
+                                .ignoresSafeArea()
+                        }
+                }
                 .task(id: song.id) { await loadLyrics(song) }
             } else {
                 Color.black.onAppear { dismiss() }

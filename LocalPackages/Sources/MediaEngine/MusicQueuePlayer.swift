@@ -28,6 +28,14 @@ public final class MusicQueuePlayer {
     public var isMuted = false { didSet { player.isMuted = isMuted } }
     /// Goes up on every seek, for anything that shows the position without following it.
     public private(set) var seekCount = 0
+    /// Copies each song's audio into `levels` as it plays, for a visualizer; off, nothing is tapped.
+    public var isMetering = false {
+        didSet {
+            guard isMetering != oldValue else { return }
+            player.items().forEach(meter)
+        }
+    }
+    @ObservationIgnored public let levels = MusicLevels()
 
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
     @ObservationIgnored private let streamURL: (MusicSong) -> URL?
@@ -239,7 +247,21 @@ public final class MusicQueuePlayer {
             let failed = ObjectIdentifier(item)
             Task { @MainActor [weak self] in self?.itemFailed(failed, path: path) }
         }
+        if isMetering { meter(item) }
         return item
+    }
+
+    /// The track only exists once a streamed file has started loading, so the tap goes on after.
+    private func meter(_ item: AVPlayerItem) {
+        guard isMetering else {
+            item.audioMix = nil
+            return
+        }
+        Task { @MainActor [weak self] in
+            guard let track = try? await item.asset.loadTracks(withMediaType: .audio).first,
+                  let self, isMetering, entryIDs[ObjectIdentifier(item)] != nil else { return }
+            item.audioMix = levels.audioMix(for: track)
+        }
     }
 
     private func itemEnded(_ item: ObjectIdentifier?) {

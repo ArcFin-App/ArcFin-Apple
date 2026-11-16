@@ -1965,6 +1965,70 @@
         }
       }
     },
+    "Bars that move with the music, in the music bar and Now Playing. Hidden when Reduce Motion is on." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balken, die sich zur Musik bewegen, in der Musikleiste und in „Jetzt läuft“. Ausgeblendet, wenn „Bewegung reduzieren“ aktiv ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barras que se mueven con la música, en la barra de música y en Reproduciendo. Se ocultan si Reducir movimiento está activado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des barres qui bougent avec la musique, dans la barre de musique et À l’écoute. Masquées quand Réduire les animations est activé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barre che si muovono con la musica, nella barra della musica e in In riproduzione. Nascoste quando Riduci movimento è attivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音楽に合わせて動くバー。ミュージックバーと再生中画面に表示されます。「視差効果を減らす」がオンのときは表示されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음악에 맞춰 움직이는 막대로, 음악 막대와 지금 재생 중에 표시됩니다. 동작 줄이기가 켜져 있으면 숨겨집니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balken die meebewegen met de muziek, in de muziekbalk en Nu aan het spelen. Verborgen als Verminder beweging aan staat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barras que se movem com a música, na barra de música e em Reproduzindo. Ocultas quando Reduzir Movimento está ativado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Полоски, движущиеся под музыку, в панели музыки и на экране «Исполняется». Скрыты, если включено «Уменьшение движения»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随音乐跳动的条形，显示在音乐栏和“正在播放”中。开启“减弱动态效果”时隐藏。"
+          }
+        }
+      }
+    },
     "Button" : {
       "localizations" : {
         "de" : {
@@ -5353,6 +5417,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此网络中有多台 Apple TV 等待设置。请逐台设置。"
+          }
+        }
+      }
+    },
+    "Visualizer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualizer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualizador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualiseur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualizzatore"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ビジュアライザ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시각화"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualizer"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualizador"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Визуализатор"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可视化效果"
           }
         }
       }

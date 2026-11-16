@@ -246,6 +246,24 @@ struct PlaybackEnhancementsSection: View {
     }
 }
 
+/// Settings › Playback › Music.
+struct PlaybackMusicSection: View {
+    @Environment(AuthManager.self) private var authManager
+    @AppStorage(MusicPlayback.visualizerKey) private var visualizer = true
+
+    var body: some View {
+        Section {
+            Toggle(isOn: $visualizer) {
+                TVRowLabelText(title: "Visualizer", detail: "Bars that move with the music, in the music bar and Now Playing. Hidden when Reduce Motion is on.")
+            }
+            .tvListRow()
+            .syncLocked(MusicPlayback.visualizerKey, authManager)
+        } header: {
+            Text("Music")
+        }
+    }
+}
+
 /// Settings › Playback's links to Codec Compatibility, Player Features and Subtitle Style.
 struct PlaybackMoreSettingsSection: View {
     var body: some View {

@@ -51,6 +51,8 @@ struct MusicPlayerBar: View {
                     }
                 }
                 .lineLimit(1)
+                MusicVisualizer(bars: 4, spacing: 2)
+                    .frame(width: 16, height: 14)
             }
             .contentShape(Rectangle())
         }
@@ -168,6 +170,9 @@ struct MusicMacNowPlaying: View {
                         if let album = song.albumName {
                             Text(verbatim: album).foregroundStyle(.secondary)
                         }
+                        MusicVisualizer(bars: 24, spacing: 3)
+                            .frame(height: 36)
+                            .padding(.top, DT.Spacing.xs)
                     }
                     .frame(width: 300)
                     VStack(alignment: .leading, spacing: DT.Spacing.sm) {

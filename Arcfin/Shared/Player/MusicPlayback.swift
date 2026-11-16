@@ -38,6 +38,10 @@ final class MusicPlayback {
     @ObservationIgnored private var isHandingToCast = false
     private var cast: CastManager { .shared }
 
+    /// Settings › Playback › Visualizer: on, each song is tapped for the visualizer's bars.
+    static let visualizerKey = "musicVisualizer"
+    @ObservationIgnored private var defaultsObserver: NSObjectProtocol?
+
     private static let deviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
 
     init(authManager: AuthManager) {
@@ -53,6 +57,20 @@ final class MusicPlayback {
         followPlayer()
         followProfile(authManager.state.credential?.userID)
         followCast()
+        followVisualizerSetting()
+    }
+
+    private func followVisualizerSetting() {
+        applyVisualizerSetting()
+        // A synced change from another device lands without the Settings screen open.
+        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil,
+                                                                  queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.applyVisualizerSetting() }
+        }
+    }
+
+    private func applyVisualizerSetting() {
+        player.isMetering = UserDefaults.standard.object(forKey: Self.visualizerKey) as? Bool ?? true
     }
 
     /// Signing out or switching profile stops the music: the queue was the last profile's.
