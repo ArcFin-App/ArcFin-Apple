@@ -519,10 +519,13 @@ struct PlayerView: View {
 
 extension PlayerView {
     /// Whether the video went to an AirPlay device, and which. AVFoundation sends the video
-    /// itself; with the other engines AirPlay carries the sound only, so there's no screen.
+    /// itself, and so does Aether on its native route, through an AVPlayer of its own; its
+    /// software route and VLC keep the picture here and send only the sound.
     func watchAirPlay() async {
         while !Task.isCancelled {
-            let external = (model.player as? AVFoundationPlayer)?.player.isExternalPlaybackActive ?? false
+            let avPlayer = (model.player as? AVFoundationPlayer)?.player
+                ?? (model.player as? AetherEnginePlayer)?.nativePlayerLayer?.player
+            let external = avPlayer?.isExternalPlaybackActive ?? false
             let name = AVAudioSession.sharedInstance().currentRoute.outputs
                 .first { $0.portType == .airPlay }?.portName
             let route = external ? (name ?? String(localized: "AirPlay")) : nil
