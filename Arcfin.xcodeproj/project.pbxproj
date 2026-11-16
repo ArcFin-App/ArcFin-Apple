@@ -170,6 +170,11 @@
 				iOS/Lock/AppLockView.swift = (ios, );
 				iOS/Login/LoginPlatform.swift = (ios, );
 				iOS/Login/SetupGuideSheet.swift = (ios, );
+				iOS/Music/MusicAlbumView.swift = (ios, );
+				iOS/Music/MusicComponents.swift = (ios, );
+				iOS/Music/MusicLibraryView.swift = (ios, );
+				iOS/Music/MusicListsView.swift = (ios, );
+				iOS/Music/MusicNowPlayingView.swift = (ios, );
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );

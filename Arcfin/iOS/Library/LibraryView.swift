@@ -22,7 +22,7 @@ struct LibraryView: View {
         ]
     }
 
-    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV) }
+    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV, includeMusic: true) }
 
     var body: some View {
         NavigationStack {
@@ -88,6 +88,8 @@ struct LibraryView: View {
     private func libraryDestination(_ library: JellyfinLibrary) -> some View {
         if library.collectionType == .livetv {
             LiveTVView(library: library)
+        } else if library.collectionType == .music {
+            MusicLibraryView(library: library)
         } else {
             LibraryDetailView(library: library)
         }

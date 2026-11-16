@@ -107,6 +107,7 @@ struct MainTabView: View {
 /// there is no mini controller rather than a permanently empty accessory.
 private struct CastMiniControllerAccessory: ViewModifier {
     private var casting: Bool { CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil }
+    @State private var showsMusic = false
 
     func body(content: Content) -> some View {
         accessory(content)
@@ -118,10 +119,19 @@ private struct CastMiniControllerAccessory: ViewModifier {
     @ViewBuilder
     private func accessory(_ content: Content) -> some View {
         if #available(iOS 26.1, *) {
-            content.tabViewBottomAccessory(isEnabled: casting || AppServices.remoteSessions.selected != nil) {
-                // Casting from here comes first; otherwise another device playing on this profile.
-                if casting { CastMiniController() } else { RemoteMiniController() }
+            content.tabViewBottomAccessory(isEnabled: casting || AppServices.music.isActive
+                                           || AppServices.remoteSessions.selected != nil) {
+                // Casting from here comes first, then music on this device, then another
+                // device playing on this profile.
+                if casting {
+                    CastMiniController()
+                } else if AppServices.music.isActive {
+                    MusicMiniPlayer(isExpanded: $showsMusic)
+                } else {
+                    RemoteMiniController()
+                }
             }
+            .fullScreenCover(isPresented: $showsMusic) { MusicNowPlayingView() }
             .fullScreenCover(isPresented: Binding(get: { AppServices.remoteSessions.isShowingRemote },
                                                   set: { AppServices.remoteSessions.isShowingRemote = $0 })) {
                 RemoteControllerView()

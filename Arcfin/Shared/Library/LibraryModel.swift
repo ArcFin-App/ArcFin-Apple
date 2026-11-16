@@ -16,11 +16,13 @@ final class LibraryModel {
     /// Browse's library tiles, in the same order on every device: Movies, Shows, Live TV,
     /// Collections, Playlists, then the rest as the server lists them. Each Jellyfin user has
     /// their own library order, so the server's alone moved tiles between profiles.
-    /// Music isn't shown: there's no music player yet (#386). Live TV only for profiles allowed it.
-    static func libraries(in mediaRepo: MediaRepository, includeLiveTV: Bool = false) -> [JellyfinLibrary] {
+    /// Music only where there are music screens (#386). Live TV only for profiles allowed it.
+    static func libraries(in mediaRepo: MediaRepository, includeLiveTV: Bool = false,
+                          includeMusic: Bool = false) -> [JellyfinLibrary] {
         let hidden = LibraryVisibility.hiddenIDs
         var libraries = mediaRepo.libraries.filter {
-            ($0.collectionType != .livetv || includeLiveTV) && $0.collectionType != .music && !hidden.contains($0.id)
+            ($0.collectionType != .livetv || includeLiveTV) && ($0.collectionType != .music || includeMusic)
+                && !hidden.contains($0.id)
         }
         // The server only lists a Playlists library once a playlist exists; the tile is
         // always there so the first one can be made from it.
