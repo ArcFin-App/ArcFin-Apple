@@ -31,12 +31,13 @@ public final class MusicQueuePlayer {
         didSet {
             player.isMuted = isMuted
             fadingOut?.isMuted = isMuted
+            prepared?.deck.isMuted = isMuted
         }
     }
     /// Seconds each song fades into the next; 0 runs them together with no gap.
-    public var crossfade: Double = 0
+    public var crossfade: Double = 0 { didSet { if crossfade != oldValue { refreshUpcoming() } } }
     /// Pause when the playing song ends, with the next one ready (a sleep timer's End of Song).
-    public var pausesAtEndOfSong = false
+    public var pausesAtEndOfSong = false { didSet { if pausesAtEndOfSong != oldValue { refreshUpcoming() } } }
     /// A queue from `load` that hasn't loaded yet, and where it starts.
     @ObservationIgnored private var pendingStart: Double?
     /// Goes up on every seek, for anything that shows the position without following it.
@@ -67,6 +68,12 @@ public final class MusicQueuePlayer {
     /// The player still fading out the last song, during a crossfade.
     @ObservationIgnored private var fadingOut: AVQueuePlayer?
     @ObservationIgnored private var fade: Task<Void, Never>?
+    /// The next song lined up on its own player, paused and buffered, for a crossfade.
+    @ObservationIgnored private var prepared: (deck: AVQueuePlayer, entry: MusicQueue.Entry.ID, item: AVPlayerItem)?
+    /// A next song that couldn't be lined up, so it isn't tried every tick.
+    @ObservationIgnored private var unpreparable: MusicQueue.Entry.ID?
+    /// How long before a crossfade the next song starts loading.
+    private static let prepareLead = 20.0
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicQueuePlayer")
     @ObservationIgnored private var entryIDs: [ObjectIdentifier: MusicQueue.Entry.ID] = [:]
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
@@ -103,7 +110,8 @@ public final class MusicQueuePlayer {
             let status = deck.timeControlStatus
             Task { @MainActor [weak self] in
                 guard let self, deck === player else { return }
-                isPlaying = status != .paused
+                // The next song takes a moment to start during a fade; it isn't a pause.
+                isPlaying = status != .paused || fade != nil
                 isBuffering = status == .waitingToPlayAtSpecifiedRate
             }
         }
@@ -216,6 +224,7 @@ public final class MusicQueuePlayer {
     /// Stops and empties the queue.
     public func stop() {
         finishCrossfade()
+        dropPrepared()
         endCurrent()
         player.pause()
         forgetItems()
@@ -282,6 +291,7 @@ public final class MusicQueuePlayer {
     /// straight away; a paused one waits for `resume()`.
     private func reload() {
         pendingStart = nil
+        dropPrepared()
         forgetItems()
         position = 0
         duration = queue.current?.track.duration ?? 0
@@ -306,8 +316,22 @@ public final class MusicQueuePlayer {
             player.remove(item)
         }
         var peek = queue
-        guard let following = peek.advance(finished: true), let item = makeItem(following) else { return }
+        let following = peek.advance(finished: true)
+        if prepared?.entry != following?.id || !crossfadesCurrent { dropPrepared() }
+        // A crossfade lines the next song up on its own player instead.
+        guard !crossfadesCurrent, let following, let item = makeItem(following) else { return }
         player.insert(item, after: player.items().last)
+    }
+
+    /// Whether the playing song will fade into the next rather than run into it.
+    private var crossfadesCurrent: Bool {
+        let length = duration > 0 ? duration : (queue.current?.track.duration ?? 0)
+        return crossfade > 0 && !pausesAtEndOfSong && queue.repeatMode != .one && length > crossfade * 2 + 1
+    }
+
+    private func forget(_ item: AVPlayerItem) {
+        entryIDs[ObjectIdentifier(item)] = nil
+        itemObservations[ObjectIdentifier(item)] = nil
     }
 
     private func makeItem(_ entry: MusicQueue.Entry) -> AVPlayerItem? {
@@ -399,6 +423,10 @@ public final class MusicQueuePlayer {
             }
             next()
             if wasPlaying { resume() }
+        } else if let ready = prepared, ObjectIdentifier(ready.item) == item {
+            // The crossfade loads it afresh instead.
+            unpreparable = ready.entry
+            dropPrepared()
         } else {
             refreshUpcoming()
         }
@@ -409,33 +437,75 @@ public final class MusicQueuePlayer {
         if time.isNumeric { position = time.seconds }
         if position > 0 { failures = 0 }
         if item.duration.isNumeric, item.duration.seconds > 0 { duration = item.duration.seconds }
-        if crossfade > 0, fade == nil, !pausesAtEndOfSong, isPlaying, queue.repeatMode != .one, duration > crossfade * 2 + 1,
-           position >= duration - crossfade {
-            startCrossfade()
+        if crossfadesCurrent, fade == nil, isPlaying {
+            if prepared == nil, position >= duration - crossfade - Self.prepareLead { prepareNext() }
+            if position >= duration - crossfade { startCrossfade() }
         }
     }
 
     // MARK: Crossfade
 
-    /// Starts the next song on a new player and fades the two across; the old one keeps
-    /// only the song it's finishing.
+    /// Loads the next song on its own player ahead of the fade, paused at no volume. A paused
+    /// player still buffers, so the fade only has to press play.
+    private func prepareNext() {
+        var peek = queue
+        guard let following = peek.advance(finished: true), following.id != unpreparable else { return }
+        // It was lined up behind this song for a gapless change; it loads only once.
+        for item in player.items().dropFirst() {
+            forget(item)
+            player.remove(item)
+        }
+        guard let item = makeItem(following) else { return }
+        let deck = Self.makeDeck()
+        deck.volume = 0
+        deck.isMuted = isMuted
+        deck.insert(item, after: nil)
+        prepared = (deck, following.id, item)
+    }
+
+    private func dropPrepared() {
+        guard let ready = prepared else { return }
+        prepared = nil
+        forget(ready.item)
+        ready.deck.pause()
+        ready.deck.removeAllItems()
+    }
+
+    /// Plays the next song on the other player and fades the two across; the old one keeps
+    /// only the song it's finishing. The audio session is already active, so it's left alone:
+    /// setting it again mid-song can glitch the sound.
     private func startCrossfade() {
         var peek = queue
-        guard peek.advance(finished: true) != nil else { return }
+        guard let following = peek.advance(finished: true) else { return }
         endCurrent(at: duration)
         let old = player
         old.actionAtItemEnd = .pause
+        // Its end mustn't move the queue on again.
+        old.items().forEach(forget)
         for item in old.items().dropFirst() { old.remove(item) }
         if let timeObserver { old.removeTimeObserver(timeObserver) }
         fadingOut = old
-        player = Self.makeDeck()
-        player.isMuted = isMuted
-        player.volume = 0
-        follow(player)
         queue.advance(finished: true)
-        // Drops the old song's item from what's tracked, so its end doesn't move the queue.
-        reload()
-        resume()
+        unpreparable = nil
+        if let ready = prepared, ready.entry == following.id {
+            prepared = nil
+            player = ready.deck
+            follow(player)
+            position = 0
+            duration = following.track.duration ?? 0
+            player.play()
+            markStarted(following)
+            refreshUpcoming()
+        } else {
+            // Not lined up (a seek to near the end, or it failed to): load it now.
+            player = Self.makeDeck()
+            player.isMuted = isMuted
+            player.volume = 0
+            follow(player)
+            reload()
+            player.play()
+            if started == nil, let entry = queue.current { markStarted(entry) }
+        }
         let seconds = crossfade
         fade = Task { @MainActor [weak self] in
             let steps = max(Int(seconds * 20), 1)
