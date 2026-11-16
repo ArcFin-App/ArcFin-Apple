@@ -56,10 +56,17 @@ struct MusicMiniPlayer: View {
             .padding(.leading, DT.Spacing.sm)
             .padding(.trailing, DT.Spacing.xs)
             .contentShape(Rectangle())
+            // Up opens Now Playing; left skips ahead and right goes back.
             .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { drag in
-                if drag.translation.height < -20 { isExpanded = true }
+                let (x, y) = (drag.translation.width, drag.translation.height)
+                if abs(x) > abs(y), abs(x) > 50 {
+                    x < 0 ? music.next() : music.previous()
+                } else if y < -20 {
+                    isExpanded = true
+                }
             })
             .accessibilityElement(children: .contain)
+            .accessibilityAction(named: "Previous") { music.previous() }
         }
     }
 }
