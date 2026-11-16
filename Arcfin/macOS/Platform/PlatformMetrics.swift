@@ -13,6 +13,8 @@ enum PlatformMetrics {
     static let hostsAppleTVSetup = false
     /// Offers to set up a signed-out Apple TV on the same network (#481).
     static let setsUpAppleTV = false
+    /// Sheets with a lot in them lay it out in two columns across the screen (TVs are landscape).
+    static let sheetsSideBySide = false
     static let licensePlatform = "macOS"
     static let descriptionMaxWidth: CGFloat = .infinity
     static let pagePad: CGFloat = 28

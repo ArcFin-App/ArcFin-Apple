@@ -64,76 +64,8 @@ struct SeerrRequestConfirmSheet: View {
     }
 
     var body: some View {
-        // Wrapped in a NavigationStack so Cancel can live in the toolbar's leading edge
-        // (sheets.md's platform convention) instead of only as a link below the primary
-        // CTA. tvOS keeps the bottom link — its remote-navigation convention doesn't use a
-        // leading-corner Cancel button the same way, and Menu already serves that role.
-        NavigationStack {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                header
-
-                if isLoadingDetail {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, DT.Spacing.pagePad)
-                        .padding(.bottom, DT.Spacing.sm)
-                }
-
-                if let genres = detail?.genres, !genres.isEmpty {
-                    genreRow(genres)
-                }
-
-                if isSeries {
-                    seasonSection
-                }
-
-                let overviewText = detail?.overview ?? item.overview
-                if let overviewText, !overviewText.isEmpty {
-                    Text(overviewText)
-                        .font(DT.Font.caption)
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .lineSpacing(3)
-                        .lineLimit(5)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, DT.Spacing.pagePad)
-                        .padding(.bottom, DT.Spacing.md)
-                }
-
-                if let cast = detail?.cast, !cast.isEmpty {
-                    castRow(cast)
-                } else {
-                    Spacer().frame(height: DT.Spacing.sm)
-                }
-
-                Text("Send a request to your Seerr server. You'll be notified when it becomes available.")
-                    .font(DT.Font.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineSpacing(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, DT.Spacing.pagePad)
-                    .padding(.bottom, DT.Spacing.lg)
-
-                if alreadyRequested {
-                    Text("This title has already been requested. You'll be notified when it becomes available.")
-                        .font(.system(.caption))
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, DT.Spacing.pagePad)
-                        .padding(.bottom, DT.Spacing.sm)
-                } else if let submitError {
-                    Text(submitError)
-                        .font(.system(.caption))
-                        .foregroundStyle(DT.Color.palette("F43F5E"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, DT.Spacing.pagePad)
-                        .padding(.bottom, DT.Spacing.sm)
-                }
-
-                submitButton
-                SeerrRequestCancelButton { requestingItem = nil }
-            }
+        Group {
+            if PlatformMetrics.sheetsSideBySide { sideBySide } else { singleColumn }
         }
         .task {
             // A movie has no per-season rows to say so; the loaded requests and the item's own
@@ -152,10 +84,118 @@ struct SeerrRequestConfirmSheet: View {
             }
             isLoadingDetail = false
         }
-        .navigationTitle("")
-        .inlineNavigationTitle()
-        .seerrRequestCancelToolbar { requestingItem = nil }
+    }
+
+    /// iPhone, iPad and Mac: one column, in a NavigationStack so Cancel can live in the
+    /// toolbar's leading edge (sheets.md's platform convention).
+    private var singleColumn: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    header
+                    loadingIndicator
+                    if let genres = detail?.genres, !genres.isEmpty { genreRow(genres) }
+                    if isSeries { seasonSection }
+                    overview
+                    if let cast = detail?.cast, !cast.isEmpty {
+                        castRow(cast)
+                    } else {
+                        Spacer().frame(height: DT.Spacing.sm)
+                    }
+                    requestFooter
+                }
+            }
+            .navigationTitle("")
+            .inlineNavigationTitle()
+            .seerrRequestCancelToolbar { requestingItem = nil }
         }
+    }
+
+    /// Apple TV: the title on the left, what to request on the right, each scrolling on its
+    /// own, with room around the rows so a focused one isn't cut at the edge.
+    private var sideBySide: some View {
+        HStack(alignment: .top, spacing: 48) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                    loadingIndicator
+                    if let genres = detail?.genres, !genres.isEmpty { genreRow(genres) }
+                    overview
+                    if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
+                }
+                .padding(.vertical, 24)
+            }
+            .scrollClipDisabled()
+            .frame(maxWidth: .infinity)
+            .loginFocusSection()
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    if isSeries { seasonSection }
+                    requestFooter
+                }
+                .padding(.vertical, 24)
+            }
+            .scrollClipDisabled()
+            .frame(maxWidth: .infinity)
+            .loginFocusSection()
+        }
+    }
+
+    @ViewBuilder
+    private var loadingIndicator: some View {
+        if isLoadingDetail {
+            ProgressView()
+                .scaleEffect(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.sm)
+        }
+    }
+
+    @ViewBuilder
+    private var overview: some View {
+        let overviewText = detail?.overview ?? item.overview
+        if let overviewText, !overviewText.isEmpty {
+            Text(overviewText)
+                .font(DT.Font.caption)
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineSpacing(3)
+                .lineLimit(PlatformMetrics.sheetsSideBySide ? 10 : 5)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.md)
+        }
+    }
+
+    /// The note, any error, and Request and Cancel.
+    @ViewBuilder
+    private var requestFooter: some View {
+        Text("Send a request to your Seerr server. You'll be notified when it becomes available.")
+            .font(DT.Font.caption)
+            .foregroundStyle(DT.Color.textSecondary)
+            .lineSpacing(3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.lg)
+
+        if alreadyRequested {
+            Text("This title has already been requested. You'll be notified when it becomes available.")
+                .font(.system(.caption))
+                .foregroundStyle(DT.Color.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.sm)
+        } else if let submitError {
+            Text(submitError)
+                .font(.system(.caption))
+                .foregroundStyle(DT.Color.palette("F43F5E"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.bottom, DT.Spacing.sm)
+        }
+
+        submitButton
+        SeerrRequestCancelButton { requestingItem = nil }
     }
 
     // MARK: - Header / genres / cast (unchanged visual language)

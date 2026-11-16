@@ -78,9 +78,11 @@ private struct TVSheetPanel<Content: View>: View {
                 .padding(.top, 40)
             }
             // A list or scroll view clips at its own edges, so a row that grows when focused
-            // was cut there. The margin puts that room inside the scroll view.
+            // was cut there. The margin puts room inside the scroll view, and scroll views in
+            // a sheet don't clip: the panel's own edge does.
             content
                 .contentMargins(.horizontal, 40, for: .scrollContent)
+                .scrollClipDisabled()
                 .environment(\.inTitledSheet, title != nil)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .focusSection()
