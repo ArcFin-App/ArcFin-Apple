@@ -8,7 +8,7 @@ import Observation
 /// Plays a `MusicQueue`. AVQueuePlayer always holds the playing song and the one after it, so
 /// one runs into the next with no gap.
 @MainActor @Observable
-public final class MusicPlayer {
+public final class MusicQueuePlayer {
     public enum Event: Sendable {
         case started(MusicSong)
         /// Finished, skipped or stopped, at a position in seconds.
@@ -20,6 +20,8 @@ public final class MusicPlayer {
     public private(set) var isBuffering = false
     public private(set) var position: Double = 0
     public private(set) var duration: Double = 0
+    /// Goes up on every seek, for anything that shows the position without following it.
+    public private(set) var seekCount = 0
 
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
     @ObservationIgnored private let streamURL: (MusicSong) -> URL?
@@ -78,6 +80,7 @@ public final class MusicPlayer {
 
     public func seek(to seconds: Double) {
         position = seconds
+        seekCount += 1
         player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
     }
 
