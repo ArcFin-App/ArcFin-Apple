@@ -31,7 +31,9 @@ struct YouTubeTrailerPlayerView: View {
     }
 
     var body: some View {
-        bodyContent.alwaysDarkPlayer()
+        bodyContent
+            .alwaysDarkPlayer()
+            .onAppear { AppServices.music.yieldToVideo() }
     }
 
     @ViewBuilder

@@ -10,7 +10,8 @@ import Observation
 @MainActor @Observable
 public final class MusicQueuePlayer {
     public enum Event: Sendable {
-        case started(MusicSong)
+        /// Started or resumed after `suspend()`, at a position in seconds.
+        case started(MusicSong, at: Double)
         /// Finished, skipped or stopped, at a position in seconds.
         case ended(MusicSong, at: Double)
     }
@@ -32,6 +33,8 @@ public final class MusicQueuePlayer {
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
     @ObservationIgnored private var started: MusicQueue.Entry?
+    /// Songs that failed in a row; a whole queue of them stops instead of looping.
+    @ObservationIgnored private var failures = 0
 
     public init(streamURL: @escaping (MusicSong) -> URL?) {
         self.streamURL = streamURL
@@ -75,6 +78,13 @@ public final class MusicQueuePlayer {
     }
 
     public func pause() { player.pause() }
+
+    /// Pauses and ends the song's report, for something else taking over the audio.
+    /// `resume()` starts it again.
+    public func suspend() {
+        player.pause()
+        endCurrent()
+    }
 
     public func togglePlayPause() { isPlaying ? pause() : resume() }
 
@@ -244,6 +254,13 @@ public final class MusicQueuePlayer {
     private func itemFailed(_ item: ObjectIdentifier) {
         guard let failed = entryIDs[item] else { return }
         if failed == queue.current?.id {
+            failures += 1
+            guard failures < queue.entries.count else {
+                failures = 0
+                endCurrent()
+                player.pause()
+                return
+            }
             next()
             resume()
         } else {
@@ -254,12 +271,13 @@ public final class MusicQueuePlayer {
     private func tick(_ time: CMTime) {
         guard let item = player.currentItem, entryIDs[ObjectIdentifier(item)] == queue.current?.id else { return }
         if time.isNumeric { position = time.seconds }
+        if position > 0 { failures = 0 }
         if item.duration.isNumeric, item.duration.seconds > 0 { duration = item.duration.seconds }
     }
 
     private func markStarted(_ entry: MusicQueue.Entry) {
         started = entry
-        onEvent?(.started(entry.track))
+        onEvent?(.started(entry.track, at: position))
     }
 
     private func endCurrent(at seconds: Double? = nil) {

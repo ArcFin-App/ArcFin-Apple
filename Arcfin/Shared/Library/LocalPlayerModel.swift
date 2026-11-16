@@ -17,6 +17,7 @@ final class LocalPlayerModel {
 
     func start(_ url: URL) async {
         _ = url.startAccessingSecurityScopedResource()
+        AppServices.music.yieldToVideo()
         try? await player.load(url: url, startPositionTicks: 0)
         await player.play()
     }

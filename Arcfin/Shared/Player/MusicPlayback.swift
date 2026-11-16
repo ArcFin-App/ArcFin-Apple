@@ -21,6 +21,8 @@ final class MusicPlayback {
     @ObservationIgnored private var observation: Task<Void, Never>?
     @ObservationIgnored private var artwork: (id: String, image: MPMediaItemArtwork)?
     @ObservationIgnored private var hasCommands = false
+    /// Reports go out one after another, so a song's Stopped always lands before the next Start.
+    @ObservationIgnored private var lastReport: Task<Void, Never>?
 
     private static let deviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
 
@@ -36,6 +38,14 @@ final class MusicPlayback {
 
     /// Whether there's anything to show a mini player for.
     var isActive: Bool { player.current != nil }
+
+    /// A video is starting: the music pauses, its report ends, and the lock screen's controls
+    /// go to the video until the music plays again.
+    func yieldToVideo() {
+        guard player.current != nil else { return }
+        player.suspend()
+        removeCommands()
+    }
 
     func artworkURL(for song: MusicSong, width: Int = 600) -> URL? {
         guard let credential = authManager.state.credential else { return nil }
@@ -53,20 +63,29 @@ final class MusicPlayback {
     private func handle(_ event: MusicQueuePlayer.Event) {
         guard let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
+        let client = client
         switch event {
-        case .started(let song):
+        case .started(let song, let seconds):
             installCommands()
-            Task {
+            report {
                 await client.reportPlaybackStart(credential: credential, authHeader: header, itemId: song.id,
-                                                 mediaSourceId: song.id, positionTicks: 0)
+                                                 mediaSourceId: song.id, positionTicks: Int64(seconds * 10_000_000))
             }
             startProgressReports()
         case .ended(let song, let seconds):
             progressTask?.cancel()
-            Task {
+            report {
                 await client.reportPlaybackStopped(credential: credential, authHeader: header, itemId: song.id,
                                                    mediaSourceId: song.id, positionTicks: Int64(seconds * 10_000_000))
             }
+        }
+    }
+
+    private func report(_ send: @escaping @Sendable () async -> Void) {
+        let previous = lastReport
+        lastReport = Task {
+            await previous?.value
+            await send()
         }
     }
 
@@ -77,10 +96,12 @@ final class MusicPlayback {
                 try? await Task.sleep(for: .seconds(10))
                 guard let self, !Task.isCancelled, let song = player.current,
                       let credential = authManager.state.credential else { return }
-                await client.reportPlaybackProgress(
-                    credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken),
-                    itemId: song.id, mediaSourceId: song.id, positionTicks: Int64(player.position * 10_000_000),
-                    isPaused: !player.isPlaying)
+                let header = authManager.authClient.authHeader(token: credential.accessToken)
+                let client = client, ticks = Int64(player.position * 10_000_000), isPaused = !player.isPlaying
+                report {
+                    await client.reportPlaybackProgress(credential: credential, authHeader: header, itemId: song.id,
+                                                        mediaSourceId: song.id, positionTicks: ticks, isPaused: isPaused)
+                }
             }
         }
     }
@@ -144,24 +165,35 @@ final class MusicPlayback {
 
     /// Installed again each time a song starts: the video player clears every command when it
     /// closes.
-    private func installCommands() {
+    private static var commands: [MPRemoteCommand] {
         let center = MPRemoteCommandCenter.shared()
-        let commands = [center.playCommand, center.pauseCommand, center.togglePlayPauseCommand,
-                        center.nextTrackCommand, center.previousTrackCommand, center.changePlaybackPositionCommand]
-        if hasCommands { commands.forEach { $0.removeTarget(nil) } }
+        return [center.playCommand, center.pauseCommand, center.togglePlayPauseCommand,
+                center.nextTrackCommand, center.previousTrackCommand, center.changePlaybackPositionCommand]
+    }
+
+    private func removeCommands() {
+        guard hasCommands else { return }
+        hasCommands = false
+        Self.commands.forEach { $0.removeTarget(nil) }
+    }
+
+    private func installCommands() {
+        removeCommands()
         hasCommands = true
+        let center = MPRemoteCommandCenter.shared()
         let player = player
-        center.playCommand.addTarget { _ in MainActor.assumeIsolated { player.resume() }; return .success }
-        center.pauseCommand.addTarget { _ in MainActor.assumeIsolated { player.pause() }; return .success }
-        center.togglePlayPauseCommand.addTarget { _ in MainActor.assumeIsolated { player.togglePlayPause() }; return .success }
-        center.nextTrackCommand.addTarget { _ in MainActor.assumeIsolated { player.next() }; return .success }
-        center.previousTrackCommand.addTarget { _ in MainActor.assumeIsolated { player.previous() }; return .success }
+        center.playCommand.addTarget { _ in Task { @MainActor in player.resume() }; return .success }
+        center.pauseCommand.addTarget { _ in Task { @MainActor in player.pause() }; return .success }
+        center.togglePlayPauseCommand.addTarget { _ in Task { @MainActor in player.togglePlayPause() }; return .success }
+        center.nextTrackCommand.addTarget { _ in Task { @MainActor in player.next() }; return .success }
+        center.previousTrackCommand.addTarget { _ in Task { @MainActor in player.previous() }; return .success }
         center.changePlaybackPositionCommand.addTarget { event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-            MainActor.assumeIsolated { player.seek(to: event.positionTime) }
+            let seconds = event.positionTime
+            Task { @MainActor in player.seek(to: seconds) }
             return .success
         }
-        commands.forEach { $0.isEnabled = true }
+        Self.commands.forEach { $0.isEnabled = true }
         // A song is skipped, not jumped through ten seconds at a time.
         center.skipForwardCommand.isEnabled = false
         center.skipBackwardCommand.isEnabled = false
