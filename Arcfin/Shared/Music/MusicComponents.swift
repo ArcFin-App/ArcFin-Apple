@@ -100,6 +100,7 @@ struct MusicAlbumMenu: View {
         Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") {
             Task { MusicActions.addToQueue(await MusicActions.albumSongs(album)) }
         }
+        MusicAddToPlaylistButton { await MusicActions.albumSongs(album) }
         Divider()
         Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
             Task { await MusicActions.instantMix(from: album.id) }
@@ -114,6 +115,7 @@ struct MusicSongMenu: View {
     var body: some View {
         Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
         Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
+        MusicAddToPlaylistButton { [song] }
         Divider()
         MusicFavoriteButton(id: song.id, server: song.isFavorite)
         Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {

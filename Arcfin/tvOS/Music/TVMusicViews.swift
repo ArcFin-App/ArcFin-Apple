@@ -13,9 +13,7 @@ extension View {
             case .songs(let library): TVMusicSongsView(libraryID: library)
             case .genres(let library): TVMusicGenresView(libraryID: library)
             case .playlists: TVMusicPlaylistsView()
-            case .playlist(let playlist): TVMusicSongListView(title: playlist.name, artworkURL: MusicAPI.artworkURL(playlist, width: 800)) {
-                await MusicActions.playlistSongs(playlist)
-            }
+            case .playlist(let playlist): TVMusicPlaylistView(playlist: playlist)
             case .album(let album): TVMusicAlbumView(album: album)
             case .artist(let artist, let library): TVMusicArtistView(artist: artist, libraryID: library)
             }
@@ -148,6 +146,7 @@ private struct TVMusicSongRow: View {
     let song: MusicSong
     var number: Int?
     var showsArtwork = false
+    var onRemove: (() -> Void)?
     let play: () -> Void
 
     var body: some View {
@@ -158,6 +157,10 @@ private struct TVMusicSongRow: View {
                 Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
                 Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
                 MusicFavoriteButton(id: song.id, server: song.isFavorite)
+                MusicAddToPlaylistButton { [song] }
+                if let onRemove {
+                    Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive, action: onRemove)
+                }
                 Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
                     Task {
                         await MusicActions.instantMix(from: song.id)
@@ -257,6 +260,7 @@ private struct TVAlbumGrid: View {
                     Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") {
                         Task { MusicActions.addToQueue(await MusicActions.albumSongs(album)) }
                     }
+                    MusicAddToPlaylistButton { await MusicActions.albumSongs(album) }
                 }
                 .focused($focused, equals: album.id)
                 .task { await list.rowAppeared(album) }
@@ -493,6 +497,7 @@ private struct TVMusicSongPage<Header: View>: View {
     let songs: [MusicSong]
     let hasLoaded: Bool
     var numbered = true
+    var onRemove: ((MusicSong) -> Void)?
     @ViewBuilder let header: () -> Header
 
     var body: some View {
@@ -515,7 +520,8 @@ private struct TVMusicSongPage<Header: View>: View {
                         ContentUnavailableView("No Songs", systemImage: "music.note")
                     }
                     ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
-                        TVMusicSongRow(song: song, number: numbered ? song.trackNumber : nil, showsArtwork: !numbered) {
+                        TVMusicSongRow(song: song, number: numbered ? song.trackNumber : nil, showsArtwork: !numbered,
+                                       onRemove: onRemove.map { remove in { remove(song) } }) {
                             TVMusicPresenter.shared.play(songs, from: index)
                         }
                     }
@@ -555,20 +561,19 @@ struct TVMusicAlbumView: View {
     }
 }
 
-/// A playlist, or any list of songs that comes in one go.
-struct TVMusicSongListView: View {
-    let title: String
-    let artworkURL: URL?
-    let load: () async -> [MusicSong]
+/// A playlist: its songs in order; hold one to remove it.
+struct TVMusicPlaylistView: View {
+    let playlist: MusicPlaylist
     @State private var songs: [MusicSong] = []
     @State private var hasLoaded = false
 
     var body: some View {
-        TVMusicSongPage(artworkURL: artworkURL, songs: songs, hasLoaded: hasLoaded, numbered: false) {
-            Text(verbatim: title).font(.title2.weight(.bold)).lineLimit(2)
+        TVMusicSongPage(artworkURL: MusicAPI.artworkURL(playlist, width: 800), songs: songs, hasLoaded: hasLoaded,
+                        numbered: false, onRemove: { song in Task { await MusicPlaylistEditor.shared.remove(song, from: playlist) } }) {
+            Text(verbatim: playlist.name).font(.title2.weight(.bold)).lineLimit(2)
         }
-        .task {
-            songs = await load()
+        .task(id: MusicPlaylistEditor.shared.changeCount) {
+            songs = await MusicActions.playlistSongs(playlist)
             hasLoaded = true
         }
     }

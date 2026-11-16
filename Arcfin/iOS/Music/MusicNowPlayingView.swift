@@ -161,6 +161,7 @@ struct MusicNowPlayingView: View {
                 Task { await MusicActions.instantMix(from: song.id) }
             }
             MusicFavoriteButton(id: song.id, server: song.isFavorite)
+            MusicAddToPlaylistButton { [song] }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.body.weight(.semibold))

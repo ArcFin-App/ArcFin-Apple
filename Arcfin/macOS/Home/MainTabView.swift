@@ -10,6 +10,7 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
+    @Bindable private var musicPlaylists = MusicPlaylistEditor.shared
     @Bindable private var tagEditor = TagEditor.shared
     @Bindable private var metadataEditor = MetadataEditor.shared
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
@@ -84,6 +85,10 @@ struct MainTabView: View {
             }
             .sheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
+                    .presentationDetents([.medium, .large])
+            }
+            .sheet(item: $musicPlaylists.request) { request in
+                MusicAddToPlaylistSheet(songs: request.songs)
                     .presentationDetents([.medium, .large])
             }
             .onChange(of: selectedTab) { old, _ in

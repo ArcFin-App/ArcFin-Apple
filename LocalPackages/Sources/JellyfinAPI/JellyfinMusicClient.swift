@@ -72,12 +72,16 @@ public struct MusicSong: Sendable, Identifiable, Equatable, Hashable {
     public var hasLyrics: Bool
     /// The file's container as the server names it, e.g. "flac" or "mov,mp4,m4a,3gp,3g2,mj2".
     public var container: String?
+    /// Its place in a playlist, which removing it from the playlist needs.
+    public var playlistEntryId: String?
 
     public init(id: String, name: String, albumId: String? = nil, albumName: String? = nil, albumArtist: String? = nil,
                 artists: [MusicArtistRef] = [], trackNumber: Int? = nil, discNumber: Int? = nil,
                 runTimeTicks: Int64? = nil, primaryImageTag: String? = nil, albumPrimaryImageTag: String? = nil,
-                isFavorite: Bool = false, playCount: Int = 0, hasLyrics: Bool = false, container: String? = nil) {
+                isFavorite: Bool = false, playCount: Int = 0, hasLyrics: Bool = false, container: String? = nil,
+                playlistEntryId: String? = nil) {
         self.container = container
+        self.playlistEntryId = playlistEntryId
         self.id = id; self.name = name; self.albumId = albumId; self.albumName = albumName
         self.albumArtist = albumArtist; self.artists = artists; self.trackNumber = trackNumber
         self.discNumber = discNumber; self.runTimeTicks = runTimeTicks; self.primaryImageTag = primaryImageTag
@@ -329,6 +333,11 @@ extension JellyfinMediaClient {
                                               songCount: $0.childCount) }
     }
 
+    public func createMusicPlaylist(credential: ServerCredential, authHeader: String, name: String,
+                                    songIds: [String]) async throws {
+        try await createPlaylist(credential: credential, authHeader: authHeader, name: name, itemIds: songIds, mediaType: "Audio")
+    }
+
     /// A playlist's songs in its own order.
     public func getPlaylistSongs(credential: ServerCredential, authHeader: String, playlistId: String) async throws -> [MusicSong] {
         var query = baseQuery(credential: credential, startIndex: 0, limit: 1000)
@@ -474,6 +483,7 @@ struct MusicItemResponse: Decodable {
     let hasLyrics: Bool?
     let container: String?
     let type: String?
+    let playlistItemId: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", overview = "Overview", albumArtist = "AlbumArtist"
@@ -482,7 +492,7 @@ struct MusicItemResponse: Decodable {
         case backdropImageTags = "BackdropImageTags", productionYear = "ProductionYear"
         case indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber", runTimeTicks = "RunTimeTicks"
         case childCount = "ChildCount", genres = "Genres", userData = "UserData", hasLyrics = "HasLyrics"
-        case container = "Container", type = "Type"
+        case container = "Container", type = "Type", playlistItemId = "PlaylistItemId"
     }
 
     private static func refs(_ items: [NameId]?) -> [MusicArtistRef] {
@@ -506,7 +516,7 @@ struct MusicItemResponse: Decodable {
                    artists: Self.refs(artistItems), trackNumber: indexNumber, discNumber: parentIndexNumber,
                    runTimeTicks: runTimeTicks, primaryImageTag: imageTags?["Primary"],
                    albumPrimaryImageTag: albumPrimaryImageTag, isFavorite: userData?.isFavorite ?? false,
-                   playCount: userData?.playCount ?? 0, hasLyrics: hasLyrics ?? false, container: container)
+                   playCount: userData?.playCount ?? 0, hasLyrics: hasLyrics ?? false, container: container, playlistEntryId: playlistItemId)
     }
 }
 

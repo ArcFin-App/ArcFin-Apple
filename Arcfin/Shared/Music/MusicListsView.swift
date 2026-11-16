@@ -73,6 +73,8 @@ struct MusicSongsView: View {
 /// A song in a list: its cover, name and artist, and a menu.
 struct MusicSongRow: View {
     let song: MusicSong
+    /// On a playlist's page: Remove from Playlist in its menu.
+    var onRemove: (() -> Void)?
     let play: () -> Void
     private var player: MusicQueuePlayer { AppServices.music.player }
 
@@ -100,7 +102,13 @@ struct MusicSongRow: View {
         }
         .buttonStyle(.plain)
         .listRowBackground(Color.clear)
-        .contextMenu { MusicSongMenu(song: song) }
+        .contextMenu {
+            MusicSongMenu(song: song)
+            if let onRemove {
+                Divider()
+                Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive, action: onRemove)
+            }
+        }
         .swipeActions(edge: .leading) {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
                 .tint(DT.Color.accent)
@@ -325,6 +333,7 @@ struct MusicPlaylistsView: View {
         .navigationTitle("Playlists")
         .task { await list.loadIfNeeded() }
         .refreshable { await list.reload() }
+        .onChange(of: MusicPlaylistEditor.shared.changeCount) { Task { await list.reload() } }
     }
 }
 
@@ -357,14 +366,16 @@ struct MusicPlaylistView: View {
                 ContentUnavailableView("No Songs", systemImage: "music.note").listRowBackground(Color.clear)
             }
             ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
-                MusicSongRow(song: song) { MusicActions.play(songs, from: index) }
+                MusicSongRow(song: song, onRemove: { Task { await MusicPlaylistEditor.shared.remove(song, from: playlist) } }) {
+                    MusicActions.play(songs, from: index)
+                }
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .screenBackground()
         .inlineNavigationTitle()
-        .task {
+        .task(id: MusicPlaylistEditor.shared.changeCount) {
             songs = await MusicActions.playlistSongs(playlist)
             hasLoaded = true
         }

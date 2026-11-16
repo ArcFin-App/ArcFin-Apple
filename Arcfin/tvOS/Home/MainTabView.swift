@@ -9,6 +9,7 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
+    @Bindable private var musicPlaylists = MusicPlaylistEditor.shared
     @Bindable private var tagEditor = TagEditor.shared
     @State private var searchQuery = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
@@ -64,6 +65,9 @@ struct MainTabView: View {
             }
             .appSheet(item: $playlistStore.addingItem, title: "Add to Playlist", systemImage: "text.badge.plus") { item in
                 AddToPlaylistSheet(item: item)
+            }
+            .appSheet(item: $musicPlaylists.request, title: "Add to Playlist", systemImage: "text.badge.plus") { request in
+                MusicAddToPlaylistSheet(songs: request.songs)
             }
         }
     }
