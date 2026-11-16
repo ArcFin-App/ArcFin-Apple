@@ -7,17 +7,19 @@ import JellyfinAPI
 // MARK: - Apple TV: being set up
 
 /// The Apple TV's side of setup from an iPhone or iPad (#481), while it's on the sign-in
-/// pages. Nothing is contacted until the person at the TV allows it, so a device on the
-/// network can't sign this Apple TV in to another server by itself.
+/// pages. The connection agrees fresh keys and shows a code made from them on both screens
+/// (see DeviceSetup). Nothing is contacted until the person here presses Allow and the
+/// person at the phone confirms the same code, so nobody else on the network can sign this
+/// Apple TV in, or listen in.
 @MainActor @Observable
 final class AppleTVSetupHost {
     enum Phase: Equatable {
         case idle
-        /// A phone asked; the person at the TV allows it or not.
-        case asking(userName: String, serverName: String)
-        case contacting
-        /// Shown here and on the phone, which approves it once they match.
-        case showingCode(String, userName: String)
+        /// A phone connected; the person here checks the code and allows it or not.
+        case confirming(code: String)
+        /// Allowed here; waiting for the phone to confirm the same code.
+        case waitingForPhone(code: String)
+        case signingIn(names: String)
         case failed(String)
     }
 
@@ -27,20 +29,20 @@ final class AppleTVSetupHost {
 
     @ObservationIgnored private var listener: DeviceSetupListener?
     @ObservationIgnored private var listenTask: Task<Void, Never>?
-    @ObservationIgnored private var channel: DeviceSetupChannel?
+    @ObservationIgnored private var session: DeviceSetupSession?
     @ObservationIgnored private var answer: CheckedContinuation<Bool, Never>?
 
     func start(authManager: AuthManager) {
         guard listener == nil, let listener = try? DeviceSetupListener() else { return }
         self.listener = listener
         listenTask = Task { [weak self] in
-            for await channel in listener.channels {
+            for await session in listener.sessions {
                 guard let self else { return }
-                if self.channel != nil {
-                    channel.finish(with: .failed(.busy))
+                if self.session != nil {
+                    session.finish(with: .failed(.busy))
                     continue
                 }
-                Task { await self.serve(channel, authManager: authManager) }
+                Task { await self.serve(session, authManager: authManager) }
             }
         }
     }
@@ -57,7 +59,7 @@ final class AppleTVSetupHost {
         answer = nil
     }
 
-    /// The person at the TV stops it; the TV stays ready for another try.
+    /// The person here stops it; the TV stays ready for another try.
     func cancelSession() {
         endSession(sending: .failed(.declined))
     }
@@ -88,47 +90,49 @@ final class AppleTVSetupHost {
         return .unreachable
     }
 
-    private func serve(_ channel: DeviceSetupChannel, authManager: AuthManager) async {
-        self.channel = channel
-        var messages = channel.messages.makeAsyncIterator()
-        guard case .hello(let profiles)? = await messages.next(), let first = profiles.first else {
-            endSession()
-            return
-        }
-        let names = ListFormatter.localizedString(byJoining: profiles.map(\.userName))
-        phase = .asking(userName: names, serverName: first.serverName)
+    private func serve(_ session: DeviceSetupSession, authManager: AuthManager) async {
+        self.session = session
+        phase = .confirming(code: session.code)
         let allowed = await withCheckedContinuation { answer = $0 }
         guard allowed else {
             endSession(sending: .failed(.declined))
             return
         }
-        channel.send(.allowed)
-        phase = .contacting
+        session.send(.allowed)
+        phase = .waitingForPhone(code: session.code)
 
-        // Each profile gets its own Quick Connect code on its own server. The first is shown
-        // here for the person to check against the phone; the rest follow on the same
-        // connection once that one's confirmed.
+        // The phone sends its profiles only once its person has confirmed the same code.
+        var messages = session.messages.makeAsyncIterator()
+        guard case .hello(let profiles)? = await messages.next(), let first = profiles.first,
+              self.session === session else {
+            endSession()
+            return
+        }
+        phase = .signingIn(names: ListFormatter.localizedString(byJoining: profiles.map(\.userName)))
+
+        // Each profile gets its own Quick Connect code on its own server, which the phone
+        // approves with that profile's sign-in. The connection is already checked, so no
+        // more codes need comparing.
         var pending: [(index: Int, url: URL, secret: String)] = []
         for (index, profile) in profiles.enumerated() {
             switch await startQuickConnect(profile.servers, authManager: authManager) {
             case .started(let url, let code, let secret):
                 pending.append((index, url, secret))
-                channel.send(.code(profile: index, code: code))
-                if pending.count == 1 { phase = .showingCode(code, userName: profile.userName) }
+                session.send(.code(profile: index, code: code))
             case .quickConnectOff(let url):
                 guard index > 0 else {
                     endSession(sending: .failed(.quickConnectOff))
                     passwordServer = url
                     return
                 }
-                channel.send(.skipped(profile: index, .quickConnectOff))
+                session.send(.skipped(profile: index, .quickConnectOff))
             case .unreachable:
                 guard index > 0 else {
                     endSession(sending: .failed(.unreachable))
                     phase = .failed(String(localized: "This Apple TV couldn't reach \(first.serverName). Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first."))
                     return
                 }
-                channel.send(.skipped(profile: index, .unreachable))
+                session.send(.skipped(profile: index, .unreachable))
             }
         }
 
@@ -136,14 +140,14 @@ final class AppleTVSetupHost {
         // up early gets a short grace, so approvals it already made still sign in.
         var closedAt: Date?
         let watcher = Task {
-            for await _ in channel.messages {}
+            for await _ in session.messages {}
             closedAt = .now
         }
         defer { watcher.cancel() }
         var signedIn: [Int: ServerCredential] = [:]
         for _ in 0..<300 where signedIn.count < pending.count {
             try? await Task.sleep(for: .seconds(2))
-            guard channel === self.channel else { return }
+            guard self.session === session else { return }
             if let closedAt, Date.now.timeIntervalSince(closedAt) > 20 { break }
             for item in pending where signedIn[item.index] == nil {
                 let approved = (try? await authManager.authClient.pollQuickConnect(baseURL: item.url, secret: item.secret)) ?? false
@@ -153,29 +157,38 @@ final class AppleTVSetupHost {
                 }
             }
         }
-        guard let primary = signedIn.keys.min().flatMap({ signedIn[$0] }) else {
+        guard let primaryIndex = signedIn.keys.min(), let primary = signedIn[primaryIndex] else {
             endSession(sending: .failed(.expired))
             return
         }
         endSession(sending: .done(signedIn: signedIn.count))
         // The others first, then the first chosen, so that's the one in use.
-        for (_, credential) in signedIn.sorted(by: { $0.key > $1.key }) where credential.id != primary.id {
+        for (_, credential) in signedIn.sorted(by: { $0.key > $1.key }) where credential.userID != primary.userID || credential.baseURL != primary.baseURL {
             authManager.addProfile(credential)
         }
         authManager.save(primary)
+        Self.keepTMDBKeys(profiles: profiles, signedIn: signedIn, authManager: authManager)
     }
 
-    private func giveUp() {
-        guard case .showingCode = phase else { return }
-        endSession()
+    /// Each profile's TMDB key, under the id the profile got here, and the active one's in
+    /// the slot TMDB reads.
+    private static func keepTMDBKeys(profiles: [DeviceSetup.Profile], signedIn: [Int: ServerCredential],
+                                     authManager: AuthManager) {
+        let active = authManager.state.credential?.id
+        for (index, credential) in signedIn {
+            guard let key = profiles[index].tmdbKey, !key.isEmpty else { continue }
+            let id = authManager.profiles.first { $0.userID == credential.userID && $0.baseURL == credential.baseURL }?.id ?? credential.id
+            try? TMDBCredential.save(key, profile: id)
+            if id == active { try? TMDBCredential.save(key) }
+        }
     }
 
     /// `sending` goes out before the connection closes.
     private func endSession(sending last: DeviceSetup.Message? = nil) {
         answer?.resume(returning: false)
         answer = nil
-        if let last { channel?.finish(with: last) } else { channel?.close() }
-        channel = nil
+        if let last { session?.finish(with: last) } else { session?.close() }
+        session = nil
         if case .failed = phase { return }
         phase = .idle
     }
@@ -206,31 +219,37 @@ struct AppleTVSetupHostView: View {
         switch host.phase {
         case .idle:
             EmptyView()
-        case .asking(let userName, let serverName):
+        case .confirming(let code):
             title("Set Up This Apple TV?")
-            message(Text("\(userName) wants to sign this Apple TV in to \(serverName) from an iPhone or iPad."))
+            message(Text("An iPhone or iPad on this network wants to set up this Apple TV. Allow it only if it shows this code."))
+            codeText(code)
             HStack(spacing: 32) {
                 Button("Allow") { host.allow(true) }
                 Button("Cancel", role: .cancel) { host.allow(false) }
             }
-        case .contacting:
-            title("Contacting Your Server")
-            ProgressView()
-        case .showingCode(let code, let userName):
-            title("Check the Code")
-            message(Text("Make sure \(userName)'s iPhone or iPad shows the same code, then confirm it there."))
-            Text(code.count == 6 ? "\(code.prefix(3)) \(code.suffix(3))" : code)
-                .font(.system(size: 96, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .tracking(10)
-                .foregroundStyle(DT.Color.textPrimary)
-                .accessibilityLabel("Code \(code.map(String.init).joined(separator: " "))")
+        case .waitingForPhone(let code):
+            title("Confirm on Your iPhone or iPad")
+            message(Text("Check that it shows the same code, then confirm it there."))
+            codeText(code)
             Button("Cancel", role: .cancel) { host.cancelSession() }
+        case .signingIn(let names):
+            title("Signing In")
+            message(Text("Signing in \(names)."))
+            ProgressView()
         case .failed(let reason):
             title("Couldn't Set Up This Apple TV")
             message(Text(reason))
             Button("OK") { host.dismissFailure() }
         }
+    }
+
+    private func codeText(_ code: String) -> some View {
+        Text(code.count == 6 ? "\(code.prefix(3)) \(code.suffix(3))" : code)
+            .font(.system(size: 96, weight: .bold, design: .rounded))
+            .monospacedDigit()
+            .tracking(10)
+            .foregroundStyle(DT.Color.textPrimary)
+            .accessibilityLabel("Code \(code.map(String.init).joined(separator: " "))")
     }
 
     private func title(_ text: LocalizedStringKey) -> some View {
@@ -250,8 +269,9 @@ struct AppleTVSetupHostView: View {
 // MARK: - iPhone / iPad: setting one up
 
 /// The phone's side (#481): notices a signed-out Apple TV on the network and offers to set it
-/// up with one or more of this device's profiles, by approving the Quick Connect codes it
-/// shows.
+/// up with one or more of this device's profiles. Once both people have checked the code,
+/// it sends the profiles over the sealed connection and approves the Quick Connect code the
+/// Apple TV starts for each.
 @MainActor @Observable
 final class AppleTVSetupGuide {
     enum Phase: Equatable {
@@ -259,9 +279,11 @@ final class AppleTVSetupGuide {
         /// Settings › Set Up Nearby Apple TV: looking, with nothing found yet.
         case searching
         case offering(DeviceSetupBrowser.AppleTV)
-        /// Waiting for the person at the Apple TV to press Allow.
-        case waitingForTV(String)
+        case connecting(String)
+        /// Both screens show this; the person confirms it matches.
         case confirming(code: String, name: String)
+        /// Confirmed here; waiting for the person at the Apple TV to press Allow.
+        case waitingForTV(String)
         case approving
         case done(String)
         case failed(String)
@@ -273,35 +295,43 @@ final class AppleTVSetupGuide {
     /// Profiles with a PIN, which can only be added after switching to them.
     private(set) var locked: Set<UUID> = []
 
+    /// How long it looks by itself each time the app comes to the front. Settings › Set Up
+    /// Nearby Apple TV looks again whenever it's asked.
+    private static let lookingWindow: Duration = .seconds(120)
+
     @ObservationIgnored private var browser: DeviceSetupBrowser?
     @ObservationIgnored private var browseTask: Task<Void, Never>?
-    @ObservationIgnored private var channel: DeviceSetupChannel?
+    @ObservationIgnored private var session: DeviceSetupSession?
     @ObservationIgnored private var declined: Set<String> = []
     @ObservationIgnored private var sending: [ServerCredential] = []
-    @ObservationIgnored private var confirmed = false
-    @ObservationIgnored private var waitingCodes: [Int: String] = [:]
-    @ObservationIgnored private var skipped = 0
-
+    @ObservationIgnored private var tvAllowed = false
     @ObservationIgnored private var found: [DeviceSetupBrowser.AppleTV] = []
     @ObservationIgnored private var searchTimeout: Task<Void, Never>?
 
-    /// Keeps looking while the app is in front. The search stops when the Local Network
-    /// permission is first asked for, or the network changes, so it starts again after a
-    /// moment rather than staying stopped.
+    /// Looks for a while after the app comes to the front, then stops to save battery. The
+    /// search also stops when the Local Network permission is first asked for, so it starts
+    /// again after a moment.
     func start(authManager: AuthManager) {
         guard browseTask == nil else { return }
         browseTask = Task { [weak self] in
-            while !Task.isCancelled {
+            let deadline = ContinuousClock.now + Self.lookingWindow
+            while !Task.isCancelled, ContinuousClock.now < deadline {
                 let browser = DeviceSetupBrowser()
                 self?.browser = browser
+                let stopper = Task {
+                    try? await Task.sleep(until: deadline)
+                    browser.stop()
+                }
                 for await results in browser.results {
                     guard let self else { return }
                     self.found = results
                     await self.offer(authManager: authManager)
                 }
+                stopper.cancel()
                 browser.stop()
                 try? await Task.sleep(for: .seconds(3))
             }
+            self?.browser = nil
         }
     }
 
@@ -316,13 +346,14 @@ final class AppleTVSetupGuide {
         if phase == .searching { phase = .idle }
     }
 
-    /// Settings › Set Up Nearby Apple TV: offers one even after Not Now, and says so when
-    /// there's none.
+    /// Settings › Set Up Nearby Apple TV: looks again, offers one even after Not Now, and
+    /// says so when there's none.
     func findNearby(authManager: AuthManager) {
         declined = []
         phase = .searching
+        stop()
+        phase = .searching
         start(authManager: authManager)
-        Task { await offer(authManager: authManager) }
         searchTimeout?.cancel()
         searchTimeout = Task { [weak self] in
             try? await Task.sleep(for: .seconds(15))
@@ -355,14 +386,15 @@ final class AppleTVSetupGuide {
         if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
     }
 
+    /// Hides this Apple TV until the app is next opened, or Settings looks again.
     func notNow() {
         if case .offering(let tv) = phase { declined.insert(tv.name) }
         cancel()
     }
 
     func cancel() {
-        channel?.finish(with: .failed(.declined))
-        channel = nil
+        session?.finish(with: .failed(.declined))
+        session = nil
         phase = .idle
     }
 
@@ -373,49 +405,41 @@ final class AppleTVSetupGuide {
             .filter { selected.contains($0.id) && !locked.contains($0.id) }
             .sorted { ($0.id == active ? 0 : 1) < ($1.id == active ? 0 : 1) }
         guard !sending.isEmpty else { return }
-        declined.insert(tv.name)
-        confirmed = false
-        waitingCodes = [:]
-        skipped = 0
-        let channel = DeviceSetupChannel(endpoint: tv.endpoint)
-        self.channel = channel
-        phase = .waitingForTV(tv.name)
-        channel.send(.hello(profiles: sending.map { profile in
-            DeviceSetup.Profile(userName: profile.displayName,
-                                serverName: profile.baseURL.host() ?? profile.baseURL.absoluteString,
-                                servers: Self.addresses(for: profile).map(\.absoluteString))
-        }))
+        tvAllowed = false
+        phase = .connecting(tv.name)
         Task {
-            for await message in channel.messages {
+            guard let session = try? await withTimeout(seconds: 10, { try await DeviceSetupSession.connect(to: tv.endpoint) }) else {
+                phase = .failed(String(localized: "The Apple TV stopped answering. Try again from its sign-in page."))
+                return
+            }
+            guard case .connecting = phase else {
+                session.finish(with: .failed(.declined))
+                return
+            }
+            self.session = session
+            phase = .confirming(code: session.code, name: tv.name)
+            for await message in session.messages {
                 switch message {
+                case .allowed:
+                    tvAllowed = true
+                    if case .waitingForTV = phase { phase = .approving }
                 case .code(let index, let code):
-                    if index == 0 {
-                        phase = .confirming(code: code, name: tv.name)
-                    } else if confirmed {
-                        approve(index: index, code: code, authManager: authManager)
-                    } else {
-                        waitingCodes[index] = code
-                    }
-                case .skipped:
-                    skipped += 1
+                    approve(index: index, code: code, authManager: authManager)
                 case .done(let count):
                     phase = .done(count == 1
                         ? String(localized: "The Apple TV is signed in as \(sending.first?.displayName ?? "").")
                         : String(localized: "The Apple TV is signed in with \(count) profiles."))
-                    channel.close()
                 case .failed(let failure):
                     phase = .failed(Self.explanation(failure))
-                    channel.close()
                 default:
                     break
                 }
             }
-            if self.channel === channel { self.channel = nil }
+            if self.session === session { self.session = nil }
             switch phase {
-            case .waitingForTV, .confirming:
+            case .confirming, .waitingForTV:
                 phase = .failed(String(localized: "The Apple TV stopped answering. Try again from its sign-in page."))
             case .approving:
-                // Approved, but the Apple TV hung up before saying it had signed in.
                 phase = .failed(String(localized: "The Apple TV stopped answering before it confirmed. Check whether it's signed in."))
             default:
                 break
@@ -423,35 +447,40 @@ final class AppleTVSetupGuide {
         }
     }
 
-    /// The first code matches what the Apple TV shows: approve it, and the others it sends.
-    func confirm(code: String, authManager: AuthManager) {
-        guard channel != nil else { return }
-        confirmed = true
-        phase = .approving
-        approve(index: 0, code: code, authManager: authManager)
-        for (index, code) in waitingCodes { approve(index: index, code: code, authManager: authManager) }
-        waitingCodes = [:]
+    /// The person saw the same code on both screens: the connection is the Apple TV's, so
+    /// the profiles go to it, sealed, with their TMDB keys.
+    func confirm(authManager: AuthManager) {
+        guard let session, case .confirming(_, let name) = phase else { return }
+        let activeID = authManager.state.credential?.id
+        session.send(.hello(profiles: sending.map { profile in
+            let key = profile.id == activeID ? TMDBCredential.load() : TMDBCredential.load(profile: profile.id)
+            return DeviceSetup.Profile(userName: profile.displayName,
+                                       serverName: profile.baseURL.host() ?? profile.baseURL.absoluteString,
+                                       servers: Self.addresses(for: profile).map(\.absoluteString),
+                                       tmdbKey: key.flatMap { $0.isEmpty ? nil : $0 })
+        }))
+        phase = tvAllowed ? .approving : .waitingForTV(name)
     }
 
     private func approve(index: Int, code: String, authManager: AuthManager) {
-        guard sending.indices.contains(index), let channel else { return }
+        guard sending.indices.contains(index), let session else { return }
         let profile = sending[index]
         Task {
             let header = authManager.authClient.authHeader(token: profile.accessToken)
             let approved = (try? await authManager.authClient.authorizeQuickConnect(
                 baseURL: profile.baseURL, authHeader: header, code: code)) ?? false
             if approved {
-                channel.send(.approved(profile: index))
+                session.send(.approved(profile: index))
             } else if index == 0 {
                 phase = .failed(String(localized: "The code has expired or was already used. Start again from the Apple TV's sign-in page."))
-                channel.finish(with: .failed(.expired))
+                session.finish(with: .failed(.expired))
             }
         }
     }
 
     func dismiss() {
-        channel?.close()
-        channel = nil
+        session?.close()
+        session = nil
         phase = .idle
     }
 
@@ -474,6 +503,20 @@ final class AppleTVSetupGuide {
         case .busy: String(localized: "Another device is already setting up this Apple TV.")
         case .expired: String(localized: "The code ran out before it was confirmed. Start again from the Apple TV's sign-in page.")
         }
+    }
+}
+
+/// Runs `work`, giving up after `seconds`.
+private func withTimeout<T: Sendable>(seconds: Double, _ work: @escaping @Sendable () async throws -> T) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await work() }
+        group.addTask {
+            try await Task.sleep(for: .seconds(seconds))
+            throw CancellationError()
+        }
+        defer { group.cancelAll() }
+        guard let first = try await group.next() else { throw CancellationError() }
+        return first
     }
 }
 
@@ -505,7 +548,7 @@ struct AppleTVSetupCard: View {
     @ViewBuilder
     private var content: some View {
         switch guide.phase {
-        case .idle, .approving:
+        case .idle:
             ProgressView()
         case .searching:
             heading("Looking for Apple TVs")
@@ -524,9 +567,8 @@ struct AppleTVSetupCard: View {
                 .disabled(guide.selected.isEmpty)
             Button("Not Now") { guide.notNow() }
                 .foregroundStyle(DT.Color.textSecondary)
-        case .waitingForTV(let name):
-            heading("Allow on the Apple TV")
-            note(Text("Press Allow on \(name) with its remote."))
+        case .connecting(let name):
+            heading("Connecting to \(name)")
             ProgressView()
             Button("Cancel") { guide.cancel() }
                 .foregroundStyle(DT.Color.textSecondary)
@@ -539,9 +581,18 @@ struct AppleTVSetupCard: View {
                 .tracking(6)
                 .foregroundStyle(DT.Color.textPrimary)
                 .accessibilityLabel("Code \(code.map(String.init).joined(separator: " "))")
-            primary("It Matches") { guide.confirm(code: code, authManager: authManager) }
+            primary("It Matches") { guide.confirm(authManager: authManager) }
             Button("Cancel") { guide.cancel() }
                 .foregroundStyle(DT.Color.textSecondary)
+        case .waitingForTV(let name):
+            heading("Allow on the Apple TV")
+            note(Text("Press Allow on \(name) with its remote."))
+            ProgressView()
+            Button("Cancel") { guide.cancel() }
+                .foregroundStyle(DT.Color.textSecondary)
+        case .approving:
+            heading("Signing In the Apple TV")
+            ProgressView()
         case .done(let text):
             heading("Apple TV Signed In")
             note(Text(text))

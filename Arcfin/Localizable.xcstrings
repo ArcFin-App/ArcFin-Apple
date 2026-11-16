@@ -129,6 +129,454 @@
         }
       }
     },
+    "An iPhone or iPad on this network wants to set up this Apple TV. Allow it only if it shows this code." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ein iPhone oder iPad in diesem Netzwerk möchte dieses Apple TV einrichten. Erlaube es nur, wenn es diesen Code zeigt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un iPhone o iPad de esta red quiere configurar este Apple TV. Permítelo solo si muestra este código."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un iPhone ou un iPad de ce réseau souhaite configurer cette Apple TV. Autorisez-le uniquement s’il affiche ce code."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un iPhone o iPad in questa rete vuole configurare questa Apple TV. Consentilo solo se mostra questo codice."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このネットワーク上のiPhoneまたはiPadが、このApple TVを設定しようとしています。このコードが表示されている場合にのみ許可してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 네트워크의 iPhone 또는 iPad가 이 Apple TV를 설정하려고 합니다. 이 코드가 표시된 경우에만 허용하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Een iPhone of iPad in dit netwerk wil deze Apple TV instellen. Sta het alleen toe als hij deze code toont."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Um iPhone ou iPad nesta rede quer configurar esta Apple TV. Permita apenas se ele mostrar este código."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone или iPad в этой сети хочет настроить эту Apple TV. Разрешайте, только если на нём показан этот код."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此网络中的一台 iPhone 或 iPad 想设置这台 Apple TV。仅当它显示此代码时才允许。"
+          }
+        }
+      }
+    },
+    "Check that it shows the same code, then confirm it there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Prüfe, ob dort derselbe Code steht, und bestätige ihn dort."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Comprueba que muestra el mismo código y confírmalo allí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vérifiez qu’il affiche le même code, puis confirmez-le sur cet appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controlla che mostri lo stesso codice, poi confermalo lì."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "同じコードが表示されていることを確認し、そちらで確定してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "같은 코드가 표시되는지 확인한 다음 그 기기에서 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controleer of hij dezelfde code toont en bevestig hem daar."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verifique se ele mostra o mesmo código e confirme lá."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Убедитесь, что там тот же код, и подтвердите его на том устройстве."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "确认它显示相同的代码，然后在那台设备上确认。"
+          }
+        }
+      }
+    },
+    "Confirm on Your iPhone or iPad" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Auf dem iPhone oder iPad bestätigen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Confírmalo en tu iPhone o iPad"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Confirmez sur votre iPhone ou iPad"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conferma sul tuo iPhone o iPad"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhoneまたはiPadで確定してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone 또는 iPad에서 확인하세요"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bevestig op je iPhone of iPad"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Confirme no seu iPhone ou iPad"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подтвердите на iPhone или iPad"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 iPhone 或 iPad 上确认"
+          }
+        }
+      }
+    },
+    "Connecting to %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbindung mit %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conectando con %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion à %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connessione a %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@に接続中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@에 연결하는 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbinden met %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conectando a %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подключение к %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在连接 %@"
+          }
+        }
+      }
+    },
+    "Signing In" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anmeldung läuft"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Iniciando sesión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion en cours"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accesso in corso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サインイン中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "로그인하는 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inloggen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entrando"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выполняется вход"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在登录"
+          }
+        }
+      }
+    },
+    "Signing in %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ wird angemeldet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Iniciando sesión como %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion de %@ en cours."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accesso per %@ in corso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@をサインインしています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 로그인하는 중입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ wordt ingelogd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entrando como %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выполняется вход: %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在登录 %@。"
+          }
+        }
+      }
+    },
+    "Signing In the Apple TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV wird angemeldet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Iniciando sesión en el Apple TV"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion de l’Apple TV"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accesso dell’Apple TV in corso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVをサインイン中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV 로그인하는 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV inloggen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conectando a Apple TV"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход на Apple TV"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在登录 Apple TV"
+          }
+        }
+      }
+    },
     "The Apple TV stopped answering before it confirmed. Check whether it's signed in." : {
       "localizations" : {
         "de" : {
@@ -2685,70 +3133,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "《%1$@》将于 %3$@ 在 %2$@ 开播。"
-          }
-        }
-      }
-    },
-    "%@ wants to sign this Apple TV in to %@ from an iPhone or iPad." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ möchte dieses Apple TV von einem iPhone oder iPad aus bei %2$@ anmelden."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ quiere iniciar sesión en este Apple TV en %2$@ desde un iPhone o iPad."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ souhaite connecter cette Apple TV à %2$@ depuis un iPhone ou un iPad."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ vuole collegare questa Apple TV a %2$@ da un iPhone o iPad."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@さんがiPhoneまたはiPadから、このApple TVを%2$@にサインインしようとしています。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ 님이 iPhone 또는 iPad에서 이 Apple TV를 %2$@에 로그인하려고 합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ wil deze Apple TV vanaf een iPhone of iPad inloggen op %2$@."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ quer conectar esta Apple TV a %2$@ a partir de um iPhone ou iPad."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ хочет выполнить вход на этой Apple TV в %2$@ с iPhone или iPad."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ 想从 iPhone 或 iPad 将这台 Apple TV 登录到 %2$@。"
           }
         }
       }
@@ -20035,70 +20419,6 @@
         }
       }
     },
-    "Check the Code" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Code prüfen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Comprueba el código"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Vérifiez le code"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Controlla il codice"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "コードを確認"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "코드 확인"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Controleer de code"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Confira o código"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Проверьте код"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "核对代码"
-          }
-        }
-      }
-    },
     "Check your connection and try again." : {
       "localizations" : {
         "de" : {
@@ -22911,70 +23231,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "联系支持"
-          }
-        }
-      }
-    },
-    "Contacting Your Server" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Server wird kontaktiert"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Contactando con tu servidor"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Connexion à votre serveur"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Contatto del server in corso"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "サーバーに接続中"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "서버에 연결하는 중"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Contact met je server"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Contatando seu servidor"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Подключение к серверу"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "正在联系你的服务器"
           }
         }
       }
@@ -49985,70 +50241,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "创建播放列表，然后向其中添加电影、剧集和单集。"
-          }
-        }
-      }
-    },
-    "Make sure %@'s iPhone or iPad shows the same code, then confirm it there." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Prüfe, ob das iPhone oder iPad von %@ denselben Code zeigt, und bestätige ihn dort."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Asegúrate de que el iPhone o iPad de %@ muestra el mismo código y confírmalo allí."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Vérifiez que l’iPhone ou l’iPad de %@ affiche le même code, puis confirmez-le sur cet appareil."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Assicurati che l’iPhone o l’iPad di %@ mostri lo stesso codice, poi confermalo lì."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@さんのiPhoneまたはiPadに同じコードが表示されていることを確認し、そちらで確定してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ 님의 iPhone 또는 iPad에 같은 코드가 표시되는지 확인한 다음 그 기기에서 확인하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Controleer of de iPhone of iPad van %@ dezelfde code toont en bevestig hem daar."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Verifique se o iPhone ou iPad de %@ mostra o mesmo código e confirme lá."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Убедитесь, что iPhone или iPad пользователя %@ показывает тот же код, и подтвердите его там."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "请确认 %@ 的 iPhone 或 iPad 显示相同的代码，然后在那台设备上确认。"
           }
         }
       }
@@ -100045,70 +100237,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "服务器的安全证书不受信任。请使用有有效证书的地址，或在家庭网络中使用 http://。"
-          }
-        }
-      }
-    },
-    "The sign-in didn't finish. Try again from your iPhone or iPad." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Die Anmeldung wurde nicht abgeschlossen. Versuch es von deinem iPhone oder iPad aus noch einmal."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "El inicio de sesión no terminó. Vuelve a intentarlo desde tu iPhone o iPad."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La connexion n’a pas abouti. Réessayez depuis votre iPhone ou iPad."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "L’accesso non è stato completato. Riprova dal tuo iPhone o iPad."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "サインインが完了しませんでした。iPhoneまたはiPadからもう一度お試しください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "로그인이 완료되지 않았습니다. iPhone 또는 iPad에서 다시 시도하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Het inloggen is niet voltooid. Probeer het opnieuw vanaf je iPhone of iPad."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "A entrada não foi concluída. Tente de novo pelo seu iPhone ou iPad."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Вход не завершён. Повторите попытку с iPhone или iPad."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "登录未完成。请在 iPhone 或 iPad 上重试。"
           }
         }
       }
