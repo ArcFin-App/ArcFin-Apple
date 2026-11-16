@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         BackgroundRefresh.register()
         RemotePlaybackActivity.shared.install()
+        WatchLink.shared.install()
         return true
     }
 

@@ -2,10 +2,12 @@
 
 import SwiftUI
 import ActivityKit
+import AuthCore
 import AVFoundation
 import CastKit
 import JellyfinAPI
 import LiveActivityKit
+import WatchConnectivity
 
 /// The compact "now casting" bar shown above the tab bar (via tabViewBottomAccessory) while a
 /// Cast session has something loaded and the player screen isn't open — so playback on the
@@ -568,5 +570,65 @@ final class RemotePlaybackActivity {
             if let jpeg = small.jpegData(compressionQuality: quality), jpeg.count < 2_500 { return jpeg }
         }
         return nil
+    }
+}
+
+// MARK: - Apple Watch
+
+/// Signs the watch's remote (#458) in as this iPhone: the active profile's server and the
+/// header the phone signs its own requests with, sent again whenever the profile changes, and
+/// "signed out" on sign-out. The latest one waits in the application context for the watch.
+@MainActor
+final class WatchLink: NSObject, WCSessionDelegate {
+    static let shared = WatchLink()
+
+    func install() {
+        guard WCSession.isSupported() else { return }
+        WCSession.default.delegate = self
+        WCSession.default.activate()
+        followSignIn()
+    }
+
+    private func followSignIn() {
+        withObservationTracking {
+            _ = AppServices.authManager.state.credential
+        } onChange: {
+            Task { @MainActor in
+                WatchLink.shared.send()
+                WatchLink.shared.followSignIn()
+            }
+        }
+    }
+
+    private func send() {
+        let session = WCSession.default
+        guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled else { return }
+        let context: [String: Any]
+        if let credential = AppServices.authManager.state.credential {
+            context = [
+                "serverURL": credential.baseURL.absoluteString,
+                "authHeader": AppServices.authManager.authClient.authHeader(token: credential.accessToken),
+                "userID": credential.userID,
+                "accessToken": credential.accessToken,
+            ]
+        } else {
+            context = ["signedOut": true]
+        }
+        try? session.updateApplicationContext(context)
+    }
+
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: (any Error)?) {
+        Task { @MainActor in WatchLink.shared.send() }
+    }
+
+    nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
+        Task { @MainActor in WatchLink.shared.send() }
+    }
+
+    nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
+
+    /// After switching to another watch: activate again for the new one.
+    nonisolated func sessionDidDeactivate(_ session: WCSession) {
+        session.activate()
     }
 }
