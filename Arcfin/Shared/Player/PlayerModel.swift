@@ -965,6 +965,9 @@ final class PlayerModel {
         reportStateToServer()
     }
 
+    /// The volume a remote set, as the 0–100 a remote shows.
+    private var reportedVolume: Int { Int((remoteVolume * 100).rounded()) }
+
     private func setRemoteVolume(_ volume: Float) {
         remoteVolume = volume
         if volumeBeforeMute == nil { setEngineVolume(volume) }
@@ -986,7 +989,8 @@ final class PlayerModel {
             await client.reportPlaybackProgress(
                 credential: credential, authHeader: authHeader, itemId: item.id,
                 mediaSourceId: info.mediaSourceId, positionTicks: player.positionTicks,
-                isPaused: player.status == .paused, liveStreamId: info.liveStreamId
+                isPaused: player.status == .paused, liveStreamId: info.liveStreamId,
+                volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
             )
         }
     }
@@ -1225,7 +1229,8 @@ final class PlayerModel {
                 await client.reportPlaybackProgress(
                     credential: credential, authHeader: authHeader, itemId: item.id,
                     mediaSourceId: mediaSourceId, positionTicks: player.positionTicks,
-                    isPaused: player.status == .paused, liveStreamId: playbackInfo?.liveStreamId
+                    isPaused: player.status == .paused, liveStreamId: playbackInfo?.liveStreamId,
+                    volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
                 )
             }
         }

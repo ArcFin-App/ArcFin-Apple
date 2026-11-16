@@ -371,10 +371,13 @@ extension JellyfinMediaClient {
                                 liveStreamId: liveStreamId)
     }
 
-    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String? = nil) async {
+    /// The volume and mute state are what a remote shows for this session; left out, the
+    /// server forgets the last ones.
+    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String? = nil,
+                                       volumeLevel: Int? = nil, isMuted: Bool? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Progress",
                                 itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: isPaused,
-                                liveStreamId: liveStreamId)
+                                liveStreamId: liveStreamId, volumeLevel: volumeLevel, isMuted: isMuted)
     }
 
     public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
@@ -383,7 +386,8 @@ extension JellyfinMediaClient {
                                 liveStreamId: liveStreamId)
     }
 
-    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String?) async {
+    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String?,
+                                   volumeLevel: Int? = nil, isMuted: Bool? = nil) async {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent(path))
         req.httpMethod = "POST"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -397,6 +401,8 @@ extension JellyfinMediaClient {
             "PlayMethod": "DirectPlay",
         ]
         if let liveStreamId { body["LiveStreamId"] = liveStreamId }
+        if let volumeLevel { body["VolumeLevel"] = volumeLevel }
+        if let isMuted { body["IsMuted"] = isMuted }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         _ = try? await URLSession.arcfin.data(for: req)
     }
