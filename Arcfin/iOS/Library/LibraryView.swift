@@ -110,6 +110,15 @@ struct LibraryView: View {
 
                 // ── Downloads ───────────────────────────────────────────
                 jellyfinDownloadsSection
+                if !MusicDownloads.shared.isEmpty {
+                    NavigationLink {
+                        MusicDownloadsView()
+                    } label: {
+                        LibraryLinkRow(systemImage: "music.note", title: "Downloaded Music",
+                                       subtitle: "Albums and songs saved for offline listening")
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 // ── On This Device ──────────────────────────────────────
                 onDeviceSection

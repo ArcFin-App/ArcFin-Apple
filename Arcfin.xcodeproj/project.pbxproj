@@ -135,6 +135,7 @@
 				Shared/Admin/AdminView.swift = (ios, macos, );
 				Shared/Music/MusicAlbumView.swift = (ios, macos, );
 				Shared/Music/MusicComponents.swift = (ios, macos, );
+				Shared/Music/MusicDownloadsView.swift = (ios, macos, );
 				Shared/Music/MusicLibraryView.swift = (ios, macos, );
 				Shared/Music/MusicListsView.swift = (ios, macos, );
 				Shared/Music/MusicSearchSection.swift = (ios, macos, );

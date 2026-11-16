@@ -94,6 +94,7 @@ struct MusicSongRow: View {
                 }
                 .lineLimit(1)
                 Spacer(minLength: DT.Spacing.xs)
+                MusicDownloadedMark(songID: song.id)
                 if player.current?.id == song.id {
                     MusicPlayingIndicator(isPlaying: player.isPlaying)
                 }
@@ -375,6 +376,13 @@ struct MusicPlaylistView: View {
         .scrollContentBackground(.hidden)
         .screenBackground()
         .inlineNavigationTitle()
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu("More", systemImage: "ellipsis") {
+                    MusicDownloadButton(songs: { songs }, known: songs)
+                }
+            }
+        }
         .task(id: MusicPlaylistEditor.shared.changeCount) {
             songs = await MusicActions.playlistSongs(playlist)
             hasLoaded = true

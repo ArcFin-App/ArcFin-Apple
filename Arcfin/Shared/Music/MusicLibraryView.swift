@@ -29,7 +29,13 @@ struct MusicLibraryView: View {
                     row("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
                     row("Albums", systemImage: "square.stack", route: .albums(libraryID: library.id, title: String(localized: "Albums")))
                     row("Songs", systemImage: "music.note", route: .songs(libraryID: library.id))
-                    row("Genres", systemImage: "guitars", route: .genres(libraryID: library.id), isLast: true)
+                    row("Genres", systemImage: "guitars", route: .genres(libraryID: library.id), isLast: MusicDownloads.shared.isEmpty)
+                    if !MusicDownloads.shared.isEmpty {
+                        NavigationLink { MusicDownloadsView() } label: {
+                            rowLabel("Downloaded", systemImage: "arrow.down.circle", isLast: true)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 VStack(alignment: .leading, spacing: DT.Spacing.sm) {
                     Text("Recently Added")
@@ -52,30 +58,34 @@ struct MusicLibraryView: View {
 
     private func row(_ title: LocalizedStringKey, systemImage: String, route: MusicRoute, isLast: Bool = false) -> some View {
         NavigationLink { MusicDestination(route: route) } label: {
-            VStack(spacing: 0) {
-                HStack(spacing: DT.Spacing.md) {
-                    Image(systemName: systemImage)
-                        .font(.title3)
-                        .foregroundStyle(DT.Color.accent)
-                        .frame(width: 30)
-                        .accessibilityHidden(true)
-                    Text(title)
-                        .font(.title3)
-                        .foregroundStyle(DT.Color.textPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .accessibilityHidden(true)
-                }
-                .padding(.vertical, 12)
-                if !isLast {
-                    Divider().padding(.leading, 46)
-                }
-            }
-            .contentShape(Rectangle())
+            rowLabel(title, systemImage: systemImage, isLast: isLast)
         }
         .buttonStyle(.plain)
+    }
+
+    private func rowLabel(_ title: LocalizedStringKey, systemImage: String, isLast: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: DT.Spacing.md) {
+                Image(systemName: systemImage)
+                    .font(.title3)
+                    .foregroundStyle(DT.Color.accent)
+                    .frame(width: 30)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(.title3)
+                    .foregroundStyle(DT.Color.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, 12)
+            if !isLast {
+                Divider().padding(.leading, 46)
+            }
+        }
+        .contentShape(Rectangle())
     }
 }
 

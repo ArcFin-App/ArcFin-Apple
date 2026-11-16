@@ -39,7 +39,7 @@ enum MusicAPI {
     }
 
     static func artworkURL(_ album: MusicAlbum, width: Int = 400) -> URL? {
-        imageURL(itemID: album.id, tag: album.primaryImageTag, width: width)
+        MusicDownloads.shared.coverURL(albumID: album.id) ?? imageURL(itemID: album.id, tag: album.primaryImageTag, width: width)
     }
 
     static func artworkURL(_ artist: MusicArtist, width: Int = 400) -> URL? {
@@ -51,7 +51,7 @@ enum MusicAPI {
     }
 
     static func artworkURL(_ song: MusicSong, width: Int = 200) -> URL? {
-        AppServices.music.artworkURL(for: song, width: width)
+        song.albumId.flatMap(MusicDownloads.shared.coverURL(albumID:)) ?? AppServices.music.artworkURL(for: song, width: width)
     }
 }
 

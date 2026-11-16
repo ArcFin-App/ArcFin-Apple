@@ -89,6 +89,8 @@ struct MusicAlbumCard: View {
 /// Play, shuffle and queue a whole album.
 struct MusicAlbumMenu: View {
     let album: MusicAlbum
+    /// Off on the album's own page, which has a Download button that knows its progress.
+    var showsDownload = true
 
     var body: some View {
         Button("Play", systemImage: "play") { Task { MusicActions.play(await MusicActions.albumSongs(album)) } }
@@ -101,6 +103,9 @@ struct MusicAlbumMenu: View {
             Task { MusicActions.addToQueue(await MusicActions.albumSongs(album)) }
         }
         MusicAddToPlaylistButton { await MusicActions.albumSongs(album) }
+        if showsDownload {
+            MusicDownloadButton(songs: { await MusicActions.albumSongs(album) }, album: album)
+        }
         Divider()
         Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
             Task { await MusicActions.instantMix(from: album.id) }

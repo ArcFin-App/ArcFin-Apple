@@ -5,7 +5,7 @@ import AuthCore
 
 // MARK: - Music models (#386)
 
-public struct MusicArtistRef: Sendable, Identifiable, Equatable, Hashable {
+public struct MusicArtistRef: Sendable, Identifiable, Equatable, Hashable, Codable {
     public let id: String
     public var name: String
 
@@ -15,7 +15,7 @@ public struct MusicArtistRef: Sendable, Identifiable, Equatable, Hashable {
     }
 }
 
-public struct MusicAlbum: Sendable, Identifiable, Equatable, Hashable {
+public struct MusicAlbum: Sendable, Identifiable, Equatable, Hashable, Codable {
     public let id: String
     public var name: String
     /// The album's own artist line ("Various Artists" for a compilation).
@@ -53,7 +53,7 @@ public struct MusicArtist: Sendable, Identifiable, Equatable, Hashable {
     }
 }
 
-public struct MusicSong: Sendable, Identifiable, Equatable, Hashable {
+public struct MusicSong: Sendable, Identifiable, Equatable, Hashable, Codable {
     public let id: String
     public var name: String
     public var albumId: String?

@@ -43,7 +43,10 @@ struct MusicAlbumView: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
-                Menu("More", systemImage: "ellipsis") { MusicAlbumMenu(album: album) }
+                Menu("More", systemImage: "ellipsis") {
+                    MusicAlbumMenu(album: album, showsDownload: false)
+                    MusicDownloadButton(songs: { songs }, album: album, known: songs)
+                }
             }
         }
         .task { await load() }
@@ -171,6 +174,7 @@ private struct MusicAlbumSongRow: View {
                     }
                 }
                 Spacer(minLength: DT.Spacing.xs)
+                MusicDownloadedMark(songID: song.id)
                 if let duration = song.duration {
                     Text(verbatim: duration.musicTime)
                         .font(.footnote.monospacedDigit())
