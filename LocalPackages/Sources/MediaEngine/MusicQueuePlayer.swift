@@ -16,6 +16,8 @@ public final class MusicQueuePlayer {
         case started(MusicSong, at: Double)
         /// Finished, skipped or stopped, at a position in seconds.
         case ended(MusicSong, at: Double)
+        /// Paused at the end of a song because `pausesAtEndOfSong` was set.
+        case pausedAtEnd
     }
 
     public private(set) var queue = MusicQueue()
@@ -33,6 +35,8 @@ public final class MusicQueuePlayer {
     }
     /// Seconds each song fades into the next; 0 runs them together with no gap.
     public var crossfade: Double = 0
+    /// Pause when the playing song ends, with the next one ready (a sleep timer's End of Song).
+    public var pausesAtEndOfSong = false
     /// Goes up on every seek, for anything that shows the position without following it.
     public private(set) var seekCount = 0
     /// Copies each song's audio into `levels` as it plays, for a visualizer.
@@ -323,6 +327,14 @@ public final class MusicQueuePlayer {
         entryIDs[item] = nil
         itemObservations[item] = nil
         endCurrent(at: duration)
+        if pausesAtEndOfSong {
+            pausesAtEndOfSong = false
+            player.pause()
+            if queue.advance(finished: true) == nil { queue.jump(to: queue.entries[0].id) }
+            reload()
+            onEvent?(.pausedAtEnd)
+            return
+        }
         guard queue.advance(finished: true) != nil else {
             // The end of the queue: back to the first song, paused.
             pause()
@@ -367,7 +379,7 @@ public final class MusicQueuePlayer {
         if time.isNumeric { position = time.seconds }
         if position > 0 { failures = 0 }
         if item.duration.isNumeric, item.duration.seconds > 0 { duration = item.duration.seconds }
-        if crossfade > 0, fade == nil, isPlaying, queue.repeatMode != .one, duration > crossfade * 2 + 1,
+        if crossfade > 0, fade == nil, !pausesAtEndOfSong, isPlaying, queue.repeatMode != .one, duration > crossfade * 2 + 1,
            position >= duration - crossfade {
             startCrossfade()
         }

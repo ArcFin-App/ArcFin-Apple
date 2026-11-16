@@ -249,10 +249,24 @@ struct MusicNowPlayingView: View {
                 .frame(width: 44, height: 44)
                 .accessibilityLabel("Cast")
             Spacer()
+            sleepTimerMenu
+            Spacer()
             panelButton(.queue, systemImage: "list.bullet", label: "Playing Next")
             Spacer()
         }
         .font(.title3)
+    }
+
+    private var sleepTimerMenu: some View {
+        Menu {
+            Section { MusicSleepTimerOptions() } header: { MusicSleepTimerStatus() }
+        } label: {
+            Image(systemName: music.sleepTimer == nil ? "moon.zzz" : "moon.zzz.fill")
+                .frame(width: 44, height: 44)
+                .background(music.sleepTimer == nil ? .clear : .white.opacity(0.2), in: Circle())
+        }
+        .accessibilityLabel("Sleep Timer")
+        .accessibilityValue(music.sleepTimer == nil ? Text("Off") : MusicSleepTimerStatus.text)
     }
 
     private func panelButton(_ target: Panel, systemImage: String, label: LocalizedStringKey) -> some View {

@@ -13,6 +13,7 @@ struct TVMusicNowPlaying: View {
     @Environment(\.dismiss) private var dismiss
     @State private var panel = Panel.upNext
     @State private var lyrics: Lyrics?
+    @State private var showsSleepTimer = false
     private var player: MusicQueuePlayer { AppServices.music.player }
 
     var body: some View {
@@ -102,8 +103,16 @@ struct TVMusicNowPlaying: View {
                     panel = panel == .lyrics ? .upNext : .lyrics
                 }
             }
+            circle("moon.zzz", label: "Sleep Timer", isOn: AppServices.music.sleepTimer != nil) {
+                showsSleepTimer = true
+            }
         }
         .focusSection()
+        .confirmationDialog(Text("Sleep Timer"), isPresented: $showsSleepTimer) {
+            MusicSleepTimerOptions()
+        } message: {
+            MusicSleepTimerStatus()
+        }
     }
 
     private func circle(_ systemImage: String, label: LocalizedStringKey, isOn: Bool = false, large: Bool = false,

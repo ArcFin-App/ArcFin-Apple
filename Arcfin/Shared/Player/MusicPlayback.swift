@@ -240,6 +240,8 @@ final class MusicPlayback {
             }
         case .ended(let song, let seconds):
             reportStop(song, at: seconds)
+        case .pausedAtEnd:
+            sleepTimer = nil
         }
     }
 
@@ -294,6 +296,53 @@ final class MusicPlayback {
                                                 mediaSourceId: song.id, positionTicks: ticks, isPaused: isPaused,
                                                 volumeLevel: volume, isMuted: isMuted)
         }
+    }
+
+    // MARK: Sleep timer
+
+    enum SleepTimer: Hashable {
+        case minutes(Int)
+        case endOfSong
+    }
+
+    private(set) var sleepTimer: SleepTimer?
+    /// When a minutes timer stops the music.
+    private(set) var sleepsAt: Date?
+    @ObservationIgnored private var sleepTask: Task<Void, Never>?
+
+    func setSleepTimer(_ timer: SleepTimer?) {
+        sleepTask?.cancel()
+        sleepTask = nil
+        sleepTimer = timer
+        sleepsAt = nil
+        player.pausesAtEndOfSong = timer == .endOfSong
+        guard case .minutes(let minutes) = timer else { return }
+        let seconds = Double(minutes * 60)
+        sleepsAt = .now.addingTimeInterval(seconds)
+        sleepTask = Task { [weak self] in
+            guard (try? await Task.sleep(for: .seconds(seconds - Self.sleepFade))) != nil else { return }
+            await self?.fallAsleep()
+        }
+    }
+
+    private static let sleepFade = 8.0
+
+    /// Fades the last seconds out, then pauses and puts the volume back.
+    private func fallAsleep() async {
+        let level = player.volume
+        let steps = 32
+        for step in 1...steps {
+            guard (try? await Task.sleep(for: .seconds(Self.sleepFade / Double(steps)))) != nil else {
+                player.volume = level
+                return
+            }
+            player.volume = level * Float(steps - step) / Float(steps)
+        }
+        pause()
+        player.volume = level
+        sleepTimer = nil
+        sleepsAt = nil
+        sleepTask = nil
     }
 
     // MARK: Chromecast
@@ -368,6 +417,12 @@ final class MusicPlayback {
 
     private func castSongFinished() {
         endCastSong(at: player.duration)
+        if sleepTimer == .endOfSong {
+            // The next song waits here, not cast.
+            setSleepTimer(nil)
+            player.next()
+            return
+        }
         if player.repeatMode == .one { return castCurrent(at: 0) }
         let before = player.queue.currentIndex
         player.next()

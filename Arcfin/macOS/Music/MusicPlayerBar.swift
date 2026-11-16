@@ -116,6 +116,17 @@ struct MusicPlayerBar: View {
             Button { nowPlaying = .queue } label: { Image(systemName: "list.bullet") }
                 .accessibilityLabel("Playing Next")
                 .help("Playing Next")
+            Menu {
+                Section { MusicSleepTimerOptions() } header: { MusicSleepTimerStatus() }
+            } label: {
+                Image(systemName: AppServices.music.sleepTimer == nil ? "moon.zzz" : "moon.zzz.fill")
+                    .foregroundStyle(AppServices.music.sleepTimer == nil ? Color.primary : DT.Color.accent)
+            }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Sleep Timer")
+            .accessibilityLabel("Sleep Timer")
             MusicMacRoutePicker()
                 .frame(width: 22, height: 22)
                 .accessibilityLabel("AirPlay")
