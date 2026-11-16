@@ -39,7 +39,7 @@ struct CustomHeadersView: View {
         }
         .arcfinListStyle()
         .screenBackground()
-        .arcfinNavTitleLarge("Custom Headers")
+        .sheetTitle("Custom Headers")
         .onDisappear(perform: model.save)
         .onSubmit(model.save)
     }

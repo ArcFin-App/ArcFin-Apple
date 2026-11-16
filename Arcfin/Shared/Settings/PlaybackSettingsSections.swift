@@ -271,3 +271,30 @@ struct PlaybackMoreSettingsSection: View {
         }
     }
 }
+
+/// Settings › Playback › Default Player, on iPhone, iPad and Mac: Play opens a movie or
+/// episode in another installed app instead.
+struct PlaybackDefaultPlayerSection: View {
+    @AppStorage(ExternalPlayer.defaultPlayerKey) private var defaultPlayer = ""
+    @State private var installed: [ExternalPlayer] = []
+
+    var body: some View {
+        Section {
+            if !installed.isEmpty {
+                Picker(selection: $defaultPlayer) {
+                    Text(verbatim: "Arcfin").tag("")
+                    ForEach(installed) { player in
+                        Text(verbatim: player.name).tag(player.id)
+                    }
+                } label: {
+                    TVRowLabelText(title: "Default Player", detail: "Play opens movies and episodes in this app.")
+                }
+            }
+        } footer: {
+            if !installed.isEmpty, !defaultPlayer.isEmpty {
+                Text("Titles start from the beginning there, and what you watch isn't saved to your server.")
+            }
+        }
+        .task { installed = ExternalPlayer.installed }
+    }
+}

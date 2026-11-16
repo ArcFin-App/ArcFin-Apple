@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import CoreImage.CIFilterBuiltins
 import AuthCore
 import JellyfinAPI
 
@@ -33,50 +34,13 @@ struct AuthView: View {
         if signedIn {
             successView
         } else {
-            VStack(alignment: .leading, spacing: 28) {
-                LoginBackButton(title: serverName, action: onBack)
-
-                LoginHeader(
-                    title: "Sign In",
-                    message: mode == .quickConnect
-                        ? "Approve this device from Jellyfin on a phone, computer or TV where you're already signed in."
-                        : "Use your Jellyfin username and password for \(serverName)."
-                )
-
-                if authManager.expiredCredential?.baseURL == serverURL {
-                    Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
-                        .font(.footnote)
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Picker("Sign-in method", selection: $mode) {
-                    Text("Quick Connect").tag(AuthMode.quickConnect)
-                    Text("Password").tag(AuthMode.credentials)
-                }
-                .pickerStyle(.segmented)
-
-                if mode == .quickConnect {
-                    quickConnectView
+            Group {
+                if !PlatformMetrics.loginSideBySide {
+                    formPage
+                } else if mode == .quickConnect {
+                    quickConnectPage
                 } else {
-                    credentialsView
-                }
-
-                if let err = authError {
-                    Label(err, systemImage: "exclamationmark.circle.fill")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .loginLayout {
-                if mode == .credentials {
-                    LoginPrimaryButton(title: "Sign In", busyTitle: "Signing In…", isBusy: signingIn,
-                                       // Password is deliberately optional: Jellyfin allows accounts
-                                       // with no password (common for kids' and demo profiles).
-                                       isDisabled: username.isEmpty) {
-                        Task { await handleSignIn() }
-                    }
+                    passwordPage
                 }
             }
             .animation(DT.Animation.standard, value: mode)
@@ -92,6 +56,165 @@ struct AuthView: View {
                 guard let secret = qcSecret, qcPolling else { return }
                 await pollQuickConnect(secret: secret)
             }
+        }
+    }
+
+    // MARK: - Layouts
+
+    /// One column: the method picker, then Quick Connect or the password fields.
+    private var formPage: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            LoginBackButton(title: serverName, action: onBack)
+
+            LoginHeader(
+                title: "Sign In",
+                message: mode == .quickConnect
+                    ? "Approve this device from Jellyfin on a phone, computer or TV where you're already signed in."
+                    : "Use your Jellyfin username and password for \(serverName)."
+            )
+
+            if authManager.expiredCredential?.baseURL == serverURL {
+                Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Picker("Sign-in method", selection: $mode) {
+                Text("Quick Connect").tag(AuthMode.quickConnect)
+                Text("Password").tag(AuthMode.credentials)
+            }
+            .pickerStyle(.segmented)
+
+            if mode == .quickConnect {
+                quickConnectView
+            } else {
+                credentialsView
+            }
+
+            if let err = authError {
+                Label(err, systemImage: "exclamationmark.circle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .loginLayout {
+            if mode == .credentials {
+                LoginPrimaryButton(title: "Sign In", busyTitle: "Signing In…", isBusy: signingIn,
+                                   // Password is deliberately optional: Jellyfin allows accounts
+                                   // with no password (common for kids' and demo profiles).
+                                   isDisabled: username.isEmpty) {
+                    Task { await handleSignIn() }
+                }
+            }
+        }
+    }
+
+    /// Apple TV: the steps on the left with a way to use a password instead, and the QR code
+    /// with the code under it on the right.
+    private var quickConnectPage: some View {
+        LoginSplitPage {
+            LoginBackButton(title: serverName, action: onBack)
+            LoginSplitHeader(title: "Sign In", message: Text("Approve this device from Jellyfin on a phone, computer or TV where you're already signed in."))
+            expiredNotice
+            AppleTVSetupHint()
+            VStack(alignment: .leading, spacing: 18) {
+                step(1, "Open Jellyfin where you're already signed in.")
+                step(2, "Go to your profile, then Quick Connect.")
+                step(3, "Enter the code on the right.")
+            }
+            errorLabel
+            HStack(spacing: 24) {
+                Button { mode = .credentials } label: {
+                    Label("Sign In with Password", systemImage: "key").loginLinkPadding()
+                }
+                if !qcPolling && !qcLoading {
+                    Button { Task { await initiateQC() } } label: {
+                        Text("Get a New Code").loginLinkPadding()
+                    }
+                }
+            }
+            .font(.callout)
+            .foregroundStyle(DT.Color.accent)
+            .arcfinPlainButton(cornerRadius: DT.Radius.pill)
+        } trailing: {
+            Group {
+                if qcPolling, let link = QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)),
+                   let image = QuickConnectQR.image(for: link) {
+                    Image(decorative: image, scale: 1)
+                        .interpolation(.none)
+                        .resizable()
+                } else {
+                    ProgressView()
+                }
+            }
+            .frame(width: 400, height: 400)
+            .padding(24)
+            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .accessibilityLabel("QR code to sign in")
+            Text("Scan with your iPhone's Camera")
+                .font(.footnote)
+                .foregroundStyle(DT.Color.textSecondary)
+            if !qcCode.isEmpty {
+                Text(qcCode)
+                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .monospacedDigit()
+                    .tracking(8)
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .accessibilityLabel("Code \(qcCode.map(String.init).joined(separator: " "))")
+            }
+            if qcPolling {
+                HStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
+                    Text("Waiting for approval")
+                        .font(.footnote)
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+        }
+    }
+
+    /// Apple TV: what's being signed in to on the left, with Quick Connect to go back to, and
+    /// the fields on the right.
+    private var passwordPage: some View {
+        LoginSplitPage {
+            LoginBackButton(title: serverName, action: onBack)
+            LoginSplitHeader(title: "Sign In", message: Text("Use your Jellyfin username and password for \(serverName)."))
+            expiredNotice
+            Button { mode = .quickConnect } label: {
+                Label("Sign In with Quick Connect", systemImage: "qrcode").loginLinkPadding()
+            }
+            .font(.callout)
+            .foregroundStyle(DT.Color.accent)
+            .arcfinPlainButton(cornerRadius: DT.Radius.pill)
+        } trailing: {
+            credentialsView
+            errorLabel
+            LoginPrimaryButton(title: "Sign In", busyTitle: "Signing In…", isBusy: signingIn,
+                               isDisabled: username.isEmpty) {
+                Task { await handleSignIn() }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var expiredNotice: some View {
+        if authManager.expiredCredential?.baseURL == serverURL {
+            Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
+                .font(.footnote)
+                .foregroundStyle(DT.Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private var errorLabel: some View {
+        if let err = authError {
+            Label(err, systemImage: "exclamationmark.circle.fill")
+                .font(.footnote)
+                .foregroundStyle(.red)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -262,8 +385,10 @@ struct AuthView: View {
         qcLoading = false
     }
 
+    /// Jellyfin's codes last ten minutes; then there's a new one, rather than an error, since
+    /// the Apple TV may have been left on this screen.
     private func pollQuickConnect(secret: String) async {
-        for _ in 0..<40 {
+        for _ in 0..<195 {
             try? await Task.sleep(for: .seconds(3))
             guard qcPolling, !Task.isCancelled else { return }
             let approved = (try? await authManager.authClient.pollQuickConnect(baseURL: serverURL, secret: secret)) ?? false
@@ -281,14 +406,26 @@ struct AuthView: View {
             }
             return
         }
-        qcPolling = false
-        authError = String(localized: "Quick Connect timed out — please try again.")
+        // Outside this task, which ends as soon as the new code replaces the secret it polls.
+        Task { await initiateQC() }
     }
 
     private func formatCode(_ raw: String) -> String {
         let digits = raw.filter { $0.isNumber }
         guard digits.count >= 6 else { return raw }
         return "\(digits.prefix(3)) \(String(digits.dropFirst(3).prefix(3)))"
+    }
+}
+
+/// The Quick Connect link as a QR code, drawn sharp at any size.
+private enum QuickConnectQR {
+    static func image(for link: URL) -> CGImage? {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(link.absoluteString.utf8)
+        filter.correctionLevel = "M"
+        guard let output = filter.outputImage else { return nil }
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: 12, y: 12))
+        return CIContext().createCGImage(scaled, from: scaled.extent)
     }
 }
 

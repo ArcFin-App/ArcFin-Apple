@@ -38,6 +38,16 @@ struct ExternalPlayer: Identifiable, Hashable {
     /// The players installed here that can take a stream.
     static var installed: [ExternalPlayer] { all.filter { ExternalApps.canOpen($0) } }
 
+    /// Settings › Playback › Default Player on iPhone, iPad and Mac. Not synced between
+    /// devices: the apps installed differ, and Apple TV has no such setting.
+    static let defaultPlayerKey = "defaultExternalPlayer"
+
+    /// The app Play opens instead of Arcfin's player, while it's still installed.
+    static var preferred: ExternalPlayer? {
+        guard let id = UserDefaults.standard.string(forKey: defaultPlayerKey), !id.isEmpty else { return nil }
+        return installed.first { $0.id == id }
+    }
+
     /// The file itself, played as is, signed with the profile's token so the other app can
     /// fetch it without signing in.
     static func streamURL(for item: MediaItem, credential: ServerCredential) -> URL? {

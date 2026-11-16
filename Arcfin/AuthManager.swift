@@ -430,6 +430,9 @@ final class AuthManager {
         SeerrSpotlightStore.clear()
         BackgroundRefresh.resetState()
         #endif
+        #if os(tvOS)
+        TopShelfArtwork.clear()
+        #endif
         SplashMosaicStore.clear()
         PlaylistStore.shared.clear()
     }
@@ -454,6 +457,9 @@ final class AuthManager {
         #endif
         #if !os(tvOS)
         BackgroundRefresh.resetState()
+        #else
+        // The Top Shelf, likewise.
+        TopShelfArtwork.clear()
         #endif
         SplashMosaicStore.clear()
         PlaylistStore.shared.clear()

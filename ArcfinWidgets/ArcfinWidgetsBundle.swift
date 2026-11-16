@@ -15,6 +15,7 @@ struct ArcfinWidgetsBundle: WidgetBundle {
     var body: some Widget {
         #if os(iOS)
         DownloadLiveActivity()
+        RemotePlaybackLiveActivity()
         #endif
         ContinueWatchingWidget()
         RecentlyAddedWidget()

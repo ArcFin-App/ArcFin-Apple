@@ -28,7 +28,8 @@ struct SettingsView: View {
         .navigationDestination(for: TVSettingsPage.self, destination: page)
         .screenBackground()
         .toolbar(.hidden, for: .navigationBar)
-        .appSheet(isPresented: $showUsersSheet) {
+        // Full screen, not a panel: its two columns, and Add Profile's, need the width.
+        .fullScreenCover(isPresented: $showUsersSheet) {
             NavigationStack { UsersView() }
         }
     }
@@ -262,7 +263,7 @@ private enum TVSettingsPage: Hashable {
 
 // Settings rows in the tvOS ScrollView: plain text at rest and the light platter of the
 // system's own lists when focused.
-private struct TVSettingsRowStyle: ButtonStyle {
+struct TVSettingsRowStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         TVSettingsRow(label: configuration.label, isPressed: configuration.isPressed)
     }

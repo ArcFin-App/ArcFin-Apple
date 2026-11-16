@@ -34,6 +34,11 @@ struct AppRootLifecycle: ViewModifier {
             .environment(model.syncPlayManager)
             .environment(model.sharePlayManager)
             .onOpenURL { model.handleDeepLink($0) }
+            // A link to arcfin.psmattas.com that opens the app (the Apple TV's QR code) comes as
+            // a browsing activity, not through onOpenURL.
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                if let url = activity.webpageURL { model.handleDeepLink(url) }
+            }
             .appIntentRoutes(model)
             .smartDownloadsIgnorePrompt(model.downloadManager)
             .task { await model.checkLaunch() }
@@ -102,13 +107,16 @@ struct AppRootLifecycle: ViewModifier {
             // The profile's parental controls and permissions, from the server: on sign-in, a
             // profile switch, and each return to the app (an admin may have changed them).
             .task(id: model.authManager.state.credential?.id) { await model.loadProfileRules() }
-            .task(id: LiveUpdatesKey(credentialID: model.authManager.state.credential?.id, isActive: scenePhase == .active)) {
-                if scenePhase == .active, let credential = model.authManager.state.credential {
+            .task(id: LiveUpdatesKey(credentialID: model.authManager.state.credential?.id,
+                                     isActive: scenePhase != .background || PlayerActivity.shared.isPlayerOpen)) {
+                if scenePhase != .background || PlayerActivity.shared.isPlayerOpen,
+                   let credential = model.authManager.state.credential {
                     AppServices.liveUpdates.connect(credential: credential, authClient: model.authManager.authClient)
                 } else {
                     AppServices.liveUpdates.disconnect()
                 }
             }
+            .modifier(AppRootPrompts(model: model))
             .onChange(of: offlineModeEnabled) { _, isOffline in
                 if !isOffline { model.syncOfflineProgress(modelContext: modelContext) }
             }
@@ -143,5 +151,81 @@ struct AppRootLifecycle: ViewModifier {
 
     private func configureSeerr() {
         model.configureSeerr(seerrURL: seerrURL, seerrUsername: seerrUsername, seerrAuthMethod: seerrAuthMethod)
+    }
+}
+
+/// What can pop up over any screen: a scanned Apple TV code, an Apple TV to set up, and a
+/// message from the server's dashboard. Kept apart from AppRootLifecycle, whose chain of
+/// modifiers was getting too long to type-check.
+private struct AppRootPrompts: ViewModifier {
+    let model: AppRootModel
+    @Environment(\.scenePhase) private var scenePhase
+    private var setupGuide: AppleTVSetupGuide { AppServices.appleTVSetup }
+
+    /// Prompts that act for the signed-in profile wait for the launch checks and the PIN lock.
+    private var canPrompt: Bool { model.splashDone && model.launchChecked && !model.isAppLocked }
+
+    /// Looks for an Apple TV to set up only while it could be offered: signed in, in front,
+    /// unlocked and not watching something.
+    private var offersAppleTVSetup: Bool {
+        PlatformMetrics.setsUpAppleTV && canPrompt && scenePhase == .active
+            && model.authManager.state.credential != nil && !PlayerActivity.shared.isPlayerOpen
+    }
+
+    private var watchesOtherDevices: Bool {
+        PlatformMetrics.controlsOtherDevices && canPrompt && scenePhase == .active
+            && model.authManager.state.credential != nil
+    }
+
+    func body(content: Content) -> some View {
+        content
+        // A scanned Quick Connect code: nothing is signed in until it's confirmed here.
+        .alert("Sign In Apple TV?",
+               isPresented: Binding(get: { QuickConnectApproval.shared.request != nil && canPrompt },
+                                    set: { if !$0 { QuickConnectApproval.shared.request = nil } }),
+               presenting: QuickConnectApproval.shared.request) { request in
+            Button("Sign In") { QuickConnectApproval.shared.approve(request, authManager: model.authManager) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            if let name = model.authManager.state.credential?.displayName {
+                Text("The Apple TV showing this code signs in to your server as \(name).")
+            } else {
+                Text("Sign in to Arcfin on this device first.")
+            }
+        }
+        .alert(QuickConnectApproval.shared.outcome?.succeeded == true ? Text("Apple TV Signed In") : Text("Couldn't Sign In Apple TV"),
+               isPresented: Binding(get: { QuickConnectApproval.shared.outcome != nil },
+                                    set: { if !$0 { QuickConnectApproval.shared.outcome = nil } }),
+               presenting: QuickConnectApproval.shared.outcome) { _ in
+            Button("OK") {}
+        } message: { outcome in
+            Text(outcome.message)
+        }
+        // Other devices playing on this profile, for the remote (#457).
+        .task(id: watchesOtherDevices) {
+            if watchesOtherDevices {
+                AppServices.remoteSessions.start(authManager: model.authManager)
+            } else {
+                AppServices.remoteSessions.stop()
+            }
+        }
+        // A signed-out Apple TV on the network, offered for setup with this profile (#481).
+        .task(id: offersAppleTVSetup) {
+            if offersAppleTVSetup { setupGuide.start(authManager: model.authManager) } else { setupGuide.stop() }
+        }
+        .sheet(isPresented: Binding(get: { setupGuide.phase != .idle && canPrompt },
+                                    set: { if !$0 { setupGuide.notNow() } })) {
+            AppleTVSetupCard(guide: setupGuide, authManager: model.authManager)
+                    .environment(model.authManager)
+        }
+        // A message from the dashboard while nothing is playing; the player shows its own.
+        .alert(Text(verbatim: RemoteControl.shared.message.flatMap { $0.header.isEmpty ? nil : $0.header } ?? "Arcfin"),
+               isPresented: Binding(get: { RemoteControl.shared.message != nil },
+                                    set: { if !$0 { RemoteControl.shared.message = nil } }),
+               presenting: RemoteControl.shared.message) { _ in
+            Button("OK") {}
+        } message: { message in
+            Text(verbatim: message.text)
+        }
     }
 }

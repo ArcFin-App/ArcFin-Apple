@@ -4,26 +4,37 @@ import SwiftUI
 import AuthCore
 import JellyfinAPI
 
-/// "Play this" from outside the app's screens: Siri and SharePlay. Buffered like the other
-/// deep links, because Home isn't listening yet on a cold launch.
+/// "Play this" from outside the app's screens: Siri, SharePlay and the web app's Play On.
+/// Buffered like the other deep links, because Home isn't listening yet on a cold launch.
 enum WatchRoute {
     static let pendingKey = "arcfin.pendingWatchID"
+    static let pendingStartKey = "arcfin.pendingWatchStart"
     static let notification = Notification.Name("arcfinWatchItem")
 
-    static func open(id: String) {
+    /// `startTicks` overrides where the title was left, for Play On.
+    static func open(id: String, startTicks: Int64? = nil) {
         UserDefaults.standard.set(id, forKey: pendingKey)
+        if let startTicks {
+            UserDefaults.standard.set(startTicks, forKey: pendingStartKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: pendingStartKey)
+        }
         NotificationCenter.default.post(name: notification, object: nil)
     }
 
     /// The pending title, if any, taken off the buffer.
-    static func takePending() -> String? {
-        guard let id = UserDefaults.standard.string(forKey: pendingKey) else { return nil }
-        UserDefaults.standard.removeObject(forKey: pendingKey)
-        return id
+    static func takePending() -> (id: String, startTicks: Int64?)? {
+        let defaults = UserDefaults.standard
+        guard let id = defaults.string(forKey: pendingKey) else { return nil }
+        let start = defaults.object(forKey: pendingStartKey) as? Int64
+        defaults.removeObject(forKey: pendingKey)
+        defaults.removeObject(forKey: pendingStartKey)
+        return (id, start)
     }
 
-    /// A movie or episode plays from where it was left; a series from its next episode.
-    static func resolve(id: String, credential: ServerCredential, authHeader: String) async -> PlaybackRequest? {
+    /// A movie or episode plays from where it was left, or from `startTicks`; a series from
+    /// its next episode.
+    static func resolve(id: String, startTicks: Int64? = nil, credential: ServerCredential, authHeader: String) async -> PlaybackRequest? {
         let client = JellyfinMediaClient()
         guard var item = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: id).item
         else { return nil }
@@ -38,7 +49,7 @@ enum WatchRoute {
         }
         guard item.type == .movie || item.type == .episode else { return nil }
         let resume = item.userData.flatMap { $0.played ? nil : $0.playbackPositionTicks } ?? 0
-        return PlaybackRequest(item: item, startTicks: resume)
+        return PlaybackRequest(item: item, startTicks: item.id == id ? startTicks ?? resume : resume)
     }
 }
 

@@ -25,6 +25,8 @@ struct PlaybackSettingsView: View {
                 .syncLocked("playbackEngine", authManager)
             }
 
+            PlaybackDefaultPlayerSection()
+
             PlaybackSkipIntervalSection()
 
             PlaybackAutomationSection()

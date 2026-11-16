@@ -26,6 +26,7 @@
 		FAB5D79A2FA79F5C002031A9 /* Telemetry in Frameworks */ = {isa = PBXBuildFile; productRef = FAB5D7992FA79F5C002031A9 /* Telemetry */; };
 		FAB5D86E2FA9621A002031A9 /* TVServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAB5D86D2FA9621A002031A9 /* TVServices.framework */; };
 		FAB5D8752FA9621A002031A9 /* ArcfinTopShelf.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */; platformFilters = (tvos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FAD27E3530AACE7700B67955 /* ArcfinWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = FAD27E2B30AACE7600B67955 /* ArcfinWatch Watch App.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,13 @@
 			remoteGlobalIDString = FAB5D86A2FA9621A002031A9;
 			remoteInfo = ArcfinTopShelf;
 		};
+		FAD27E3330AACE7700B67955 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FAB5D74C2FA79A9B002031A9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FAD27E2A30AACE7600B67955;
+			remoteInfo = "ArcfinWatch Watch App";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -72,6 +80,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FAD27E3930AACE7700B67955 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				FAD27E3530AACE7700B67955 /* ArcfinWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -83,6 +102,7 @@
 		FAB5D76D2FA79A9C002031A9 /* ArcfinUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArcfinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ArcfinTopShelf.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAB5D86D2FA9621A002031A9 /* TVServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = TVServices.framework; path = Library/Frameworks/TVServices.framework; sourceTree = DEVELOPER_DIR; };
+		FAD27E2B30AACE7600B67955 /* ArcfinWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ArcfinWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -103,8 +123,8 @@
 				Shared/Admin/AdminActivityView.swift = (ios, macos, );
 				Shared/Admin/AdminEncodersSection.swift = (ios, macos, );
 				Shared/Admin/AdminLibrariesView.swift = (ios, macos, );
-				Shared/Admin/AdminMetadataEditor.swift = (ios, macos, );
 				Shared/Admin/AdminMaintenanceViews.swift = (ios, macos, );
+				Shared/Admin/AdminMetadataEditor.swift = (ios, macos, );
 				Shared/Admin/AdminPluginsView.swift = (ios, macos, );
 				Shared/Admin/AdminServerSettingsView.swift = (ios, macos, );
 				Shared/Admin/AdminSessions.swift = (ios, macos, );
@@ -154,11 +174,11 @@
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );
 				iOS/Platform/AdaptiveColor.swift = (ios, );
+				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
 				iOS/Platform/AppSheet.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
-				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/ExternalApps.swift = (ios, );
 				iOS/Platform/FieldBackground.swift = (ios, );
 				iOS/Platform/FocusRing.swift = (ios, );
@@ -254,11 +274,11 @@
 				macOS/Onboarding/WhatsNew.swift = (macos, );
 				macOS/Onboarding/WhatsNewView.swift = (macos, );
 				macOS/Platform/AdaptiveColor.swift = (macos, );
+				macOS/Platform/AdminPlatform.swift = (macos, );
 				macOS/Platform/AlwaysDarkPlayer.swift = (macos, );
 				macOS/Platform/AppSheet.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
-				macOS/Platform/AdminPlatform.swift = (macos, );
 				macOS/Platform/ExternalApps.swift = (macos, );
 				macOS/Platform/FieldBackground.swift = (macos, );
 				macOS/Platform/FocusRing.swift = (macos, );
@@ -349,11 +369,11 @@
 				tvOS/Onboarding/WhatsNew.swift = (tvos, );
 				tvOS/Onboarding/WhatsNewView.swift = (tvos, );
 				tvOS/Platform/AdaptiveColor.swift = (tvos, );
+				tvOS/Platform/AdminPlatform.swift = (tvos, );
 				tvOS/Platform/AlwaysDarkPlayer.swift = (tvos, );
 				tvOS/Platform/AppSheet.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
-				tvOS/Platform/AdminPlatform.swift = (tvos, );
 				tvOS/Platform/ExternalApps.swift = (tvos, );
 				tvOS/Platform/FieldBackground.swift = (tvos, );
 				tvOS/Platform/FocusRing.swift = (tvos, );
@@ -415,6 +435,13 @@
 			);
 			target = FAB5D86A2FA9621A002031A9 /* ArcfinTopShelf */;
 		};
+		FAD27E3A30AACE7700B67955 /* Exceptions for "ArcfinWatch Watch App" folder in "ArcfinWatch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FAD27E2A30AACE7600B67955 /* ArcfinWatch Watch App */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -451,6 +478,14 @@
 				FAB5D8762FA9621A002031A9 /* Exceptions for "ArcfinTopShelf" folder in "ArcfinTopShelf" target */,
 			);
 			path = ArcfinTopShelf;
+			sourceTree = "<group>";
+		};
+		FAD27E2C30AACE7600B67955 /* ArcfinWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FAD27E3A30AACE7700B67955 /* Exceptions for "ArcfinWatch Watch App" folder in "ArcfinWatch Watch App" target */,
+			);
+			path = "ArcfinWatch Watch App";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -508,6 +543,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FAD27E2830AACE7600B67955 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -519,6 +561,7 @@
 				FAB5D7702FA79A9C002031A9 /* ArcfinUITests */,
 				FAB5D86F2FA9621A002031A9 /* ArcfinTopShelf */,
 				FA2E193F305DEF7900513FD4 /* ArcfinWidgets */,
+				FAD27E2C30AACE7600B67955 /* ArcfinWatch Watch App */,
 				FAB5D86C2FA9621A002031A9 /* Frameworks */,
 				FAB5D7552FA79A9B002031A9 /* Products */,
 			);
@@ -532,6 +575,7 @@
 				FAB5D76D2FA79A9C002031A9 /* ArcfinUITests.xctest */,
 				FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */,
 				FA2E193A305DEF7900513FD4 /* ArcfinWidgetsExtension.appex */,
+				FAD27E2B30AACE7600B67955 /* ArcfinWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -581,12 +625,14 @@
 				FAB5D7522FA79A9B002031A9 /* Resources */,
 				FAB5D87A2FA9621A002031A9 /* Embed Foundation Extensions */,
 				C9E2F0949C4D8A20F69CAA8B /* Generate GoogleCast dSYM */,
+				FAD27E3930AACE7700B67955 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				FAB5D8742FA9621A002031A9 /* PBXTargetDependency */,
 				FA2E1948305DEF7A00513FD4 /* PBXTargetDependency */,
+				FAD27E3430AACE7700B67955 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FAB5D7562FA79A9B002031A9 /* Arcfin */,
@@ -679,6 +725,28 @@
 			productReference = FAB5D86B2FA9621A002031A9 /* ArcfinTopShelf.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		FAD27E2A30AACE7600B67955 /* ArcfinWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FAD27E3630AACE7700B67955 /* Build configuration list for PBXNativeTarget "ArcfinWatch Watch App" */;
+			buildPhases = (
+				FAD27E2730AACE7600B67955 /* Sources */,
+				FAD27E2830AACE7600B67955 /* Frameworks */,
+				FAD27E2930AACE7600B67955 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FAD27E2C30AACE7600B67955 /* ArcfinWatch Watch App */,
+			);
+			name = "ArcfinWatch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "ArcfinWatch Watch App";
+			productReference = FAD27E2B30AACE7600B67955 /* ArcfinWatch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -686,7 +754,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2700;
+				LastSwiftUpdateCheck = 2710;
 				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					FA2E1939305DEF7900513FD4 = {
@@ -705,6 +773,9 @@
 					};
 					FAB5D86A2FA9621A002031A9 = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					FAD27E2A30AACE7600B67955 = {
+						CreatedOnToolsVersion = 27.1;
 					};
 				};
 			};
@@ -740,6 +811,7 @@
 				FAB5D76C2FA79A9C002031A9 /* ArcfinUITests */,
 				FAB5D86A2FA9621A002031A9 /* ArcfinTopShelf */,
 				FA2E1939305DEF7900513FD4 /* ArcfinWidgetsExtension */,
+				FAD27E2A30AACE7600B67955 /* ArcfinWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
@@ -774,6 +846,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FAB5D8692FA9621A002031A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FAD27E2930AACE7600B67955 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -841,6 +920,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FAD27E2730AACE7600B67955 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -870,6 +956,12 @@
 			);
 			target = FAB5D86A2FA9621A002031A9 /* ArcfinTopShelf */;
 			targetProxy = FAB5D8732FA9621A002031A9 /* PBXContainerItemProxy */;
+		};
+		FAD27E3430AACE7700B67955 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = FAD27E2A30AACE7600B67955 /* ArcfinWatch Watch App */;
+			targetProxy = FAD27E3330AACE7700B67955 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1116,6 +1208,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
@@ -1189,6 +1282,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
@@ -1403,6 +1497,75 @@
 			};
 			name = Release;
 		};
+		FAD27E3730AACE7700B67955 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 25;
+				DEVELOPMENT_TEAM = CW6GQT9SK5;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "ArcfinWatch Watch App/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Arcfin;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.psmattas.Arcfin;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		FAD27E3830AACE7700B67955 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 25;
+				DEVELOPMENT_TEAM = CW6GQT9SK5;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "ArcfinWatch Watch App/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Arcfin;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.psmattas.Arcfin;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1456,6 +1619,15 @@
 			buildConfigurations = (
 				FAB5D8782FA9621A002031A9 /* Debug */,
 				FAB5D8792FA9621A002031A9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FAD27E3630AACE7700B67955 /* Build configuration list for PBXNativeTarget "ArcfinWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAD27E3730AACE7700B67955 /* Debug */,
+				FAD27E3830AACE7700B67955 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

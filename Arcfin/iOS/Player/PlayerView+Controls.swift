@@ -416,6 +416,192 @@ extension PlayerView {
             .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
     }
 
+    // MARK: - AirPlay
+
+    /// Over the video while it plays on an AirPlay device, in the cast controller's style. The
+    /// local player is what AirPlay plays, so the controls drive it directly.
+    func airPlayScreen(route: String) -> some View {
+        GeometryReader { geo in
+            let landscape = geo.size.width > geo.size.height
+            ScrollView {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button { closePlayer() } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close player")
+                        Spacer()
+                    }
+                    if landscape {
+                        HStack(spacing: 32) {
+                            airPlayInfo(route: route).frame(maxWidth: .infinity)
+                            airPlayControls.frame(maxWidth: .infinity)
+                        }
+                        .frame(maxHeight: .infinity)
+                    } else {
+                        Spacer(minLength: 16)
+                        airPlayInfo(route: route)
+                        Spacer(minLength: 24)
+                        airPlayControls
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .frame(minHeight: geo.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .background {
+            ZStack {
+                Color.black
+                if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+                    CachedAsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img): img.resizable().scaledToFill()
+                        default: Color.clear
+                        }
+                    }
+                    .overlay(.black.opacity(0.75))
+                    .blur(radius: 40)
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .transition(.opacity)
+    }
+
+    private func airPlayInfo(route: String) -> some View {
+        VStack(spacing: 14) {
+            Image(systemName: "airplay.video")
+                .font(.largeTitle.weight(.medium))
+                .foregroundStyle(DT.Color.accent)
+                .accessibilityHidden(true)
+            VStack(spacing: 6) {
+                Text("Playing on \(route)")
+                    .font(.system(.body, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(item.name)
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(2)
+            }
+            .multilineTextAlignment(.center)
+        }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+    }
+
+    private var airPlayControls: some View {
+        let duration = Double(max(model.player.durationTicks, 1))
+        let shown = airPlayScrubTicks ?? Double(model.elapsedTicks)
+        return VStack(spacing: 16) {
+            if !model.isLive {
+                VStack(spacing: 4) {
+                    Slider(value: Binding(get: { shown / duration }, set: { airPlayScrubTicks = $0 * duration }), in: 0...1) { editing in
+                        if !editing, let ticks = airPlayScrubTicks {
+                            model.performSeek(to: Int64(ticks))
+                            airPlayScrubTicks = nil
+                        }
+                    }
+                    .tint(DT.Color.accent)
+                    .accessibilityLabel("Playback position")
+                    HStack {
+                        Text(model.timeLabel(ticks: Int64(shown)))
+                        Spacer()
+                        Text("-" + model.timeLabel(ticks: Int64(max(duration - shown, 0))))
+                    }
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.7))
+                    .accessibilityHidden(true)
+                }
+            }
+
+            HStack(spacing: 24) {
+                if !model.isLive {
+                    Button { model.seek(by: -skipBackwardSeconds) } label: {
+                        Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
+                            .font(.title)
+                            .frame(minWidth: 52, minHeight: 52)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
+                }
+                Button { model.togglePlayPause() } label: {
+                    Image(systemName: model.player.status == .playing ? "pause.fill" : "play.fill")
+                        .font(.largeTitle)
+                        .frame(minWidth: 64, minHeight: 64)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(model.player.status == .playing ? "Pause" : "Play")
+                if !model.isLive {
+                    Button { model.seek(by: skipForwardSeconds) } label: {
+                        Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
+                            .font(.title)
+                            .frame(minWidth: 52, minHeight: 52)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
+                }
+                if model.nextEpisode != nil {
+                    Button { model.playNextEpisode() } label: {
+                        Image(systemName: "forward.end.fill")
+                            .font(.title2)
+                            .frame(minWidth: 52, minHeight: 52)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Next episode")
+                }
+            }
+            .foregroundStyle(.white)
+            .buttonStyle(.plain)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+
+            HStack(spacing: 12) {
+                if let audio = model.playbackInfo?.audioStreams, audio.count > 1 {
+                    Menu {
+                        Picker("Audio", selection: Binding(
+                            get: { model.selectedAudioIndex ?? model.playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
+                            set: { model.changeTrack(audioIndex: $0) }
+                        )) {
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                        }
+                    } label: {
+                        castTrackLabel("Audio", systemImage: "speaker.wave.2")
+                    }
+                }
+                if let subs = model.playbackInfo?.subtitleStreams, !subs.isEmpty {
+                    Menu {
+                        Picker("Subtitles", selection: Binding(
+                            get: { model.selectedSubtitleIndex ?? -1 },
+                            set: { model.changeTrack(subtitleIndex: .some($0 < 0 ? nil : $0)) }
+                        )) {
+                            Text("Off").tag(-1)
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                        }
+                    } label: {
+                        castTrackLabel("Subtitles", systemImage: "captions.bubble")
+                    }
+                }
+            }
+
+            Button { routeBridge.fireAirPlay() } label: {
+                Label("AirPlay", systemImage: "airplay.video")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 18).padding(.vertical, 9)
+                    .background(Color.white.opacity(0.15), in: Capsule())
+                    .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Switch device or stop AirPlay")
+        }
+        .frame(maxWidth: 480)
+    }
+
     private var castInfo: some View {
         VStack(spacing: 14) {
             Image(systemName: "tv")

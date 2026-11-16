@@ -106,12 +106,25 @@ struct MainTabView: View {
 /// `isEnabled:` arrived in iOS 26.1; the older overload can't hide the bar, so on 26.0
 /// there is no mini controller rather than a permanently empty accessory.
 private struct CastMiniControllerAccessory: ViewModifier {
+    private var casting: Bool { CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil }
+
     func body(content: Content) -> some View {
+        accessory(content)
+            .onChange(of: AppServices.remoteSessions.refreshCount) {
+                Task { await RemotePlaybackActivity.shared.sync() }
+            }
+    }
+
+    @ViewBuilder
+    private func accessory(_ content: Content) -> some View {
         if #available(iOS 26.1, *) {
-            content.tabViewBottomAccessory(
-                isEnabled: CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil
-            ) {
-                CastMiniController()
+            content.tabViewBottomAccessory(isEnabled: casting || AppServices.remoteSessions.selected != nil) {
+                // Casting from here comes first; otherwise another device playing on this profile.
+                if casting { CastMiniController() } else { RemoteMiniController() }
+            }
+            .fullScreenCover(isPresented: Binding(get: { AppServices.remoteSessions.isShowingRemote },
+                                                  set: { AppServices.remoteSessions.isShowingRemote = $0 })) {
+                RemoteControllerView()
             }
         } else {
             content

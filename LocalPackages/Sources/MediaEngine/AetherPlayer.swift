@@ -87,6 +87,14 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     /// yet. Same passthrough rationale as `volume` above.
     public var nativePlayerLayer: AVPlayerLayer? { engine.nativePlayerLayer }
 
+    /// AirPlay passthroughs. The engine can't tell a TV from a speaker on the audio route, so it
+    /// keeps some pictures here (Dolby Vision with an enhancement layer, interlaced H.264) until
+    /// told the receiver shows video. iOS only; no effect elsewhere.
+    public func setAirPlayReceiverShowsVideo(_ shows: Bool) { engine.setAirPlayReceiverShowsVideo(shows) }
+
+    /// The receiver has the sound but the picture can't follow it (software decoding).
+    public var airPlayPictureStaysLocal: Bool { engine.airPlayPictureStaysLocal }
+
     /// Passthrough so PlayerView's fill-screen toggle can reach this engine's own
     /// videoGravity — applies on every route (it re-applies to whichever of nativeHost's
     /// playerLayer / softwareHost's displayLayer is actually live), unlike nativePlayerLayer

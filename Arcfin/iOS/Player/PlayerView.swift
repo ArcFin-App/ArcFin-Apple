@@ -41,6 +41,9 @@ struct PlayerView: View {
     // Separate from isScrubbing/scrubTicks: those track the local player, which is frozen
     // while casting (see castingPlaceholder).
     @State var isCastScrubbing = false
+    /// The AirPlay device the video is on, while it's on one.
+    @State var airPlayRoute: String?
+    @State var airPlayScrubTicks: Double?
     @State var castScrubTicks: Double = 0
     @State var showTrackMenu = false
     @State var showQualityMenu = false
@@ -105,6 +108,11 @@ struct PlayerView: View {
                 castingPlaceholder
             } else {
                 videoSurfaceLayer
+                // The video is on an AirPlay device: a controller for it here, as when
+                // casting, instead of controls over a blank video area.
+                if let airPlayRoute {
+                    airPlayScreen(route: airPlayRoute)
+                }
             }
 
             if audioOnly {
@@ -154,8 +162,8 @@ struct PlayerView: View {
             // screen on every tap. Keeping the view always mounted means there's nothing to
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
-                .opacity(model.isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
-                .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
+                .opacity(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil ? 1 : 0)
+                .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil)
 
             SkipSegmentButton(model: model)
             SpeedBoostBadge(model: model)
@@ -172,6 +180,7 @@ struct PlayerView: View {
                 StillWatchingPrompt(model: model)
             }
         }
+        .task { await watchAirPlay() }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         // With swipes allowed right to the edges, the player's swipes come before Control
@@ -182,7 +191,10 @@ struct PlayerView: View {
             connectModel()
             applyOpeningOrientation()
         }
-        .task { if !model.isAskingToResume { await setup() } }
+        .task {
+            if model.handOffToDefaultPlayer() { closePlayer(); return }
+            if !model.isAskingToResume { await setup() }
+        }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks
@@ -266,6 +278,10 @@ struct PlayerView: View {
         .onChange(of: sharePlay.incomingCommand) { _, command in
             guard let command else { return }
             model.applySharePlayCommand(command)
+        }
+        .onChange(of: RemoteControl.shared.command) { _, command in
+            guard let command else { return }
+            if command.kind == .stop { closePlayer() } else { model.applyRemoteCommand(command.kind) }
         }
         .onChange(of: sharePlay.activityItemId) { _, id in
             guard let id, id != item.id else { return }
@@ -498,5 +514,33 @@ struct PlayerView: View {
         await Task.detached(priority: .utility) {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }.value
+    }
+}
+
+extension PlayerView {
+    /// Whether the video went to an AirPlay device, and which. AVFoundation sends the video
+    /// itself, and so does Aether on its native route, through an AVPlayer of its own; its
+    /// software route and VLC keep the picture here and send only the sound.
+    func watchAirPlay() async {
+        var toldPictureStaysHere = false
+        while !Task.isCancelled {
+            let aether = model.player as? AetherEnginePlayer
+            let avPlayer = (model.player as? AVFoundationPlayer)?.player ?? aether?.nativePlayerLayer?.player
+            let external = avPlayer?.isExternalPlaybackActive ?? false
+            let name = AVAudioSession.sharedInstance().currentRoute.outputs
+                .first { $0.portType == .airPlay }?.portName
+            // AirPlay picked from the video player is taken as a screen. Left unsaid, Aether keeps
+            // Dolby Vision with an enhancement layer and interlaced video here and sends the sound.
+            aether?.setAirPlayReceiverShowsVideo(name != nil)
+            let route = external ? (name ?? String(localized: "AirPlay")) : nil
+            if route != airPlayRoute { withAnimation(DT.Animation.fast) { airPlayRoute = route } }
+            // Decoded in software: nothing can send this picture, so say why the TV shows none.
+            let staysHere = aether?.airPlayPictureStaysLocal ?? false
+            if staysHere, !toldPictureStaysHere {
+                model.showSharePlayNotice(String(localized: "AirPlay is playing the sound only. This video is decoded on this device, so its picture can’t be sent."))
+            }
+            toldPictureStaysHere = staysHere
+            try? await Task.sleep(for: .seconds(1))
+        }
     }
 }

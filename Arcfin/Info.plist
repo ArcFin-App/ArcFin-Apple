@@ -35,6 +35,7 @@
 		<string>_jellyfin._tcp</string>
 		<string>_googlecast._tcp</string>
 		<string>_CC1AD845._googlecast._tcp</string>
+		<string>_arcfin-setup._tcp</string>
 	</array>
 	<key>NSUserActivityTypes</key>
 	<array>

@@ -114,6 +114,9 @@ struct OfflinePlayerView: View {
         }
         .keepsScreenAwake(status: model.player.status)
         .task { await setup() }
+        .onChange(of: RemoteControl.shared.command) { _, command in
+            if let command { model.applyRemoteCommand(command.kind) }
+        }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(OfflinePlayerModel.timeText(model.askedResumeTicks))") { model.resumeAnswer = model.askedResumeTicks }
             Button("Start from Beginning") { model.resumeAnswer = 0 }

@@ -118,6 +118,25 @@ public struct JellyfinSession: Sendable, Identifiable, Equatable {
     public var playMethod: String? = nil
     public var transcode: Transcode? = nil
     public var supportsRemoteControl: Bool = false
+    /// For the remote (#457): which device, what's playing on it and how.
+    public var deviceId: String? = nil
+    public var userId: String? = nil
+    public var nowPlayingItemId: String? = nil
+    public var nowPlayingSeriesName: String? = nil
+    /// "S1 E4" for an episode.
+    public var nowPlayingEpisodeCode: String? = nil
+    public var volumeLevel: Int? = nil
+    public var isMuted: Bool = false
+    public var audioStreamIndex: Int? = nil
+    public var subtitleStreamIndex: Int? = nil
+    public var audioTracks: [Track] = []
+    public var subtitleTracks: [Track] = []
+
+    public struct Track: Sendable, Equatable, Identifiable {
+        public let index: Int
+        public let title: String
+        public var id: Int { index }
+    }
 
     public struct Transcode: Sendable, Equatable {
         public let bitrate: Int?
@@ -352,10 +371,13 @@ extension JellyfinMediaClient {
                                 liveStreamId: liveStreamId)
     }
 
-    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String? = nil) async {
+    /// The volume and mute state are what a remote shows for this session; left out, the
+    /// server forgets the last ones.
+    public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String? = nil,
+                                       volumeLevel: Int? = nil, isMuted: Bool? = nil) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Progress",
                                 itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: isPaused,
-                                liveStreamId: liveStreamId)
+                                liveStreamId: liveStreamId, volumeLevel: volumeLevel, isMuted: isMuted)
     }
 
     public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
@@ -364,7 +386,8 @@ extension JellyfinMediaClient {
                                 liveStreamId: liveStreamId)
     }
 
-    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String?) async {
+    private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String?,
+                                   volumeLevel: Int? = nil, isMuted: Bool? = nil) async {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent(path))
         req.httpMethod = "POST"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -378,6 +401,8 @@ extension JellyfinMediaClient {
             "PlayMethod": "DirectPlay",
         ]
         if let liveStreamId { body["LiveStreamId"] = liveStreamId }
+        if let volumeLevel { body["VolumeLevel"] = volumeLevel }
+        if let isMuted { body["IsMuted"] = isMuted }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         _ = try? await URLSession.arcfin.data(for: req)
     }
@@ -760,21 +785,48 @@ public struct DownloadEncoding: Sendable, Equatable {
 
 struct SessionResponse: Decodable {
     struct NowPlayingItem: Decodable {
+        struct Stream: Decodable {
+            let index: Int?
+            let type: String?
+            let displayTitle: String?
+            let language: String?
+            enum CodingKeys: String, CodingKey {
+                case index = "Index", type = "Type", displayTitle = "DisplayTitle", language = "Language"
+            }
+        }
+        let id: String?
         let name: String?
         let runTimeTicks: Int64?
+        let seriesName: String?
+        let indexNumber: Int?
+        let parentIndexNumber: Int?
+        let mediaStreams: [Stream]?
         enum CodingKeys: String, CodingKey {
+            case id = "Id"
             case name = "Name"
             case runTimeTicks = "RunTimeTicks"
+            case seriesName = "SeriesName"
+            case indexNumber = "IndexNumber"
+            case parentIndexNumber = "ParentIndexNumber"
+            case mediaStreams = "MediaStreams"
         }
     }
     struct PlayState: Decodable {
         let isPaused: Bool?
         let positionTicks: Int64?
         let playMethod: String?
+        let volumeLevel: Int?
+        let isMuted: Bool?
+        let audioStreamIndex: Int?
+        let subtitleStreamIndex: Int?
         enum CodingKeys: String, CodingKey {
             case isPaused = "IsPaused"
             case positionTicks = "PositionTicks"
             case playMethod = "PlayMethod"
+            case volumeLevel = "VolumeLevel"
+            case isMuted = "IsMuted"
+            case audioStreamIndex = "AudioStreamIndex"
+            case subtitleStreamIndex = "SubtitleStreamIndex"
         }
     }
     struct TranscodingInfo: Decodable {
@@ -803,8 +855,12 @@ struct SessionResponse: Decodable {
     let lastActivityDate: String?
     let transcodingInfo: TranscodingInfo?
     let supportsRemoteControl: Bool?
+    let deviceId: String?
+    let userId: String?
 
     enum CodingKeys: String, CodingKey {
+        case deviceId = "DeviceId"
+        case userId = "UserId"
         case transcodingInfo = "TranscodingInfo"
         case supportsRemoteControl = "SupportsRemoteControl"
         case id = "Id"
@@ -841,8 +897,29 @@ struct SessionResponse: Decodable {
                     isVideoDirect: $0.isVideoDirect ?? false, isAudioDirect: $0.isAudioDirect ?? false,
                     reasons: $0.transcodeReasons ?? [], hardwareAcceleration: $0.hardwareAccelerationType)
             },
-            supportsRemoteControl: supportsRemoteControl ?? false
+            supportsRemoteControl: supportsRemoteControl ?? false,
+            deviceId: deviceId,
+            userId: userId,
+            nowPlayingItemId: nowPlayingItem?.id,
+            nowPlayingSeriesName: nowPlayingItem?.seriesName,
+            nowPlayingEpisodeCode: nowPlayingItem.flatMap { item in
+                guard let episode = item.indexNumber else { return nil }
+                return item.parentIndexNumber.map { "S\($0) E\(episode)" } ?? "E\(episode)"
+            },
+            volumeLevel: playState?.volumeLevel,
+            isMuted: playState?.isMuted ?? false,
+            audioStreamIndex: playState?.audioStreamIndex,
+            subtitleStreamIndex: playState?.subtitleStreamIndex,
+            audioTracks: Self.tracks(nowPlayingItem?.mediaStreams, type: "Audio"),
+            subtitleTracks: Self.tracks(nowPlayingItem?.mediaStreams, type: "Subtitle")
         )
+    }
+
+    private static func tracks(_ streams: [NowPlayingItem.Stream]?, type: String) -> [JellyfinSession.Track] {
+        (streams ?? []).compactMap { stream in
+            guard stream.type == type, let index = stream.index else { return nil }
+            return JellyfinSession.Track(index: index, title: stream.displayTitle ?? stream.language ?? "Track \(index)")
+        }
     }
 }
 

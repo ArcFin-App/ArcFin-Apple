@@ -19,6 +19,9 @@ public enum JellyfinWSEvent: Sendable {
     case userDataChanged(itemIds: [String])
     /// Titles were added to, removed from or updated in the library.
     case libraryChanged
+    /// The web app or the dashboard controlling this device. The server sends it to only one
+    /// of the device's sockets (the most recently active), so every owner passes it on.
+    case remoteCommand(JellyfinRemoteCommand)
 }
 
 /// Thin wrapper over URLSessionWebSocketTask for Jellyfin's `/socket` feed. One instance
@@ -110,6 +113,10 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
             continuation.yield(.userDataChanged(itemIds: ids))
         case "LibraryChanged":
             continuation.yield(.libraryChanged)
+        case "Play", "Playstate", "GeneralCommand":
+            if let command = JellyfinRemoteCommand.parse(messageType: envelope.messageType, json: raw) {
+                continuation.yield(.remoteCommand(command))
+            }
         case "ForceKeepAlive":
             // The server drops a socket that stays silent past this timeout (seconds).
             let timeout = (try? JSONDecoder().decode(KeepAlivePayload.self, from: raw))?.data ?? 60

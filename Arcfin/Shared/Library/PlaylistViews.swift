@@ -61,7 +61,7 @@ struct AddToPlaylistSheet: View {
                         .foregroundStyle(.red)
                 }
             }
-            .navigationTitle("Add to Playlist")
+            .sheetTitle("Add to Playlist")
             .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -190,7 +190,7 @@ struct AddTitlesToPlaylistSheet: View {
             .arcfinListStyle()
             .screenBackground()
             .searchable(text: $query, prompt: "Movies, shows, episodes")
-            .navigationTitle("Add Titles")
+            .sheetTitle("Add Titles")
             .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

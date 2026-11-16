@@ -27,6 +27,13 @@ enum TopShelfArtwork {
         TVTopShelfContentProvider.topShelfContentDidChange()
     }
 
+    /// Empties the shelf and its images, for a sign-out or a profile switch.
+    static func clear() {
+        TopShelfBridge.clear()
+        if let directory = TopShelfBridge.artworkDirectory { removeUnused(keeping: [], in: directory) }
+        TVTopShelfContentProvider.topShelfContentDidChange()
+    }
+
     private static func addArtwork(to items: inout [TopShelfMediaItem], in directory: URL) async {
         let accent = UIColor(DT.Color.accent)
         for index in items.indices {

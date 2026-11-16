@@ -96,7 +96,7 @@ struct LibraryDetailView: View {
             }
         }
         .navigationTitle("")
-        .appSheet(isPresented: $showFilterSheet) {
+        .appSheet(isPresented: $showFilterSheet, title: "Filter & Sort", systemImage: "line.3.horizontal.decrease.circle") {
             LibraryFilterSheet(
                 availableGenres: model.availableGenres, availableYears: model.availableYears, availableRatings: model.availableRatings, availableTags: model.availableTags,
                 selectedGenres: $model.selectedGenres, selectedYears: $model.selectedYears,

@@ -17,29 +17,42 @@ struct UsersView: View {
         authManager.profiles.filter { $0.id != activeID }
     }
 
+    /// The profile in use, its PIN and Sign Out on the left; the others to switch to and Add
+    /// Profile on the right, across the screen.
     var body: some View {
-        List {
+        LoginSplitPage {
+            Text("Profiles")
+                .font(.title.bold())
+                .foregroundStyle(DT.Color.textPrimary)
             if let active = authManager.state.credential {
-                Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    sectionLabel("Current Profile")
                     tvProfileRow(active, isActive: true)
-                        .listRowBackground(Color.clear)
-                        .focusEffectDisabled()
+                        .padding(.horizontal, 24)
+                }
+                VStack(alignment: .leading, spacing: 8) {
                     if pins.hasPIN(active.id) {
                         Button("Change PIN") { pinTask = TVPINTask(profile: active, kind: .change) }
-                            .tvListRow()
                         Button("Remove PIN") { pinTask = TVPINTask(profile: active, kind: .remove) }
-                            .tvListRow()
                     } else {
                         Button("Set a PIN") { pinTask = TVPINTask(profile: active, kind: .set) }
-                            .tvListRow()
                     }
-                } header: { sectionLabel("Current Profile") } footer: {
-                    Text("With a PIN, Arcfin asks for it when it opens and before switching to this profile.")
+                    Button(role: .destructive) {
+                        signOutTarget = active
+                    } label: {
+                        Text("Sign Out").foregroundStyle(.red)
+                    }
                 }
+                .buttonStyle(TVSettingsRowStyle())
+                Text("With a PIN, Arcfin asks for it when it opens and before switching to this profile.")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            if !otherProfiles.isEmpty {
-                Section {
+        } trailing: {
+            VStack(alignment: .leading, spacing: 8) {
+                if !otherProfiles.isEmpty {
+                    sectionLabel("Switch To")
                     ForEach(otherProfiles) { profile in
                         Button {
                             if pins.hasPIN(profile.id) {
@@ -51,36 +64,18 @@ struct UsersView: View {
                         } label: {
                             tvProfileRow(profile, isActive: false)
                         }
-                        .listRowBackground(Color.clear)
                     }
-                } header: { sectionLabel("Switch To") }
-            }
-
-            Section {
+                }
                 NavigationLink {
                     TVAddProfileFlowView(onProfileAdded: { dismiss() })
                 } label: {
-                    Text("Add Profile")
-                        .foregroundStyle(DT.Color.accent)
+                    Label("Add Profile", systemImage: "plus")
                 }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 48, bottom: 8, trailing: 48))
             }
-
-            Section {
-                Button(role: .destructive) {
-                    signOutTarget = authManager.state.credential
-                } label: {
-                    Text("Sign Out")
-                        .foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-                .listRowBackground(Color.clear)
-            }
+            .buttonStyle(TVSettingsRowStyle())
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .listStyle(.plain)
-        .screenBackground()
-        .navigationTitle("Profiles")
+        .toolbar(.hidden, for: .navigationBar)
         .task { await pins.load(authManager: authManager) }
         .confirmingProfileRemoval($signOutTarget, signingOut: true,
                                   isLastProfile: authManager.profiles.count <= 1) { _ in
@@ -142,7 +137,7 @@ struct UsersView: View {
         .padding(.vertical, 8)
     }
 
-    private func sectionLabel(_ text: String) -> some View {
+    private func sectionLabel(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.system(.caption, design: .default, weight: .semibold))
             .foregroundStyle(DT.Color.textSecondary)
@@ -230,7 +225,7 @@ private struct TVPINFlow: View {
     }
 }
 
-// MARK: - tvOS add-profile flow (pushed within UsersView's NavigationStack)
+// MARK: - tvOS add-profile flow (pushed within UsersView's NavigationStack, full screen)
 
 private struct TVAddProfileFlowView: View {
     var onProfileAdded: () -> Void
@@ -249,7 +244,9 @@ private struct TVAddProfileFlowView: View {
                     onProfileAdded()
                 }
             )
-            .navigationTitle("Add Profile")
+            .toolbar(.hidden, for: .navigationBar)
+            // Another profile can be added from Arcfin on an iPhone or iPad too (#481).
+            .hostsAppleTVSetup(onAdded: onProfileAdded)
         }
     }
 }

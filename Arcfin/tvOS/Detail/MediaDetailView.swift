@@ -26,6 +26,7 @@ struct MediaDetailView: View {
     @State private var openedCollection: MediaItem?
     @State private var openedPlaylist: MediaItem?
     @Namespace private var focusNamespace
+    @State private var episodeScrollID: String?
     @State private var minuteTick = Date()
 
     init(item: MediaItem) {
@@ -66,7 +67,10 @@ struct MediaDetailView: View {
             .ignoresSafeArea()
         }
         .screenBackground()
-        .task {
+        // A page handed another title (a link opened while one is showing) keeps its state, so
+        // it would show the new title's name over the old one's details: start it over.
+        .task(id: item.id) {
+            if model.item.id != item.id { model = MediaDetailModel(item: item) }
             await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: nil,
                              trailers: .withPage, seriesOpensOnSeasonInProgress: false)
         }
@@ -104,7 +108,7 @@ struct MediaDetailView: View {
             .id(request.item.id)
         }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
-        .appSheet(isPresented: $showSubtitleSearch) {
+        .appSheet(isPresented: $showSubtitleSearch, title: "Search Subtitles", systemImage: "magnifyingglass") {
             NavigationStack {
                 SubtitleSearchView(itemId: item.id)
                     .toolbar {
@@ -120,16 +124,21 @@ struct MediaDetailView: View {
         ZStack(alignment: .bottomLeading) {
             Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920) {
-                CachedAsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img.resizable().scaledToFill()
-                    default:
-                        fallbackGradient
+                // In an overlay so the image can't size the hero: an episode whose only art is
+                // a portrait still filled to 2600 pt tall and pushed the title and buttons below
+                // the fold.
+                Color.clear
+                    .overlay {
+                        CachedAsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let img):
+                                img.resizable().scaledToFill()
+                            default:
+                                fallbackGradient
+                            }
+                        }
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
+                    .clipped()
             } else {
                 fallbackGradient.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -505,8 +514,7 @@ struct MediaDetailView: View {
             }
             .padding(.horizontal, 80)
 
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(model.episodes) { ep in
                             let watched = ep.userData?.played == true
@@ -530,18 +538,22 @@ struct MediaDetailView: View {
                             .id(ep.id)
                         }
                     }
+                    .scrollTargetLayout()
                     .padding(.horizontal, 80)
                     .padding(.top, 20)
                     .focusSection()
                 }
                 .scrollClipDisabled()
+                // Lines the row up on the episode by moving only this row. ScrollViewReader's
+                // scrollTo moved the page too: an episode opened from Continue Watching opened
+                // scrolled down to its episodes, with focus on the Series card below them.
+                .scrollPosition(id: $episodeScrollID, anchor: .leading)
                 .onChange(of: model.episodes) { _, newEps in
                     guard let target = model.initialEpisodeID,
                           newEps.contains(where: { $0.id == target }) else { return }
-                    proxy.scrollTo(target, anchor: .leading)
+                    episodeScrollID = target
                     model.initialEpisodeID = nil
                 }
-            }
         }
         .padding(.bottom, 56)
     }

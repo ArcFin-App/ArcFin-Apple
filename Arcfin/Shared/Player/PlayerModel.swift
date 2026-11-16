@@ -171,7 +171,21 @@ final class PlayerModel {
         let behavior = ResumeBehavior.current
         let isLive = item.type == .tvChannel
         resumeFrom = behavior == .startOver || isLive ? 0 : startPositionTicks
-        isAskingToResume = behavior == .ask && startPositionTicks > 0 && !isLive
+        isAskingToResume = behavior == .ask && startPositionTicks > 0 && !isLive && !handsOff
+    }
+
+    /// Settings › Playback › Default Player is another app, and this title goes there.
+    private var handsOff: Bool {
+        (item.type == .movie || item.type == .episode) && !CastManager.shared.isConnected && ExternalPlayer.preferred != nil
+    }
+
+    /// Opens the title in the default player app; true when it did, and the view then closes.
+    func handOffToDefaultPlayer() -> Bool {
+        guard handsOff, let player = ExternalPlayer.preferred,
+              let credential = AppServices.authManager.state.credential,
+              let stream = ExternalPlayer.streamURL(for: item, credential: credential) else { return false }
+        ExternalApps.open(player, stream: stream)
+        return true
     }
 
     /// A live TV channel: no timeline to seek in, nothing to resume or mark watched.
@@ -901,6 +915,86 @@ final class PlayerModel {
         syncPlayManager.leaveGroup(credential: credential, authHeader: authHeader)
     }
 
+    // MARK: - Remote control
+
+    @ObservationIgnored private var remoteVolume: Float = 1
+    @ObservationIgnored private var volumeBeforeMute: Float?
+
+    /// A command from the web app or the dashboard (see RemoteControl). Stop is the view's,
+    /// since it owns closing the player.
+    func applyRemoteCommand(_ kind: RemoteControl.Kind) {
+        let defaults = UserDefaults.standard
+        switch kind {
+        case .stop:
+            return
+        case .pause:
+            if player.status == .playing { togglePlayPause() }
+        case .unpause:
+            if player.status != .playing { togglePlayPause() }
+        case .playPause:
+            togglePlayPause()
+        case .seek(let ticks):
+            performSeek(to: ticks)
+        case .rewind:
+            seek(by: -((defaults.object(forKey: "skipBackwardSeconds") as? Int) ?? 10))
+        case .fastForward:
+            seek(by: (defaults.object(forKey: "skipForwardSeconds") as? Int) ?? 10)
+        case .nextTrack:
+            playNextEpisode()
+        case .previousTrack:
+            performSeek(to: 0)
+        case .setVolume(let volume):
+            setRemoteVolume(volume)
+        case .volumeUp:
+            setRemoteVolume(min(remoteVolume + 0.1, 1))
+        case .volumeDown:
+            setRemoteVolume(max(remoteVolume - 0.1, 0))
+        case .mute:
+            setRemoteMute(true)
+        case .unmute:
+            setRemoteMute(false)
+        case .toggleMute:
+            setRemoteMute(volumeBeforeMute == nil)
+        case .audioTrack(let index):
+            if index != selectedAudioIndex { changeTrack(audioIndex: index) }
+        case .subtitleTrack(let index):
+            if index != selectedSubtitleIndex { changeTrack(subtitleIndex: .some(index)) }
+        case .message(let text):
+            showSharePlayNotice(text)
+        }
+        reportStateToServer()
+    }
+
+    /// The volume a remote set, as the 0–100 a remote shows.
+    private var reportedVolume: Int { Int((remoteVolume * 100).rounded()) }
+
+    private func setRemoteVolume(_ volume: Float) {
+        remoteVolume = volume
+        if volumeBeforeMute == nil { setEngineVolume(volume) }
+    }
+
+    private func setRemoteMute(_ muted: Bool) {
+        guard muted != (volumeBeforeMute != nil) else { return }
+        volumeBeforeMute = muted ? remoteVolume : nil
+        setEngineVolume(muted ? 0 : remoteVolume)
+        soundMutedChanged(muted)
+    }
+
+    /// The dashboard shows what the last report said, so it hears about a change right away
+    /// rather than at the next ten-second report.
+    private func reportStateToServer() {
+        guard !CastManager.shared.isConnected, let credential, let authHeader, let info = playbackInfo else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            await client.reportPlaybackProgress(
+                credential: credential, authHeader: authHeader, itemId: item.id,
+                mediaSourceId: info.mediaSourceId, positionTicks: player.positionTicks,
+                isPaused: player.status == .paused, liveStreamId: info.liveStreamId,
+                volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
+            )
+        }
+    }
+
     // MARK: - SharePlay
 
     /// A command from someone else in the call. Applied straight to the player, so it isn't
@@ -1135,7 +1229,8 @@ final class PlayerModel {
                 await client.reportPlaybackProgress(
                     credential: credential, authHeader: authHeader, itemId: item.id,
                     mediaSourceId: mediaSourceId, positionTicks: player.positionTicks,
-                    isPaused: player.status == .paused, liveStreamId: playbackInfo?.liveStreamId
+                    isPaused: player.status == .paused, liveStreamId: playbackInfo?.liveStreamId,
+                    volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
                 )
             }
         }
@@ -1220,7 +1315,7 @@ final class PlayerModel {
     /// Auto only. Aether can open a source and play its sound while no frame ever reaches the
     /// screen (#269), which setup()'s load-failure fallback never sees. After several seconds of
     /// playback on screen with nothing rendered, that same AVFoundation/VLC fallback takes over
-    /// at the same position.
+    /// at the same position. Not while the video is on AirPlay or another screen.
     private func watchForMissingPicture() {
         guard playbackEnginePreference == .auto, let aether = player as? AetherEnginePlayer,
               let info = playbackInfo, info.videoStream != nil else { return }
@@ -1232,7 +1327,9 @@ final class PlayerModel {
                 guard !Task.isCancelled, player === aether else { return }
                 if scenePhase == .active, aether.status == .playing, !aether.isBuffering { secondsPlayed += 1 }
             }
-            guard await !aether.hasRenderedVideoFrame(), !Task.isCancelled, player === aether else { return }
+            // On AirPlay or another screen the frames are drawn there, never here.
+            guard aether.nativePlayerLayer?.player?.isExternalPlaybackActive != true,
+                  await !aether.hasRenderedVideoFrame(), !Task.isCancelled, player === aether else { return }
             let resumeTicks = aether.positionTicks
             await aether.stop()
             engineReleased()

@@ -6,6 +6,17 @@ import SwiftUI
 enum PlatformMetrics {
     /// How wide a title's description may run: lines across a whole iPad are too long to read.
     /// Which platform's components the Licenses screen lists.
+    /// The sign-in pages: two columns across the screen (what to do, and what to do it with),
+    /// or one readable column.
+    static let loginSideBySide = true
+    /// Can be set up from an iPhone or iPad on the same network (#481).
+    static let hostsAppleTVSetup = true
+    /// Offers to set up a signed-out Apple TV on the same network (#481).
+    static let setsUpAppleTV = false
+    /// Sheets with a lot in them lay it out in two columns across the screen (TVs are landscape).
+    static let sheetsSideBySide = true
+    /// Acts as a remote for Arcfin (or another Jellyfin app) playing elsewhere (#457).
+    static let controlsOtherDevices = false
     static let licensePlatform = "tvOS"
     static let descriptionMaxWidth: CGFloat = 720
     static let pagePad: CGFloat = 20
