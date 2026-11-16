@@ -42,6 +42,9 @@ public final class MusicQueuePlayer {
     public init(streamURL: @escaping (MusicSong) -> URL?) {
         self.streamURL = streamURL
         player.actionAtItemEnd = .advance
+        // Music goes to AirPlay as audio, so the receiver shows the song and its art; as
+        // external (video) playback an Apple TV took over its screen with nothing on it.
+        player.allowsExternalPlayback = false
         statusObservation = player.observe(\.timeControlStatus) { [weak self] player, _ in
             let status = player.timeControlStatus
             Task { @MainActor [weak self] in
@@ -222,15 +225,11 @@ public final class MusicQueuePlayer {
         guard let url = streamURL(entry.track) else { return nil }
         let item = AVPlayerItem(url: url)
         entryIDs[ObjectIdentifier(item)] = entry.id
+        let path = url.path
         itemObservations[ObjectIdentifier(item)] = item.observe(\.status) { [weak self] item, _ in
             guard item.status == .failed else { return }
             let failed = ObjectIdentifier(item)
-            let reason = (item.error as NSError?).map { "\($0.domain) \($0.code): \($0.localizedDescription)" } ?? "unknown"
-            let path = (item.asset as? AVURLAsset)?.url.path ?? "?"
-            Task { @MainActor [weak self] in
-                self?.log.error("Song failed (\(path, privacy: .public)): \(reason, privacy: .public)")
-            }
-            Task { @MainActor [weak self] in self?.itemFailed(failed) }
+            Task { @MainActor [weak self] in self?.itemFailed(failed, path: path) }
         }
         return item
     }
@@ -259,8 +258,11 @@ public final class MusicQueuePlayer {
         }
     }
 
-    private func itemFailed(_ item: ObjectIdentifier) {
+    private func itemFailed(_ item: ObjectIdentifier, path: String) {
         guard let failed = entryIDs[item] else { return }
+        let error = player.items().first { ObjectIdentifier($0) == item }?.error as NSError?
+        let reason = error.map { "\($0.domain) \($0.code): \($0.localizedDescription)" } ?? "unknown"
+        log.error("Song failed (\(path, privacy: .public)): \(reason, privacy: .public)")
         if failed == queue.current?.id {
             failures += 1
             guard failures < queue.entries.count else {
