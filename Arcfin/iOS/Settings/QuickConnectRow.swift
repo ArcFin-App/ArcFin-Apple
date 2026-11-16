@@ -14,10 +14,19 @@ struct QuickConnectRow: View {
             // A Label, as the Your Profile row above uses, so the icon gets the same size.
             Label {
                 HStack(spacing: 10) {
-                    TextField("Quick Connect", text: $quickConnect.code)
-                        .keyboardType(.numberPad)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
+                    // The list lines a row's separator up with its first text, and a field's
+                    // placeholder isn't one: the line started at Authorize instead. The
+                    // placeholder is drawn as text behind the field, so it lines up as above.
+                    ZStack(alignment: .leading) {
+                        Text("Quick Connect")
+                            .foregroundStyle(.tertiary)
+                            .opacity(quickConnect.code.isEmpty ? 1 : 0)
+                            .accessibilityHidden(true)
+                        TextField(text: $quickConnect.code, prompt: Text(verbatim: "")) { Text("Quick Connect") }
+                            .keyboardType(.numberPad)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                    }
                     Button {
                         quickConnect.authorize(authManager: authManager)
                     } label: {
