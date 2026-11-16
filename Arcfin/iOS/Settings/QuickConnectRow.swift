@@ -11,6 +11,25 @@ struct QuickConnectRow: View {
     @State private var isScanning = false
 
     var body: some View {
+        codeRow
+        // Its own row: a second button inside the code's row was hard to hit, and a tap on the
+        // row could reach the wrong one.
+        if QuickConnectScanner.isAvailable {
+            Button { isScanning = true } label: {
+                Label {
+                    Text("Scan Apple TV Code")
+                        .foregroundStyle(DT.Color.textPrimary)
+                } icon: {
+                    Image(systemName: "qrcode.viewfinder")
+                        .foregroundStyle(DT.Color.accent)
+                        .frame(width: 22)
+                }
+            }
+            .sheet(isPresented: $isScanning) { scannerSheet }
+        }
+    }
+
+    private var codeRow: some View {
         VStack(alignment: .leading, spacing: 6) {
             // A Label, as the Your Profile row above uses, so the icon gets the same size.
             Label {
@@ -26,12 +45,6 @@ struct QuickConnectRow: View {
                         else { Text("Authorize") }
                     }
                     .disabled(quickConnect.code.isEmpty || quickConnect.isAuthorizing)
-                    if QuickConnectScanner.isAvailable {
-                        Button { isScanning = true } label: {
-                            Image(systemName: "qrcode.viewfinder")
-                        }
-                        .accessibilityLabel("Scan Code")
-                    }
                 }
             } icon: {
                 Image(systemName: "number.square")
@@ -44,18 +57,19 @@ struct QuickConnectRow: View {
                     .foregroundStyle(quickConnectResult.hasPrefix("✓") ? DT.Color.palette("10b981") : DT.Color.palette("F43F5E"))
             }
         }
-        .sheet(isPresented: $isScanning) {
-            NavigationStack {
-                QuickConnectScanner { url in
-                    isScanning = false
-                    _ = QuickConnectApproval.shared.open(url)
-                }
-                .ignoresSafeArea()
-                .navigationTitle("Scan Code")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isScanning = false } }
-                }
+    }
+
+    private var scannerSheet: some View {
+        NavigationStack {
+            QuickConnectScanner { url in
+                isScanning = false
+                _ = QuickConnectApproval.shared.open(url)
+            }
+            .ignoresSafeArea()
+            .navigationTitle("Scan Code")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isScanning = false } }
             }
         }
     }
