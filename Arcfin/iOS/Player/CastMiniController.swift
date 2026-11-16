@@ -122,14 +122,36 @@ struct RemoteControllerView: View {
     @State private var volume: Double?
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+        Group {
             if let session = remote.selected {
-                background(session)
-                content(session)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: 520)
+                GeometryReader { geo in
+                    let landscape = geo.size.width > geo.size.height
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            header
+                            if landscape {
+                                HStack(spacing: 32) {
+                                    info(session, artworkHeight: max(geo.size.height - 150, 120))
+                                        .frame(maxWidth: .infinity)
+                                    controls(session).frame(maxWidth: .infinity)
+                                }
+                                .frame(maxHeight: .infinity)
+                            } else {
+                                Spacer(minLength: 12)
+                                info(session, artworkHeight: min(280, geo.size.height * 0.34))
+                                Spacer(minLength: 20)
+                                controls(session)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
+                        .frame(minHeight: geo.size.height)
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
+                }
+                .foregroundStyle(.white)
+                .buttonStyle(.plain)
+                .background { background(session) }
             } else {
                 VStack(spacing: 12) {
                     Text("Nothing Playing")
@@ -137,56 +159,63 @@ struct RemoteControllerView: View {
                     Button("Close") { remote.isShowingRemote = false }
                 }
                 .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.ignoresSafeArea())
             }
         }
         .preferredColorScheme(.dark)
     }
 
     private func background(_ session: JellyfinSession) -> some View {
-        CachedAsyncImage(url: remote.artworkURL(for: session)) { phase in
-            switch phase {
-            case .success(let image): image.resizable().scaledToFill()
-            default: Color.clear
+        Color.black
+            .overlay {
+                CachedAsyncImage(url: remote.artworkURL(for: session)) { phase in
+                    switch phase {
+                    case .success(let image): image.resizable().scaledToFill()
+                    default: Color.clear
+                    }
+                }
+                .overlay(.black.opacity(0.75))
+                .blur(radius: 40)
             }
-        }
-        .overlay(.black.opacity(0.75))
-        .blur(radius: 40)
-        .ignoresSafeArea()
+            .clipped()
+            .ignoresSafeArea()
     }
 
-    private func content(_ session: JellyfinSession) -> some View {
-        VStack(spacing: 22) {
-            HStack {
-                Button { remote.isShowingRemote = false } label: {
-                    Image(systemName: "chevron.down")
-                        .font(.title3.weight(.semibold))
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel("Close remote")
-                Spacer()
-                if remote.playing.count > 1 {
-                    Menu {
-                        ForEach(remote.playing) { other in
-                            Button(other.deviceName) { remote.open(other) }
-                        }
-                    } label: {
-                        Label("Devices", systemImage: "rectangle.on.rectangle")
-                            .labelStyle(.iconOnly)
-                            .frame(minWidth: 44, minHeight: 44)
-                    }
-                    .accessibilityLabel("Choose a device")
-                }
+    private var header: some View {
+        HStack {
+            Button { remote.isShowingRemote = false } label: {
+                Image(systemName: "chevron.down")
+                    .font(.title3.weight(.semibold))
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
-            Spacer(minLength: 0)
+            .accessibilityLabel("Close remote")
+            Spacer()
+            if remote.playing.count > 1 {
+                Menu {
+                    ForEach(remote.playing) { other in
+                        Button(other.deviceName) { remote.open(other) }
+                    }
+                } label: {
+                    Label("Devices", systemImage: "rectangle.on.rectangle")
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Choose a device")
+            }
+        }
+    }
 
+    private func info(_ session: JellyfinSession, artworkHeight: CGFloat) -> some View {
+        VStack(spacing: 18) {
             CachedAsyncImage(url: remote.artworkURL(for: session, type: "Primary")) { phase in
                 switch phase {
                 case .success(let image): image.resizable().scaledToFit()
                 default: RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.08)).aspectRatio(2 / 3, contentMode: .fit)
                 }
             }
-            .frame(maxHeight: 280)
+            .frame(maxHeight: artworkHeight)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .accessibilityHidden(true)
 
@@ -199,6 +228,7 @@ struct RemoteControllerView: View {
                     Text(verbatim: [series, session.nowPlayingEpisodeCode].compactMap { $0 }.joined(separator: " · "))
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
                 }
                 Label {
                     Text("Playing on \(session.deviceName)")
@@ -208,22 +238,25 @@ struct RemoteControllerView: View {
                 .font(.footnote)
                 .foregroundStyle(DT.Color.accent)
             }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+    }
 
+    private func controls(_ session: JellyfinSession) -> some View {
+        VStack(spacing: 18) {
             scrubber(session)
             transport(session)
             volumeRow(session)
             trackMenus(session)
-
             Button(role: .destructive) { remote.stopPlayback() } label: {
                 Text("Stop Playback")
                     .font(.footnote.weight(.semibold))
                     .padding(.horizontal, 18).padding(.vertical, 9)
                     .background(Color.white.opacity(0.15), in: Capsule())
             }
-            Spacer(minLength: 0)
         }
-        .foregroundStyle(.white)
-        .buttonStyle(.plain)
+        .frame(maxWidth: 480)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     private func scrubber(_ session: JellyfinSession) -> some View {
@@ -250,7 +283,7 @@ struct RemoteControllerView: View {
     }
 
     private func transport(_ session: JellyfinSession) -> some View {
-        HStack(spacing: 22) {
+        HStack(spacing: 12) {
             control("backward.end.fill", label: "Previous") { remote.previous() }
             control(skipIconName(seconds: skipBackwardSeconds, forward: false), label: "Skip back \(skipBackwardSeconds) seconds") {
                 remote.skip(seconds: -skipBackwardSeconds)
