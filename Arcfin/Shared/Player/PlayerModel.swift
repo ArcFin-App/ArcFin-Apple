@@ -1315,7 +1315,7 @@ final class PlayerModel {
     /// Auto only. Aether can open a source and play its sound while no frame ever reaches the
     /// screen (#269), which setup()'s load-failure fallback never sees. After several seconds of
     /// playback on screen with nothing rendered, that same AVFoundation/VLC fallback takes over
-    /// at the same position.
+    /// at the same position. Not while the video is on AirPlay or another screen.
     private func watchForMissingPicture() {
         guard playbackEnginePreference == .auto, let aether = player as? AetherEnginePlayer,
               let info = playbackInfo, info.videoStream != nil else { return }
@@ -1327,7 +1327,9 @@ final class PlayerModel {
                 guard !Task.isCancelled, player === aether else { return }
                 if scenePhase == .active, aether.status == .playing, !aether.isBuffering { secondsPlayed += 1 }
             }
-            guard await !aether.hasRenderedVideoFrame(), !Task.isCancelled, player === aether else { return }
+            // On AirPlay or another screen the frames are drawn there, never here.
+            guard aether.nativePlayerLayer?.player?.isExternalPlaybackActive != true,
+                  await !aether.hasRenderedVideoFrame(), !Task.isCancelled, player === aether else { return }
             let resumeTicks = aether.positionTicks
             await aether.stop()
             engineReleased()
