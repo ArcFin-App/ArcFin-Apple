@@ -37,58 +37,78 @@ struct WatchJellyfin: Sendable {
     private static let session: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.waitsForConnectivity = true
-        configuration.timeoutIntervalForResource = 20
+        configuration.timeoutIntervalForResource = 30
         return URLSession(configuration: configuration)
     }()
 
+    /// The address that answered last, tried first next time: the watch may be at home or away.
+    @MainActor private static var lastWorking: URL?
+
     func playingSessions() async throws -> [WatchSession] {
         await Self.waitForNetwork()
-        var comps = URLComponents(url: credential.serverURL.appendingPathComponent("Sessions"), resolvingAgainstBaseURL: false)
-        comps?.queryItems = [
-            .init(name: "controllableByUserId", value: credential.userID),
-            .init(name: "activeWithinSeconds", value: "960"),
-        ]
-        guard let url = comps?.url else { throw URLError(.badURL) }
-        var request = URLRequest(url: url)
-        request.setValue(credential.authHeader, forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 10
-        let (data, response) = try await Self.session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
+        let (data, response) = try await send { server in
+            var comps = URLComponents(url: server.appendingPathComponent("Sessions"), resolvingAgainstBaseURL: false)
+            comps?.queryItems = [
+                .init(name: "controllableByUserId", value: credential.userID),
+                .init(name: "activeWithinSeconds", value: "960"),
+            ]
+            return comps?.url.map { URLRequest(url: $0) }
         }
+        guard (200...299).contains(response.statusCode) else { throw URLError(.badServerResponse) }
         return try JSONDecoder().decode([SessionResponse].self, from: data).compactMap(\.session)
     }
 
     /// POST /Sessions/{id}/Playing/{command}: PlayPause, Stop, Seek, NextTrack, PreviousTrack.
     func playstate(_ command: String, seekTicks: Int64? = nil, sessionID: String) async {
-        var comps = URLComponents(url: credential.serverURL.appendingPathComponent("Sessions/\(sessionID)/Playing/\(command)"),
-                                  resolvingAgainstBaseURL: false)
-        if let seekTicks { comps?.queryItems = [.init(name: "seekPositionTicks", value: String(seekTicks))] }
-        guard let url = comps?.url else { return }
-        await post(URLRequest(url: url))
+        _ = try? await send(method: "POST") { server in
+            var comps = URLComponents(url: server.appendingPathComponent("Sessions/\(sessionID)/Playing/\(command)"),
+                                      resolvingAgainstBaseURL: false)
+            if let seekTicks { comps?.queryItems = [.init(name: "seekPositionTicks", value: String(seekTicks))] }
+            return comps?.url.map { URLRequest(url: $0) }
+        }
     }
 
     /// POST /Sessions/{id}/Command: SetVolume, ToggleMute, SetAudioStreamIndex, SetSubtitleStreamIndex.
     func command(_ name: String, arguments: [String: String] = [:], sessionID: String) async {
-        var request = URLRequest(url: credential.serverURL.appendingPathComponent("Sessions/\(sessionID)/Command"))
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: ["Name": name, "Arguments": arguments] as [String: Any])
-        await post(request)
+        let body = try? JSONSerialization.data(withJSONObject: ["Name": name, "Arguments": arguments] as [String: Any])
+        _ = try? await send(method: "POST") { server in
+            var request = URLRequest(url: server.appendingPathComponent("Sessions/\(sessionID)/Command"))
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = body
+            return request
+        }
     }
 
     func artworkURL(itemID: String) -> URL? {
-        var comps = URLComponents(url: credential.serverURL.appendingPathComponent("Items/\(itemID)/Images/Primary"),
-                                  resolvingAgainstBaseURL: false)
-        comps?.queryItems = [.init(name: "fillWidth", value: "200"), .init(name: "api_key", value: credential.accessToken)]
-        return comps?.url
+        guard let server = Self.lastWorking ?? credential.serverURLs.first,
+              var comps = URLComponents(url: server.appendingPathComponent("Items/\(itemID)/Images/Primary"),
+                                        resolvingAgainstBaseURL: false) else { return nil }
+        comps.queryItems = [.init(name: "fillWidth", value: "200"), .init(name: "api_key", value: credential.accessToken)]
+        return comps.url
     }
 
-    private func post(_ request: URLRequest) async {
-        var request = request
-        request.httpMethod = "POST"
-        request.setValue(credential.authHeader, forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 10
-        _ = try? await Self.session.data(for: request)
+    /// Tries the address that worked last, then the others, until one answers at all. An
+    /// answer of any status counts: it's the server, so another address won't do better.
+    private func send(method: String = "GET", _ build: (URL) -> URLRequest?) async throws -> (Data, HTTPURLResponse) {
+        let preferred = Self.lastWorking.flatMap { credential.serverURLs.contains($0) ? $0 : nil }
+        let servers = (preferred.map { [$0] } ?? []) + credential.serverURLs.filter { $0 != preferred }
+        var lastError: any Error = URLError(.cannotConnectToHost)
+        for server in servers {
+            guard var request = build(server) else { continue }
+            request.httpMethod = method
+            request.setValue(credential.authHeader, forHTTPHeaderField: "Authorization")
+            // Short, so an address that can't be reached from here gives way quickly.
+            request.timeoutInterval = servers.count > 1 ? 5 : 10
+            do {
+                let (data, response) = try await Self.session.data(for: request)
+                guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+                Self.lastWorking = server
+                return (data, http)
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError
     }
 
     /// waitsForConnectivity alone still lets a request made before the path is known fail at

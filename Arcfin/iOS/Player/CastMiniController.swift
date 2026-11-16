@@ -575,8 +575,9 @@ final class RemotePlaybackActivity {
 
 // MARK: - Apple Watch
 
-/// Signs the watch's remote (#458) in as this iPhone: the active profile's server and the
-/// header the phone signs its own requests with, sent again whenever the profile changes, and
+/// Signs the watch's remote (#458) in as this iPhone: every address of the active profile's
+/// server (home, away and the one in use, as the watch may be on either network) and the
+/// header the phone signs its own requests with. Sent again whenever the profile changes, and
 /// "signed out" on sign-out. The latest one waits in the application context for the watch.
 @MainActor
 final class WatchLink: NSObject, WCSessionDelegate {
@@ -606,7 +607,7 @@ final class WatchLink: NSObject, WCSessionDelegate {
         let context: [String: Any]
         if let credential = AppServices.authManager.state.credential {
             context = [
-                "serverURL": credential.baseURL.absoluteString,
+                "serverURLs": Self.addresses(for: credential),
                 "authHeader": AppServices.authManager.authClient.authHeader(token: credential.accessToken),
                 "userID": credential.userID,
                 "accessToken": credential.accessToken,
@@ -615,6 +616,15 @@ final class WatchLink: NSObject, WCSessionDelegate {
             context = ["signedOut": true]
         }
         try? session.updateApplicationContext(context)
+    }
+
+    private static func addresses(for credential: ServerCredential) -> [String] {
+        let defaults = UserDefaults.standard
+        let id = credential.id.uuidString
+        let all = [defaults.string(forKey: "serverLocalURL.\(id)"), defaults.string(forKey: "serverRemoteURL.\(id)"),
+                   credential.baseURL.absoluteString].compactMap { $0 }.filter { !$0.isEmpty }
+        var seen = Set<String>()
+        return all.filter { seen.insert($0).inserted }
     }
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: (any Error)?) {

@@ -4,11 +4,11 @@ import Foundation
 import Security
 import WatchConnectivity
 
-/// The iPhone's active profile, as the iPhone sends it: the server and the header it signs its
-/// own requests with, so the watch acts as the phone toward Jellyfin. Sent again on a profile
-/// change, and cleared on sign-out.
+/// The iPhone's active profile, as the iPhone sends it: every address of the server and the
+/// header it signs its own requests with, so the watch acts as the phone toward Jellyfin. Sent
+/// again on a profile change, and cleared on sign-out.
 struct WatchCredential: Codable, Equatable {
-    var serverURL: URL
+    var serverURLs: [URL]
     var authHeader: String
     var userID: String
     var accessToken: String
@@ -32,11 +32,12 @@ final class WatchSignIn: NSObject {
             Keychain.save(nil)
             return
         }
-        guard let server = (context["serverURL"] as? String).flatMap(URL.init(string:)),
+        let servers = (context["serverURLs"] as? [String] ?? []).compactMap(URL.init(string:))
+        guard !servers.isEmpty,
               let header = context["authHeader"] as? String,
               let user = context["userID"] as? String,
               let token = context["accessToken"] as? String else { return }
-        let received = WatchCredential(serverURL: server, authHeader: header, userID: user, accessToken: token)
+        let received = WatchCredential(serverURLs: servers, authHeader: header, userID: user, accessToken: token)
         guard received != credential else { return }
         credential = received
         Keychain.save(received)
