@@ -17,7 +17,7 @@ struct LibraryView: View {
         [GridItem(.adaptive(minimum: 220), spacing: 12)]
     }
 
-    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV) }
+    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV, includeMusic: true) }
 
     var body: some View {
         NavigationStack {
@@ -51,6 +51,7 @@ struct LibraryView: View {
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
             }
+            .musicDestinations()
             .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenFile)) { _ in
                 model.openFileRequested()
             }
@@ -88,6 +89,8 @@ struct LibraryView: View {
     private func libraryDestination(_ library: JellyfinLibrary) -> some View {
         if library.collectionType == .livetv {
             LiveTVView(library: library)
+        } else if library.collectionType == .music {
+            MusicLibraryView(library: library)
         } else {
             LibraryDetailView(library: library)
         }

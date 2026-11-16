@@ -30,7 +30,7 @@ struct MusicSongsView: View {
         .screenBackground()
         .navigationTitle("Songs")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Picker("Sort By", selection: $sort) {
                         Text("Title").tag(MusicSort.name)
@@ -252,9 +252,9 @@ struct MusicArtistView: View {
             .padding(.bottom, DT.Spacing.xl)
         }
         .screenBackground()
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineNavigationTitle()
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .primaryAction) {
                 Menu("More", systemImage: "ellipsis") {
                     Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
                         let id = artist.id
@@ -363,7 +363,7 @@ struct MusicPlaylistView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .screenBackground()
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineNavigationTitle()
         .task {
             songs = await MusicActions.playlistSongs(playlist)
             hasLoaded = true

@@ -34,9 +34,9 @@ struct MusicAlbumView: View {
             .padding(.bottom, DT.Spacing.xl)
         }
         .screenBackground()
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineNavigationTitle()
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .primaryAction) {
                 Button(album.isFavorite ? "Remove from Favorites" : "Add to Favorites",
                        systemImage: album.isFavorite ? "star.fill" : "star") {
                     album.isFavorite.toggle()
@@ -44,7 +44,7 @@ struct MusicAlbumView: View {
                     Task { await MusicActions.setFavorite(id, isFavorite) }
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .primaryAction) {
                 Menu("More", systemImage: "ellipsis") { MusicAlbumMenu(album: album) }
             }
         }

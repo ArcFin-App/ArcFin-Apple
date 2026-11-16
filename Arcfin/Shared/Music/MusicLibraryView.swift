@@ -106,7 +106,7 @@ struct MusicAlbumsView: View {
         .screenBackground()
         .navigationTitle(Text(verbatim: title))
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Picker("Sort By", selection: $sort) {
                         Text("Title").tag(MusicSort.name)

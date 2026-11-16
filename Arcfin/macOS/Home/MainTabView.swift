@@ -48,6 +48,9 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if AppServices.music.isActive { MusicPlayerBar() }
+            }
             // The tab sidebar's own toggle ends up in the toolbar's overflow menu at the far
             // right, and `.toolbar(removing: .sidebarToggle)` doesn't reach it, so it's taken
             // off the window's toolbar and Arcfin's own sits at the leading edge instead.

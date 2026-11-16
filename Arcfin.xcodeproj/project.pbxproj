@@ -133,6 +133,11 @@
 				Shared/Admin/AdminTasksView.swift = (ios, macos, );
 				Shared/Admin/AdminUsersView.swift = (ios, macos, );
 				Shared/Admin/AdminView.swift = (ios, macos, );
+				Shared/Music/MusicAlbumView.swift = (ios, macos, );
+				Shared/Music/MusicComponents.swift = (ios, macos, );
+				Shared/Music/MusicLibraryView.swift = (ios, macos, );
+				Shared/Music/MusicListsView.swift = (ios, macos, );
+				Shared/Music/MusicSearchSection.swift = (ios, macos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
 				iOS/App/ArcfinScenes.swift = (ios, );
 				iOS/App/ContentView.swift = (ios, );
@@ -170,12 +175,7 @@
 				iOS/Lock/AppLockView.swift = (ios, );
 				iOS/Login/LoginPlatform.swift = (ios, );
 				iOS/Login/SetupGuideSheet.swift = (ios, );
-				iOS/Music/MusicAlbumView.swift = (ios, );
-				iOS/Music/MusicComponents.swift = (ios, );
-				iOS/Music/MusicLibraryView.swift = (ios, );
-				iOS/Music/MusicListsView.swift = (ios, );
 				iOS/Music/MusicNowPlayingView.swift = (ios, );
-				iOS/Music/MusicSearchSection.swift = (ios, );
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );
@@ -276,6 +276,7 @@
 				macOS/Lock/AppLockView.swift = (macos, );
 				macOS/Login/LoginPlatform.swift = (macos, );
 				macOS/Login/SetupGuideSheet.swift = (macos, );
+				macOS/Music/MusicPlayerBar.swift = (macos, );
 				macOS/Onboarding/OnboardingView.swift = (macos, );
 				macOS/Onboarding/WhatsNew.swift = (macos, );
 				macOS/Onboarding/WhatsNewView.swift = (macos, );
