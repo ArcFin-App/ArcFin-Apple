@@ -41,6 +41,9 @@ struct PlayerView: View {
     // Separate from isScrubbing/scrubTicks: those track the local player, which is frozen
     // while casting (see castingPlaceholder).
     @State var isCastScrubbing = false
+    /// The AirPlay device the video is on, while it's on one.
+    @State var airPlayRoute: String?
+    @State var airPlayScrubTicks: Double?
     @State var castScrubTicks: Double = 0
     @State var showTrackMenu = false
     @State var showQualityMenu = false
@@ -105,6 +108,11 @@ struct PlayerView: View {
                 castingPlaceholder
             } else {
                 videoSurfaceLayer
+                // The video is on an AirPlay device: a controller for it here, as when
+                // casting, instead of controls over a blank video area.
+                if let airPlayRoute {
+                    airPlayScreen(route: airPlayRoute)
+                }
             }
 
             if audioOnly {
@@ -154,8 +162,8 @@ struct PlayerView: View {
             // screen on every tap. Keeping the view always mounted means there's nothing to
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
-                .opacity(model.isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
-                .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
+                .opacity(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil ? 1 : 0)
+                .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil)
 
             SkipSegmentButton(model: model)
             SpeedBoostBadge(model: model)
@@ -172,6 +180,7 @@ struct PlayerView: View {
                 StillWatchingPrompt(model: model)
             }
         }
+        .task { await watchAirPlay() }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         // With swipes allowed right to the edges, the player's swipes come before Control
@@ -505,5 +514,20 @@ struct PlayerView: View {
         await Task.detached(priority: .utility) {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }.value
+    }
+}
+
+extension PlayerView {
+    /// Whether the video went to an AirPlay device, and which. AVFoundation sends the video
+    /// itself; with the other engines AirPlay carries the sound only, so there's no screen.
+    func watchAirPlay() async {
+        while !Task.isCancelled {
+            let external = (model.player as? AVFoundationPlayer)?.player.isExternalPlaybackActive ?? false
+            let name = AVAudioSession.sharedInstance().currentRoute.outputs
+                .first { $0.portType == .airPlay }?.portName
+            let route = external ? (name ?? String(localized: "AirPlay")) : nil
+            if route != airPlayRoute { withAnimation(DT.Animation.fast) { airPlayRoute = route } }
+            try? await Task.sleep(for: .seconds(1))
+        }
     }
 }
