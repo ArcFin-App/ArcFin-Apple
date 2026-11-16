@@ -159,7 +159,7 @@ public struct Lyrics: Sendable, Equatable {
 }
 
 public enum MusicSort: String, Sendable, CaseIterable {
-    case name, artist, album, year, dateAdded, playCount, random
+    case name, artist, album, year, dateAdded, playCount, datePlayed, random
 
     /// Jellyfin's SortBy, with tie-breakers so equal values keep a stable order.
     var sortBy: String {
@@ -170,6 +170,7 @@ public enum MusicSort: String, Sendable, CaseIterable {
         case .year: "ProductionYear,PremiereDate,SortName"
         case .dateAdded: "DateCreated,SortName"
         case .playCount: "PlayCount,SortName"
+        case .datePlayed: "DatePlayed,SortName"
         case .random: "Random"
         }
     }
@@ -180,9 +181,12 @@ public struct MusicFilter: Sendable, Equatable {
     public var favoritesOnly = false
     public var genreId: String?
     public var artistId: String?
+    /// Only what this profile has played.
+    public var playedOnly = false
 
-    public init(favoritesOnly: Bool = false, genreId: String? = nil, artistId: String? = nil) {
+    public init(favoritesOnly: Bool = false, genreId: String? = nil, artistId: String? = nil, playedOnly: Bool = false) {
         self.favoritesOnly = favoritesOnly; self.genreId = genreId; self.artistId = artistId
+        self.playedOnly = playedOnly
     }
 }
 
@@ -432,6 +436,7 @@ extension JellyfinMediaClient {
         ]
         if filter.favoritesOnly { query.append(.init(name: "IsFavorite", value: "true")) }
         if let genreId = filter.genreId { query.append(.init(name: "GenreIds", value: genreId)) }
+        if filter.playedOnly { query.append(.init(name: "IsPlayed", value: "true")) }
         return query
     }
 

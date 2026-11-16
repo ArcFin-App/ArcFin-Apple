@@ -291,10 +291,14 @@ private struct TVClaimFirstFocus<ID: Hashable>: ViewModifier {
 struct TVMusicLibraryView: View {
     let library: JellyfinLibrary
     @State private var recent: MusicPagedList<MusicAlbum>
+    @State private var recentlyPlayed: MusicPagedList<MusicSong>
+    @State private var mostPlayed: MusicPagedList<MusicSong>
 
     init(library: JellyfinLibrary) {
         self.library = library
         let id = library.id
+        _recentlyPlayed = State(initialValue: TVMusicSongShelf.list(libraryID: id, sort: .datePlayed))
+        _mostPlayed = State(initialValue: TVMusicSongShelf.list(libraryID: id, sort: .playCount))
         _recent = State(initialValue: MusicPagedList { _ in
             let page = try await MusicAPI.call {
                 try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: id, sort: .dateAdded,
@@ -320,6 +324,8 @@ struct TVMusicLibraryView: View {
                     link("Genres", systemImage: "guitars", route: .genres(libraryID: library.id))
                 }
                 .focusSection()
+                TVMusicSongShelf(title: "Recently Played", list: recentlyPlayed)
+                TVMusicSongShelf(title: "Most Played", list: mostPlayed)
                 VStack(alignment: .leading, spacing: 24) {
                     Text("Recently Added").font(.title3.weight(.semibold))
                     TVMusicLoading(list: recent, empty: "No Albums")
@@ -330,13 +336,57 @@ struct TVMusicLibraryView: View {
             .padding(.vertical, 48)
         }
         .screenBackground()
-        .task { await recent.loadIfNeeded() }
+        .task {
+            async let albums: Void = recent.loadIfNeeded()
+            async let played: Void = recentlyPlayed.loadIfNeeded()
+            async let most: Void = mostPlayed.loadIfNeeded()
+            _ = await (albums, played, most)
+        }
     }
 
     private func link(_ title: LocalizedStringKey, systemImage: String, route: MusicRoute) -> some View {
         NavigationLink(value: route) { TVMusicPill(title: title, systemImage: systemImage) }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
+    }
+}
+
+/// A row of songs this profile has played; choosing one plays the row from there.
+private struct TVMusicSongShelf: View {
+    let title: LocalizedStringKey
+    let list: MusicPagedList<MusicSong>
+
+    static func list(libraryID: String, sort: MusicSort) -> MusicPagedList<MusicSong> {
+        MusicPagedList { _ in
+            let page = try await MusicAPI.call {
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
+                                            ascending: false, filter: .init(playedOnly: true), limit: 20)
+            }
+            return (page.tracks, page.tracks.count)
+        }
+    }
+
+    var body: some View {
+        if !list.items.isEmpty {
+            VStack(alignment: .leading, spacing: 24) {
+                Text(title).font(.title3.weight(.semibold))
+                ScrollView(.horizontal) {
+                    LazyHStack(alignment: .top, spacing: 40) {
+                        ForEach(Array(list.items.enumerated()), id: \.element.id) { index, song in
+                            Button { TVMusicPresenter.shared.play(list.items, from: index) } label: {
+                                TVMusicTile(url: MusicAPI.artworkURL(song, width: 400), title: song.name, subtitle: song.artistLine)
+                                    .frame(width: 240)
+                            }
+                            .buttonStyle(TVCardButtonStyle())
+                            .focusEffectDisabled()
+                        }
+                    }
+                    .padding(.vertical, 20)
+                }
+                .scrollClipDisabled()
+            }
+            .focusSection()
+        }
     }
 }
 

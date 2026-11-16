@@ -8,10 +8,14 @@ struct MusicLibraryView: View {
     let library: JellyfinLibrary
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var recent: MusicPagedList<MusicAlbum>
+    @State private var recentlyPlayed: MusicPagedList<MusicSong>
+    @State private var mostPlayed: MusicPagedList<MusicSong>
 
     init(library: JellyfinLibrary) {
         self.library = library
         let id = library.id
+        _recentlyPlayed = State(initialValue: MusicSongShelf.list(libraryID: id, sort: .datePlayed))
+        _mostPlayed = State(initialValue: MusicSongShelf.list(libraryID: id, sort: .playCount))
         _recent = State(initialValue: MusicPagedList { _ in
             let page = try await MusicAPI.call {
                 try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: id, sort: .dateAdded,
@@ -37,6 +41,8 @@ struct MusicLibraryView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                MusicSongShelf(title: "Recently Played", list: recentlyPlayed)
+                MusicSongShelf(title: "Most Played", list: mostPlayed)
                 VStack(alignment: .leading, spacing: DT.Spacing.sm) {
                     Text("Recently Added")
                         .font(DT.Font.sectionTitle)
@@ -52,8 +58,18 @@ struct MusicLibraryView: View {
         }
         .screenBackground()
         .navigationTitle(Text(verbatim: library.name))
-        .task { await recent.loadIfNeeded() }
-        .refreshable { await recent.reload() }
+        .task {
+            async let albums: Void = recent.loadIfNeeded()
+            async let played: Void = recentlyPlayed.loadIfNeeded()
+            async let most: Void = mostPlayed.loadIfNeeded()
+            _ = await (albums, played, most)
+        }
+        .refreshable {
+            async let albums: Void = recent.reload()
+            async let played: Void = recentlyPlayed.reload()
+            async let most: Void = mostPlayed.reload()
+            _ = await (albums, played, most)
+        }
     }
 
     private func row(_ title: LocalizedStringKey, systemImage: String, route: MusicRoute, isLast: Bool = false) -> some View {
@@ -86,6 +102,62 @@ struct MusicLibraryView: View {
             }
         }
         .contentShape(Rectangle())
+    }
+}
+
+/// A row of songs this profile has played, newest or most often first; tap one to play the
+/// row from there. Hidden until there's something in it.
+struct MusicSongShelf: View {
+    let title: LocalizedStringKey
+    let list: MusicPagedList<MusicSong>
+
+    static func list(libraryID: String, sort: MusicSort) -> MusicPagedList<MusicSong> {
+        MusicPagedList { _ in
+            let page = try await MusicAPI.call {
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
+                                            ascending: false, filter: .init(playedOnly: true), limit: 20)
+            }
+            return (page.tracks, page.tracks.count)
+        }
+    }
+
+    var body: some View {
+        if !list.items.isEmpty {
+            VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                Text(title)
+                    .font(DT.Font.sectionTitle)
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
+                        ForEach(Array(list.items.enumerated()), id: \.element.id) { index, song in
+                            Button { MusicActions.play(list.items, from: index) } label: {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    MusicArtwork(url: MusicAPI.artworkURL(song, width: 300))
+                                        .frame(width: 140, height: 140)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(verbatim: song.name)
+                                            .font(.footnote.weight(.medium))
+                                            .foregroundStyle(DT.Color.textPrimary)
+                                        Text(verbatim: song.artistLine ?? "")
+                                            .font(.footnote)
+                                            .foregroundStyle(DT.Color.textSecondary)
+                                    }
+                                    .lineLimit(1)
+                                }
+                                .frame(width: 140, alignment: .leading)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .contextMenu { MusicSongMenu(song: song) }
+                        }
+                    }
+                }
+                .shelfScrollButtons()
+                .padding(.horizontal, -DT.Spacing.pagePad)
+                .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
+            }
+        }
     }
 }
 
