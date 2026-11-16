@@ -49,6 +49,11 @@ enum StorageManagement {
     // same as the Downloads list, rather than re-walking the filesystem for a slightly larger number.
     static func size(of items: [DownloadedItem]) -> Int64 { items.reduce(0) { $0 + $1.fileSizeBytes } }
 
+    /// Free space as the system's storage screen counts it, where the platform can tell.
+    static func freeBytes() -> Int64? {
+        PlatformStorage.freeBytes(at: DownloadStore.rootDirectory().deletingLastPathComponent())
+    }
+
     static func formatted(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }
 
     static func seasonTitle(_ number: Int?) -> String {
@@ -196,9 +201,7 @@ struct StorageManagementContent: View {
     }
 
     private func refreshDeviceSpace() {
-        let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
-            .resourceValues(forKeys: [.volumeAvailableCapacityKey])
-        freeBytes = values?.volumeAvailableCapacity.map(Int64.init)
+        freeBytes = StorageManagement.freeBytes()
     }
 
     // MARK: - Shows

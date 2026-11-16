@@ -76,7 +76,7 @@ struct MusicDownloadsView: View {
         }
         .screenBackground()
         .navigationTitle("Downloaded Music")
-        .task(id: downloads.songCount) { freeBytes = Self.freeSpace() }
+        .task(id: downloads.songCount) { freeBytes = StorageManagement.freeBytes() }
         .toolbar {
             if !downloads.isEmpty {
                 ToolbarItem(placement: .primaryAction) {
@@ -134,12 +134,6 @@ struct MusicDownloadsView: View {
         }
         .padding(16)
         .background(MusicDownloadsCard())
-    }
-
-    private static func freeSpace() -> Int64? {
-        let home = URL(fileURLWithPath: NSHomeDirectory())
-        return (try? home.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
-            .volumeAvailableCapacityForImportantUsage
     }
 
     // MARK: Downloading

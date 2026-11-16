@@ -124,9 +124,7 @@ final class DownloadsModel {
     // MARK: - Storage
 
     func refreshFreeBytes() {
-        let values = try? DownloadStore.rootDirectory().deletingLastPathComponent()
-            .resourceValues(forKeys: [.volumeAvailableCapacityKey])
-        freeBytes = values?.volumeAvailableCapacity.map(Int64.init)
+        freeBytes = StorageManagement.freeBytes()
     }
 
     // MARK: - Artwork

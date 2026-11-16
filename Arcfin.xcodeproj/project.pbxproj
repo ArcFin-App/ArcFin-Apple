@@ -197,6 +197,7 @@
 				iOS/Platform/PlainButton.swift = (ios, );
 				iOS/Platform/PlatformAccessibility.swift = (ios, );
 				iOS/Platform/PlatformMetrics.swift = (ios, );
+				iOS/Platform/PlatformStorage.swift = (ios, );
 				iOS/Platform/PlayerOverlayButton.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/PressableHover.swift = (ios, );
@@ -298,6 +299,7 @@
 				macOS/Platform/PlainButton.swift = (macos, );
 				macOS/Platform/PlatformAccessibility.swift = (macos, );
 				macOS/Platform/PlatformMetrics.swift = (macos, );
+				macOS/Platform/PlatformStorage.swift = (macos, );
 				macOS/Platform/PlayerOverlayButton.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/PressableHover.swift = (macos, );
@@ -395,6 +397,7 @@
 				tvOS/Platform/PlainButton.swift = (tvos, );
 				tvOS/Platform/PlatformAccessibility.swift = (tvos, );
 				tvOS/Platform/PlatformMetrics.swift = (tvos, );
+				tvOS/Platform/PlatformStorage.swift = (tvos, );
 				tvOS/Platform/PlayerOverlayButton.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/PressableHover.swift = (tvos, );
