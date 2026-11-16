@@ -4,18 +4,6 @@ import SwiftUI
 import JellyfinAPI
 import MediaEngine
 
-/// Where a music screen leads.
-enum MusicRoute: Hashable {
-    case artists(libraryID: String)
-    case albums(libraryID: String, title: String, genreID: String? = nil)
-    case songs(libraryID: String)
-    case genres(libraryID: String)
-    case playlists
-    case playlist(MusicPlaylist)
-    case album(MusicAlbum)
-    case artist(MusicArtist, libraryID: String?)
-}
-
 extension View {
     func musicDestinations() -> some View {
         navigationDestination(for: MusicRoute.self) { route in

@@ -6,6 +6,18 @@ import JellyfinAPI
 import MediaEngine
 import Observation
 
+/// Where a music screen leads.
+enum MusicRoute: Hashable {
+    case artists(libraryID: String)
+    case albums(libraryID: String, title: String, genreID: String? = nil)
+    case songs(libraryID: String)
+    case genres(libraryID: String)
+    case playlists
+    case playlist(MusicPlaylist)
+    case album(MusicAlbum)
+    case artist(MusicArtist, libraryID: String?)
+}
+
 /// Music calls as the signed-in profile.
 @MainActor
 enum MusicAPI {

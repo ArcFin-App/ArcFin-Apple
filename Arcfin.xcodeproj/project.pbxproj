@@ -372,6 +372,8 @@
 				tvOS/Lock/AppLockView.swift = (tvos, );
 				tvOS/Login/LoginPlatform.swift = (tvos, );
 				tvOS/Login/SetupGuideSheet.swift = (tvos, );
+				tvOS/Music/TVMusicNowPlaying.swift = (tvos, );
+				tvOS/Music/TVMusicViews.swift = (tvos, );
 				tvOS/Onboarding/OnboardingView.swift = (tvos, );
 				tvOS/Onboarding/WhatsNew.swift = (tvos, );
 				tvOS/Onboarding/WhatsNewView.swift = (tvos, );

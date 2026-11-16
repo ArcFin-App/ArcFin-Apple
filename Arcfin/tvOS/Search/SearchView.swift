@@ -14,6 +14,8 @@ struct SearchView: View {
     @State private var model = SearchModel()
     /// Channels and programmes, between the library results and Discover.
     @State private var liveTV = LiveTVModel()
+    /// Artists, albums and songs, after the library's titles.
+    @State private var music = MusicSearchModel()
     @AppStorage(RecentSearches.key) private var recentSearchesData = Data()
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
     /// Off brings back the plain Library and Discover poster grids.
@@ -32,8 +34,10 @@ struct SearchView: View {
         ProfileRules.shared.canWatchLiveTV && mediaRepo.libraries.contains { $0.collectionType == .livetv }
     }
 
+    private var searchesMusic: Bool { mediaRepo.libraries.contains { $0.collectionType == .music } }
+
     private var foundNothing: Bool {
-        model.foundNothing && !liveTV.isSearching && !liveTV.hasSearchResults
+        model.foundNothing && !liveTV.isSearching && !liveTV.hasSearchResults && !music.isSearching && music.results.isEmpty
     }
 
     private func saveRecentSearch() {
@@ -71,6 +75,9 @@ struct SearchView: View {
                         ForEach(model.libraryGroups, id: \.title) { group in
                             libraryShelf(group)
                         }
+                        if !music.results.isEmpty {
+                            TVMusicSearchSection(results: music.results)
+                        }
                         if liveTV.hasSearchResults {
                             LiveTVSearchSection(model: liveTV)
                                 .focusSection()
@@ -98,6 +105,7 @@ struct SearchView: View {
             model.search(newValue, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
             liveTV.searchQuery = searchesLiveTV ? newValue : ""
             liveTV.search(authManager: authManager)
+            music.search(searchesMusic ? newValue : "")
         }
         .liveTVPresentations(model: liveTV)
     }
@@ -149,6 +157,10 @@ struct SearchView: View {
                     }
                 } else if model.isSearchingLibrary {
                     ProgressView().frame(maxWidth: .infinity)
+                }
+                if !music.results.isEmpty {
+                    TVMusicSearchSection(results: music.results)
+                        .padding(.horizontal, -DT.Spacing.pagePad)
                 }
                 if liveTV.hasSearchResults {
                     LiveTVSearchSection(model: liveTV)

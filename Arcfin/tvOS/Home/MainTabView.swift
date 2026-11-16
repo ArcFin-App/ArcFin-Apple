@@ -12,6 +12,7 @@ struct MainTabView: View {
     @Bindable private var tagEditor = TagEditor.shared
     @State private var searchQuery = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
+    @Bindable private var music = TVMusicPresenter.shared
 
     var body: some View {
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
@@ -38,6 +39,7 @@ struct MainTabView: View {
                             .navigationDestination(for: SeerrItem.self) { item in
                                 SeerrItemDetailView(item: item)
                             }
+                            .musicDestinations()
                     }
                 }
                 Tab(BottomNavItem.requests.title, systemImage: BottomNavItem.requests.icon) {
@@ -56,6 +58,7 @@ struct MainTabView: View {
             // The focus ENGINE still works (remote nav, isFocused env); only
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
+            .fullScreenCover(isPresented: $music.isShowingNowPlaying) { TVMusicNowPlaying() }
             .appSheet(item: $tagEditor.item, title: "Tags", systemImage: "tag") { item in
                 EditTagsSheet(item: item)
             }
