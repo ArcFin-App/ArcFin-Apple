@@ -85,7 +85,6 @@ struct ServerURLView: View {
             }
             .font(.subheadline)
             .foregroundStyle(DT.Color.accent)
-            .arcfinPlainButton(cornerRadius: DT.Radius.pill)
             .frame(maxWidth: .infinity)
         }
         .loginLayout {
@@ -133,11 +132,15 @@ struct ServerURLView: View {
                 .lineLimit(1)
                 .fixedSize()
         }
+        // On each button, not the stack: on Apple TV the focus ring follows focus anywhere
+        // inside the view it's on, so one ring covered both.
+        .arcfinPlainButton(cornerRadius: DT.Radius.pill)
         Button { showCustomHeaders = true } label: {
             Label("Custom Headers", systemImage: "key.horizontal")
                 .lineLimit(1)
                 .fixedSize()
         }
+        .arcfinPlainButton(cornerRadius: DT.Radius.pill)
         .accessibilityHint("For a server behind an access gateway")
     }
 
