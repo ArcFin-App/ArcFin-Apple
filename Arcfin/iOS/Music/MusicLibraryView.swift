@@ -25,6 +25,7 @@ struct MusicLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                 VStack(spacing: 0) {
+                    row("Playlists", systemImage: "music.note.list", route: .playlists)
                     row("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
                     row("Albums", systemImage: "square.stack", route: .albums(libraryID: library.id, title: String(localized: "Albums")))
                     row("Songs", systemImage: "music.note", route: .songs(libraryID: library.id))
@@ -45,7 +46,6 @@ struct MusicLibraryView: View {
         }
         .screenBackground()
         .navigationTitle(Text(verbatim: library.name))
-        .musicDestinations()
         .task { await recent.loadIfNeeded() }
         .refreshable { await recent.reload() }
     }

@@ -175,6 +175,7 @@
 				iOS/Music/MusicLibraryView.swift = (ios, );
 				iOS/Music/MusicListsView.swift = (ios, );
 				iOS/Music/MusicNowPlayingView.swift = (ios, );
+				iOS/Music/MusicSearchSection.swift = (ios, );
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );

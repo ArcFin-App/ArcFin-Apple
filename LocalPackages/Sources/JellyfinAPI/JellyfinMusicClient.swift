@@ -94,6 +94,28 @@ public struct MusicSong: Sendable, Identifiable, Equatable, Hashable {
     public var duration: TimeInterval? { runTimeTicks.map { Double($0) / 10_000_000 } }
 }
 
+public struct MusicPlaylist: Sendable, Identifiable, Equatable, Hashable {
+    public let id: String
+    public var name: String
+    public var primaryImageTag: String?
+    public var songCount: Int?
+
+    public init(id: String, name: String, primaryImageTag: String? = nil, songCount: Int? = nil) {
+        self.id = id; self.name = name; self.primaryImageTag = primaryImageTag; self.songCount = songCount
+    }
+}
+
+/// What a search found in music.
+public struct MusicSearchResults: Sendable, Equatable {
+    public var artists: [MusicArtist] = []
+    public var albums: [MusicAlbum] = []
+    public var songs: [MusicSong] = []
+    public var isEmpty: Bool { artists.isEmpty && albums.isEmpty && songs.isEmpty }
+    public init(artists: [MusicArtist] = [], albums: [MusicAlbum] = [], songs: [MusicSong] = []) {
+        self.artists = artists; self.albums = albums; self.songs = songs
+    }
+}
+
 public struct MusicGenre: Sendable, Identifiable, Equatable, Hashable {
     public let id: String
     public var name: String
@@ -162,7 +184,8 @@ public struct MusicFilter: Sendable, Equatable {
 extension JellyfinMediaClient {
 
     /// Albums in a music library, a page at a time.
-    public func getMusicAlbums(credential: ServerCredential, authHeader: String, libraryId: String,
+    /// No library looks in all of them.
+    public func getMusicAlbums(credential: ServerCredential, authHeader: String, libraryId: String?,
                                sort: MusicSort = .name, ascending: Bool = true, filter: MusicFilter = .init(),
                                startIndex: Int = 0, limit: Int = 100) async throws -> (albums: [MusicAlbum], total: Int) {
         var query = musicItemsQuery(credential: credential, types: "MusicAlbum", parentId: libraryId, sort: sort,
@@ -174,7 +197,7 @@ extension JellyfinMediaClient {
     }
 
     /// Songs in a music library, a page at a time.
-    public func getMusicTracks(credential: ServerCredential, authHeader: String, libraryId: String,
+    public func getMusicTracks(credential: ServerCredential, authHeader: String, libraryId: String?,
                                sort: MusicSort = .name, ascending: Bool = true, filter: MusicFilter = .init(),
                                startIndex: Int = 0, limit: Int = 100) async throws -> (tracks: [MusicSong], total: Int) {
         var query = musicItemsQuery(credential: credential, types: "Audio", parentId: libraryId, sort: sort,
@@ -250,6 +273,57 @@ extension JellyfinMediaClient {
         return page.items.map { $0.asTrack }
     }
 
+    /// Artists, albums and songs whose names match, in every music library.
+    public func searchMusic(credential: ServerCredential, authHeader: String, term: String,
+                            limit: Int = 24) async throws -> MusicSearchResults {
+        var query = baseQuery(credential: credential, startIndex: 0, limit: limit)
+        query += [
+            .init(name: "SearchTerm", value: term),
+            .init(name: "IncludeItemTypes", value: "MusicArtist,MusicAlbum,Audio"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "Fields", value: Self.musicFields),
+        ]
+        let page: MusicPage = try await getMusic("Items", query: query, credential: credential, authHeader: authHeader)
+        return Self.searchResults(page.items)
+    }
+
+    static func searchResults(_ items: [MusicItemResponse]) -> MusicSearchResults {
+        var results = MusicSearchResults()
+        for item in items {
+            switch item.type {
+            case "MusicArtist": results.artists.append(item.asArtist)
+            case "MusicAlbum": results.albums.append(item.asAlbum)
+            case "Audio": results.songs.append(item.asTrack)
+            default: break
+            }
+        }
+        return results
+    }
+
+    /// The profile's playlists of music.
+    public func getMusicPlaylists(credential: ServerCredential, authHeader: String) async throws -> [MusicPlaylist] {
+        var query = baseQuery(credential: credential, startIndex: 0, limit: 500)
+        query += [
+            .init(name: "IncludeItemTypes", value: "Playlist"),
+            .init(name: "MediaTypes", value: "Audio"),
+            .init(name: "Recursive", value: "true"),
+            .init(name: "SortBy", value: "SortName"),
+            .init(name: "Fields", value: "ChildCount"),
+        ]
+        let page: MusicPage = try await getMusic("Items", query: query, credential: credential, authHeader: authHeader)
+        return page.items.map { MusicPlaylist(id: $0.id, name: $0.name ?? "", primaryImageTag: $0.imageTags?["Primary"],
+                                              songCount: $0.childCount) }
+    }
+
+    /// A playlist's songs in its own order.
+    public func getPlaylistSongs(credential: ServerCredential, authHeader: String, playlistId: String) async throws -> [MusicSong] {
+        var query = baseQuery(credential: credential, startIndex: 0, limit: 1000)
+        query.append(.init(name: "Fields", value: Self.musicFields))
+        let page: MusicPage = try await getMusic("Playlists/\(playlistId)/Items", query: query,
+                                                 credential: credential, authHeader: authHeader)
+        return page.items.filter { $0.type == nil || $0.type == "Audio" }.map { $0.asTrack }
+    }
+
     /// The song's lyrics, or nil when the server has none (Jellyfin 10.9+).
     public func getLyrics(credential: ServerCredential, authHeader: String, trackId: String) async throws -> Lyrics? {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Audio/\(trackId)/Lyrics"))
@@ -313,11 +387,11 @@ extension JellyfinMediaClient {
         ]
     }
 
-    private func musicItemsQuery(credential: ServerCredential, types: String, parentId: String, sort: MusicSort,
+    private func musicItemsQuery(credential: ServerCredential, types: String, parentId: String?, sort: MusicSort,
                                  ascending: Bool, filter: MusicFilter, startIndex: Int, limit: Int) -> [URLQueryItem] {
         var query = baseQuery(credential: credential, startIndex: startIndex, limit: limit)
+        if let parentId { query.append(.init(name: "ParentId", value: parentId)) }
         query += [
-            .init(name: "ParentId", value: parentId),
             .init(name: "IncludeItemTypes", value: types),
             .init(name: "Recursive", value: "true"),
             .init(name: "SortBy", value: sort.sortBy),
@@ -385,6 +459,7 @@ struct MusicItemResponse: Decodable {
     let userData: UserDataResponse?
     let hasLyrics: Bool?
     let container: String?
+    let type: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", overview = "Overview", albumArtist = "AlbumArtist"
@@ -393,7 +468,7 @@ struct MusicItemResponse: Decodable {
         case backdropImageTags = "BackdropImageTags", productionYear = "ProductionYear"
         case indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber", runTimeTicks = "RunTimeTicks"
         case childCount = "ChildCount", genres = "Genres", userData = "UserData", hasLyrics = "HasLyrics"
-        case container = "Container"
+        case container = "Container", type = "Type"
     }
 
     private static func refs(_ items: [NameId]?) -> [MusicArtistRef] {

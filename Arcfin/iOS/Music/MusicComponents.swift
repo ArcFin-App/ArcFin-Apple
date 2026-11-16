@@ -10,8 +10,10 @@ enum MusicRoute: Hashable {
     case albums(libraryID: String, title: String, genreID: String? = nil)
     case songs(libraryID: String)
     case genres(libraryID: String)
+    case playlists
+    case playlist(MusicPlaylist)
     case album(MusicAlbum)
-    case artist(MusicArtist, libraryID: String)
+    case artist(MusicArtist, libraryID: String?)
 }
 
 extension View {
@@ -22,6 +24,8 @@ extension View {
             case .albums(let library, let title, let genre): MusicAlbumsView(libraryID: library, title: title, genreID: genre)
             case .songs(let library): MusicSongsView(libraryID: library)
             case .genres(let library): MusicGenresView(libraryID: library)
+            case .playlists: MusicPlaylistsView()
+            case .playlist(let playlist): MusicPlaylistView(playlist: playlist)
             case .album(let album): MusicAlbumView(album: album)
             case .artist(let artist, let library): MusicArtistView(artist: artist, libraryID: library)
             }

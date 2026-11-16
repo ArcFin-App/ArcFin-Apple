@@ -33,6 +33,10 @@ enum MusicAPI {
         imageURL(itemID: artist.id, tag: artist.primaryImageTag, width: width)
     }
 
+    static func artworkURL(_ playlist: MusicPlaylist, width: Int = 400) -> URL? {
+        imageURL(itemID: playlist.id, tag: playlist.primaryImageTag, width: width)
+    }
+
     static func artworkURL(_ song: MusicSong, width: Int = 200) -> URL? {
         AppServices.music.artworkURL(for: song, width: width)
     }
@@ -108,6 +112,10 @@ enum MusicActions {
 
     static func addToQueue(_ songs: [MusicSong]) { player.addToQueue(songs) }
 
+    static func playlistSongs(_ playlist: MusicPlaylist) async -> [MusicSong] {
+        (try? await MusicAPI.call { try await $0.getPlaylistSongs(credential: $1, authHeader: $2, playlistId: playlist.id) }) ?? []
+    }
+
     static func albumSongs(_ album: MusicAlbum) async -> [MusicSong] {
         (try? await MusicAPI.call { try await $0.getAlbumTracks(credential: $1, authHeader: $2, albumId: album.id) }) ?? []
     }
@@ -132,5 +140,32 @@ extension TimeInterval {
         let hours = total / 3600, minutes = total / 60 % 60, seconds = total % 60
         return hours > 0 ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
                          : String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+/// Music in Browse search: artists, albums and songs, a moment after typing stops.
+@MainActor @Observable
+final class MusicSearchModel {
+    private(set) var results = MusicSearchResults()
+    private(set) var isSearching = false
+    @ObservationIgnored private var task: Task<Void, Never>?
+
+    func search(_ term: String) {
+        task?.cancel()
+        let term = term.trimmingCharacters(in: .whitespaces)
+        guard term.count >= 2 else {
+            results = MusicSearchResults()
+            isSearching = false
+            return
+        }
+        isSearching = true
+        task = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            let found = try? await MusicAPI.call { try await $0.searchMusic(credential: $1, authHeader: $2, term: term) }
+            guard !Task.isCancelled else { return }
+            results = found ?? MusicSearchResults()
+            isSearching = false
+        }
     }
 }

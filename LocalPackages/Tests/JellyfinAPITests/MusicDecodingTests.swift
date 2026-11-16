@@ -109,4 +109,13 @@ struct MusicDecodingTests {
         let page = try JellyfinMediaClient.decodeMusicPage(Data(json.utf8))
         #expect(page.items.first?.asTrack.container == "flac")
     }
+
+    @Test("A search splits into artists, albums and songs")
+    func searchSplits() throws {
+        let json = #"{"Items":[{"Id":"a","Name":"Band","Type":"MusicArtist"},{"Id":"b","Name":"Record","Type":"MusicAlbum"},{"Id":"c","Name":"Tune","Type":"Audio"},{"Id":"d","Name":"Film","Type":"Movie"}]}"#
+        let results = JellyfinMediaClient.searchResults(try JellyfinMediaClient.decodeMusicPage(Data(json.utf8)).items)
+        #expect(results.artists.map(\.id) == ["a"])
+        #expect(results.albums.map(\.id) == ["b"])
+        #expect(results.songs.map(\.id) == ["c"])
+    }
 }
