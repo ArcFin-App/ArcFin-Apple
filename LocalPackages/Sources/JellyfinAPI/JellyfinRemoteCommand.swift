@@ -92,3 +92,75 @@ extension JellyfinMediaClient {
         _ = try? await URLSession.arcfin.data(for: req)
     }
 }
+
+// MARK: - Controlling another device (#457)
+
+extension JellyfinMediaClient {
+    /// The sessions this profile can control: its own on other devices, and any that let it.
+    public func controllableSessions(credential: ServerCredential, authHeader: String) async throws -> [JellyfinSession] {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Sessions"), resolvingAgainstBaseURL: false)
+        comps?.queryItems = [
+            .init(name: "controllableByUserId", value: credential.userID),
+            .init(name: "activeWithinSeconds", value: "960"),
+        ]
+        guard let url = comps?.url else { throw URLError(.badURL) }
+        var req = URLRequest(url: url)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        let (data, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return try JSONDecoder().decode([SessionResponse].self, from: data).map { $0.toSession() }
+    }
+
+    /// POST /Sessions/{id}/Playing/{command}: Pause, Unpause, PlayPause, Stop, Seek,
+    /// NextTrack, PreviousTrack, Rewind, FastForward.
+    public func sendPlaystate(_ command: JellyfinRemoteCommand.Playstate, seekTicks: Int64? = nil, sessionId: String,
+                              credential: ServerCredential, authHeader: String) async {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Sessions/\(sessionId)/Playing/\(command.rawValue)"),
+                                  resolvingAgainstBaseURL: false)
+        if let seekTicks { comps?.queryItems = [.init(name: "seekPositionTicks", value: String(seekTicks))] }
+        guard let url = comps?.url else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        _ = try? await URLSession.arcfin.data(for: req)
+    }
+
+    /// POST /Sessions/{id}/Command: SetVolume, Mute, Unmute, SetAudioStreamIndex,
+    /// SetSubtitleStreamIndex and the like. Argument values are strings, as Jellyfin expects.
+    public func sendGeneralCommand(_ name: String, arguments: [String: String] = [:], sessionId: String,
+                                   credential: ServerCredential, authHeader: String) async {
+        var req = URLRequest(url: credential.baseURL.appendingPathComponent("Sessions/\(sessionId)/Command"))
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 10
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["Name": name, "Arguments": arguments] as [String: Any])
+        _ = try? await URLSession.arcfin.data(for: req)
+    }
+
+    /// POST /Sessions/{id}/Playing: plays these titles on that device now.
+    public func play(itemIds: [String], startTicks: Int64?, sessionId: String,
+                     credential: ServerCredential, authHeader: String) async throws {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Sessions/\(sessionId)/Playing"),
+                                  resolvingAgainstBaseURL: false)
+        var items: [URLQueryItem] = [
+            .init(name: "playCommand", value: "PlayNow"),
+            .init(name: "itemIds", value: itemIds.joined(separator: ",")),
+        ]
+        if let startTicks, startTicks > 0 { items.append(.init(name: "startPositionTicks", value: String(startTicks))) }
+        comps?.queryItems = items
+        guard let url = comps?.url else { throw URLError(.badURL) }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        let (_, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+}

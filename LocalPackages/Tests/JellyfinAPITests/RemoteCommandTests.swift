@@ -58,3 +58,34 @@ struct RemoteCommandTests {
         #expect(parse("UserDataChanged", #"{"Data":{}}"#) == nil)
     }
 }
+
+@Suite("Controllable sessions")
+struct ControllableSessionTests {
+
+    @Test("A session's device, what it plays and how, for the remote")
+    func decodesNowPlaying() throws {
+        let json = """
+        [{"Id":"s1","UserId":"u1","UserName":"Sam","DeviceId":"tv-1","DeviceName":"Living Room","Client":"Arcfin",
+          "SupportsRemoteControl":true,
+          "NowPlayingItem":{"Id":"ep4","Name":"Malware","RunTimeTicks":27000000000,"SeriesName":"VisionQuest",
+            "IndexNumber":4,"ParentIndexNumber":1,
+            "MediaStreams":[{"Index":1,"Type":"Audio","DisplayTitle":"English - AAC"},
+                            {"Index":2,"Type":"Audio","Language":"fre"},
+                            {"Index":3,"Type":"Subtitle","DisplayTitle":"English - SRT"},
+                            {"Index":0,"Type":"Video"}]},
+          "PlayState":{"IsPaused":true,"PositionTicks":600000000,"VolumeLevel":40,"IsMuted":false,
+            "AudioStreamIndex":1,"SubtitleStreamIndex":-1}}]
+        """
+        let session = try #require(try JSONDecoder().decode([SessionResponse].self, from: Data(json.utf8)).first?.toSession())
+        #expect(session.deviceId == "tv-1")
+        #expect(session.nowPlayingItemId == "ep4")
+        #expect(session.nowPlayingSeriesName == "VisionQuest")
+        #expect(session.nowPlayingEpisodeCode == "S1 E4")
+        #expect(session.isPaused)
+        #expect(session.volumeLevel == 40)
+        #expect(session.audioStreamIndex == 1)
+        #expect(session.audioTracks.map(\.title) == ["English - AAC", "fre"])
+        #expect(session.subtitleTracks.map(\.index) == [3])
+        #expect(session.supportsRemoteControl)
+    }
+}

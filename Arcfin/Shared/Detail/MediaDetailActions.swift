@@ -295,6 +295,7 @@ struct DetailMoreMenu: View {
                 Label("Add to Playlist…", systemImage: "text.badge.plus")
             }
             OpenInPlayerMenu(item: item)
+            PlayOnDeviceMenu(item: item)
             CopyItemMenu(item: model.detail?.item ?? item)
             EditTagsButton(item: item)
             EditMetadataButton(item: item)

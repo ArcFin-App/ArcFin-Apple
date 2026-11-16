@@ -15,6 +15,8 @@ enum PlatformMetrics {
     static let setsUpAppleTV = false
     /// Sheets with a lot in them lay it out in two columns across the screen (TVs are landscape).
     static let sheetsSideBySide = false
+    /// Acts as a remote for Arcfin (or another Jellyfin app) playing elsewhere (#457).
+    static let controlsOtherDevices = false
     static let licensePlatform = "macOS"
     static let descriptionMaxWidth: CGFloat = .infinity
     static let pagePad: CGFloat = 28

@@ -172,6 +172,11 @@ private struct AppRootPrompts: ViewModifier {
             && model.authManager.state.credential != nil && !PlayerActivity.shared.isPlayerOpen
     }
 
+    private var watchesOtherDevices: Bool {
+        PlatformMetrics.controlsOtherDevices && canPrompt && scenePhase == .active
+            && model.authManager.state.credential != nil
+    }
+
     func body(content: Content) -> some View {
         content
         // A scanned Quick Connect code: nothing is signed in until it's confirmed here.
@@ -195,6 +200,14 @@ private struct AppRootPrompts: ViewModifier {
             Button("OK") {}
         } message: { outcome in
             Text(outcome.message)
+        }
+        // Other devices playing on this profile, for the remote (#457).
+        .task(id: watchesOtherDevices) {
+            if watchesOtherDevices {
+                AppServices.remoteSessions.start(authManager: model.authManager)
+            } else {
+                AppServices.remoteSessions.stop()
+            }
         }
         // A signed-out Apple TV on the network, offered for setup with this profile (#481).
         .task(id: offersAppleTVSetup) {
