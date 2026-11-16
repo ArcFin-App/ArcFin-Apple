@@ -360,16 +360,20 @@ extension JellyfinMediaClient {
     }
 
     /// Containers AVFoundation opens as they are.
-    static let directAudioContainers: Set<String> = ["mp3", "aac", "m4a", "m4b", "mp4", "flac", "alac", "wav", "aiff", "aif", "caf"]
+    public static let directAudioContainers: Set<String> = ["mp3", "aac", "m4a", "m4b", "mp4", "flac", "alac", "wav", "aiff", "aif", "caf"]
 
     /// The song's file as is when AVFoundation plays its container, otherwise MP3 made from it.
     /// The extension is in the path: AVFoundation picks a demuxer from it, and without one it
     /// can't open the stream at all.
+    /// Containers a Chromecast plays as they are; M4A can hold ALAC, which it doesn't.
+    public static let castAudioContainers: Set<String> = ["mp3", "flac", "wav"]
+
     public func audioStreamURL(credential: ServerCredential, deviceId: String, trackId: String,
-                               container: String?, maxBitrate: Int = 320_000) -> URL? {
+                               container: String?, maxBitrate: Int = 320_000,
+                               direct playable: Set<String> = directAudioContainers) -> URL? {
         let names = (container ?? "").lowercased().split(separator: ",").map(String.init)
-        let direct = names.first(where: { $0 == "m4a" && names.count > 1 })
-            ?? names.first(where: Self.directAudioContainers.contains)
+        let direct = names.first(where: { $0 == "m4a" && names.count > 1 && playable.contains("m4a") })
+            ?? names.first(where: playable.contains)
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Audio/\(trackId)/stream.\(direct ?? "mp3")"),
                                   resolvingAgainstBaseURL: false)
         comps?.queryItems = direct != nil

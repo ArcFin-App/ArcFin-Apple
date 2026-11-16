@@ -112,12 +112,15 @@ struct MainTabView: View {
 /// `isEnabled:` arrived in iOS 26.1; the older overload can't hide the bar, so on 26.0
 /// there is no mini controller rather than a permanently empty accessory.
 private struct CastMiniControllerAccessory: ViewModifier {
-    private var casting: Bool { CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil }
+    /// A video on a Chromecast; music on one keeps the music bar.
+    private var casting: Bool {
+        CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil && !AppServices.music.isCasting
+    }
     @State private var showsMusic = false
     @Namespace private var musicTransition
     /// Music playing here goes first; paused, it gives the bar to another device that's playing.
     private var showsMusicBar: Bool {
-        AppServices.music.isActive && (AppServices.music.player.isPlaying || AppServices.remoteSessions.selected == nil)
+        AppServices.music.isActive && (AppServices.music.isPlaying || AppServices.remoteSessions.selected == nil)
     }
 
     func body(content: Content) -> some View {

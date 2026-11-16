@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AuthCore
+import CastKit
 import Foundation
 import JellyfinAPI
 import MediaEngine
@@ -27,6 +28,16 @@ final class MusicPlayback {
     /// Reports go out one after another, so a song's Stopped always lands before the next Start.
     @ObservationIgnored private var lastReport: Task<Void, Never>?
 
+    /// Playing on a Chromecast: the receiver plays each song, this keeps the queue.
+    private(set) var isCasting = false
+    private(set) var castPosition: Double = 0
+    @ObservationIgnored private var castSong: MusicSong?
+    @ObservationIgnored private var castTick: Task<Void, Never>?
+    @ObservationIgnored private var castFinishedCount = CastManager.shared.playbackFinishedCount
+    /// A local start being handed to the receiver, so it isn't reported as played here.
+    @ObservationIgnored private var isHandingToCast = false
+    private var cast: CastManager { .shared }
+
     private static let deviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
 
     init(authManager: AuthManager) {
@@ -39,6 +50,7 @@ final class MusicPlayback {
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()
         followProfile(authManager.state.credential?.userID)
+        followCast()
     }
 
     /// Signing out or switching profile stops the music: the queue was the last profile's.
@@ -67,6 +79,7 @@ final class MusicPlayback {
     /// report ends, and the lock screen's controls go to the video until the music plays again.
     func yieldToVideo() {
         guard player.current != nil else { return }
+        if isCasting { leaveCast() }
         player.suspend()
         removeCommands()
         hasYielded = true
@@ -85,20 +98,68 @@ final class MusicPlayback {
                                             fillWidth: width, token: credential.accessToken)
     }
 
+    // MARK: Transport, here or on a Chromecast
+
+    var isPlaying: Bool { isCasting ? !cast.isPaused : player.isPlaying }
+    var position: Double { isCasting ? castPosition : player.position }
+
+    func togglePlayPause() { isCasting ? cast.togglePlayPause() : player.togglePlayPause() }
+    func resume() { isCasting ? cast.play() : player.resume() }
+    func pause() { isCasting ? cast.pause() : player.pause() }
+
+    func seek(to seconds: Double) {
+        guard isCasting else { return player.seek(to: seconds) }
+        castPosition = seconds
+        cast.seek(toSeconds: seconds)
+        updateNowPlaying()
+    }
+
+    func next() {
+        guard isCasting else { return player.next() }
+        let before = player.queue.currentIndex
+        endCastSong()
+        player.next()
+        if player.queue.currentIndex == before { cast.pause() } else { castCurrent(at: 0) }
+    }
+
+    func previous() {
+        guard isCasting else { return player.previous() }
+        if castPosition > MusicQueue.restartThreshold { return seek(to: 0) }
+        endCastSong()
+        player.seek(to: 0)
+        player.previous()
+        castCurrent(at: 0)
+    }
+
+    func jump(to id: MusicQueue.Entry.ID) {
+        guard isCasting else { return player.jump(to: id) }
+        endCastSong()
+        player.jump(to: id, plays: false)
+        castCurrent(at: 0)
+    }
+
+    func stop() {
+        if isCasting {
+            leaveCast()
+            cast.pause()
+        }
+        player.stop()
+    }
+
     /// A command from a remote (the web app, the watch, another device) while no video is
     /// open. Returns false for what music has no use for, like subtitles.
     func apply(_ command: RemoteControl.Kind) -> Bool {
         guard player.current != nil, !hasYielded else { return false }
         switch command {
-        case .pause: player.pause()
-        case .unpause: player.resume()
-        case .playPause: player.togglePlayPause()
-        case .stop: player.stop()
-        case .seek(let ticks): player.seek(to: Double(ticks) / 10_000_000)
-        case .rewind: player.seek(to: max(player.position - 10, 0))
-        case .fastForward: player.seek(to: min(player.position + 10, player.duration))
-        case .nextTrack: player.next()
-        case .previousTrack: player.previous()
+        case .pause: pause()
+        case .unpause: resume()
+        case .playPause: togglePlayPause()
+        case .stop: stop()
+        case .seek(let ticks): seek(to: Double(ticks) / 10_000_000)
+        case .rewind: seek(to: max(position - 10, 0))
+        case .fastForward: seek(to: min(position + 10, player.duration))
+        case .nextTrack: next()
+        case .previousTrack: previous()
         case .setVolume(let level): player.volume = level
         case .volumeUp: player.volume = min(player.volume + 0.05, 1)
         case .volumeDown: player.volume = max(player.volume - 0.05, 0)
@@ -139,24 +200,39 @@ final class MusicPlayback {
 
     private func handle(_ event: MusicQueuePlayer.Event) {
         if isSwitchingProfile { progressTask?.cancel() }
-        guard !isSwitchingProfile, let credential = authManager.state.credential else { return }
-        let header = authManager.authClient.authHeader(token: credential.accessToken)
-        let client = client
+        guard !isSwitchingProfile, !isHandingToCast else { return }
         switch event {
         case .started(let song, let seconds):
             hasYielded = false
             installCommands()
-            report {
-                await client.reportPlaybackStart(credential: credential, authHeader: header, itemId: song.id,
-                                                 mediaSourceId: song.id, positionTicks: Int64(seconds * 10_000_000))
+            // Music started while connected to a Chromecast plays there.
+            if isCasting || cast.isConnected {
+                handToCast(at: seconds)
+            } else {
+                reportStart(song, at: seconds)
             }
-            startProgressReports()
         case .ended(let song, let seconds):
-            progressTask?.cancel()
-            report {
-                await client.reportPlaybackStopped(credential: credential, authHeader: header, itemId: song.id,
-                                                   mediaSourceId: song.id, positionTicks: Int64(seconds * 10_000_000))
-            }
+            reportStop(song, at: seconds)
+        }
+    }
+
+    private func reportStart(_ song: MusicSong, at seconds: Double) {
+        guard let credential = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: credential.accessToken), client = client
+        report {
+            await client.reportPlaybackStart(credential: credential, authHeader: header, itemId: song.id,
+                                             mediaSourceId: song.id, positionTicks: Int64(seconds * 10_000_000))
+        }
+        startProgressReports()
+    }
+
+    private func reportStop(_ song: MusicSong, at seconds: Double) {
+        progressTask?.cancel()
+        guard let credential = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: credential.accessToken), client = client
+        report {
+            await client.reportPlaybackStopped(credential: credential, authHeader: header, itemId: song.id,
+                                               mediaSourceId: song.id, positionTicks: Int64(seconds * 10_000_000))
         }
     }
 
@@ -181,15 +257,105 @@ final class MusicPlayback {
 
     /// Where the song is, whether it's paused, and the volume, so remotes show it.
     private func reportProgress() {
-        guard player.isInSession, let song = player.current, let credential = authManager.state.credential else { return }
+        guard let song = castSong ?? (player.isInSession ? player.current : nil),
+              let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
-        let client = client, ticks = Int64(player.position * 10_000_000), isPaused = !player.isPlaying
-        let volume = Int((player.volume * 100).rounded()), isMuted = player.isMuted
+        let client = client, ticks = Int64(position * 10_000_000), isPaused = !isPlaying
+        let volume = Int(((isCasting ? cast.volume : player.volume) * 100).rounded()), isMuted = player.isMuted
         report {
             await client.reportPlaybackProgress(credential: credential, authHeader: header, itemId: song.id,
                                                 mediaSourceId: song.id, positionTicks: ticks, isPaused: isPaused,
                                                 volumeLevel: volume, isMuted: isMuted)
         }
+    }
+
+    // MARK: Chromecast
+
+    private func followCast() {
+        withObservationTracking {
+            _ = cast.isConnected
+            _ = cast.isPaused
+            _ = cast.playbackFinishedCount
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.castChanged()
+                self?.followCast()
+            }
+        }
+    }
+
+    private func castChanged() {
+        if cast.playbackFinishedCount != castFinishedCount {
+            castFinishedCount = cast.playbackFinishedCount
+            if isCasting { castSongFinished() }
+        }
+        if cast.isConnected, !isCasting, !hasYielded, player.isInSession {
+            // Connected while music plays here: it moves over, from where it is.
+            handToCast(at: player.position)
+        } else if !cast.isConnected, isCasting {
+            // The session ended: the music waits here, paused where the receiver left it.
+            let at = cast.lastKnownPositionSeconds ?? castPosition
+            leaveCast()
+            player.seek(to: at)
+        }
+        updateNowPlaying()
+        reportProgress()
+    }
+
+    /// Pauses the song here and plays it on the receiver from `seconds`.
+    private func handToCast(at seconds: Double) {
+        endCastSong()
+        isCasting = true
+        isHandingToCast = true
+        player.suspend()
+        isHandingToCast = false
+        castCurrent(at: seconds)
+        castTick?.cancel()
+        castTick = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard let self, isCasting else { return }
+                if let now = cast.currentPositionSeconds() { castPosition = now }
+            }
+        }
+    }
+
+    private func castCurrent(at seconds: Double) {
+        guard let song = player.current, let credential = authManager.state.credential,
+              let url = client.audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
+                                              container: song.container, direct: JellyfinMediaClient.castAudioContainers)
+        else { return }
+        let type = switch url.pathExtension.lowercased() {
+        case "flac": "audio/flac"
+        case "wav": "audio/wav"
+        default: "audio/mpeg"
+        }
+        cast.loadSong(itemID: song.id, streamURL: url, title: song.name, artist: song.artistLine, album: song.albumName,
+                      artworkURL: artworkURL(for: song), contentType: type, startPositionSeconds: seconds)
+        castSong = song
+        castPosition = seconds
+        reportStart(song, at: seconds)
+        updateNowPlaying()
+    }
+
+    private func castSongFinished() {
+        endCastSong(at: player.duration)
+        if player.repeatMode == .one { return castCurrent(at: 0) }
+        let before = player.queue.currentIndex
+        player.next()
+        if player.queue.currentIndex != before { castCurrent(at: 0) }
+    }
+
+    private func endCastSong(at seconds: Double? = nil) {
+        guard let song = castSong else { return }
+        castSong = nil
+        reportStop(song, at: seconds ?? castPosition)
+    }
+
+    private func leaveCast() {
+        endCastSong(at: cast.lastKnownPositionSeconds)
+        isCasting = false
+        castTick?.cancel()
     }
 
     // MARK: Lock screen and Control Center
@@ -225,8 +391,8 @@ final class MusicPlayback {
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: song.name,
             MPMediaItemPropertyPlaybackDuration: player.duration,
-            MPNowPlayingInfoPropertyElapsedPlaybackTime: player.position,
-            MPNowPlayingInfoPropertyPlaybackRate: player.isPlaying ? 1.0 : 0.0,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
+            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
             MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
         ]
         if let artist = song.artistLine { info[MPMediaItemPropertyArtist] = artist }
@@ -241,7 +407,7 @@ final class MusicPlayback {
             loadArtwork(for: song)
         }
         center.nowPlayingInfo = info
-        center.playbackState = player.isPlaying ? .playing : .paused
+        center.playbackState = isPlaying ? .playing : .paused
     }
 
     private func loadArtwork(for song: MusicSong) {
@@ -272,16 +438,15 @@ final class MusicPlayback {
         removeCommands()
         hasCommands = true
         let center = MPRemoteCommandCenter.shared()
-        let player = player
-        center.playCommand.addTarget { _ in Task { @MainActor in player.resume() }; return .success }
-        center.pauseCommand.addTarget { _ in Task { @MainActor in player.pause() }; return .success }
-        center.togglePlayPauseCommand.addTarget { _ in Task { @MainActor in player.togglePlayPause() }; return .success }
-        center.nextTrackCommand.addTarget { _ in Task { @MainActor in player.next() }; return .success }
-        center.previousTrackCommand.addTarget { _ in Task { @MainActor in player.previous() }; return .success }
+        center.playCommand.addTarget { _ in Task { @MainActor in AppServices.music.resume() }; return .success }
+        center.pauseCommand.addTarget { _ in Task { @MainActor in AppServices.music.pause() }; return .success }
+        center.togglePlayPauseCommand.addTarget { _ in Task { @MainActor in AppServices.music.togglePlayPause() }; return .success }
+        center.nextTrackCommand.addTarget { _ in Task { @MainActor in AppServices.music.next() }; return .success }
+        center.previousTrackCommand.addTarget { _ in Task { @MainActor in AppServices.music.previous() }; return .success }
         center.changePlaybackPositionCommand.addTarget { event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             let seconds = event.positionTime
-            Task { @MainActor in player.seek(to: seconds) }
+            Task { @MainActor in AppServices.music.seek(to: seconds) }
             return .success
         }
         Self.commands.forEach { $0.isEnabled = true }

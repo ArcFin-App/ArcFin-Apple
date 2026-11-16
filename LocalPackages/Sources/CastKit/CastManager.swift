@@ -125,6 +125,31 @@ public final class CastManager: NSObject {
         #endif
     }
 
+    /// A song: the receiver shows it as music, with its artist, album and cover.
+    public func loadSong(itemID: String, streamURL: URL, title: String, artist: String?, album: String?,
+                         artworkURL: URL?, contentType: String, startPositionSeconds: TimeInterval) {
+        #if canImport(GoogleCast)
+        guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
+        nowPlayingTitle = title
+        nowPlayingItemID = itemID
+        let metadata = GCKMediaMetadata(metadataType: .musicTrack)
+        metadata.setString(title, forKey: kGCKMetadataKeyTitle)
+        if let artist { metadata.setString(artist, forKey: kGCKMetadataKeyArtist) }
+        if let album { metadata.setString(album, forKey: kGCKMetadataKeyAlbumTitle) }
+        if let artworkURL { metadata.addImage(GCKImage(url: artworkURL, width: 600, height: 600)) }
+        let infoBuilder = GCKMediaInformationBuilder(contentURL: streamURL)
+        infoBuilder.contentType = contentType
+        infoBuilder.streamType = .buffered
+        infoBuilder.metadata = metadata
+        infoBuilder.customData = [Self.itemIDKey: itemID]
+        let requestBuilder = GCKMediaLoadRequestDataBuilder()
+        requestBuilder.mediaInformation = infoBuilder.build()
+        requestBuilder.startTime = startPositionSeconds
+        requestBuilder.autoplay = true
+        client.loadMedia(with: requestBuilder.build())
+        #endif
+    }
+
     private nonisolated static let itemIDKey = "arcfinItemId"
 
     public func setActiveSubtitleTrack(id: Int?) {

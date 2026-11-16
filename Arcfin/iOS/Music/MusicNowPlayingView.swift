@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AVKit
+import GoogleCast
 import MediaPlayer
 import SwiftUI
 import JellyfinAPI
@@ -11,6 +12,7 @@ import MediaEngine
 struct MusicMiniPlayer: View {
     @Binding var isExpanded: Bool
     private var player: MusicQueuePlayer { AppServices.music.player }
+    private var music: MusicPlayback { AppServices.music }
 
     var body: some View {
         if let song = player.current {
@@ -34,15 +36,15 @@ struct MusicMiniPlayer: View {
                     .contentShape(Rectangle())
                 }
                 .accessibilityHint("Opens Now Playing")
-                Button { player.togglePlayPause() } label: {
-                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                Button { music.togglePlayPause() } label: {
+                    Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title3)
                         .contentTransition(.symbolEffect(.replace))
                         .frame(width: 40, height: 44)
                         .contentShape(Rectangle())
                 }
-                .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-                Button { player.next() } label: {
+                .accessibilityLabel(music.isPlaying ? "Pause" : "Play")
+                Button { music.next() } label: {
                     Image(systemName: "forward.fill")
                         .font(.title3)
                         .frame(width: 40, height: 44)
@@ -72,6 +74,7 @@ struct MusicNowPlayingView: View {
     @State private var scrubbing: Double?
     @State private var lyrics: Lyrics?
     private var player: MusicQueuePlayer { AppServices.music.player }
+    private var music: MusicPlayback { AppServices.music }
 
     var body: some View {
         Group {
@@ -121,8 +124,8 @@ struct MusicNowPlayingView: View {
     private func bigArtwork(_ song: MusicSong) -> some View {
         MusicArtwork(url: MusicAPI.artworkURL(song, width: 1000), cornerRadius: DT.Radius.md)
             .shadow(color: .black.opacity(0.4), radius: 24, y: 12)
-            .scaleEffect(player.isPlaying ? 1 : 0.82)
-            .animation(.spring(response: 0.45, dampingFraction: 0.7), value: player.isPlaying)
+            .scaleEffect(music.isPlaying ? 1 : 0.82)
+            .animation(.spring(response: 0.45, dampingFraction: 0.7), value: music.isPlaying)
             .frame(maxHeight: .infinity)
     }
 
@@ -173,11 +176,11 @@ struct MusicNowPlayingView: View {
 
     private var scrubber: some View {
         let duration = max(player.duration, 1)
-        let position = scrubbing ?? player.position
+        let position = scrubbing ?? music.position
         return VStack(spacing: DT.Spacing.xxs) {
             Slider(value: Binding(get: { position }, set: { scrubbing = $0 }), in: 0...duration) { editing in
                 if !editing, let scrubbing {
-                    player.seek(to: scrubbing)
+                    music.seek(to: scrubbing)
                     self.scrubbing = nil
                 }
             }
@@ -198,20 +201,20 @@ struct MusicNowPlayingView: View {
     private var transport: some View {
         HStack {
             Spacer()
-            Button { player.previous() } label: {
+            Button { music.previous() } label: {
                 Image(systemName: "backward.fill").font(.system(size: 30))
             }
             .accessibilityLabel("Previous")
             Spacer()
-            Button { player.togglePlayPause() } label: {
-                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+            Button { music.togglePlayPause() } label: {
+                Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 44))
                     .contentTransition(.symbolEffect(.replace))
                     .frame(width: 64, height: 64)
             }
-            .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
+            .accessibilityLabel(music.isPlaying ? "Pause" : "Play")
             Spacer()
-            Button { player.next() } label: {
+            Button { music.next() } label: {
                 Image(systemName: "forward.fill").font(.system(size: 30))
             }
             .accessibilityLabel("Next")
@@ -239,6 +242,10 @@ struct MusicNowPlayingView: View {
             MusicRoutePicker()
                 .frame(width: 44, height: 44)
                 .accessibilityLabel("AirPlay")
+            Spacer()
+            MusicCastButton()
+                .frame(width: 44, height: 44)
+                .accessibilityLabel("Cast")
             Spacer()
             panelButton(.queue, systemImage: "list.bullet", label: "Playing Next")
             Spacer()
@@ -293,11 +300,12 @@ private struct MusicArtworkBackdrop: View {
 private struct MusicLyricsPanel: View {
     let lyrics: Lyrics?
     private var player: MusicQueuePlayer { AppServices.music.player }
+    private var music: MusicPlayback { AppServices.music }
 
     var body: some View {
         Group {
             if let lyrics, !lyrics.lines.isEmpty {
-                let current = lyrics.isSynced ? lyrics.lineIndex(at: player.position) : nil
+                let current = lyrics.isSynced ? lyrics.lineIndex(at: music.position) : nil
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: DT.Spacing.md) {
@@ -308,7 +316,7 @@ private struct MusicLyricsPanel: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .id(index)
                                     .onTapGesture {
-                                        if let start = line.start { player.seek(to: start) }
+                                        if let start = line.start { music.seek(to: start) }
                                     }
                             }
                         }
@@ -330,6 +338,7 @@ private struct MusicLyricsPanel: View {
 /// Shuffle and repeat, then what plays next, to drag into order or swipe away.
 private struct MusicQueuePanel: View {
     private var player: MusicQueuePlayer { AppServices.music.player }
+    private var music: MusicPlayback { AppServices.music }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.sm) {
@@ -368,7 +377,7 @@ private struct MusicQueuePanel: View {
                         .lineLimit(1)
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture { player.jump(to: entry.id) }
+                    .onTapGesture { music.jump(to: entry.id) }
                     .listRowBackground(Color.clear)
                     .listRowSeparatorTint(.white.opacity(0.15))
                 }
@@ -421,4 +430,14 @@ private struct MusicRoutePicker: UIViewRepresentable {
         return view
     }
     func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
+}
+
+/// Chromecast; picking one moves the music to it.
+private struct MusicCastButton: UIViewRepresentable {
+    func makeUIView(context: Context) -> GCKUICastButton {
+        let view = GCKUICastButton(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
+        view.tintColor = .white
+        return view
+    }
+    func updateUIView(_ uiView: GCKUICastButton, context: Context) {}
 }

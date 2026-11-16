@@ -125,11 +125,12 @@ public final class MusicQueuePlayer {
         reload()
     }
 
-    public func jump(to id: MusicQueue.Entry.ID) {
+    /// `plays` false only moves the queue there, for a song playing somewhere else.
+    public func jump(to id: MusicQueue.Entry.ID, plays: Bool = true) {
         endCurrent()
         guard queue.jump(to: id) != nil else { return }
         reload()
-        resume()
+        if plays { resume() }
     }
 
     /// Stops and empties the queue.
