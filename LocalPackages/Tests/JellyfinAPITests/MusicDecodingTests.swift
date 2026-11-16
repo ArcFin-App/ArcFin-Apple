@@ -45,8 +45,8 @@ struct MusicDecodingTests {
 
     @Test("A track with no artists of its own uses the album's")
     func artistFallback() {
-        #expect(MusicTrack(id: "t", name: "x", albumArtist: "Various Artists").artistLine == "Various Artists")
-        #expect(MusicTrack(id: "t", name: "x").artistLine == nil)
+        #expect(MusicSong(id: "t", name: "x", albumArtist: "Various Artists").artistLine == "Various Artists")
+        #expect(MusicSong(id: "t", name: "x").artistLine == nil)
     }
 
     @Test("An artist keeps its bio and backdrop")

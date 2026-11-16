@@ -18,8 +18,8 @@ struct MusicQueueTests {
         }
     }
 
-    private static func tracks(_ names: String...) -> [MusicTrack] {
-        names.map { MusicTrack(id: $0, name: $0) }
+    private static func tracks(_ names: String...) -> [MusicSong] {
+        names.map { MusicSong(id: $0, name: $0) }
     }
 
     private static func ids(_ entries: some Sequence<MusicQueue.Entry>) -> [String] {

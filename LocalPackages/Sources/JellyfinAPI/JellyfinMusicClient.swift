@@ -53,7 +53,7 @@ public struct MusicArtist: Sendable, Identifiable, Equatable, Hashable {
     }
 }
 
-public struct MusicTrack: Sendable, Identifiable, Equatable, Hashable {
+public struct MusicSong: Sendable, Identifiable, Equatable, Hashable {
     public let id: String
     public var name: String
     public var albumId: String?
@@ -173,7 +173,7 @@ extension JellyfinMediaClient {
     /// Songs in a music library, a page at a time.
     public func getMusicTracks(credential: ServerCredential, authHeader: String, libraryId: String,
                                sort: MusicSort = .name, ascending: Bool = true, filter: MusicFilter = .init(),
-                               startIndex: Int = 0, limit: Int = 100) async throws -> (tracks: [MusicTrack], total: Int) {
+                               startIndex: Int = 0, limit: Int = 100) async throws -> (tracks: [MusicSong], total: Int) {
         var query = musicItemsQuery(credential: credential, types: "Audio", parentId: libraryId, sort: sort,
                                     ascending: ascending, filter: filter, startIndex: startIndex, limit: limit)
         if let artistId = filter.artistId { query.append(.init(name: "ArtistIds", value: artistId)) }
@@ -210,7 +210,7 @@ extension JellyfinMediaClient {
     }
 
     /// An album's tracks in disc and track order.
-    public func getAlbumTracks(credential: ServerCredential, authHeader: String, albumId: String) async throws -> [MusicTrack] {
+    public func getAlbumTracks(credential: ServerCredential, authHeader: String, albumId: String) async throws -> [MusicSong] {
         var query = baseQuery(credential: credential, startIndex: 0, limit: 1000)
         query += [
             .init(name: "ParentId", value: albumId),
@@ -239,7 +239,7 @@ extension JellyfinMediaClient {
 
     /// Songs like this one, an album or an artist, for a radio-style mix.
     public func getInstantMix(credential: ServerCredential, authHeader: String, itemId: String,
-                              limit: Int = 100) async throws -> [MusicTrack] {
+                              limit: Int = 100) async throws -> [MusicSong] {
         var query = baseQuery(credential: credential, startIndex: 0, limit: limit)
         query.append(.init(name: "Fields", value: Self.musicFields))
         let page: MusicPage = try await getMusic("Items/\(itemId)/InstantMix", query: query,
@@ -403,8 +403,8 @@ struct MusicItemResponse: Decodable {
                     isFavorite: userData?.isFavorite ?? false)
     }
 
-    var asTrack: MusicTrack {
-        MusicTrack(id: id, name: name ?? "", albumId: albumId, albumName: album, albumArtist: albumArtist,
+    var asTrack: MusicSong {
+        MusicSong(id: id, name: name ?? "", albumId: albumId, albumName: album, albumArtist: albumArtist,
                    artists: Self.refs(artistItems), trackNumber: indexNumber, discNumber: parentIndexNumber,
                    runTimeTicks: runTimeTicks, primaryImageTag: imageTags?["Primary"],
                    albumPrimaryImageTag: albumPrimaryImageTag, isFavorite: userData?.isFavorite ?? false,

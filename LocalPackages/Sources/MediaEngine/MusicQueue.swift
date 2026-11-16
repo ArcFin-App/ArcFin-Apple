@@ -8,9 +8,9 @@ import JellyfinAPI
 public struct MusicQueue: Sendable, Equatable {
     public struct Entry: Sendable, Identifiable, Equatable, Hashable {
         public let id: UUID
-        public let track: MusicTrack
+        public let track: MusicSong
 
-        public init(_ track: MusicTrack, id: UUID = UUID()) {
+        public init(_ track: MusicSong, id: UUID = UUID()) {
             self.id = id
             self.track = track
         }
@@ -35,12 +35,12 @@ public struct MusicQueue: Sendable, Equatable {
         unshuffled = []
     }
 
-    public init(_ tracks: [MusicTrack], startingAt index: Int = 0, shuffled: Bool = false) {
+    public init(_ tracks: [MusicSong], startingAt index: Int = 0, shuffled: Bool = false) {
         var generator = SystemRandomNumberGenerator()
         self.init(tracks, startingAt: index, shuffled: shuffled, using: &generator)
     }
 
-    public init(_ tracks: [MusicTrack], startingAt index: Int = 0, shuffled: Bool = false,
+    public init(_ tracks: [MusicSong], startingAt index: Int = 0, shuffled: Bool = false,
                 using generator: inout some RandomNumberGenerator) {
         entries = tracks.map { Entry($0) }
         unshuffled = entries
@@ -91,7 +91,7 @@ public struct MusicQueue: Sendable, Equatable {
     }
 
     /// Right after the current song, in the order given.
-    public mutating func playNext(_ tracks: [MusicTrack]) {
+    public mutating func playNext(_ tracks: [MusicSong]) {
         let added = tracks.map { Entry($0) }
         guard let index = currentIndex else { return append(added) }
         entries.insert(contentsOf: added, at: index + 1)
@@ -99,7 +99,7 @@ public struct MusicQueue: Sendable, Equatable {
         unshuffled.insert(contentsOf: added, at: at)
     }
 
-    public mutating func addToQueue(_ tracks: [MusicTrack]) {
+    public mutating func addToQueue(_ tracks: [MusicSong]) {
         append(tracks.map { Entry($0) })
     }
 
