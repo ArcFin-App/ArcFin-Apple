@@ -12,6 +12,8 @@ struct NowPlayingView: View {
     @State private var showsVolume = false
     @State private var volumeTask: Task<Void, Never>?
     @State private var showsMore = false
+    /// The crown only turns a view that has focus.
+    @FocusState private var crownFocused: Bool
 
     var body: some View {
         if let session = remote.session(sessionID) {
@@ -20,10 +22,15 @@ struct NowPlayingView: View {
                 .toolbar { bottomBar(session) }
                 .sheet(isPresented: $showsMore) { MoreView(sessionID: sessionID) }
                 .focusable()
+                .focused($crownFocused)
                 .digitalCrownRotation($crownVolume, from: 0, through: 100, by: 5, sensitivity: .medium,
                                       isContinuous: false, isHapticFeedbackEnabled: true)
                 .onChange(of: crownVolume) { _, volume in turned(to: volume, on: session) }
-                .onAppear { crownVolume = Double(session.volumeLevel ?? 100) }
+                .onAppear {
+                    crownVolume = Double(session.volumeLevel ?? 100)
+                    crownFocused = true
+                }
+                .onChange(of: showsMore) { _, shown in if !shown { crownFocused = true } }
                 .onChange(of: session.volumeLevel) { _, level in
                     // The device's own level, unless the crown is being turned.
                     if volumeTask == nil { crownVolume = Double(level ?? 100) }
@@ -57,12 +64,23 @@ struct NowPlayingView: View {
                 }
                 .gaugeStyle(.accessoryLinearCapacity)
                 .tint(.accentColor)
-                .accessibilityLabel("Volume")
+                .accessibilityHidden(true)
             } else {
                 ProgressView(value: Double(remote.position(of: session)), total: Double(max(session.runTimeTicks, 1)))
                     .tint(.accentColor)
                     .accessibilityHidden(true)
             }
+            // What the crown is turning.
+            Label {
+                Text(verbatim: "\(Int(crownVolume))%")
+            } icon: {
+                Image(systemName: session.isMuted || crownVolume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Volume")
+            .accessibilityValue(Text(verbatim: "\(Int(crownVolume))%"))
             HStack {
                 Button { remote.skip(session, seconds: -10) } label: {
                     Image(systemName: "gobackward.10")
