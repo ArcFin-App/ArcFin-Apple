@@ -522,14 +522,24 @@ extension PlayerView {
     /// itself, and so does Aether on its native route, through an AVPlayer of its own; its
     /// software route and VLC keep the picture here and send only the sound.
     func watchAirPlay() async {
+        var toldPictureStaysHere = false
         while !Task.isCancelled {
-            let avPlayer = (model.player as? AVFoundationPlayer)?.player
-                ?? (model.player as? AetherEnginePlayer)?.nativePlayerLayer?.player
+            let aether = model.player as? AetherEnginePlayer
+            let avPlayer = (model.player as? AVFoundationPlayer)?.player ?? aether?.nativePlayerLayer?.player
             let external = avPlayer?.isExternalPlaybackActive ?? false
             let name = AVAudioSession.sharedInstance().currentRoute.outputs
                 .first { $0.portType == .airPlay }?.portName
+            // AirPlay picked from the video player is taken as a screen. Left unsaid, Aether keeps
+            // Dolby Vision with an enhancement layer and interlaced video here and sends the sound.
+            aether?.setAirPlayReceiverShowsVideo(name != nil)
             let route = external ? (name ?? String(localized: "AirPlay")) : nil
             if route != airPlayRoute { withAnimation(DT.Animation.fast) { airPlayRoute = route } }
+            // Decoded in software: nothing can send this picture, so say why the TV shows none.
+            let staysHere = aether?.airPlayPictureStaysLocal ?? false
+            if staysHere, !toldPictureStaysHere {
+                model.showSharePlayNotice(String(localized: "AirPlay is playing the sound only. This video is decoded on this device, so its picture can’t be sent."))
+            }
+            toldPictureStaysHere = staysHere
             try? await Task.sleep(for: .seconds(1))
         }
     }

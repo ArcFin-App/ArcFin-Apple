@@ -129,6 +129,70 @@
         }
       }
     },
+    "AirPlay is playing the sound only. This video is decoded on this device, so its picture can’t be sent." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay gibt nur den Ton wieder. Dieses Video wird auf diesem Gerät decodiert, daher kann sein Bild nicht gesendet werden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay solo reproduce el sonido. Este vídeo se decodifica en este dispositivo, así que su imagen no se puede enviar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay ne diffuse que le son. Cette vidéo est décodée sur cet appareil, son image ne peut donc pas être envoyée."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay riproduce solo l’audio. Questo video viene decodificato su questo dispositivo, quindi la sua immagine non può essere inviata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlayでは音声のみ再生しています。このビデオはこのデバイスでデコードされているため、映像を送信できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay에서 소리만 재생 중입니다. 이 비디오는 이 기기에서 디코딩되므로 화면을 보낼 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay speelt alleen het geluid af. Deze video wordt op dit apparaat gedecodeerd, dus het beeld kan niet worden verstuurd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O AirPlay está reproduzindo só o som. Este vídeo é decodificado neste dispositivo, então a imagem não pode ser enviada."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay воспроизводит только звук. Это видео декодируется на этом устройстве, поэтому изображение нельзя передать."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AirPlay 仅在播放声音。此视频在本设备上解码，因此无法发送画面。"
+          }
+        }
+      }
+    },
     "All your profiles are already on this Apple TV." : {
       "localizations" : {
         "de" : {
