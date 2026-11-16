@@ -53,6 +53,10 @@ struct MusicMiniPlayer: View {
             .buttonStyle(.plain)
             .padding(.leading, DT.Spacing.sm)
             .padding(.trailing, DT.Spacing.xs)
+            .contentShape(Rectangle())
+            .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { drag in
+                if drag.translation.height < -20 { isExpanded = true }
+            })
             .accessibilityElement(children: .contain)
         }
     }

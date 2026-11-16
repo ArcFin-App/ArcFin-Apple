@@ -40,8 +40,8 @@ final class MusicPlayback {
     /// Whether there's anything to show a mini player for.
     var isActive: Bool { player.current != nil }
 
-    /// A video is starting: the music pauses, its report ends, and the lock screen's controls
-    /// go to the video until the music plays again.
+    /// A video is starting, here or (with Play On) on another device: the music pauses, its
+    /// report ends, and the lock screen's controls go to the video until the music plays again.
     func yieldToVideo() {
         guard player.current != nil else { return }
         player.suspend()

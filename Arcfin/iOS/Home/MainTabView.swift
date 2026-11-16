@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import MediaEngine
 import JellyfinAPI
 import SeerrAPI
 import CastKit
@@ -108,6 +109,11 @@ struct MainTabView: View {
 private struct CastMiniControllerAccessory: ViewModifier {
     private var casting: Bool { CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil }
     @State private var showsMusic = false
+    @Namespace private var musicTransition
+    /// Music playing here goes first; paused, it gives the bar to another device that's playing.
+    private var showsMusicBar: Bool {
+        AppServices.music.isActive && (AppServices.music.player.isPlaying || AppServices.remoteSessions.selected == nil)
+    }
 
     func body(content: Content) -> some View {
         accessory(content)
@@ -125,13 +131,19 @@ private struct CastMiniControllerAccessory: ViewModifier {
                 // device playing on this profile.
                 if casting {
                     CastMiniController()
-                } else if AppServices.music.isActive {
+                } else if showsMusicBar || AppServices.remoteSessions.selected == nil {
                     MusicMiniPlayer(isExpanded: $showsMusic)
+                        .matchedTransitionSource(id: "music", in: musicTransition)
                 } else {
                     RemoteMiniController()
                 }
             }
-            .fullScreenCover(isPresented: $showsMusic) { MusicNowPlayingView() }
+            .sheet(isPresented: $showsMusic) {
+                MusicNowPlayingView()
+                    .navigationTransition(.zoom(sourceID: "music", in: musicTransition))
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(.black)
+            }
             .fullScreenCover(isPresented: Binding(get: { AppServices.remoteSessions.isShowingRemote },
                                                   set: { AppServices.remoteSessions.isShowingRemote = $0 })) {
                 RemoteControllerView()
