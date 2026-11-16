@@ -80,6 +80,14 @@ public enum TopShelfBridge {
         defaults.synchronize()
     }
 
+    /// Nobody signed in, or another profile now: the shelf shouldn't show the last one's titles.
+    public static func clear() {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return }
+        for key in [continueWatchingKey, nextUpKey, recentlyAddedKey, liveChannelsKey] {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
     public static func loadContinueWatching() -> [TopShelfMediaItem] {
         load(key: continueWatchingKey)
     }
