@@ -124,16 +124,21 @@ struct MediaDetailView: View {
         ZStack(alignment: .bottomLeading) {
             Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
             if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920) {
-                CachedAsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
-                        img.resizable().scaledToFill()
-                    default:
-                        fallbackGradient
+                // In an overlay so the image can't size the hero: an episode whose only art is
+                // a portrait still filled to 2600 pt tall and pushed the title and buttons below
+                // the fold.
+                Color.clear
+                    .overlay {
+                        CachedAsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let img):
+                                img.resizable().scaledToFill()
+                            default:
+                                fallbackGradient
+                            }
+                        }
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
+                    .clipped()
             } else {
                 fallbackGradient.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
