@@ -217,6 +217,78 @@
         }
       }
     },
+    "NSCameraUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin nutzt die Kamera nur, um den Code zu scannen, den ein Apple TV zum Anmelden zeigt. Nichts wird aufgezeichnet oder irgendwohin gesendet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa la cámara solo para escanear el código que muestra un Apple TV para iniciar sesión. No se graba ni se envía nada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin utilise l’appareil photo uniquement pour scanner le code qu’affiche une Apple TV pour se connecter. Rien n’est enregistré ni envoyé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin usa la fotocamera solo per scansionare il codice che una Apple TV mostra per accedere. Nulla viene registrato o inviato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinがカメラを使うのは、Apple TVがサインインのために表示するコードを読み取るときだけです。何も記録・送信されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin은 Apple TV가 로그인을 위해 표시하는 코드를 스캔할 때만 카메라를 사용합니다. 아무것도 기록하거나 전송하지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin gebruikt de camera alleen om de code te scannen die een Apple TV toont om in te loggen. Er wordt niets opgenomen of verstuurd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin usa a câmera apenas para escanear o código que uma Apple TV mostra para entrar. Nada é gravado nem enviado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin использует камеру только для сканирования кода, который Apple TV показывает для входа. Ничего не записывается и никуда не отправляется."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 仅使用相机扫描 Apple TV 为登录而显示的代码。不会录制或发送任何内容。"
+          }
+        }
+      }
+    },
     "NSFaceIDUsageDescription" : {
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",

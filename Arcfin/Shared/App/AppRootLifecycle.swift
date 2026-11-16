@@ -111,6 +111,28 @@ struct AppRootLifecycle: ViewModifier {
                     AppServices.liveUpdates.disconnect()
                 }
             }
+            // A scanned Quick Connect code: nothing is signed in until it's confirmed here.
+            .alert("Sign In Apple TV?",
+                   isPresented: Binding(get: { QuickConnectApproval.shared.request != nil },
+                                        set: { if !$0 { QuickConnectApproval.shared.request = nil } }),
+                   presenting: QuickConnectApproval.shared.request) { request in
+                Button("Sign In") { QuickConnectApproval.shared.approve(request, authManager: model.authManager) }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                if let name = model.authManager.state.credential?.displayName {
+                    Text("The Apple TV showing this code signs in to your server as \(name).")
+                } else {
+                    Text("Sign in to Arcfin on this device first.")
+                }
+            }
+            .alert(QuickConnectApproval.shared.outcome?.succeeded == true ? Text("Apple TV Signed In") : Text("Couldn't Sign In Apple TV"),
+                   isPresented: Binding(get: { QuickConnectApproval.shared.outcome != nil },
+                                        set: { if !$0 { QuickConnectApproval.shared.outcome = nil } }),
+                   presenting: QuickConnectApproval.shared.outcome) { _ in
+                Button("OK") {}
+            } message: { outcome in
+                Text(outcome.message)
+            }
             // A message from the dashboard while nothing is playing; the player shows its own.
             .alert(Text(verbatim: RemoteControl.shared.message.flatMap { $0.header.isEmpty ? nil : $0.header } ?? "Arcfin"),
                    isPresented: Binding(get: { RemoteControl.shared.message != nil },

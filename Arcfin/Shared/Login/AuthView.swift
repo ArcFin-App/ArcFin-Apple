@@ -126,6 +126,7 @@ struct AuthView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 22)
             .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .quickConnectQRCode(qcPolling ? QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)) : nil)
 
             VStack(alignment: .leading, spacing: 12) {
                 step(1, "Open Jellyfin where you're already signed in.")
@@ -262,8 +263,10 @@ struct AuthView: View {
         qcLoading = false
     }
 
+    /// Jellyfin's codes last ten minutes; then there's a new one, rather than an error, since
+    /// the Apple TV may have been left on this screen.
     private func pollQuickConnect(secret: String) async {
-        for _ in 0..<40 {
+        for _ in 0..<195 {
             try? await Task.sleep(for: .seconds(3))
             guard qcPolling, !Task.isCancelled else { return }
             let approved = (try? await authManager.authClient.pollQuickConnect(baseURL: serverURL, secret: secret)) ?? false
@@ -281,8 +284,8 @@ struct AuthView: View {
             }
             return
         }
-        qcPolling = false
-        authError = String(localized: "Quick Connect timed out — please try again.")
+        // Outside this task, which ends as soon as the new code replaces the secret it polls.
+        Task { await initiateQC() }
     }
 
     private func formatCode(_ raw: String) -> String {

@@ -34,8 +34,10 @@ final class AppRootModel {
     @ObservationIgnored private var arcfinSyncTask: Task<Void, Never>?
     @ObservationIgnored private var seerrPollTask: Task<Void, Never>?
 
-    /// Routes an arcfin:// link from a widget, Live Activity, the Top Shelf or a control.
+    /// Routes an arcfin:// link from a widget, Live Activity, the Top Shelf or a control, and
+    /// the Apple TV's Quick Connect QR code.
     func handleDeepLink(_ url: URL) {
+        if QuickConnectApproval.shared.open(url) { return }
         guard url.scheme == "arcfin" else { return }
         switch url.host {
         case "play":
