@@ -46,6 +46,11 @@ struct SettingsView: View {
                 settingsRow("Downloads", icon: "arrow.down.circle")
             }
             NavigationLink {
+                MusicSettingsView()
+            } label: {
+                settingsRow("Music", icon: "music.note")
+            }
+            NavigationLink {
                 AppearanceView()
             } label: {
                 settingsRow("Appearance", icon: "paintbrush")

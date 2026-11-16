@@ -129,6 +129,70 @@
         }
       }
     },
+    "%@ kbps" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbit/s"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbps"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbit/s"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbps"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbps"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@kbps"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbps"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbps"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ кбит/с"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kbps"
+          }
+        }
+      }
+    },
     "%lld songs" : {
       "localizations" : {
         "en" : {
@@ -3821,6 +3885,70 @@
         }
       }
     },
+    "Off, music downloads wait for Wi-Fi. Charges may apply." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn aus, warten Musik-Downloads auf WLAN. Es können Kosten anfallen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si está desactivado, las descargas de música esperan al Wi-Fi. Pueden aplicarse cargos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désactivé, les téléchargements de musique attendent le Wi-Fi. Des frais peuvent s’appliquer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se disattivato, i download di musica attendono il Wi-Fi. Potrebbero essere applicati costi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフの場合、音楽のダウンロードはWi-Fiを待ちます。料金が発生する場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끄면 음악 다운로드가 Wi-Fi를 기다립니다. 요금이 부과될 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uit wachten muziekdownloads op wifi. Er kunnen kosten in rekening worden gebracht."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desativado, os downloads de música esperam pelo Wi-Fi. Podem ser cobradas tarifas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если выключено, загрузка музыки ждёт Wi-Fi. Может взиматься плата."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭时，音乐下载会等待 Wi-Fi。可能会产生费用。"
+          }
+        }
+      }
+    },
     "Opens Now Playing" : {
       "localizations" : {
         "de" : {
@@ -3945,6 +4073,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "打开遥控器"
+          }
+        }
+      }
+    },
+    "Original plays each song as it is. A lower rate has your server convert songs to MP3, using less data." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„Original“ spielt jeden Titel unverändert ab. Bei einer niedrigeren Rate wandelt dein Server Titel in MP3 um und spart Daten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original reproduce cada canción tal cual. Una tasa más baja hace que tu servidor convierta las canciones a MP3 y use menos datos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original lit chaque morceau tel quel. Un débit plus faible fait convertir les morceaux en MP3 par votre serveur, pour moins de données."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Originale riproduce ogni brano così com’è. Una velocità più bassa fa convertire i brani in MP3 dal server, usando meno dati."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「オリジナル」は各曲をそのまま再生します。低いビットレートではサーバが曲をMP3に変換し、データ量を抑えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원본은 각 노래를 그대로 재생합니다. 더 낮은 비트레이트를 선택하면 서버가 노래를 MP3로 변환해 데이터를 덜 사용합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origineel speelt elk nummer af zoals het is. Bij een lagere bitrate zet je server nummers om naar MP3, wat minder data gebruikt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original reproduz cada música como ela é. Uma taxa menor faz seu servidor converter as músicas para MP3, usando menos dados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Оригинал» воспроизводит песни как есть. При меньшем битрейте сервер конвертирует песни в MP3 и расходует меньше трафика."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“原始”按原样播放每首歌曲。较低的码率会让服务器将歌曲转换为 MP3，以节省流量。"
+          }
+        }
+      }
+    },
+    "Original saves each song as it is where this device plays it. A lower rate saves MP3s that take less space." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„Original“ speichert jeden Titel unverändert, wenn dieses Gerät ihn abspielen kann. Eine niedrigere Rate speichert MP3s, die weniger Platz belegen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original guarda cada canción tal cual si este dispositivo la reproduce. Una tasa más baja guarda MP3 que ocupan menos espacio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original enregistre chaque morceau tel quel si cet appareil le lit. Un débit plus faible enregistre des MP3 qui prennent moins de place."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Originale salva ogni brano così com’è se questo dispositivo lo riproduce. Una velocità più bassa salva MP3 che occupano meno spazio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「オリジナル」はこのデバイスで再生できる曲をそのまま保存します。低いビットレートでは容量の小さいMP3で保存します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원본은 이 기기에서 재생할 수 있는 노래를 그대로 저장합니다. 더 낮은 비트레이트는 공간을 덜 차지하는 MP3로 저장합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origineel bewaart elk nummer zoals het is als dit apparaat het afspeelt. Een lagere bitrate bewaart MP3’s die minder ruimte innemen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original salva cada música como ela é quando este dispositivo a reproduz. Uma taxa menor salva MP3s que ocupam menos espaço."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Оригинал» сохраняет песни как есть, если устройство их воспроизводит. Меньший битрейт сохраняет MP3, которые занимают меньше места."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“原始”会按原样保存本设备可播放的歌曲。较低的码率会保存占用空间更小的 MP3。"
           }
         }
       }
@@ -5165,6 +5421,134 @@
         }
       }
     },
+    "Streaming" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ストリーミング"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스트리밍"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Потоковое воспроизведение"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流媒体"
+          }
+        }
+      }
+    },
+    "Streaming Quality" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streamingqualität"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calidad de streaming"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualité de streaming"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualità streaming"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ストリーミングの品質"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스트리밍 품질"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streamingkwaliteit"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualidade de Streaming"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Качество потока"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流媒体质量"
+          }
+        }
+      }
+    },
     "Switch device or stop AirPlay" : {
       "localizations" : {
         "de" : {
@@ -5673,6 +6057,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在队列中等待"
+          }
+        }
+      }
+    },
+    "What's saved, the space it takes, and removing it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was gespeichert ist, wie viel Platz es belegt, und Entfernen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo guardado, el espacio que ocupa y cómo eliminarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce qui est enregistré, la place occupée, et sa suppression."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa è salvato, lo spazio che occupa e come rimuoverlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存済みの曲、使用容量、削除。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장된 항목, 차지하는 공간, 제거."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wat er bewaard is, de ruimte die het inneemt, en verwijderen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O que está salvo, o espaço que ocupa e como remover."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Что сохранено, сколько места занимает, и удаление."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存的内容、占用空间及移除。"
           }
         }
       }

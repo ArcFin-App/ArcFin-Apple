@@ -33,6 +33,8 @@ final class MusicDownloads {
     private(set) var current: String?
     /// How far the current song is, 0 to 1.
     private(set) var progress: Double = 0
+    /// Settings › Music › Download on Mobile Data is off and this is on mobile data.
+    private(set) var isWaitingForWiFi = false
     @ObservationIgnored private var worker: Task<Void, Never>?
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicDownloads")
 
@@ -156,6 +158,12 @@ final class MusicDownloads {
         guard worker == nil, !queue.isEmpty else { return }
         worker = Task { [weak self] in
             while let self, let song = queue.first {
+                while MusicSettings.downloadsWaitForWiFi, !queue.isEmpty {
+                    isWaitingForWiFi = true
+                    try? await Task.sleep(for: .seconds(5))
+                }
+                isWaitingForWiFi = false
+                guard queue.first?.id == song.id else { continue }
                 current = song.id
                 progress = 0
                 await fetch(song)
@@ -169,7 +177,8 @@ final class MusicDownloads {
     private func fetch(_ song: MusicSong) async {
         guard let credential = AppServices.authManager.state.credential,
               let url = MusicAPI.client.audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
-                                                       container: song.container) else { return }
+                                                       container: song.container,
+                                                       bitrateCap: MusicSettings.downloadBitrate) else { return }
         do {
             let (temp, response) = try await URLSession.arcfin.download(from: url, delegate: ProgressReporter { fraction in
                 Task { @MainActor in MusicDownloads.shared.reportProgress(fraction, for: song.id) }

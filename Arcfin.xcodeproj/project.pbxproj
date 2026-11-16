@@ -226,6 +226,7 @@
 				iOS/Settings/HomeShelfSettingsView.swift = (ios, );
 				iOS/Settings/IntegrationsSettingsView.swift = (ios, );
 				iOS/Settings/LicenseRow.swift = (ios, );
+				iOS/Settings/MusicSettingsView.swift = (ios, );
 				iOS/Settings/NotificationsSettingsView.swift = (ios, );
 				iOS/Settings/PlaybackSettingsView.swift = (ios, );
 				iOS/Settings/PlayerFeaturesSettingsView.swift = (ios, );
@@ -327,6 +328,7 @@
 				macOS/Settings/IntegrationsSettingsView.swift = (macos, );
 				macOS/Settings/LicenseRow.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
+				macOS/Settings/MusicSettingsView.swift = (macos, );
 				macOS/Settings/NotificationsSettingsView.swift = (macos, );
 				macOS/Settings/PlaybackSettingsView.swift = (macos, );
 				macOS/Settings/PlayerFeaturesSettingsView.swift = (macos, );
@@ -420,6 +422,7 @@
 				tvOS/Settings/CustomHeadersView.swift = (tvos, );
 				tvOS/Settings/HomeShelfSettingsView.swift = (tvos, );
 				tvOS/Settings/LicenseRow.swift = (tvos, );
+				tvOS/Settings/MusicSettingsView.swift = (tvos, );
 				tvOS/Settings/PlaybackSettingsView.swift = (tvos, );
 				tvOS/Settings/PlayerFeaturesSettingsView.swift = (tvos, );
 				tvOS/Settings/SeerrPluginView.swift = (tvos, );

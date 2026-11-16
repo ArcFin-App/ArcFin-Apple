@@ -370,15 +370,17 @@ extension JellyfinMediaClient {
 
     public func audioStreamURL(credential: ServerCredential, deviceId: String, trackId: String,
                                container: String?, maxBitrate: Int = 320_000,
-                               direct playable: Set<String> = directAudioContainers) -> URL? {
+                               direct playable: Set<String> = directAudioContainers,
+                               bitrateCap: Int? = nil) -> URL? {
         let names = (container ?? "").lowercased().split(separator: ",").map(String.init)
-        let direct = names.first(where: { $0 == "m4a" && names.count > 1 && playable.contains("m4a") })
-            ?? names.first(where: playable.contains)
+        // A cap converts every song, at that rate.
+        let direct = bitrateCap != nil ? nil
+            : names.first(where: { $0 == "m4a" && names.count > 1 && playable.contains("m4a") }) ?? names.first(where: playable.contains)
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Audio/\(trackId)/stream.\(direct ?? "mp3")"),
                                   resolvingAgainstBaseURL: false)
         comps?.queryItems = direct != nil
             ? [.init(name: "static", value: "true")]
-            : [.init(name: "audioCodec", value: "mp3"), .init(name: "audioBitRate", value: String(maxBitrate))]
+            : [.init(name: "audioCodec", value: "mp3"), .init(name: "audioBitRate", value: String(bitrateCap ?? maxBitrate))]
         comps?.queryItems? += [
             .init(name: "DeviceId", value: deviceId),
             .init(name: "api_key", value: credential.accessToken),

@@ -103,6 +103,15 @@ struct MusicDecodingTests {
         #expect(url.query?.contains("static") == false)
     }
 
+    @Test("A quality cap converts even a file AVFoundation plays, at that rate")
+    func cappedStream() throws {
+        let url = try #require(JellyfinMediaClient().audioStreamURL(credential: Self.credential, deviceId: "d",
+                                                                    trackId: "t", container: "flac", bitrateCap: 128_000))
+        #expect(url.path == "/Audio/t/stream.mp3")
+        #expect(url.query?.contains("audioBitRate=128000") == true)
+        #expect(url.query?.contains("static") == false)
+    }
+
     @Test("A song's container is decoded")
     func containerDecoded() throws {
         let json = #"{"Items":[{"Id":"s","Name":"x","Container":"flac"}],"TotalRecordCount":1}"#

@@ -12,7 +12,7 @@ struct MusicArtworkVisualizer: View {
     var spacing: CGFloat = 2
     let cornerRadius: CGFloat
 
-    @AppStorage(MusicPlayback.visualizerKey) private var isOn = true
+    @AppStorage(MusicSettings.visualizerKey) private var isOn = true
     @AppStorage("reduceMotion") private var appReduceMotion = false
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 

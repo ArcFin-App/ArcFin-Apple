@@ -38,8 +38,6 @@ final class MusicPlayback {
     @ObservationIgnored private var isHandingToCast = false
     private var cast: CastManager { .shared }
 
-    /// Settings › Playback › Visualizer: on, each song is tapped for the visualizer's bars.
-    static let visualizerKey = "musicVisualizer"
     @ObservationIgnored private var defaultsObserver: NSObjectProtocol?
 
     private static let deviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
@@ -51,7 +49,7 @@ final class MusicPlayback {
             if let local = MusicDownloads.shared.localURL(for: song.id) { return local }
             guard let credential = authManager.state.credential else { return nil }
             return JellyfinMediaClient().audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
-                                                      container: song.container)
+                                                      container: song.container, bitrateCap: MusicSettings.streamBitrate)
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()
@@ -70,7 +68,7 @@ final class MusicPlayback {
     }
 
     private func applyVisualizerSetting() {
-        player.isMetering = UserDefaults.standard.object(forKey: Self.visualizerKey) as? Bool ?? true
+        player.isMetering = UserDefaults.standard.object(forKey: MusicSettings.visualizerKey) as? Bool ?? true
     }
 
     /// Signing out or switching profile stops the music: the queue was the last profile's.
@@ -343,7 +341,8 @@ final class MusicPlayback {
     private func castCurrent(at seconds: Double) {
         guard let song = player.current, let credential = authManager.state.credential,
               let url = client.audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
-                                              container: song.container, direct: JellyfinMediaClient.castAudioContainers)
+                                              container: song.container, direct: JellyfinMediaClient.castAudioContainers,
+                                              bitrateCap: MusicSettings.streamBitrate)
         else { return }
         let type = switch url.pathExtension.lowercased() {
         case "flac": "audio/flac"

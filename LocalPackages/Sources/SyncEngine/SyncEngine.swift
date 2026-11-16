@@ -202,6 +202,10 @@ public enum SettingsSyncRegistry {
         .init("resumeBehavior", .string),
         .init("markWatchedAt", .string),
         .init("musicVisualizer", .bool),
+        .init("musicStreamQuality", .string),
+        .init("musicMobileStreamQuality", .string),
+        .init("musicDownloadQuality", .string),
+        .init("musicDownloadOnMobileData", .bool),
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),

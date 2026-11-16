@@ -221,6 +221,10 @@ private struct MusicDownloadingRow: View {
                 if isCurrent {
                     ProgressView(value: downloads.progress)
                         .tint(DT.Color.accent)
+                } else if downloads.isWaitingForWiFi {
+                    Text("Waiting for Wi-Fi")
+                        .font(.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
                 } else {
                     Text("Waiting in queue")
                         .font(.caption)
