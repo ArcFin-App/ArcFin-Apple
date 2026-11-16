@@ -26,6 +26,7 @@ struct MediaDetailView: View {
     @State private var openedCollection: MediaItem?
     @State private var openedPlaylist: MediaItem?
     @Namespace private var focusNamespace
+    @State private var episodeScrollID: String?
     @State private var minuteTick = Date()
 
     init(item: MediaItem) {
@@ -66,7 +67,10 @@ struct MediaDetailView: View {
             .ignoresSafeArea()
         }
         .screenBackground()
-        .task {
+        // A page handed another title (a link opened while one is showing) keeps its state, so
+        // it would show the new title's name over the old one's details: start it over.
+        .task(id: item.id) {
+            if model.item.id != item.id { model = MediaDetailModel(item: item) }
             await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: nil,
                              trailers: .withPage, seriesOpensOnSeasonInProgress: false)
         }
@@ -505,8 +509,7 @@ struct MediaDetailView: View {
             }
             .padding(.horizontal, 80)
 
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(model.episodes) { ep in
                             let watched = ep.userData?.played == true
@@ -530,18 +533,22 @@ struct MediaDetailView: View {
                             .id(ep.id)
                         }
                     }
+                    .scrollTargetLayout()
                     .padding(.horizontal, 80)
                     .padding(.top, 20)
                     .focusSection()
                 }
                 .scrollClipDisabled()
+                // Lines the row up on the episode by moving only this row. ScrollViewReader's
+                // scrollTo moved the page too: an episode opened from Continue Watching opened
+                // scrolled down to its episodes, with focus on the Series card below them.
+                .scrollPosition(id: $episodeScrollID, anchor: .leading)
                 .onChange(of: model.episodes) { _, newEps in
                     guard let target = model.initialEpisodeID,
                           newEps.contains(where: { $0.id == target }) else { return }
-                    proxy.scrollTo(target, anchor: .leading)
+                    episodeScrollID = target
                     model.initialEpisodeID = nil
                 }
-            }
         }
         .padding(.bottom, 56)
     }

@@ -198,7 +198,10 @@ struct MediaDetailView: View {
                     .frame(minWidth: 800, minHeight: 450)
             }
         }
-        .task {
+        // A page handed another title (a link opened while one is showing) keeps its state, so
+        // it would show the new title's name over the old one's details: start it over.
+        .task(id: item.id) {
+            if model.item.id != item.id { model = MediaDetailModel(item: item) }
             await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: downloadManager,
                              trailers: trailersEnabled ? .alongside(youTubeFallback: youtubeTrailersEnabled) : .skipped,
                              seriesOpensOnSeasonInProgress: true)
