@@ -29,6 +29,12 @@ enum MusicSettings {
     static let crossfadeKey = "musicCrossfadeSeconds"
     static let autoplayKey = "musicAutoplay"
     static let rememberQueueKey = "musicRememberQueue"
+    static let keepFavoritesDownloadedKey = "musicKeepFavoritesDownloaded"
+
+    /// Off where music isn't downloaded, even when the setting arrives synced from elsewhere.
+    static var keepsFavoritesDownloaded: Bool {
+        PlatformStorage.keepsMusicDownloads && defaults.bool(forKey: keepFavoritesDownloadedKey)
+    }
 
     static var isAutoplayOn: Bool { defaults.object(forKey: autoplayKey) as? Bool ?? true }
     static var remembersQueue: Bool { defaults.object(forKey: rememberQueueKey) as? Bool ?? true }

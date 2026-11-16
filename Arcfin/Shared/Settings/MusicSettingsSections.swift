@@ -75,6 +75,7 @@ struct MusicDownloadSettingsSection: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage(MusicSettings.downloadQualityKey) private var quality = MusicQuality.original
     @AppStorage(MusicSettings.downloadOnMobileDataKey) private var onMobileData = false
+    @AppStorage(MusicSettings.keepFavoritesDownloadedKey) private var keepFavorites = false
 
     var body: some View {
         Section {
@@ -85,8 +86,15 @@ struct MusicDownloadSettingsSection: View {
                 TVRowLabelText(title: "Download on Mobile Data", detail: "Off, music downloads wait for Wi-Fi. Charges may apply.")
             }
             .syncLocked(MusicSettings.downloadOnMobileDataKey, authManager)
+            Toggle(isOn: $keepFavorites) {
+                TVRowLabelText(title: "Keep Favorites Downloaded", detail: "Songs and albums you favorite download by themselves. Turning this on downloads the favorites you already have.")
+            }
+            .syncLocked(MusicSettings.keepFavoritesDownloadedKey, authManager)
         } header: {
             Text("Downloads")
+        }
+        .onChange(of: keepFavorites) { _, on in
+            if on { Task { await MusicDownloads.shared.downloadAllFavorites() } }
         }
     }
 }

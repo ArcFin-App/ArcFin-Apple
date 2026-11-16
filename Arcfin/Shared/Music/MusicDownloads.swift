@@ -116,6 +116,30 @@ final class MusicDownloads {
         startIfNeeded()
     }
 
+    /// A song, or an album's songs, just made a favourite (Keep Favorites Downloaded).
+    func downloadFavorite(_ id: String) async {
+        if let songs = try? await MusicAPI.call({ try await $0.getSongs(credential: $1, authHeader: $2, ids: [id]) }) ?? nil,
+           !songs.isEmpty {
+            return download(songs)
+        }
+        let tracks = (try? await MusicAPI.call { try await $0.getAlbumTracks(credential: $1, authHeader: $2, albumId: id) }) ?? []
+        download(tracks)
+    }
+
+    /// Every favourite song, for turning Keep Favorites Downloaded on.
+    func downloadAllFavorites() async {
+        var start = 0
+        while true {
+            guard let page = try? await MusicAPI.call({
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: nil,
+                                            filter: .init(favoritesOnly: true), startIndex: start, limit: 200)
+            }) else { return }
+            download(page.tracks)
+            start += page.tracks.count
+            if page.tracks.isEmpty || start >= page.total { return }
+        }
+    }
+
     func download(album: MusicAlbum) {
         Task { download(await MusicActions.albumSongs(album), album: album) }
     }

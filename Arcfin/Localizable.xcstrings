@@ -3437,6 +3437,70 @@
         }
       }
     },
+    "Keep Favorites Downloaded" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten geladen halten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantener favoritos descargados"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garder les favoris téléchargés"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantieni scaricati i preferiti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "お気に入りをダウンロードしておく"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "즐겨찾기 다운로드 유지"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorieten gedownload houden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manter Favoritos Baixados"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Хранить избранное загруженным"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保持已下载个人收藏"
+          }
+        }
+      }
+    },
     "Less" : {
       "localizations" : {
         "de" : {
@@ -6249,6 +6313,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "歌曲"
+          }
+        }
+      }
+    },
+    "Songs and albums you favorite download by themselves. Turning this on downloads the favorites you already have." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel und Alben, die du zu Favoriten hinzufügst, werden automatisch geladen. Beim Einschalten werden deine bisherigen Favoriten geladen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las canciones y álbumes que marques como favoritos se descargan solos. Al activarlo se descargan los favoritos que ya tienes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les morceaux et albums que vous ajoutez aux favoris se téléchargent d’eux-mêmes. L’activer télécharge les favoris que vous avez déjà."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I brani e gli album che aggiungi ai preferiti si scaricano da soli. Attivandolo vengono scaricati i preferiti che hai già."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "お気に入りにした曲やアルバムが自動でダウンロードされます。オンにすると、既存のお気に入りもダウンロードします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "즐겨찾기한 노래와 앨범이 자동으로 다운로드됩니다. 켜면 기존 즐겨찾기도 다운로드됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummers en albums die je als favoriet markeert, worden vanzelf gedownload. Aanzetten downloadt de favorieten die je al hebt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Músicas e álbuns que você favoritar são baixados sozinhos. Ativar baixa os favoritos que você já tem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Песни и альбомы, добавленные в избранное, загружаются сами. При включении загружается уже имеющееся избранное."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你收藏的歌曲和专辑会自动下载。开启后会下载你已有的个人收藏。"
           }
         }
       }

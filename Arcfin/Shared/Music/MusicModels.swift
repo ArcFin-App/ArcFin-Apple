@@ -120,6 +120,9 @@ final class MusicFavorites {
         let favorite = !isFavorite(id, server: server)
         changed[id] = favorite
         Task { await MusicActions.setFavorite(id, favorite) }
+        if favorite, MusicSettings.keepsFavoritesDownloaded {
+            Task { await MusicDownloads.shared.downloadFavorite(id) }
+        }
     }
 }
 
