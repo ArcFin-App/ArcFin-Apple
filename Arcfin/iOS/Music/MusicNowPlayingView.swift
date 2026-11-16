@@ -353,6 +353,7 @@ private struct MusicLyricsPanel: View {
 
 /// Shuffle and repeat, then what plays next, to drag into order or swipe away.
 private struct MusicQueuePanel: View {
+    @AppStorage(MusicSettings.autoplayKey) private var autoplay = true
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
 
@@ -370,6 +371,7 @@ private struct MusicQueuePanel: View {
                     case .one: .off
                     }
                 }
+                toggle("Autoplay", systemImage: "infinity", isOn: autoplay) { autoplay.toggle() }
             }
             HStack {
                 Text("Playing Next").font(.headline)

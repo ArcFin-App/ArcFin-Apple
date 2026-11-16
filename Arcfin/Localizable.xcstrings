@@ -2029,6 +2029,70 @@
         }
       }
     },
+    "Autoplay" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autoplay"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducción automática"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecture automatique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riproduzione automatica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動再生"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동 재생"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatisch afspelen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reprodução Automática"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Автовоспроизведение"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动播放"
+          }
+        }
+      }
+    },
     "Bass Booster" : {
       "localizations" : {
         "de" : {
@@ -4397,6 +4461,70 @@
         }
       }
     },
+    "Opening Arcfin again brings back the song and Playing Next, paused where you left them." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim nächsten Öffnen von Arcfin sind der Titel und „Als Nächstes“ wieder da, pausiert an der Stelle, an der du aufgehört hast."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al volver a abrir Arcfin vuelven la canción y A continuación, en pausa donde los dejaste."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En rouvrant Arcfin, le morceau et « À suivre » reviennent, en pause là où vous les avez laissés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riaprendo Arcfin tornano il brano e In coda, in pausa dove li avevi lasciati."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfinを再び開くと、曲と「次に再生」が中断した位置で一時停止した状態で戻ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin을 다시 열면 노래와 다음 재생이 멈춘 위치에서 일시 정지된 상태로 돌아옵니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als je Arcfin weer opent, komen het nummer en Hierna terug, gepauzeerd waar je was gebleven."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao abrir o Arcfin de novo, a música e A Seguir voltam, pausados onde você parou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "При следующем открытии Arcfin песня и «Далее» вернутся на паузе там, где вы остановились."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再次打开 Arcfin 时，歌曲和“接下来播放”会恢复，并暂停在你离开的位置。"
+          }
+        }
+      }
+    },
     "Opens Now Playing" : {
       "localizations" : {
         "de" : {
@@ -5097,6 +5225,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "播放位置"
+          }
+        }
+      }
+    },
+    "Remember What's Playing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabe merken"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recordar lo que suena"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mémoriser la lecture"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricorda cosa è in riproduzione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生中の内容を記憶"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재생 중인 항목 기억"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Onthoud wat er speelt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lembrar o que Está Tocando"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запоминать воспроизведение"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "记住正在播放的内容"
           }
         }
       }
@@ -7209,6 +7401,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已保存的内容、占用空间及移除。"
+          }
+        }
+      }
+    },
+    "When the last song in Playing Next starts, similar music is added after it, so it keeps playing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn der letzte Titel in „Als Nächstes“ beginnt, wird ähnliche Musik angehängt, damit es weiterläuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando empieza la última canción de A continuación, se añade música parecida detrás para que siga sonando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quand le dernier morceau de « À suivre » commence, de la musique similaire est ajoutée après pour que la lecture continue."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando inizia l’ultimo brano di In coda, viene aggiunta musica simile dopo, così la riproduzione continua."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「次に再生」の最後の曲が始まると、似た曲が後ろに追加され、再生が続きます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 재생의 마지막 노래가 시작되면 비슷한 음악이 뒤에 추가되어 계속 재생됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als het laatste nummer in Hierna begint, wordt vergelijkbare muziek erachter gezet, zodat het blijft spelen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando a última música de A Seguir começa, músicas parecidas são adicionadas depois, para continuar tocando."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Когда начинается последняя песня в «Далее», после неё добавляется похожая музыка, чтобы воспроизведение продолжалось."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当“接下来播放”中的最后一首歌曲开始时，会在其后添加相似的音乐，让播放继续。"
           }
         }
       }

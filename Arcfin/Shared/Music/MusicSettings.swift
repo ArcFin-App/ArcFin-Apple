@@ -27,6 +27,11 @@ enum MusicSettings {
     static let soundCheckKey = "musicSoundCheck"
     static let equalizerKey = "musicEqualizer"
     static let crossfadeKey = "musicCrossfadeSeconds"
+    static let autoplayKey = "musicAutoplay"
+    static let rememberQueueKey = "musicRememberQueue"
+
+    static var isAutoplayOn: Bool { defaults.object(forKey: autoplayKey) as? Bool ?? true }
+    static var remembersQueue: Bool { defaults.object(forKey: rememberQueueKey) as? Bool ?? true }
     static let crossfadeOptions = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12]
 
     private static var defaults: UserDefaults { .standard }

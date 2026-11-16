@@ -56,6 +56,7 @@ final class MusicPlayback {
         followProfile(authManager.state.credential?.userID)
         followCast()
         followVisualizerSetting()
+        restoreQueue()
     }
 
     private func followVisualizerSetting() {
@@ -93,6 +94,8 @@ final class MusicPlayback {
                     isSwitchingProfile = true
                     player.stop()
                     isSwitchingProfile = false
+                    // Signing in, at launch too: that profile's last queue comes back.
+                    if now != nil { restoreQueue() }
                 }
                 followProfile(now)
             }
@@ -238,6 +241,8 @@ final class MusicPlayback {
             } else {
                 reportStart(song, at: seconds)
             }
+            continueWithAutoplay(after: song)
+            saveQueue()
         case .ended(let song, let seconds):
             reportStop(song, at: seconds)
         case .pausedAtEnd:
@@ -286,6 +291,7 @@ final class MusicPlayback {
 
     /// Where the song is, whether it's paused, and the volume, so remotes show it.
     private func reportProgress() {
+        saveQueue()
         guard let song = castSong ?? (player.isInSession ? player.current : nil),
               let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
@@ -296,6 +302,64 @@ final class MusicPlayback {
                                                 mediaSourceId: song.id, positionTicks: ticks, isPaused: isPaused,
                                                 volumeLevel: volume, isMuted: isMuted)
         }
+    }
+
+    // MARK: Autoplay
+
+    @ObservationIgnored private var autoplayTask: Task<Void, Never>?
+
+    /// When the last song starts, a station from it is added behind it, so the music keeps going.
+    private func continueWithAutoplay(after song: MusicSong) {
+        guard MusicSettings.isAutoplayOn, player.repeatMode == .off, player.queue.upNext.isEmpty,
+              autoplayTask == nil else { return }
+        autoplayTask = Task { [weak self] in
+            let mix = (try? await MusicAPI.call {
+                try await $0.getInstantMix(credential: $1, authHeader: $2, itemId: song.id, limit: 25)
+            }) ?? []
+            guard let self else { return }
+            autoplayTask = nil
+            let queued = Set(player.queue.entries.map(\.track.id))
+            let fresh = mix.filter { !queued.contains($0.id) }
+            guard player.current?.id == song.id, player.queue.upNext.isEmpty, !fresh.isEmpty else { return }
+            player.addToQueue(fresh)
+        }
+    }
+
+    // MARK: Remembering the queue
+
+    private struct SavedQueue: Codable {
+        var userID: String
+        var songs: [MusicSong]
+        var index: Int
+        var position: Double
+        var repeatMode: String
+    }
+
+    private static let savedQueueURL: URL = {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        return base.appendingPathComponent("MusicQueue.json")
+    }()
+
+    /// Written on each song and every progress report, off the main thread.
+    private func saveQueue() {
+        guard MusicSettings.remembersQueue, let userID = authManager.state.credential?.userID,
+              let index = player.queue.currentIndex else { return }
+        let saved = SavedQueue(userID: userID, songs: player.queue.entries.map(\.track), index: index,
+                               position: position, repeatMode: player.repeatMode.rawValue)
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        let url = Self.savedQueueURL
+        Task.detached(priority: .utility) { try? data.write(to: url, options: .atomic) }
+    }
+
+    /// The last queue for this profile, paused where it was.
+    private func restoreQueue() {
+        guard MusicSettings.remembersQueue, player.queue.isEmpty, let userID = authManager.state.credential?.userID,
+              let data = try? Data(contentsOf: Self.savedQueueURL),
+              let saved = try? JSONDecoder().decode(SavedQueue.self, from: data),
+              saved.userID == userID, !saved.songs.isEmpty else { return }
+        player.load(saved.songs, startingAt: saved.index, at: saved.position,
+                    repeatMode: MusicQueue.RepeatMode(rawValue: saved.repeatMode) ?? .off)
     }
 
     // MARK: Sleep timer

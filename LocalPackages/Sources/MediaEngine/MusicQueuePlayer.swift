@@ -127,6 +127,19 @@ public final class MusicQueuePlayer {
         resume()
     }
 
+    /// Lines up a queue paused at a position, as it was when the app last closed;
+    /// `resume()` plays it. Nothing is reported until then.
+    public func load(_ tracks: [MusicSong], startingAt index: Int, at seconds: Double,
+                     repeatMode: MusicQueue.RepeatMode) {
+        finishCrossfade()
+        endCurrent()
+        player.pause()
+        queue = MusicQueue(tracks, startingAt: index)
+        queue.repeatMode = repeatMode
+        reload()
+        if seconds > 0 { seek(to: seconds) }
+    }
+
     public func resume() {
         guard let entry = queue.current else { return }
         Self.activateAudioSession()

@@ -209,6 +209,8 @@ public enum SettingsSyncRegistry {
         .init("musicSoundCheck", .bool),
         .init("musicEqualizer", .string),
         .init("musicCrossfadeSeconds", .int),
+        .init("musicAutoplay", .bool),
+        .init("musicRememberQueue", .bool),
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),

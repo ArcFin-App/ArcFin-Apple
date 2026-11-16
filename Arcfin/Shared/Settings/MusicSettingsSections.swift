@@ -9,6 +9,8 @@ struct MusicPlaybackSection: View {
     @AppStorage(MusicSettings.soundCheckKey) private var soundCheck = false
     @AppStorage(MusicSettings.equalizerKey) private var equalizer = MusicEqualizer.off
     @AppStorage(MusicSettings.crossfadeKey) private var crossfade = 0
+    @AppStorage(MusicSettings.autoplayKey) private var autoplay = true
+    @AppStorage(MusicSettings.rememberQueueKey) private var rememberQueue = true
 
     var body: some View {
         Section {
@@ -25,6 +27,16 @@ struct MusicPlaybackSection: View {
             SettingsPicker("Equalizer", detail: "Shapes the sound of everything that plays here, including on AirPlay. Not on a Chromecast.",
                            selection: $equalizer, options: MusicEqualizer.allCases) { Text($0.label) }
                 .syncLocked(MusicSettings.equalizerKey, authManager)
+            Toggle(isOn: $autoplay) {
+                TVRowLabelText(title: "Autoplay", detail: "When the last song in Playing Next starts, similar music is added after it, so it keeps playing.")
+            }
+            .tvListRow()
+            .syncLocked(MusicSettings.autoplayKey, authManager)
+            Toggle(isOn: $rememberQueue) {
+                TVRowLabelText(title: "Remember What's Playing", detail: "Opening Arcfin again brings back the song and Playing Next, paused where you left them.")
+            }
+            .tvListRow()
+            .syncLocked(MusicSettings.rememberQueueKey, authManager)
         } header: {
             Text("Playback")
         }
