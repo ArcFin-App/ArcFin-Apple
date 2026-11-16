@@ -345,7 +345,8 @@ final class AppleTVSetupGuide {
         case idle
         /// Settings › Set Up Nearby Apple TV: looking, with nothing found yet.
         case searching
-        case offering(DeviceSetupBrowser.AppleTV)
+        /// The Apple TVs waiting to be set up; more than one is set up one at a time.
+        case offering([DeviceSetupBrowser.AppleTV])
         case connecting(String)
         /// Both screens show this; the person confirms it matches.
         case confirming(code: String, name: String)
@@ -377,12 +378,14 @@ final class AppleTVSetupGuide {
     private(set) var onTV: Set<String>?
     @ObservationIgnored private var phoneConfirmed = false
     @ObservationIgnored private var found: [DeviceSetupBrowser.AppleTV] = []
+    @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private var searchTimeout: Task<Void, Never>?
 
     /// Looks for a while after the app comes to the front, then stops to save battery. The
     /// search also stops when the Local Network permission is first asked for, so it starts
     /// again after a moment.
     func start(authManager: AuthManager) {
+        self.authManager = authManager
         guard browseTask == nil else { return }
         browseTask = Task { [weak self] in
             let deadline = ContinuousClock.now + Self.lookingWindow
@@ -433,13 +436,26 @@ final class AppleTVSetupGuide {
         }
     }
 
+    private var isOfferingOrWaiting: Bool {
+        switch phase {
+        case .idle, .searching, .offering: true
+        default: false
+        }
+    }
+
+    /// Offers every Apple TV found that wasn't passed over, and keeps the list current while
+    /// it shows.
     private func offer(authManager: AuthManager) async {
-        guard phase == .idle || phase == .searching,
-              let tv = found.first(where: { !declined.contains($0.name) }) else { return }
+        let tvs = found.filter { !declined.contains($0.name) }
+        guard isOfferingOrWaiting else { return }
+        if tvs.isEmpty {
+            if case .offering = phase { phase = .idle }
+            return
+        }
         await prepareChoices(authManager: authManager)
-        guard phase == .idle || phase == .searching else { return }
+        guard isOfferingOrWaiting else { return }
         searchTimeout?.cancel()
-        phase = .offering(tv)
+        phase = .offering(tvs)
     }
 
     private func prepareChoices(authManager: AuthManager) async {
@@ -460,7 +476,7 @@ final class AppleTVSetupGuide {
 
     /// Hides this Apple TV until the app is next opened, or Settings looks again.
     func notNow() {
-        if case .offering(let tv) = phase { declined.insert(tv.name) }
+        if case .offering(let tvs) = phase { declined.formUnion(tvs.map(\.name)) }
         cancel()
     }
 
@@ -487,9 +503,9 @@ final class AppleTVSetupGuide {
             self.session = session
             phase = .confirming(code: session.code, name: tv.name)
             // A code left unconfirmed doesn't stay open.
-            Task { [weak self] in
+            Task {
                 try? await Task.sleep(for: .seconds(60))
-                guard let self, self.session === session, case .confirming = self.phase else { return }
+                guard self.session === session, case .confirming = self.phase else { return }
                 session.finish(with: .failed(.declined))
                 self.session = nil
                 self.phase = .failed(String(localized: "The code wasn't confirmed in time. Start again from Set Up."))
@@ -571,10 +587,12 @@ final class AppleTVSetupGuide {
         }
     }
 
+    /// Closes this one; any other Apple TV still waiting is offered next.
     func dismiss() {
         session?.close()
         session = nil
         phase = .idle
+        if let authManager { Task { await offer(authManager: authManager) } }
     }
 
     /// Home first, then away, then the address in use now: the Apple TV is usually at home,
@@ -649,13 +667,37 @@ struct AppleTVSetupCard: View {
             ProgressView()
             Button("Cancel") { guide.dismiss() }
                 .foregroundStyle(DT.Color.textSecondary)
-        case .offering(let tv):
+        case .offering(let tvs) where tvs.count == 1:
             heading("Set Up Apple TV?")
-            Text(verbatim: tv.name)
+            Text(verbatim: tvs[0].name)
                 .font(.headline)
                 .foregroundStyle(DT.Color.textSecondary)
             note(Text("Sign this Apple TV in with your profile from here."))
-            primary("Set Up") { guide.setUp(tv, authManager: authManager) }
+            primary("Set Up") { guide.setUp(tvs[0], authManager: authManager) }
+            Button("Not Now") { guide.notNow() }
+                .foregroundStyle(DT.Color.textSecondary)
+        case .offering(let tvs):
+            heading("Set Up Apple TVs?")
+            note(Text("There's more than one Apple TV waiting to be set up on this network. Set them up one at a time."))
+            VStack(spacing: 0) {
+                ForEach(tvs, id: \.self) { tv in
+                    HStack(spacing: 12) {
+                        Image(systemName: "appletv")
+                            .foregroundStyle(DT.Color.accent)
+                            .accessibilityHidden(true)
+                        Text(verbatim: tv.name)
+                            .foregroundStyle(DT.Color.textPrimary)
+                        Spacer()
+                        Button("Set Up") { guide.setUp(tv, authManager: authManager) }
+                            .buttonStyle(.bordered)
+                    }
+                    .padding(.vertical, 10)
+                }
+            }
+            .padding(.horizontal, 16)
+            .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            Button("Not Now") { guide.notNow() }
+                .foregroundStyle(DT.Color.textSecondary)
             Button("Not Now") { guide.notNow() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .connecting(let name):

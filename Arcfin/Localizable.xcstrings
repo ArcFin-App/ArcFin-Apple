@@ -577,6 +577,70 @@
         }
       }
     },
+    "Set Up Apple TVs?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVs einrichten?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Configurar Apple TV?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurer les Apple TV ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurare le Apple TV?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVを設定しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV를 설정하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV’s instellen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurar Apple TVs?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настроить Apple TV?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "要设置 Apple TV 吗？"
+          }
+        }
+      }
+    },
     "Signing In" : {
       "localizations" : {
         "de" : {
@@ -893,6 +957,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "代码未及时确认。请从“设置”重新开始。"
+          }
+        }
+      }
+    },
+    "There's more than one Apple TV waiting to be set up on this network. Set them up one at a time." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In diesem Netzwerk warten mehrere Apple TVs auf die Einrichtung. Richte sie nacheinander ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hay más de un Apple TV esperando configuración en esta red. Configúralos de uno en uno."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Plusieurs Apple TV attendent d’être configurées sur ce réseau. Configurez-les une par une."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In questa rete ci sono più Apple TV da configurare. Configurale una alla volta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このネットワークで設定を待っているApple TVが複数あります。1台ずつ設定してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 네트워크에 설정을 기다리는 Apple TV가 여러 대 있습니다. 한 대씩 설정하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Er wachten meerdere Apple TV’s op dit netwerk om ingesteld te worden. Stel ze een voor een in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Há mais de uma Apple TV esperando configuração nesta rede. Configure uma de cada vez."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "В этой сети несколько Apple TV ждут настройки. Настройте их по одной."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此网络中有多台 Apple TV 等待设置。请逐台设置。"
           }
         }
       }
