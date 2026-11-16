@@ -231,6 +231,8 @@ public final class MusicQueuePlayer {
         let item = AVPlayerItem(url: url)
         entryIDs[ObjectIdentifier(item)] = entry.id
         let path = url.path
+        // Which way it streams: the file as is (stream.flac, …) or converted (stream.mp3 with a codec).
+        log.notice("Song stream: \(path, privacy: .public)\(url.query?.contains("static=true") == true ? "" : " (converted)", privacy: .public)")
         itemObservations[ObjectIdentifier(item)] = item.observe(\.status) { [weak self] item, _ in
             guard item.status == .failed else { return }
             let failed = ObjectIdentifier(item)

@@ -12,7 +12,7 @@ struct MusicSearchSection: View {
             if !results.artists.isEmpty {
                 shelf(String(localized: "Artists"), count: results.artists.count) {
                     ForEach(results.artists) { artist in
-                        NavigationLink(value: MusicRoute.artist(artist, libraryID: nil)) {
+                        NavigationLink { MusicDestination(route: MusicRoute.artist(artist, libraryID: nil)) } label: {
                             VStack(spacing: DT.Spacing.xs) {
                                 MusicArtwork(url: MusicAPI.artworkURL(artist, width: 240), isCircle: true)
                                     .frame(width: 100, height: 100)

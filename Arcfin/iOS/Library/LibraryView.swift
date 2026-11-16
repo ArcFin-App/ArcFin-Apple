@@ -57,7 +57,6 @@ struct LibraryView: View {
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
             }
-            .musicDestinations()
             .sheet(isPresented: $model.showDocPicker) {
                 DocumentPickerView { url in
                     model.play(url)

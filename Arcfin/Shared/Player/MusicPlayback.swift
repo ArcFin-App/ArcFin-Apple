@@ -21,6 +21,9 @@ final class MusicPlayback {
     @ObservationIgnored private var observation: Task<Void, Never>?
     @ObservationIgnored private var artwork: (id: String, image: MPMediaItemArtwork)?
     @ObservationIgnored private var hasCommands = false
+    /// Paused for a video; remotes and the lock screen belong to the video until it plays again.
+    @ObservationIgnored private var hasYielded = false
+    @ObservationIgnored private var isSwitchingProfile = false
     /// Reports go out one after another, so a song's Stopped always lands before the next Start.
     @ObservationIgnored private var lastReport: Task<Void, Never>?
 
@@ -35,6 +38,26 @@ final class MusicPlayback {
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()
+        followProfile(authManager.state.credential?.userID)
+    }
+
+    /// Signing out or switching profile stops the music: the queue was the last profile's.
+    private func followProfile(_ userID: String?) {
+        withObservationTracking {
+            _ = authManager.state.credential?.userID
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let now = authManager.state.credential?.userID
+                if now != userID {
+                    // The new profile's sign-in mustn't report the last one's song.
+                    isSwitchingProfile = true
+                    player.stop()
+                    isSwitchingProfile = false
+                }
+                followProfile(now)
+            }
+        }
     }
 
     /// Whether there's anything to show a mini player for.
@@ -46,6 +69,9 @@ final class MusicPlayback {
         guard player.current != nil else { return }
         player.suspend()
         removeCommands()
+        hasYielded = true
+        // The video's player fills Now Playing in; a paused state left here would hide it on the Mac.
+        MPNowPlayingInfoCenter.default().playbackState = .unknown
     }
 
     func artworkURL(for song: MusicSong, width: Int = 600) -> URL? {
@@ -62,7 +88,7 @@ final class MusicPlayback {
     /// A command from a remote (the web app, the watch, another device) while no video is
     /// open. Returns false for what music has no use for, like subtitles.
     func apply(_ command: RemoteControl.Kind) -> Bool {
-        guard player.current != nil else { return false }
+        guard player.current != nil, !hasYielded else { return false }
         switch command {
         case .pause: player.pause()
         case .unpause: player.resume()
@@ -87,11 +113,13 @@ final class MusicPlayback {
     // MARK: Server reports
 
     private func handle(_ event: MusicQueuePlayer.Event) {
-        guard let credential = authManager.state.credential else { return }
+        if isSwitchingProfile { progressTask?.cancel() }
+        guard !isSwitchingProfile, let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         let client = client
         switch event {
         case .started(let song, let seconds):
+            hasYielded = false
             installCommands()
             report {
                 await client.reportPlaybackStart(credential: credential, authHeader: header, itemId: song.id,
@@ -163,9 +191,10 @@ final class MusicPlayback {
 
     private func updateNowPlaying() {
         let center = MPNowPlayingInfoCenter.default()
+        guard !hasYielded else { return }
         guard let song = player.current else {
             center.nowPlayingInfo = nil
-            center.playbackState = .stopped
+            center.playbackState = .unknown
             return
         }
         var info: [String: Any] = [

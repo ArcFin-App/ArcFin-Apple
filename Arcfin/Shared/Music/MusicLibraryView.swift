@@ -51,7 +51,7 @@ struct MusicLibraryView: View {
     }
 
     private func row(_ title: LocalizedStringKey, systemImage: String, route: MusicRoute, isLast: Bool = false) -> some View {
-        NavigationLink(value: route) {
+        NavigationLink { MusicDestination(route: route) } label: {
             VStack(spacing: 0) {
                 HStack(spacing: DT.Spacing.md) {
                     Image(systemName: systemImage)

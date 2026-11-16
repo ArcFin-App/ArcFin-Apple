@@ -132,7 +132,7 @@ struct MusicArtistsView: View {
             MusicListState(list: list, empty: "No Artists")
                 .listRowBackground(Color.clear)
             ForEach(list.items) { artist in
-                NavigationLink(value: MusicRoute.artist(artist, libraryID: libraryID)) {
+                NavigationLink { MusicDestination(route: MusicRoute.artist(artist, libraryID: libraryID)) } label: {
                     HStack(spacing: DT.Spacing.sm) {
                         MusicArtwork(url: MusicAPI.artworkURL(artist, width: 160), isCircle: true)
                             .frame(width: 48, height: 48)
@@ -171,7 +171,7 @@ struct MusicGenresView: View {
             MusicListState(list: list, empty: "No Genres")
                 .listRowBackground(Color.clear)
             ForEach(list.items) { genre in
-                NavigationLink(value: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) {
+                NavigationLink { MusicDestination(route: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) } label: {
                     Text(verbatim: genre.name)
                         .foregroundStyle(DT.Color.textPrimary)
                 }
@@ -296,7 +296,7 @@ struct MusicPlaylistsView: View {
             MusicListState(list: list, empty: "No Playlists")
                 .listRowBackground(Color.clear)
             ForEach(list.items) { playlist in
-                NavigationLink(value: MusicRoute.playlist(playlist)) {
+                NavigationLink { MusicDestination(route: MusicRoute.playlist(playlist)) } label: {
                     HStack(spacing: DT.Spacing.sm) {
                         MusicArtwork(url: MusicAPI.artworkURL(playlist, width: 160), cornerRadius: DT.Radius.xs)
                             .frame(width: 56, height: 56)

@@ -234,6 +234,9 @@ private let albumColumns = [GridItem(.adaptive(minimum: 260), spacing: 48)]
 private struct TVAlbumGrid: View {
     let list: MusicPagedList<MusicAlbum>
     var showsArtist = true
+    /// On a screen with nothing else to focus, the first album takes focus once it loads.
+    var claimsFocus = false
+    @FocusState private var focused: String?
 
     var body: some View {
         LazyVGrid(columns: albumColumns, alignment: .leading, spacing: 56) {
@@ -254,10 +257,26 @@ private struct TVAlbumGrid: View {
                         Task { MusicActions.addToQueue(await MusicActions.albumSongs(album)) }
                     }
                 }
+                .focused($focused, equals: album.id)
                 .task { await list.rowAppeared(album) }
             }
         }
         .focusSection()
+        .onChange(of: list.items.first?.id) { _, first in
+            if claimsFocus, focused == nil { focused = first }
+        }
+    }
+}
+
+/// Focus for a screen whose only focusable things arrive with its list: the first one, once it does.
+private struct TVClaimFirstFocus<ID: Hashable>: ViewModifier {
+    let first: ID?
+    let focus: FocusState<ID?>.Binding
+
+    func body(content: Content) -> some View {
+        content.onChange(of: first) { _, first in
+            if focus.wrappedValue == nil { focus.wrappedValue = first }
+        }
     }
 }
 
@@ -340,7 +359,7 @@ struct TVMusicAlbumsView: View {
             VStack(alignment: .leading, spacing: 32) {
                 Text(verbatim: title).font(.title2.weight(.bold))
                 TVMusicLoading(list: list, empty: "No Albums")
-                TVAlbumGrid(list: list)
+                TVAlbumGrid(list: list, claimsFocus: true)
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
@@ -353,6 +372,7 @@ struct TVMusicAlbumsView: View {
 struct TVMusicArtistsView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicArtist>
+    @FocusState private var focused: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
@@ -376,10 +396,12 @@ struct TVMusicArtistsView: View {
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .focused($focused, equals: artist.id)
                         .task { await list.rowAppeared(artist) }
                     }
                 }
                 .focusSection()
+                .modifier(TVClaimFirstFocus(first: list.items.first?.id, focus: $focused))
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
@@ -392,6 +414,7 @@ struct TVMusicArtistsView: View {
 struct TVMusicGenresView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicGenre>
+    @FocusState private var focused: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
@@ -413,9 +436,11 @@ struct TVMusicGenresView: View {
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .focused($focused, equals: genre.id)
                     }
                 }
                 .focusSection()
+                .modifier(TVClaimFirstFocus(first: list.items.first?.id, focus: $focused))
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
@@ -426,6 +451,7 @@ struct TVMusicGenresView: View {
 }
 
 struct TVMusicPlaylistsView: View {
+    @FocusState private var focused: String?
     @State private var list = MusicPagedList<MusicPlaylist> { _ in
         let playlists = try await MusicAPI.call { try await $0.getMusicPlaylists(credential: $1, authHeader: $2) }
         return (playlists, playlists.count)
@@ -444,9 +470,11 @@ struct TVMusicPlaylistsView: View {
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .focused($focused, equals: playlist.id)
                     }
                 }
                 .focusSection()
+                .modifier(TVClaimFirstFocus(first: list.items.first?.id, focus: $focused))
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
@@ -475,7 +503,6 @@ private struct TVMusicSongPage<Header: View>: View {
                     TVPillButton(title: "Play", systemImage: "play.fill") { TVMusicPresenter.shared.play(songs) }
                     TVPillButton(title: "Shuffle", systemImage: "shuffle") { TVMusicPresenter.shared.shuffle(songs) }
                 }
-                .disabled(songs.isEmpty)
                 .focusSection()
             }
             .frame(width: 460)

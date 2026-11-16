@@ -51,7 +51,6 @@ struct LibraryView: View {
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
             }
-            .musicDestinations()
             .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenFile)) { _ in
                 model.openFileRequested()
             }
