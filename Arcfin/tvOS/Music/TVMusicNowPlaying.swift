@@ -21,6 +21,7 @@ struct TVMusicNowPlaying: View {
                 VStack(alignment: .leading, spacing: 48) {
                     HStack(alignment: .center, spacing: 80) {
                         TVMusicArtwork(url: MusicAPI.artworkURL(song, width: 1000))
+                            .overlay { MusicArtworkVisualizer(bars: 32, spacing: 5, inset: 24, cornerRadius: DT.Radius.card) }
                             .frame(width: 520, height: 520)
                             .shadow(color: .black.opacity(0.5), radius: 30, y: 16)
                             .focusable(false)
@@ -34,8 +35,6 @@ struct TVMusicNowPlaying: View {
                                     Text(verbatim: album).font(.callout).foregroundStyle(.white.opacity(0.5))
                                 }
                             }
-                            MusicVisualizer(bars: 28, spacing: 6, color: .white.opacity(0.85))
-                                .frame(width: 420, height: 56)
                             progress
                             controls(song)
                         }

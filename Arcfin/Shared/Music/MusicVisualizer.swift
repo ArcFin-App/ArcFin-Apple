@@ -3,6 +3,25 @@
 import SwiftUI
 import MediaEngine
 
+/// Bars along the bottom of a cover, over a fade so they read on any artwork.
+struct MusicArtworkVisualizer: View {
+    let bars: Int
+    var spacing: CGFloat = 2
+    /// How far the bars sit from the cover's sides and bottom.
+    var inset: CGFloat = 4
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        GeometryReader { geometry in
+            MusicVisualizer(bars: bars, spacing: spacing, color: .white.opacity(0.9), shadeInset: inset)
+                .frame(height: geometry.size.height * 0.32)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .allowsHitTesting(false)
+    }
+}
+
 /// Bars that follow what's playing, low notes on the left. When there's no sound here to
 /// follow (on a Chromecast, or before the first samples) they sway instead. Hidden when the
 /// setting or Reduce Motion is off.
@@ -10,6 +29,8 @@ struct MusicVisualizer: View {
     let bars: Int
     var spacing: CGFloat = 2
     var color: Color = DT.Color.accent
+    /// Set, the bars sit this far inside a dark fade, for drawing them over artwork.
+    var shadeInset: CGFloat?
 
     @AppStorage(MusicPlayback.visualizerKey) private var isOn = true
     @AppStorage("reduceMotion") private var appReduceMotion = false
@@ -18,6 +39,12 @@ struct MusicVisualizer: View {
     var body: some View {
         if isOn, !appReduceMotion, !systemReduceMotion {
             MusicVisualizerBars(bars: bars, spacing: spacing, color: color)
+                .padding(shadeInset ?? 0)
+                .background {
+                    if shadeInset != nil {
+                        LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                    }
+                }
                 .accessibilityHidden(true)
         }
     }

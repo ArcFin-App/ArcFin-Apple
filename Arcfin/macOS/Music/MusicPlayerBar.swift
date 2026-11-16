@@ -40,6 +40,7 @@ struct MusicPlayerBar: View {
         Button { nowPlaying = .queue } label: {
             HStack(spacing: DT.Spacing.sm) {
                 MusicArtwork(url: MusicAPI.artworkURL(song, width: 120), cornerRadius: DT.Radius.xs)
+                    .overlay { MusicArtworkVisualizer(bars: 5, spacing: 1.5, inset: 4, cornerRadius: DT.Radius.xs) }
                     .frame(width: 44, height: 44)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(verbatim: song.name)
@@ -51,8 +52,6 @@ struct MusicPlayerBar: View {
                     }
                 }
                 .lineLimit(1)
-                MusicVisualizer(bars: 4, spacing: 2)
-                    .frame(width: 16, height: 14)
             }
             .contentShape(Rectangle())
         }
@@ -160,6 +159,7 @@ struct MusicMacNowPlaying: View {
                 HStack(alignment: .top, spacing: DT.Spacing.xl) {
                     VStack(alignment: .leading, spacing: DT.Spacing.sm) {
                         MusicArtwork(url: MusicAPI.artworkURL(song, width: 800), cornerRadius: DT.Radius.md)
+                            .overlay { MusicArtworkVisualizer(bars: 24, spacing: 3, inset: 12, cornerRadius: DT.Radius.md) }
                             .frame(width: 300, height: 300)
                             .shadow(color: .black.opacity(0.3), radius: 16, y: 8)
                         Text(verbatim: song.name)
@@ -170,9 +170,6 @@ struct MusicMacNowPlaying: View {
                         if let album = song.albumName {
                             Text(verbatim: album).foregroundStyle(.secondary)
                         }
-                        MusicVisualizer(bars: 24, spacing: 3)
-                            .frame(height: 36)
-                            .padding(.top, DT.Spacing.xs)
                     }
                     .frame(width: 300)
                     VStack(alignment: .leading, spacing: DT.Spacing.sm) {
