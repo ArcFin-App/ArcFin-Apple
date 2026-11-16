@@ -107,6 +107,11 @@ final class RemoteSessions {
         send { await $0.sendGeneralCommand("SetVolume", arguments: ["Volume": String(percent)], sessionId: $1, credential: $2, authHeader: $3) }
     }
 
+    /// A press of the phone's own volume buttons.
+    func stepVolume(up: Bool) {
+        send { await $0.sendGeneralCommand(up ? "VolumeUp" : "VolumeDown", sessionId: $1, credential: $2, authHeader: $3) }
+    }
+
     func toggleMute() {
         send { await $0.sendGeneralCommand("ToggleMute", sessionId: $1, credential: $2, authHeader: $3) }
     }

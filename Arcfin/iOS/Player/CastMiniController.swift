@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import AVFoundation
 import CastKit
 import JellyfinAPI
 
@@ -120,6 +121,7 @@ struct RemoteControllerView: View {
     @AppStorage("skipBackwardSeconds") private var skipBackwardSeconds = 10
     @State private var scrubbing: Double?
     @State private var volume: Double?
+    @State private var volumeButtons = RemoteVolumeButtons()
 
     var body: some View {
         Group {
@@ -164,6 +166,8 @@ struct RemoteControllerView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear { volumeButtons.start { remote.stepVolume(up: $0) } }
+        .onDisappear { volumeButtons.stop() }
     }
 
     private func background(_ session: JellyfinSession) -> some View {
@@ -389,5 +393,63 @@ struct RemoteControllerView: View {
         let total = Int(ticks / 10_000_000)
         let h = total / 3600, m = (total % 3600) / 60, s = total % 60
         return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+    }
+}
+
+// MARK: - Volume buttons
+
+/// The phone's volume buttons turn the other device's volume up and down while the remote is
+/// open. The buttons only reach the app as changes to the phone's own volume, so a press at
+/// either end of its range would go unheard: the volume is moved back to the middle there.
+/// The phone's volume is put back as it was when the remote closes.
+@MainActor
+final class RemoteVolumeButtons {
+    private var observation: NSKeyValueObservation?
+    private var hiddenSlider: SystemVolumeController?
+    private var originalVolume: Float?
+    private var settingTo: Float?
+
+    func start(onPress: @escaping @MainActor (Bool) -> Void) {
+        guard observation == nil else { return }
+        let session = AVAudioSession.sharedInstance()
+        // Mixes, so music playing on the phone carries on. Active, or the buttons change the
+        // ringer and the app hears nothing.
+        try? session.setCategory(.playback, options: .mixWithOthers)
+        try? session.setActive(true)
+        hiddenSlider = SystemVolumeController()
+        originalVolume = session.outputVolume
+        recentre(session.outputVolume)
+        observation = session.observe(\.outputVolume, options: [.old, .new]) { [weak self] _, change in
+            guard let new = change.newValue, let old = change.oldValue else { return }
+            Task { @MainActor in self?.changed(from: old, to: new, onPress: onPress) }
+        }
+    }
+
+    func stop() {
+        observation?.invalidate()
+        observation = nil
+        if let originalVolume, abs(AVAudioSession.sharedInstance().outputVolume - originalVolume) > 0.001 {
+            hiddenSlider?.setVolume(originalVolume)
+        }
+        originalVolume = nil
+        hiddenSlider?.teardown()
+        hiddenSlider = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private func changed(from old: Float, to new: Float, onPress: @MainActor (Bool) -> Void) {
+        if let settingTo, abs(new - settingTo) < 0.01 {
+            self.settingTo = nil
+            return
+        }
+        guard abs(new - old) > 0.001 else { return }
+        onPress(new > old)
+        recentre(new)
+    }
+
+    private func recentre(_ volume: Float) {
+        guard volume > 0.95 || volume < 0.05 else { return }
+        settingTo = 0.5
+        hiddenSlider?.setVolume(0.5)
     }
 }
