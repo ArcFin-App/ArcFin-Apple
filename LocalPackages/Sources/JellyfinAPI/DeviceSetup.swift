@@ -123,6 +123,14 @@ public final class DeviceSetupChannel: @unchecked Sendable {
         continuation.finish()
     }
 
+    /// Sends a last message and closes once it's gone: closing straight after `send` drops
+    /// what hasn't been sent yet.
+    public func finish(with message: DeviceSetup.Message) {
+        connection.send(content: DeviceSetup.Framer.encode(message), completion: .contentProcessed { [weak self] _ in
+            self?.close()
+        })
+    }
+
     private func receive() {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 4096) { [weak self] data, _, isComplete, error in
             guard let self else { return }

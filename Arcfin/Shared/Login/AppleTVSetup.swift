@@ -37,8 +37,7 @@ final class AppleTVSetupHost {
             for await channel in listener.channels {
                 guard let self else { return }
                 if self.channel != nil {
-                    channel.send(.failed(.busy))
-                    channel.close()
+                    channel.finish(with: .failed(.busy))
                     continue
                 }
                 Task { await self.serve(channel, authManager: authManager) }
@@ -60,8 +59,7 @@ final class AppleTVSetupHost {
 
     /// The person at the TV stops it; the TV stays ready for another try.
     func cancelSession() {
-        channel?.send(.failed(.declined))
-        endSession()
+        endSession(sending: .failed(.declined))
     }
 
     func dismissFailure() {
@@ -101,8 +99,7 @@ final class AppleTVSetupHost {
         phase = .asking(userName: names, serverName: first.serverName)
         let allowed = await withCheckedContinuation { answer = $0 }
         guard allowed else {
-            channel.send(.failed(.declined))
-            endSession()
+            endSession(sending: .failed(.declined))
             return
         }
         channel.send(.allowed)
@@ -120,16 +117,14 @@ final class AppleTVSetupHost {
                 if pending.count == 1 { phase = .showingCode(code, userName: profile.userName) }
             case .quickConnectOff(let url):
                 guard index > 0 else {
-                    channel.send(.failed(.quickConnectOff))
-                    endSession()
+                    endSession(sending: .failed(.quickConnectOff))
                     passwordServer = url
                     return
                 }
                 channel.send(.skipped(profile: index, .quickConnectOff))
             case .unreachable:
                 guard index > 0 else {
-                    channel.send(.failed(.unreachable))
-                    endSession()
+                    endSession(sending: .failed(.unreachable))
                     phase = .failed(String(localized: "This Apple TV couldn't reach \(first.serverName). Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first."))
                     return
                 }
@@ -159,12 +154,10 @@ final class AppleTVSetupHost {
             }
         }
         guard let primary = signedIn.keys.min().flatMap({ signedIn[$0] }) else {
-            channel.send(.failed(.expired))
-            endSession()
+            endSession(sending: .failed(.expired))
             return
         }
-        channel.send(.done(signedIn: signedIn.count))
-        endSession()
+        endSession(sending: .done(signedIn: signedIn.count))
         // The others first, then the first chosen, so that's the one in use.
         for (_, credential) in signedIn.sorted(by: { $0.key > $1.key }) where credential.id != primary.id {
             authManager.addProfile(credential)
@@ -177,10 +170,11 @@ final class AppleTVSetupHost {
         endSession()
     }
 
-    private func endSession() {
+    /// `sending` goes out before the connection closes.
+    private func endSession(sending last: DeviceSetup.Message? = nil) {
         answer?.resume(returning: false)
         answer = nil
-        channel?.close()
+        if let last { channel?.finish(with: last) } else { channel?.close() }
         channel = nil
         if case .failed = phase { return }
         phase = .idle
@@ -367,8 +361,7 @@ final class AppleTVSetupGuide {
     }
 
     func cancel() {
-        channel?.send(.failed(.declined))
-        channel?.close()
+        channel?.finish(with: .failed(.declined))
         channel = nil
         phase = .idle
     }
@@ -418,7 +411,15 @@ final class AppleTVSetupGuide {
                 }
             }
             if self.channel === channel { self.channel = nil }
-            if case .waitingForTV = phase { phase = .failed(String(localized: "The Apple TV stopped answering. Try again from its sign-in page.")) }
+            switch phase {
+            case .waitingForTV, .confirming:
+                phase = .failed(String(localized: "The Apple TV stopped answering. Try again from its sign-in page."))
+            case .approving:
+                // Approved, but the Apple TV hung up before saying it had signed in.
+                phase = .failed(String(localized: "The Apple TV stopped answering before it confirmed. Check whether it's signed in."))
+            default:
+                break
+            }
         }
     }
 
@@ -443,8 +444,7 @@ final class AppleTVSetupGuide {
                 channel.send(.approved(profile: index))
             } else if index == 0 {
                 phase = .failed(String(localized: "The code has expired or was already used. Start again from the Apple TV's sign-in page."))
-                channel.send(.failed(.expired))
-                channel.close()
+                channel.finish(with: .failed(.expired))
             }
         }
     }

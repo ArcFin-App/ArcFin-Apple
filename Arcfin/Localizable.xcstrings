@@ -129,6 +129,70 @@
         }
       }
     },
+    "The Apple TV stopped answering before it confirmed. Check whether it's signed in." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das Apple TV hat nicht mehr geantwortet, bevor es bestätigt hat. Prüfe, ob es angemeldet ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El Apple TV dejó de responder antes de confirmar. Comprueba si ha iniciado sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV a cessé de répondre avant de confirmer. Vérifiez si elle est connectée."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’Apple TV ha smesso di rispondere prima di confermare. Controlla se ha effettuato l’accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVが確定前に応答しなくなりました。サインインしているか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV가 확인 전에 응답을 멈췄습니다. 로그인되었는지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De Apple TV reageerde niet meer voordat hij bevestigde. Controleer of hij is ingelogd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A Apple TV parou de responder antes de confirmar. Verifique se ela está conectada."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV перестала отвечать до подтверждения. Проверьте, выполнен ли вход."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV 在确认前停止了响应。请检查它是否已登录。"
+          }
+        }
+      }
+    },
     "·" : {
       "localizations" : {
         "de" : {

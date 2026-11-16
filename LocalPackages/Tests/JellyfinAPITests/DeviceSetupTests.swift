@@ -82,6 +82,21 @@ struct DeviceSetupTests {
         #expect(await tvMessages.next() == nil)
     }
 
+    @Test("A last message still arrives when the sender closes after it")
+    func finishDelivers() async throws {
+        let listener = try DeviceSetupListener(advertised: false)
+        defer { listener.stop() }
+        let port = try await readyPort(of: listener)
+        let phone = DeviceSetupChannel(endpoint: .hostPort(host: "127.0.0.1", port: port))
+        defer { phone.close() }
+        var incoming = listener.channels.makeAsyncIterator()
+        let tv = try #require(await incoming.next())
+        tv.finish(with: .done(signedIn: 2))
+        var phoneMessages = phone.messages.makeAsyncIterator()
+        #expect(await phoneMessages.next() == .done(signedIn: 2))
+        #expect(await phoneMessages.next() == nil)
+    }
+
     /// The listener reports port 0 until it's actually listening.
     private func readyPort(of listener: DeviceSetupListener) async throws -> NWEndpoint.Port {
         for _ in 0..<100 {
