@@ -11,14 +11,19 @@ struct PosterCardArtwork: View {
     var body: some View {
         Group {
             if let url = imageURL {
-                RetryingAsyncImage(
-                    url: url,
-                    logCategory: "PosterCard",
-                    logContext: "title=\(title)",
-                    content: { img in img.resizable().scaledToFill() },
-                    placeholder: { placeholderGradient }
-                )
-                .clipped()
+                // In an overlay so the image can't size the card: portrait art filled a
+                // landscape card to several times its height and pushed the title out of it.
+                Color.clear
+                    .overlay {
+                        RetryingAsyncImage(
+                            url: url,
+                            logCategory: "PosterCard",
+                            logContext: "title=\(title)",
+                            content: { img in img.resizable().scaledToFill() },
+                            placeholder: { placeholderGradient }
+                        )
+                    }
+                    .clipped()
             } else {
                 placeholderGradient
             }
