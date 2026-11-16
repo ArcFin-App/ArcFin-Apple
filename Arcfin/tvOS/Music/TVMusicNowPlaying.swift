@@ -21,7 +21,7 @@ struct TVMusicNowPlaying: View {
                 VStack(alignment: .leading, spacing: 48) {
                     HStack(alignment: .center, spacing: 80) {
                         TVMusicArtwork(url: MusicAPI.artworkURL(song, width: 1000))
-                            .overlay { MusicArtworkVisualizer(bars: 32, spacing: 5, inset: 24, cornerRadius: DT.Radius.card) }
+                            .overlay { MusicArtworkVisualizer(bars: 36, spacing: 3, cornerRadius: DT.Radius.card) }
                             .frame(width: 520, height: 520)
                             .shadow(color: .black.opacity(0.5), radius: 30, y: 16)
                             .focusable(false)

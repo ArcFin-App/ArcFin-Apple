@@ -20,7 +20,6 @@ struct MusicMiniPlayer: View {
                 Button { isExpanded = true } label: {
                     HStack(spacing: DT.Spacing.sm) {
                         MusicArtwork(url: MusicAPI.artworkURL(song, width: 120), cornerRadius: DT.Radius.xs)
-                            .overlay { MusicArtworkVisualizer(bars: 4, spacing: 1.5, inset: 3, cornerRadius: DT.Radius.xs) }
                             .frame(width: 32, height: 32)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(verbatim: song.name)
@@ -124,7 +123,7 @@ struct MusicNowPlayingView: View {
 
     private func bigArtwork(_ song: MusicSong) -> some View {
         MusicArtwork(url: MusicAPI.artworkURL(song, width: 1000), cornerRadius: DT.Radius.md)
-            .overlay { MusicArtworkVisualizer(bars: 32, spacing: 3, inset: 14, cornerRadius: DT.Radius.md) }
+            .overlay { MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: DT.Radius.md) }
             .shadow(color: .black.opacity(0.4), radius: 24, y: 12)
             .scaleEffect(music.isPlaying ? 1 : 0.82)
             .animation(.spring(response: 0.45, dampingFraction: 0.7), value: music.isPlaying)

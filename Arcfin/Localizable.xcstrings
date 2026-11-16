@@ -1965,70 +1965,6 @@
         }
       }
     },
-    "Bars that move with the music, in the music bar and Now Playing. Hidden when Reduce Motion is on." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Balken, die sich zur Musik bewegen, in der Musikleiste und in „Jetzt läuft“. Ausgeblendet, wenn „Bewegung reduzieren“ aktiv ist."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Barras que se mueven con la música, en la barra de música y en Reproduciendo. Se ocultan si Reducir movimiento está activado."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Des barres qui bougent avec la musique, dans la barre de musique et À l’écoute. Masquées quand Réduire les animations est activé."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Barre che si muovono con la musica, nella barra della musica e in In riproduzione. Nascoste quando Riduci movimento è attivo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音楽に合わせて動くバー。ミュージックバーと再生中画面に表示されます。「視差効果を減らす」がオンのときは表示されません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "음악에 맞춰 움직이는 막대로, 음악 막대와 지금 재생 중에 표시됩니다. 동작 줄이기가 켜져 있으면 숨겨집니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Balken die meebewegen met de muziek, in de muziekbalk en Nu aan het spelen. Verborgen als Verminder beweging aan staat."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Barras que se movem com a música, na barra de música e em Reproduzindo. Ocultas quando Reduzir Movimento está ativado."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Полоски, движущиеся под музыку, в панели музыки и на экране «Исполняется». Скрыты, если включено «Уменьшение движения»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "随音乐跳动的条形，显示在音乐栏和“正在播放”中。开启“减弱动态效果”时隐藏。"
-          }
-        }
-      }
-    },
     "Button" : {
       "localizations" : {
         "de" : {
@@ -2921,6 +2857,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在下载 %lld/%lld"
+          }
+        }
+      }
+    },
+    "Glass bars that move with the music along the bottom of the cover in Now Playing. Hidden when Reduce Motion is on." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glasbalken, die sich zur Musik bewegen, am unteren Rand des Covers in „Jetzt läuft“. Ausgeblendet, wenn „Bewegung reduzieren“ aktiv ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barras de cristal que se mueven con la música en la parte inferior de la portada en Reproduciendo. Se ocultan si Reducir movimiento está activado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des barres de verre qui bougent avec la musique en bas de la pochette dans À l’écoute. Masquées quand Réduire les animations est activé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barre di vetro che si muovono con la musica lungo il bordo inferiore della copertina in In riproduzione. Nascoste quando Riduci movimento è attivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生中画面でジャケットの下端に沿って音楽に合わせて動くガラスのバー。「視差効果を減らす」がオンのときは表示されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금 재생 중에서 커버 아래쪽을 따라 음악에 맞춰 움직이는 유리 막대입니다. 동작 줄이기가 켜져 있으면 숨겨집니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glazen balken die meebewegen met de muziek langs de onderkant van de hoes in Nu aan het spelen. Verborgen als Verminder beweging aan staat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barras de vidro que se movem com a música na parte inferior da capa em Reproduzindo. Ocultas quando Reduzir Movimento está ativado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Стеклянные полоски, движущиеся под музыку вдоль нижнего края обложки на экране «Исполняется». Скрыты, если включено «Уменьшение движения»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“正在播放”中沿封面底部随音乐跳动的玻璃条形。开启“减弱动态效果”时隐藏。"
           }
         }
       }

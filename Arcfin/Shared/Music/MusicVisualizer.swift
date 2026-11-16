@@ -3,34 +3,14 @@
 import SwiftUI
 import MediaEngine
 
-/// Bars along the bottom of a cover, over a fade so they read on any artwork.
+/// Frosted bars that follow what's playing, standing on the bottom edge of a cover from one
+/// side to the other, low notes on the left. When there's no sound here to follow (on a
+/// Chromecast, or before the first samples) they sway instead. Hidden when the setting or
+/// Reduce Motion is off.
 struct MusicArtworkVisualizer: View {
     let bars: Int
     var spacing: CGFloat = 2
-    /// How far the bars sit from the cover's sides and bottom.
-    var inset: CGFloat = 4
     let cornerRadius: CGFloat
-
-    var body: some View {
-        GeometryReader { geometry in
-            MusicVisualizer(bars: bars, spacing: spacing, color: .white.opacity(0.9), shadeInset: inset)
-                .frame(height: geometry.size.height * 0.32)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-        .allowsHitTesting(false)
-    }
-}
-
-/// Bars that follow what's playing, low notes on the left. When there's no sound here to
-/// follow (on a Chromecast, or before the first samples) they sway instead. Hidden when the
-/// setting or Reduce Motion is off.
-struct MusicVisualizer: View {
-    let bars: Int
-    var spacing: CGFloat = 2
-    var color: Color = DT.Color.accent
-    /// Set, the bars sit this far inside a dark fade, for drawing them over artwork.
-    var shadeInset: CGFloat?
 
     @AppStorage(MusicPlayback.visualizerKey) private var isOn = true
     @AppStorage("reduceMotion") private var appReduceMotion = false
@@ -38,22 +18,22 @@ struct MusicVisualizer: View {
 
     var body: some View {
         if isOn, !appReduceMotion, !systemReduceMotion {
-            MusicVisualizerBars(bars: bars, spacing: spacing, color: color)
-                .padding(shadeInset ?? 0)
-                .background {
-                    if shadeInset != nil {
-                        LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                    }
-                }
-                .accessibilityHidden(true)
+            GeometryReader { geometry in
+                MusicGlassBars(bars: bars, spacing: spacing)
+                    .frame(height: geometry.size.height * 0.34)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
     }
 }
 
-private struct MusicVisualizerBars: View {
+/// The bars cut out of a frosted layer, so the cover shows through them blurred, lit from the top.
+private struct MusicGlassBars: View {
     let bars: Int
     let spacing: CGFloat
-    let color: Color
 
     @State private var meter = MusicMeter()
     /// Paused long enough for the bars to have fallen; the timeline stops until it plays.
@@ -62,15 +42,23 @@ private struct MusicVisualizerBars: View {
 
     var body: some View {
         let isPlaying = isPlaying
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: isSettled)) { context in
-            Canvas { canvas, size in
-                let heights = meter.heights(bars, at: context.date, playing: isPlaying)
-                let width = max((size.width - spacing * CGFloat(bars - 1)) / CGFloat(bars), 1)
-                for (index, height) in heights.enumerated() {
-                    let barHeight = max(CGFloat(height) * size.height, min(width, size.height))
-                    let rect = CGRect(x: CGFloat(index) * (width + spacing), y: size.height - barHeight,
-                                      width: width, height: barHeight)
-                    canvas.fill(Path(roundedRect: rect, cornerRadius: width / 2), with: .color(color))
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial)
+            LinearGradient(colors: [.white.opacity(0.45), .white.opacity(0.12)], startPoint: .top, endPoint: .bottom)
+        }
+        .mask {
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: isSettled)) { context in
+                Canvas { canvas, size in
+                    let heights = meter.heights(bars, at: context.date, playing: isPlaying)
+                    let width = max((size.width - spacing * CGFloat(bars - 1)) / CGFloat(bars), 1)
+                    let radius = min(width / 2, 4)
+                    for (index, height) in heights.enumerated() {
+                        let barHeight = max(CGFloat(height) * size.height, 3)
+                        let rect = CGRect(x: CGFloat(index) * (width + spacing), y: size.height - barHeight,
+                                          width: width, height: barHeight)
+                        let shape = UnevenRoundedRectangle(topLeadingRadius: radius, topTrailingRadius: radius)
+                        canvas.fill(shape.path(in: rect), with: .color(.white))
+                    }
                 }
             }
         }

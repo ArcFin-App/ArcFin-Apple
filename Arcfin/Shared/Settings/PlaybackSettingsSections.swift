@@ -254,7 +254,7 @@ struct PlaybackMusicSection: View {
     var body: some View {
         Section {
             Toggle(isOn: $visualizer) {
-                TVRowLabelText(title: "Visualizer", detail: "Bars that move with the music, in the music bar and Now Playing. Hidden when Reduce Motion is on.")
+                TVRowLabelText(title: "Visualizer", detail: "Glass bars that move with the music along the bottom of the cover in Now Playing. Hidden when Reduce Motion is on.")
             }
             .tvListRow()
             .syncLocked(MusicPlayback.visualizerKey, authManager)
