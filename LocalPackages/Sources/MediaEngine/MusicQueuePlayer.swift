@@ -4,6 +4,8 @@ import AVFoundation
 import Foundation
 import JellyfinAPI
 import Observation
+import Telemetry
+import os
 
 /// Plays a `MusicQueue`. AVQueuePlayer always holds the playing song and the one after it, so
 /// one runs into the next with no gap.
@@ -27,6 +29,7 @@ public final class MusicQueuePlayer {
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
     @ObservationIgnored private let streamURL: (MusicSong) -> URL?
     @ObservationIgnored private let player = AVQueuePlayer()
+    @ObservationIgnored private let log = Telemetry.logger(category: "MusicQueuePlayer")
     @ObservationIgnored private var entryIDs: [ObjectIdentifier: MusicQueue.Entry.ID] = [:]
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
     @ObservationIgnored private var itemObservations: [ObjectIdentifier: NSKeyValueObservation] = [:]
@@ -222,6 +225,11 @@ public final class MusicQueuePlayer {
         itemObservations[ObjectIdentifier(item)] = item.observe(\.status) { [weak self] item, _ in
             guard item.status == .failed else { return }
             let failed = ObjectIdentifier(item)
+            let reason = (item.error as NSError?).map { "\($0.domain) \($0.code): \($0.localizedDescription)" } ?? "unknown"
+            let path = (item.asset as? AVURLAsset)?.url.path ?? "?"
+            Task { @MainActor [weak self] in
+                self?.log.error("Song failed (\(path, privacy: .public)): \(reason, privacy: .public)")
+            }
             Task { @MainActor [weak self] in self?.itemFailed(failed) }
         }
         return item

@@ -70,11 +70,14 @@ public struct MusicSong: Sendable, Identifiable, Equatable, Hashable {
     public var isFavorite: Bool
     public var playCount: Int
     public var hasLyrics: Bool
+    /// The file's container as the server names it, e.g. "flac" or "mov,mp4,m4a,3gp,3g2,mj2".
+    public var container: String?
 
     public init(id: String, name: String, albumId: String? = nil, albumName: String? = nil, albumArtist: String? = nil,
                 artists: [MusicArtistRef] = [], trackNumber: Int? = nil, discNumber: Int? = nil,
                 runTimeTicks: Int64? = nil, primaryImageTag: String? = nil, albumPrimaryImageTag: String? = nil,
-                isFavorite: Bool = false, playCount: Int = 0, hasLyrics: Bool = false) {
+                isFavorite: Bool = false, playCount: Int = 0, hasLyrics: Bool = false, container: String? = nil) {
+        self.container = container
         self.id = id; self.name = name; self.albumId = albumId; self.albumName = albumName
         self.albumArtist = albumArtist; self.artists = artists; self.trackNumber = trackNumber
         self.discNumber = discNumber; self.runTimeTicks = runTimeTicks; self.primaryImageTag = primaryImageTag
@@ -259,20 +262,24 @@ extension JellyfinMediaClient {
         return try Self.decodeLyrics(data)
     }
 
-    /// The universal audio endpoint: the file as is where the device plays it, otherwise AAC
-    /// over HLS, capped at the bitrate given.
+    /// Containers AVFoundation opens as they are.
+    static let directAudioContainers: Set<String> = ["mp3", "aac", "m4a", "m4b", "mp4", "flac", "alac", "wav", "aiff", "aif", "caf"]
+
+    /// The song's file as is when AVFoundation plays its container, otherwise MP3 made from it.
+    /// The extension is in the path: AVFoundation picks a demuxer from it, and without one it
+    /// can't open the stream at all.
     public func audioStreamURL(credential: ServerCredential, deviceId: String, trackId: String,
-                               maxBitrate: Int? = nil) -> URL? {
-        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Audio/\(trackId)/universal"),
+                               container: String?, maxBitrate: Int = 320_000) -> URL? {
+        let names = (container ?? "").lowercased().split(separator: ",").map(String.init)
+        let direct = names.first(where: { $0 == "m4a" && names.count > 1 })
+            ?? names.first(where: Self.directAudioContainers.contains)
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Audio/\(trackId)/stream.\(direct ?? "mp3")"),
                                   resolvingAgainstBaseURL: false)
-        comps?.queryItems = [
-            .init(name: "UserId", value: credential.userID),
+        comps?.queryItems = direct != nil
+            ? [.init(name: "static", value: "true")]
+            : [.init(name: "audioCodec", value: "mp3"), .init(name: "audioBitRate", value: String(maxBitrate))]
+        comps?.queryItems? += [
             .init(name: "DeviceId", value: deviceId),
-            .init(name: "Container", value: "mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,wav,aiff"),
-            .init(name: "TranscodingContainer", value: "mp4"),
-            .init(name: "TranscodingProtocol", value: "hls"),
-            .init(name: "AudioCodec", value: "aac"),
-            .init(name: "MaxStreamingBitrate", value: String(maxBitrate ?? 320_000_000)),
             .init(name: "api_key", value: credential.accessToken),
         ]
         return comps?.url
@@ -377,6 +384,7 @@ struct MusicItemResponse: Decodable {
     let genres: [String]?
     let userData: UserDataResponse?
     let hasLyrics: Bool?
+    let container: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", overview = "Overview", albumArtist = "AlbumArtist"
@@ -385,6 +393,7 @@ struct MusicItemResponse: Decodable {
         case backdropImageTags = "BackdropImageTags", productionYear = "ProductionYear"
         case indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber", runTimeTicks = "RunTimeTicks"
         case childCount = "ChildCount", genres = "Genres", userData = "UserData", hasLyrics = "HasLyrics"
+        case container = "Container"
     }
 
     private static func refs(_ items: [NameId]?) -> [MusicArtistRef] {
@@ -408,7 +417,7 @@ struct MusicItemResponse: Decodable {
                    artists: Self.refs(artistItems), trackNumber: indexNumber, discNumber: parentIndexNumber,
                    runTimeTicks: runTimeTicks, primaryImageTag: imageTags?["Primary"],
                    albumPrimaryImageTag: albumPrimaryImageTag, isFavorite: userData?.isFavorite ?? false,
-                   playCount: userData?.playCount ?? 0, hasLyrics: hasLyrics ?? false)
+                   playCount: userData?.playCount ?? 0, hasLyrics: hasLyrics ?? false, container: container)
     }
 }
 

@@ -30,7 +30,8 @@ final class MusicPlayback {
         self.authManager = authManager
         player = MusicQueuePlayer { [authManager] song in
             guard let credential = authManager.state.credential else { return nil }
-            return JellyfinMediaClient().audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id)
+            return JellyfinMediaClient().audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
+                                                      container: song.container)
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()

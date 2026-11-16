@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import AuthCore
 import Foundation
 import Testing
 @testable import JellyfinAPI
@@ -79,5 +80,33 @@ struct MusicDecodingTests {
         #expect(!lyrics.isSynced)
         #expect(lyrics.lineIndex(at: 3) == nil)
         #expect(lyrics.lines.map(\.text) == ["One", "Two"])
+    }
+
+    private static let credential = ServerCredential(baseURL: URL(string: "http://server:8096")!, userID: "u1",
+                                                     accessToken: "tok", displayName: "Home")
+
+    @Test("A container AVFoundation plays streams as is, with its extension in the path",
+          arguments: [("flac", "stream.flac"), ("mp3", "stream.mp3"), ("mov,mp4,m4a,3gp,3g2,mj2", "stream.m4a")])
+    func directStream(container: String, file: String) throws {
+        let url = try #require(JellyfinMediaClient().audioStreamURL(credential: Self.credential, deviceId: "d",
+                                                                    trackId: "t", container: container))
+        #expect(url.path == "/Audio/t/\(file)")
+        #expect(url.query?.contains("static=true") == true)
+    }
+
+    @Test("Anything else is made into MP3", arguments: ["ogg", "ape", nil] as [String?])
+    func transcoded(container: String?) throws {
+        let url = try #require(JellyfinMediaClient().audioStreamURL(credential: Self.credential, deviceId: "d",
+                                                                    trackId: "t", container: container))
+        #expect(url.path == "/Audio/t/stream.mp3")
+        #expect(url.query?.contains("audioCodec=mp3") == true)
+        #expect(url.query?.contains("static") == false)
+    }
+
+    @Test("A song's container is decoded")
+    func containerDecoded() throws {
+        let json = #"{"Items":[{"Id":"s","Name":"x","Container":"flac"}],"TotalRecordCount":1}"#
+        let page = try JellyfinMediaClient.decodeMusicPage(Data(json.utf8))
+        #expect(page.items.first?.asTrack.container == "flac")
     }
 }
