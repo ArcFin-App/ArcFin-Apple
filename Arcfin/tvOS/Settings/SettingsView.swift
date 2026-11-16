@@ -132,15 +132,9 @@ struct SettingsView: View {
             .tvInfoRow()
             introductionRows
             NavigationLink(value: TVSettingsPage.licenses) {
-                Text("Licenses & Third-Party Notices")
+                Text("Legal & Licenses")
             }
             LabeledContent("Support", value: "arcfin.psmattas.com/support")
-                .tvInfoRow()
-            LabeledContent("Privacy Policy", value: "arcfin.psmattas.com/privacy")
-                .tvInfoRow()
-            LabeledContent("Terms of Use", value: "arcfin.psmattas.com/terms")
-                .tvInfoRow()
-            LabeledContent("Data Protection", value: "arcfin.psmattas.com/data-protection")
                 .tvInfoRow()
         } header: {
             sectionHeader("About")

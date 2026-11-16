@@ -35,3 +35,19 @@ struct LicenseRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+/// Where to get the exact version's source. Apple TV has no browser, so the address is shown
+/// to type in elsewhere.
+struct LicenseSourceRow: View {
+    let title: LocalizedStringKey
+    let url: URL
+
+    var body: some View {
+        LabeledContent(title) {
+            Text(verbatim: url.absoluteString)
+                .lineLimit(2)
+                .multilineTextAlignment(.trailing)
+        }
+        .tvReadOnlyRow()
+    }
+}

@@ -31,3 +31,19 @@ struct LicenseRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+/// Where to get the exact version's source, opened in the browser.
+struct LicenseSourceRow: View {
+    let title: LocalizedStringKey
+    let url: URL
+
+    var body: some View {
+        Link(destination: url) {
+            LabeledContent(title) {
+                Text(verbatim: url.absoluteString)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.trailing)
+            }
+        }
+    }
+}

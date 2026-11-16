@@ -5,6 +5,8 @@ import SwiftUI
 /// The design tokens that differ on this platform; `DT` reads them.
 enum PlatformMetrics {
     /// How wide a title's description may run: lines across a whole iPad are too long to read.
+    /// Which platform's components the Licenses screen lists.
+    static let licensePlatform = "tvOS"
     static let descriptionMaxWidth: CGFloat = 720
     static let pagePad: CGFloat = 20
     static let shelfGap: CGFloat = 12

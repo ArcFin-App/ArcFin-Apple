@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Jobs that need Xcode or Apple's SDKs (building, the String Catalog check, which reads the
+# build's extracted strings, and the package tests) run on the Mac runner. The rest only need
+# git and Python and run on Ubuntu, keeping the Mac free.
 jobs:
   package-tests:
     runs-on: macos
@@ -74,7 +77,7 @@ jobs:
   # Each platform folder compiles only for its platform, through per-file filters in the project,
   # and Arcfin/Shared has no #if.
   platform-folders:
-    runs-on: macos
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Platform folders build only for their platform, Shared has no #if
@@ -83,7 +86,7 @@ jobs:
   # Merge commits are skipped: Gitea makes them when a PR is merged or its branch updated.
   sign-off:
     if: github.event_name == 'pull_request'
-    runs-on: macos
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -101,3 +104,14 @@ jobs:
           done
           [ "$missing" -eq 0 ] && echo "All commits are signed off."
           exit "$missing"
+
+  # Everything Arcfin ships has its licence on the Legal & Licenses screen, at the pinned
+  # version. Fetches each pinned package's source, so it fails when a dependency is added,
+  # removed or bumped without running .gitea/scripts/update-licenses.py. A change on the
+  # website's legal pages is only a warning.
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every bundled component has its current licence
+        run: python3 .gitea/scripts/update-licenses.py --check

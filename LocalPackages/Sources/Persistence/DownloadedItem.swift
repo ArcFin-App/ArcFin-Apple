@@ -66,6 +66,19 @@ public final class DownloadedItem {
     /// When playback here last moved the position or watched state, to weigh it against the
     /// server's own last-played time. nil on downloads from before this was kept.
     public var progressChangedAt: Date?
+    /// The server's play count when this was downloaded, and as last seen. Jellyfin only raises
+    /// it when a title is watched to the end (or marked watched), on any device, so the two tell
+    /// a finish since the download apart from a title watched before it, or one being rewatched.
+    /// nil on downloads from before these were kept, until the next watched-state sync.
+    public var playCountAtDownload: Int?
+    public var serverPlayCount: Int?
+
+    /// Watched to the end, here or anywhere else, since it was downloaded. What Delete After
+    /// Watching and Smart Downloads go by, rather than `played`, which can be true from before.
+    public var finishedSinceDownload: Bool {
+        guard let start = playCountAtDownload, let now = serverPlayCount else { return false }
+        return now > start
+    }
 
     // Richer page details, saved at download time so the downloaded page reads like the
     // online one. Defaults keep older downloads (made before these existed) loading as-is.

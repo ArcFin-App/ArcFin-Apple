@@ -33,6 +33,8 @@ final class OfflinePlayerModel {
     private(set) var autoSkipCountdown: PlayerView.AutoActionCountdown?
     @ObservationIgnored private var autoSkipTask: Task<Void, Never>?
     private var autoSkipped: Set<String> = []
+    /// Reached Mark as Watched's point in this playback, for Delete After Watching.
+    @ObservationIgnored private var finishedHere = false
     var isFillScreen = false
     /// Settings › Playback › When Resuming is Ask, and the answer isn't in yet.
     var isAskingToResume = false
@@ -159,7 +161,10 @@ final class OfflinePlayerModel {
             let reached = threshold == .server
                 ? seconds / duration >= 0.9
                 : threshold.isReached(seconds: seconds, duration: duration, creditsStart: downloadedItem.creditsStartSeconds)
-            if reached { downloadedItem.played = true }
+            if reached {
+                downloadedItem.played = true
+                finishedHere = true
+            }
         }
         // Picked up by OfflineProgressSync once the app's back online — this is the only
         // record that playback happened at all while offline.
@@ -199,8 +204,9 @@ final class OfflinePlayerModel {
         if status == .ended {
             savePosition(final: true)
             // The player's end can come early (a converted file cut short), so only a title
-            // that counts as watched goes.
-            if deleteAfterWatching && downloadedItem.played {
+            // watched to the end in this playback goes: one watched before it was downloaded
+            // is already marked watched.
+            if deleteAfterWatching && finishedHere {
                 downloadManager.markForDeletionAfterWatching(itemId: downloadedItem.itemId)
             }
             closePlayer()

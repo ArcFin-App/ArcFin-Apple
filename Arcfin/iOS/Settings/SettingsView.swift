@@ -92,7 +92,7 @@ struct SettingsView: View {
             NavigationLink {
                 LicensesView()
             } label: {
-                Text("Licenses & Third-Party Notices")
+                Text("Legal & Licenses")
             }
             DiagnosticsRow()
             Link(destination: URL(string: "https://git.psmattas.com/ArcFin/ArcFin/issues/new/choose")!) {
@@ -106,27 +106,6 @@ struct SettingsView: View {
             Link(destination: URL(string: "https://arcfin.psmattas.com/support")!) {
                 HStack {
                     Text("Contact Support").foregroundStyle(DT.Color.textPrimary)
-                    Spacer()
-                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                }
-            }
-            Link(destination: URL(string: "https://arcfin.psmattas.com/privacy")!) {
-                HStack {
-                    Text("Privacy Policy").foregroundStyle(DT.Color.textPrimary)
-                    Spacer()
-                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                }
-            }
-            Link(destination: URL(string: "https://arcfin.psmattas.com/terms")!) {
-                HStack {
-                    Text("Terms of Use").foregroundStyle(DT.Color.textPrimary)
-                    Spacer()
-                    Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
-                }
-            }
-            Link(destination: URL(string: "https://arcfin.psmattas.com/data-protection")!) {
-                HStack {
-                    Text("Data Protection").foregroundStyle(DT.Color.textPrimary)
                     Spacer()
                     Image(systemName: "arrow.up.right").font(.system(.caption2)).foregroundStyle(DT.Color.textSecondary)
                 }
