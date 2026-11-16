@@ -204,7 +204,7 @@ final class MusicDownloads {
                 guard queue.first?.id == song.id else { continue }
                 current = song.id
                 progress = 0
-                let transfer = Task { await fetch(song) }
+                let transfer = Task { await self.fetch(song) }
                 self.transfer = transfer
                 await transfer.value
                 self.transfer = nil

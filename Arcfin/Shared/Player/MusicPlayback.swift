@@ -327,7 +327,8 @@ final class MusicPlayback {
 
     // MARK: Remembering the queue
 
-    private struct SavedQueue: Codable, Sendable {
+    /// Not on the main actor, so it can be encoded off it.
+    nonisolated private struct SavedQueue: Codable, Sendable {
         var userID: String
         var songs: [MusicSong]
         var index: Int
