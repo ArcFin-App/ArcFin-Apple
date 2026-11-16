@@ -435,12 +435,12 @@
         }
       }
     },
-    "%lld songs, %@" : {
+    "%lld songs · %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -468,7 +468,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -496,7 +496,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -524,7 +524,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -552,7 +552,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -580,7 +580,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@、%2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -602,7 +602,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -624,7 +624,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -652,7 +652,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -680,7 +680,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@, %2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -720,7 +720,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%#@songs@，%2$@"
+            "value" : "%#@songs@ · %2$@"
           },
           "substitutions" : {
             "songs" : {
@@ -2733,66 +2733,66 @@
         }
       }
     },
-    "Download an album or playlist from its menu to listen offline." : {
+    "Download a song, album or playlist from its menu to listen offline." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lade ein Album oder eine Playlist über das Menü, um offline zu hören."
+            "value" : "Lade einen Titel, ein Album oder eine Playlist über das Menü, um offline zu hören."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Descarga un álbum o una playlist desde su menú para escucharlo sin conexión."
+            "value" : "Descarga una canción, un álbum o una lista desde su menú para escuchar sin conexión."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Téléchargez un album ou une playlist depuis son menu pour l’écouter hors ligne."
+            "value" : "Téléchargez un morceau, un album ou une playlist depuis son menu pour écouter hors ligne."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scarica un album o una playlist dal suo menu per ascoltarli offline."
+            "value" : "Scarica un brano, un album o una playlist dal suo menu per ascoltare offline."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アルバムやプレイリストのメニューからダウンロードすると、オフラインで聴けます。"
+            "value" : "曲、アルバム、プレイリストをメニューからダウンロードすると、オフラインで聴けます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "앨범이나 플레이리스트의 메뉴에서 다운로드하면 오프라인으로 들을 수 있습니다."
+            "value" : "노래, 앨범 또는 플레이리스트를 메뉴에서 다운로드하면 오프라인으로 들을 수 있습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Download een album of playlist via het menu om offline te luisteren."
+            "value" : "Download een nummer, album of afspeellijst via het menu om offline te luisteren."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Baixe um álbum ou playlist pelo menu para ouvir offline."
+            "value" : "Baixe uma música, um álbum ou uma playlist pelo menu para ouvir offline."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Загрузите альбом или плейлист через меню, чтобы слушать офлайн."
+            "value" : "Загрузите песню, альбом или плейлист через меню, чтобы слушать офлайн."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从专辑或播放列表的菜单下载，即可离线收听。"
+            "value" : "从菜单下载歌曲、专辑或播放列表，即可离线收听。"
           }
         }
       }
@@ -5421,6 +5421,70 @@
         }
       }
     },
+    "used by music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "von Musik belegt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "usados por la música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "utilisés par la musique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "usati dalla musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音楽が使用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음악이 사용 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gebruikt door muziek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "usados por músicas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "занято музыкой"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由音乐占用"
+          }
+        }
+      }
+    },
     "Visualizer" : {
       "localizations" : {
         "de" : {
@@ -5545,6 +5609,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "音量"
+          }
+        }
+      }
+    },
+    "Waiting in queue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wartet in der Warteschlange"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En espera en la cola"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En attente dans la file"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In attesa in coda"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キューで待機中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대기열에서 대기 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wacht in wachtrij"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aguardando na fila"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ожидает в очереди"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在队列中等待"
           }
         }
       }

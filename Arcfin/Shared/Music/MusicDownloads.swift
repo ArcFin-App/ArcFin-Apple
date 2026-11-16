@@ -31,6 +31,8 @@ final class MusicDownloads {
     /// Waiting or downloading, in order.
     private(set) var queue: [MusicSong] = []
     private(set) var current: String?
+    /// How far the current song is, 0 to 1.
+    private(set) var progress: Double = 0
     @ObservationIgnored private var worker: Task<Void, Never>?
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicDownloads")
 
@@ -59,6 +61,10 @@ final class MusicDownloads {
     var isEmpty: Bool { mine.isEmpty }
     var songCount: Int { mine.count }
     var totalBytes: Int64 { mine.reduce(0) { $0 + $1.bytes } }
+
+    func bytes(of songs: [MusicSong]) -> Int64 {
+        songs.reduce(0) { $0 + (index.songs[$1.id]?.bytes ?? 0) }
+    }
 
     func isDownloaded(_ songID: String) -> Bool { index.songs[songID]?.userID == userID && index.songs[songID] != nil }
     func isQueued(_ songID: String) -> Bool { queue.contains { $0.id == songID } }
@@ -123,6 +129,14 @@ final class MusicDownloads {
         saveIndex()
     }
 
+    /// Stops songs that haven't finished; one halfway through is thrown away.
+    func cancel(_ songs: [MusicSong]) {
+        let ids = Set(songs.map(\.id))
+        queue.removeAll { ids.contains($0.id) }
+    }
+
+    func cancelAll() { queue.removeAll() }
+
     func removeAll() {
         queue.removeAll()
         remove(mine.map(\.song))
@@ -143,6 +157,7 @@ final class MusicDownloads {
         worker = Task { [weak self] in
             while let self, let song = queue.first {
                 current = song.id
+                progress = 0
                 await fetch(song)
                 queue.removeAll { $0.id == song.id }
                 current = nil
@@ -156,9 +171,16 @@ final class MusicDownloads {
               let url = MusicAPI.client.audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
                                                        container: song.container) else { return }
         do {
-            let (temp, response) = try await URLSession.arcfin.download(from: url)
+            let (temp, response) = try await URLSession.arcfin.download(from: url, delegate: ProgressReporter { fraction in
+                Task { @MainActor in MusicDownloads.shared.reportProgress(fraction, for: song.id) }
+            })
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                 throw URLError(.badServerResponse)
+            }
+            // Cancelled while it downloaded.
+            guard isQueued(song.id) else {
+                try? FileManager.default.removeItem(at: temp)
+                return
             }
             let file = "\(song.id).\(url.pathExtension)"
             let destination = Self.folder.appendingPathComponent(file)
@@ -171,6 +193,11 @@ final class MusicDownloads {
         } catch {
             log.error("Couldn't save \(song.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    private func reportProgress(_ fraction: Double, for songID: String) {
+        guard current == songID else { return }
+        progress = fraction
     }
 
     private func saveCover(for song: MusicSong) async {
@@ -186,4 +213,25 @@ final class MusicDownloads {
     }
 
     private static let deviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
+}
+
+/// Passes on a download's progress, a percent at a time.
+private final class ProgressReporter: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    private let report: @Sendable (Double) -> Void
+    private var observation: NSKeyValueObservation?
+    private var last = -1
+
+    init(_ report: @escaping @Sendable (Double) -> Void) {
+        self.report = report
+    }
+
+    func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
+        observation = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
+            guard let self else { return }
+            let percent = Int(progress.fractionCompleted * 100)
+            guard percent != last else { return }
+            last = percent
+            report(progress.fractionCompleted)
+        }
+    }
 }

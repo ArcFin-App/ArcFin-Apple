@@ -175,6 +175,7 @@ struct MusicNowPlayingView: View {
             }
             MusicFavoriteButton(id: song.id, server: song.isFavorite)
             MusicAddToPlaylistButton { [song] }
+            MusicDownloadButton(songs: { [song] }, known: [song])
         } label: {
             Image(systemName: "ellipsis")
                 .font(.body.weight(.semibold))
