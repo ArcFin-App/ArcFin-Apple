@@ -300,6 +300,20 @@ extension JellyfinMediaClient {
         return results
     }
 
+    /// These items, in the order given, when every one is a song; nil when any isn't.
+    public func getSongs(credential: ServerCredential, authHeader: String, ids: [String]) async throws -> [MusicSong]? {
+        var query = baseQuery(credential: credential, startIndex: 0, limit: ids.count)
+        query += [.init(name: "Ids", value: ids.joined(separator: ",")), .init(name: "Fields", value: Self.musicFields)]
+        let page: MusicPage = try await getMusic("Items", query: query, credential: credential, authHeader: authHeader)
+        return Self.songs(page.items, inOrder: ids)
+    }
+
+    static func songs(_ items: [MusicItemResponse], inOrder ids: [String]) -> [MusicSong]? {
+        guard !items.isEmpty, items.allSatisfy({ $0.type == "Audio" }) else { return nil }
+        let byID = Dictionary(items.map { ($0.id, $0.asTrack) }, uniquingKeysWith: { first, _ in first })
+        return ids.compactMap { byID[$0] }
+    }
+
     /// The profile's playlists of music.
     public func getMusicPlaylists(credential: ServerCredential, authHeader: String) async throws -> [MusicPlaylist] {
         var query = baseQuery(credential: credential, startIndex: 0, limit: 500)

@@ -5,6 +5,7 @@ import Foundation
 import JellyfinAPI
 import MediaEngine
 import Observation
+import SwiftUI
 
 /// Where a music screen leads.
 enum MusicRoute: Hashable {
@@ -107,6 +108,21 @@ final class MusicPagedList<Item: Identifiable & Sendable> {
     }
 }
 
+/// Favourites changed here, over what the server sent, so every menu and button agrees.
+@MainActor @Observable
+final class MusicFavorites {
+    static let shared = MusicFavorites()
+    private var changed: [String: Bool] = [:]
+
+    func isFavorite(_ id: String, server: Bool) -> Bool { changed[id] ?? server }
+
+    func toggle(_ id: String, server: Bool) {
+        let favorite = !isFavorite(id, server: server)
+        changed[id] = favorite
+        Task { await MusicActions.setFavorite(id, favorite) }
+    }
+}
+
 /// What Play, Shuffle and a row's menu do with songs.
 @MainActor
 enum MusicActions {
@@ -141,6 +157,19 @@ enum MusicActions {
     static func setFavorite(_ itemID: String, _ isFavorite: Bool) async {
         _ = try? await MusicAPI.call {
             try await $0.markFavorite(credential: $1, authHeader: $2, itemId: itemID, favorite: isFavorite)
+        }
+    }
+}
+
+/// Add to Favorites or Remove from Favorites, as it stands now.
+struct MusicFavoriteButton: View {
+    let id: String
+    let server: Bool
+    private var isFavorite: Bool { MusicFavorites.shared.isFavorite(id, server: server) }
+
+    var body: some View {
+        Button(isFavorite ? "Remove from Favorites" : "Add to Favorites", systemImage: isFavorite ? "star.slash" : "star") {
+            MusicFavorites.shared.toggle(id, server: server)
         }
     }
 }

@@ -110,6 +110,31 @@ final class MusicPlayback {
         return true
     }
 
+    /// The web app's Play On with songs: they play here, from the one asked for. False when
+    /// they aren't all songs.
+    func playFromRemote(_ ids: [String], startIndex: Int, startTicks: Int64?) async -> Bool {
+        guard let songs = try? await MusicAPI.call({ try await $0.getSongs(credential: $1, authHeader: $2, ids: ids) }),
+              !songs.isEmpty else { return false }
+        if PlayerActivity.shared.isPlayerOpen {
+            // The closing player clears the lock screen's controls, so the music waits for it.
+            RemoteControl.shared.stopPlayer()
+            for _ in 0..<20 where PlayerActivity.shared.isPlayerOpen {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+        player.play(songs, startingAt: min(startIndex, songs.count - 1))
+        if let startTicks, startTicks > 0 { player.seek(to: Double(startTicks) / 10_000_000) }
+        return true
+    }
+
+    /// Play Next or Play Last from a remote.
+    func queueFromRemote(_ ids: [String], next: Bool) async -> Bool {
+        guard let songs = try? await MusicAPI.call({ try await $0.getSongs(credential: $1, authHeader: $2, ids: ids) }),
+              !songs.isEmpty else { return false }
+        next ? player.playNext(songs) : player.addToQueue(songs)
+        return true
+    }
+
     // MARK: Server reports
 
     private func handle(_ event: MusicQueuePlayer.Event) {

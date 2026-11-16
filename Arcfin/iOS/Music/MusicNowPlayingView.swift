@@ -160,9 +160,7 @@ struct MusicNowPlayingView: View {
             Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
                 Task { await MusicActions.instantMix(from: song.id) }
             }
-            Button("Add to Favorites", systemImage: "star") {
-                Task { await MusicActions.setFavorite(song.id, true) }
-            }
+            MusicFavoriteButton(id: song.id, server: song.isFavorite)
         } label: {
             Image(systemName: "ellipsis")
                 .font(.body.weight(.semibold))

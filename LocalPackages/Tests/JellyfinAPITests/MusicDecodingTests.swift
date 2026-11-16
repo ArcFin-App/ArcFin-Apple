@@ -118,4 +118,13 @@ struct MusicDecodingTests {
         #expect(results.albums.map(\.id) == ["b"])
         #expect(results.songs.map(\.id) == ["c"])
     }
+
+    @Test("Items sent to play are songs only when every one is, in the order sent")
+    func songsInOrder() throws {
+        let json = #"{"Items":[{"Id":"b","Name":"B","Type":"Audio"},{"Id":"a","Name":"A","Type":"Audio"}]}"#
+        let items = try JellyfinMediaClient.decodeMusicPage(Data(json.utf8)).items
+        #expect(JellyfinMediaClient.songs(items, inOrder: ["a", "b"])?.map(\.id) == ["a", "b"])
+        let mixed = #"{"Items":[{"Id":"a","Name":"A","Type":"Audio"},{"Id":"m","Name":"M","Type":"Movie"}]}"#
+        #expect(JellyfinMediaClient.songs(try JellyfinMediaClient.decodeMusicPage(Data(mixed.utf8)).items, inOrder: ["a", "m"]) == nil)
+    }
 }

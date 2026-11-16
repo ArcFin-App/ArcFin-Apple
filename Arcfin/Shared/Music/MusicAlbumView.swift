@@ -37,11 +37,9 @@ struct MusicAlbumView: View {
         .inlineNavigationTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(album.isFavorite ? "Remove from Favorites" : "Add to Favorites",
-                       systemImage: album.isFavorite ? "star.fill" : "star") {
-                    album.isFavorite.toggle()
-                    let id = album.id, isFavorite = album.isFavorite
-                    Task { await MusicActions.setFavorite(id, isFavorite) }
+                let isFavorite = MusicFavorites.shared.isFavorite(album.id, server: album.isFavorite)
+                Button(isFavorite ? "Remove from Favorites" : "Add to Favorites", systemImage: isFavorite ? "star.fill" : "star") {
+                    MusicFavorites.shared.toggle(album.id, server: album.isFavorite)
                 }
             }
             ToolbarItem(placement: .primaryAction) {

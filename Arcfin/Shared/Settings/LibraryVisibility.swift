@@ -60,7 +60,7 @@ struct LibraryVisibilityView: View {
     @State private var model = LibraryVisibilityModel()
 
     private var libraries: [JellyfinLibrary] {
-        mediaRepo.libraries.filter { $0.collectionType != .livetv && $0.collectionType != .music }
+        mediaRepo.libraries.filter { $0.collectionType != .livetv }
     }
 
     private var hidden: Set<String> {

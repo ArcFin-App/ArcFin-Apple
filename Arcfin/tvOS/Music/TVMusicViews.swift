@@ -157,6 +157,7 @@ private struct TVMusicSongRow: View {
             .contextMenu {
                 Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
                 Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
+                MusicFavoriteButton(id: song.id, server: song.isFavorite)
                 Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
                     Task {
                         await MusicActions.instantMix(from: song.id)
