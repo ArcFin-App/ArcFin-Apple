@@ -197,6 +197,55 @@ final class AppleTVSetupHost {
     }
 }
 
+/// Where the Apple TV can be set up from a phone: the sign-in pages, and Add Profile. Shows
+/// the setup screen over them while a phone is setting it up.
+private struct AppleTVSetupHosting: ViewModifier {
+    let onAdded: () -> Void
+    let onPasswordServer: (URL) -> Void
+    @Environment(AuthManager.self) private var authManager
+    @State private var host = AppleTVSetupHost()
+
+    func body(content: Content) -> some View {
+        content
+            .task {
+                if PlatformMetrics.hostsAppleTVSetup { host.start(authManager: authManager) }
+            }
+            .onDisappear { host.stop() }
+            .appSheet(isPresented: Binding(get: { host.phase != .idle },
+                                           set: { if !$0 { host.cancelSession() } })) {
+                AppleTVSetupHostView(host: host)
+            }
+            .onChange(of: host.completedSetups) { onAdded() }
+            // Quick Connect is off on the server the phone sent: its password page.
+            .onChange(of: host.passwordServer) { _, url in
+                guard let url else { return }
+                host.passwordServer = nil
+                onPasswordServer(url)
+            }
+    }
+}
+
+extension View {
+    /// Lets a phone on the network set this Apple TV up while this screen shows (#481).
+    func hostsAppleTVSetup(onAdded: @escaping () -> Void = {},
+                           onPasswordServer: @escaping (URL) -> Void = { _ in }) -> some View {
+        modifier(AppleTVSetupHosting(onAdded: onAdded, onPasswordServer: onPasswordServer))
+    }
+}
+
+/// The line on the Apple TV's sign-in pages saying a phone can set it up too.
+struct AppleTVSetupHint: View {
+    var body: some View {
+        if PlatformMetrics.hostsAppleTVSetup {
+            Label("You can also set up this Apple TV from Arcfin on an iPhone or iPad on this network.",
+                  systemImage: "iphone")
+                .font(.callout)
+                .foregroundStyle(DT.Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 /// The Apple TV's setup screen, over the sign-in pages while a phone is setting it up.
 struct AppleTVSetupHostView: View {
     let host: AppleTVSetupHost

@@ -118,6 +118,7 @@ struct AuthView: View {
             LoginBackButton(title: serverName, action: onBack)
             LoginSplitHeader(title: "Sign In", message: Text("Approve this device from Jellyfin on a phone, computer or TV where you're already signed in."))
             expiredNotice
+            AppleTVSetupHint()
             VStack(alignment: .leading, spacing: 18) {
                 step(1, "Open Jellyfin where you're already signed in.")
                 step(2, "Go to your profile, then Quick Connect.")

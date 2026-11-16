@@ -16,7 +16,6 @@ struct AddServerSteps: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.dismiss) private var dismiss
     @State private var step: AddServerStep = .serverURL
-    @State private var setupHost = AppleTVSetupHost()
 
     var body: some View {
         ZStack {
@@ -49,18 +48,7 @@ struct AddServerSteps: View {
         }
         .animation(DT.Animation.standard, value: stepTag)
         // Apple TV: another profile can be added from Arcfin on an iPhone or iPad too (#481).
-        .task {
-            if PlatformMetrics.hostsAppleTVSetup { setupHost.start(authManager: authManager) }
-        }
-        .onDisappear { setupHost.stop() }
-        .appSheet(isPresented: Binding(get: { setupHost.phase != .idle },
-                                       set: { if !$0 { setupHost.cancelSession() } })) {
-            AppleTVSetupHostView(host: setupHost)
-        }
-        .onChange(of: setupHost.completedSetups) { dismiss() }
-        .onChange(of: setupHost.passwordServer) { _, url in
-            guard let url else { return }
-            setupHost.passwordServer = nil
+        .hostsAppleTVSetup(onAdded: { dismiss() }) { url in
             withAnimation(DT.Animation.standard) {
                 step = .auth(serverURL: url, serverName: url.host() ?? url.absoluteString)
             }
