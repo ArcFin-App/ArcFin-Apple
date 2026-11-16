@@ -6,8 +6,9 @@ import SwiftUI
 enum PlatformMetrics {
     /// How wide a title's description may run. The window sets it here; it's resized at will.
     /// Which platform's components the Licenses screen lists.
-    /// Quick Connect's sign-in page: steps beside a QR code across the screen, or one column.
-    static let quickConnectSideBySide = false
+    /// The sign-in pages: two columns across the screen (what to do, and what to do it with),
+    /// or one readable column.
+    static let loginSideBySide = false
     static let licensePlatform = "macOS"
     static let descriptionMaxWidth: CGFloat = .infinity
     static let pagePad: CGFloat = 28

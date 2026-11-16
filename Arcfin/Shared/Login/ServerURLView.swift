@@ -25,73 +25,8 @@ struct ServerURLView: View {
     @State private var showSetupGuide: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            if let onBack { LoginBackButton(title: String(localized: "Back"), action: onBack) }
-
-            LoginHeader(
-                title: "Connect to Your Server",
-                message: "Enter the address of your Jellyfin server, or pick one found on your network."
-            )
-            .padding(.top, onBack == nil ? 24 : 0)
-
-            LoginTextField(
-                title: "Server Address",
-                prompt: Text(verbatim: "jellyfin.example.com"),
-                text: $serverURL,
-                kind: .url,
-                isValid: connected,
-                error: showError ? errorMessage : nil,
-                onSubmit: { Task { await handleConnect() } }
-            )
-            .onChange(of: serverURL) {
-                showError = false
-                connected = false
-            }
-
-            if discovering || !discoveredServers.isEmpty {
-                if discoveredServers.isEmpty {
-                    HStack(spacing: 10) {
-                        ProgressView()
-                        Text("Looking for servers on your network…")
-                            .font(.footnote)
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                } else {
-                    LoginRowGroup(title: "On Your Network") {
-                        ForEach(discoveredServers) { server in
-                            LoginRow(systemImage: "wifi", title: server.name, subtitle: server.address) {
-                                connect(to: server.address)
-                            }
-                        }
-                    }
-                }
-            }
-
-            if !recentServers.isEmpty {
-                LoginRowGroup(title: "Recent") {
-                    ForEach(recentServers) { cred in
-                        LoginRow(systemImage: "server.rack", title: cred.displayName, subtitle: cred.baseURL.absoluteString) {
-                            connect(to: cred.baseURL.absoluteString)
-                        }
-                    }
-                }
-            }
-
-            // Side by side where they fit on one line each, otherwise one above the other: on
-            // Apple TV's narrow column each label wrapped onto two lines.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 20) { helpLinks }
-                VStack(spacing: 12) { helpLinks }
-            }
-            .font(.subheadline)
-            .foregroundStyle(DT.Color.accent)
-            .frame(maxWidth: .infinity)
-        }
-        .loginLayout {
-            LoginPrimaryButton(title: "Continue", busyTitle: "Connecting…", isBusy: connecting,
-                               isDisabled: serverURL.trimmingCharacters(in: .whitespaces).isEmpty) {
-                Task { await handleConnect() }
-            }
+        Group {
+            if PlatformMetrics.loginSideBySide { splitPage } else { columnPage }
         }
         .task { await runDiscovery() }
         .appSheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
@@ -101,6 +36,104 @@ struct ServerURLView: View {
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) { Button("Done") { showCustomHeaders = false } }
                     }
+            }
+        }
+    }
+
+    /// One readable column, with Continue pinned at the bottom.
+    private var columnPage: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            if let onBack { LoginBackButton(title: String(localized: "Back"), action: onBack) }
+
+            LoginHeader(
+                title: "Connect to Your Server",
+                message: "Enter the address of your Jellyfin server, or pick one found on your network."
+            )
+            .padding(.top, onBack == nil ? 24 : 0)
+
+            addressField
+            serverLists
+
+            // Side by side where they fit on one line each, otherwise one above the other.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 20) { helpLinks }
+                VStack(spacing: 12) { helpLinks }
+            }
+            .font(.subheadline)
+            .foregroundStyle(DT.Color.accent)
+            .frame(maxWidth: .infinity)
+        }
+        .loginLayout { continueButton }
+    }
+
+    /// Apple TV: the welcome and help on the left; the address, Continue and the servers
+    /// found on the right.
+    private var splitPage: some View {
+        LoginSplitPage {
+            if let onBack { LoginBackButton(title: String(localized: "Back"), action: onBack) }
+            LoginSplitHeader(title: "Connect to Your Server",
+                             message: Text("Enter the address of your Jellyfin server, or pick one found on your network."))
+            VStack(alignment: .leading, spacing: 12) { helpLinks }
+                .font(.callout)
+                .foregroundStyle(DT.Color.accent)
+        } trailing: {
+            addressField
+            continueButton
+            serverLists
+        }
+    }
+
+    private var addressField: some View {
+        LoginTextField(
+            title: "Server Address",
+            prompt: Text(verbatim: "jellyfin.example.com"),
+            text: $serverURL,
+            kind: .url,
+            isValid: connected,
+            error: showError ? errorMessage : nil,
+            onSubmit: { Task { await handleConnect() } }
+        )
+        .onChange(of: serverURL) {
+            showError = false
+            connected = false
+        }
+    }
+
+    private var continueButton: some View {
+        LoginPrimaryButton(title: "Continue", busyTitle: "Connecting…", isBusy: connecting,
+                           isDisabled: serverURL.trimmingCharacters(in: .whitespaces).isEmpty) {
+            Task { await handleConnect() }
+        }
+    }
+
+    @ViewBuilder
+    private var serverLists: some View {
+        if discovering || !discoveredServers.isEmpty {
+            if discoveredServers.isEmpty {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Looking for servers on your network…")
+                        .font(.footnote)
+                        .foregroundStyle(DT.Color.textSecondary)
+                }
+            } else {
+                LoginRowGroup(title: "On Your Network") {
+                    ForEach(discoveredServers) { server in
+                        LoginRow(systemImage: "wifi", title: server.name, subtitle: server.address) {
+                            connect(to: server.address)
+                        }
+                    }
+                }
+            }
+        }
+
+        if !recentServers.isEmpty {
+            LoginRowGroup(title: "Recent") {
+                ForEach(recentServers) { cred in
+                    LoginRow(systemImage: "server.rack", title: cred.displayName, subtitle: cred.baseURL.absoluteString) {
+                        connect(to: cred.baseURL.absoluteString)
+                    }
+                }
             }
         }
     }
@@ -131,6 +164,7 @@ struct ServerURLView: View {
             Label("Setup Guide", systemImage: "questionmark.circle")
                 .lineLimit(1)
                 .fixedSize()
+                .loginLinkPadding()
         }
         // On each button, not the stack: on Apple TV the focus ring follows focus anywhere
         // inside the view it's on, so one ring covered both.
@@ -139,6 +173,7 @@ struct ServerURLView: View {
             Label("Custom Headers", systemImage: "key.horizontal")
                 .lineLimit(1)
                 .fixedSize()
+                .loginLinkPadding()
         }
         .arcfinPlainButton(cornerRadius: DT.Radius.pill)
         .accessibilityHint("For a server behind an access gateway")

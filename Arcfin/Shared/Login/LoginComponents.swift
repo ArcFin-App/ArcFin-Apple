@@ -258,3 +258,56 @@ extension View {
         }
     }
 }
+
+/// Apple TV's sign-in pages: what to do on the left, and the code or fields to do it with on
+/// the right, across the whole screen. The right column scrolls when it's long.
+struct LoginSplitPage<Leading: View, Trailing: View>: View {
+    @ViewBuilder var leading: Leading
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 96) {
+            // Each column is its own focus area, so left and right on the remote move between
+            // them from any height, rather than only where a button happens to line up.
+            VStack(alignment: .leading, spacing: 36) { leading }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .loginFocusSection()
+            ScrollView {
+                VStack(spacing: 28) { trailing }
+                    .padding(.vertical, 40)
+                    .frame(maxWidth: .infinity)
+            }
+            .scrollClipDisabled()
+            .frame(maxWidth: .infinity)
+            .loginFocusSection()
+        }
+        .padding(.horizontal, 96)
+        .padding(.vertical, 60)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .screenBackground()
+    }
+}
+
+/// The left column's heading: the logo, a title and what this page is for.
+struct LoginSplitHeader: View {
+    let title: LocalizedStringKey
+    let message: Text
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Image("ArcfinLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 72 * 0.225, style: .continuous))
+                .accessibilityHidden(true)
+            Text(title)
+                .font(.title.bold())
+                .foregroundStyle(DT.Color.textPrimary)
+            message
+                .font(.callout)
+                .foregroundStyle(DT.Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}

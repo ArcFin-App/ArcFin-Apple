@@ -15,6 +15,17 @@ extension View {
         self
     }
 
+    /// Room inside a link-style button, so the Apple TV's focus ring clears its text.
+    func loginLinkPadding() -> some View {
+        padding(.horizontal, 28)
+            .padding(.vertical, 14)
+    }
+
+    /// A column the remote moves into as a whole, from any height.
+    func loginFocusSection() -> some View {
+        focusSection()
+    }
+
     func seerrPromptNotNowButton(_ action: @escaping () -> Void) -> some View {
         self
     }

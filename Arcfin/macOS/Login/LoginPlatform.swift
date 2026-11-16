@@ -16,6 +16,16 @@ extension View {
         textSelection(.enabled)
     }
 
+    /// Room inside a link-style button for the Apple TV's focus ring; none needed here.
+    func loginLinkPadding() -> some View {
+        self
+    }
+
+    /// A column the remote moves into as a whole; Apple TV only.
+    func loginFocusSection() -> some View {
+        self
+    }
+
     func seerrPromptNotNowButton(_ action: @escaping () -> Void) -> some View {
         toolbar {
             ToolbarItem(placement: .cancellationAction) {
