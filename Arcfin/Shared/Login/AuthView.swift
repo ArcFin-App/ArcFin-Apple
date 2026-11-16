@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import CoreImage.CIFilterBuiltins
 import AuthCore
 import JellyfinAPI
 
@@ -33,50 +34,11 @@ struct AuthView: View {
         if signedIn {
             successView
         } else {
-            VStack(alignment: .leading, spacing: 28) {
-                LoginBackButton(title: serverName, action: onBack)
-
-                LoginHeader(
-                    title: "Sign In",
-                    message: mode == .quickConnect
-                        ? "Approve this device from Jellyfin on a phone, computer or TV where you're already signed in."
-                        : "Use your Jellyfin username and password for \(serverName)."
-                )
-
-                if authManager.expiredCredential?.baseURL == serverURL {
-                    Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
-                        .font(.footnote)
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Picker("Sign-in method", selection: $mode) {
-                    Text("Quick Connect").tag(AuthMode.quickConnect)
-                    Text("Password").tag(AuthMode.credentials)
-                }
-                .pickerStyle(.segmented)
-
-                if mode == .quickConnect {
-                    quickConnectView
+            Group {
+                if mode == .quickConnect && PlatformMetrics.quickConnectSideBySide {
+                    quickConnectPage
                 } else {
-                    credentialsView
-                }
-
-                if let err = authError {
-                    Label(err, systemImage: "exclamationmark.circle.fill")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .loginLayout {
-                if mode == .credentials {
-                    LoginPrimaryButton(title: "Sign In", busyTitle: "Signing In…", isBusy: signingIn,
-                                       // Password is deliberately optional: Jellyfin allows accounts
-                                       // with no password (common for kids' and demo profiles).
-                                       isDisabled: username.isEmpty) {
-                        Task { await handleSignIn() }
-                    }
+                    formPage
                 }
             }
             .animation(DT.Animation.standard, value: mode)
@@ -93,6 +55,147 @@ struct AuthView: View {
                 await pollQuickConnect(secret: secret)
             }
         }
+    }
+
+    // MARK: - Layouts
+
+    /// One column: the method picker, then Quick Connect or the password fields.
+    private var formPage: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            LoginBackButton(title: serverName, action: onBack)
+
+            LoginHeader(
+                title: "Sign In",
+                message: mode == .quickConnect
+                    ? "Approve this device from Jellyfin on a phone, computer or TV where you're already signed in."
+                    : "Use your Jellyfin username and password for \(serverName)."
+            )
+
+            if authManager.expiredCredential?.baseURL == serverURL {
+                Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Picker("Sign-in method", selection: $mode) {
+                Text("Quick Connect").tag(AuthMode.quickConnect)
+                Text("Password").tag(AuthMode.credentials)
+            }
+            .pickerStyle(.segmented)
+
+            if mode == .quickConnect {
+                quickConnectView
+            } else {
+                credentialsView
+            }
+
+            if let err = authError {
+                Label(err, systemImage: "exclamationmark.circle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .loginLayout {
+            if mode == .credentials {
+                LoginPrimaryButton(title: "Sign In", busyTitle: "Signing In…", isBusy: signingIn,
+                                   // Password is deliberately optional: Jellyfin allows accounts
+                                   // with no password (common for kids' and demo profiles).
+                                   isDisabled: username.isEmpty) {
+                    Task { await handleSignIn() }
+                }
+            }
+        }
+    }
+
+    /// Apple TV: the steps on the left with a way to use a password instead, and the QR code
+    /// with the code under it on the right, across the whole screen.
+    private var quickConnectPage: some View {
+        HStack(alignment: .center, spacing: 96) {
+            VStack(alignment: .leading, spacing: 36) {
+                LoginBackButton(title: serverName, action: onBack)
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Sign In")
+                        .font(.title.bold())
+                        .foregroundStyle(DT.Color.textPrimary)
+                    Text("Approve this device from Jellyfin on a phone, computer or TV where you're already signed in.")
+                        .font(.callout)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if authManager.expiredCredential?.baseURL == serverURL {
+                    Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
+                        .font(.footnote)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                VStack(alignment: .leading, spacing: 18) {
+                    step(1, "Open Jellyfin where you're already signed in.")
+                    step(2, "Go to your profile, then Quick Connect.")
+                    step(3, "Enter the code on the right.")
+                }
+                if let err = authError {
+                    Label(err, systemImage: "exclamationmark.circle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack(spacing: 24) {
+                    Button { mode = .credentials } label: {
+                        Label("Sign In with Password", systemImage: "key")
+                    }
+                    if !qcPolling && !qcLoading {
+                        Button("Get a New Code") { Task { await initiateQC() } }
+                    }
+                }
+                .font(.callout)
+                .foregroundStyle(DT.Color.accent)
+                .arcfinPlainButton(cornerRadius: DT.Radius.pill)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(spacing: 28) {
+                Group {
+                    if qcPolling, let link = QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)),
+                       let image = QuickConnectQR.image(for: link) {
+                        Image(decorative: image, scale: 1)
+                            .interpolation(.none)
+                            .resizable()
+                    } else {
+                        ProgressView()
+                    }
+                }
+                .frame(width: 400, height: 400)
+                .padding(24)
+                .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .accessibilityLabel("QR code to sign in")
+                Text("Scan with your iPhone's Camera")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
+                if !qcCode.isEmpty {
+                    Text(qcCode)
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .monospacedDigit()
+                        .tracking(8)
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .accessibilityLabel("Code \(qcCode.map(String.init).joined(separator: " "))")
+                }
+                if qcPolling {
+                    HStack(spacing: 10) {
+                        ProgressView().controlSize(.small)
+                        Text("Waiting for approval")
+                            .font(.footnote)
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 96)
+        .padding(.vertical, 60)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .screenBackground()
     }
 
     // MARK: - Quick Connect (default)
@@ -126,7 +229,6 @@ struct AuthView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 22)
             .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .quickConnectQRCode(qcPolling ? QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)) : nil)
 
             VStack(alignment: .leading, spacing: 12) {
                 step(1, "Open Jellyfin where you're already signed in.")
@@ -292,6 +394,18 @@ struct AuthView: View {
         let digits = raw.filter { $0.isNumber }
         guard digits.count >= 6 else { return raw }
         return "\(digits.prefix(3)) \(String(digits.dropFirst(3).prefix(3)))"
+    }
+}
+
+/// The Quick Connect link as a QR code, drawn sharp at any size.
+private enum QuickConnectQR {
+    static func image(for link: URL) -> CGImage? {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(link.absoluteString.utf8)
+        filter.correctionLevel = "M"
+        guard let output = filter.outputImage else { return nil }
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: 12, y: 12))
+        return CIContext().createCGImage(scaled, from: scaled.extent)
     }
 }
 

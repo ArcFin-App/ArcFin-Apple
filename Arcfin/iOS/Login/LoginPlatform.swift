@@ -20,11 +20,6 @@ extension View {
         textSelection(.enabled)
     }
 
-    /// Only the Apple TV shows a QR code for the phone to scan.
-    func quickConnectQRCode(_ link: URL?) -> some View {
-        self
-    }
-
     func seerrPromptNotNowButton(_ action: @escaping () -> Void) -> some View {
         toolbar {
             ToolbarItem(placement: .cancellationAction) {

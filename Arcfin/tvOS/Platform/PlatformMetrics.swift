@@ -6,6 +6,8 @@ import SwiftUI
 enum PlatformMetrics {
     /// How wide a title's description may run: lines across a whole iPad are too long to read.
     /// Which platform's components the Licenses screen lists.
+    /// Quick Connect's sign-in page: steps beside a QR code across the screen, or one column.
+    static let quickConnectSideBySide = true
     static let licensePlatform = "tvOS"
     static let descriptionMaxWidth: CGFloat = 720
     static let pagePad: CGFloat = 20
