@@ -833,6 +833,70 @@
         }
       }
     },
+    "The code wasn't confirmed in time. Start again from Set Up." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Code wurde nicht rechtzeitig bestätigt. Beginne noch einmal mit „Einrichten“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El código no se confirmó a tiempo. Vuelve a empezar desde Configurar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le code n’a pas été confirmé à temps. Recommencez depuis Configurer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il codice non è stato confermato in tempo. Ricomincia da Configura."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "時間内にコードが確定されませんでした。「設定」からやり直してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "제시간에 코드가 확인되지 않았습니다. 설정에서 다시 시작하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De code is niet op tijd bevestigd. Begin opnieuw bij Stel in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O código não foi confirmado a tempo. Recomece em Configurar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Код не был подтверждён вовремя. Начните заново с кнопки «Настроить»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "代码未及时确认。请从“设置”重新开始。"
+          }
+        }
+      }
+    },
     "·" : {
       "localizations" : {
         "de" : {

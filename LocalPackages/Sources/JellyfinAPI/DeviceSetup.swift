@@ -6,18 +6,23 @@ import Network
 
 /// Setting up an Apple TV from an iPhone or iPad on the same network (#481).
 ///
-/// The two first agree on keys, the way Bluetooth numeric comparison does: the phone commits
-/// to a fresh X25519 key, the Apple TV sends its own, the phone reveals its key, and both
-/// work out the same secret. A six-digit code made from that secret and both keys is shown on
-/// both screens; someone in the middle ends up with different keys, so different codes, and
-/// the commitment stops them trying keys until the codes happen to match. Nothing else is
-/// sent until the person has pressed Allow on the TV and confirmed the code on the phone.
+/// The two first agree on keys, the way Bluetooth numeric comparison does: the Apple TV
+/// commits to a fresh X25519 key, the phone sends its own, the Apple TV reveals its key, and
+/// both work out the same secret. A six-digit code made from that secret and both keys is
+/// shown on both screens; someone in the middle ends up with different keys, so different
+/// codes. The Apple TV commits first so a device posing as a phone can't work out the code
+/// before it has sent its key: every try puts a code on the TV's screen, where it's seen, and
+/// the TV takes one try at a time with a pause between them. The phone only connects when
+/// someone taps Set Up. Nothing else is sent until the person has pressed Allow on the TV and
+/// confirmed the code on the phone.
 /// After that every message is sealed with ChaCha20-Poly1305, with a key for each direction
 /// and a counter as the nonce, so a changed, replayed or reordered message ends the session.
 public enum DeviceSetup {
     public static let serviceType = "_arcfin-setup._tcp"
     /// A message is a few hundred bytes; anything far bigger isn't from Arcfin.
     static let maxMessageSize = 16 * 1024
+    /// How long the Apple TV waits after one exchange before taking the next.
+    static let pauseBetweenTries: Duration = .seconds(2)
 
     public enum Failure: String, Codable, Sendable {
         /// The person at the Apple TV said no, or the phone cancelled.
@@ -71,11 +76,11 @@ public enum DeviceSetup {
 
     /// What goes over the connection: the key exchange in the clear, then sealed messages.
     enum Wire: Codable, Equatable {
-        /// Phone → TV: SHA-256 of the phone's public key and a random nonce.
+        /// TV → phone, first: SHA-256 of the TV's public key and a random nonce.
         case commit(Data)
-        /// TV → phone: the TV's public key.
+        /// Phone → TV: the phone's public key.
         case key(Data)
-        /// Phone → TV: the phone's public key and nonce, which must match the commitment.
+        /// TV → phone: the TV's public key and nonce, which must match the commitment.
         case reveal(key: Data, nonce: Data)
         /// A Message, sealed.
         case sealed(Data)
@@ -240,6 +245,8 @@ public final class DeviceSetupSession: @unchecked Sendable {
     /// The six digits both screens show; they match only if nobody is in between.
     public private(set) var code = ""
     public let messages: AsyncStream<DeviceSetup.Message>
+    /// Finishes when the connection closes, from either side.
+    public let closed: AsyncStream<Void>
 
     private let channel: DeviceSetupChannel
     private let role: Role
@@ -247,11 +254,13 @@ public final class DeviceSetupSession: @unchecked Sendable {
     private var cipher: DeviceSetup.Cipher?
     private var handshake: CheckedContinuation<Void, Error>?
     private let messageContinuation: AsyncStream<DeviceSetup.Message>.Continuation
+    private let closedContinuation: AsyncStream<Void>.Continuation
 
     private init(channel: DeviceSetupChannel, role: Role) {
         self.channel = channel
         self.role = role
         (messages, messageContinuation) = AsyncStream.makeStream(of: DeviceSetup.Message.self)
+        (closed, closedContinuation) = AsyncStream.makeStream(of: Void.self)
     }
 
     /// The phone's side: connects to an Apple TV found by `DeviceSetupBrowser`.
@@ -288,24 +297,24 @@ public final class DeviceSetupSession: @unchecked Sendable {
         let myKey = mine.publicKey.rawRepresentation
         let nonce = Data((0..<32).map { _ in UInt8.random(in: .min ... .max) })
         var commitment: Data?
-        if role == .phone { channel.send(.commit(DeviceSetup.commitment(key: myKey, nonce: nonce))) }
+        if role == .tv { channel.send(.commit(DeviceSetup.commitment(key: myKey, nonce: nonce))) }
 
         var failure: HandshakeError = .closed
         loop: for await wire in channel.messages {
             let agreed = lock.withLock { cipher != nil }
             switch (role, wire, agreed) {
-            case (.tv, .commit(let value), false) where commitment == nil:
+            case (.phone, .commit(let value), false) where commitment == nil:
                 commitment = value
                 channel.send(.key(myKey))
-            case (.phone, .key(let tvKey), false):
+            case (.tv, .key(let phoneKey), false):
                 channel.send(.reveal(key: myKey, nonce: nonce))
-                guard agree(mine, theirs: tvKey, phoneKey: myKey, tvKey: tvKey) else { failure = .badKey; break loop }
-            case (.tv, .reveal(let phoneKey, let phoneNonce), false):
-                guard let commitment, DeviceSetup.commitment(key: phoneKey, nonce: phoneNonce) == commitment else {
+                guard agree(mine, theirs: phoneKey, phoneKey: phoneKey, tvKey: myKey) else { failure = .badKey; break loop }
+            case (.phone, .reveal(let tvKey, let tvNonce), false):
+                guard let commitment, DeviceSetup.commitment(key: tvKey, nonce: tvNonce) == commitment else {
                     failure = .wrongCommitment
                     break loop
                 }
-                guard agree(mine, theirs: phoneKey, phoneKey: phoneKey, tvKey: myKey) else { failure = .badKey; break loop }
+                guard agree(mine, theirs: tvKey, phoneKey: myKey, tvKey: tvKey) else { failure = .badKey; break loop }
             case (_, .sealed(let data), true):
                 guard let message = open(data) else { break loop }
                 messageContinuation.yield(message)
@@ -349,6 +358,7 @@ public final class DeviceSetupSession: @unchecked Sendable {
     public func close() {
         channel.close()
         messageContinuation.finish()
+        closedContinuation.finish()
     }
 
     private func seal(_ message: DeviceSetup.Message) -> Data? {
@@ -372,7 +382,14 @@ public final class DeviceSetupListener: @unchecked Sendable {
         listener = try NWListener(using: .tcp, on: port)
         (sessions, continuation) = AsyncStream.makeStream(of: DeviceSetupSession.self)
         if advertised { listener.service = NWListener.Service(type: DeviceSetup.serviceType) }
+        let gate = HandshakeGate()
         listener.newConnectionHandler = { [continuation] connection in
+            // One exchange at a time, with a pause after each: a device can't run many in
+            // parallel or back to back to look for a code that matches.
+            guard gate.enter() else {
+                connection.cancel()
+                return
+            }
             let channel = DeviceSetupChannel(connection: connection)
             Task {
                 // A connection that doesn't finish the exchange within a few seconds is dropped.
@@ -384,6 +401,8 @@ public final class DeviceSetupListener: @unchecked Sendable {
                 let session = try? await DeviceSetupSession.accept(channel)
                 timeout.cancel()
                 if let session { continuation.yield(session) } else { channel.close() }
+                try? await Task.sleep(for: DeviceSetup.pauseBetweenTries)
+                gate.leave()
             }
         }
         listener.stateUpdateHandler = { [continuation] state in
@@ -397,6 +416,24 @@ public final class DeviceSetupListener: @unchecked Sendable {
     public func stop() {
         listener.cancel()
         continuation.finish()
+    }
+}
+
+/// Lets one key exchange through at a time.
+private final class HandshakeGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var busy = false
+
+    func enter() -> Bool {
+        lock.withLock {
+            guard !busy else { return false }
+            busy = true
+            return true
+        }
+    }
+
+    func leave() {
+        lock.withLock { busy = false }
     }
 }
 

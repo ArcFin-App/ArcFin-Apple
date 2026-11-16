@@ -116,22 +116,53 @@ struct DeviceSetupTests {
         #expect(await phoneMessages.next() == nil)
     }
 
-    @Test("A phone whose key doesn't match its commitment is refused")
+    @Test("An Apple TV whose key doesn't match its commitment is refused")
     func brokenCommitment() async throws {
+        // A fake Apple TV that commits to one key and reveals another.
+        let fake = try NWListener(using: .tcp, on: .any)
+        let queue = DispatchQueue(label: "fake-tv")
+        fake.newConnectionHandler = { connection in
+            let channel = DeviceSetupChannel(connection: connection)
+            channel.send(.commit(DeviceSetup.commitment(key: Data(repeating: 1, count: 32), nonce: Data(repeating: 2, count: 32))))
+            Task {
+                for await wire in channel.messages {
+                    guard case .key = wire else { continue }
+                    channel.send(.reveal(key: Curve25519.KeyAgreement.PrivateKey().publicKey.rawRepresentation,
+                                         nonce: Data(repeating: 2, count: 32)))
+                }
+            }
+        }
+        fake.start(queue: queue)
+        defer { fake.cancel() }
+        var port: NWEndpoint.Port?
+        for _ in 0..<100 {
+            if let p = fake.port, p.rawValue != 0 { port = p; break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let ready = try #require(port)
+        await #expect(throws: DeviceSetupSession.HandshakeError.self) {
+            _ = try await DeviceSetupSession.connect(to: .hostPort(host: "127.0.0.1", port: ready))
+        }
+    }
+
+    @Test("The Apple TV takes one exchange at a time")
+    func oneAtATime() async throws {
         let listener = try DeviceSetupListener(advertised: false)
         defer { listener.stop() }
         let port = try await readyPort(of: listener)
-        let raw = DeviceSetupChannel(connection: NWConnection(to: .hostPort(host: "127.0.0.1", port: port), using: .tcp))
-        defer { raw.close() }
-        raw.send(.commit(DeviceSetup.commitment(key: Data(repeating: 1, count: 32), nonce: Data(repeating: 2, count: 32))))
-        var replies = raw.messages.makeAsyncIterator()
-        guard case .key? = await replies.next() else {
-            Issue.record("The TV didn't send its key")
+        // A connection that never finishes the exchange holds the Apple TV.
+        let stuck = DeviceSetupChannel(connection: NWConnection(to: .hostPort(host: "127.0.0.1", port: port), using: .tcp))
+        defer { stuck.close() }
+        var stuckMessages = stuck.messages.makeAsyncIterator()
+        guard case .commit? = await stuckMessages.next() else {
+            Issue.record("The TV didn't commit first")
             return
         }
-        raw.send(.reveal(key: Curve25519.KeyAgreement.PrivateKey().publicKey.rawRepresentation, nonce: Data(repeating: 2, count: 32)))
-        // The TV drops the connection, and offers no session.
-        #expect(await replies.next() == nil)
+        // A second one meanwhile is turned away.
+        let second = DeviceSetupChannel(connection: NWConnection(to: .hostPort(host: "127.0.0.1", port: port), using: .tcp))
+        defer { second.close() }
+        var secondMessages = second.messages.makeAsyncIterator()
+        #expect(await secondMessages.next() == nil)
     }
 
     @Test("The other side going away ends the messages")

@@ -95,6 +95,13 @@ final class AppleTVSetupHost {
     private func serve(_ session: DeviceSetupSession, authManager: AuthManager) async {
         self.session = session
         phase = .confirming(code: session.code)
+        // A phone that hangs up while this asks takes the question away with it.
+        let hangUp = Task { [weak self] in
+            for await _ in session.closed {}
+            guard let self, self.session === session else { return }
+            self.endSession()
+        }
+        defer { hangUp.cancel() }
         let allowed = await withCheckedContinuation { answer = $0 }
         guard allowed else {
             endSession(sending: .failed(.declined))
@@ -471,6 +478,14 @@ final class AppleTVSetupGuide {
             }
             self.session = session
             phase = .confirming(code: session.code, name: tv.name)
+            // A code left unconfirmed doesn't stay open.
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(60))
+                guard let self, self.session === session, case .confirming = self.phase else { return }
+                session.finish(with: .failed(.declined))
+                self.session = nil
+                self.phase = .failed(String(localized: "The code wasn't confirmed in time. Start again from Set Up."))
+            }
             for await message in session.messages {
                 switch message {
                 case .allowed(let signedIn):
