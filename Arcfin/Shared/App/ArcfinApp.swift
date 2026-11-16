@@ -32,6 +32,8 @@ enum AppServices {
     static let appleTVSetup = AppleTVSetupGuide()
     /// The other devices this profile can control, for the iPhone remote (#457).
     static let remoteSessions = RemoteSessions()
+    /// Music, playing behind every screen (#386).
+    static let music = MusicPlayback(authManager: authManager)
     static let introduction = AppIntroduction()
     /// Past the app lock (or there's none) this launch. A player window brought back on
     /// relaunch closes rather than play ahead of the lock.
