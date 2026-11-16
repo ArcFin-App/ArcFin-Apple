@@ -327,7 +327,7 @@ final class MusicPlayback {
 
     // MARK: Remembering the queue
 
-    private struct SavedQueue: Codable {
+    private struct SavedQueue: Codable, Sendable {
         var userID: String
         var songs: [MusicSong]
         var index: Int
@@ -347,9 +347,12 @@ final class MusicPlayback {
               let index = player.queue.currentIndex else { return }
         let saved = SavedQueue(userID: userID, songs: player.queue.entries.map(\.track), index: index,
                                position: position, repeatMode: player.repeatMode.rawValue)
-        guard let data = try? JSONEncoder().encode(saved) else { return }
         let url = Self.savedQueueURL
-        Task.detached(priority: .utility) { try? data.write(to: url, options: .atomic) }
+        // Encoding a long queue would hitch the main thread on every progress report.
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(saved) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     /// The last queue for this profile, paused where it was.

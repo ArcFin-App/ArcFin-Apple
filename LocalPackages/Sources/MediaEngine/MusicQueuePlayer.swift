@@ -37,6 +37,8 @@ public final class MusicQueuePlayer {
     public var crossfade: Double = 0
     /// Pause when the playing song ends, with the next one ready (a sleep timer's End of Song).
     public var pausesAtEndOfSong = false
+    /// A queue from `load` that hasn't loaded yet, and where it starts.
+    @ObservationIgnored private var pendingStart: Double?
     /// Goes up on every seek, for anything that shows the position without following it.
     public private(set) var seekCount = 0
     /// Copies each song's audio into `levels` as it plays, for a visualizer.
@@ -128,20 +130,27 @@ public final class MusicQueuePlayer {
     }
 
     /// Lines up a queue paused at a position, as it was when the app last closed;
-    /// `resume()` plays it. Nothing is reported until then.
+    /// `resume()` plays it. Nothing loads or is reported until then, so a song that can't
+    /// load (away from the server) can't skip on and start the music by itself.
     public func load(_ tracks: [MusicSong], startingAt index: Int, at seconds: Double,
                      repeatMode: MusicQueue.RepeatMode) {
         finishCrossfade()
         endCurrent()
         player.pause()
+        forgetItems()
         queue = MusicQueue(tracks, startingAt: index)
         queue.repeatMode = repeatMode
-        reload()
-        if seconds > 0 { seek(to: seconds) }
+        position = seconds
+        duration = queue.current?.track.duration ?? 0
+        pendingStart = seconds
     }
 
     public func resume() {
         guard let entry = queue.current else { return }
+        if let start = pendingStart {
+            reload()
+            if start > 0 { seek(to: start) }
+        }
         Self.activateAudioSession()
         player.play()
         if started == nil { markStarted(entry) }
@@ -166,6 +175,10 @@ public final class MusicQueuePlayer {
         finishCrossfade()
         position = seconds
         seekCount += 1
+        if pendingStart != nil {
+            pendingStart = seconds
+            return
+        }
         player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
     }
 
@@ -268,6 +281,7 @@ public final class MusicQueuePlayer {
     /// The current song from its start, and the one after it. A playing player plays it
     /// straight away; a paused one waits for `resume()`.
     private func reload() {
+        pendingStart = nil
         forgetItems()
         position = 0
         duration = queue.current?.track.duration ?? 0
@@ -302,7 +316,8 @@ public final class MusicQueuePlayer {
         entryIDs[ObjectIdentifier(item)] = entry.id
         let path = url.path
         // Which way it streams: the file as is (stream.flac, …) or converted (stream.mp3 with a codec).
-        log.notice("Song stream: \(path, privacy: .public)\(url.query?.contains("static=true") == true ? "" : " (converted)", privacy: .public)")
+        let gain = entry.track.normalizationGain.map { String(format: " gain %.1f dB", $0) } ?? " no gain"
+        log.notice("Song stream: \(path, privacy: .public)\(url.query?.contains("static=true") == true ? "" : " (converted)", privacy: .public)\(gain, privacy: .public)")
         itemObservations[ObjectIdentifier(item)] = item.observe(\.status) { [weak self] item, _ in
             guard item.status == .failed else { return }
             let failed = ObjectIdentifier(item)
@@ -373,6 +388,8 @@ public final class MusicQueuePlayer {
         let reason = error.map { "\($0.domain) \($0.code): \($0.localizedDescription)" } ?? "unknown"
         log.error("Song failed (\(path, privacy: .public)): \(reason, privacy: .public)")
         if failed == queue.current?.id {
+            // Paused (a queue lined up, or the sleep timer's end), it moves on but stays paused.
+            let wasPlaying = isPlaying || player.rate != 0
             failures += 1
             guard failures < queue.entries.count else {
                 failures = 0
@@ -381,7 +398,7 @@ public final class MusicQueuePlayer {
                 return
             }
             next()
-            resume()
+            if wasPlaying { resume() }
         } else {
             refreshUpcoming()
         }

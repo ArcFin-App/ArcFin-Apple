@@ -36,6 +36,8 @@ final class MusicDownloads {
     /// Settings › Music › Download on Mobile Data is off and this is on mobile data.
     private(set) var isWaitingForWiFi = false
     @ObservationIgnored private var worker: Task<Void, Never>?
+    /// The current song's transfer, so cancelling it stops the download.
+    @ObservationIgnored private var transfer: Task<Void, Never>?
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicDownloads")
 
     private static let folder: URL = {
@@ -126,8 +128,14 @@ final class MusicDownloads {
         download(tracks)
     }
 
-    /// Every favourite song, for turning Keep Favorites Downloaded on.
+    /// Every favourite song and album, for turning Keep Favorites Downloaded on.
     func downloadAllFavorites() async {
+        if let albums = try? await MusicAPI.call({
+            try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: nil,
+                                        filter: .init(favoritesOnly: true), limit: 500)
+        }).albums {
+            for album in albums { download(await MusicActions.albumSongs(album), album: album) }
+        }
         var start = 0
         while true {
             guard let page = try? await MusicAPI.call({
@@ -147,6 +155,7 @@ final class MusicDownloads {
     func remove(_ songs: [MusicSong]) {
         let ids = Set(songs.map(\.id))
         queue.removeAll { ids.contains($0.id) }
+        if let current, ids.contains(current) { transfer?.cancel() }
         for id in ids {
             guard let saved = index.songs.removeValue(forKey: id) else { continue }
             try? FileManager.default.removeItem(at: Self.folder.appendingPathComponent(saved.file))
@@ -159,9 +168,13 @@ final class MusicDownloads {
     func cancel(_ songs: [MusicSong]) {
         let ids = Set(songs.map(\.id))
         queue.removeAll { ids.contains($0.id) }
+        if let current, ids.contains(current) { transfer?.cancel() }
     }
 
-    func cancelAll() { queue.removeAll() }
+    func cancelAll() {
+        queue.removeAll()
+        transfer?.cancel()
+    }
 
     func removeAll() {
         queue.removeAll()
@@ -191,7 +204,10 @@ final class MusicDownloads {
                 guard queue.first?.id == song.id else { continue }
                 current = song.id
                 progress = 0
-                await fetch(song)
+                let transfer = Task { await fetch(song) }
+                self.transfer = transfer
+                await transfer.value
+                self.transfer = nil
                 if isDownloaded(song.id) { saved += 1 }
                 queue.removeAll { $0.id == song.id }
                 current = nil
