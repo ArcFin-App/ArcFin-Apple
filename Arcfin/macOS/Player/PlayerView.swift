@@ -175,7 +175,10 @@ struct PlayerView: View {
         }
         .keepsScreenAwake(status: model.player.status)
         .onAppear { connectModel() }
-        .task { if !model.isAskingToResume { await model.setup() } }
+        .task {
+            if model.handOffToDefaultPlayer() { closePlayer(); return }
+            if !model.isAskingToResume { await model.setup() }
+        }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks

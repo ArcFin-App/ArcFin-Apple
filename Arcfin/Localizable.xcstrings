@@ -12033,6 +12033,70 @@
         }
       }
     },
+    "Default Player" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Standard-Player"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproductor predeterminado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lecteur par défaut"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Player predefinito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "デフォルトのプレーヤー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "기본 플레이어"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Standaardspeler"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Player padrão"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Плеер по умолчанию"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "默认播放器"
+          }
+        }
+      }
+    },
     "Delete %@ of %@?" : {
       "localizations" : {
         "de" : {
@@ -26429,6 +26493,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "自动播放下一集"
+          }
+        }
+      }
+    },
+    "Play opens movies and episodes in this app." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abspielen öffnet Filme und Folgen in dieser App."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproducir abre películas y episodios en esta app."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lire ouvre les films et épisodes dans cette app."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riproduci apre film ed episodi in questa app."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生すると、映画とエピソードがこのアプリで開きます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "재생하면 영화와 에피소드가 이 앱에서 열립니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Afspelen opent films en afleveringen in deze app."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduzir abre filmes e episódios neste app."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Кнопка «Воспроизвести» открывает фильмы и эпизоды в этом приложении."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“播放”会在此应用中打开电影和剧集。"
           }
         }
       }
@@ -43069,6 +43197,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "缩略图"
+          }
+        }
+      }
+    },
+    "Titles start from the beginning there, and what you watch isn't saved to your server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Titel starten dort von vorne, und was du schaust, wird nicht auf deinem Server gespeichert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Allí los títulos empiezan desde el principio y lo que ves no se guarda en tu servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les titres y démarrent depuis le début, et ce que vous regardez n’est pas enregistré sur votre serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lì i titoli partono dall’inizio e ciò che guardi non viene salvato sul tuo server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "そのアプリでは最初から再生され、視聴内容はサーバーに保存されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "해당 앱에서는 처음부터 재생되며, 시청 기록은 서버에 저장되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Titels beginnen daar vanaf het begin, en wat je kijkt wordt niet op je server bewaard."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lá os títulos começam do início, e o que você assiste não é salvo no seu servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Там просмотр начинается с начала, и то, что вы смотрите, не сохраняется на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在那里会从头播放，观看记录不会保存到你的服务器。"
           }
         }
       }

@@ -182,7 +182,10 @@ struct PlayerView: View {
             connectModel()
             applyOpeningOrientation()
         }
-        .task { if !model.isAskingToResume { await setup() } }
+        .task {
+            if model.handOffToDefaultPlayer() { closePlayer(); return }
+            if !model.isAskingToResume { await setup() }
+        }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
                 model.resumeFrom = startPositionTicks

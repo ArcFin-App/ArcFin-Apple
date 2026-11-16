@@ -171,7 +171,21 @@ final class PlayerModel {
         let behavior = ResumeBehavior.current
         let isLive = item.type == .tvChannel
         resumeFrom = behavior == .startOver || isLive ? 0 : startPositionTicks
-        isAskingToResume = behavior == .ask && startPositionTicks > 0 && !isLive
+        isAskingToResume = behavior == .ask && startPositionTicks > 0 && !isLive && !handsOff
+    }
+
+    /// Settings › Playback › Default Player is another app, and this title goes there.
+    private var handsOff: Bool {
+        (item.type == .movie || item.type == .episode) && !CastManager.shared.isConnected && ExternalPlayer.preferred != nil
+    }
+
+    /// Opens the title in the default player app; true when it did, and the view then closes.
+    func handOffToDefaultPlayer() -> Bool {
+        guard handsOff, let player = ExternalPlayer.preferred,
+              let credential = AppServices.authManager.state.credential,
+              let stream = ExternalPlayer.streamURL(for: item, credential: credential) else { return false }
+        ExternalApps.open(player, stream: stream)
+        return true
     }
 
     /// A live TV channel: no timeline to seek in, nothing to resume or mark watched.
