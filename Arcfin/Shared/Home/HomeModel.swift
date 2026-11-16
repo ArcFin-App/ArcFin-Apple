@@ -214,12 +214,13 @@ final class HomeModel {
         playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
     }
 
-    /// Siri's Play and a SharePlay title: straight into the player.
+    /// Siri's Play, a SharePlay title and the web app's Play On: straight into the player.
     func playPendingWatch(authManager: AuthManager) {
-        guard let cred = authManager.state.credential, let id = WatchRoute.takePending() else { return }
+        guard let cred = authManager.state.credential, let pending = WatchRoute.takePending() else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         Task {
-            if let request = await WatchRoute.resolve(id: id, credential: cred, authHeader: header) {
+            if let request = await WatchRoute.resolve(id: pending.id, startTicks: pending.startTicks,
+                                                      credential: cred, authHeader: header) {
                 playbackRequest = request
             }
         }

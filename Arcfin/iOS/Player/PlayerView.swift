@@ -267,6 +267,10 @@ struct PlayerView: View {
             guard let command else { return }
             model.applySharePlayCommand(command)
         }
+        .onChange(of: RemoteControl.shared.command) { _, command in
+            guard let command else { return }
+            if command.kind == .stop { closePlayer() } else { model.applyRemoteCommand(command.kind) }
+        }
         .onChange(of: sharePlay.activityItemId) { _, id in
             guard let id, id != item.id else { return }
             model.followSharePlay(to: id)

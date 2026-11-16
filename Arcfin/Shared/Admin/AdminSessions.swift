@@ -74,9 +74,17 @@ final class AdminSessionsModel {
         socket.startSessionUpdates()
         socketTask = Task {
             for await event in socket.events {
-                guard case .sessions(let pushed) = event else { continue }
-                lastPush = Date()
-                apply(pushed)
+                switch event {
+                case .sessions(let pushed):
+                    lastPush = Date()
+                    apply(pushed)
+                case .remoteCommand(let command):
+                    RemoteControl.shared.handle(command)
+                case .syncPlayCommand, .syncPlayGroupChanged, .syncPlayGroupGone:
+                    await AppServices.syncPlayManager.handle(event, credential: credential, authHeader: authHeader)
+                default:
+                    break
+                }
             }
         }
     }

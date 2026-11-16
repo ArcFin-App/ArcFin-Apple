@@ -302,6 +302,20 @@ struct PlayerView: View {
             guard let command else { return }
             model.applySharePlayCommand(command)
         }
+        .onChange(of: RemoteControl.shared.command) { _, command in
+            guard let command else { return }
+            // Volume and mute go through the Mac's own level, so its arrow keys and HUD stay in step.
+            switch command.kind {
+            case .stop: closePlayer()
+            case .setVolume(let volume): adjustMacVolume(by: Double(volume) - macVolume)
+            case .volumeUp: adjustMacVolume(by: 0.1)
+            case .volumeDown: adjustMacVolume(by: -0.1)
+            case .mute: if macVolume > 0 { toggleMacMute() }
+            case .unmute: if macVolume == 0 { toggleMacMute() }
+            case .toggleMute: toggleMacMute()
+            default: model.applyRemoteCommand(command.kind)
+            }
+        }
         .onChange(of: sharePlay.activityItemId) { _, id in
             guard let id, id != item.id else { return }
             model.followSharePlay(to: id)

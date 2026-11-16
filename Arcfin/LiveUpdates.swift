@@ -7,7 +7,8 @@ import JellyfinAPI
 import Telemetry
 
 /// Keeps Home current while the app is open: watching or favouriting on another device, or
-/// titles arriving on the server, update the shelves without a pull to refresh.
+/// titles arriving on the server, update the shelves without a pull to refresh. Also the
+/// socket the web app and the dashboard control this device through.
 @MainActor
 final class LiveUpdates {
     private let mediaRepo: MediaRepository
@@ -53,9 +54,15 @@ final class LiveUpdates {
         let authHeader = authClient.authHeader(token: credential.accessToken)
         let socket = JellyfinWebSocketClient(credential: credential, authHeader: authHeader, deviceId: deviceId)
         self.socket = socket
+        // Each new socket can mean a new session on the server, which starts out not controllable.
+        await JellyfinMediaClient().postRemoteControlCapabilities(credential: credential, authHeader: authHeader)
         await withTaskCancellationHandler {
             for await event in socket.events {
                 switch event {
+                case .remoteCommand(let command):
+                    RemoteControl.shared.handle(command)
+                case .syncPlayCommand, .syncPlayGroupChanged, .syncPlayGroupGone:
+                    await AppServices.syncPlayManager.handle(event, credential: credential, authHeader: authHeader)
                 case .userDataChanged:
                     scheduleWatchStateRefresh(credential: credential, authClient: authClient)
                 case .libraryChanged:
@@ -93,7 +100,9 @@ final class LiveUpdates {
     }
 }
 
-/// ContentView reconnects when the profile changes and drops the socket in the background.
+/// ContentView reconnects when the profile changes, and drops the socket in the background
+/// unless a player is open (Picture in Picture, sound in the background), so it can still be
+/// controlled.
 struct LiveUpdatesKey: Hashable {
     let credentialID: UUID?
     let isActive: Bool

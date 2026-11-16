@@ -340,6 +340,22 @@ final class OfflinePlayerModel {
 
     // MARK: - Actions
 
+    /// The web app's or the dashboard's playback controls. Track and volume changes are left
+    /// to the player that streams from the server.
+    func applyRemoteCommand(_ kind: RemoteControl.Kind) {
+        let defaults = UserDefaults.standard
+        switch kind {
+        case .stop: closePlayer()
+        case .pause: if player.status == .playing { togglePlayPause() }
+        case .unpause: if player.status != .playing { togglePlayPause() }
+        case .playPause: togglePlayPause()
+        case .seek(let ticks): Task { await player.seek(to: min(max(ticks, 0), player.durationTicks)) }
+        case .rewind: seek(by: -((defaults.object(forKey: "skipBackwardSeconds") as? Int) ?? 10))
+        case .fastForward: seek(by: (defaults.object(forKey: "skipForwardSeconds") as? Int) ?? 10)
+        default: break
+        }
+    }
+
     func togglePlayPause() {
         Task { if player.status == .playing { await player.pause() } else { await player.play() } }
         revealControls()

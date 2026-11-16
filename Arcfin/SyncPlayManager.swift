@@ -115,20 +115,32 @@ final class SyncPlayManager {
             for await event in socket.events {
                 guard let self else { return }
                 switch event {
-                case .syncPlayCommand(let command):
-                    self.incomingCommand = command
-                case .syncPlayGroupChanged:
-                    // Cheap and simple: re-derive participant/group state from the REST
-                    // list rather than parse every GroupUpdate variant's nested payload.
-                    await self.refreshGroups(credential: credential, authHeader: authHeader)
-                case .syncPlayGroupGone:
-                    self.currentGroupId = nil
-                    self.groupName = nil
-                    self.disconnectSocket()
-                case .sessions, .userDataChanged, .libraryChanged:
-                    break
+                case .remoteCommand(let command):
+                    RemoteControl.shared.handle(command)
+                default:
+                    await self.handle(event, credential: credential, authHeader: authHeader)
                 }
             }
+        }
+    }
+
+    /// A group event from any of the app's sockets: the server sends it to only one of them
+    /// (the most recently active), which needn't be this one.
+    func handle(_ event: JellyfinWSEvent, credential: ServerCredential, authHeader: String) async {
+        guard isInGroup else { return }
+        switch event {
+        case .syncPlayCommand(let command):
+            incomingCommand = command
+        case .syncPlayGroupChanged:
+            // Cheap and simple: re-derive participant/group state from the REST
+            // list rather than parse every GroupUpdate variant's nested payload.
+            await refreshGroups(credential: credential, authHeader: authHeader)
+        case .syncPlayGroupGone:
+            currentGroupId = nil
+            groupName = nil
+            disconnectSocket()
+        default:
+            break
         }
     }
 

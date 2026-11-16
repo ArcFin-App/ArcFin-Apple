@@ -102,12 +102,23 @@ struct AppRootLifecycle: ViewModifier {
             // The profile's parental controls and permissions, from the server: on sign-in, a
             // profile switch, and each return to the app (an admin may have changed them).
             .task(id: model.authManager.state.credential?.id) { await model.loadProfileRules() }
-            .task(id: LiveUpdatesKey(credentialID: model.authManager.state.credential?.id, isActive: scenePhase == .active)) {
-                if scenePhase == .active, let credential = model.authManager.state.credential {
+            .task(id: LiveUpdatesKey(credentialID: model.authManager.state.credential?.id,
+                                     isActive: scenePhase != .background || PlayerActivity.shared.isPlayerOpen)) {
+                if scenePhase != .background || PlayerActivity.shared.isPlayerOpen,
+                   let credential = model.authManager.state.credential {
                     AppServices.liveUpdates.connect(credential: credential, authClient: model.authManager.authClient)
                 } else {
                     AppServices.liveUpdates.disconnect()
                 }
+            }
+            // A message from the dashboard while nothing is playing; the player shows its own.
+            .alert(Text(verbatim: RemoteControl.shared.message.flatMap { $0.header.isEmpty ? nil : $0.header } ?? "Arcfin"),
+                   isPresented: Binding(get: { RemoteControl.shared.message != nil },
+                                        set: { if !$0 { RemoteControl.shared.message = nil } }),
+                   presenting: RemoteControl.shared.message) { _ in
+                Button("OK") {}
+            } message: { message in
+                Text(verbatim: message.text)
             }
             .onChange(of: offlineModeEnabled) { _, isOffline in
                 if !isOffline { model.syncOfflineProgress(modelContext: modelContext) }
