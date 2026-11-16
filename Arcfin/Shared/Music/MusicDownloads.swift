@@ -181,6 +181,7 @@ final class MusicDownloads {
     private func startIfNeeded() {
         guard worker == nil, !queue.isEmpty else { return }
         worker = Task { [weak self] in
+            var saved = 0
             while let self, let song = queue.first {
                 while MusicSettings.downloadsWaitForWiFi, !queue.isEmpty {
                     isWaitingForWiFi = true
@@ -191,10 +192,14 @@ final class MusicDownloads {
                 current = song.id
                 progress = 0
                 await fetch(song)
+                if isDownloaded(song.id) { saved += 1 }
                 queue.removeAll { $0.id == song.id }
                 current = nil
             }
             self?.worker = nil
+            if saved > 0, MusicSettings.notifiesDownloads {
+                await NotificationManager.notifyMusicDownloaded(songs: saved)
+            }
         }
     }
 

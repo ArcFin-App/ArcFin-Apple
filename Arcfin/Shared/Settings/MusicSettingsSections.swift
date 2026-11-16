@@ -116,3 +116,20 @@ struct MusicAppearanceSection: View {
         }
     }
 }
+
+/// Settings › Music › Notifications.
+struct MusicNotificationsSection: View {
+    @Environment(AuthManager.self) private var authManager
+    @AppStorage(MusicSettings.notifyDownloadsKey) private var notifyDownloads = true
+
+    var body: some View {
+        Section {
+            Toggle(isOn: $notifyDownloads) {
+                TVRowLabelText(title: "Music Downloads", detail: "Tells you when songs you're downloading are ready to play offline.")
+            }
+            .syncLocked(MusicSettings.notifyDownloadsKey, authManager)
+        } header: {
+            Text("Notifications")
+        }
+    }
+}

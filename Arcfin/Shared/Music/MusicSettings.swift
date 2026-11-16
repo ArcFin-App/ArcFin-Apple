@@ -30,6 +30,9 @@ enum MusicSettings {
     static let autoplayKey = "musicAutoplay"
     static let rememberQueueKey = "musicRememberQueue"
     static let keepFavoritesDownloadedKey = "musicKeepFavoritesDownloaded"
+    static let notifyDownloadsKey = "musicNotifyDownloads"
+
+    static var notifiesDownloads: Bool { defaults.object(forKey: notifyDownloadsKey) as? Bool ?? true }
 
     /// Off where music isn't downloaded, even when the setting arrives synced from elsewhere.
     static var keepsFavoritesDownloaded: Bool {
