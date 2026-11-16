@@ -3,14 +3,22 @@
 import SwiftUI
 
 extension View {
-    /// A sheet. Apple TV draws its own wider panel instead (see its AppSheet).
+    /// A sheet. Apple TV draws its own panel instead, in two columns when there's a title
+    /// (see its AppSheet); here `title` and `systemImage` aren't used.
     func appSheet<Content: View>(isPresented: Binding<Bool>, onDismiss: (() -> Void)? = nil,
+                                 title: LocalizedStringKey? = nil, systemImage: String? = nil,
                                  @ViewBuilder content: @escaping () -> Content) -> some View {
         sheet(isPresented: isPresented, onDismiss: onDismiss, content: content)
     }
 
     func appSheet<Item: Identifiable, Content: View>(item: Binding<Item?>, onDismiss: (() -> Void)? = nil,
+                                                     title: LocalizedStringKey? = nil, systemImage: String? = nil,
                                                      @ViewBuilder content: @escaping (Item) -> Content) -> some View {
         sheet(item: item, onDismiss: onDismiss, content: content)
+    }
+
+    /// A sheet page's title. On Apple TV a two-column sheet shows it in its left column instead.
+    func sheetTitle(_ title: LocalizedStringKey) -> some View {
+        navigationTitle(title)
     }
 }

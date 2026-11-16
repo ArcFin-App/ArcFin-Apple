@@ -210,7 +210,7 @@ struct PlayerView: View {
         .onChange(of: showRateMenu) { _, isOpen in model.handleMenuVisibilityChange(isOpen) }
         .onChange(of: showChapterMenu) { _, isOpen in model.handleMenuVisibilityChange(isOpen) }
         .onChange(of: showInfoSheet) { _, isOpen in model.handleMenuVisibilityChange(isOpen) }
-        .appSheet(isPresented: $showTrackMenu) {
+        .appSheet(isPresented: $showTrackMenu, title: "Audio & Subtitles", systemImage: "captions.bubble") {
             trackSelectionSheet
         }
         .confirmationDialog("Quality", isPresented: $showQualityMenu, titleVisibility: .visible) {
@@ -221,7 +221,7 @@ struct PlayerView: View {
         }
         // No presentationDetents on tvOS: it has no drag-to-dismiss, and forcing .medium/.large
         // onto its differently shaped modal container clipped the content at both edges.
-        .appSheet(isPresented: $showChapterMenu) {
+        .appSheet(isPresented: $showChapterMenu, title: "Chapters", systemImage: "list.bullet.rectangle") {
             ChapterListSheet(model: model) { showChapterMenu = false }
         }
         .appSheet(item: $castPanelPerson, onDismiss: { Task { await model.player.play() } }) { person in
@@ -232,11 +232,11 @@ struct PlayerView: View {
                     }
             }
         }
-        .appSheet(isPresented: $showInfoSheet) {
+        .appSheet(isPresented: $showInfoSheet, title: "Media Info", systemImage: "info.circle") {
             PlayerMediaInfoSheet(model: model) { showInfoSheet = false }
         }
         .onChange(of: showSyncPlayMenu) { _, isOpen in model.handleMenuVisibilityChange(isOpen) }
-        .appSheet(isPresented: $showSyncPlayMenu) {
+        .appSheet(isPresented: $showSyncPlayMenu, title: "SyncPlay", systemImage: "person.2.fill") {
             SyncPlaySheet(model: model) { showSyncPlayMenu = false }
         }
         .onChange(of: syncPlayManager.incomingCommand) { _, command in

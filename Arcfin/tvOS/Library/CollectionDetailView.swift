@@ -79,14 +79,14 @@ struct CollectionDetailView: View {
             }
             .id(request.item.id)
         }
-        .appSheet(isPresented: $showFilterSheet) {
+        .appSheet(isPresented: $showFilterSheet, title: "Filter & Sort", systemImage: "line.3.horizontal.decrease.circle") {
             NavigationStack {
                 TVLibraryFilterList(
                     availableGenres: availableGenres, availableYears: availableYears,
                     selectedGenres: $selectedGenres, selectedYears: $selectedYears,
                     watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption
                 )
-                .navigationTitle("Filter & Sort")
+                .sheetTitle("Filter & Sort")
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Done") { showFilterSheet = false }

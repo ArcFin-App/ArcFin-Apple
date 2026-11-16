@@ -253,48 +253,48 @@ struct AppleTVSetupHint: View {
     }
 }
 
-/// The Apple TV's setup screen, over the sign-in pages while a phone is setting it up.
+/// The Apple TV's setup screen, over the sign-in pages while a phone is setting it up: what
+/// to do on the left, the code on the right.
 struct AppleTVSetupHostView: View {
     let host: AppleTVSetupHost
 
     var body: some View {
-        ZStack {
-            DT.Color.backgroundPrimary.ignoresSafeArea()
-            VStack(spacing: 32) {
+        HStack(alignment: .center, spacing: 96) {
+            VStack(alignment: .leading, spacing: 28) {
                 Image(systemName: "iphone.and.arrow.forward")
-                    .font(.system(size: 72))
+                    .font(.system(size: 64))
                     .foregroundStyle(DT.Color.accent)
                     .accessibilityHidden(true)
-                content
+                details
             }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: 1000)
-            .padding(60)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .loginFocusSection()
+            code
+                .frame(maxWidth: .infinity)
         }
+        .padding(60)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
-    private var content: some View {
+    private var details: some View {
         switch host.phase {
         case .idle:
             EmptyView()
-        case .confirming(let code):
+        case .confirming:
             title("Set Up This Apple TV?")
             message(Text("An iPhone or iPad on this network wants to set up this Apple TV. Allow it only if it shows this code."))
-            codeText(code)
             HStack(spacing: 32) {
                 Button("Allow") { host.allow(true) }
                 Button("Cancel", role: .cancel) { host.allow(false) }
             }
-        case .waitingForPhone(let code):
+        case .waitingForPhone:
             title("Confirm on Your iPhone or iPad")
             message(Text("Check that it shows the same code, then confirm it there."))
-            codeText(code)
             Button("Cancel", role: .cancel) { host.cancelSession() }
         case .signingIn(let names):
             title("Signing In")
             message(Text("Signing in \(names)."))
-            ProgressView()
         case .failed(let reason):
             title("Couldn't Set Up This Apple TV")
             message(Text(reason))
@@ -302,13 +302,21 @@ struct AppleTVSetupHostView: View {
         }
     }
 
-    private func codeText(_ code: String) -> some View {
-        Text(code.count == 6 ? "\(code.prefix(3)) \(code.suffix(3))" : code)
-            .font(.system(size: 96, weight: .bold, design: .rounded))
-            .monospacedDigit()
-            .tracking(10)
-            .foregroundStyle(DT.Color.textPrimary)
-            .accessibilityLabel("Code \(code.map(String.init).joined(separator: " "))")
+    @ViewBuilder
+    private var code: some View {
+        switch host.phase {
+        case .confirming(let code), .waitingForPhone(let code):
+            Text(code.count == 6 ? "\(code.prefix(3)) \(code.suffix(3))" : code)
+                .font(.system(size: 120, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .tracking(12)
+                .foregroundStyle(DT.Color.textPrimary)
+                .accessibilityLabel("Code \(code.map(String.init).joined(separator: " "))")
+        case .signingIn:
+            ProgressView()
+        default:
+            EmptyView()
+        }
     }
 
     private func title(_ text: LocalizedStringKey) -> some View {

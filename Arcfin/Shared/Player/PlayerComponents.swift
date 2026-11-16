@@ -218,7 +218,7 @@ struct ChapterListSheet: View {
                     .arcfinPlainButton()
                 }
             }
-            .navigationTitle("Chapters")
+            .sheetTitle("Chapters")
             .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -285,7 +285,7 @@ struct PlayerMediaInfoSheet: View {
         }
         .insetGroupedList()
         .screenBackground()
-        .navigationTitle("Media Info")
+        .sheetTitle("Media Info")
         .inlineNavigationTitle()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -371,7 +371,7 @@ struct SyncPlaySheet: View {
                     .refreshable { await model.refreshSyncPlayGroups() }
                 }
             }
-            .navigationTitle("SyncPlay")
+            .sheetTitle("SyncPlay")
             .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

@@ -30,7 +30,7 @@ struct ServerURLView: View {
         }
         .task { await runDiscovery() }
         .appSheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
-        .appSheet(isPresented: $showCustomHeaders) {
+        .appSheet(isPresented: $showCustomHeaders, title: "Custom Headers", systemImage: "key.horizontal") {
             NavigationStack {
                 CustomHeadersView()
                     .toolbar {

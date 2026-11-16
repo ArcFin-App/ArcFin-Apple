@@ -76,7 +76,7 @@ struct EditTagsSheet: View {
                     form
                 }
             }
-            .navigationTitle("Tags")
+            .sheetTitle("Tags")
             .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

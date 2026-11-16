@@ -104,7 +104,7 @@ struct MediaDetailView: View {
             .id(request.item.id)
         }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
-        .appSheet(isPresented: $showSubtitleSearch) {
+        .appSheet(isPresented: $showSubtitleSearch, title: "Search Subtitles", systemImage: "magnifyingglass") {
             NavigationStack {
                 SubtitleSearchView(itemId: item.id)
                     .toolbar {

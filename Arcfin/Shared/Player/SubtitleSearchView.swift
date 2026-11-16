@@ -73,7 +73,7 @@ struct SubtitleSearchView: View {
         }
         .insetGroupedList()
         .screenBackground()
-        .navigationTitle("Search Subtitles")
+        .sheetTitle("Search Subtitles")
         .inlineNavigationTitle()
         .task(id: language) { await search() }
     }

@@ -175,7 +175,7 @@ struct LibraryFilterSheet: View {
                 watchedFilter: $watchedFilter, favoritesOnly: $favoritesOnly, sortOption: $sortOption,
                 extraFilters: $extraFilters, sortOptions: sortOptions
             )
-            .navigationTitle("Filter & Sort")
+            .sheetTitle("Filter & Sort")
             .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
