@@ -12,6 +12,7 @@ struct QuickConnectRow: View {
 
     var body: some View {
         codeRow
+            .listRowSeparator(.visible, edges: .bottom)
         // Its own row: a second button inside the code's row was hard to hit, and a tap on the
         // row could reach the wrong one.
         if QuickConnectScanner.isAvailable {
@@ -25,6 +26,7 @@ struct QuickConnectRow: View {
                         .frame(width: 22)
                 }
             }
+            .listRowSeparator(.visible, edges: .top)
             .sheet(isPresented: $isScanning) { scannerSheet }
         }
     }
