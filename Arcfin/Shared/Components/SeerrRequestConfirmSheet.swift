@@ -351,8 +351,9 @@ struct SeerrRequestConfirmSheet: View {
                         seasonRow(row)
                     }
                 }
-                .background(DT.Color.textPrimary.opacity(0.03))
-                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+                // A background in the shape, not a clip: a focused row grows past the edge on
+                // Apple TV, and clipping cut it off on both sides.
+                .background(DT.Color.textPrimary.opacity(0.03), in: RoundedRectangle(cornerRadius: DT.Radius.md))
                 .padding(.horizontal, DT.Spacing.pagePad)
             }
         }
