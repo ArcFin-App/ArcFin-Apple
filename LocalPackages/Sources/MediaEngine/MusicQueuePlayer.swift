@@ -24,8 +24,15 @@ public final class MusicQueuePlayer {
     public private(set) var position: Double = 0
     public private(set) var duration: Double = 0
     /// This player's own level, under the device's; a remote sets it.
-    public var volume: Float = 1 { didSet { player.volume = volume } }
-    public var isMuted = false { didSet { player.isMuted = isMuted } }
+    public var volume: Float = 1 { didSet { if fade == nil { player.volume = volume } } }
+    public var isMuted = false {
+        didSet {
+            player.isMuted = isMuted
+            fadingOut?.isMuted = isMuted
+        }
+    }
+    /// Seconds each song fades into the next; 0 runs them together with no gap.
+    public var crossfade: Double = 0
     /// Goes up on every seek, for anything that shows the position without following it.
     public private(set) var seekCount = 0
     /// Copies each song's audio into `levels` as it plays, for a visualizer.
@@ -49,7 +56,11 @@ public final class MusicQueuePlayer {
 
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
     @ObservationIgnored private let streamURL: (MusicSong) -> URL?
-    @ObservationIgnored private let player = AVQueuePlayer()
+    /// The player for the current song. A crossfade starts the next song on a new one.
+    @ObservationIgnored private var player: AVQueuePlayer
+    /// The player still fading out the last song, during a crossfade.
+    @ObservationIgnored private var fadingOut: AVQueuePlayer?
+    @ObservationIgnored private var fade: Task<Void, Never>?
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicQueuePlayer")
     @ObservationIgnored private var entryIDs: [ObjectIdentifier: MusicQueue.Entry.ID] = [:]
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
@@ -62,25 +73,37 @@ public final class MusicQueuePlayer {
 
     public init(streamURL: @escaping (MusicSong) -> URL?) {
         self.streamURL = streamURL
-        player.actionAtItemEnd = .advance
-        // Music goes to AirPlay as audio, so the receiver shows the song and its art; as
-        // external (video) playback an Apple TV took over its screen with nothing on it.
-        player.allowsExternalPlayback = false
-        statusObservation = player.observe(\.timeControlStatus) { [weak self] player, _ in
-            let status = player.timeControlStatus
-            Task { @MainActor [weak self] in
-                self?.isPlaying = status != .paused
-                self?.isBuffering = status == .waitingToPlayAtSpecifiedRate
-            }
-        }
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600),
-                                                      queue: .main) { [weak self] time in
-            MainActor.assumeIsolated { self?.tick(time) }
-        }
+        player = Self.makeDeck()
+        follow(player)
         endObserver = NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification,
                                                              object: nil, queue: .main) { [weak self] note in
             let ended = (note.object as? AVPlayerItem).map(ObjectIdentifier.init)
             MainActor.assumeIsolated { self?.itemEnded(ended) }
+        }
+    }
+
+    private static func makeDeck() -> AVQueuePlayer {
+        let deck = AVQueuePlayer()
+        deck.actionAtItemEnd = .advance
+        // Music goes to AirPlay as audio, so the receiver shows the song and its art; as
+        // external (video) playback an Apple TV took over its screen with nothing on it.
+        deck.allowsExternalPlayback = false
+        return deck
+    }
+
+    /// Watches `deck` for whether it plays and where it is, and stops watching the last one.
+    private func follow(_ deck: AVQueuePlayer) {
+        statusObservation = deck.observe(\.timeControlStatus) { [weak self] deck, _ in
+            let status = deck.timeControlStatus
+            Task { @MainActor [weak self] in
+                guard let self, deck === player else { return }
+                isPlaying = status != .paused
+                isBuffering = status == .waitingToPlayAtSpecifiedRate
+            }
+        }
+        timeObserver = deck.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600),
+                                                    queue: .main) { [weak self] time in
+            MainActor.assumeIsolated { self?.tick(time) }
         }
     }
 
@@ -91,6 +114,7 @@ public final class MusicQueuePlayer {
     // MARK: Playing
 
     public func play(_ tracks: [MusicSong], startingAt index: Int = 0, shuffled: Bool = false) {
+        finishCrossfade()
         endCurrent()
         let repeatMode = queue.repeatMode
         queue = MusicQueue(tracks, startingAt: index, shuffled: shuffled)
@@ -106,11 +130,15 @@ public final class MusicQueuePlayer {
         if started == nil { markStarted(entry) }
     }
 
-    public func pause() { player.pause() }
+    public func pause() {
+        finishCrossfade()
+        player.pause()
+    }
 
     /// Pauses and ends the song's report, for something else taking over the audio.
     /// `resume()` starts it again.
     public func suspend() {
+        finishCrossfade()
         player.pause()
         endCurrent()
     }
@@ -118,12 +146,14 @@ public final class MusicQueuePlayer {
     public func togglePlayPause() { isPlaying ? pause() : resume() }
 
     public func seek(to seconds: Double) {
+        finishCrossfade()
         position = seconds
         seekCount += 1
         player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
     }
 
     public func next() {
+        finishCrossfade()
         endCurrent()
         if queue.advance() == nil {
             seek(to: 0)
@@ -134,6 +164,7 @@ public final class MusicQueuePlayer {
     }
 
     public func previous() {
+        finishCrossfade()
         let before = queue.current
         if queue.goBack(from: position)?.id == before?.id {
             seek(to: 0)
@@ -145,6 +176,7 @@ public final class MusicQueuePlayer {
 
     /// `plays` false only moves the queue there, for a song playing somewhere else.
     public func jump(to id: MusicQueue.Entry.ID, plays: Bool = true) {
+        finishCrossfade()
         endCurrent()
         guard queue.jump(to: id) != nil else { return }
         reload()
@@ -153,6 +185,7 @@ public final class MusicQueuePlayer {
 
     /// Stops and empties the queue.
     public func stop() {
+        finishCrossfade()
         endCurrent()
         player.pause()
         forgetItems()
@@ -177,6 +210,7 @@ public final class MusicQueuePlayer {
     }
 
     public func remove(_ id: MusicQueue.Entry.ID) {
+        finishCrossfade()
         let playing = queue.current?.id
         if id == playing { endCurrent() }
         queue.remove(id)
@@ -333,6 +367,56 @@ public final class MusicQueuePlayer {
         if time.isNumeric { position = time.seconds }
         if position > 0 { failures = 0 }
         if item.duration.isNumeric, item.duration.seconds > 0 { duration = item.duration.seconds }
+        if crossfade > 0, fade == nil, isPlaying, queue.repeatMode != .one, duration > crossfade * 2 + 1,
+           position >= duration - crossfade {
+            startCrossfade()
+        }
+    }
+
+    // MARK: Crossfade
+
+    /// Starts the next song on a new player and fades the two across; the old one keeps
+    /// only the song it's finishing.
+    private func startCrossfade() {
+        var peek = queue
+        guard peek.advance(finished: true) != nil else { return }
+        endCurrent(at: duration)
+        let old = player
+        old.actionAtItemEnd = .pause
+        for item in old.items().dropFirst() { old.remove(item) }
+        if let timeObserver { old.removeTimeObserver(timeObserver) }
+        fadingOut = old
+        player = Self.makeDeck()
+        player.isMuted = isMuted
+        player.volume = 0
+        follow(player)
+        queue.advance(finished: true)
+        // Drops the old song's item from what's tracked, so its end doesn't move the queue.
+        reload()
+        resume()
+        let seconds = crossfade
+        fade = Task { @MainActor [weak self] in
+            let steps = max(Int(seconds * 20), 1)
+            for step in 1...steps {
+                guard (try? await Task.sleep(for: .seconds(seconds / Double(steps)))) != nil, let self else { return }
+                // Equal power, so the middle doesn't dip.
+                let progress = Double(step) / Double(steps)
+                player.volume = volume * Float(sin(progress * .pi / 2))
+                old.volume = volume * Float(cos(progress * .pi / 2))
+            }
+            self?.finishCrossfade()
+        }
+    }
+
+    /// Ends a crossfade now: the old song stops and the new one is at full volume.
+    private func finishCrossfade() {
+        fade?.cancel()
+        fade = nil
+        guard let old = fadingOut else { return }
+        fadingOut = nil
+        old.pause()
+        old.removeAllItems()
+        player.volume = volume
     }
 
     private func markStarted(_ entry: MusicQueue.Entry) {

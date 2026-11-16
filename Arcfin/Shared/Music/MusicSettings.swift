@@ -26,6 +26,8 @@ enum MusicSettings {
     static let downloadOnMobileDataKey = "musicDownloadOnMobileData"
     static let soundCheckKey = "musicSoundCheck"
     static let equalizerKey = "musicEqualizer"
+    static let crossfadeKey = "musicCrossfadeSeconds"
+    static let crossfadeOptions = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12]
 
     private static var defaults: UserDefaults { .standard }
 

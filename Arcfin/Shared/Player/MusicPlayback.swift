@@ -76,6 +76,8 @@ final class MusicPlayback {
         if player.isMetering != metering { player.isMetering = metering }
         if player.soundCheck != soundCheck { player.soundCheck = soundCheck }
         if player.equalizer != equalizer { player.equalizer = equalizer }
+        let crossfade = Double(defaults.integer(forKey: MusicSettings.crossfadeKey))
+        if player.crossfade != crossfade { player.crossfade = crossfade }
     }
 
     /// Signing out or switching profile stops the music: the queue was the last profile's.

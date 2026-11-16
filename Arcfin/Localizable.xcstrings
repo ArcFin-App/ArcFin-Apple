@@ -2733,6 +2733,70 @@
         }
       }
     },
+    "Crossfade" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überblenden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fundido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fondu enchaîné"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dissolvenza incrociata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クロスフェード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크로스페이드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crossfade"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transição Suave"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Плавный переход"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "淡入淡出"
+          }
+        }
+      }
+    },
     "Device" : {
       "localizations" : {
         "de" : {
@@ -3113,6 +3177,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "均衡器"
+          }
+        }
+      }
+    },
+    "Fades each song into the next. Off, songs run into each other with no gap, as albums are made to play. Not on a Chromecast." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blendet jeden Titel in den nächsten über. Aus gehen Titel lückenlos ineinander über, wie Alben gedacht sind. Nicht auf einem Chromecast."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funde cada canción con la siguiente. Desactivado, las canciones se suceden sin pausa, como se hicieron los álbumes. No en un Chromecast."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fond chaque morceau dans le suivant. Désactivé, les morceaux s’enchaînent sans blanc, comme les albums sont conçus. Pas sur un Chromecast."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfuma ogni brano nel successivo. Se disattivato, i brani si susseguono senza pause, come sono pensati gli album. Non su un Chromecast."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "各曲を次の曲へフェードでつなぎます。オフの場合は、アルバム本来のとおり曲間なしで続けて再生します。Chromecastでは使えません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "각 노래를 다음 노래로 서서히 전환합니다. 끄면 앨범의 의도대로 노래가 끊김 없이 이어집니다. Chromecast에서는 적용되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laat elk nummer overvloeien in het volgende. Uit lopen nummers zonder pauze in elkaar over, zoals albums bedoeld zijn. Niet op een Chromecast."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funde cada música na próxima. Desativado, as músicas seguem sem pausa, como os álbuns foram feitos. Não no Chromecast."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Плавно переводит каждую песню в следующую. Если выключено, песни идут без пауз, как задумано в альбомах. Не на Chromecast."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将每首歌曲淡入下一首。关闭时，歌曲会按专辑本意无缝衔接。不适用于 Chromecast。"
           }
         }
       }

@@ -8,9 +8,15 @@ struct MusicPlaybackSection: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage(MusicSettings.soundCheckKey) private var soundCheck = false
     @AppStorage(MusicSettings.equalizerKey) private var equalizer = MusicEqualizer.off
+    @AppStorage(MusicSettings.crossfadeKey) private var crossfade = 0
 
     var body: some View {
         Section {
+            SettingsPicker("Crossfade", detail: "Fades each song into the next. Off, songs run into each other with no gap, as albums are made to play. Not on a Chromecast.",
+                           selection: $crossfade, options: MusicSettings.crossfadeOptions) { seconds in
+                seconds == 0 ? Text("Off") : Text(Duration.seconds(seconds).formatted(.units(allowed: [.seconds], width: .wide)))
+            }
+            .syncLocked(MusicSettings.crossfadeKey, authManager)
             Toggle(isOn: $soundCheck) {
                 TVRowLabelText(title: "Sound Check", detail: "Plays songs at about the same volume, using the loudness your server measured for each. Needs Jellyfin 10.9 or later.")
             }
