@@ -14,6 +14,8 @@ struct WatchSession: Identifiable, Equatable, Sendable {
     let id: String
     let deviceName: String
     let itemID: String
+    /// The album's, for a song: songs rarely have art of their own.
+    let artworkItemID: String
     let title: String
     let subtitle: String?
     let isPaused: Bool
@@ -149,9 +151,15 @@ private struct SessionResponse: Decodable {
         let indexNumber: Int?
         let parentIndexNumber: Int?
         let mediaStreams: [Stream]?
+        let type: String?
+        let albumId: String?
+        let album: String?
+        let artists: [String]?
+        let albumArtist: String?
         enum CodingKeys: String, CodingKey {
             case id = "Id", name = "Name", runTimeTicks = "RunTimeTicks", seriesName = "SeriesName"
             case indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber", mediaStreams = "MediaStreams"
+            case type = "Type", albumId = "AlbumId", album = "Album", artists = "Artists", albumArtist = "AlbumArtist"
         }
     }
     struct PlayState: Decodable {
@@ -179,10 +187,18 @@ private struct SessionResponse: Decodable {
     /// Only devices playing something that take commands.
     var session: WatchSession? {
         guard supportsRemoteControl == true, let item = nowPlayingItem, let itemID = item.id else { return nil }
-        let episode = item.indexNumber.map { number in item.parentIndexNumber.map { "S\($0) E\(number)" } ?? "E\(number)" }
-        let subtitle = item.seriesName.map { [$0, episode].compactMap { $0 }.joined(separator: " · ") }
+        let isSong = item.type == "Audio"
+        let subtitle: String?
+        if isSong {
+            let artist = item.artists.flatMap { $0.isEmpty ? nil : $0.joined(separator: ", ") } ?? item.albumArtist
+            subtitle = artist ?? item.album
+        } else {
+            let episode = item.indexNumber.map { number in item.parentIndexNumber.map { "S\($0) E\(number)" } ?? "E\(number)" }
+            subtitle = item.seriesName.map { [$0, episode].compactMap { $0 }.joined(separator: " · ") }
+        }
         return WatchSession(
-            id: id, deviceName: deviceName ?? "", itemID: itemID, title: item.name ?? "", subtitle: subtitle,
+            id: id, deviceName: deviceName ?? "", itemID: itemID,
+            artworkItemID: isSong ? item.albumId ?? itemID : itemID, title: item.name ?? "", subtitle: subtitle,
             isPaused: playState?.isPaused ?? false, positionTicks: playState?.positionTicks ?? 0,
             runTimeTicks: item.runTimeTicks ?? 0, volumeLevel: playState?.volumeLevel,
             isMuted: playState?.isMuted ?? false, audioIndex: playState?.audioStreamIndex,

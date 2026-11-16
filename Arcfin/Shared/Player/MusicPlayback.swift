@@ -59,6 +59,31 @@ final class MusicPlayback {
                                             fillWidth: width, token: credential.accessToken)
     }
 
+    /// A command from a remote (the web app, the watch, another device) while no video is
+    /// open. Returns false for what music has no use for, like subtitles.
+    func apply(_ command: RemoteControl.Kind) -> Bool {
+        guard player.current != nil else { return false }
+        switch command {
+        case .pause: player.pause()
+        case .unpause: player.resume()
+        case .playPause: player.togglePlayPause()
+        case .stop: player.stop()
+        case .seek(let ticks): player.seek(to: Double(ticks) / 10_000_000)
+        case .rewind: player.seek(to: max(player.position - 10, 0))
+        case .fastForward: player.seek(to: min(player.position + 10, player.duration))
+        case .nextTrack: player.next()
+        case .previousTrack: player.previous()
+        case .setVolume(let level): player.volume = level
+        case .volumeUp: player.volume = min(player.volume + 0.05, 1)
+        case .volumeDown: player.volume = max(player.volume - 0.05, 0)
+        case .mute: player.isMuted = true
+        case .unmute: player.isMuted = false
+        case .toggleMute: player.isMuted.toggle()
+        case .audioTrack, .subtitleTrack, .message: return false
+        }
+        return true
+    }
+
     // MARK: Server reports
 
     private func handle(_ event: MusicQueuePlayer.Event) {
@@ -95,15 +120,22 @@ final class MusicPlayback {
         progressTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(10))
-                guard let self, !Task.isCancelled, let song = player.current,
-                      let credential = authManager.state.credential else { return }
-                let header = authManager.authClient.authHeader(token: credential.accessToken)
-                let client = client, ticks = Int64(player.position * 10_000_000), isPaused = !player.isPlaying
-                report {
-                    await client.reportPlaybackProgress(credential: credential, authHeader: header, itemId: song.id,
-                                                        mediaSourceId: song.id, positionTicks: ticks, isPaused: isPaused)
-                }
+                guard let self, !Task.isCancelled else { return }
+                reportProgress()
             }
+        }
+    }
+
+    /// Where the song is, whether it's paused, and the volume, so remotes show it.
+    private func reportProgress() {
+        guard player.isInSession, let song = player.current, let credential = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: credential.accessToken)
+        let client = client, ticks = Int64(player.position * 10_000_000), isPaused = !player.isPlaying
+        let volume = Int((player.volume * 100).rounded()), isMuted = player.isMuted
+        report {
+            await client.reportPlaybackProgress(credential: credential, authHeader: header, itemId: song.id,
+                                                mediaSourceId: song.id, positionTicks: ticks, isPaused: isPaused,
+                                                volumeLevel: volume, isMuted: isMuted)
         }
     }
 
@@ -117,9 +149,13 @@ final class MusicPlayback {
             _ = player.duration
             _ = player.queue.currentIndex
             _ = player.seekCount
+            _ = player.volume
+            _ = player.isMuted
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 self?.updateNowPlaying()
+                // A remote sees a pause, a seek or a volume change straight away.
+                self?.reportProgress()
                 self?.followPlayer()
             }
         }

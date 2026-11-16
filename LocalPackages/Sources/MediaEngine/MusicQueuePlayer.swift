@@ -23,6 +23,9 @@ public final class MusicQueuePlayer {
     public private(set) var isBuffering = false
     public private(set) var position: Double = 0
     public private(set) var duration: Double = 0
+    /// This player's own level, under the device's; a remote sets it.
+    public var volume: Float = 1 { didSet { player.volume = volume } }
+    public var isMuted = false { didSet { player.isMuted = isMuted } }
     /// Goes up on every seek, for anything that shows the position without following it.
     public private(set) var seekCount = 0
 
@@ -64,6 +67,8 @@ public final class MusicQueuePlayer {
     }
 
     public var current: MusicSong? { queue.current?.track }
+    /// Between a song's started and ended events; suspended or stopped, it isn't.
+    public var isInSession: Bool { started != nil }
 
     // MARK: Playing
 

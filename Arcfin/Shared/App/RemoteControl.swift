@@ -90,7 +90,9 @@ final class RemoteControl {
         }
     }
 
+    /// To the open player, or to the music when no player is open.
     private func send(_ kind: Kind) {
+        if !PlayerActivity.shared.isPlayerOpen, AppServices.music.apply(kind) { return }
         command = Command(kind: kind)
     }
 
