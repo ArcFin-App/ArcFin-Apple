@@ -205,9 +205,8 @@ public final class MusicQueuePlayer {
             return
         }
         let target = CMTime(seconds: seconds, preferredTimescale: 600), count = seekCount
-        // A tenth of a second either way is inaudible and lands much sooner than an exact frame.
-        let tolerance = CMTime(seconds: 0.1, preferredTimescale: 600)
-        player.seek(to: target, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] finished in
+        // Exact: checked to land where it says in variable-bitrate Ogg files.
+        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
             Task { @MainActor [weak self] in
                 guard let self, count == seekCount else { return }
                 let now = player.currentTime().seconds
@@ -418,6 +417,9 @@ public final class MusicQueuePlayer {
 
     private func itemEnded(_ item: ObjectIdentifier?) {
         guard let item, entryIDs[item] != nil else { return }
+        if crossfadesCurrent {
+            log.notice("Song ran out before its crossfade, at \(self.position, privacy: .public)s of \(self.duration, privacy: .public)s")
+        }
         entryIDs[item] = nil
         itemObservations[item] = nil
         endCurrent(at: duration)
@@ -544,6 +546,7 @@ public final class MusicQueuePlayer {
     private func startCrossfade() {
         var peek = queue
         guard let following = peek.advance(finished: true) else { return }
+        log.notice("Crossfade: \(self.crossfade, privacy: .public)s into \(following.track.id, privacy: .public) at \(self.position, privacy: .public)s of \(self.duration, privacy: .public)s, \(self.prepared?.entry == following.id ? "lined up" : "loading now", privacy: .public)")
         endCurrent(at: duration)
         let old = player
         old.actionAtItemEnd = .pause
@@ -583,12 +586,16 @@ public final class MusicQueuePlayer {
                 player.volume = output * Float(sin(progress * .pi / 2))
                 old.volume = output * Float(cos(progress * .pi / 2))
             }
+            self?.fade = nil
             self?.finishCrossfade()
         }
     }
 
     /// Ends a crossfade now: the old song stops and the new one is at full volume.
     private func finishCrossfade() {
+        if fade != nil, !(fade?.isCancelled ?? true) {
+            log.notice("Crossfade ended early at \(self.position, privacy: .public)s")
+        }
         fade?.cancel()
         fade = nil
         guard let old = fadingOut else { return }
