@@ -2541,6 +2541,70 @@
         }
       }
     },
+    "Colour from Cover" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Farbe vom Cover"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Color de la portada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Couleur de la pochette"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Colore dalla copertina"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "カバーの色"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "커버 색상"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kleur van de hoes"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cor da capa"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Цвет обложки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "封面颜色"
+          }
+        }
+      }
+    },
     "Confirm on Your iPhone or iPad" : {
       "localizations" : {
         "de" : {
@@ -7721,6 +7785,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此网络中有多台 Apple TV 等待设置。请逐台设置。"
+          }
+        }
+      }
+    },
+    "Tints the bars with a colour from the cover, dark over light covers and light over dark ones, so they stand out. Off, they're white glass." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Färbt die Balken mit einer Farbe aus dem Cover, dunkel auf hellen und hell auf dunklen Covern, damit sie sich abheben. Aus sind sie weißes Glas."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tiñe las barras con un color de la portada, oscuro sobre portadas claras y claro sobre las oscuras, para que destaquen. Desactivado, son de cristal blanco."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Teinte les barres d'une couleur de la pochette, sombre sur les pochettes claires et claire sur les sombres, pour qu'elles ressortent. Désactivé, elles sont en verre blanc."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Colora le barre con un colore della copertina, scuro sulle copertine chiare e chiaro su quelle scure, così risaltano. Disattivato, sono di vetro bianco."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "バーをカバーの色で着色します。明るいカバーには暗く、暗いカバーには明るくして目立たせます。オフにすると白いガラスになります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "커버의 색상으로 막대를 칠합니다. 밝은 커버에는 어둡게, 어두운 커버에는 밝게 해서 눈에 띄게 합니다. 끄면 흰색 유리가 됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kleurt de balken met een kleur uit de hoes, donker op lichte hoezen en licht op donkere, zodat ze opvallen. Uit zijn ze wit glas."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pinta as barras com uma cor da capa, escura sobre capas claras e clara sobre as escuras, para que se destaquem. Desativado, são de vidro branco."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Окрашивает полосы в цвет обложки: тёмный на светлых обложках и светлый на тёмных, чтобы они выделялись. Если выключено, они из белого стекла."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用封面中的颜色为条形着色，浅色封面上用深色，深色封面上用浅色，使其更醒目。关闭时为白色玻璃。"
           }
         }
       }

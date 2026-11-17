@@ -103,6 +103,7 @@ struct MusicDownloadSettingsSection: View {
 struct MusicAppearanceSection: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage(MusicSettings.visualizerKey) private var visualizer = true
+    @AppStorage(MusicSettings.visualizerTintKey) private var tint = true
 
     var body: some View {
         Section {
@@ -111,6 +112,13 @@ struct MusicAppearanceSection: View {
             }
             .tvListRow()
             .syncLocked(MusicSettings.visualizerKey, authManager)
+            if visualizer {
+                Toggle(isOn: $tint) {
+                    TVRowLabelText(title: "Colour from Cover", detail: "Tints the bars with a colour from the cover, dark over light covers and light over dark ones, so they stand out. Off, they're white glass.")
+                }
+                .tvListRow()
+                .syncLocked(MusicSettings.visualizerTintKey, authManager)
+            }
         } header: {
             Text("Appearance")
         }

@@ -19,6 +19,7 @@ enum MusicQuality: String, CaseIterable, Identifiable {
 /// Settings › Music's keys, and what they come to now.
 enum MusicSettings {
     static let visualizerKey = "musicVisualizer"
+    static let visualizerTintKey = "musicVisualizerTint"
     static let streamQualityKey = "musicStreamQuality"
     /// Empty: the same as on Wi-Fi.
     static let mobileStreamQualityKey = "musicMobileStreamQuality"
