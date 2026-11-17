@@ -95,7 +95,8 @@ struct MusicDecodingTests {
                                                      accessToken: "tok", displayName: "Home")
 
     @Test("A container AVFoundation plays streams as is, with its extension in the path",
-          arguments: [("flac", "stream.flac"), ("mp3", "stream.mp3"), ("mov,mp4,m4a,3gp,3g2,mj2", "stream.m4a")])
+          arguments: [("flac", "stream.flac"), ("mp3", "stream.mp3"), ("mov,mp4,m4a,3gp,3g2,mj2", "stream.m4a"),
+                       ("ogg", "stream.ogg"), ("opus", "stream.opus")])
     func directStream(container: String, file: String) throws {
         let url = try #require(JellyfinMediaClient().audioStreamURL(credential: Self.credential, deviceId: "d",
                                                                     trackId: "t", container: container))
@@ -103,7 +104,7 @@ struct MusicDecodingTests {
         #expect(url.query?.contains("static=true") == true)
     }
 
-    @Test("Anything else is made into MP3", arguments: ["ogg", "ape", nil] as [String?])
+    @Test("Anything else is made into MP3", arguments: ["ape", "wma", nil] as [String?])
     func transcoded(container: String?) throws {
         let url = try #require(JellyfinMediaClient().audioStreamURL(credential: Self.credential, deviceId: "d",
                                                                     trackId: "t", container: container))
@@ -119,6 +120,16 @@ struct MusicDecodingTests {
         #expect(url.path == "/Audio/t/stream.mp3")
         #expect(url.query?.contains("audioBitRate=128000") == true)
         #expect(url.query?.contains("static") == false)
+    }
+
+    @Test("A converted song started part-way asks the server to start there; a file played as is doesn't")
+    func convertedStart() throws {
+        let converted = try #require(JellyfinMediaClient().audioStreamURL(credential: Self.credential, deviceId: "d",
+                                                                          trackId: "t", container: "ape", startSeconds: 25))
+        #expect(converted.query?.contains("StartTimeTicks=250000000") == true)
+        let direct = try #require(JellyfinMediaClient().audioStreamURL(credential: Self.credential, deviceId: "d",
+                                                                       trackId: "t", container: "flac", startSeconds: 25))
+        #expect(direct.query?.contains("StartTimeTicks") == false)
     }
 
     @Test("A song's container is decoded")

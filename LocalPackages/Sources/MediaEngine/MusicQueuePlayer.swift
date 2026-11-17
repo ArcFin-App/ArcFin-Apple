@@ -64,7 +64,11 @@ public final class MusicQueuePlayer {
     @ObservationIgnored private var isTapped = false
 
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
-    @ObservationIgnored private let streamURL: (MusicSong) -> URL?
+    /// The song's address, converted from a point in seconds when it can't be played as is.
+    @ObservationIgnored private let streamURL: (MusicSong, Double) -> URL?
+    /// Songs converted as they stream, and the point each conversion began. They can't be
+    /// seeked in, so a seek starts the conversion again from there.
+    @ObservationIgnored private var convertedStarts: [ObjectIdentifier: Double] = [:]
     /// The player for the current song. A crossfade starts the next song on a new one.
     @ObservationIgnored private var player: AVQueuePlayer
     /// The player still fading out the last song, during a crossfade.
@@ -86,7 +90,7 @@ public final class MusicQueuePlayer {
     /// Songs that failed in a row; a whole queue of them stops instead of looping.
     @ObservationIgnored private var failures = 0
 
-    public init(streamURL: @escaping (MusicSong) -> URL?) {
+    public init(streamURL: @escaping (MusicSong, Double) -> URL?) {
         self.streamURL = streamURL
         player = Self.makeDeck()
         follow(player)
@@ -189,7 +193,21 @@ public final class MusicQueuePlayer {
             pendingStart = seconds
             return
         }
+        if let item = player.currentItem, convertedStarts[ObjectIdentifier(item)] != nil {
+            restartConversion(at: seconds)
+            return
+        }
         player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+
+    /// A converted song from a new point: a fresh conversion from there takes the old one's
+    /// place, and whatever is lined up after it stays.
+    private func restartConversion(at seconds: Double) {
+        guard let entry = queue.current, let old = player.currentItem, let item = makeItem(entry, from: seconds) else { return }
+        player.insert(item, after: old)
+        player.advanceToNextItem()
+        forget(old)
+        position = seconds
     }
 
     public func next() {
@@ -308,6 +326,7 @@ public final class MusicQueuePlayer {
         player.removeAllItems()
         entryIDs.removeAll()
         itemObservations.removeAll()
+        convertedStarts.removeAll()
     }
 
     /// Replaces whatever is lined up behind the playing song.
@@ -335,12 +354,14 @@ public final class MusicQueuePlayer {
     private func forget(_ item: AVPlayerItem) {
         entryIDs[ObjectIdentifier(item)] = nil
         itemObservations[ObjectIdentifier(item)] = nil
+        convertedStarts[ObjectIdentifier(item)] = nil
     }
 
-    private func makeItem(_ entry: MusicQueue.Entry) -> AVPlayerItem? {
-        guard let url = streamURL(entry.track) else { return nil }
+    private func makeItem(_ entry: MusicQueue.Entry, from start: Double = 0) -> AVPlayerItem? {
+        guard let url = streamURL(entry.track, start) else { return nil }
         let item = AVPlayerItem(url: url)
         entryIDs[ObjectIdentifier(item)] = entry.id
+        if !url.isFileURL, url.query?.contains("static=true") != true { convertedStarts[ObjectIdentifier(item)] = start }
         let path = url.path
         // Which way it streams: the file as is (stream.flac, …) or converted (stream.mp3 with a codec).
         let gain = entry.track.normalizationGain.map { String(format: " gain %.1f dB", $0) } ?? " no gain"
@@ -439,9 +460,15 @@ public final class MusicQueuePlayer {
 
     private func tick(_ time: CMTime) {
         guard let item = player.currentItem, entryIDs[ObjectIdentifier(item)] == queue.current?.id else { return }
-        if time.isNumeric { position = time.seconds }
+        // A conversion started part-way through counts from where it began.
+        let start = convertedStarts[ObjectIdentifier(item)]
+        if time.isNumeric { position = (start ?? 0) + time.seconds }
         if position > 0 { failures = 0 }
-        if item.duration.isNumeric, item.duration.seconds > 0 { duration = item.duration.seconds }
+        // A conversion's own length is only what it has made so far; the song's is known.
+        if item.duration.isNumeric, item.duration.seconds > 0,
+           start == nil || queue.current?.track.duration == nil {
+            duration = (start ?? 0) + item.duration.seconds
+        }
         if crossfadesCurrent, fade == nil, isPlaying {
             if prepared == nil, position >= duration - crossfade - Self.prepareLead { prepareNext() }
             if position >= duration - crossfade { startCrossfade() }

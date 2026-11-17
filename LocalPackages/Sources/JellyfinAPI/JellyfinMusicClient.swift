@@ -396,8 +396,10 @@ extension JellyfinMediaClient {
         return try Self.decodeLyrics(data)
     }
 
-    /// Containers AVFoundation opens as they are.
-    public static let directAudioContainers: Set<String> = ["mp3", "aac", "m4a", "m4b", "mp4", "flac", "alac", "wav", "aiff", "aif", "caf"]
+    /// Containers AVFoundation opens as they are: Ogg too (Opus and Vorbis) since iOS 17,
+    /// so an .opus file plays as it is rather than converted to MP3.
+    public static let directAudioContainers: Set<String> = ["mp3", "aac", "m4a", "m4b", "mp4", "flac", "alac", "wav", "aiff", "aif", "caf",
+                                                            "ogg", "oga", "opus"]
 
     /// The song's file as is when AVFoundation plays its container, otherwise MP3 made from it.
     /// The extension is in the path: AVFoundation picks a demuxer from it, and without one it
@@ -408,7 +410,7 @@ extension JellyfinMediaClient {
     public func audioStreamURL(credential: ServerCredential, deviceId: String, trackId: String,
                                container: String?, maxBitrate: Int = 320_000,
                                direct playable: Set<String> = directAudioContainers,
-                               bitrateCap: Int? = nil) -> URL? {
+                               bitrateCap: Int? = nil, startSeconds: Double = 0) -> URL? {
         let names = (container ?? "").lowercased().split(separator: ",").map(String.init)
         // A cap converts every song, at that rate.
         let direct = bitrateCap != nil ? nil
@@ -418,6 +420,7 @@ extension JellyfinMediaClient {
         comps?.queryItems = direct != nil
             ? [.init(name: "static", value: "true")]
             : [.init(name: "audioCodec", value: "mp3"), .init(name: "audioBitRate", value: String(bitrateCap ?? maxBitrate))]
+                + (startSeconds > 0 ? [.init(name: "StartTimeTicks", value: String(Int64(startSeconds * 10_000_000)))] : [])
         comps?.queryItems? += [
             .init(name: "DeviceId", value: deviceId),
             .init(name: "api_key", value: credential.accessToken),

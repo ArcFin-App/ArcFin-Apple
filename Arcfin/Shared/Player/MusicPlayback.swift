@@ -46,12 +46,12 @@ final class MusicPlayback {
     init(authManager: AuthManager) {
         self.authManager = authManager
         scrobbler = MusicScrobbler(authManager: authManager)
-        player = MusicQueuePlayer { [authManager] song in
+        player = MusicQueuePlayer { [authManager] song, start in
             // A saved song plays from its file.
             if let local = MusicDownloads.shared.localURL(for: song.id) { return local }
             guard let credential = authManager.state.credential else { return nil }
             return JellyfinMediaClient().audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
-                                                      container: song.container, bitrateCap: MusicSettings.streamBitrate)
+                                                      container: song.container, bitrateCap: MusicSettings.streamBitrate, startSeconds: start)
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()
