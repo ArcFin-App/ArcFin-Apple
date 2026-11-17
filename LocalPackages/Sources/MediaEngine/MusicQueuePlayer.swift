@@ -320,8 +320,9 @@ public final class MusicQueuePlayer {
         var peek = queue
         let following = peek.advance(finished: true)
         if prepared?.entry != following?.id || !crossfadesCurrent { dropPrepared() }
-        // A crossfade lines the next song up on its own player instead.
-        guard !crossfadesCurrent, let following, let item = makeItem(following) else { return }
+        // A crossfade lines the next song up on its own player instead, and a song the
+        // sleep timer ends with has nothing after it, so none of the next one plays.
+        guard !crossfadesCurrent, !pausesAtEndOfSong, let following, let item = makeItem(following) else { return }
         player.insert(item, after: player.items().last)
     }
 

@@ -472,6 +472,10 @@ final class MusicPlayback {
         sleepTimer = timer
         sleepsAt = nil
         player.pausesAtEndOfSong = timer == .endOfSong
+        if timer == .endOfSong {
+            sleepTask = Task { [weak self] in await self?.fadeOutWithSong() }
+            return
+        }
         guard case .minutes(let minutes) = timer else { return }
         let seconds = Double(minutes * 60)
         sleepsAt = .now.addingTimeInterval(seconds)
@@ -481,18 +485,19 @@ final class MusicPlayback {
         }
     }
 
-    private static let sleepFade = 8.0
+    private static let sleepFade = 15.0
 
-    /// Fades the last seconds out, then pauses and puts the volume back.
+    /// Fades the last seconds out, then pauses and puts the volume back. The level falls on
+    /// a curve, so the end sounds gradual rather than dropping away at the last moment.
     private func fallAsleep() async {
         let level = player.volume
-        let steps = 32
+        let steps = 90
         for step in 1...steps {
             guard (try? await Task.sleep(for: .seconds(Self.sleepFade / Double(steps)))) != nil else {
                 player.volume = level
                 return
             }
-            player.volume = level * Float(steps - step) / Float(steps)
+            player.volume = level * Self.fadeLevel(remaining: Double(steps - step) / Double(steps))
         }
         pause()
         autoplayTask?.cancel()
@@ -502,6 +507,22 @@ final class MusicPlayback {
         sleepsAt = nil
         sleepTask = nil
     }
+
+    /// End of Song: the song's last seconds fade out, so it doesn't stop dead. Seeking back
+    /// out of them brings the level back up.
+    private func fadeOutWithSong() async {
+        let level = player.volume
+        defer { player.volume = level }
+        while sleepTimer == .endOfSong {
+            guard (try? await Task.sleep(for: .milliseconds(150))) != nil else { return }
+            let remaining = player.duration - player.position
+            guard player.duration > Self.sleepFade * 2, !isCasting else { continue }
+            player.volume = level * Self.fadeLevel(remaining: min(max(remaining / Self.sleepFade, 0), 1))
+        }
+    }
+
+    /// Volume for a fade with this share of it left: sounds even to the ear, unlike a straight line.
+    private static func fadeLevel(remaining: Double) -> Float { Float(remaining * remaining) }
 
     // MARK: Chromecast
 
