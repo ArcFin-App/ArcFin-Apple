@@ -18,6 +18,8 @@ public final class MusicQueuePlayer {
         case ended(MusicSong, at: Double)
         /// Paused at the end of a song because `pausesAtEndOfSong` was set.
         case pausedAtEnd
+        /// The last song finished playing, and the queue went back to its first song, paused.
+        case queueEnded(MusicSong)
     }
 
     public private(set) var queue = MusicQueue()
@@ -387,11 +389,13 @@ public final class MusicQueuePlayer {
             onEvent?(.pausedAtEnd)
             return
         }
+        let finished = queue.current?.track
         guard queue.advance(finished: true) != nil else {
             // The end of the queue: back to the first song, paused.
             pause()
             queue.jump(to: queue.entries[0].id)
             reload()
+            if let finished { onEvent?(.queueEnded(finished)) }
             return
         }
         // AVQueuePlayer has moved on to the song lined up for this; anything else reloads.

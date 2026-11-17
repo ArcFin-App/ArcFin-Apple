@@ -284,6 +284,17 @@ extension JellyfinMediaClient {
         return page.items.map { $0.asTrack }
     }
 
+    /// Artists the server finds like this one: from shared genres, or from ListenBrainz when
+    /// the library has it switched on for artists.
+    public func getSimilarArtists(credential: ServerCredential, authHeader: String, artistId: String,
+                                  limit: Int = 12) async throws -> [MusicArtist] {
+        var query = baseQuery(credential: credential, startIndex: 0, limit: limit)
+        query.append(.init(name: "Fields", value: "Overview,Genres,PrimaryImageAspectRatio"))
+        let page: MusicPage = try await getMusic("Items/\(artistId)/Similar", query: query,
+                                                 credential: credential, authHeader: authHeader)
+        return page.items.filter { $0.type == "MusicArtist" }.map { $0.asArtist }
+    }
+
     /// Artists, albums and songs whose names match, in every music library.
     public func searchMusic(credential: ServerCredential, authHeader: String, term: String,
                             limit: Int = 24) async throws -> MusicSearchResults {

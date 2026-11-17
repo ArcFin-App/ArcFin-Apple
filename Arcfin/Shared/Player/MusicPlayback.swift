@@ -79,6 +79,11 @@ final class MusicPlayback {
         if player.equalizer != equalizer { player.equalizer = equalizer }
         let crossfade = Double(defaults.integer(forKey: MusicSettings.crossfadeKey))
         if player.crossfade != crossfade { player.crossfade = crossfade }
+        let autoplay = MusicSettings.isAutoplayOn
+        if autoplay != wasAutoplayOn {
+            wasAutoplayOn = autoplay
+            if autoplay { topUpAutoplay() } else { autoplayTask?.cancel(); autoplayTask = nil }
+        }
     }
 
     /// Signing out or switching profile stops the music: the queue was the last profile's.
@@ -241,12 +246,14 @@ final class MusicPlayback {
             } else {
                 reportStart(song, at: seconds)
             }
-            continueWithAutoplay(after: song)
+            topUpAutoplay()
             saveQueue()
         case .ended(let song, let seconds):
             reportStop(song, at: seconds)
         case .pausedAtEnd:
             sleepTimer = nil
+        case .queueEnded(let song):
+            continueAfterQueue(song)
         }
     }
 
@@ -307,22 +314,94 @@ final class MusicPlayback {
     // MARK: Autoplay
 
     @ObservationIgnored private var autoplayTask: Task<Void, Never>?
+    @ObservationIgnored private var wasAutoplayOn = MusicSettings.isAutoplayOn
 
-    /// When the last song starts, a station from it is added behind it, so the music keeps going.
-    private func continueWithAutoplay(after song: MusicSong) {
-        guard MusicSettings.isAutoplayOn, player.repeatMode == .off, player.queue.upNext.isEmpty,
-              autoplayTask == nil else { return }
-        autoplayTask = Task { [weak self] in
-            let mix = (try? await MusicAPI.call {
-                try await $0.getInstantMix(credential: $1, authHeader: $2, itemId: song.id, limit: 25)
-            }) ?? []
-            guard let self else { return }
-            autoplayTask = nil
-            let queued = Set(player.queue.entries.map(\.track.id))
-            let fresh = mix.filter { !queued.contains($0.id) }
-            guard player.current?.id == song.id, player.queue.upNext.isEmpty, !fresh.isEmpty else { return }
-            player.addToQueue(fresh)
+    /// On the last song, a station from it goes behind it, so the music keeps going.
+    private func topUpAutoplay() {
+        guard MusicSettings.isAutoplayOn, player.repeatMode == .off, player.isInSession,
+              let song = player.current, player.queue.upNext.isEmpty else { return }
+        fetchAutoplay(after: song) { [weak self] songs in
+            guard let self, player.current?.id == song.id, player.queue.upNext.isEmpty else { return }
+            player.addToQueue(songs)
         }
+    }
+
+    /// The queue ran out before a station arrived: it carries on from the last song.
+    private func continueAfterQueue(_ song: MusicSong) {
+        guard MusicSettings.isAutoplayOn, player.repeatMode == .off else { return }
+        let last = player.queue.entries.last?.id
+        fetchAutoplay(after: song) { [weak self] songs in
+            // Only if nothing has been played or changed since.
+            guard let self, !player.isPlaying, player.queue.entries.last?.id == last,
+                  player.queue.current?.id == player.queue.entries.first?.id else { return }
+            let count = player.queue.entries.count
+            player.addToQueue(songs)
+            guard player.queue.entries.count > count else { return }
+            player.jump(to: player.queue.entries[count].id)
+        }
+    }
+
+    /// A newer request replaces one still loading; a server that can't be reached is tried again.
+    private func fetchAutoplay(after song: MusicSong, then add: @escaping @MainActor ([MusicSong]) -> Void) {
+        autoplayTask?.cancel()
+        let queued = Set(player.queue.entries.map(\.track.id))
+        autoplayTask = Task { [weak self] in
+            for attempt in 0..<3 {
+                if attempt > 0, (try? await Task.sleep(for: .seconds(10))) == nil { return }
+                guard let songs = await Self.autoplaySongs(after: song, leavingOut: queued) else { continue }
+                guard !Task.isCancelled, let self else { return }
+                autoplayTask = nil
+                if !songs.isEmpty { add(songs) }
+                return
+            }
+        }
+    }
+
+    /// Songs to carry on with, the closest match first: this song's mix, its album's, its
+    /// artist's, then songs by similar artists, then anything in the library. Nil when the
+    /// server couldn't be reached.
+    private static func autoplaySongs(after song: MusicSong, leavingOut queued: Set<String>) async -> [MusicSong]? {
+        var sources: [@MainActor () async throws -> [MusicSong]] = [
+            { try await MusicAPI.call { try await $0.getInstantMix(credential: $1, authHeader: $2, itemId: song.id, limit: 50) } },
+        ]
+        if let albumID = song.albumId {
+            sources.append {
+                try await MusicAPI.call { try await $0.getInstantMix(credential: $1, authHeader: $2, itemId: albumID, limit: 50) }
+            }
+        }
+        if let artistID = song.artists.first?.id {
+            sources.append {
+                try await MusicAPI.call { try await $0.getInstantMix(credential: $1, authHeader: $2, itemId: artistID, limit: 50) }
+            }
+            sources.append {
+                let similar = try await MusicAPI.call {
+                    try await $0.getSimilarArtists(credential: $1, authHeader: $2, artistId: artistID)
+                }
+                guard !similar.isEmpty else { return [] }
+                let filter = MusicFilter(artistId: similar.map(\.id).joined(separator: ","))
+                return try await MusicAPI.call {
+                    try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: nil, sort: .random,
+                                                filter: filter, limit: 50)
+                }.tracks
+            }
+        }
+        let anything: @MainActor () async throws -> [MusicSong] = {
+            try await MusicAPI.call {
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: nil, sort: .random, limit: 50)
+            }.tracks
+        }
+        sources.append(anything)
+        var reached = false
+        for source in sources {
+            guard !Task.isCancelled else { return [] }
+            guard let songs = try? await source() else { continue }
+            reached = true
+            let fresh = songs.filter { !queued.contains($0.id) }
+            if !fresh.isEmpty { return Array(fresh.prefix(25)) }
+        }
+        // Everything has been played already: it plays again, just not this song straight away.
+        guard reached, let again = try? await anything() else { return reached ? [] : nil }
+        return Array(again.filter { $0.id != song.id }.prefix(25))
     }
 
     // MARK: Remembering the queue
