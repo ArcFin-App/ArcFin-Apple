@@ -35,7 +35,35 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         tabs.delegate = self
         interfaceController.setRootTemplate(tabs, animated: false, completion: nil)
         setUpNowPlaying()
+        watchProfile()
+        watchSong()
         load(recent)
+    }
+
+    /// Signing in, out or switching profile on the phone shows that profile's music here.
+    private func watchProfile() {
+        withObservationTracking {
+            _ = AppServices.authManager.state.credential?.id
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, interface != nil else { return }
+                for list in [recent, playlists, albums, downloaded] { load(list) }
+                watchProfile()
+            }
+        }
+    }
+
+    /// The star follows the song that's playing.
+    private func watchSong() {
+        withObservationTracking {
+            _ = player.current?.id
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, interface != nil else { return }
+                updateNowPlayingButtons()
+                watchSong()
+            }
+        }
     }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
@@ -51,12 +79,20 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     // MARK: Lists
 
     private func load(_ list: CPListTemplate) {
-        guard AppServices.authManager.state.credential != nil else {
-            list.emptyViewTitleVariants = [String(localized: "Sign in to Arcfin on your iPhone")]
-            list.updateSections([])
-            return
-        }
         Task {
+            // Started from the car, the app hasn't checked its stored sign-in yet.
+            let auth = AppServices.authManager
+            await auth.checkStoredAuthOnce()
+            guard let credential = auth.state.credential else {
+                show(String(localized: "Sign in to Arcfin on your iPhone"), in: list)
+                return
+            }
+            // A profile with a PIN stays locked until it's entered on the phone.
+            if !AppServices.hasPassedLock, await auth.pin(for: credential.id) != nil {
+                show(String(localized: "Unlock Arcfin on your iPhone"), in: list)
+                return
+            }
+            list.emptyViewTitleVariants = [String(localized: "Nothing Here Yet")]
             switch list {
             case recent: list.updateSections(await recentSections())
             case playlists: list.updateSections([CPListSection(items: await playlistItems())])
@@ -64,6 +100,11 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             default: list.updateSections([CPListSection(items: downloadedItems())])
             }
         }
+    }
+
+    private func show(_ message: String, in list: CPListTemplate) {
+        list.emptyViewTitleVariants = [message]
+        list.updateSections([])
     }
 
     private func recentSections() async -> [CPListSection] {

@@ -83,6 +83,15 @@ final class AuthManager {
 
     // MARK: - Startup
 
+    @ObservationIgnored private var storedAuthCheck: Task<Void, Never>?
+
+    /// The launch's stored sign-in check, run once whichever screen asks first: the window, or
+    /// CarPlay when the app starts in the car.
+    func checkStoredAuthOnce() async {
+        if storedAuthCheck == nil { storedAuthCheck = Task { await checkStoredAuth() } }
+        await storedAuthCheck?.value
+    }
+
     func checkStoredAuth() async {
         defer { isChecking = false }
         #if DEBUG
