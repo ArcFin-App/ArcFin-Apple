@@ -44,12 +44,29 @@ public enum DeviceSetup {
         public let serverName: String
         public let servers: [String]
         public let tmdbKey: String?
+        /// The profile's Seerr server and how it signs in. No password: the Jellyfin sign-in
+        /// goes through Quick Connect on the TV, and a local Seerr account signs in there.
+        public let seerr: Seerr?
+        public let listenBrainzToken: String?
 
-        public init(userName: String, serverName: String, servers: [String], tmdbKey: String? = nil) {
+        public struct Seerr: Codable, Equatable, Sendable {
+            public let url: String
+            public let authMethod: String
+            public let username: String
+
+            public init(url: String, authMethod: String, username: String) {
+                self.url = url; self.authMethod = authMethod; self.username = username
+            }
+        }
+
+        public init(userName: String, serverName: String, servers: [String], tmdbKey: String? = nil,
+                    seerr: Seerr? = nil, listenBrainzToken: String? = nil) {
             self.userName = userName
             self.serverName = serverName
             self.servers = servers
             self.tmdbKey = tmdbKey
+            self.seerr = seerr
+            self.listenBrainzToken = listenBrainzToken
         }
     }
 

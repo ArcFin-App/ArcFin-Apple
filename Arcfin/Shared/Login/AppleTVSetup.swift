@@ -176,20 +176,28 @@ final class AppleTVSetupHost {
             authManager.addProfile(credential)
         }
         authManager.save(primary)
-        Self.keepTMDBKeys(profiles: profiles, signedIn: signedIn, authManager: authManager)
+        Self.keepIntegrations(profiles: profiles, signedIn: signedIn, authManager: authManager)
         completedSetups += 1
     }
 
-    /// Each profile's TMDB key, under the id the profile got here, and the active one's in
-    /// the slot TMDB reads.
-    private static func keepTMDBKeys(profiles: [DeviceSetup.Profile], signedIn: [Int: ServerCredential],
-                                     authManager: AuthManager) {
+    /// Each profile's TMDB key, Seerr connection and ListenBrainz token, under the id the
+    /// profile got here; the active one's TMDB key and Seerr go in the slots in use.
+    private static func keepIntegrations(profiles: [DeviceSetup.Profile], signedIn: [Int: ServerCredential],
+                                         authManager: AuthManager) {
         let active = authManager.state.credential?.id
         for (index, credential) in signedIn {
-            guard let key = profiles[index].tmdbKey, !key.isEmpty else { continue }
+            let profile = profiles[index]
             let id = authManager.profiles.first { $0.userID == credential.userID && $0.baseURL == credential.baseURL }?.id ?? credential.id
-            try? TMDBCredential.save(key, profile: id)
-            if id == active { try? TMDBCredential.save(key) }
+            if let key = profile.tmdbKey, !key.isEmpty {
+                try? TMDBCredential.save(key, profile: id)
+                if id == active { try? TMDBCredential.save(key) }
+            }
+            if let seerr = profile.seerr {
+                authManager.setSeerrConnection(url: seerr.url, authMethod: seerr.authMethod, username: seerr.username, for: id)
+            }
+            if let token = profile.listenBrainzToken, !token.isEmpty {
+                try? ListenBrainzCredential.save(token, profile: id)
+            }
         }
     }
 
@@ -553,7 +561,8 @@ final class AppleTVSetupGuide {
         authManager.profiles.filter { !(onTV?.contains($0.userID) ?? false) }
     }
 
-    /// Sends the picked profiles, sealed, each with its TMDB key, the active one first.
+    /// Sends the picked profiles, sealed, each with its TMDB key, Seerr connection and
+    /// ListenBrainz token, the active one first.
     func signIn(authManager: AuthManager) {
         guard let session, case .choosing = phase else { return }
         let activeID = authManager.state.credential?.id
@@ -563,10 +572,14 @@ final class AppleTVSetupGuide {
         guard !sending.isEmpty else { return }
         session.send(.hello(profiles: sending.map { profile in
             let key = profile.id == activeID ? TMDBCredential.load() : TMDBCredential.load(profile: profile.id)
+            let seerr = authManager.seerrConnection(for: profile.id).map {
+                DeviceSetup.Profile.Seerr(url: $0.url, authMethod: $0.authMethod, username: $0.username)
+            }
             return DeviceSetup.Profile(userName: profile.displayName,
                                        serverName: profile.baseURL.host() ?? profile.baseURL.absoluteString,
                                        servers: Self.addresses(for: profile).map(\.absoluteString),
-                                       tmdbKey: key.flatMap { $0.isEmpty ? nil : $0 })
+                                       tmdbKey: key.flatMap { $0.isEmpty ? nil : $0 }, seerr: seerr,
+                                       listenBrainzToken: ListenBrainzCredential.load(profile: profile.id))
         }))
         phase = .approving
     }
