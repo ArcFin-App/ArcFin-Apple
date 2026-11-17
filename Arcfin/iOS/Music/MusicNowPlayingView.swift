@@ -246,7 +246,7 @@ struct MusicNowPlayingView: View {
         HStack {
             Spacer()
             panelButton(.lyrics, systemImage: "quote.bubble", label: "Lyrics")
-                .disabled(!song.hasLyrics)
+                .disabled(!MusicLyricsSource.shared.isAvailable(song))
             Spacer()
             MusicRoutePicker()
                 .frame(width: 44, height: 44)
@@ -289,11 +289,8 @@ struct MusicNowPlayingView: View {
 
     private func loadLyrics(_ song: MusicSong) async {
         lyrics = nil
-        guard song.hasLyrics else {
-            if panel == .lyrics { panel = .artwork }
-            return
-        }
-        lyrics = try? await MusicAPI.call { try await $0.getLyrics(credential: $1, authHeader: $2, trackId: song.id) } ?? nil
+        lyrics = await MusicLyricsSource.shared.lyrics(for: song)
+        if lyrics == nil, panel == .lyrics { panel = .artwork }
     }
 }
 

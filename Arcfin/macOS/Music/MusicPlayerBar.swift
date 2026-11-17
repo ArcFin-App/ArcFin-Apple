@@ -110,7 +110,7 @@ struct MusicPlayerBar: View {
     private func trailingControls(_ song: MusicSong) -> some View {
         HStack(spacing: DT.Spacing.sm) {
             Button { nowPlaying = .lyrics } label: { Image(systemName: "quote.bubble") }
-                .disabled(!song.hasLyrics)
+                .disabled(!MusicLyricsSource.shared.isAvailable(song))
                 .accessibilityLabel("Lyrics")
                 .help("Lyrics")
             Button { nowPlaying = .queue } label: { Image(systemName: "list.bullet") }
@@ -198,9 +198,7 @@ struct MusicMacNowPlaying: View {
                 .padding(DT.Spacing.xl)
                 .task(id: song.id) {
                     lyrics = nil
-                    if song.hasLyrics {
-                        lyrics = try? await MusicAPI.call { try await $0.getLyrics(credential: $1, authHeader: $2, trackId: song.id) } ?? nil
-                    }
+                    lyrics = await MusicLyricsSource.shared.lyrics(for: song)
                 }
             } else {
                 ContentUnavailableView("Nothing Playing", systemImage: "music.note")
@@ -270,7 +268,7 @@ struct MusicMacNowPlaying: View {
                     withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
                 }
             }
-        } else if song.hasLyrics {
+        } else if MusicLyricsSource.shared.isAvailable(song) {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ContentUnavailableView("No Lyrics", systemImage: "quote.bubble")

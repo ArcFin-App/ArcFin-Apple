@@ -9,6 +9,7 @@ struct MusicSettingsView: View {
             MusicPlaybackSection()
             MusicStreamingSection(showsMobileData: false)
             MusicAppearanceSection()
+            MusicLyricsSection()
         }
         .arcfinListStyle()
         .screenBackground()

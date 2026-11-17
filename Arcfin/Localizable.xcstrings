@@ -3373,6 +3373,70 @@
         }
       }
     },
+    "Find Missing Lyrics" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Fehlende Liedtexte suchen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Buscar letras que faltan"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trouver les paroles manquantes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trova testi mancanti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "見つからない歌詞を探す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "없는 가사 찾기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ontbrekende songteksten zoeken"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Encontrar letras ausentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Искать недостающие тексты"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "查找缺失的歌词"
+          }
+        }
+      }
+    },
     "Glass bars that move with the music along the bottom of the cover in Now Playing. Hidden when Reduce Motion is on." : {
       "localizations" : {
         "de" : {
@@ -3817,6 +3881,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "待发送的收听记录：%lld"
+          }
+        }
+      }
+    },
+    "Looks up lyrics your server doesn't have on LRCLIB, a free lyrics library, sending it the song's title, artist, album and length." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sucht Liedtexte, die dein Server nicht hat, bei LRCLIB, einer freien Liedtext-Bibliothek, und sendet dafür Titel, Künstler, Album und Länge des Songs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Busca en LRCLIB, una biblioteca gratuita de letras, las letras que tu servidor no tiene, enviando el título, el artista, el álbum y la duración de la canción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cherche sur LRCLIB, une bibliothèque de paroles gratuite, les paroles que votre serveur n'a pas, en lui envoyant le titre, l'artiste, l'album et la durée du morceau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cerca su LRCLIB, una raccolta gratuita di testi, i testi che il tuo server non ha, inviando titolo, artista, album e durata del brano."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバーにない歌詞を無料の歌詞ライブラリLRCLIBで探します。その際、曲名、アーティスト、アルバム、長さを送信します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 없는 가사를 무료 가사 라이브러리인 LRCLIB에서 찾으며, 노래의 제목, 아티스트, 앨범, 길이를 보냅니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zoekt songteksten die je server niet heeft op LRCLIB, een gratis songtekstbibliotheek, en stuurt daarvoor de titel, artiest, het album en de lengte van het nummer."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Procura no LRCLIB, uma biblioteca gratuita de letras, as letras que seu servidor não tem, enviando o título, o artista, o álbum e a duração da música."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ищет тексты, которых нет на вашем сервере, в LRCLIB — бесплатной библиотеке текстов песен, отправляя название, исполнителя, альбом и длительность песни."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在免费歌词库 LRCLIB 上查找服务器没有的歌词，会发送歌曲的标题、艺人、专辑和时长。"
           }
         }
       }

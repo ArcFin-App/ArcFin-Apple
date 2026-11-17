@@ -117,6 +117,24 @@ struct MusicAppearanceSection: View {
     }
 }
 
+/// Settings › Music › Lyrics: looking up the lyrics the server doesn't have.
+struct MusicLyricsSection: View {
+    @Environment(AuthManager.self) private var authManager
+    @AppStorage(MusicSettings.findsLyricsOnlineKey) private var findsOnline = false
+
+    var body: some View {
+        Section {
+            Toggle(isOn: $findsOnline) {
+                TVRowLabelText(title: "Find Missing Lyrics", detail: "Looks up lyrics your server doesn't have on LRCLIB, a free lyrics library, sending it the song's title, artist, album and length.")
+            }
+            .tvListRow()
+            .syncLocked(MusicSettings.findsLyricsOnlineKey, authManager)
+        } header: {
+            Text("Lyrics")
+        }
+    }
+}
+
 /// Settings › Music › Notifications.
 struct MusicNotificationsSection: View {
     @Environment(AuthManager.self) private var authManager

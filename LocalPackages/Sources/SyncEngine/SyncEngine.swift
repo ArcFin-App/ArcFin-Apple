@@ -213,6 +213,7 @@ public enum SettingsSyncRegistry {
         .init("musicRememberQueue", .bool),
         .init("musicKeepFavoritesDownloaded", .bool),
         .init("musicNotifyDownloads", .bool),
+        .init("musicFindLyricsOnline", .bool),
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),

@@ -31,6 +31,9 @@ enum MusicSettings {
     static let rememberQueueKey = "musicRememberQueue"
     static let keepFavoritesDownloadedKey = "musicKeepFavoritesDownloaded"
     static let notifyDownloadsKey = "musicNotifyDownloads"
+    static let findsLyricsOnlineKey = "musicFindLyricsOnline"
+
+    static var findsLyricsOnline: Bool { defaults.bool(forKey: findsLyricsOnlineKey) }
 
     static var notifiesDownloads: Bool { defaults.object(forKey: notifyDownloadsKey) as? Bool ?? true }
 

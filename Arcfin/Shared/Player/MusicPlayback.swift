@@ -250,6 +250,7 @@ final class MusicPlayback {
                 reportStart(song, at: seconds)
             }
             topUpAutoplay()
+            MusicLyricsSource.shared.prefetch(song)
             saveQueue()
         case .ended(let song, let seconds):
             reportStop(song, at: seconds)

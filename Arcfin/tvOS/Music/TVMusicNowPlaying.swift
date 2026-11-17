@@ -51,11 +51,8 @@ struct TVMusicNowPlaying: View {
                 .background { backdrop(MusicAPI.artworkURL(song, width: 600)) }
                 .task(id: song.id) {
                     lyrics = nil
-                    if song.hasLyrics {
-                        lyrics = try? await MusicAPI.call { try await $0.getLyrics(credential: $1, authHeader: $2, trackId: song.id) } ?? nil
-                    } else if panel == .lyrics {
-                        panel = .upNext
-                    }
+                    lyrics = await MusicLyricsSource.shared.lyrics(for: song)
+                    if lyrics == nil, panel == .lyrics { panel = .upNext }
                 }
             } else {
                 Color.black.onAppear { dismiss() }
@@ -98,7 +95,7 @@ struct TVMusicNowPlaying: View {
                 case .one: .off
                 }
             }
-            if song.hasLyrics {
+            if MusicLyricsSource.shared.isAvailable(song) {
                 circle("quote.bubble", label: "Lyrics", isOn: panel == .lyrics) {
                     panel = panel == .lyrics ? .upNext : .lyrics
                 }
