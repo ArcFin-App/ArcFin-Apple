@@ -7,7 +7,9 @@ import JellyfinAPI
 import MediaEngine
 import MediaPlayer
 import Observation
+import os
 import SwiftUI
+import Telemetry
 
 /// The app's one music player: streams from the signed-in server, tells the server what's
 /// playing so play counts and Recently Played work, and shows it on the lock screen and in
@@ -46,13 +48,13 @@ final class MusicPlayback {
     init(authManager: AuthManager) {
         self.authManager = authManager
         scrobbler = MusicScrobbler(authManager: authManager)
-        player = MusicQueuePlayer { [authManager] song, start, convert in
+        player = MusicQueuePlayer { [authManager] song, start, source in
             // A saved song plays from its file, unless the file won't play or seek.
-            if !convert, let local = MusicDownloads.shared.localURL(for: song.id) { return local }
+            if source == .best, let local = MusicDownloads.shared.localURL(for: song.id) { return local }
             guard let credential = authManager.state.credential else { return nil }
             return JellyfinMediaClient().audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
                                                       container: song.container,
-                                                      direct: convert ? [] : JellyfinMediaClient.directAudioContainers,
+                                                      direct: source == .converted ? [] : JellyfinMediaClient.directAudioContainers,
                                                       bitrateCap: MusicSettings.streamBitrate, startSeconds: start)
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
@@ -712,10 +714,13 @@ final class MusicPlayback {
 
     /// What the server has now for the song that started: liked, disliked or a favorite may
     /// have changed elsewhere, or not have come with a queue saved before.
+    private static let ratingLog = Telemetry.logger(category: "MusicRatings")
+
     private func refreshRating(of song: MusicSong) {
         Task {
             guard let fresh = try? await MusicAPI.call({ try await $0.getSongs(credential: $1, authHeader: $2, ids: [song.id]) })?.first
             else { return }
+            Self.ratingLog.notice("Jellyfin has \(fresh.id, privacy: .public): favorite \(fresh.isFavorite, privacy: .public), likes \(fresh.likes.map(String.init) ?? "-", privacy: .public)")
             MusicFavorites.shared.sync(fresh.id, isFavorite: fresh.isFavorite)
             MusicRatings.shared.sync(fresh.id, likes: fresh.likes)
             if player.current?.id == song.id || castSong?.id == song.id { updateRatingCommands(for: fresh) }

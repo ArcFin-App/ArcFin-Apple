@@ -76,9 +76,15 @@ public final class MusicQueuePlayer {
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
     /// The song's address from a point in seconds; `true` asks for it converted, for a file
     /// that turned out not to open as it is.
-    @ObservationIgnored private let streamURL: (MusicSong, Double, Bool) -> URL?
+    /// Where a song plays from: its saved file if there is one, else the server's file as it
+    /// is, else a conversion; `.server` and `.converted` skip what didn't work.
+    public enum Source: Sendable { case best, server, converted }
+
+    @ObservationIgnored private let streamURL: (MusicSong, Double, Source) -> URL?
     /// Songs whose file wouldn't open as it is (Ogg Vorbis, say), streamed converted instead.
     @ObservationIgnored private var mustConvert: Set<String> = []
+    /// Songs whose saved file wouldn't play or seek.
+    @ObservationIgnored private var skipsSaved: Set<String> = []
     /// Songs converted as they stream, and the point each conversion began. They can't be
     /// seeked in, so a seek starts the conversion again from there.
     @ObservationIgnored private var convertedStarts: [ObjectIdentifier: Double] = [:]
@@ -103,7 +109,7 @@ public final class MusicQueuePlayer {
     /// Songs that failed in a row; a whole queue of them stops instead of looping.
     @ObservationIgnored private var failures = 0
 
-    public init(streamURL: @escaping (MusicSong, Double, Bool) -> URL?) {
+    public init(streamURL: @escaping (MusicSong, Double, Source) -> URL?) {
         self.streamURL = streamURL
         player = Self.makeDeck()
         follow(player)
@@ -251,10 +257,10 @@ public final class MusicQueuePlayer {
                 // A saved file that says it moved and didn't (one kept from an old conversion):
                 // the server plays the song from there instead.
                 if seconds > 2, !(now.isFinite && abs(now - seconds) < 2), (item.asset as? AVURLAsset)?.url.isFileURL == true,
-                   let entry = queue.current, !mustConvert.contains(entry.track.id) {
+                   let entry = queue.current, !skipsSaved.contains(entry.track.id) {
                     log.error("The saved file of \(entry.track.id, privacy: .public) can't seek; streaming it from \(seconds, privacy: .public)s")
-                    mustConvert.insert(entry.track.id)
-                    restartConversion(at: seconds)
+                    skipsSaved.insert(entry.track.id)
+                    replaceCurrent(at: seconds)
                 }
             }
         }
@@ -262,12 +268,18 @@ public final class MusicQueuePlayer {
 
     /// A converted song from a new point: a fresh conversion from there takes the old one's
     /// place, and whatever is lined up after it stays.
-    private func restartConversion(at seconds: Double) {
+    private func restartConversion(at seconds: Double) { replaceCurrent(at: seconds) }
+
+    /// The playing song from a new source, at `seconds`: a conversion starts there, a file seeks.
+    private func replaceCurrent(at seconds: Double) {
         guard let entry = queue.current, let old = player.currentItem, let item = makeItem(entry, from: seconds) else { return }
+        let plays = isPlaying || player.rate != 0
         player.insert(item, after: old)
         player.advanceToNextItem()
         forget(old)
         position = seconds
+        if convertedStarts[ObjectIdentifier(item)] == nil, seconds > 0 { startSeek(seconds) }
+        if plays { player.play() }
     }
 
     public func next() {
@@ -422,7 +434,9 @@ public final class MusicQueuePlayer {
     }
 
     private func makeItem(_ entry: MusicQueue.Entry, from start: Double = 0) -> AVPlayerItem? {
-        guard let url = streamURL(entry.track, start, mustConvert.contains(entry.track.id)) else { return nil }
+        let id = entry.track.id
+        let source: Source = mustConvert.contains(id) ? .converted : skipsSaved.contains(id) ? .server : .best
+        guard let url = streamURL(entry.track, start, source) else { return nil }
         let item = AVPlayerItem(url: url)
         entryIDs[ObjectIdentifier(item)] = entry.id
         if !url.isFileURL, url.query?.contains("static=true") != true { convertedStarts[ObjectIdentifier(item)] = start }
@@ -433,7 +447,7 @@ public final class MusicQueuePlayer {
         itemObservations[ObjectIdentifier(item)] = item.observe(\.status) { [weak self] item, _ in
             guard item.status == .failed else { return }
             let failed = ObjectIdentifier(item)
-            Task { @MainActor [weak self] in self?.itemFailed(failed, path: path) }
+            Task { @MainActor [weak self] in self?.itemFailed(failed, path: path, saved: url.isFileURL) }
         }
         if isTapped { tap(item, gain: entry.track.normalizationGain) }
         return item
@@ -500,18 +514,28 @@ public final class MusicQueuePlayer {
     }
 
     /// Containers played as they are that hold codecs AVFoundation may not decode.
+    private func retry(_ id: String, path: String, saved: Bool) -> String? {
+        if saved, !skipsSaved.contains(id) {
+            skipsSaved.insert(id)
+            return "from the server"
+        }
+        guard !saved, !mustConvert.contains(id), Self.mayNeedConverting.contains((path as NSString).pathExtension.lowercased())
+        else { return nil }
+        mustConvert.insert(id)
+        return "converted"
+    }
+
     private static let mayNeedConverting: Set<String> = ["ogg", "oga", "opus"]
 
-    private func itemFailed(_ item: ObjectIdentifier, path: String) {
+    private func itemFailed(_ item: ObjectIdentifier, path: String, saved: Bool) {
         guard let failed = entryIDs[item] else { return }
         let error = player.items().first { ObjectIdentifier($0) == item }?.error as NSError?
         let reason = error.map { "\($0.domain) \($0.code): \($0.localizedDescription)" } ?? "unknown"
         log.error("Song failed (\(path, privacy: .public)): \(reason, privacy: .public)")
-        // A file played as it is that won't open is tried once more, converted.
-        if let entry = queue.entries.first(where: { $0.id == failed }), !mustConvert.contains(entry.track.id),
-           Self.mayNeedConverting.contains((path as NSString).pathExtension.lowercased()) {
-            mustConvert.insert(entry.track.id)
-            log.notice("Trying \(entry.track.id, privacy: .public) again, converted")
+        // A saved file that won't open is tried from the server, and a file played as it is
+        // that won't open once more, converted.
+        if let entry = queue.entries.first(where: { $0.id == failed }), let retry = retry(entry.track.id, path: path, saved: saved) {
+            log.notice("Trying \(entry.track.id, privacy: .public) again, \(retry, privacy: .public)")
             if failed == queue.current?.id {
                 let wasPlaying = isPlaying || player.rate != 0
                 reload()
